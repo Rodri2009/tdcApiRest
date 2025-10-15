@@ -1,0 +1,59 @@
+version: '3.8' # Especifica la versión de Docker Compose
+
+services:
+  # Servicio Nginx para servir el frontend y actuar como proxy inverso
+  nginx:
+    build:
+      context: ../ # El contexto es el directorio raíz del proyecto (tdc)
+      dockerfile: docker/Dockerfile.nginx
+    ports:
+      - "80:80" # Mapea el puerto 80 del host al puerto 80 del contenedor
+    depends_on:
+      - backend # Nginx depende del backend para el proxy
+    networks:
+      - tdc_network
+
+  # Servicio Backend (Node.js/Express)
+  backend:
+    build:
+      context: ../ # El contexto es el directorio raíz del proyecto (tdc)
+      dockerfile: docker/Dockerfile.backend
+    environment:
+      DB_HOST: mariadb
+      DB_USER: rodrigo # Tus nuevos valores
+      DB_PASSWORD: desa8102test # Tus nuevos valores
+      DB_NAME: tdc_db
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    networks:
+      - tdc_network
+    volumes:
+      - ../backend:/app # Monta tu código fuente (server.js, package.json, etc.)
+      # ESTA ES LA LÍNEA CLAVE: Un volumen anónimo para node_modules
+      - /app/node_modules # Monta un volumen anónimo sobre node_modules para que Docker gestione las dependencias
+                          # que se instalaron en la imagen, y no sean sobrescritas por el host.
+
+  # Servicio MariaDB
+  mariadb:
+    image: mariadb:10.6
+    ports:
+      - "3306:3306" # Mapea el puerto 3306 del host al 3306 del contenedor
+    environment:
+      MARIADB_ROOT_PASSWORD: sys81902root # Tus nuevos valores
+      MARIADB_USER: rodrigo # Tus nuevos valores
+      MARIADB_PASSWORD: desa8102test # Tus nuevos valores
+      MARIADB_DATABASE: tdc_db
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - tdc_network
+
+# Definición de redes
+networks:
+  tdc_network:
+    driver: bridge
+
+# Definición de volúmenes persistentes
+volumes:
+  mariadb_data:

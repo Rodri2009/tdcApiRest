@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background-color: #f4f5f7; }
+    .container { max-width: 900px; margin: 0 auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1, h2, h3 { color: #0056b3; text-align: center; }
+    h1 { margin-bottom: 5px; }
+    h3 { color: #555; font-weight: normal; margin-top: 0; }
+    .loader { text-align: center; padding: 50px; }
+    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 25px; background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 30px; font-size: 1.1em; }
+    .details-grid div { line-height: 1.5; }
+    .details-grid strong { color: #333; }
+    .notes-section { background-color: #fff8e1; padding: 15px; border-radius: 5px; border-left: 5px solid #ffc107; margin-bottom: 30px; }
+    .notes-section h4 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #0056b3; color: white; }
+    td.number { text-align: right; font-family: monospace, sans-serif; font-size: 1.1em; }
+    .total-row td { border-top: 2px solid #333; font-weight: bold; font-size: 1.2em; }
+    .button-group { margin-top: 30px; text-align: center; }
+    button { padding: 12px 25px; font-size: 16px; border-radius: 4px; border: none; cursor: pointer; color: white; background-color: #6c757d; }
+  </style>
+</head>
+<body>
+  <div class="container" id="main-container">
+    <div class="loader" id="loader"><h2>Generando Orden de Trabajo...</h2></div>
+  </div>
+  <form id="navigationForm" style="display:none;" method="get" action="<?= urlDeLaApp ?>" target="_top"></form>
+
+<script>
+    const solicitudId = <?= solicitudId ?>;
+    let tipoEventoIdForNav = ''; // La inicializamos vacía
+
+    // --- NECESITAMOS LA FUNCIÓN DE NAVEGACIÓN AQUÍ TAMBIÉN ---
+    function navegarA(pagina, params = {}) {
+        const navigationForm = document.getElementById('navigationForm');
+        navigationForm.innerHTML = '';
+        const pageInput = document.createElement('input');
+        pageInput.type = 'hidden'; pageInput.name = 'page'; pageInput.value = pagina;
+        navigationForm.appendChild(pageInput);
+        for (const key in params) {
+            const input = document.createElement('input');
+            input.type = 'hidden'; input.name = key; input.value = params[key];
+            navigationForm.appendChild(input);
+        }
+        navigationForm.submit();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        google.script.run
+            .withSuccessHandler(renderWorkOrder)
+            .withFailureHandler(error => {
+                document.getElementById('main-container').innerHTML = `<h1>Error</h1><p>${error.message}</p>`;
+            })
+            .getWorkOrderData(solicitudId);
+    });
+
+    function renderWorkOrder(data) {
+        const container = document.getElementById('main-container');
+        if (data.error) {
+            container.innerHTML = `<h1>Error</h1><p>${data.error}</p>`;
+            return;
+        }
+
+        tipoEventoIdForNav = data.tipoEventoIdForNav;
+
+        let tableRows = '';
+        data.assignedStaff.forEach(person => {
+            tableRows += `
+                <tr>
+                    <td>${person.nombre}</td>
+                    <td>${person.rol}</td>
+                    <td class="number">$ ${person.costoPorHora.toLocaleString('es-AR')}</td>
+                    <td class="number">${data.duracionTotalPersonalEnHoras} hs</td>
+                    <td class="number">$ ${person.viaticos.toLocaleString('es-AR')}</td>
+                    <td class="number">$ ${person.totalPorPersona.toLocaleString('es-AR')}</td>
+                </tr>
+            `;
+        });
+        
+        const html = `
+            <h1>Orden de Trabajo</h1>
+            <h3>El Templo de Claypole</h3>
+
+            <div class="details-grid">
+                <div><strong>Solicitud ID:</strong> ${data.solicitudId}</div>
+                <div><strong>Cliente:</strong> ${data.clienteNombre}</div>
+                <div><strong>Fecha del Evento:</strong> ${data.fechaEvento}</div>
+                <div><strong>Tipo de Evento:</strong> ${data.tipoEvento}</div>
+                <div><strong>Horario Evento:</strong> ${data.horaInicio} a ${data.horaFinEvento} hs</div>
+                <div><strong>Horario Personal:</strong> ${data.horaInicioPersonal} a ${data.horaFinPersonal} hs (${data.duracionTotalPersonalEnHoras} hs)</div>
+            </div>
+
+            <div class="notes-section">
+                <h4>Detalles Adicionales del Cliente:</h4>
+                <p>${data.detallesAdicionales.replace(/\n/g, '<br>')}</p>
+            </div>
+
+            <h2>Detalle de Personal y Costos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Personal Asignado</th>
+                        <th>Rol</th>
+                        <th class="number">Costo / Hora</th>
+                        <th class="number">Horas</th>
+                        <th class="number">Viáticos</th>
+                        <th class="number">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                    <tr class="total-row">
+                        <td colspan="5">Costo Total de Personal</td>
+                        <td class="number">$ ${data.costoTotalPersonal.toLocaleString('es-AR')}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="button-group">
+                <button onclick="window.top.location.href='<?= urlDeLaApp ?>?page=admin'">Volver al Panel</button>
+                <!-- Ahora el onclick usa las variables globales y funcionará -->
+                <button class="btn-work-order" 
+                        onclick="navegarA('asignar_personal', { solicitudId: solicitudId, tipoEventoId: tipoEventoIdForNav })">
+                  Volver a Asignar Personal
+                </button>
+            </div>
+        `;
+        container.innerHTML = html;
+    }
+</script>
+</body>
+</html>

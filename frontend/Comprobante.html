@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+    .container { max-width: 98%; margin: 0 auto; background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); position: relative; }
+    h2 { color: #0056b3; text-align: center; margin-bottom: 5px; }
+    h3.subtitle { color: #0056b3; text-align: center; margin-top: 0; margin-bottom: 25px; font-size: 1.1em; font-weight: normal; }
+    .legend-text { text-align: center; font-size: 1.1em; margin-bottom: 20px; color: #555; }
+    #comprobanteDetalle { margin-top: 25px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9; }
+    #comprobanteDetalle ul { list-style: none; padding: 0; margin: 0 0 15px 0; text-align: left; }
+    #comprobanteDetalle ul li { margin-bottom: 5px; font-size: 1.05em; color: #444; }
+    #comprobanteTotal { text-align: right; font-size: 1.8em; font-weight: bold; color: #28a745; margin-top: 15px; border-top: 2px solid #ddd; padding-top: 10px; }
+    #comprobanteTotal span { font-size: 0.7em; color: #555; }
+    .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.8); display: flex; justify-content: center; align-items: center; z-index: 10; border-radius: 8px; flex-direction: column; display: none; }
+    .loading-overlay p { font-size: 1.2em; font-weight: bold; color: #0056b3; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin-top: 10px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>¡Su solicitud de reserva fue registrada correctamente!</h2>
+    <h3 class="subtitle">Le llegará un email con la información detallada<br><br>
+      ¡Gracias por confiar en El Templo de Claypole!
+    </h3>
+    <div id="comprobanteDetalle"><p>Cargando los detalles...</p></div>
+    <div id="comprobanteTotal"><span>Total Final: </span> $0</div>
+    <div class="loading-overlay" id="loadingOverlay"><p>Cargando comprobante...</p><div class="spinner"></div></div>
+  </div>
+
+  <script>
+    const comprobanteDetalleDiv = document.getElementById('comprobanteDetalle');
+    const comprobanteTotalDiv = document.getElementById('comprobanteTotal');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const solicitudId = <?= solicitudId ?>;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      cargarComprobante();
+    });
+
+    function toggleLoadingOverlay(show) {
+      loadingOverlay.style.display = show ? 'flex' : 'none';
+    }
+
+    function cargarComprobante() {
+      toggleLoadingOverlay(true);
+      if (!solicitudId) {
+          comprobanteDetalleDiv.innerHTML = `<p style="color: red;"><b>Error:</b> No se especificó un número de solicitud.</p>`;
+          toggleLoadingOverlay(false);
+          return;
+      }
+
+      google.script.run
+        .withSuccessHandler(function(solicitud) {
+          console.log('CLIENTE: Datos de comprobante recibidos.', solicitud);
+          if (!solicitud) {
+              comprobanteDetalleDiv.innerHTML = `<p>No se encontraron datos para la solicitud. Por favor, intente de nuevo.</p>`;
+              toggleLoadingOverlay(false);
+              return;
+          }
+
+          // --- ESTA PARTE AHORA MOSTRARÁ LOS DATOS CORRECTOS Y COMPLETOS ---
+          let horaFinStr = '';
+          const duracion = solicitud.duracionEvento;
+          const hora = solicitud.horaInicio;
+          const duracionMatch = duracion ? duracion.match(/\d+/) : null;
+          const duracionNum = duracionMatch ? parseInt(duracionMatch[0]) : 0;
+          if (hora && duracionNum > 0) {
+              const horaParts = hora.split(':');
+              const startHour = parseInt(horaParts[0]);
+              const startMinute = parseInt(horaParts[1] || '0');
+              if (!isNaN(startHour) && !isNaN(startMinute)) {
+                  const fechaCalculo = new Date();
+                  fechaCalculo.setHours(startHour, startMinute, 0, 0);
+                  fechaCalculo.setHours(fechaCalculo.getHours() + duracionNum);
+                  const endHour = fechaCalculo.getHours();
+                  const endMinute = String(fechaCalculo.getMinutes()).padStart(2, '0');
+                  horaFinStr = `${endHour}:${endMinute}`;
+              }
+          }
+
+          let detalleHtml = '<ul>';
+          if (solicitud.nombreCompleto) detalleHtml += `<li><strong>Nombre Completo:</strong> ${solicitud.nombreCompleto}</li>`;
+          if (solicitud.celular) detalleHtml += `<li><strong>Celular:</strong> ${solicitud.celular}</li>`;
+          if (solicitud.email) detalleHtml += `<li><strong>Email:</strong> ${solicitud.email}</li>`;
+          detalleHtml += `<li style="margin-top:15px;">---</li>`;
+          detalleHtml += `<li><strong>Tipo de Evento:</strong> ${solicitud.tipoEvento}</li>`;
+          if (solicitud.fechaEvento) detalleHtml += `<li><strong>Fecha:</strong> ${solicitud.fechaEvento}</li>`;
+          if (solicitud.horaInicio) detalleHtml += `<li><strong>Hora de Inicio:</strong> ${solicitud.horaInicio} hs.</li>`;
+          if (solicitud.duracionEvento) detalleHtml += `<li><strong>Duración:</strong> ${solicitud.duracionEvento}</li>`;
+          if (horaFinStr) detalleHtml += `<li><strong>Hora de Finalización:</strong> ${horaFinStr} hs.</li>`;
+          detalleHtml += `<li><strong>Cantidad de Personas:</strong> ${solicitud.cantidadPersonas}</li>`;
+          detalleHtml += `<li style="margin-top:15px;">---</li>`;
+          detalleHtml += `<li><strong>Precio Básico:</strong> $${solicitud.precioBase.toLocaleString('es-AR')}</li>`;
+          if (solicitud.adicionales && solicitud.adicionales.length > 0) {
+            detalleHtml += `<li><strong>Adicionales:</strong></li><ul style="list-style: none; padding-left: 20px;">`;
+            solicitud.adicionales.forEach(ad => {
+                detalleHtml += `<li>- ${ad.nombre}: $${ad.precio.toLocaleString('es-AR')}</li>`;
+            });
+            detalleHtml += `</ul>`;
+          }
+
+          // --- NUEVO BLOQUE PARA SEnA Y DEPÓSITO ---
+          if (solicitud.montoSena > 0 || solicitud.depositoGarantia > 0) {
+            detalleHtml += `<li style="margin-top:15px;">---</li>`;
+            if (solicitud.montoSena > 0) {
+              detalleHtml += `<li style="color: #0056b3;"><strong>Monto de Sena para Reservar:</strong> $${solicitud.montoSena.toLocaleString('es-AR')}</li>`;
+            }
+            if (solicitud.depositoGarantia > 0) {
+              detalleHtml += `<li style="color: #555;"><strong>Depósito de Garantía:</strong> $${solicitud.depositoGarantia.toLocaleString('es-AR')} (reintegrable)</li>`;
+            }
+          }
+          // --- FIN DE NUEVO BLOQUE ---
+
+          detalleHtml += '</ul>';
+
+          comprobanteDetalleDiv.innerHTML = detalleHtml;
+          comprobanteTotalDiv.innerHTML = `<span>Total Final: </span> $${solicitud.precioFinal.toLocaleString('es-AR')}`;
+
+          toggleLoadingOverlay(false);
+        })
+        .withFailureHandler(function(error) {
+          console.error('CLIENTE: Error al cargar el comprobante:', error);
+          comprobanteDetalleDiv.innerHTML = `<p style="color: red;"><b>Error al cargar el comprobante:</b> ${error.message}</p>`;
+          toggleLoadingOverlay(false);
+        })
+        .getSolicitudDetailsById(solicitudId);
+    }
+  </script>
+</body>
+</html>
