@@ -501,9 +501,29 @@
             detalleHtml += '</ul>';
 
             if (tipoId && cantidad && duracion && fechaSeleccionada) {
-                const cantidadNum = parseInt(cantidad.match(/\d+/g).pop());
+                //const cantidadNum = parseInt(cantidad.match(/\d+/g).pop());
+                const cantidadNum = parseInt(cantidad.match(/\d+/)[0]);
                 const duracionNum = parseInt((duracion.match(/\d+/) || ['0'])[0]);
-                const reglasAplicables = this.tarifas.filter(r => r.tipo.toUpperCase() === tipoId.toUpperCase() && cantidadNum >= r.min && cantidadNum <= r.max && fechaSeleccionada >= new Date(r.fechaVigencia + 'T00:00:00'));
+                console.log("Valores para filtrar:", { tipoId, cantidadNum, fechaSeleccionada });
+                const fechaEventoStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
+
+                console.log("Valores para filtrar:", { tipoId, cantidadNum, fechaEventoStr });
+                
+                const reglasAplicables = this.tarifas.filter(r => {
+                    const tipoCoincide = r.tipo.toUpperCase() === tipoId.toUpperCase();
+                    const cantidadCoincide = cantidadNum >= r.min && cantidadNum <= r.max;
+                    // 2. Compara los strings directamente. Es infalible.
+                    const fechaCoincide = fechaEventoStr >= r.fechaVigencia; 
+
+                    // Log de depuración
+                    if (tipoCoincide && cantidadCoincide) {
+                        console.log(`Evaluando regla para '${r.tipo}', cant ${cantidadNum}: fecha? ${fechaCoincide} (evento: ${fechaEventoStr} >= vigencia: ${r.fechaVigencia})`);
+                    }
+                    
+                    return tipoCoincide && cantidadCoincide && fechaCoincide;
+                });
+                console.log("Reglas de tarifa APLICABLES:", reglasAplicables);
+
 
                 if (reglasAplicables.length > 0) {
                     reglasAplicables.sort((a, b) => new Date(b.fechaVigencia) - new Date(a.fechaVigencia));
