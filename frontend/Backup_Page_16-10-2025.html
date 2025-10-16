@@ -143,7 +143,7 @@
             this.elements.btnContacto.onclick = () => this.validarYEnviar('contacto');
             this.elements.resetTipoEventoBtn.onclick = () => window.top.location.href = '<?= urlDeLaApp ?>';
             [this.elements.cantidadPersonasSelect, this.elements.duracionEventoSelect, this.elements.horaInicioSelect].forEach(el => {
-                if (el) el.addEventListener('change', () => this.actualizarTodo());
+                if (el) el.addEventListener('change', () => this.actualizarDetallePresupuesto());
             });
         },
 
@@ -224,7 +224,8 @@
                             this.tiposDeEvento.forEach(tipo => { this.descripcionesTipos[tipo.id] = tipo.descripcion; });
                             
                             this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento); 
-                            this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => this.actualizarTodo()));                            
+                            this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => this.actualizarOpcionesDependientes()));
+                            
                             this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
                             this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
                             this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo...');
@@ -325,7 +326,7 @@
                 }
                 setTimeout(() => {
                     this.elements.horaInicioSelect.value = solicitud.horaInicio;
-                    this.actualizarTodo();
+                    this.actualizarDetallePresupuesto();
                     console.log("--- FIN populateForm ---");
                 }, 100);
             }, 250);
@@ -375,25 +376,25 @@
             try {
                 // Log 1: Verificar los datos de entrada
                 console.log("Datos de entrada - fechasOcupadas:", fechasOcupadas);
-                //console.log("Es fechasOcupadas un array?", Array.isArray(fechasOcupadas));
+                console.log("Es fechasOcupadas un array?", Array.isArray(fechasOcupadas));
                 console.log("Datos de entrada - feriados:", feriados);
-                //console.log("Es feriados un array?", Array.isArray(feriados));
+                console.log("Es feriados un array?", Array.isArray(feriados));
 
                 // Log 2: Crear la configuración paso a paso
-                //console.log("Creando objeto de configuración...");
+                console.log("Creando objeto de configuración...");
                 const config = {};
-                //console.log("Añadiendo 'locale'...");
+                console.log("Añadiendo 'locale'...");
                 config.locale = "es";
-                //console.log("Añadiendo 'altInput'...");
+                console.log("Añadiendo 'altInput'...");
                 config.altInput = true;
-                //console.log("Añadiendo 'altFormat'...");
+                console.log("Añadiendo 'altFormat'...");
                 config.altFormat = "j \\de F, Y";
-                //console.log("Añadiendo 'dateFormat'...");
+                console.log("Añadiendo 'dateFormat'...");
                 config.dateFormat = "Y-m-d";
-                //console.log("Añadiendo 'minDate'...");
+                console.log("Añadiendo 'minDate'...");
                 config.minDate = "today";
                 
-                //console.log("Creando la función 'disable'...");
+                console.log("Creando la función 'disable'...");
                 const disableFunction = (date) => {
                     const esFinDeSemana = date.getDay() === 0 || date.getDay() === 6;
                     const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -402,18 +403,20 @@
                     return !(esFinDeSemana || esFeriado);
                 };
                 
-                //console.log("Combinando 'disableFunction' y 'fechasOcupadas' en el array 'disable'...");
+                console.log("Combinando 'disableFunction' y 'fechasOcupadas' en el array 'disable'...");
                 // Esta es la línea más sospechosa. La construimos de forma segura.
                 config.disable = [disableFunction, ...(fechasOcupadas || [])];
                 
-                //console.log("Creando la función 'onChange'...");
-                
-                config.onChange = () => this.actualizarTodo()
+                console.log("Creando la función 'onChange'...");
+                config.onChange = () => {
+                    this.actualizarHorariosDisponibles();
+                    this.actualizarDetallePresupuesto();
+                };
 
                 // Log 3: Justo antes de llamar a flatpickr
-                //console.log("Configuración completa. Llamando a flatpickr...");
-                //console.log("Elemento a usar:", this.elements.fechaEventoInput);
-                //console.log("Configuración a pasar:", config);
+                console.log("Configuración completa. Llamando a flatpickr...");
+                console.log("Elemento a usar:", this.elements.fechaEventoInput);
+                console.log("Configuración a pasar:", config);
 
                 // Llamada final
                 this.calendario = flatpickr(this.elements.fechaEventoInput, config);
@@ -427,99 +430,142 @@
 
        
         actualizarOpcionesDependientes: function() {
-            this.actualizarTodo();
-        },
-
-        actualizarHorariosDisponibles: function() {
-            this.actualizarTodo();
-        },
-        
-        actualizarDetallePresupuesto: function() {
-            this.actualizarTodo();
-        },
-
-        actualizarTodo: function() {
-            console.groupCollapsed("--- Actualizando Formulario Completo ---");
-            
-            // 1. OBTENER ESTADO ACTUAL
             const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
             const tipoId = selectedRadio ? selectedRadio.value : '';
-            const fechaSeleccionada = this.calendario ? this.calendario.selectedDates[0] : null;
-            const cantidad = this.elements.cantidadPersonasSelect.value;
-            const duracion = this.elements.duracionEventoSelect.value;
-            const hora = this.elements.horaInicioSelect.value;
-            
-            console.log("Estado actual:", { tipoId, fechaSeleccionada, cantidad, duracion, hora });
-
-            // 2. ACTUALIZAR OPCIONES DEPENDIENTES (lógica de actualizarOpcionesDependientes)
             this.elements.tipoEventoDescripcionDiv.innerHTML = tipoId ? this.descripcionesTipos[tipoId] || 'Sin descripción.' : 'Seleccione un tipo de evento.';
-            
-            const prevCantidad = this.elements.cantidadPersonasSelect.value;
-            const prevDuracion = this.elements.duracionEventoSelect.value;
-            
             if (tipoId) {
                 this.llenarSelect(this.elements.cantidadPersonasSelect, this.opcionesCantidades[tipoId] || [], 'Seleccione cantidad...');
                 this.llenarSelect(this.elements.duracionEventoSelect, this.opcionesDuraciones[tipoId] || [], 'Seleccione duración...');
-                
-                // Restaurar valores si es posible
-                this.elements.cantidadPersonasSelect.value = prevCantidad;
-                this.elements.duracionEventoSelect.value = prevDuracion;
-
             } else {
                 this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
                 this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
             }
+            this.actualizarHorariosDisponibles();
+            this.actualizarDetallePresupuesto();
+        },
 
-            // 3. ACTUALIZAR HORARIOS (lógica de actualizarHorariosDisponibles)
-            const prevHora = this.elements.horaInicioSelect.value;
-            if (tipoId && fechaSeleccionada) {
-                const diaDeLaSemana = fechaSeleccionada.getDay();
-                const fechaStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
-                const esFeriado = this.feriadosGlobal.includes(fechaStr);
-                let tipoDeDia = (diaDeLaSemana === 6 && !esFeriado) ? 'sabado' : 'domingo/feriado';
-                
-                const todosLosHorariosParaTipo = this.opcionesHoras[tipoId] || [];
-                const horariosFiltrados = todosLosHorariosParaTipo.filter(h => h.tipoDia === 'todos' || h.tipoDia === tipoDeDia).map(h => h.hora).sort();
-                
-                this.llenarSelect(this.elements.horaInicioSelect, horariosFiltrados, 'Seleccione hora...');
-                this.elements.horaInicioSelect.value = prevHora; // Restaurar valor si es posible
-            } else {
+        actualizarHorariosDisponibles: function() {
+            console.groupCollapsed("--- Depurando actualizarHorariosDisponibles ---"); // Agrupa los logs para limpieza
+            const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
+            const tipoId = selectedRadio ? selectedRadio.value : '';
+            const fechaSeleccionada = this.calendario ? this.calendario.selectedDates[0] : null;
+
+            console.log("Tipo de Evento ID:", tipoId);
+            console.log("Fecha Seleccionada:", fechaSeleccionada);
+            
+            if (!tipoId || !fechaSeleccionada) {
                 this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo y fecha');
+                console.log("Faltan datos (tipo o fecha). Abortando.");
+                console.groupEnd();
+                return;
             }
 
-            // 4. ACTUALIZAR PRESUPUESTO (lógica de actualizarDetallePresupuesto)
+            const diaDeLaSemana = fechaSeleccionada.getDay();
+            const fechaStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
+            const esFeriado = this.feriadosGlobal.includes(fechaStr);
+            
+            // La lógica original era un poco restrictiva, la hacemos más flexible.
+            // Lunes a Viernes son días de semana (1-5), Sábado es 6, Domingo es 0.
+            let tipoDeDia;
+            if (diaDeLaSemana === 6 && !esFeriado) {
+                tipoDeDia = 'sabado';
+            } else if (diaDeLaSemana === 0 || esFeriado) {
+                tipoDeDia = 'domingo/feriado';
+            } else {
+                tipoDeDia = 'semana'; // Asumimos un 'semana' si no es finde o feriado
+            }
+            
+            console.log(`Día de la semana: ${diaDeLaSemana}, Es Feriado: ${esFeriado}, Tipo de Día calculado: ${tipoDeDia}`);
+
+            const todosLosHorariosParaTipo = this.opcionesHoras[tipoId] || [];
+            console.log("Horarios disponibles para este TIPO:", todosLosHorariosParaTipo);
+
+            const horariosFiltrados = todosLosHorariosParaTipo
+                .filter(h => h.tipoDia === 'todos' || h.tipoDia === tipoDeDia)
+                .map(h => h.hora)
+                .sort();
+
+            console.log("Horarios FILTRADOS para este DÍA:", horariosFiltrados);
+            this.llenarSelect(this.elements.horaInicioSelect, horariosFiltrados, 'Seleccione hora...');
+            console.groupEnd();
+        },
+
+        
+        actualizarDetallePresupuesto: function() {
+            console.groupCollapsed("--- Depurando actualizarDetallePresupuesto ---");
+            const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
+            const tipoId = selectedRadio ? selectedRadio.value : '';
+            const cantidad = this.elements.cantidadPersonasSelect.value;
+            const duracion = this.elements.duracionEventoSelect.value;
+            const fechaStr = this.elements.fechaEventoInput.value;
+            
+            console.log("Datos de entrada:", { tipoId, cantidad, duracion, fechaStr });
+
+            // ... (la primera parte de la función que construye el HTML no necesita cambios)
             const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
             const nombreParaMostrar = tipoSeleccionado ? tipoSeleccionado.nombreParaMostrar : '';
             const montoSena = tipoSeleccionado ? tipoSeleccionado.montoSena : 0;
             const depositoGarantia = tipoSeleccionado ? tipoSeleccionado.depositoGarantia : 0;
-            
+            let horaFinStr = '';
+            const duracionNum = parseInt((duracion.match(/\d+/) || ['0'])[0]);
+            const hora = this.elements.horaInicioSelect.value;
+            if (hora && duracionNum > 0) {
+                const [startHour, startMinute] = hora.split(':').map(Number);
+                if (!isNaN(startHour)) {
+                    const fechaCalculo = new Date(); fechaCalculo.setHours(startHour, startMinute || 0, 0, 0);
+                    fechaCalculo.setHours(fechaCalculo.getHours() + duracionNum);
+                    horaFinStr = `${fechaCalculo.getHours()}:${String(fechaCalculo.getMinutes()).padStart(2, '0')}`;
+                }
+            }
             let detalleHtml = '<ul>';
-            // (código para construir detalleHtml se puede copiar de tu función original)
             if (nombreParaMostrar) detalleHtml += `<li><strong>Tipo:</strong> ${nombreParaMostrar}</li>`;
-            if (fechaSeleccionada) detalleHtml += `<li><strong>Fecha:</strong> ${fechaSeleccionada.toLocaleDateString('es-AR')}</li>`;
-            // ... etc ...
+            if (fechaStr && this.calendario && this.calendario.selectedDates[0]) detalleHtml += `<li><strong>Fecha:</strong> ${this.calendario.selectedDates[0].toLocaleDateString('es-AR')}</li>`;
+            if (hora) detalleHtml += `<li><strong>Hora:</strong> ${hora}</li>`;
+            if (duracion) detalleHtml += `<li><strong>Duración:</strong> ${duracion}</li>`;
+            if (horaFinStr) detalleHtml += `<li><strong>Fin:</strong> ${horaFinStr} hs.</li>`;
+            if (cantidad) detalleHtml += `<li><strong>Personas:</strong> ${cantidad}</li>`;
+            if (montoSena > 0) detalleHtml += `<li style="margin-top:10px; color: #0056b3;"><strong>Seña:</strong> $${montoSena.toLocaleString('es-AR')}</li>`;
+            if (depositoGarantia > 0) detalleHtml += `<li style="color: #555;"><strong>Depósito:</strong> $${depositoGarantia.toLocaleString('es-AR')} (reint.)</li>`;
             detalleHtml += '</ul>';
 
-            if (tipoId && cantidad && duracion && fechaSeleccionada) {
-                const cantidadNum = parseInt(cantidad.match(/\d+/g).pop());
-                const duracionNum = parseInt((duracion.match(/\d+/) || ['0'])[0]);
-                const reglasAplicables = this.tarifas.filter(r => r.tipo.toUpperCase() === tipoId.toUpperCase() && cantidadNum >= r.min && cantidadNum <= r.max && fechaSeleccionada >= new Date(r.fechaVigencia + 'T00:00:00'));
 
-                if (reglasAplicables.length > 0) {
-                    reglasAplicables.sort((a, b) => new Date(b.fechaVigencia) - new Date(a.fechaVigencia));
-                    const reglaFinal = reglasAplicables[0];
-                    const precioCalculado = reglaFinal.precioPorHora * duracionNum;
-                    this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
-                    this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${precioCalculado.toLocaleString('es-AR')}`;
-                    this.elements.precioBaseInput.value = precioCalculado;
-                } else {
-                    this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
-                    this.elements.presupuestoDetalleDiv.insertAdjacentHTML('beforeend', '<p style="color:red;">No se encontró tarifa.</p>');
-                    this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $ -`; this.elements.precioBaseInput.value = 0;
-                }
-            } else {
+            if (!tipoId || !cantidad || !duracion || !fechaStr) {
                 this.elements.presupuestoDetalleDiv.innerHTML = '<p>Complete las opciones para ver el precio.</p>';
                 this.elements.presupuestoTotalDiv.innerHTML = `<span>Total Básico: </span> $0`; this.elements.precioBaseInput.value = 0;
+                console.log("Faltan datos para calcular, mostrando mensaje por defecto.");
+                console.groupEnd();
+                return;
+            }
+
+            const cantidadNum = parseInt(cantidad.match(/\d+/g).pop());
+            const fechaSeleccionada = new Date(fechaStr + 'T00:00:00');
+            console.log("Valores para filtrar tarifas:", { tipoId, cantidadNum, fechaSeleccionada });
+            console.log("Tarifas disponibles:", this.tarifas);
+
+            const reglasAplicables = this.tarifas.filter(r => {
+                // Log detallado para CADA regla de tarifa
+                const tipoCoincide = r.tipo.toUpperCase() === tipoId.toUpperCase();
+                const cantidadCoincide = cantidadNum >= r.min && cantidadNum <= r.max;
+                const fechaCoincide = fechaSeleccionada >= new Date(r.fechaVigencia + 'T00:00:00');
+                console.log(`Evaluando regla para tipo '${r.tipo}': tipo? ${tipoCoincide}, cant? ${cantidadCoincide}, fecha? ${fechaCoincide}`);
+                return tipoCoincide && cantidadCoincide && fechaCoincide;
+            });
+
+            console.log("Reglas de tarifa APLICABLES:", reglasAplicables);
+
+            if (reglasAplicables.length > 0) {
+                reglasAplicables.sort((a, b) => new Date(b.fechaVigencia) - new Date(a.fechaVigencia));
+                const reglaFinal = reglasAplicables[0];
+                console.log("Regla FINAL seleccionada (la más reciente):", reglaFinal);
+                const precioCalculado = reglaFinal.precioPorHora * duracionNum;
+                this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
+                this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${precioCalculado.toLocaleString('es-AR')}`;
+                this.elements.precioBaseInput.value = precioCalculado;
+            } else {
+                console.warn("No se encontró ninguna regla de tarifa aplicable.");
+                this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
+                this.elements.presupuestoDetalleDiv.insertAdjacentHTML('beforeend', '<p style="color:red;">No se encontró tarifa.</p>');
+                this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $ -`; this.elements.precioBaseInput.value = 0;
             }
             console.groupEnd();
         },
@@ -573,7 +619,7 @@
                 if (optionDiv.querySelector('input') !== radio) { optionDiv.style.display = 'none'; }
             });
             this.elements.resetTipoEventoBtn.style.display = 'inline-block';
-            //this.actualizarOpcionesDependientes();
+            this.actualizarOpcionesDependientes();
         }
     };
     

@@ -1,0 +1,24 @@
+id_evento,header,duracion
+INFANTILES,Opcion 1,3 horas
+INFORMALES,Opcion 1,4 horas
+CON_SERVICIO_DE_MESA,Opcion 1,4 horas
+SIN_SERVICIO_DE_MESA,Opcion 1,4 horas
+BABY_SHOWERS,Opcion 1,3 horas
+FECHA_BANDAS,Opcion 1,5 horas
+INFANTILES,Opcion 2,4 horas
+INFORMALES,Opcion 2,6 horas
+CON_SERVICIO_DE_MESA,Opcion 2,6 horas
+SIN_SERVICIO_DE_MESA,Opcion 2,6 horas
+BABY_SHOWERS,Opcion 2,4 horas
+FECHA_BANDAS,Opcion 2,6 horas
+INFANTILES,Opcion 3,5 horas
+INFORMALES,Opcion 3,8 horas
+CON_SERVICIO_DE_MESA,Opcion 3,8 horas
+SIN_SERVICIO_DE_MESA,Opcion 3,8 horas
+BABY_SHOWERS,Opcion 3,5 horas
+FECHA_BANDAS,Opcion 3,7 horas
+INFORMALES,Opcion 4,10 horas
+CON_SERVICIO_DE_MESA,Opcion 4,10 horas
+SIN_SERVICIO_DE_MESA,Opcion 4,10 horas
+BABY_SHOWERS,Opcion 4,6 horas
+FECHA_BANDAS,Opcion 4,8 horas

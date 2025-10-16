@@ -1,27 +1,29 @@
 version: '3.8' # Especifica la versión de Docker Compose
 
 services:
-  # Servicio Nginx para servir el frontend y actuar como proxy inverso
   nginx:
     build:
-      context: ../ # El contexto es el directorio raíz del proyecto (tdc)
+      # El contexto ahora es la raíz del proyecto
+      context: ..
       dockerfile: docker/Dockerfile.nginx
     ports:
-      - "80:80" # Mapea el puerto 80 del host al puerto 80 del contenedor
+      - "80:80"
+    volumes:
+      - ../frontend:/usr/share/nginx/html
     depends_on:
-      - backend # Nginx depende del backend para el proxy
+      - backend
     networks:
       - tdc_network
 
-  # Servicio Backend (Node.js/Express)
   backend:
     build:
-      context: ../ # El contexto es el directorio raíz del proyecto (tdc)
+      # El contexto también es la raíz del proyecto
+      context: ..
       dockerfile: docker/Dockerfile.backend
     environment:
       DB_HOST: mariadb
-      DB_USER: rodrigo # Tus nuevos valores
-      DB_PASSWORD: desa8102test # Tus nuevos valores
+      DB_USER: rodrigo
+      DB_PASSWORD: desa8102test
       DB_NAME: tdc_db
       PORT: 3000
     ports:
@@ -29,12 +31,13 @@ services:
     networks:
       - tdc_network
     volumes:
-      - ../backend:/app # Monta tu código fuente (server.js, package.json, etc.)
-      # ESTA ES LA LÍNEA CLAVE: Un volumen anónimo para node_modules
-      - /app/node_modules # Monta un volumen anónimo sobre node_modules para que Docker gestione las dependencias
-                          # que se instalaron en la imagen, y no sean sobrescritas por el host.
+      # ¡ESTA ES LA RUTA CORREGIDA Y ROBUSTA!
+      # La ruta es relativa al archivo docker-compose.yml.
+      # Para apuntar a la carpeta `backend` en la raíz, usamos `../backend`.
+      - ../backend:/app
+      # Este volumen anónimo sigue siendo crucial para proteger node_modules.
+      - /app/node_modules
 
-  # Servicio MariaDB
   mariadb:
     image: mariadb:10.6
     ports:
@@ -46,6 +49,12 @@ services:
       MARIADB_DATABASE: tdc_db
     volumes:
       - mariadb_data:/var/lib/mysql
+      # --- AÑADE ESTAS LÍNEAS ---
+      # Monta los scripts de inicialización en una carpeta especial que se ejecuta al inicio
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
+      - ../database/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
+      # Monta los archivos CSV en una carpeta accesible para LOAD DATA INFILE
+      - ../database/seeds:/var/lib/mysql-files
     networks:
       - tdc_network
 

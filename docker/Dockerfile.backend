@@ -1,18 +1,19 @@
+# Versión final para desarrollo
+
 FROM node:18-alpine
 
+# Establece el directorio de trabajo
 WORKDIR /app
 
-# Solo copiamos los archivos de dependencias para poder ejecutar npm install
-# Los archivos de código se montarán desde el host en tiempo de ejecución.
-COPY backend/package*.json ./
+# Copia solo los archivos de dependencias para poder ejecutar npm install
+# Estos archivos serán montados desde el host, pero los copiamos para construir la imagen.
+COPY ../backend/package*.json ./
 
-# Instala las dependencias del proyecto
+# Instala las dependencias. Esto creará /app/node_modules dentro de la imagen.
 RUN npm install
 
-# Ya no necesitamos copiar el resto del código aquí, ya que se montará.
-# Eliminamos las líneas de depuración 'ls -l' ya que no son necesarias con este enfoque.
-
+# Expone el puerto
 EXPOSE 3000
 
-# CMD ejecutará el server.js que viene del bind mount del host
+# El comando se ejecutará sobre los archivos montados desde el host.
 CMD [ "node", "server.js" ]

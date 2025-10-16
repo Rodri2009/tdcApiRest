@@ -1,0 +1,119 @@
+ID_Evento,NombreParaMostrar,Descripcion,MontoSena,Deposito,EsPublico
+INFANTILES,INFANTILES: Cumpleaños Infantiles hasta 12 años,"CUMPLEAÑOS INFANTILES - HASTA 12 AÑOS
+
+📆 ____DÍAS Y HORARIOS____
+🌅 Mañana: Desde las 11:00hs
+🌇 Tarde: Desde las 16:00hs
+✅ Sábados Domingos y feriados: Mañana y Tarde
+
+INCLUYE: 
+* Encargada de salón, uso de cocina completa con cocinera y control de entrada
+* Inflable de 3x3, dos metegoles, PingPong, Pool y Jenga gigante
+* Mesas, sillas, mantelería, platos y bowls de plastico
+* Baño equipado (papel higiénico y toallas de papel para manos).
+* Uso de Barra, Heladera y freezer
+* Música y Juego de luces.
+* Cancha de fútbol (sólo para los niños)
+* 20 minutos previos sin cargo para decoración",40000,,TRUE
+INFORMALES,"INFORMALES: Juntadas familiares o entre amigos, con uso de parrilla (sin servicios de cocina, ni de mesa, ni de sonido)","ALQUILER DE BAJO PRESUPUESTO
+
+📆 ____DÍAS Y HORARIOS____
+🌅 Sábados, Domingos y feriados: Desde las 11:00hs
+✅ Sábados, horario nocturno hasta las 03:00hs
+
+IMPORTANTE:
+El Cliente tiene que encargarse de la cocina, de armar las mesas, de preparar y mantener el salón.
+El volumen de la música va a estar limitado (sonido acorde al salón)
+No se permiten Dj ni servicios de animación con parlantes (se usa el propio sonido del salón).
+Se cobra un depósito de garantía que se devuelve al finalizar el evento o se cobra en caso de perdidas o roturas.
+
+INCLUYE:
+* Encargada/o general y/o control de puerta.
+* Mesas y sillas
+* Uso de parrilla
+* Baño equipado (papel higiénico y toallas de papel para manos).
+* Uso de Cocina completa, Barra, Heladera y freezer
+* Equipo de Música y Juego de luces.
+* Dos Metegoles, PingPong, Pool y Jenga gigante
+
+NO INCLUYE:
+* Cocinera, meseras, vajilla, decoración, Dj
+* Tiempo extra para decoración ni cocina",50000,80000,TRUE
+CON_SERVICIO_DE_MESA,FIESTAS de 15 / 18 / casamientos / aniversarios,"FIESTAS DE 15, DE 18, CASAMIENTOS O ANIVERSARIOS
+
+📆 ____DÍAS Y HORARIOS____
+🌅 Sábados, Domingos y feriados: Desde las 11:00hs
+✅ Sábados, horario nocturno hasta las 05:00hs
+
+SERVICIO COMPLETO (sólo tenes que poner comida y bebida)
+
+INCLUYE:
+* Encargada de salón, uso de cocina completa con cocinera y ayudantes, meseras y control de entrada.
+* Mesas, sillas, mantelería negra con camino blanco, vajilla de cristal y cubiertos de metal, bowls, centros de mesa.
+* Baño equipado (papel higiénico y toallas de papel para manos).
+* Uso de la Barra, Heladera y freezer
+* Equipo de sonido y Juego de luces.
+* Dos metegoles, PingPong, Pool y Jenga gigante",80000,,TRUE
+SIN_SERVICIO_DE_MESA,"FIESTAS de egresados, despedidas de año o bailes","FIESTAS DE EGRESADOS, DESPEDIDAS DE AÑO O BAILES
+
+📆 ____DÍAS Y HORARIOS____
+🌅 Sábados, Domingos y feriados: Desde las 11:00hs
+✅ Sábados, horario nocturno hasta las 05:00hs
+
+INCLUYE:
+* Encargados de salón y control de puerta.
+* Mesas, sillas y mantelería.
+* Baño equipado (papel higiénico y toallas de papel para manos).
+* Uso de la barra, heladera y freezer.
+* Juego de luces.* Uso del Patio (mesas y sillas).
+
+NO INCLUYE:
+* Cocinera, meseras, vajilla, decoración
+* Tiempo extra para decoración ni cocina",50000,80000,TRUE
+BABY_SHOWERS,"Baby Showers, Bautismos o Comuniones","BABY SHOWERS, BAUTISMOS O COMUNIONES
+
+📆 ____DÍAS Y HORARIOS____
+🌅 Mañana: Desde las 11:00hs
+🌇 Tarde: Desde las 16:00hs
+✅ Sábados Domingos y feriados: Mañana y Tarde
+
+INCLUYE:
+* Encargada de salón, uso de cocina completa con cocinera y ayudante, meseras y control de entrada
+* Mesas, sillas, mantelería negra, vajilla de cristal y cubiertos de metal, bowls, centros de mesa.
+* Baño equipado (papel higiénico y toallas de papel para manos).
+* Uso de la Barra, Heladera y freezer
+* Equipo de sonido y Juego de luces.
+* Dos metegoles, PingPong, Pool y Jenga gigante
+* Aire acondicionado / calefacción
+* Planos, matafuegos y señalización.
+* Servicio de continuidad eléctrica.
+* Vigilancia con cámaras perimetrales",40000,,TRUE
+FECHA_BANDAS,Fecha de bandas en vivo,"FECHA DE BANDAS EN VIVO
+
+📆 ____DÍAS Y HORARIOS____
+✅ Sábados y pre-feriados: Noche
+
+INCLUYE:
+* Control de puerta.
+* Mesas, sillas, mantelería negra, vajilla de cristal y cubiertos de metal, bowls, centros de mesa.
+* Baño equipado (papel higiénico y toallas de papel para manos).
+* Uso de la Barra, Heladera y freezer
+* Equipo de sonido y Juego de luces.
+* Dos metegoles, PingPong, Pool y Jenga gigante",,,FALSE
+ADOLESCENTES,"ADOLESCENTES: Cumpleaños de 13, 14, 15, 16 y 17 años (varones)","CUMPLEAÑOS adolescentes - 13, 14, 15, 16 y 17 AÑOS VARONES
+
+📆 ____DÍAS Y HORARIOS____
+🌅 Mañana: Desde las 11:00hs
+🌇 Tarde: Desde las 16:00hs
+✅ Sábados Domingos y feriados: Mañana y Tarde
+
+INCLUYE: 
+* Encargada de salón, uso de cocina completa con cocinera y control de entrada
+* Inflable de 3x3, dos metegoles, PingPong, Pool y Jenga gigante
+* Mesas, sillas, mantelería, platos y bowls de plastico
+* Baño equipado (papel higiénico y toallas de papel para manos).
+* Uso de Barra, Heladera y freezer
+* Música y Juego de luces.
+* Cancha de fútbol (sólo para los niños)
+* 20 minutos previos sin cargo para decoración",,,FALSE
+DEPILACION_DEFINITIVA,DPILACIÓN DEFINITIVA,Completar datos,,,FALSE

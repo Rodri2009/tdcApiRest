@@ -1,17 +1,25 @@
+// backend/routes/opcionesRoutes.js
 const express = require('express');
 const router = express.Router();
-const { getTiposDeEvento, getAdicionales } = require('../controllers/opcionesController');
+const { 
+    getTiposDeEvento, 
+    getAdicionales,
+    getConfig,
+    getTarifas,
+    getOpcionesDuracion,
+    getOpcionesHorarios,
+    getFechasOcupadas,
+    getSesionExistente
+} = require('../controllers/opcionesController');
 
-// --- LOG DE DEPURACIÓN (NUEVO) ---
-console.log("Router de 'opciones' inicializado.");
-
-// GET /api/opciones/tipos-evento
-// Cuando el servidor arranque, este log nos confirmará que la ruta se está registrando.
-console.log("Definiendo ruta: GET /tipos-evento");
 router.get('/tipos-evento', getTiposDeEvento);
-
-// GET /api/opciones/adicionales
-console.log("Definiendo ruta: GET /adicionales");
 router.get('/adicionales', getAdicionales);
+router.get('/config', getConfig);
+router.get('/tarifas', getTarifas);
+router.get('/duraciones', getOpcionesDuracion);
+router.get('/horarios', getOpcionesHorarios);
+router.get('/fechas-ocupadas', getFechasOcupadas);
+router.get('/sesion', getSesionExistente);
+
 
 module.exports = router;
