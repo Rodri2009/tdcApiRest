@@ -42,7 +42,7 @@ SET
 -- Carga las columnas del CSV en variables temporales
 (`id_evento`, `nombre_para_mostrar`, `descripcion`, `monto_sena`, `deposito`, @espublico_var)
 -- Usa SET para asignar los valores, transformando la variable del booleano
-SET `EsPublico` = IF(UPPER(TRIM(@espublico_var)) = 'TRUE', 1, 0);
+SET `es_publico` = IF(UPPER(TRIM(@espublico_var)) = 'TRUE', 1, 0);
 
 
 -- 6. Cargar datos de Personal_Disponible.csv (CON TRANSFORMACIÓN)
@@ -55,7 +55,7 @@ IGNORE 1 ROWS
 -- Carga las columnas del CSV en variables temporales
 (`id_personal`, `nombre_completo`, `rol`, `celular`, @activo_var, `cvu_alias`)
 -- Usa SET para transformar la variable del booleano
-SET `Activo` = IF(UPPER(TRIM(@activo_var)) = 'TRUE', 1, 0);
+SET `activo` = IF(UPPER(TRIM(@activo_var)) = 'TRUE', 1, 0);
 
 
 -- 7. Cargar datos de Roles_Por_Evento.csv (sin cambios)
