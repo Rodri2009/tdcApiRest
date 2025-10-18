@@ -23,6 +23,7 @@ Abre una terminal y clona el proyecto desde GitHub:
 git clone <URL_DE_TU_REPOSITORIO_EN_GITHU>
 cd <NOMBRE_DEL_DIRECTORIO_DEL_PROYECTO>
 ```
+
 ### 2. Configurar Variables de Entorno
 Crea el archivo backend/.env con el siguiente contenido:
 ```js
@@ -48,6 +49,10 @@ docker-compose -f docker/docker-compose.yml up --build -d
 Verificar los logs del contenedor de MariaDB:
 ```bash
 docker-compose -f docker/docker-compose.yml logs mariadb
+```
+si por algun motivo no fncionó, primero hay que bajar los volumenes con este comando:
+```bash
+docker-compose -f docker/docker-compose.yml down --volumes
 ```
 
 ### 4. Inicializar la Base de Datos (Solo la primera vez)

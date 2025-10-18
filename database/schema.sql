@@ -19,102 +19,102 @@ DROP TABLE IF EXISTS `opciones_adicionales`;
 USE tdc_db;
 
 CREATE TABLE `solicitudes` (
-    `ID_Solicitud` INT AUTO_INCREMENT PRIMARY KEY,
-    `Fecha Hora` DATETIME,
-    `Tipo de Evento` VARCHAR(255),
-    `Cantidad de Personas` VARCHAR(100),
-    `Duracion` VARCHAR(100),
-    `Fecha Evento` DATE,
-    `Hora Evento` VARCHAR(20),
-    `Precio Basico` DECIMAL(10, 2),
-    `Precio Final` DECIMAL(10, 2),
-    `Nombre Completo` VARCHAR(255),
-    `Telefono` VARCHAR(50),
-    `Email` VARCHAR(255),
-    `Descripcion` TEXT,
-    `Estado` VARCHAR(50),
-    `FingerprintID` VARCHAR(255)
+    `id_solicitud` INT AUTO_INCREMENT PRIMARY KEY,
+    `fecha_hora` DATETIME,
+    `tipo_de_evento` VARCHAR(255),
+    `cantidad_de_personas` VARCHAR(100),
+    `duracion` VARCHAR(100),
+    `fecha_evento` DATE,
+    `hora_evento` VARCHAR(20),
+    `precio_basico` DECIMAL(10, 2),
+    `precio_final` DECIMAL(10, 2),
+    `nombre_completo` VARCHAR(255),
+    `telefono` VARCHAR(50),
+    `email` VARCHAR(255),
+    `descripcion` TEXT,
+    `estado` VARCHAR(50),
+    `fingerprintid` VARCHAR(255)
 );
 
 CREATE TABLE `solicitudes_adicionales` (
-    `Timestamp` DATETIME,
-    `ID_Solicitud` INT,
-    `Adicional_Nombre` VARCHAR(255),
-    `Adicional_Precio` DECIMAL(10, 2)
+    `timestamp` DATETIME,
+    `id_solicitud` INT,
+    `adicional_nombre` VARCHAR(255),
+    `adicional_precio` DECIMAL(10, 2)
 );
 
 CREATE TABLE `opciones_adicionales` (
-    `Nombre` VARCHAR(255) PRIMARY KEY,
-    `Precio` DECIMAL(10, 2),
-    `Descripcion` TEXT,
-    `URL de la Imagen` TEXT
+    `nombre` VARCHAR(255) PRIMARY KEY,
+    `precio` DECIMAL(10, 2),
+    `descripcion` TEXT,
+    `url_de_la_imagen` TEXT
 );
 
 CREATE TABLE `precios_vigencia` (
-    `Tipo de Evento` VARCHAR(255),
-    `Cantidad Minima` INT,
-    `Cantidad Maxima` INT,
-    `Fecha de Vigencia` DATE,
-    `Precio por Hora` DECIMAL(10, 2)
+    `tipo_de_evento` VARCHAR(255),
+    `cantidad_minima` INT,
+    `cantidad_maxima` INT,
+    `fecha_de_vigencia` DATE,
+    `precio_por_hora` DECIMAL(10, 2)
 );
 
 CREATE TABLE `opciones_duracion` (
-    id_evento VARCHAR(255),
-    header VARCHAR(255),
-    duracion VARCHAR(100)
+    `id_evento` VARCHAR(255),
+    `header` VARCHAR(255),
+    `duracion` VARCHAR(100)
 );
 
 CREATE TABLE `configuracion_horarios` (
-    `ID de Evento` VARCHAR(255),
-    `Hora de Inicio` VARCHAR(20),
-    `Tipo de Dia` VARCHAR(100)
+    `id_de_evento` VARCHAR(255),
+    `hora_de_inicio` VARCHAR(20),
+    `tipo_de_dia` VARCHAR(100)
 );
 
 CREATE TABLE `opciones_tipos` (
-    `ID_Evento` VARCHAR(255) PRIMARY KEY,
-    `NombreParaMostrar` VARCHAR(255),
-    `Descripcion` TEXT,
-    `MontoSena` DECIMAL(10, 2),
-    `Deposito` DECIMAL(10, 2),
-    `EsPublico` BOOLEAN
+    `id_evento` VARCHAR(255) PRIMARY KEY,
+    `nombre_para_mostrar` VARCHAR(255),
+    `descripcion` TEXT,
+    `monto_sena` DECIMAL(10, 2),
+    `deposito` DECIMAL(10, 2),
+    `es_publico` BOOLEAN
 );
 
 CREATE TABLE `configuracion` (
-    `Clave` VARCHAR(255) PRIMARY KEY,
-    `Valor` TEXT
+    `clave` VARCHAR(255) PRIMARY KEY,
+    `valor` TEXT
 );
 
 CREATE TABLE `personal_disponible` (
-    `ID_Personal` VARCHAR(50) PRIMARY KEY,
-    `NombreCompleto` VARCHAR(255),
-    `Rol` VARCHAR(255),
-    `Celular` VARCHAR(50),
-    `Activo` BOOLEAN,
-    `CVU/ALIAS` VARCHAR(255)
+    `id_personal` VARCHAR(50) PRIMARY KEY,
+    `nombre_completo` VARCHAR(255),
+    `rol` VARCHAR(255),
+    `celular` VARCHAR(50),
+    `activo` BOOLEAN,
+    `cvu_alias` VARCHAR(255)
 );
 
 CREATE TABLE `roles_por_evento` (
-    `ID_Evento` VARCHAR(255),
-    `RolRequerido` VARCHAR(100),
-    `Cantidad` INT,
-    `Min_Personas` INT,
-    `Max_Personas` INT
+    `id_evento` VARCHAR(255),
+    `rol_requerido` VARCHAR(100),
+    `cantidad` INT,
+    `min_personas` INT,
+    `max_personas` INT
 );
 
 CREATE TABLE `costos_personal_vigencia` (
-    `ID_Costo` VARCHAR(50) PRIMARY KEY,
-    `Rol` VARCHAR(100),
-    `FechaDeVigencia` DATE,
-    `CostoPorHora` DECIMAL(10, 2),
-    `Viaticos` DECIMAL(10, 2)
+    `id_costo` VARCHAR(50) PRIMARY KEY,
+    `rol` VARCHAR(100),
+    `fecha_de_vigencia` DATE,
+    `costo_por_hora` DECIMAL(10, 2),
+    `viaticos` DECIMAL(10, 2)
 );
 
 CREATE TABLE `solicitudes_personal` (
-    `ID_Asignacion` VARCHAR(50) PRIMARY KEY,
-    `ID_Solicitud` INT,
-    `RolRequerido` VARCHAR(100),
-    `ID_Personal_Asignado` VARCHAR(50),
-    `EstadoAsignacion` VARCHAR(50)
+    `id_asignacion` VARCHAR(50) PRIMARY KEY,
+    `id_solicitud` INT,
+    `rol_requerido` VARCHAR(100),
+    `id_personal_asignado` VARCHAR(50),
+    `estado_asignacion` VARCHAR(50)
 );
 
 -- Mensaje de éxito al final

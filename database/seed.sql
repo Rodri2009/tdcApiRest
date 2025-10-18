@@ -27,12 +27,20 @@ INTO TABLE `configuracion_horarios` CHARACTER SET utf8mb4 FIELDS TERMINATED BY '
 -- 5. Cargar datos de Opciones_Tipos.csv (CON TRANSFORMACIÓN)
 LOAD DATA LOCAL INFILE '/var/lib/mysql-files/Opciones_Tipos.csv'
 INTO TABLE `opciones_tipos`
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ',' ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
+CHARACTER SET utf8mb4 FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\n' IGNORE 1 ROWS
+-- Lista explícita de columnas en el CSV
+(@col1, @col2, @col3, @col4, @col5, @espublico_var)
+-- Mapeo a las columnas normalizadas de la tabla
+SET 
+    `id_evento` = @col1,
+    `nombre_para_mostrar` = @col2,
+    `descripcion` = @col3,
+    `monto_sena` = @col4,
+    `deposito` = @col5,
+    `es_publico` = IF(UPPER(TRIM(@espublico_var)) = 'TRUE', 1, 0);
+
 -- Carga las columnas del CSV en variables temporales
-(`ID_Evento`, `NombreParaMostrar`, `Descripcion`, `MontoSena`, `Deposito`, @espublico_var)
+(`id_evento`, `nombre_para_mostrar`, `descripcion`, `monto_sena`, `deposito`, @espublico_var)
 -- Usa SET para asignar los valores, transformando la variable del booleano
 SET `EsPublico` = IF(UPPER(TRIM(@espublico_var)) = 'TRUE', 1, 0);
 
@@ -45,7 +53,7 @@ FIELDS TERMINATED BY ',' ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 -- Carga las columnas del CSV en variables temporales
-(`ID_Personal`, `NombreCompleto`, `Rol`, `Celular`, @activo_var, `CVU/ALIAS`)
+(`id_personal`, `nombre_completo`, `rol`, `celular`, @activo_var, `cvu_alias`)
 -- Usa SET para transformar la variable del booleano
 SET `Activo` = IF(UPPER(TRIM(@activo_var)) = 'TRUE', 1, 0);
 

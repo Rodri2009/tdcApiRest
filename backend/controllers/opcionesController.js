@@ -9,7 +9,7 @@ const getTiposDeEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
         // ¡ESTA ES LA LÍNEA A CORREGIR!
-        const rows = await conn.query("SELECT `ID_Evento` as id, `NombreParaMostrar` as nombreParaMostrar, `Descripcion` as descripcion, `MontoSena` as montoSena, `Deposito` as depositoGarantia, `EsPublico` as esPublico FROM `opciones_tipos` WHERE `EsPublico` = 1;");
+        const rows = await conn.query("SELECT `id_evento` as id, `nombre_para_mostrar` as nombreParaMostrar, `descripcion` as descripcion, `monto_sena` as montoSena, `deposito` as depositoGarantia, `es_publico` as esPublico FROM `opciones_tipos` WHERE `es_publico` = 1;");
         // El error estaba en mi copia anterior, la consulta correcta ya estaba, pero vamos a asegurarnos.
         // La consulta debe tener `AS id`
         res.status(200).json(rows);
@@ -29,7 +29,7 @@ const getAdicionales = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query("SELECT nombre, precio, descripcion, `URL de la Imagen` as url_imagen FROM opciones_adicionales;");
+        const rows = await conn.query("SELECT nombre, precio, descripcion, `url_de_la_imagen` as url_imagen FROM opciones_adicionales;");
         res.status(200).json(rows);
     } catch (err) {
         console.error("Error al obtener adicionales:", err);
@@ -62,7 +62,7 @@ const getTarifas = async (req, res) => {
     try {
         conn = await pool.getConnection();
         // Renombramos las columnas para que coincidan con el código JS original
-        const rows = await conn.query("SELECT `Tipo de Evento` as tipo, `Cantidad Minima` as min, `Cantidad Maxima` as max, `Fecha de Vigencia` as fechaVigencia, `Precio por Hora` as precioPorHora FROM `precios_vigencia`;");
+        const rows = await conn.query("SELECT `tipo_de_Evento` as tipo, `cantidad_minima` as min, `cantidad_maxima` as max, `fecha_de_vigencia` as fechaVigencia, `precio_por_hora` as precioPorHora FROM `precios_vigencia`;");
         res.status(200).json(rows);
     } catch (err) {
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -76,7 +76,7 @@ const getOpcionesDuracion = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query("SELECT * FROM `opciones_duracion`;");
-         // El código original esperaba un objeto anidado, lo reconstruimos
+        // El código original esperaba un objeto anidado, lo reconstruimos
         const duracionesObject = rows.reduce((acc, row) => {
             if (!acc[row.id_evento]) {
                 acc[row.id_evento] = [];
@@ -92,12 +92,12 @@ const getOpcionesDuracion = async (req, res) => {
     }
 };
 
- const getOpcionesHorarios = async (req, res) => {
+const getOpcionesHorarios = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query("SELECT `ID de Evento` as tipo, `Hora de Inicio` as hora, `Tipo de Dia` as tipoDia FROM `configuracion_horarios`;");
-         // Reconstruimos el objeto anidado que esperaba el frontend
+        const rows = await conn.query("SELECT `id_de_evento` as tipo, `hora_de_inicio` as hora, `tipo_de_dia` as tipoDia FROM `configuracion_horarios`;");
+        // Reconstruimos el objeto anidado que esperaba el frontend
         const horariosObject = rows.reduce((acc, row) => {
             if (!acc[row.tipo]) {
                 acc[row.tipo] = [];
@@ -117,7 +117,7 @@ const getFechasOcupadas = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query("SELECT DATE_FORMAT(`Fecha Evento`, '%Y-%m-%d') as fecha FROM `solicitudes` WHERE `Estado` = 'Confirmado';");
+        const rows = await conn.query("SELECT DATE_FORMAT(`fecha_evento`, '%Y-%m-%d') as fecha FROM `solicitudes` WHERE `estado` = 'Confirmado';");
         // Devolvemos un array simple de strings de fecha
         const fechas = rows.map(r => r.fecha);
         res.status(200).json(fechas);
@@ -140,7 +140,7 @@ const getSesionExistente = async (req, res) => {
         conn = await pool.getConnection();
         // Busca una solicitud reciente (últimas 24h) y no completada
         const rows = await conn.query(
-            "SELECT `ID_Solicitud` as solicitudId, `Tipo de Evento` as tipoEvento, `Cantidad de Personas` as cantidadPersonas, `Duracion` as duracionEvento, DATE_FORMAT(`Fecha Evento`, '%Y-%m-%d') as fechaEvento, `Hora Evento` as horaInicio FROM `solicitudes` WHERE `FingerprintID` = ? AND `Estado` = 'Solicitado' AND `Fecha Hora` > (NOW() - INTERVAL 24 HOUR) ORDER BY `Fecha Hora` DESC LIMIT 1;",
+            "SELECT `id_solicitud` as solicitudId, `tipo_de_evento` as tipoEvento, `cantidad_de_personas` as cantidadPersonas, `duracion` as duracionEvento, DATE_FORMAT(`fecha_fvento`, '%Y-%m-%d') as fechaEvento, `hora_evento` as horaInicio FROM `solicitudes` WHERE `fingerprintid` = ? AND `estado` = 'solicitado' AND `fecha_hora` > (NOW() - INTERVAL 24 HOUR) ORDER BY `fecha_hora` DESC LIMIT 1;",
             [fingerprintId]
         );
 
