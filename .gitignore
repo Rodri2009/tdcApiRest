@@ -6,6 +6,7 @@ data_migration/node_modules/
 # Archivos de entorno (¡MUY IMPORTANTE!)
 .env
 backend/.env
+SENSIBLE.md
 
 # Archivos de migración de datos (no son parte del código fuente)
 # Es una buena práctica no subir los datos crudos al repositorio.

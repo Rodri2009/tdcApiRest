@@ -24,15 +24,6 @@ git clone <URL_DE_TU_REPOSITORIO_EN_GITHU>
 cd <NOMBRE_DEL_DIRECTORIO_DEL_PROYECTO>
 ```
 
-### 2. Configurar Variables de Entorno
-Crea el archivo backend/.env con el siguiente contenido:
-```js
-PORT=3000
-DB_HOST=mariadb
-DB_USER=rodrigo
-DB_PASSWORD=desa8102test
-DB_NAME=tdc_db
-```
 
 ### 3. Levantar los Contenedores
 Este comando hará todo: construirá las imágenes, creará los contenedores, y la primera vez que se ejecute, inicializará la base de datos con las tablas y los datos semilla.
