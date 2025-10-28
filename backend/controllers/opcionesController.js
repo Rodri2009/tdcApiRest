@@ -29,7 +29,7 @@ const getAdicionales = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query("SELECT nombre, precio, descripcion, `url_de_la_imagen` as url_imagen FROM opciones_adicionales;");
+        const rows = await conn.query("SELECT `nombre`, `precio`, `descripcion`, `url_imagen` as imageUrl FROM `opciones_adicionales`;");
         res.status(200).json(rows);
     } catch (err) {
         console.error("Error al obtener adicionales:", err);

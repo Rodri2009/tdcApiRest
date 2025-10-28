@@ -47,7 +47,7 @@ CREATE TABLE `opciones_adicionales` (
     `nombre` VARCHAR(255) PRIMARY KEY,
     `precio` DECIMAL(10, 2),
     `descripcion` TEXT,
-    `url_de_la_imagen` TEXT
+    `url_imagen` TEXT
 );
 
 CREATE TABLE `precios_vigencia` (

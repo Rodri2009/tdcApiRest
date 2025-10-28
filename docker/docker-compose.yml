@@ -18,6 +18,9 @@ services:
       # El contexto también es la raíz del proyecto
       context: ..
       dockerfile: docker/Dockerfile.backend
+    depends_on:
+      mariadb:
+        condition: service_healthy # Espera hasta que el healthcheck de mariadb pase
     environment:
       DB_HOST: mariadb
       DB_USER: rodrigo
@@ -38,23 +41,25 @@ services:
 
   mariadb:
     image: mariadb:10.6
+    command:
+      - '--max_allowed_packet=64M'
+    healthcheck:
+      # El 'test' ahora usa las variables del archivo .env
+      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "${MARIADB_USER}", "-p${MARIADB_PASSWORD}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10 # Aumentamos los reintentos
     ports:
-      - "3306:3306" # Mapea el puerto 3306 del host al 3306 del contenedor
-    environment:
-      MARIADB_ROOT_PASSWORD: sys81902root # Tus nuevos valores
-      MARIADB_USER: rodrigo # Tus nuevos valores
-      MARIADB_PASSWORD: desa8102test # Tus nuevos valores
-      MARIADB_DATABASE: tdc_db
+      - "3306:3306"
+    # El 'environment' también se lee del .env
     volumes:
       - mariadb_data:/var/lib/mysql
-      # --- AÑADE ESTAS LÍNEAS ---
-      # Monta los scripts de inicialización en una carpeta especial que se ejecuta al inicio
-      - ../database/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
-      - ../database/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
-      # Monta los archivos CSV en una carpeta accesible para LOAD DATA INFILE
+      # Usamos rutas relativas explícitas desde la raíz del proyecto
+      - ../database/1_schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
+      - ../database/2_seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
+      - ../database/3_restore_sensitive.sh:/docker-entrypoint-initdb.d/3_restore_sensitive.sh
+      - ../data_migration/datos_sensibles_backup.sql:/var/lib/mysql-files/datos_sensibles_backup.sql
       - ../database/seeds:/var/lib/mysql-files
-    networks:
-      - tdc_network
 
 # Definición de redes
 networks:

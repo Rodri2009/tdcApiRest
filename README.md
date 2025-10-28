@@ -23,6 +23,11 @@ Abre una terminal y clona el proyecto desde GitHub:
 git clone <URL_DE_TU_REPOSITORIO_EN_GITHU>
 cd <NOMBRE_DEL_DIRECTORIO_DEL_PROYECTO>
 ```
+y agregar los datos sensibles de conexión
+
+
+### 2. Restaurar base de datos de solicitudes
+copiar el archivo datos_sensibles_backup.sql a la carpeta data_migration/
 
 
 ### 3. Levantar los Contenedores
@@ -50,6 +55,14 @@ docker-compose -f docker/docker-compose.yml down --volumes
 Después de levantar los contenedores por primera vez, la base de datos estará vacía. Ejecuta el siguiente comando para crear todas las tablas necesarias:
 ```bash
 docker-compose -f docker/docker-compose.yml exec -T mariadb mariadb -u rodrigo -pdesa8102test tdc_db < database/schema.sql
+```
+
+
+Para Destruir el Entorno y Hacer un Backup
+Para destruir completamente el entorno (incluyendo la base de datos) y guardar una copia de seguridad de los datos sensibles antes de hacerlo, utiliza el siguiente script:
+code
+```bash
+./down-and-backup.sh
 ```
 
 
@@ -124,3 +137,30 @@ Para abrir una terminal dentro de un contenedor (docker-compose exec backend sh)
 
 
 
+Resumen de Contexto del Proyecto TDC
+Objetivo General: Migración de una aplicación de Google Apps Script a una arquitectura de stack web moderna para la gestión de un salón de eventos.
+
+1. Arquitectura y Stack Tecnológico:
+Contenerización: Todo el entorno se ejecuta en Docker y se orquesta con Docker Compose.
+Servidor Web / Proxy Inverso: Nginx, que sirve los archivos estáticos del frontend y redirige las llamadas a la API al backend.
+Backend: Una API RESTful construida con Node.js y el framework Express.js.
+Base de Datos: MariaDB, que reemplaza a Google Sheets como el sistema de almacenamiento de datos.
+
+2. Estructura del Proyecto:
+backend/: Código fuente de la API de Node.js, con una estructura modular (/routes, /controllers).
+frontend/: Archivos estáticos de la aplicación (HTML, CSS, JS del cliente).
+docker/: Contiene el docker-compose.yml y los Dockerfile para cada servicio.
+database/:
+schema.sql: Script SQL para crear la estructura completa de la base de datos con nombres de columna normalizados a snake_case.
+seeds/: Carpeta con archivos CSV que contienen los datos de configuración no sensibles (tipos de evento, precios, etc.).
+seed.sql: Script SQL que carga los datos de los CSVs de la carpeta seeds/ en la base de datos.
+data_migration/: Carpeta local (ignorada por Git) para scripts de única vez y gestión de datos sensibles.
+
+3. Gestión de la Base de Datos:
+Inicialización Automatizada: Al ejecutar docker-compose up en un entorno nuevo (con el volumen de la base de datos vacío), los scripts schema.sql y seed.sql se ejecutan automáticamente, creando y poblando la base de datos con los datos de configuración esenciales.
+Datos Sensibles: Los datos de clientes (solicitudes, etc.) no están en Git. Se gestionan manualmente mediante un archivo de volcado SQL (datos_sensibles_backup.sql), que se genera con el script generate_sensitive_dump.js y se importa manualmente cuando es necesario.
+
+4. Estado Actual del Desarrollo:
+Backend: Se han implementado todos los endpoints GET necesarios (/api/opciones/...) para obtener los datos de configuración (tipos de evento, tarifas, horarios, etc.).
+Frontend: El archivo principal Page.html ha sido refactorizado. Su JavaScript ya no usa google.script.run. En su lugar, utiliza fetch para llamar a la nueva API de Node.js al cargar la página.
+Funcionalidad Migrada: La lógica para cargar el formulario, poblar todas las opciones (tipos de evento, cantidades, duraciones, horas) y calcular dinámicamente el presupuesto básico está 100% funcional usando el nuevo backend.

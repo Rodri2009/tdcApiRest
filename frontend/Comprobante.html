@@ -1,134 +1,239 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-    .container { max-width: 98%; margin: 0 auto; background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); position: relative; }
-    h2 { color: #0056b3; text-align: center; margin-bottom: 5px; }
-    h3.subtitle { color: #0056b3; text-align: center; margin-top: 0; margin-bottom: 25px; font-size: 1.1em; font-weight: normal; }
-    .legend-text { text-align: center; font-size: 1.1em; margin-bottom: 20px; color: #555; }
-    #comprobanteDetalle { margin-top: 25px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9; }
-    #comprobanteDetalle ul { list-style: none; padding: 0; margin: 0 0 15px 0; text-align: left; }
-    #comprobanteDetalle ul li { margin-bottom: 5px; font-size: 1.05em; color: #444; }
-    #comprobanteTotal { text-align: right; font-size: 1.8em; font-weight: bold; color: #28a745; margin-top: 15px; border-top: 2px solid #ddd; padding-top: 10px; }
-    #comprobanteTotal span { font-size: 0.7em; color: #555; }
-    .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.8); display: flex; justify-content: center; align-items: center; z-index: 10; border-radius: 8px; flex-direction: column; display: none; }
-    .loading-overlay p { font-size: 1.2em; font-weight: bold; color: #0056b3; }
-    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin-top: 10px; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f4f7f6;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .header {
+      background-color: #007bff;
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 2em;
+    }
+
+    .header p {
+      margin: 5px 0 0;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .section h2 {
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      color: #007bff;
+      font-size: 1.4em;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+
+    .detail-item {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      border-left: 4px solid #007bff;
+    }
+
+    .detail-item strong {
+      display: block;
+      color: #555;
+      margin-bottom: 5px;
+      font-size: 0.9em;
+      text-transform: uppercase;
+    }
+
+    .detail-item span {
+      font-size: 1.1em;
+    }
+
+    #adicionales-list li,
+    #precios-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    #adicionales-list li:last-child,
+    #precios-list li:last-child {
+      border-bottom: none;
+    }
+
+    #total-final {
+      text-align: right;
+      font-size: 1.8em;
+      font-weight: bold;
+      color: #28a745;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #007bff;
+    }
+
+    #loading,
+    #error {
+      text-align: center;
+      padding: 40px;
+      font-size: 1.2em;
+    }
   </style>
 </head>
+
 <body>
+
   <div class="container">
-    <h2>¡Su solicitud de reserva fue registrada correctamente!</h2>
-    <h3 class="subtitle">Le llegará un email con la información detallada<br><br>
-      ¡Gracias por confiar en El Templo de Claypole!
-    </h3>
-    <div id="comprobanteDetalle"><p>Cargando los detalles...</p></div>
-    <div id="comprobanteTotal"><span>Total Final: </span> $0</div>
-    <div class="loading-overlay" id="loadingOverlay"><p>Cargando comprobante...</p><div class="spinner"></div></div>
+    <div class="header">
+      <h1>¡Gracias por tu Solicitud!</h1>
+      <p>Hemos recibido los detalles de tu evento. Nos pondremos en contacto a la brevedad.</p>
+    </div>
+
+    <div class="content" id="comprobante-content" style="display: none;">
+      <div class="section">
+        <h2>Detalles del Solicitante</h2>
+        <div class="details-grid">
+          <div class="detail-item"><strong>Nombre:</strong> <span id="nombre_completo"></span></div>
+          <div class="detail-item"><strong>Email:</strong> <span id="email"></span></div>
+          <div class="detail-item"><strong>Teléfono:</strong> <span id="telefono"></span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Detalles del Evento</h2>
+        <div class="details-grid">
+          <div class="detail-item"><strong>Tipo de Evento:</strong> <span id="nombre_para_mostrar"></span></div>
+          <div class="detail-item"><strong>Fecha:</strong> <span id="fecha_evento"></span></div>
+          <div class="detail-item"><strong>Hora:</strong> <span id="hora_evento"></span></div>
+          <div class="detail-item"><strong>Duración:</strong> <span id="duracion"></span></div>
+          <div class="detail-item"><strong>Cantidad de Personas:</strong> <span id="cantidad_de_personas"></span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Resumen de Precios</h2>
+        <ul id="precios-list" style="list-style: none; padding: 0;">
+          <li><span>Precio Base del Evento</span><strong id="precio_basico"></strong></li>
+        </ul>
+        <div id="adicionales-section" style="display: none;">
+          <h3>Adicionales Seleccionados:</h3>
+          <ul id="adicionales-list" style="list-style: none; padding: 0;">
+            <!-- Los adicionales se insertarán aquí dinámicamente -->
+          </ul>
+        </div>
+        <div id="total-final">Total Estimado: <span id="precio_final"></span></div>
+      </div>
+    </div>
+
+    <div id="loading">
+      <p>Cargando tu comprobante...</p>
+    </div>
+    <div id="error" style="display: none;">
+      <p style="color: red;">Error al cargar el comprobante.</p>
+    </div>
   </div>
 
   <script>
-    const comprobanteDetalleDiv = document.getElementById('comprobanteDetalle');
-    const comprobanteTotalDiv = document.getElementById('comprobanteTotal');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const solicitudId = <?= solicitudId ?>;
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const solicitudId = params.get('solicitudId');
 
-    document.addEventListener('DOMContentLoaded', function() {
-      cargarComprobante();
-    });
+      const loadingDiv = document.getElementById('loading');
+      const errorDiv = document.getElementById('error');
+      const contentDiv = document.getElementById('comprobante-content');
 
-    function toggleLoadingOverlay(show) {
-      loadingOverlay.style.display = show ? 'flex' : 'none';
-    }
-
-    function cargarComprobante() {
-      toggleLoadingOverlay(true);
       if (!solicitudId) {
-          comprobanteDetalleDiv.innerHTML = `<p style="color: red;"><b>Error:</b> No se especificó un número de solicitud.</p>`;
-          toggleLoadingOverlay(false);
-          return;
+        loadingDiv.style.display = 'none';
+        errorDiv.style.display = 'block';
+        errorDiv.querySelector('p').textContent = 'Error: No se encontró un ID de solicitud en la URL.';
+        return;
       }
 
-      google.script.run
-        .withSuccessHandler(function(solicitud) {
-          console.log('CLIENTE: Datos de comprobante recibidos.', solicitud);
-          if (!solicitud) {
-              comprobanteDetalleDiv.innerHTML = `<p>No se encontraron datos para la solicitud. Por favor, intente de nuevo.</p>`;
-              toggleLoadingOverlay(false);
-              return;
-          }
+      // Llamamos al mismo endpoint que usamos en la página de Contacto
+      fetch(`/api/solicitudes/${solicitudId}`)
+        .then(response => {
+          if (!response.ok) throw new Error('No se pudo cargar la información de la solicitud.');
+          return response.json();
+        })
+        .then(data => {
+          // Función para formatear fechas
+          const formatDate = (dateString) => new Date(dateString).toLocaleDateString('es-AR', { timeZone: 'UTC' });
+          // Función para formatear moneda
+          const formatCurrency = (number) => `$${parseFloat(number).toLocaleString('es-AR')}`;
 
-          // --- ESTA PARTE AHORA MOSTRARÁ LOS DATOS CORRECTOS Y COMPLETOS ---
-          let horaFinStr = '';
-          const duracion = solicitud.duracionEvento;
-          const hora = solicitud.horaInicio;
-          const duracionMatch = duracion ? duracion.match(/\d+/) : null;
-          const duracionNum = duracionMatch ? parseInt(duracionMatch[0]) : 0;
-          if (hora && duracionNum > 0) {
-              const horaParts = hora.split(':');
-              const startHour = parseInt(horaParts[0]);
-              const startMinute = parseInt(horaParts[1] || '0');
-              if (!isNaN(startHour) && !isNaN(startMinute)) {
-                  const fechaCalculo = new Date();
-                  fechaCalculo.setHours(startHour, startMinute, 0, 0);
-                  fechaCalculo.setHours(fechaCalculo.getHours() + duracionNum);
-                  const endHour = fechaCalculo.getHours();
-                  const endMinute = String(fechaCalculo.getMinutes()).padStart(2, '0');
-                  horaFinStr = `${endHour}:${endMinute}`;
-              }
-          }
+          // Rellenar los campos con los datos de la API
+          document.getElementById('nombre_completo').textContent = data.nombre_completo;
+          document.getElementById('email').textContent = data.email;
+          document.getElementById('telefono').textContent = data.telefono;
+          document.getElementById('nombre_para_mostrar').textContent = data.nombre_para_mostrar;
+          document.getElementById('fecha_evento').textContent = formatDate(data.fecha_evento);
+          document.getElementById('hora_evento').textContent = data.hora_evento;
+          document.getElementById('duracion').textContent = data.duracion;
+          document.getElementById('cantidad_de_personas').textContent = data.cantidad_de_personas;
 
-          let detalleHtml = '<ul>';
-          if (solicitud.nombreCompleto) detalleHtml += `<li><strong>Nombre Completo:</strong> ${solicitud.nombreCompleto}</li>`;
-          if (solicitud.celular) detalleHtml += `<li><strong>Celular:</strong> ${solicitud.celular}</li>`;
-          if (solicitud.email) detalleHtml += `<li><strong>Email:</strong> ${solicitud.email}</li>`;
-          detalleHtml += `<li style="margin-top:15px;">---</li>`;
-          detalleHtml += `<li><strong>Tipo de Evento:</strong> ${solicitud.tipoEvento}</li>`;
-          if (solicitud.fechaEvento) detalleHtml += `<li><strong>Fecha:</strong> ${solicitud.fechaEvento}</li>`;
-          if (solicitud.horaInicio) detalleHtml += `<li><strong>Hora de Inicio:</strong> ${solicitud.horaInicio} hs.</li>`;
-          if (solicitud.duracionEvento) detalleHtml += `<li><strong>Duración:</strong> ${solicitud.duracionEvento}</li>`;
-          if (horaFinStr) detalleHtml += `<li><strong>Hora de Finalización:</strong> ${horaFinStr} hs.</li>`;
-          detalleHtml += `<li><strong>Cantidad de Personas:</strong> ${solicitud.cantidadPersonas}</li>`;
-          detalleHtml += `<li style="margin-top:15px;">---</li>`;
-          detalleHtml += `<li><strong>Precio Básico:</strong> $${solicitud.precioBase.toLocaleString('es-AR')}</li>`;
-          if (solicitud.adicionales && solicitud.adicionales.length > 0) {
-            detalleHtml += `<li><strong>Adicionales:</strong></li><ul style="list-style: none; padding-left: 20px;">`;
-            solicitud.adicionales.forEach(ad => {
-                detalleHtml += `<li>- ${ad.nombre}: $${ad.precio.toLocaleString('es-AR')}</li>`;
+          // Rellenar precios
+          document.getElementById('precio_basico').textContent = formatCurrency(data.precio_basico);
+
+          let totalAdicionales = 0;
+          if (data.adicionales && data.adicionales.length > 0) {
+            const adicionalesList = document.getElementById('adicionales-list');
+            data.adicionales.forEach(ad => {
+              const li = document.createElement('li');
+              li.innerHTML = `<span>${ad.adicional_nombre}</span><strong>${formatCurrency(ad.adicional_precio)}</strong>`;
+              adicionalesList.appendChild(li);
+              totalAdicionales += parseFloat(ad.adicional_precio);
             });
-            detalleHtml += `</ul>`;
+            document.getElementById('adicionales-section').style.display = 'block';
           }
 
-          // --- NUEVO BLOQUE PARA SEnA Y DEPÓSITO ---
-          if (solicitud.montoSena > 0 || solicitud.depositoGarantia > 0) {
-            detalleHtml += `<li style="margin-top:15px;">---</li>`;
-            if (solicitud.montoSena > 0) {
-              detalleHtml += `<li style="color: #0056b3;"><strong>Monto de Sena para Reservar:</strong> $${solicitud.montoSena.toLocaleString('es-AR')}</li>`;
-            }
-            if (solicitud.depositoGarantia > 0) {
-              detalleHtml += `<li style="color: #555;"><strong>Depósito de Garantía:</strong> $${solicitud.depositoGarantia.toLocaleString('es-AR')} (reintegrable)</li>`;
-            }
-          }
-          // --- FIN DE NUEVO BLOQUE ---
+          const precioFinal = parseFloat(data.precio_basico) + totalAdicionales;
+          document.getElementById('precio_final').textContent = formatCurrency(precioFinal);
 
-          detalleHtml += '</ul>';
-
-          comprobanteDetalleDiv.innerHTML = detalleHtml;
-          comprobanteTotalDiv.innerHTML = `<span>Total Final: </span> $${solicitud.precioFinal.toLocaleString('es-AR')}`;
-
-          toggleLoadingOverlay(false);
+          // Ocultar carga y mostrar contenido
+          loadingDiv.style.display = 'none';
+          contentDiv.style.display = 'block';
         })
-        .withFailureHandler(function(error) {
-          console.error('CLIENTE: Error al cargar el comprobante:', error);
-          comprobanteDetalleDiv.innerHTML = `<p style="color: red;"><b>Error al cargar el comprobante:</b> ${error.message}</p>`;
-          toggleLoadingOverlay(false);
-        })
-        .getSolicitudDetailsById(solicitudId);
-    }
+        .catch(error => {
+          console.error('Error:', error);
+          loadingDiv.style.display = 'none';
+          errorDiv.style.display = 'block';
+          errorDiv.querySelector('p').textContent = error.message;
+        });
+    });
   </script>
+
 </body>
+
 </html>

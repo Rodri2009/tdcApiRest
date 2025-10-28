@@ -1,603 +1,894 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <base target="_top">
-  <meta charset="UTF-8"> 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
-  
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; padding-bottom: 70px; }
-    .container { max-width: 98%; margin: 0 auto; background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; }
-    h2 { color: #0056b3; text-align: center; margin-bottom: 5px; }
-    h3.subtitle { color: #0056b3; text-align: center; margin-top: 0; margin-bottom: 25px; font-size: 1.1em; font-weight: normal; }
-    .form-group { margin-bottom: 15px; }
-    .radio-group { padding: 10px; border: 1px solid #ddd; border-radius: 4px; background-color: #fcfcfc; }
-    .radio-option { display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; }
-    .radio-option input[type="radio"] { margin-right: 10px; flex-shrink: 0; }
-    .radio-option label { line-height: 1.4; font-weight: normal; cursor: pointer; }
-    .form-group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .form-group-header label { margin-bottom: 0; font-weight: bold; color: #555; }
-    #resetTipoEventoBtn { display: none; background: none; border: none; color: #007bff; font-size: 14px; cursor: pointer; text-decoration: underline; padding: 0 5px; }
-    #resetTipoEventoBtn:hover { color: #0056b3; }
-    #tipoEventoDescripcion { padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px; background-color: #f0f0f0; font-size: 0.9em; color: #666; min-height: 120px; text-align: left; white-space: pre-wrap; box-sizing: border-box; }
-    select, input[type="text"] { width: 100%; padding: 10px; border: 1.5px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; background-color: #fff; }
-    .campo-invalido { border-color: #e74c3c !important; animation: shake 0.5s; }
-    @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
-    #presupuestoDetalle { margin-top: 25px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9; }
-    #presupuestoDetalle ul { list-style: none; padding: 0; margin: 0 0 15px 0; text-align: left; }
-    #presupuestoDetalle ul li { margin-bottom: 5px; font-size: 1.05em; color: #444; }
-    #presupuestoTotal { text-align: right; font-size: 1.8em; font-weight: bold; color: #28a745; margin-top: 15px; border-top: 2px solid #ddd; padding-top: 10px; }
-    #presupuestoTotal span { font-size: 0.7em; color: #555; }
-    .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 10; border-radius: 8px; flex-direction: column; display: none; }
-    .loading-overlay p { font-size: 1.2em; font-weight: bold; color: #0056b3; }
-    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin-top: 10px; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    #notification-banner { position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 150%); padding: 12px 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); color: white; font-size: 16px; font-weight: 500; z-index: 1000; transition: transform 0.5s ease-in-out; max-width: 90%; text-align: center; }
-    #notification-banner.show { transform: translate(-50%, 0); }
-    #notification-banner.warning { background-color: #ffc107; color: #333; }
-    #notification-banner.error { background-color: #dc3545; }
-    #notification-banner.success { background-color: #28a745; }
-    .column-layout { display: flex; flex-direction: column; gap: 0; }
-    .button-group { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; }
-    button { flex: 1; background-color: #007bff; color: white; padding: 15px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 18px; font-weight: bold; }
-    button:hover { background-color: #0056b3; }
-    @media (min-width: 768px) { .column-layout { flex-direction: row; gap: 15px; } .column-layout .form-group { flex: 1; } .button-group { flex-direction: row; gap: 10px; } button { font-size: 16px; padding: 12px 20px; } }
-  </style>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            padding-bottom: 70px;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        h2 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        h3.subtitle {
+            color: #0056b3;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            font-weight: normal;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .radio-group {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fcfcfc;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .radio-option label {
+            line-height: 1.4;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .form-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .form-group-header label {
+            margin-bottom: 0;
+            font-weight: bold;
+            color: #555;
+        }
+
+        #resetTipoEventoBtn {
+            display: none;
+            background: none;
+            border: none;
+            color: #007bff;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0 5px;
+        }
+
+        #resetTipoEventoBtn:hover {
+            color: #0056b3;
+        }
+
+        #tipoEventoDescripcion {
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            font-size: 0.9em;
+            color: #666;
+            min-height: 120px;
+            text-align: left;
+            white-space: pre-wrap;
+            box-sizing: border-box;
+        }
+
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1.5px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+            background-color: #fff;
+        }
+
+        .campo-invalido {
+            border-color: #e74c3c !important;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        #presupuestoDetalle {
+            margin-top: 25px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        #presupuestoDetalle ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 15px 0;
+            text-align: left;
+        }
+
+        #presupuestoDetalle ul li {
+            margin-bottom: 5px;
+            font-size: 1.05em;
+            color: #444;
+        }
+
+        #presupuestoTotal {
+            text-align: right;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #28a745;
+            margin-top: 15px;
+            border-top: 2px solid #ddd;
+            padding-top: 10px;
+        }
+
+        #presupuestoTotal span {
+            font-size: 0.7em;
+            color: #555;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 8px;
+            flex-direction: column;
+            display: none;
+        }
+
+        .loading-overlay p {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #0056b3;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-top: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.5s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        #notification-banner.error {
+            background-color: #dc3545;
+        }
+
+        #notification-banner.success {
+            background-color: #28a745;
+        }
+
+        .column-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            background-color: #007bff;
+            color: white;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        @media (min-width: 768px) {
+            .column-layout {
+                flex-direction: row;
+                gap: 15px;
+            }
+
+            .column-layout .form-group {
+                flex: 1;
+            }
+
+            .button-group {
+                flex-direction: row;
+                gap: 10px;
+            }
+
+            button {
+                font-size: 16px;
+                padding: 12px 20px;
+            }
+        }
+    </style>
 </head>
+
 <body>
-  <div class="container" id="mainContainer">
-    <h2>Generador de Presupuesto para Eventos</h2>
-    <h3 class="subtitle">El Templo de Claypole</h3>
-    <form id="navigationForm" style="display:none;"></form>
-    <input type="hidden" id="precioBase" name="precioBase">
-    <div class="column-layout">
-      <div class="form-group" id="tipoEventoGroup">
-        <div class="form-group-header">
-          <label>Tipo de Evento:</label>
-          <!-- --- CAMBIO 1: Eliminamos el onclick del HTML --- -->
-          <button id="resetTipoEventoBtn">Cambiar tipo de evento</button>
+    <div class="container" id="mainContainer">
+        <h2>Generador de Presupuesto para Eventos</h2>
+        <h3 class="subtitle">El Templo de Claypole</h3>
+        <form id="navigationForm" style="display:none;"></form>
+        <input type="hidden" id="precioBase" name="precioBase">
+        <div class="column-layout">
+            <div class="form-group" id="tipoEventoGroup">
+                <div class="form-group-header">
+                    <label>Tipo de Evento:</label>
+                    <!-- --- CAMBIO 1: Eliminamos el onclick del HTML --- -->
+                    <button id="resetTipoEventoBtn">Cambiar tipo de evento</button>
+                </div>
+                <div id="tipoEventoContainer" class="radio-group"></div>
+            </div>
+            <div class="form-group" id="descripcionGroup">
+                <label>Descripción:</label>
+                <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
+            </div>
         </div>
-        <div id="tipoEventoContainer" class="radio-group"></div>
-      </div>
-      <div class="form-group" id="descripcionGroup">
-        <label>Descripción:</label>
-        <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
-      </div>
+        <div class="column-layout">
+            <div class="form-group">
+                <label for="fechaEvento">Fecha del Evento (Sáb, Dom y Feriados):</label>
+                <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
+            </div>
+            <div class="form-group" id="horaInicioGroup">
+                <label for="horaInicio">Hora de Inicio:</label>
+                <select id="horaInicio">
+                    <option value="">--</option>
+                </select>
+            </div>
+        </div>
+        <div class="column-layout">
+            <div class="form-group" id="cantidadPersonasGroup">
+                <label for="cantidadPersonas">Cantidad de Personas:</label>
+                <select id="cantidadPersonas">
+                    <option value="">--</option>
+                </select>
+            </div>
+            <div class="form-group" id="duracionEventoGroup">
+                <label for="duracionEvento">Duración del Evento:</label>
+                <select id="duracionEvento">
+                    <option value="">--</option>
+                </select>
+            </div>
+        </div>
+        <hr>
+        <h3>Resumen de Presupuesto Básico:</h3>
+        <div id="presupuestoDetalle">
+            <p>Complete las opciones para ver el precio.</p>
+        </div>
+        <div id="presupuestoTotal"><span>Total Básico: </span> $0</div>
+        <div class="button-group">
+            <!-- --- CAMBIO 2: Eliminamos los onclick del HTML --- -->
+            <button id="btn-adicionales" disabled>Inicializando...</button>
+            <button id="btn-contacto" disabled>Inicializando...</button>
+        </div>
+        <div class="loading-overlay" id="loadingOverlay">
+            <p>Cargando opciones...</p>
+            <div class="spinner"></div>
+        </div>
     </div>
-    <div class="column-layout">
-        <div class="form-group">
-            <label for="fechaEvento">Fecha del Evento (Sáb, Dom y Feriados):</label>
-            <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
-        </div>
-        <div class="form-group" id="horaInicioGroup">
-            <label for="horaInicio">Hora de Inicio:</label>
-            <select id="horaInicio"><option value="">--</option></select>
-        </div>
-    </div>
-    <div class="column-layout">
-        <div class="form-group" id="cantidadPersonasGroup">
-            <label for="cantidadPersonas">Cantidad de Personas:</label>
-            <select id="cantidadPersonas"><option value="">--</option></select>
-        </div>
-        <div class="form-group" id="duracionEventoGroup">
-            <label for="duracionEvento">Duración del Evento:</label>
-            <select id="duracionEvento"><option value="">--</option></select>
-        </div>
-    </div>
-    <hr>
-    <h3>Resumen de Presupuesto Básico:</h3>
-    <div id="presupuestoDetalle"><p>Complete las opciones para ver el precio.</p></div>
-    <div id="presupuestoTotal"><span>Total Básico: </span> $0</div>
-    <div class="button-group">
-      <!-- --- CAMBIO 2: Eliminamos los onclick del HTML --- -->
-      <button id="btn-adicionales" disabled>Inicializando...</button>
-      <button id="btn-contacto" disabled>Inicializando...</button>
-    </div>
-    <div class="loading-overlay" id="loadingOverlay"><p>Cargando opciones...</p><div class="spinner"></div></div>
-  </div>
-  <div id="notification-banner"></div>
+    <div id="notification-banner"></div>
 
-<script>
-    const App = {
-        visitorId: null,
-        tarifas: [], tiposDeEvento: [], opcionesCantidades: {}, opcionesDuraciones: {},
-        opcionesHoras: {}, descripcionesTipos: {}, calendario: null, feriadosGlobal: [],
-        notificationTimer: null,
-        elements: {},
+    <script>
+        const App = {
+            visitorId: null,
+            tarifas: [], tiposDeEvento: [], opcionesCantidades: {}, opcionesDuraciones: {},
+            opcionesHoras: {}, descripcionesTipos: {}, calendario: null, feriadosGlobal: [],
+            notificationTimer: null,
+            elements: {},
 
-        init: function() {
-            console.log("App.init(): 1. Inicializando aplicación.");
-            this.bindElements();
-            this.bindEvents();
-            this.cargarOpcionesIniciales();
-        },
+            init: function () {
+                console.log("App.init(): 1. Inicializando aplicación.");
+                this.bindElements();
+                this.bindEvents();
+                this.cargarOpcionesIniciales();
+            },
 
-        bindElements: function() {
-            console.log("App.init(): 2. Enlazando elementos del DOM.");
-            this.elements = {
-                btnAdicionales: document.getElementById('btn-adicionales'),
-                btnContacto: document.getElementById('btn-contacto'),
-                tipoEventoContainer: document.getElementById('tipoEventoContainer'),
-                cantidadPersonasSelect: document.getElementById('cantidadPersonas'),
-                duracionEventoSelect: document.getElementById('duracionEvento'),
-                horaInicioSelect: document.getElementById('horaInicio'),
-                fechaEventoInput: document.getElementById('fechaEvento'),
-                presupuestoDetalleDiv: document.getElementById('presupuestoDetalle'),
-                presupuestoTotalDiv: document.getElementById('presupuestoTotal'),
-                loadingOverlay: document.getElementById('loadingOverlay'),
-                precioBaseInput: document.getElementById('precioBase'),
-                navigationForm: document.getElementById('navigationForm'),
-                notificationBanner: document.getElementById('notification-banner'),
-                resetTipoEventoBtn: document.getElementById('resetTipoEventoBtn'),
-                tipoEventoDescripcionDiv: document.getElementById('tipoEventoDescripcion')
-            };
-        },
+            bindElements: function () {
+                console.log("App.init(): 2. Enlazando elementos del DOM.");
+                this.elements = {
+                    btnAdicionales: document.getElementById('btn-adicionales'),
+                    btnContacto: document.getElementById('btn-contacto'),
+                    tipoEventoContainer: document.getElementById('tipoEventoContainer'),
+                    cantidadPersonasSelect: document.getElementById('cantidadPersonas'),
+                    duracionEventoSelect: document.getElementById('duracionEvento'),
+                    horaInicioSelect: document.getElementById('horaInicio'),
+                    fechaEventoInput: document.getElementById('fechaEvento'),
+                    presupuestoDetalleDiv: document.getElementById('presupuestoDetalle'),
+                    presupuestoTotalDiv: document.getElementById('presupuestoTotal'),
+                    loadingOverlay: document.getElementById('loadingOverlay'),
+                    precioBaseInput: document.getElementById('precioBase'),
+                    navigationForm: document.getElementById('navigationForm'),
+                    notificationBanner: document.getElementById('notification-banner'),
+                    resetTipoEventoBtn: document.getElementById('resetTipoEventoBtn'),
+                    tipoEventoDescripcionDiv: document.getElementById('tipoEventoDescripcion')
+                };
+            },
 
-        bindEvents: function() {
-            console.log("App.init(): 3. Asignando eventos.");
-            this.elements.btnAdicionales.onclick = () => this.validarYEnviar('adicionales');
-            this.elements.btnContacto.onclick = () => this.validarYEnviar('contacto');
-            this.elements.resetTipoEventoBtn.onclick = () => window.top.location.href = '<?= urlDeLaApp ?>';
-            [this.elements.cantidadPersonasSelect, this.elements.duracionEventoSelect, this.elements.horaInicioSelect].forEach(el => {
-                if (el) el.addEventListener('change', () => this.actualizarTodo());
-            });
-        },
+            bindEvents: function () {
+                console.log("App.init(): 3. Asignando eventos.");
+                this.elements.btnAdicionales.onclick = () => this.validarYEnviar('adicionales');
+                this.elements.btnContacto.onclick = () => this.validarYEnviar('contacto');
+                this.elements.resetTipoEventoBtn.onclick = () => window.top.location.href = '<?= urlDeLaApp ?>';
+                [this.elements.cantidadPersonasSelect, this.elements.duracionEventoSelect, this.elements.horaInicioSelect].forEach(el => {
+                    if (el) el.addEventListener('change', () => this.actualizarTodo());
+                });
+            },
 
-        // REEMPLAZA LA FUNCIÓN ORIGINAL "cargarOpcionesIniciales" CON ESTA VERSIÓN MODERNA
+            // REEMPLAZA LA FUNCIÓN ORIGINAL "cargarOpcionesIniciales" CON ESTA VERSIÓN MODERNA
 
-        cargarOpcionesIniciales: function() {
-            console.log("Paso 1: Llamando a la nueva API backend...");
-            this.toggleLoadingOverlay(true, 'Cargando opciones...');
+            cargarOpcionesIniciales: function () {
+                console.log("Paso 1: Llamando a la nueva API backend...");
+                this.toggleLoadingOverlay(true, 'Cargando opciones...');
 
-            // Definimos todos los endpoints que necesitamos consultar
-            const endpoints = {
-                tipos: '/api/opciones/tipos-evento',
-                tarifas: '/api/opciones/tarifas',
-                duraciones: '/api/opciones/duraciones',
-                horas: '/api/opciones/horarios',
-                fechasOcupadas: '/api/opciones/fechas-ocupadas',
-                config: '/api/opciones/config'
-                // Nota: Feriados y Cantidades se manejarán de forma diferente
-            };
+                // Definimos todos los endpoints que necesitamos consultar
+                const endpoints = {
+                    tipos: '/api/opciones/tipos-evento',
+                    tarifas: '/api/opciones/tarifas',
+                    duraciones: '/api/opciones/duraciones',
+                    horas: '/api/opciones/horarios',
+                    fechasOcupadas: '/api/opciones/fechas-ocupadas',
+                    config: '/api/opciones/config'
+                    // Nota: Feriados y Cantidades se manejarán de forma diferente
+                };
 
-            // Usamos Promise.all para hacer todas las peticiones fetch en paralelo
-            Promise.all(
-                Object.entries(endpoints).map(([key, url]) => 
-                    fetch(url).then(res => {
-                        if (!res.ok) {
-                            throw new Error(`Error al cargar ${key}: ${res.statusText}`);
-                        }
-                        return res.json();
-                    })
+                // Usamos Promise.all para hacer todas las peticiones fetch en paralelo
+                Promise.all(
+                    Object.entries(endpoints).map(([key, url]) =>
+                        fetch(url).then(res => {
+                            if (!res.ok) {
+                                throw new Error(`Error al cargar ${key}: ${res.statusText}`);
+                            }
+                            return res.json();
+                        })
+                    )
                 )
-            )
-            .then(results => {
-                // 'results' es un array con las respuestas JSON en el mismo orden que los endpoints
-                const [tipos, tarifas, duraciones, horas, fechasOcupadas, config] = results;
+                    .then(results => {
+                        // 'results' es un array con las respuestas JSON en el mismo orden que los endpoints
+                        const [tipos, tarifas, duraciones, horas, fechasOcupadas, config] = results;
 
-                // --- INICIO DE LA LÓGICA ORIGINAL (adaptada) ---
-                // Ahora, reconstruimos el objeto 'response' que el resto del código esperaba.
-                // La mayor parte de tu código original de `withSuccessHandler` puede permanecer igual.
+                        // --- INICIO DE LA LÓGICA ORIGINAL (adaptada) ---
+                        // Ahora, reconstruimos el objeto 'response' que el resto del código esperaba.
+                        // La mayor parte de tu código original de `withSuccessHandler` puede permanecer igual.
 
-                console.log("=====================================================");
-                console.log("PASO 2: DATOS CRUDOS RECIBIDOS DEL NUEVO BACKEND:");
-                console.log({ tipos, tarifas, duraciones, horas, fechasOcupadas, config });
-                console.log("=====================================================");
+                        console.log("=====================================================");
+                        console.log("PASO 2: DATOS CRUDOS RECIBIDOS DEL NUEVO BACKEND:");
+                        console.log({ tipos, tarifas, duraciones, horas, fechasOcupadas, config });
+                        console.log("=====================================================");
 
-                if (!tipos) { this.showNotification('Error: No se pudieron cargar los tipos de evento.', 'error'); this.toggleLoadingOverlay(false); return; }
-                
-                try {
-                    this.tarifas = tarifas || [];
-                    this.tiposDeEvento = tipos || [];
-                    this.opcionesDuraciones = duraciones || {};
-                    this.opcionesHoras = horas || {};
-                    
-                    // La lógica para generar 'opcionesCantidades' se movió aquí, al frontend,
-                    // ya que depende de las tarifas que ya hemos traído.
-                    this.opcionesCantidades = this.tarifas.reduce((acc, tarifa) => {
-                        if (!acc[tarifa.tipo]) acc[tarifa.tipo] = new Set();
-                        acc[tarifa.tipo].add(`Hasta ${tarifa.max}`);
-                        return acc;
-                    }, {});
-                    Object.keys(this.opcionesCantidades).forEach(tipo => {
-                        this.opcionesCantidades[tipo] = Array.from(this.opcionesCantidades[tipo]).sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/)));
-                    });
+                        if (!tipos) { this.showNotification('Error: No se pudieron cargar los tipos de evento.', 'error'); this.toggleLoadingOverlay(false); return; }
 
-                    // Obtenemos los feriados (simulando la lógica original)
-                    const anioActual = new Date().getFullYear();
-                    // Esta es una API pública y gratuita de feriados para Argentina
-                    const feriadosUrl = `https://api.argentinadatos.com/v1/feriados/${anioActual}`;
-                    const feriadosUrlSiguiente = `https://api.argentinadatos.com/v1/feriados/${anioActual + 1}`;
+                        try {
+                            this.tarifas = tarifas || [];
+                            this.tiposDeEvento = tipos || [];
+                            this.opcionesDuraciones = duraciones || {};
+                            this.opcionesHoras = horas || {};
 
-                    // Hacemos fetch a la API de feriados
-                    return Promise.all([fetch(feriadosUrl).then(res => res.json()), fetch(feriadosUrlSiguiente).then(res => res.json())])
-                        .then(([feriadosEsteAnio, feriadosSiguienteAnio]) => {
-                            const feriadosFormateados = [...feriadosEsteAnio, ...feriadosSiguienteAnio].map(f => `${f.fecha.replace(/\//g, '-')}`);
-                            this.feriadosGlobal = feriadosFormateados;
+                            // La lógica para generar 'opcionesCantidades' se movió aquí, al frontend,
+                            // ya que depende de las tarifas que ya hemos traído.
+                            this.opcionesCantidades = this.tarifas.reduce((acc, tarifa) => {
+                                if (!acc[tarifa.tipo]) acc[tarifa.tipo] = new Set();
+                                acc[tarifa.tipo].add(`Hasta ${tarifa.max}`);
+                                return acc;
+                            }, {});
+                            Object.keys(this.opcionesCantidades).forEach(tipo => {
+                                this.opcionesCantidades[tipo] = Array.from(this.opcionesCantidades[tipo]).sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/)));
+                            });
 
-                            // --- CONTINÚA LA LÓGICA ORIGINAL ---
-                            this.descripcionesTipos = {};
-                            this.tiposDeEvento.forEach(tipo => { this.descripcionesTipos[tipo.id] = tipo.descripcion; });
-                            
-                            this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento); 
-                            this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => this.actualizarTodo()));                            
-                            this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
-                            this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
-                            this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo...');
-                            
-                            this.fechasOcupadasSeguro = fechasOcupadas || [];
-                            this.inicializarCalendario(this.fechasOcupadasSeguro, this.feriadosGlobal);
-                            
-                            this.manejarParametroURL();
+                            // Obtenemos los feriados (simulando la lógica original)
+                            const anioActual = new Date().getFullYear();
+                            // Esta es una API pública y gratuita de feriados para Argentina
+                            const feriadosUrl = `https://api.argentinadatos.com/v1/feriados/${anioActual}`;
+                            const feriadosUrlSiguiente = `https://api.argentinadatos.com/v1/feriados/${anioActual + 1}`;
+
+                            // Hacemos fetch a la API de feriados
+                            return Promise.all([fetch(feriadosUrl).then(res => res.json()), fetch(feriadosUrlSiguiente).then(res => res.json())])
+                                .then(([feriadosEsteAnio, feriadosSiguienteAnio]) => {
+                                    const feriadosFormateados = [...feriadosEsteAnio, ...feriadosSiguienteAnio].map(f => `${f.fecha.replace(/\//g, '-')}`);
+                                    this.feriadosGlobal = feriadosFormateados;
+
+                                    // --- CONTINÚA LA LÓGICA ORIGINAL ---
+                                    this.descripcionesTipos = {};
+                                    this.tiposDeEvento.forEach(tipo => { this.descripcionesTipos[tipo.id] = tipo.descripcion; });
+
+                                    this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento);
+                                    this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => this.actualizarTodo()));
+                                    this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
+                                    this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
+                                    this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo...');
+
+                                    this.fechasOcupadasSeguro = fechasOcupadas || [];
+                                    this.inicializarCalendario(this.fechasOcupadasSeguro, this.feriadosGlobal);
+
+                                    this.manejarParametroURL();
+                                    this.toggleLoadingOverlay(false);
+                                    console.log("Paso 3: Formulario construido. Iniciando Fingerprint...");
+                                    this.initFingerprint();
+                                });
+
+                        } catch (e) {
+                            console.error("¡ERROR! El script se rompió procesando los datos de la API.", e);
+                            this.showNotification("Error procesando los datos del servidor. Ver la consola.", "error");
                             this.toggleLoadingOverlay(false);
-                            console.log("Paso 3: Formulario construido. Iniciando Fingerprint...");
-                            this.initFingerprint();
-                        });
+                        }
+                    })
+                    .catch(error => {
+                        // Este .catch manejará cualquier error de red en las llamadas fetch
+                        console.error("Fallo crítico al llamar a la API del backend:", error);
+                        this.showNotification('Error de conexión con el servidor: ' + error.message, 'error');
+                        this.toggleLoadingOverlay(false);
+                        this.habilitarBotones();
+                    });
+            },
 
-                } catch (e) {
-                    console.error("¡ERROR! El script se rompió procesando los datos de la API.", e);
-                    this.showNotification("Error procesando los datos del servidor. Ver la consola.", "error");
-                    this.toggleLoadingOverlay(false);
-                }
-            })
-            .catch(error => {
-                // Este .catch manejará cualquier error de red en las llamadas fetch
-                console.error("Fallo crítico al llamar a la API del backend:", error);
-                this.showNotification('Error de conexión con el servidor: ' + error.message, 'error');
-                this.toggleLoadingOverlay(false);
-                this.habilitarBotones();
-            });
-        },
-
-        initFingerprint: function() {
-            console.log("Paso 4: Dentro de initFingerprint()...");
-            const fingerprintTimeout = setTimeout(() => {
-                console.warn("ADVERTENCIA: FingerprintJS tardó demasiado. Habilitando botones por seguridad.");
-                if (this.visitorId === null) {
-                    this.visitorId = 'fingerprint_timeout';
-                    this.habilitarBotones();
-                }
-            }, 3000);
-
-            FingerprintJS.load()
-              .then(agent => agent.get())
-              .then(result => {
-                clearTimeout(fingerprintTimeout);
-                this.visitorId = result.visitorId;
-                console.log("Paso 5: Fingerprint ID generado:", this.visitorId);
-                this.buscarSesionExistente();
-              })
-              .catch(error => {
-                clearTimeout(fingerprintTimeout);
-                console.error("Error al generar Fingerprint:", error);
-                this.visitorId = 'fingerprint_error';
-              })
-              .finally(() => {
-                this.habilitarBotones();
-              });
-        },
-        
-        habilitarBotones: function() {
-            console.log("Paso 6: Habilitando botones de acción.");
-            if (this.elements.btnAdicionales.disabled) {
-                this.elements.btnAdicionales.disabled = false;
-                this.elements.btnAdicionales.textContent = 'Agregar Adicionales';
-            }
-            if (this.elements.btnContacto.disabled) {
-                this.elements.btnContacto.disabled = false;
-                this.elements.btnContacto.textContent = 'Continuar sin adicionales';
-            }
-        },
-
-        buscarSesionExistente: function() {
-            console.log("Buscando sesión existente en el nuevo backend...");
-            fetch(`/api/opciones/sesion?fingerprintId=${this.visitorId}`)
-                .then(res => res.json())
-                .then(sessionData => {
-                    if (sessionData && sessionData.solicitudId) {
-                        console.log("Sesión encontrada:", sessionData);
-                        this.populateForm(sessionData);
-                        this.showNotification("Se cargaron los datos de tu sesión anterior.", "success", 6000);
-                    } else {
-                        console.log("No se encontraron sesiones existentes.");
+            initFingerprint: function () {
+                console.log("Paso 4: Dentro de initFingerprint()...");
+                const fingerprintTimeout = setTimeout(() => {
+                    console.warn("ADVERTENCIA: FingerprintJS tardó demasiado. Habilitando botones por seguridad.");
+                    if (this.visitorId === null) {
+                        this.visitorId = 'fingerprint_timeout';
+                        this.habilitarBotones();
                     }
-                })
-                .catch(err => console.error("Error al buscar sesión:", err));
-        },
+                }, 3000);
 
-        
-        populateForm: function(solicitud) {
-            console.log("--- INICIO populateForm (v5) ---");
-            const radio = document.querySelector(`input[name="tipoEvento"][value="${solicitud.tipoEvento}"]`);
-            if (radio) {
-                radio.checked = true;
-                radio.dispatchEvent(new Event('change'));
-            }
-            setTimeout(() => {
-                this.elements.cantidadPersonasSelect.value = solicitud.cantidadPersonas;
-                this.elements.duracionEventoSelect.value = solicitud.duracionEvento;
-                if (solicitud.fechaEvento && this.calendario) {
-                    this.calendario.setDate(solicitud.fechaEvento, true);
+                FingerprintJS.load()
+                    .then(agent => agent.get())
+                    .then(result => {
+                        clearTimeout(fingerprintTimeout);
+                        this.visitorId = result.visitorId;
+                        console.log("Paso 5: Fingerprint ID generado:", this.visitorId);
+                        this.buscarSesionExistente();
+                    })
+                    .catch(error => {
+                        clearTimeout(fingerprintTimeout);
+                        console.error("Error al generar Fingerprint:", error);
+                        this.visitorId = 'fingerprint_error';
+                    })
+                    .finally(() => {
+                        this.habilitarBotones();
+                    });
+            },
+
+            habilitarBotones: function () {
+                console.log("Paso 6: Habilitando botones de acción.");
+                if (this.elements.btnAdicionales.disabled) {
+                    this.elements.btnAdicionales.disabled = false;
+                    this.elements.btnAdicionales.textContent = 'Agregar Adicionales';
+                }
+                if (this.elements.btnContacto.disabled) {
+                    this.elements.btnContacto.disabled = false;
+                    this.elements.btnContacto.textContent = 'Continuar sin adicionales';
+                }
+            },
+
+            buscarSesionExistente: function () {
+                console.log("Buscando sesión existente en el nuevo backend...");
+                fetch(`/api/opciones/sesion?fingerprintId=${this.visitorId}`)
+                    .then(res => res.json())
+                    .then(sessionData => {
+                        if (sessionData && sessionData.solicitudId) {
+                            console.log("Sesión encontrada:", sessionData);
+                            this.populateForm(sessionData);
+                            this.showNotification("Se cargaron los datos de tu sesión anterior.", "success", 6000);
+                        } else {
+                            console.log("No se encontraron sesiones existentes.");
+                        }
+                    })
+                    .catch(err => console.error("Error al buscar sesión:", err));
+            },
+
+
+            populateForm: function (solicitud) {
+                console.log("--- INICIO populateForm (v5) ---");
+                const radio = document.querySelector(`input[name="tipoEvento"][value="${solicitud.tipoEvento}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    radio.dispatchEvent(new Event('change'));
                 }
                 setTimeout(() => {
-                    this.elements.horaInicioSelect.value = solicitud.horaInicio;
-                    this.actualizarTodo();
-                    console.log("--- FIN populateForm ---");
-                }, 100);
-            }, 250);
-        },
-
-        validarYEnviar: function(destino) {
-            document.querySelectorAll('.campo-invalido').forEach(el => el.classList.remove('campo-invalido'));
-            const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
-            const tipoId = selectedRadio ? selectedRadio.value : '';
-            const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
-            const montoSena = tipoSeleccionado ? tipoSeleccionado.montoSena : 0;
-            const depositoGarantia = tipoSeleccionado ? tipoSeleccionado.depositoGarantia : 0;
-            let hayErrores = false;
-            if (!selectedRadio) { this.elements.tipoEventoContainer.classList.add('campo-invalido'); hayErrores = true; }
-            if (!this.elements.cantidadPersonasSelect.value) { this.elements.cantidadPersonasSelect.classList.add('campo-invalido'); hayErrores = true; }
-            if (!this.elements.duracionEventoSelect.value) { this.elements.duracionEventoSelect.classList.add('campo-invalido'); hayErrores = true; }
-            if (!this.elements.horaInicioSelect.value) { this.elements.horaInicioSelect.classList.add('campo-invalido'); hayErrores = true; }
-            if (!this.elements.fechaEventoInput.value) { if (this.calendario && this.calendario.altInput) { this.calendario.altInput.classList.add('campo-invalido'); } hayErrores = true; }
-            if (hayErrores) { this.showNotification('Por favor, completa todos los campos obligatorios.', 'warning'); return; }
-            this.toggleLoadingOverlay(true, 'Procesando...');
-            const formData = {
-                page: destino, tipoEvento: tipoId,
-                cantidadPersonas: this.elements.cantidadPersonasSelect.value,
-                duracionEvento: this.elements.duracionEventoSelect.value,
-                fechaEvento: this.elements.fechaEventoInput.value,
-                horaInicio: this.elements.horaInicioSelect.value,
-                precioBase: this.elements.precioBaseInput.value,
-                montoSena: montoSena, depositoGarantia: depositoGarantia,
-                fingerprintId: this.visitorId
-            };
-            this.elements.navigationForm.innerHTML = ''; 
-            this.elements.navigationForm.method = 'get'; 
-            this.elements.navigationForm.action = '<?= urlDeLaApp ?>'; 
-            this.elements.navigationForm.target = '_top';
-            for (const key in formData) { 
-                if (formData.hasOwnProperty(key) && formData[key]) { 
-                    const input = document.createElement('input'); 
-                    input.type = 'hidden'; input.name = key; input.value = formData[key]; 
-                    this.elements.navigationForm.appendChild(input); 
-                } 
-            }
-            this.elements.navigationForm.submit();
-        },
-        
-        inicializarCalendario: function(fechasOcupadas, feriados) {
-            console.log("--- INICIO inicializarCalendario ---");
-            try {
-                // Log 1: Verificar los datos de entrada
-                console.log("Datos de entrada - fechasOcupadas:", fechasOcupadas);
-                //console.log("Es fechasOcupadas un array?", Array.isArray(fechasOcupadas));
-                console.log("Datos de entrada - feriados:", feriados);
-                //console.log("Es feriados un array?", Array.isArray(feriados));
-
-                // Log 2: Crear la configuración paso a paso
-                //console.log("Creando objeto de configuración...");
-                const config = {};
-                //console.log("Añadiendo 'locale'...");
-                config.locale = "es";
-                //console.log("Añadiendo 'altInput'...");
-                config.altInput = true;
-                //console.log("Añadiendo 'altFormat'...");
-                config.altFormat = "j \\de F, Y";
-                //console.log("Añadiendo 'dateFormat'...");
-                config.dateFormat = "Y-m-d";
-                //console.log("Añadiendo 'minDate'...");
-                config.minDate = "today";
-                
-                //console.log("Creando la función 'disable'...");
-                const disableFunction = (date) => {
-                    const esFinDeSemana = date.getDay() === 0 || date.getDay() === 6;
-                    const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                    // Usamos 'feriados' directamente, ya que los logs muestran que es un array válido.
-                    const esFeriado = feriados.includes(fechaStr);
-                    return !(esFinDeSemana || esFeriado);
-                };
-                
-                //console.log("Combinando 'disableFunction' y 'fechasOcupadas' en el array 'disable'...");
-                // Esta es la línea más sospechosa. La construimos de forma segura.
-                config.disable = [disableFunction, ...(fechasOcupadas || [])];
-                
-                //console.log("Creando la función 'onChange'...");
-                
-                config.onChange = () => this.actualizarTodo()
-
-                // Log 3: Justo antes de llamar a flatpickr
-                //console.log("Configuración completa. Llamando a flatpickr...");
-                //console.log("Elemento a usar:", this.elements.fechaEventoInput);
-                //console.log("Configuración a pasar:", config);
-
-                // Llamada final
-                this.calendario = flatpickr(this.elements.fechaEventoInput, config);
-                
-                console.log("--- FIN inicializarCalendario (Éxito) ---");
-
-            } catch (e) {
-                console.error("¡¡¡ERROR CRÍTICO DENTRO DE inicializarCalendario!!!", e);
-            }
-        },
-
-       
-        actualizarOpcionesDependientes: function() {
-            this.actualizarTodo();
-        },
-
-        actualizarHorariosDisponibles: function() {
-            this.actualizarTodo();
-        },
-        
-        actualizarDetallePresupuesto: function() {
-            this.actualizarTodo();
-        },
-
-        actualizarTodo: function() {
-            console.groupCollapsed("--- Actualizando Formulario Completo ---");
-            
-            // 1. OBTENER ESTADO ACTUAL
-            const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
-            const tipoId = selectedRadio ? selectedRadio.value : '';
-            const fechaSeleccionada = this.calendario ? this.calendario.selectedDates[0] : null;
-            const cantidad = this.elements.cantidadPersonasSelect.value;
-            const duracion = this.elements.duracionEventoSelect.value;
-            const hora = this.elements.horaInicioSelect.value;
-            
-            console.log("Estado actual:", { tipoId, fechaSeleccionada, cantidad, duracion, hora });
-
-            // 2. ACTUALIZAR OPCIONES DEPENDIENTES (lógica de actualizarOpcionesDependientes)
-            this.elements.tipoEventoDescripcionDiv.innerHTML = tipoId ? this.descripcionesTipos[tipoId] || 'Sin descripción.' : 'Seleccione un tipo de evento.';
-            
-            const prevCantidad = this.elements.cantidadPersonasSelect.value;
-            const prevDuracion = this.elements.duracionEventoSelect.value;
-            
-            if (tipoId) {
-                this.llenarSelect(this.elements.cantidadPersonasSelect, this.opcionesCantidades[tipoId] || [], 'Seleccione cantidad...');
-                this.llenarSelect(this.elements.duracionEventoSelect, this.opcionesDuraciones[tipoId] || [], 'Seleccione duración...');
-                
-                // Restaurar valores si es posible
-                this.elements.cantidadPersonasSelect.value = prevCantidad;
-                this.elements.duracionEventoSelect.value = prevDuracion;
-
-            } else {
-                this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
-                this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
-            }
-
-            // 3. ACTUALIZAR HORARIOS (lógica de actualizarHorariosDisponibles)
-            const prevHora = this.elements.horaInicioSelect.value;
-            if (tipoId && fechaSeleccionada) {
-                const diaDeLaSemana = fechaSeleccionada.getDay();
-                const fechaStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
-                const esFeriado = this.feriadosGlobal.includes(fechaStr);
-                let tipoDeDia = (diaDeLaSemana === 6 && !esFeriado) ? 'sabado' : 'domingo/feriado';
-                
-                const todosLosHorariosParaTipo = this.opcionesHoras[tipoId] || [];
-                const horariosFiltrados = todosLosHorariosParaTipo.filter(h => h.tipoDia === 'todos' || h.tipoDia === tipoDeDia).map(h => h.hora).sort();
-                
-                this.llenarSelect(this.elements.horaInicioSelect, horariosFiltrados, 'Seleccione hora...');
-                this.elements.horaInicioSelect.value = prevHora; // Restaurar valor si es posible
-            } else {
-                this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo y fecha');
-            }
-
-            // 4. ACTUALIZAR PRESUPUESTO (lógica de actualizarDetallePresupuesto)
-            const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
-            const nombreParaMostrar = tipoSeleccionado ? tipoSeleccionado.nombreParaMostrar : '';
-            const montoSena = tipoSeleccionado ? tipoSeleccionado.montoSena : 0;
-            const depositoGarantia = tipoSeleccionado ? tipoSeleccionado.depositoGarantia : 0;
-            
-            let detalleHtml = '<ul>';
-            // (código para construir detalleHtml se puede copiar de tu función original)
-            if (nombreParaMostrar) detalleHtml += `<li><strong>Tipo:</strong> ${nombreParaMostrar}</li>`;
-            if (fechaSeleccionada) detalleHtml += `<li><strong>Fecha:</strong> ${fechaSeleccionada.toLocaleDateString('es-AR')}</li>`;
-            // ... etc ...
-            detalleHtml += '</ul>';
-
-            if (tipoId && cantidad && duracion && fechaSeleccionada) {
-                //const cantidadNum = parseInt(cantidad.match(/\d+/g).pop());
-                const cantidadNum = parseInt(cantidad.match(/\d+/)[0]);
-                const duracionNum = parseInt((duracion.match(/\d+/) || ['0'])[0]);
-                console.log("Valores para filtrar:", { tipoId, cantidadNum, fechaSeleccionada });
-                const fechaEventoStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
-
-                console.log("Valores para filtrar:", { tipoId, cantidadNum, fechaEventoStr });
-                
-                const reglasAplicables = this.tarifas.filter(r => {
-                    const tipoCoincide = r.tipo.toUpperCase() === tipoId.toUpperCase();
-                    const cantidadCoincide = cantidadNum >= r.min && cantidadNum <= r.max;
-                    // 2. Compara los strings directamente. Es infalible.
-                    const fechaCoincide = fechaEventoStr >= r.fechaVigencia; 
-
-                    // Log de depuración
-                    if (tipoCoincide && cantidadCoincide) {
-                        console.log(`Evaluando regla para '${r.tipo}', cant ${cantidadNum}: fecha? ${fechaCoincide} (evento: ${fechaEventoStr} >= vigencia: ${r.fechaVigencia})`);
+                    this.elements.cantidadPersonasSelect.value = solicitud.cantidadPersonas;
+                    this.elements.duracionEventoSelect.value = solicitud.duracionEvento;
+                    if (solicitud.fechaEvento && this.calendario) {
+                        this.calendario.setDate(solicitud.fechaEvento, true);
                     }
-                    
-                    return tipoCoincide && cantidadCoincide && fechaCoincide;
+                    setTimeout(() => {
+                        this.elements.horaInicioSelect.value = solicitud.horaInicio;
+                        this.actualizarTodo();
+                        console.log("--- FIN populateForm ---");
+                    }, 100);
+                }, 250);
+            },
+
+            validarYEnviar: function (destino) {
+                document.querySelectorAll('.campo-invalido').forEach(el => el.classList.remove('campo-invalido'));
+                const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
+                let hayErrores = false;
+
+                // --- Validación (sin el bloque de código extra) ---
+                if (!selectedRadio) { this.elements.tipoEventoContainer.classList.add('campo-invalido'); hayErrores = true; }
+                if (!this.elements.cantidadPersonasSelect.value) { this.elements.cantidadPersonasSelect.classList.add('campo-invalido'); hayErrores = true; }
+                if (!this.elements.duracionEventoSelect.value) { this.elements.duracionEventoSelect.classList.add('campo-invalido'); hayErrores = true; }
+                if (!this.elements.horaInicioSelect.value) { this.elements.horaInicioSelect.classList.add('campo-invalido'); hayErrores = true; }
+                if (!this.elements.fechaEventoInput.value) { if (this.calendario && this.calendario.altInput) { this.calendario.altInput.classList.add('campo-invalido'); } hayErrores = true; }
+                if (hayErrores) { this.showNotification('Por favor, completa todos los campos obligatorios.', 'warning'); return; }
+
+                this.toggleLoadingOverlay(true, 'Guardando solicitud...');
+
+                // 1. Preparamos el cuerpo (body) de la petición.
+                const bodyData = {
+                    tipoEvento: selectedRadio.value,
+                    cantidadPersonas: this.elements.cantidadPersonasSelect.value,
+                    duracionEvento: this.elements.duracionEventoSelect.value,
+                    fechaEvento: this.elements.fechaEventoInput.value,
+                    horaInicio: this.elements.horaInicioSelect.value,
+                    precioBase: this.elements.precioBaseInput.value,
+                    fingerprintId: this.visitorId
+                };
+
+                // 2. Realizamos la llamada a la API con fetch.
+                fetch('/api/solicitudes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bodyData)
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => { throw new Error(err.error || 'Error del servidor desconocido') });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const newId = data.solicitudId;
+                        console.log(`Solicitud guardada con éxito. Nuevo ID: ${newId}`);
+
+                        const nextPage = (destino === 'adicionales') ? 'Adicionales.html' : 'Contacto.html';
+                        window.location.href = `${nextPage}?solicitudId=${newId}`;
+                    })
+                    .catch(error => {
+                        console.error('Error al guardar la solicitud:', error);
+                        this.showNotification(`Error: ${error.message}`, 'error');
+                        this.toggleLoadingOverlay(false);
+                    });
+            },
+
+            inicializarCalendario: function (fechasOcupadas, feriados) {
+                console.log("--- INICIO inicializarCalendario ---");
+                try {
+                    // Log 1: Verificar los datos de entrada
+                    console.log("Datos de entrada - fechasOcupadas:", fechasOcupadas);
+                    //console.log("Es fechasOcupadas un array?", Array.isArray(fechasOcupadas));
+                    console.log("Datos de entrada - feriados:", feriados);
+                    //console.log("Es feriados un array?", Array.isArray(feriados));
+
+                    // Log 2: Crear la configuración paso a paso
+                    //console.log("Creando objeto de configuración...");
+                    const config = {};
+                    //console.log("Añadiendo 'locale'...");
+                    config.locale = "es";
+                    //console.log("Añadiendo 'altInput'...");
+                    config.altInput = true;
+                    //console.log("Añadiendo 'altFormat'...");
+                    config.altFormat = "j \\de F, Y";
+                    //console.log("Añadiendo 'dateFormat'...");
+                    config.dateFormat = "Y-m-d";
+                    //console.log("Añadiendo 'minDate'...");
+                    config.minDate = "today";
+
+                    //console.log("Creando la función 'disable'...");
+                    const disableFunction = (date) => {
+                        const esFinDeSemana = date.getDay() === 0 || date.getDay() === 6;
+                        const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        // Usamos 'feriados' directamente, ya que los logs muestran que es un array válido.
+                        const esFeriado = feriados.includes(fechaStr);
+                        return !(esFinDeSemana || esFeriado);
+                    };
+
+                    //console.log("Combinando 'disableFunction' y 'fechasOcupadas' en el array 'disable'...");
+                    // Esta es la línea más sospechosa. La construimos de forma segura.
+                    config.disable = [disableFunction, ...(fechasOcupadas || [])];
+
+                    //console.log("Creando la función 'onChange'...");
+
+                    config.onChange = () => this.actualizarTodo()
+
+                    // Log 3: Justo antes de llamar a flatpickr
+                    //console.log("Configuración completa. Llamando a flatpickr...");
+                    //console.log("Elemento a usar:", this.elements.fechaEventoInput);
+                    //console.log("Configuración a pasar:", config);
+
+                    // Llamada final
+                    this.calendario = flatpickr(this.elements.fechaEventoInput, config);
+
+                    console.log("--- FIN inicializarCalendario (Éxito) ---");
+
+                } catch (e) {
+                    console.error("¡¡¡ERROR CRÍTICO DENTRO DE inicializarCalendario!!!", e);
+                }
+            },
+
+
+            actualizarOpcionesDependientes: function () {
+                this.actualizarTodo();
+            },
+
+            actualizarHorariosDisponibles: function () {
+                this.actualizarTodo();
+            },
+
+            actualizarDetallePresupuesto: function () {
+                this.actualizarTodo();
+            },
+
+            actualizarTodo: function () {
+                console.groupCollapsed("--- Actualizando Formulario Completo ---");
+
+                // 1. OBTENER ESTADO ACTUAL
+                const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
+                const tipoId = selectedRadio ? selectedRadio.value : '';
+                const fechaSeleccionada = this.calendario ? this.calendario.selectedDates[0] : null;
+                const cantidad = this.elements.cantidadPersonasSelect.value;
+                const duracion = this.elements.duracionEventoSelect.value;
+                const hora = this.elements.horaInicioSelect.value;
+
+                console.log("Estado actual:", { tipoId, fechaSeleccionada, cantidad, duracion, hora });
+
+                // 2. ACTUALIZAR OPCIONES DEPENDIENTES (lógica de actualizarOpcionesDependientes)
+                this.elements.tipoEventoDescripcionDiv.innerHTML = tipoId ? this.descripcionesTipos[tipoId] || 'Sin descripción.' : 'Seleccione un tipo de evento.';
+
+                const prevCantidad = this.elements.cantidadPersonasSelect.value;
+                const prevDuracion = this.elements.duracionEventoSelect.value;
+
+                if (tipoId) {
+                    this.llenarSelect(this.elements.cantidadPersonasSelect, this.opcionesCantidades[tipoId] || [], 'Seleccione cantidad...');
+                    this.llenarSelect(this.elements.duracionEventoSelect, this.opcionesDuraciones[tipoId] || [], 'Seleccione duración...');
+
+                    // Restaurar valores si es posible
+                    this.elements.cantidadPersonasSelect.value = prevCantidad;
+                    this.elements.duracionEventoSelect.value = prevDuracion;
+
+                } else {
+                    this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
+                    this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
+                }
+
+                // 3. ACTUALIZAR HORARIOS (lógica de actualizarHorariosDisponibles)
+                const prevHora = this.elements.horaInicioSelect.value;
+                if (tipoId && fechaSeleccionada) {
+                    const diaDeLaSemana = fechaSeleccionada.getDay();
+                    const fechaStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
+                    const esFeriado = this.feriadosGlobal.includes(fechaStr);
+                    let tipoDeDia = (diaDeLaSemana === 6 && !esFeriado) ? 'sabado' : 'domingo/feriado';
+
+                    const todosLosHorariosParaTipo = this.opcionesHoras[tipoId] || [];
+                    const horariosFiltrados = todosLosHorariosParaTipo.filter(h => h.tipoDia === 'todos' || h.tipoDia === tipoDeDia).map(h => h.hora).sort();
+
+                    this.llenarSelect(this.elements.horaInicioSelect, horariosFiltrados, 'Seleccione hora...');
+                    this.elements.horaInicioSelect.value = prevHora; // Restaurar valor si es posible
+                } else {
+                    this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo y fecha');
+                }
+
+                // 4. ACTUALIZAR PRESUPUESTO (lógica de actualizarDetallePresupuesto)
+                const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
+                const nombreParaMostrar = tipoSeleccionado ? tipoSeleccionado.nombreParaMostrar : '';
+                const montoSena = tipoSeleccionado ? tipoSeleccionado.montoSena : 0;
+                const depositoGarantia = tipoSeleccionado ? tipoSeleccionado.depositoGarantia : 0;
+
+                let detalleHtml = '<ul>';
+                // (código para construir detalleHtml se puede copiar de tu función original)
+                if (nombreParaMostrar) detalleHtml += `<li><strong>Tipo:</strong> ${nombreParaMostrar}</li>`;
+                if (fechaSeleccionada) detalleHtml += `<li><strong>Fecha:</strong> ${fechaSeleccionada.toLocaleDateString('es-AR')}</li>`;
+                // ... etc ...
+                detalleHtml += '</ul>';
+
+                if (tipoId && cantidad && duracion && fechaSeleccionada) {
+                    //const cantidadNum = parseInt(cantidad.match(/\d+/g).pop());
+                    const cantidadNum = parseInt(cantidad.match(/\d+/)[0]);
+                    const duracionNum = parseInt((duracion.match(/\d+/) || ['0'])[0]);
+                    console.log("Valores para filtrar:", { tipoId, cantidadNum, fechaSeleccionada });
+                    const fechaEventoStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
+
+                    console.log("Valores para filtrar:", { tipoId, cantidadNum, fechaEventoStr });
+
+                    const reglasAplicables = this.tarifas.filter(r => {
+                        const tipoCoincide = r.tipo.toUpperCase() === tipoId.toUpperCase();
+                        const cantidadCoincide = cantidadNum >= r.min && cantidadNum <= r.max;
+                        // 2. Compara los strings directamente. Es infalible.
+                        const fechaCoincide = fechaEventoStr >= r.fechaVigencia;
+
+                        // Log de depuración
+                        if (tipoCoincide && cantidadCoincide) {
+                            console.log(`Evaluando regla para '${r.tipo}', cant ${cantidadNum}: fecha? ${fechaCoincide} (evento: ${fechaEventoStr} >= vigencia: ${r.fechaVigencia})`);
+                        }
+
+                        return tipoCoincide && cantidadCoincide && fechaCoincide;
+                    });
+                    console.log("Reglas de tarifa APLICABLES:", reglasAplicables);
+
+
+                    if (reglasAplicables.length > 0) {
+                        reglasAplicables.sort((a, b) => new Date(b.fechaVigencia) - new Date(a.fechaVigencia));
+                        const reglaFinal = reglasAplicables[0];
+                        const precioCalculado = reglaFinal.precioPorHora * duracionNum;
+                        this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
+                        this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${precioCalculado.toLocaleString('es-AR')}`;
+                        this.elements.precioBaseInput.value = precioCalculado;
+                    } else {
+                        this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
+                        this.elements.presupuestoDetalleDiv.insertAdjacentHTML('beforeend', '<p style="color:red;">No se encontró tarifa.</p>');
+                        this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $ -`; this.elements.precioBaseInput.value = 0;
+                    }
+                } else {
+                    this.elements.presupuestoDetalleDiv.innerHTML = '<p>Complete las opciones para ver el precio.</p>';
+                    this.elements.presupuestoTotalDiv.innerHTML = `<span>Total Básico: </span> $0`; this.elements.precioBaseInput.value = 0;
+                }
+                console.groupEnd();
+            },
+
+
+            llenarSelect: function (select, options, placeholder) {
+                if (!select) return;
+                select.innerHTML = `<option value="">${placeholder}</option>`;
+                select.disabled = !(options && options.length > 0);
+                if (select.disabled) return;
+                options.forEach(opt => { select.innerHTML += `<option value="${opt}">${opt}</option>`; });
+            },
+
+            llenarRadioButtons: function (container, name, options) {
+                if (!container) return;
+                console.log("Datos recibidos por llenarRadioButtons:", options);
+                container.innerHTML = '';
+                if (!options || options.length === 0) return;
+
+                options.forEach(opt => {
+                    // ¡ESTE ES EL CAMBIO CLAVE!
+                    // Aceptamos 'opt.id' o 'opt.id_evento' para ser más robustos.
+                    const optionId = opt.id || opt.id_evento;
+                    const optionName = opt.nombreParaMostrar || opt.nombreparamostrar;
+
+                    if (optionId) {
+                        const id = `radio_${optionId.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+                        container.innerHTML += `<div class="radio-option"><input type="radio" id="${id}" name="${name}" value="${optionId}"><label for="${id}">${optionName}</label></div>`;
+                    } else {
+                        console.warn("Se encontró un objeto inválido sin ID en el array de opciones:", opt);
+                    }
                 });
-                console.log("Reglas de tarifa APLICABLES:", reglasAplicables);
+            },
 
-
-                if (reglasAplicables.length > 0) {
-                    reglasAplicables.sort((a, b) => new Date(b.fechaVigencia) - new Date(a.fechaVigencia));
-                    const reglaFinal = reglasAplicables[0];
-                    const precioCalculado = reglaFinal.precioPorHora * duracionNum;
-                    this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
-                    this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${precioCalculado.toLocaleString('es-AR')}`;
-                    this.elements.precioBaseInput.value = precioCalculado;
-                } else {
-                    this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
-                    this.elements.presupuestoDetalleDiv.insertAdjacentHTML('beforeend', '<p style="color:red;">No se encontró tarifa.</p>');
-                    this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $ -`; this.elements.precioBaseInput.value = 0;
-                }
-            } else {
-                this.elements.presupuestoDetalleDiv.innerHTML = '<p>Complete las opciones para ver el precio.</p>';
-                this.elements.presupuestoTotalDiv.innerHTML = `<span>Total Básico: </span> $0`; this.elements.precioBaseInput.value = 0;
+            showNotification: function (message, type = 'warning', duration = 4000) {
+                clearTimeout(this.notificationTimer);
+                this.elements.notificationBanner.textContent = message;
+                this.elements.notificationBanner.className = 'show ' + type;
+                this.notificationTimer = setTimeout(() => { this.elements.notificationBanner.className = ''; }, duration);
+            },
+            toggleLoadingOverlay: function (show, message = 'Cargando...') {
+                this.elements.loadingOverlay.querySelector('p').textContent = message;
+                this.elements.loadingOverlay.style.display = show ? 'flex' : 'none';
+            },
+            manejarParametroURL: function () {
+                const tipoParam = '<?= tipoEventoDesdeURL ?>'; if (!tipoParam) return;
+                const radio = document.querySelector(`input[name="tipoEvento"][value="${tipoParam.toUpperCase()}"]`);
+                if (!radio) return;
+                radio.checked = true;
+                document.querySelectorAll('.radio-option').forEach(optionDiv => {
+                    if (optionDiv.querySelector('input') !== radio) { optionDiv.style.display = 'none'; }
+                });
+                this.elements.resetTipoEventoBtn.style.display = 'inline-block';
+                //this.actualizarOpcionesDependientes();
             }
-            console.groupEnd();
-        },
+        };
 
-
-        llenarSelect: function(select, options, placeholder) {
-            if (!select) return;
-            select.innerHTML = `<option value="">${placeholder}</option>`;
-            select.disabled = !(options && options.length > 0);
-            if (select.disabled) return;
-            options.forEach(opt => { select.innerHTML += `<option value="${opt}">${opt}</option>`; });
-        },
-        
-        llenarRadioButtons: function(container, name, options) {
-            if (!container) return;
-            console.log("Datos recibidos por llenarRadioButtons:", options);
-            container.innerHTML = '';
-            if (!options || options.length === 0) return;
-
-            options.forEach(opt => {
-                // ¡ESTE ES EL CAMBIO CLAVE!
-                // Aceptamos 'opt.id' o 'opt.id_evento' para ser más robustos.
-                const optionId = opt.id || opt.id_evento; 
-                const optionName = opt.nombreParaMostrar || opt.nombreparamostrar;
-
-                if (optionId) {
-                    const id = `radio_${optionId.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
-                    container.innerHTML += `<div class="radio-option"><input type="radio" id="${id}" name="${name}" value="${optionId}"><label for="${id}">${optionName}</label></div>`;
-                } else {
-                    console.warn("Se encontró un objeto inválido sin ID en el array de opciones:", opt);
-                }
-            });
-        },
-
-        showNotification: function(message, type = 'warning', duration = 4000) {
-            clearTimeout(this.notificationTimer);
-            this.elements.notificationBanner.textContent = message;
-            this.elements.notificationBanner.className = 'show ' + type;
-            this.notificationTimer = setTimeout(() => { this.elements.notificationBanner.className = ''; }, duration);
-        },
-        toggleLoadingOverlay: function(show, message = 'Cargando...') {
-            this.elements.loadingOverlay.querySelector('p').textContent = message;
-            this.elements.loadingOverlay.style.display = show ? 'flex' : 'none';
-        },
-        manejarParametroURL: function() {
-            const tipoParam = '<?= tipoEventoDesdeURL ?>'; if (!tipoParam) return;
-            const radio = document.querySelector(`input[name="tipoEvento"][value="${tipoParam.toUpperCase()}"]`);
-            if (!radio) return;
-            radio.checked = true;
-            document.querySelectorAll('.radio-option').forEach(optionDiv => {
-                if (optionDiv.querySelector('input') !== radio) { optionDiv.style.display = 'none'; }
-            });
-            this.elements.resetTipoEventoBtn.style.display = 'inline-block';
-            //this.actualizarOpcionesDependientes();
-        }
-    };
-    
-    document.addEventListener('DOMContentLoaded', () => App.init());
-</script>
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
 </body>
+
 </html>

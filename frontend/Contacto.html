@@ -1,33 +1,194 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     /* ... Tus estilos se mantienen exactamente igual ... */
-    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; padding-bottom: 70px; }
-    .container { max-width: 500px; margin: 0 auto; background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; }
-    h2 { color: #0056b3; text-align: center; margin-bottom: 5px; }
-    h3.subtitle { color: #0056b3; text-align: center; margin-top: 0; margin-bottom: 25px; font-size: 1.1em; font-weight: normal; }
-    label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
-    .form-group { margin-bottom: 15px; }
-    input[type="text"], input[type="email"], input[type="tel"] { width: 100%; padding: 10px; border: 1.5px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; transition: border-color 0.3s; }
-    .campo-invalido { border-color: #e74c3c !important; animation: shake 0.5s; }
-    @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
-    .button-group { display: flex; gap: 10px; margin-top: 20px; }
-    button { flex: 1; background-color: #28a745; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-    button:hover { background-color: #218838; }
-    button.btn-secondary { background-color: #6c757d; }
-    button.btn-secondary:hover { background-color: #5a6268; }
-    .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 10; border-radius: 8px; flex-direction: column; }
-    .loading-overlay p { font-size: 1.2em; font-weight: bold; color: #0056b3; }
-    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin-top: 10px; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    #notification-banner { position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 150%); padding: 12px 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); color: white; font-size: 16px; font-weight: 500; z-index: 1000; transition: transform 0.5s ease-in-out; max-width: 90%; text-align: center; }
-    #notification-banner.show { transform: translate(-50%, 0); }
-    #notification-banner.success { background-color: #28a745; }
-    #notification-banner.error { background-color: #dc3545; }
-    #notification-banner.warning { background-color: #ffc107; color: #333; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f4f4;
+      color: #333;
+      padding-bottom: 70px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    h2 {
+      color: #0056b3;
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    h3.subtitle {
+      color: #0056b3;
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 25px;
+      font-size: 1.1em;
+      font-weight: normal;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"] {
+      width: 100%;
+      padding: 10px;
+      border: 1.5px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    .campo-invalido {
+      border-color: #e74c3c !important;
+      animation: shake 0.5s;
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      20%,
+      60% {
+        transform: translateX(-5px);
+      }
+
+      40%,
+      80% {
+        transform: translateX(5px);
+      }
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      flex: 1;
+      background-color: #28a745;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    button.btn-secondary {
+      background-color: #6c757d;
+    }
+
+    button.btn-secondary:hover {
+      background-color: #5a6268;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      border-radius: 8px;
+      flex-direction: column;
+    }
+
+    .loading-overlay p {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #0056b3;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin-top: 10px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    #notification-banner {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translate(-50%, 150%);
+      padding: 12px 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      color: white;
+      font-size: 16px;
+      font-weight: 500;
+      z-index: 1000;
+      transition: transform 0.5s ease-in-out;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    #notification-banner.show {
+      transform: translate(-50%, 0);
+    }
+
+    #notification-banner.success {
+      background-color: #28a745;
+    }
+
+    #notification-banner.error {
+      background-color: #dc3545;
+    }
+
+    #notification-banner.warning {
+      background-color: #ffc107;
+      color: #333;
+    }
+
     textarea {
       width: 100%;
       padding: 10px;
@@ -35,160 +196,114 @@
       border-radius: 4px;
       box-sizing: border-box;
       font-size: 16px;
-      font-family: Arial, sans-serif; /* Asegura la misma fuente que los inputs */
+      font-family: Arial, sans-serif;
+      /* Asegura la misma fuente que los inputs */
       transition: border-color 0.3s;
-      resize: vertical; /* Permite al usuario ajustar la altura */
+      resize: vertical;
+      /* Permite al usuario ajustar la altura */
     }
-
   </style>
 </head>
+
 <body>
-  <div class="container" id="mainContainer"><!-- Contenido dinámico --></div>
-  <div id="notification-banner"></div>
-  <form id="navigationForm" style="display:none;"></form>
+  <div class="container">
+    <h2>Paso Final: Tus Datos de Contacto</h2>
+    <div id="resumen-solicitud">
+      <p>Cargando resumen...</p>
+    </div>
 
-<script>
-    // --- LOG DEPURACIÓN 1: Verificamos si el ID llega del servidor a la plantilla ---
-    let solicitudId;
-    try {
-      solicitudId = <?= solicitudId ?>;
-      console.log("CLIENTE [Paso 1]: Página de Contacto cargada. ID de Solicitud recibido:", solicitudId, "Tipo:", typeof solicitudId);
-    } catch (e) {
-      console.error("CLIENTE [Paso 1 - ERROR]: No se pudo obtener el solicitudId de la plantilla. Error:", e);
-      solicitudId = null;
-    }
+    <div class="form-group">
+      <label for="nombreCompleto">Nombre y Apellido:</label>
+      <input type="text" id="nombreCompleto" name="nombreCompleto" required>
+    </div>
+    <div class="form-group">
+      <label for="celular">Celular (con código de área):</label>
+      <input type="text" id="celular" name="celular" required>
+    </div>
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+    <div class="form-group">
+      <label for="detallesAdicionales">¿Algo más que debamos saber? (Opcional)</label>
+      <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
+    </div>
+    <button id="btn-confirmar">Confirmar y Enviar Solicitud</button>
+  </div>
 
-    const mainContainer = document.getElementById('mainContainer');
-    const notificationBanner = document.getElementById('notification-banner');
-    const navigationForm = document.getElementById('navigationForm');
-    let notificationTimer;
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Obtener el ID de la solicitud desde la URL
+      const params = new URLSearchParams(window.location.search);
+      const solicitudId = params.get('solicitudId');
 
-    // ... (las funciones auxiliares como showNotification, mostrarErrorDeSesion, etc., no cambian) ...
-    function showNotification(message, type = 'success', duration = 4000) { clearTimeout(notificationTimer); notificationBanner.textContent = message; notificationBanner.className = 'show ' + type; notificationTimer = setTimeout(() => { notificationBanner.classList.remove('show'); }, duration); }
-    function mostrarErrorDeSesion() { mainContainer.innerHTML = `<h2>Sesión No Encontrada</h2><p style="text-align: center; margin-bottom: 20px;">Parece que tu sesión ha expirado.</p><button class="btn-secondary" onclick="window.top.location.href='<?= urlDeLaApp ?>'">Volver al Inicio</button>`;}
-    function toggleLoading(isLoading, message = 'Cargando...') { const overlay = mainContainer.querySelector('.loading-overlay'); if (overlay) { overlay.querySelector('p').textContent = message; overlay.style.display = isLoading ? 'flex' : 'none'; }}
+      const resumenDiv = document.getElementById('resumen-solicitud');
 
-    document.addEventListener('DOMContentLoaded', function() {
-      mainContainer.innerHTML = `<div class="loading-overlay" style="position:relative; background:none;"><p>Cargando datos...</p><div class="spinner"></div></div>`;
-      
-      // --- LOG DEPURACIÓN 2: Verificamos que el ID sea válido antes de llamar al servidor ---
-      if (!solicitudId || typeof solicitudId === 'undefined') {
-        console.error("CLIENTE [Paso 2 - ERROR]: El ID de solicitud es nulo o indefinido. No se puede continuar. Abortando llamada al servidor.");
-        showNotification('Error crítico: No se encontró el ID de la solicitud.', 'error', 10000);
-        mostrarErrorDeSesion();
+      if (!solicitudId) {
+        resumenDiv.innerHTML = '<p style="color: red;">Error: No se encontró un ID de solicitud.</p>';
         return;
       }
-      
-      console.log("CLIENTE [Paso 2]: Iniciando llamada a google.script.run.getContactPageDetails con el ID:", solicitudId);
 
-      google.script.run
-        .withSuccessHandler(function(response) {
-          // --- LOG DEPURACIÓN 3: Éxito ---
-          console.log("CLIENTE [Paso 3 - ÉXITO]: Datos recibidos del servidor:", response);
-          if (response.error === 'NO_SESSION') {
-              showNotification('Tu sesión ha expirado. Por favor, vuelve al inicio.', 'error', 5000);
-              mostrarErrorDeSesion();
-              return;
-          }
-          renderizarFormulario(response);
+      // 2. Llamar a la API para obtener los detalles de la solicitud
+      fetch(`/api/solicitudes/${solicitudId}`)
+        .then(response => {
+          if (!response.ok) throw new Error('No se pudo cargar la solicitud.');
+          return response.json();
         })
-        .withFailureHandler(function(error){
-            // --- LOG DEPURACIÓN 3: Fallo ---
-            console.error("CLIENTE [Paso 3 - FALLO]: Error recibido del servidor:", error);
-            showNotification("Error grave al cargar la página: " + error.message, 'error', 5000);
-          mostrarErrorDeSesion();
+        .then(data => {
+          // 3. Mostrar los datos en la página
+          const fecha = new Date(data.fecha_evento).toLocaleDateString('es-AR', { timeZone: 'UTC' });
+          resumenDiv.innerHTML = `
+                    <h3>Resumen de tu evento:</h3>
+                    <ul>
+                      <!-- ¡CAMBIA ESTA LÍNEA! -->
+                      <li><strong>Tipo:</strong> ${data.nombre_para_mostrar || data.tipo_de_evento}</li>
+                      <li><strong>Fecha:</strong> ${fecha}</li>
+                      <li><strong>Hora:</strong> ${data.hora_evento}</li>
+                      <li><strong>Precio Base:</strong> $${parseFloat(data.precio_basico).toLocaleString('es-AR')}</li>
+                  </ul>
+                `;
         })
-        // --- CORRECCIÓN 2: Pasamos el solicitudId a la función del servidor ---
-        .getContactPageDetails(solicitudId);
+        .catch(error => {
+          console.error('Error:', error);
+          resumenDiv.innerHTML = `<p style="color: red;">${error.message}</p>`;
+        });
+
+      document.getElementById('btn-confirmar').onclick = () => {
+        const solicitudId = params.get('solicitudId');
+
+        // 1. Recolectar datos del formulario de contacto
+        const bodyData = {
+          nombreCompleto: document.getElementById('nombreCompleto').value,
+          celular: document.getElementById('celular').value,
+          email: document.getElementById('email').value,
+          detallesAdicionales: document.getElementById('detallesAdicionales').value,
+        };
+
+        // 2. Realizar la llamada a la API con el método PUT
+        fetch(`/api/solicitudes/${solicitudId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyData)
+        })
+          .then(response => {
+            if (!response.ok) throw new Error('Error al confirmar la solicitud.');
+            return response.json();
+          })
+          .then(data => {
+            console.log('Respuesta del servidor:', data.message);
+            // 3. Redirigir a la página de comprobante
+            window.location.href = `/Comprobante.html?solicitudId=${solicitudId}`;
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert(error.message); // Muestra un alerta simple al usuario
+          });
+      };
+
+
     });
-
-    function renderizarFormulario(response) { 
-      console.log("CLIENTE [Paso 4]: Renderizando el formulario de contacto.");
-
-      mainContainer.innerHTML = `
-            <h2>Paso Final: Datos de Contacto</h2>
-            <h3 class="subtitle">Completa tu información para finalizar la solicitud.</h3>
-            <div class="loading-overlay" style="display:none;"><p>Finalizando...</p><div class="spinner"></div></div>
-            <form id="contactForm">
-                <div class="form-group"><label for="nombreCompleto">Nombre Completo:</label><input type="text" id="nombreCompleto" name="nombreCompleto"></div>
-                <div class="form-group"><label for="celular">Celular:</label><input type="tel" id="celular" name="celular"></div>
-                <div class="form-group"><label for="email">Email:</label><input type="email" id="email" name="email"></div>
-                
-                <!-- --- CAMBIO 1: AÑADIMOS EL CUADRO DE TEXTO (TEXTAREA) --- -->
-                <div class="form-group">
-                    <label for="detallesAdicionales">Detalles Adicionales (opcional):</label>
-                    <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4" placeholder="¿Hay algo más que debamos saber? (Alergias, pedidos especiales, decoración, etc.)"></textarea>
-                </div>
-                <!-- --- FIN DEL CAMBIO 1 --- -->
-
-            </form>
-            <div class="button-group">
-                <button onclick="volver()" class="btn-secondary">Volver</button>
-                <button onclick="finalizarSolicitud()">Solicitar Reserva</button>
-            </div>
-        `;
-      if (response.config && response.config.anchoFormularioContacto) {
-          mainContainer.style.maxWidth = response.config.anchoFormularioContacto;
-      }
-    }
-
-    function volver() { window.history.back(); }
-
-    function finalizarSolicitud() {
-      // La validación de campos no cambia
-      console.log('CLIENTE: Validando datos finales para el submit.'); 
-      document.querySelectorAll('.campo-invalido').forEach(el => el.classList.remove('campo-invalido')); 
-      let hayErrores = false; const contactData = {}; 
-      const validarCampo = (id) => { 
-        const input = document.getElementById(id); 
-        if (!input) return; 
-        if (!input.value.trim()) { input.classList.add('campo-invalido'); hayErrores = true; } else { contactData[id] = input.value.trim(); } 
-      }; 
-      validarCampo('nombreCompleto'); 
-      validarCampo('celular'); 
-      validarCampo('email'); 
-      
-      // --- CAMBIO 2: CAPTURAMOS EL VALOR DEL TEXTAREA ---
-      // Este campo es opcional, así que no lo validamos, solo obtenemos su valor.
-      const detallesInput = document.getElementById('detallesAdicionales');
-      if (detallesInput) {
-        contactData.detallesAdicionales = detallesInput.value.trim();
-      }
-      // --- FIN DEL CAMBIO 2 ---
-
-      if (hayErrores) { showNotification('Por favor, completa todos los campos marcados en rojo.', 'warning'); return; }
-      
-      toggleLoading(true, 'Finalizando solicitud...');
-      
-      // La construcción del formulario no cambia en su base
-      navigationForm.innerHTML = '';
-      navigationForm.action = '<?= urlDeLaApp ?>';
-      navigationForm.method = 'get';
-      navigationForm.target = '_top';
-      
-      const pageInput = document.createElement('input');
-      pageInput.type = 'hidden';
-      pageInput.name = 'page';
-      pageInput.value = 'comprobante';
-      navigationForm.appendChild(pageInput);
-      
-      // --- CORRECCIÓN 3: Añadimos el solicitudId al formulario para pasarlo a la página de Comprobante ---
-      const idInput = document.createElement('input');
-      idInput.type = 'hidden';
-      idInput.name = 'solicitudId';
-      idInput.value = solicitudId;
-      navigationForm.appendChild(idInput);
-
-      for (const key in contactData) {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = key;
-          input.value = contactData[key];
-          navigationForm.appendChild(input);
-      }
-      
-      navigationForm.submit();
-    }
-</script>
+  </script>
 </body>
+
 </html>

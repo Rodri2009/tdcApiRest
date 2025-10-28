@@ -14,18 +14,22 @@ app.use((req, res, next) => {
     next(); // Pasa la petición al siguiente middleware o ruta
 });
 
+
+
 // --- RUTAS DE LA API ---
 console.log("Cargando rutas de la API...");
 const opcionesRoutes = require('./routes/opcionesRoutes');
 app.use('/api/opciones', opcionesRoutes);
-console.log("Rutas de opciones (/api/opciones) configuradas.");
+
+const solicitudesRoutes = require('./routes/solicitudRoutes');
+app.use('/api/solicitudes', solicitudesRoutes);
+
+console.log("Rutas de opciones (/api/opciones) y solicitudes (/api/solicitudes) configuradas.");
 
 // Ruta de prueba
 app.get('/api/status', (req, res) => {
     res.json({ message: 'El backend está funcionando correctamente!' });
 });
-
-// ... (resto del archivo sin cambios)
 
 // Función para probar la conexión a la base de datos al iniciar
 async function testDbConnection() {

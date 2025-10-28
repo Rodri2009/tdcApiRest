@@ -19,7 +19,7 @@ LOAD DATA LOCAL INFILE '/var/lib/mysql-files/Opciones_Adicionales.csv'
 INTO TABLE `opciones_adicionales`
 CHARACTER SET utf8mb4 FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\n' IGNORE 1 ROWS
 (@nombre, @precio, @descripcion, @url)
-SET `nombre` = @nombre, `precio` = @precio, `descripcion` = @descripcion, `url_de_la_imagen` = @url;
+SET `nombre` = @nombre, `precio` = @precio, `descripcion` = @descripcion, `url_imagen` = @url;
 
 -- 3. Cargar datos de opciones_duracion.csv
 LOAD DATA LOCAL INFILE '/var/lib/mysql-files/opciones_duracion.csv'

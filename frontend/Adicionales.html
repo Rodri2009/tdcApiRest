@@ -1,248 +1,307 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <base target="_top">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seleccionar Adicionales</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 10px; background-color: #f4f5f7; color: #333; padding-bottom: 80px; }
-    .container { max-width: 900px; margin: 10px auto; background-color: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); position: relative; }
-    h2 { color: #0056b3; text-align: center; margin-top: 0; margin-bottom: 5px; font-size: 1.8em; }
-    h3.subtitle { color: #555; text-align: center; margin-top: 0; margin-bottom: 30px; font-size: 1.1em; font-weight: normal; }
-    h3 { border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 30px; }
-    .adicionales-container-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 20px; }
-    .columna-adicionales { padding: 15px; border: 1px solid #ddd; border-radius: 6px; background-color: #fcfcfc; min-height: 350px; max-height: 400px; overflow-y: auto; }
-    .columna-detalle { padding: 20px; border: 1px dashed #e0e0e0; border-radius: 6px; background-color: #f8f9fa; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; text-align: center; }
-    .checkbox-option { display: flex; align-items: center; margin-bottom: 8px; padding: 8px; cursor: pointer; border-radius: 4px; transition: background-color 0.2s; }
-    .checkbox-option:hover { background-color: #e9ecef; }
-    .checkbox-option input[type="checkbox"] { margin-right: 12px; width: 18px; height: 18px; flex-shrink: 0; }
-    .checkbox-option label { font-weight: 600; color: #333; flex-grow: 1; cursor: pointer; text-align: left; }
-    .checkbox-option .precio { font-weight: normal; color: #28a745; font-size: 1em; }
-    
-    #detalleAdicionalImagen { width: 100%; height: 220px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; background-color: #e9ecef; border-radius: 6px; overflow: hidden; }
-    #detalleAdicionalImagen img { max-width: 100%; max-height: 100%; object-fit: cover; }
-    #detalleAdicionalNombre { font-size: 1.4em; font-weight: bold; color: #0056b3; margin-bottom: 10px; word-wrap: break-word; }
-    #detalleAdicionalDescripcion { font-size: 1em; color: #666; line-height: 1.5; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f4f4;
+      color: #333;
+    }
 
-    #presupuestoDetalle { margin-top: 25px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 6px; background-color: #f8f9fa; }
-    #presupuestoDetalle ul { list-style: none; padding: 0; margin: 0; }
-    #presupuestoDetalle ul li { margin-bottom: 8px; font-size: 1.05em; color: #444; }
-    #presupuestoTotal { text-align: right; font-size: 2em; font-weight: bold; color: #28a745; margin-top: 20px; border-top: 3px double #ddd; padding-top: 15px; }
-    #presupuestoTotal span { font-size: 0.6em; color: #555; font-weight: normal; display: block; }
-    .button-group { display: flex; justify-content: space-between; gap: 15px; margin-top: 30px; }
-    button { flex: 1; background-color: #007bff; color: white; padding: 14px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: background-color 0.2s, transform 0.1s; }
-    button:hover { background-color: #0056b3; }
-    button:active { transform: scale(0.98); }
-    button.volver-btn { background-color: #6c757d; }
-    button.volver-btn:hover { background-color: #5a6268; }
-    .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.85); display: flex; justify-content: center; align-items: center; z-index: 10; border-radius: 8px; flex-direction: column; display: none; }
-    .loading-overlay p { font-size: 1.2em; font-weight: bold; color: #0056b3; }
-    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin-top: 10px; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    @media (max-width: 768px) {
-      body { padding: 5px; }
-      .container { padding: 15px; }
-      .adicionales-container-grid { grid-template-columns: 1fr; }
-      .columna-detalle { order: -1; margin-bottom: 20px; min-height: 150px; }
-      .button-group { flex-direction: column; }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      color: #0056b3;
+      text-align: center;
+    }
+
+    .adicional-item {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      gap: 15px;
+      /* Añade un espacio entre los elementos */
+    }
+
+    .adicional-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 0;
+      /* Ya no necesitamos el margen derecho gracias a 'gap' */
+      flex-shrink: 0;
+      /* Evita que el checkbox se encoja */
+    }
+
+    .adicional-info {
+      flex-grow: 1;
+    }
+
+    .adicional-info label {
+      font-weight: bold;
+      font-size: 1.1em;
+      display: block;
+    }
+
+    .adicional-info p {
+      margin: 5px 0 0;
+      color: #666;
+    }
+
+    .adicional-precio {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #28a745;
+    }
+
+    .adicional-imagen {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      /* Asegura que la imagen cubra el espacio sin deformarse */
+      border-radius: 4px;
+      flex-shrink: 0;
+      /* Evita que la imagen se encoja */
+    }
+
+    #resumen-precios {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #fff;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+      padding: 15px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+    }
+
+    #total {
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+
+    #btn-continuar {
+      background-color: #007bff;
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #notification-banner {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translate(-50%, 150%);
+      padding: 12px 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      color: white;
+      font-size: 16px;
+      font-weight: 500;
+      z-index: 1000;
+      transition: transform 0.5s ease-in-out;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    #notification-banner.show {
+      transform: translate(-50%, 0);
+    }
+
+    #notification-banner.warning {
+      background-color: #ffc107;
+      color: #333;
+    }
+
+    #notification-banner.error {
+      background-color: #dc3545;
+    }
+
+    #notification-banner.success {
+      background-color: #28a745;
+    }
+
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      /* Espacio entre botones */
+    }
+
+    #btn-volver {
+      background-color: #6c757d;
+      /* Un color gris para indicar acción secundaria */
+    }
+
+    #btn-volver:hover {
+      background-color: #5a6268;
     }
   </style>
 </head>
+
 <body>
-  <div class="container" id="adicionalesContainerMain">
-    <h2>Adicionales para tu Evento</h2>
-    <h3 class="subtitle">Selecciona los servicios extra que necesites</h3>
-    <div class="adicionales-container-grid">
-      <div id="adicionalesContainer" class="columna-adicionales"></div>
-      <div id="detalleAdicionalContainer" class="columna-detalle">
-        <div id="detalleAdicionalImagen"></div>
-        <div id="detalleAdicionalNombre">Pase el cursor sobre un adicional</div>
-        <div id="detalleAdicionalDescripcion">para ver su detalle.</div>
-      </div>
+  <div id="notification-banner"></div>
+  <div class="container" style="padding-bottom: 100px;">
+    <h2>Selecciona los Adicionales que Desees</h2>
+    <div id="adicionales-container">
+      <p>Cargando adicionales...</p>
     </div>
-    <hr>
-    <h3>Resumen de tu Presupuesto Final</h3>
-    <div id="presupuestoDetalle">
-      <p>Selecciona los adicionales para ver el presupuesto final.</p>
-    </div>
-    <div id="presupuestoTotal"><span>Total Final: </span> $0</div>
+  </div>
+
+  <div id="resumen-precios">
+    <div id="total">Total: <span>$0</span></div>
     <div class="button-group">
-      <button onclick="volver()" class="volver-btn">Volver</button>
-      <button onclick="guardarYContinuar()">Continuar</button>
+      <button id="btn-volver">Volver</button>
+      <button id="btn-continuar">Continuar</button>
     </div>
-    <div class="loading-overlay" id="loadingOverlay"><p>Cargando...</p><div class="spinner"></div></div>
-    <form id="navigationForm" style="display:none;"></form>
   </div>
 
   <script>
-    // --- CORRECCIÓN: Recibimos el solicitudId directamente desde la plantilla renderizada por el servidor ---
-    const solicitudId = <?= solicitudId ?>;
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const solicitudId = params.get('solicitudId');
 
-    const adicionalesContainer = document.getElementById('adicionalesContainer');
-    const detalleAdicionalImagen = document.getElementById('detalleAdicionalImagen');
-    const detalleAdicionalNombre = document.getElementById('detalleAdicionalNombre');
-    const detalleAdicionalDescripcion = document.getElementById('detalleAdicionalDescripcion');
-    const presupuestoDetalleDiv = document.getElementById('presupuestoDetalle');
-    const presupuestoTotalDiv = document.getElementById('presupuestoTotal');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const adicionalesContainerMain = document.getElementById('adicionalesContainerMain');
-    const navigationForm = document.getElementById('navigationForm');
-    let adicionales = [];
-    let presupuestoBase = {};
+      const adicionalesContainer = document.getElementById('adicionales-container');
+      const totalSpan = document.querySelector('#total span');
+      const btnContinuar = document.getElementById('btn-continuar');
+      const btnVolver = document.getElementById('btn-volver'); // <-- Enlazar nuevo botón
+      const notificationBanner = document.getElementById('notification-banner'); // <-- Enlazar banner
+      let notificationTimer = null; // <-- Añadir variable para el timer
 
-    document.addEventListener('DOMContentLoaded', function() { cargarAdicionales(); });
-    function toggleLoadingOverlay(show, message = 'Cargando...') { const p = loadingOverlay.querySelector('p'); if (p) p.textContent = message; loadingOverlay.style.display = show ? 'flex' : 'none'; }
-    
-    function cargarAdicionales() {
-      toggleLoadingOverlay(true, 'Cargando adicionales...');
-      google.script.run
-        .withSuccessHandler(function (response) {
-          // --- CORRECCIÓN: La comprobación de sesión ahora es más robusta ---
-          if (!response || response.error === 'NO_SESSION' || !response.presupuestoBase) {
-            adicionalesContainerMain.innerHTML = '<h2>Error de Sesión</h2><p>Tu sesión ha expirado o no se encontró la solicitud. Por favor, vuelve al inicio.</p><button onclick="window.top.location.href=\'<?= urlDeLaApp ?>\'">Volver al Inicio</button>';
-            toggleLoadingOverlay(false);
-            return;
-          }
-          adicionales = response.adicionales;
-          presupuestoBase = response.presupuestoBase;
-          llenarCheckboxes(adicionalesContainer, adicionales);
-          actualizarResumen();
-          toggleLoadingOverlay(false);
+
+      let precioBase = 0;
+      let todosLosAdicionales = [];
+
+      if (!solicitudId) {
+        adicionalesContainer.innerHTML = '<p style="color: red;">Error: No se encontró un ID de solicitud.</p>';
+        return;
+      }
+
+      // 1. Hacemos dos llamadas en paralelo: una para obtener los adicionales, otra para el precio base de la solicitud.
+      Promise.all([
+        fetch('/api/opciones/adicionales').then(res => res.json()),
+        fetch(`/api/solicitudes/${solicitudId}`).then(res => res.json())
+      ])
+        .then(([adicionales, solicitud]) => {
+          todosLosAdicionales = adicionales;
+          precioBase = parseFloat(solicitud.precio_basico) || 0;
+
+          // Limpiamos el contenedor y renderizamos los checkboxes
+          adicionalesContainer.innerHTML = '';
+          adicionales.forEach(ad => {
+            // Solo mostramos la imagen si la URL existe
+            const imagenHtml = ad.imageUrl ? `<img src="${ad.imageUrl}" alt="${ad.nombre}" class="adicional-imagen">` : '';
+            console.log("imagen cargada:", imagenHtml);
+            // --- PLANTILLA HTML ACTUALIZADA ---
+            adicionalesContainer.innerHTML += `
+                  <div class="adicional-item">
+                      <input type="checkbox" id="ad_${ad.nombre}" name="adicional" value="${ad.precio}" data-nombre="${ad.nombre}">
+                      ${imagenHtml} 
+                      <div class="adicional-info">
+                          <label for="ad_${ad.nombre}">${ad.nombre}</label>
+                          <p>${ad.descripcion || ''}</p>
+                      </div>
+                      <div class="adicional-precio">$${parseFloat(ad.precio).toLocaleString('es-AR')}</div>
+                  </div>
+              `;
+          });
+
+
+          // Actualizamos el total inicial
+          actualizarTotal();
+
+          // Añadimos el evento 'change' a todos los nuevos checkboxes
+          document.querySelectorAll('input[name="adicional"]').forEach(checkbox => {
+            checkbox.addEventListener('change', actualizarTotal);
+          });
         })
-        .withFailureHandler(function (error) { /* ... sin cambios ... */ })
-        // --- CORRECCIÓN: Pasamos el solicitudId a la función del servidor ---
-        .getAdicionalesWithOptionsAndBase(solicitudId);
-    }
+        .catch(error => {
+          console.error('Error al cargar datos:', error);
+          adicionalesContainer.innerHTML = `<p style="color: red;">Error al cargar los adicionales.</p>`;
+        });
 
-
-    function llenarCheckboxes(container, options) {
-      container.innerHTML = '';
-      if (!options || options.length === 0) { container.textContent = 'No hay adicionales disponibles.'; return; }
-      options.forEach(option => {
-        const optionDiv = document.createElement('div');
-        optionDiv.className = 'checkbox-option';
-        optionDiv.innerHTML = `<input type="checkbox" id="check_${option.id}" value="${option.nombre}"><label for="check_${option.id}">${option.nombre}</label><span class="precio">($${option.precio.toLocaleString('es-AR')})</span>`;
-        optionDiv.dataset.nombre = option.nombre;
-        optionDiv.dataset.descripcion = option.descripcion;
-        optionDiv.dataset.imageUrl = option.imageUrl;
-        container.appendChild(optionDiv);
-      });
-      adicionalesContainer.addEventListener('change', (event) => { if (event.target.type === 'checkbox') actualizarResumen(); });
-      adicionalesContainer.addEventListener('mouseover', (event) => {
-        const checkboxOption = event.target.closest('.checkbox-option');
-        if (checkboxOption) {
-            const imageUrl = checkboxOption.dataset.imageUrl;
-            if (imageUrl && imageUrl.trim() !== '') {
-                detalleAdicionalImagen.innerHTML = `<img src="${imageUrl}" alt="${checkboxOption.dataset.nombre}">`;
-            } else {
-                detalleAdicionalImagen.innerHTML = `<p style="color:#888; padding: 10px;">No hay imagen disponible</p>`;
-            }
-            detalleAdicionalNombre.textContent = checkboxOption.dataset.nombre;
-            detalleAdicionalDescripcion.textContent = checkboxOption.dataset.descripcion;
-        }
-      });
-      adicionalesContainer.addEventListener('mouseout', () => {
-          detalleAdicionalImagen.innerHTML = '';
-          detalleAdicionalNombre.textContent = 'Pase el cursor sobre un adicional';
-          detalleAdicionalDescripcion.textContent = 'para ver su detalle.';
-      });
-    }
-
-    // --- FUNCIÓN 'actualizarResumen' CORREGIDA Y REESTRUCTURADA ---
-    function actualizarResumen() {
-        const checkboxes = adicionalesContainer.querySelectorAll('input[type="checkbox"]:checked');
+      // Función para calcular y mostrar el total
+      function actualizarTotal() {
         let totalAdicionales = 0;
-        let detalleHtml = '<ul>';
+        document.querySelectorAll('input[name="adicional"]:checked').forEach(checkbox => {
+          totalAdicionales += parseFloat(checkbox.value);
+        });
+        const totalFinal = precioBase + totalAdicionales;
+        totalSpan.textContent = `$${totalFinal.toLocaleString('es-AR')}`;
+      }
 
-        if (presupuestoBase && presupuestoBase.tipoEvento) {
-            // Lógica para calcular la hora de finalización
-            let horaFinStr = '';
-            const duracion = presupuestoBase.duracionEvento;
-            const hora = presupuestoBase.horaInicio;
-            const duracionMatch = duracion ? duracion.match(/\d+/) : null;
-            const duracionNum = duracionMatch ? parseInt(duracionMatch[0]) : 0;
-            if (hora && duracionNum > 0) {
-                const horaParts = hora.split(':');
-                const startHour = parseInt(horaParts[0]);
-                const startMinute = parseInt(horaParts[1] || '0');
-                if (!isNaN(startHour) && !isNaN(startMinute)) {
-                    const fechaCalculo = new Date();
-                    fechaCalculo.setHours(startHour, startMinute, 0, 0);
-                    fechaCalculo.setHours(fechaCalculo.getHours() + duracionNum);
-                    const endHour = fechaCalculo.getHours();
-                    const endMinute = String(fechaCalculo.getMinutes()).padStart(2, '0');
-                    horaFinStr = `${endHour}:${endMinute}`;
-                }
-            }
+      // Evento para el botón de continuar
+      btnContinuar.onclick = () => {
+        btnContinuar.disabled = true;
+        btnContinuar.textContent = 'Guardando...';
 
-            // Construir el resumen del presupuesto base
-            detalleHtml += `<li><strong>Tipo de Evento:</strong> ${presupuestoBase.tipoEvento}</li>`;
-            if (presupuestoBase.fechaEvento) detalleHtml += `<li><strong>Fecha:</strong> ${presupuestoBase.fechaEvento}</li>`;
-            if (presupuestoBase.horaInicio) detalleHtml += `<li><strong>Hora de Inicio:</strong> ${presupuestoBase.horaInicio} hs.</li>`;
-            if (presupuestoBase.duracionEvento) detalleHtml += `<li><strong>Duración:</strong> ${presupuestoBase.duracionEvento}</li>`;
-            if (horaFinStr) detalleHtml += `<li><strong>Hora de Finalización:</strong> ${horaFinStr} hs.</li>`;
-            detalleHtml += `<li><strong>Cantidad de Personas:</strong> ${presupuestoBase.cantidadPersonas}</li>`;
-            detalleHtml += `<li>---</li><li><strong>Precio Básico:</strong> $${presupuestoBase.precioBase.toLocaleString('es-AR')}</li>`;
-        } else {
-            detalleHtml += `<li>No se pudo cargar el presupuesto básico.</li>`;
-        }
-        
-        // Calcular y mostrar adicionales
-        if (checkboxes.length > 0) {
-            detalleHtml += `<li>---</li><li><strong>Adicionales Seleccionados:</strong></li>`;
-            checkboxes.forEach(checkbox => {
-                const adicional = adicionales.find(a => a.nombre === checkbox.value);
-                if (adicional) {
-                    totalAdicionales += adicional.precio;
-                    detalleHtml += `<li>- ${adicional.nombre}: $${adicional.precio.toLocaleString('es-AR')}</li>`;
-                }
-            });
-        }
-        
-        // --- LÓGICA CORREGIDA PARA SENA Y DEPÓSITO ---
-        // Se añade después de los adicionales y ANTES del total final.
-        if (presupuestoBase.montoSena > 0 || presupuestoBase.depositoGarantia > 0) {
-            detalleHtml += `<li>---</li>`;
-            if (presupuestoBase.montoSena > 0) {
-                detalleHtml += `<li style="color: #0056b3;"><strong>Seña para reservar:</strong> $${presupuestoBase.montoSena.toLocaleString('es-AR')}</li>`;
-            }
-            if (presupuestoBase.depositoGarantia > 0) {
-                detalleHtml += `<li style="color: #555;"><strong>Depósito de garantía:</strong> $${presupuestoBase.depositoGarantia.toLocaleString('es-AR')} (reintegrable)</li>`;
-            }
-        }
-        // ---------------------------------------------
-        
-        const totalFinal = (presupuestoBase && presupuestoBase.precioBase ? presupuestoBase.precioBase : 0) + totalAdicionales;
-        
-        detalleHtml += '</ul>';
-        presupuestoDetalleDiv.innerHTML = detalleHtml;
-        presupuestoTotalDiv.innerHTML = `<span>Total Final: </span> $${totalFinal.toLocaleString('es-AR')}`;
-    }
-    
-    function volver() { window.history.back(); }
-    
-    function guardarYContinuar() {
-      toggleLoadingOverlay(true, 'Guardando y continuando...');
-      const checkboxes = adicionalesContainer.querySelectorAll('input[type="checkbox"]:checked');
-      const adicionalesSeleccionados = Array.from(checkboxes).map(cb => adicionales.find(a => a.nombre === cb.value)).filter(Boolean);
-      
-      navigationForm.innerHTML = '';
-      navigationForm.action = '<?= urlDeLaApp ?>';
-      navigationForm.method = 'get';
-      navigationForm.target = '_top';
-      
-      const pageInput = document.createElement('input');
-      pageInput.type = 'hidden'; pageInput.name = 'page'; pageInput.value = 'contacto';
-      navigationForm.appendChild(pageInput);
-      
-      // --- CORRECCIÓN: Añadimos el solicitudId al formulario para que la siguiente página lo reciba ---
-      const idInput = document.createElement('input');
-      idInput.type = 'hidden'; idInput.name = 'solicitudId'; idInput.value = solicitudId;
-      navigationForm.appendChild(idInput);
-    
-      adicionalesSeleccionados.forEach((adicional, index) => { const nameInput = document.createElement('input'); nameInput.type = 'hidden'; nameInput.name = `adicional_${index}_nombre`; nameInput.value = adicional.nombre; navigationForm.appendChild(nameInput); const priceInput = document.createElement('input'); priceInput.type = 'hidden'; priceInput.name = `adicional_${index}_precio`; priceInput.value = adicional.precio; navigationForm.appendChild(priceInput); }); 
+        const seleccionados = [];
+        document.querySelectorAll('input[name="adicional"]:checked').forEach(checkbox => {
+          seleccionados.push({
+            nombre: checkbox.dataset.nombre,
+            precio: parseFloat(checkbox.value)
+          });
+        });
 
-      navigationForm.submit(); 
-    }
+        fetch(`/api/solicitudes/${solicitudId}/adicionales`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(seleccionados)
+        })
+          .then(response => {
+            if (!response.ok) throw new Error('Error al guardar los adicionales.');
+            return response.json();
+          })
+          .then(data => {
+            console.log(data.message);
+            // Redirigimos a la página de contacto, manteniendo el ID
+            window.location.href = `/Contacto.html?solicitudId=${solicitudId}`;
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            showNotification('Hubo un error al guardar. Por favor, intente de nuevo.');
+            btnContinuar.disabled = false;
+            btnContinuar.textContent = 'Continuar';
+          });
+      };
+
+      function showNotification(message, type = 'error', duration = 4000) {
+        clearTimeout(notificationTimer);
+        notificationBanner.textContent = message;
+        notificationBanner.className = 'show ' + type;
+        notificationTimer = setTimeout(() => { notificationBanner.className = ''; }, duration);
+      }
+
+      btnVolver.onclick = () => {
+        // Simplemente retrocede en el historial del navegador a Page.html
+        window.history.back();
+      };
+
+    });
   </script>
 </body>
+
 </html>
