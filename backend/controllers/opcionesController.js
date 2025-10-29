@@ -131,6 +131,8 @@ const getFechasOcupadas = async (req, res) => {
 // ... (al final del archivo, antes de module.exports)
 const getSesionExistente = async (req, res) => {
     const { fingerprintId } = req.query;
+    console.log(`-> Buscando sesión para Fingerprint ID: ${fingerprintId}`);
+
     if (!fingerprintId) {
         return res.status(400).json({ error: 'fingerprintId es requerido' });
     }
@@ -138,19 +140,38 @@ const getSesionExistente = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        // Busca una solicitud reciente (últimas 24h) y no completada
-        const rows = await conn.query(
-            "SELECT `id_solicitud` as solicitudId, `tipo_de_evento` as tipoEvento, `cantidad_de_personas` as cantidadPersonas, `duracion` as duracionEvento, DATE_FORMAT(`fecha_fvento`, '%Y-%m-%d') as fechaEvento, `hora_evento` as horaInicio FROM `solicitudes` WHERE `fingerprintid` = ? AND `estado` = 'solicitado' AND `fecha_hora` > (NOW() - INTERVAL 24 HOUR) ORDER BY `fecha_hora` DESC LIMIT 1;",
-            [fingerprintId]
-        );
+        
+        // --- ¡CONSULTA SQL CORREGIDA! ---
+        // Usamos los nombres de columna snake_case y los alias correctos que el frontend espera.
+        const sql = `
+            SELECT 
+                id_solicitud as solicitudId, 
+                tipo_de_evento as tipoEvento, 
+                cantidad_de_personas as cantidadPersonas, 
+                duracion as duracionEvento, 
+                DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fechaEvento, 
+                hora_evento as horaInicio 
+            FROM solicitudes 
+            WHERE fingerprintid = ? 
+              AND estado = 'Solicitado' 
+              AND fecha_hora > (NOW() - INTERVAL 24 HOUR) 
+            ORDER BY fecha_hora DESC 
+            LIMIT 1;
+        `;
 
-        if (rows.length > 0) {
-            res.status(200).json(rows[0]);
+        const [sesion] = await conn.query(sql, [fingerprintId]);
+
+        if (sesion) {
+            console.log(`Sesión encontrada:`, sesion);
+            res.status(200).json(sesion);
         } else {
-            res.status(200).json(null); // Devuelve null si no se encuentra, igual que el original
+            console.log("No se encontró ninguna sesión reciente.");
+            // Es importante devolver null para que el frontend sepa que no hay nada que rellenar.
+            res.status(200).json(null); 
         }
     } catch (err) {
-        res.status(500).json({ error: 'Error interno del servidor' });
+        console.error("Error al buscar sesión existente:", err);
+        res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
         if (conn) conn.release();
     }

@@ -110,6 +110,22 @@
       padding: 40px;
       font-size: 1.2em;
     }
+
+    .button-link {
+      display: inline-block;
+      background-color: #007bff;
+      color: white;
+      padding: 12px 25px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1.1em;
+      transition: background-color 0.2s;
+    }
+    
+    .button-link:hover {
+      background-color: #0056b3;
+    }
   </style>
 </head>
 
@@ -155,6 +171,11 @@
         </div>
         <div id="total-final">Total Estimado: <span id="precio_final"></span></div>
       </div>
+
+      <div class="section" style="text-align: center; margin-top: 40px;">
+        <a href="/" class="button-link">Realizar una Nueva Consulta</a>
+      </div>
+
     </div>
 
     <div id="loading">

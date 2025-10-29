@@ -379,6 +379,7 @@
     <script>
         const App = {
             visitorId: null,
+            solicitudId: null,
             tarifas: [], tiposDeEvento: [], opcionesCantidades: {}, opcionesDuraciones: {},
             opcionesHoras: {}, descripcionesTipos: {}, calendario: null, feriadosGlobal: [],
             notificationTimer: null,
@@ -568,20 +569,23 @@
                 }
             },
 
-            buscarSesionExistente: function () {
-                console.log("Buscando sesión existente en el nuevo backend...");
+            buscarSesionExistente: function() {
+                console.log(`[FE] Buscando sesión con Fingerprint: ${this.visitorId}`);
                 fetch(`/api/opciones/sesion?fingerprintId=${this.visitorId}`)
                     .then(res => res.json())
                     .then(sessionData => {
                         if (sessionData && sessionData.solicitudId) {
-                            console.log("Sesión encontrada:", sessionData);
+                            console.log("[FE] Sesión encontrada. Datos recibidos:", sessionData);
+                            this.solicitudId = sessionData.solicitudId;
+                            console.log(`[FE] this.solicitudId guardado como: ${this.solicitudId}`);
                             this.populateForm(sessionData);
                             this.showNotification("Se cargaron los datos de tu sesión anterior.", "success", 6000);
                         } else {
-                            console.log("No se encontraron sesiones existentes.");
+                            console.log("[FE] No se encontraron sesiones existentes.");
+                            this.solicitudId = null; // Aseguramos que esté nulo
                         }
                     })
-                    .catch(err => console.error("Error al buscar sesión:", err));
+                    .catch(err => console.error("[FE] Error al buscar sesión:", err));
             },
 
 
@@ -619,6 +623,7 @@
                 if (!this.elements.fechaEventoInput.value) { if (this.calendario && this.calendario.altInput) { this.calendario.altInput.classList.add('campo-invalido'); } hayErrores = true; }
                 if (hayErrores) { this.showNotification('Por favor, completa todos los campos obligatorios.', 'warning'); return; }
 
+                console.log(`[FE] validando y enviando. ID de solicitud actual: ${this.solicitudId}`);
                 this.toggleLoadingOverlay(true, 'Guardando solicitud...');
 
                 // 1. Preparamos el cuerpo (body) de la petición.
@@ -632,32 +637,58 @@
                     fingerprintId: this.visitorId
                 };
 
-                // 2. Realizamos la llamada a la API con fetch.
-                fetch('/api/solicitudes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(bodyData)
-                })
+
+                // --- LÓGICA INTELIGENTE: CREAR O ACTUALIZAR ---
+                let fetchPromise;
+                if (this.solicitudId) {
+                    // Si ya tenemos un ID de sesión, ACTUALIZAMOS (PUT)
+                    console.log(`[FE] DECISIÓN: Actualizar (PUT) solicitud existente ID: ${this.solicitudId}`);
+                    fetchPromise = fetch(`/api/solicitudes/${this.solicitudId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bodyData)
+                    });
+                } else {
+                    // Si no hay ID de sesión, CREAMOS una nueva (POST)
+                    console.log("[FE] DECISIÓN: Crear (POST) nueva solicitud.");
+                    fetchPromise = fetch('/api/solicitudes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bodyData)
+                    });
+                }
+
+                // El resto de la lógica es la misma para ambos casos
+                fetchPromise
                     .then(response => {
                         if (!response.ok) {
-                            return response.json().then(err => { throw new Error(err.error || 'Error del servidor desconocido') });
+                            console.error("[FE] La respuesta de la API no fue OK.", response);
+                            return response.json().then(err => { throw new Error(err.error || 'Error del servidor') });
                         }
+                        console.log("[FE] Respuesta de la API recibida. Procesando JSON...");
                         return response.json();
                     })
                     .then(data => {
-                        const newId = data.solicitudId;
-                        console.log(`Solicitud guardada con éxito. Nuevo ID: ${newId}`);
+                        console.log("[FE] JSON de la API procesado. Datos recibidos:", data);
+                        const id = data.solicitudId;
+                        
+                        if (!id) {
+                            console.error("¡ERROR CRÍTICO! La respuesta de la API no contiene 'solicitudId'. Respuesta:", data);
+                            throw new Error("Respuesta inválida del servidor.");
+                        }
 
+                        this.solicitudId = id; 
+                        console.log(`[FE] ID de solicitud procesado: ${id}. Redirigiendo...`);
+                        
                         const nextPage = (destino === 'adicionales') ? 'Adicionales.html' : 'Contacto.html';
-                        window.location.href = `${nextPage}?solicitudId=${newId}`;
+                        window.location.href = `${nextPage}?solicitudId=${id}`;
                     })
                     .catch(error => {
-                        console.error('Error al guardar la solicitud:', error);
+                        console.error('[FE] Error en la cadena de fetch de validarYEnviar:', error);
                         this.showNotification(`Error: ${error.message}`, 'error');
                         this.toggleLoadingOverlay(false);
                     });
+
             },
 
             inicializarCalendario: function (fechasOcupadas, feriados) {

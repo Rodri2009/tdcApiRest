@@ -10,8 +10,8 @@ services:
       - ../frontend:/usr/share/nginx/html
     depends_on:
       - backend
-    networks:
-      - tdc_network
+    #networks:
+    #  - tdc_network
 
   backend:
     build:
@@ -22,15 +22,15 @@ services:
       mariadb:
         condition: service_healthy # Espera hasta que el healthcheck de mariadb pase
     environment:
-      DB_HOST: mariadb
-      DB_USER: rodrigo
-      DB_PASSWORD: desa8102test
-      DB_NAME: tdc_db
-      PORT: 3000
+      PORT: ${PORT}
+      DB_HOST: ${DB_HOST}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
     ports:
       - "3000:3000"
-    networks:
-      - tdc_network
+    #networks:
+    #  - tdc_network
     volumes:
       # ¡ESTA ES LA RUTA CORREGIDA Y ROBUSTA!
       # La ruta es relativa al archivo docker-compose.yml.
@@ -45,13 +45,20 @@ services:
       - '--max_allowed_packet=64M'
     healthcheck:
       # El 'test' ahora usa las variables del archivo .env
-      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "${MARIADB_USER}", "-p${MARIADB_PASSWORD}" ]
+      #test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "${MARIADB_USER}", "-p${MARIADB_PASSWORD}" ]
+      #test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MARIADB_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MARIADB_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 10 # Aumentamos los reintentos
     ports:
       - "3306:3306"
-    # El 'environment' también se lee del .env
+   # La sección 'environment' es crucial aquí. El healthcheck leerá estas variables.
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
     volumes:
       - mariadb_data:/var/lib/mysql
       # Usamos rutas relativas explícitas desde la raíz del proyecto
@@ -62,9 +69,9 @@ services:
       - ../database/seeds:/var/lib/mysql-files
 
 # Definición de redes
-networks:
-  tdc_network:
-    driver: bridge
+#networks:
+#  tdc_network:
+#    driver: bridge
 
 # Definición de volúmenes persistentes
 volumes:

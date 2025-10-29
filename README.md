@@ -31,9 +31,9 @@ copiar el archivo datos_sensibles_backup.sql a la carpeta data_migration/
 
 
 ### 3. Levantar los Contenedores
-Este comando hará todo: construirá las imágenes, creará los contenedores, y la primera vez que se ejecute, inicializará la base de datos con las tablas y los datos semilla.
+El script comprobará automáticamente tu archivo .env y luego ejecutará docker-compose up con los parámetros correctos: construirá las imágenes, creará los contenedores, y la primera vez que se ejecute, inicializará la base de datos con las tablas y los datos semilla.
 ```bash
-docker-compose -f docker/docker-compose.yml up --build -d
+./up.sh
 ```
     Docker ve que no hay un volumen de base de datos (mariadb_data).
     Crea un contenedor de MariaDB desde cero.

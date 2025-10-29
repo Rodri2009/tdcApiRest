@@ -1,7 +1,7 @@
 // backend/routes/solicitudRoutes.js
 const express = require('express');
 const router = express.Router();
-const { crearSolicitud, getSolicitudPorId, finalizarSolicitud, guardarAdicionales } = require('../controllers/solicitudController');
+const { crearSolicitud, getSolicitudPorId, finalizarSolicitud, guardarAdicionales, actualizarSolicitud } = require('../controllers/solicitudController');
 
 // Mapea la petición POST a la raíz ('/') de este router a la función crearSolicitud.
 
@@ -16,5 +16,7 @@ router.put('/:id', finalizarSolicitud);
 
 // POST /api/solicitudes/:id/adicionales  <-- AÑADE ESTA LÍNEA
 router.post('/:id/adicionales', guardarAdicionales);
+
+router.put('/:id', actualizarSolicitud); // <-- AÑADE ESTA RUTA (PUEDE SER LA MISMA QUE finalizarSolicitud, pero la separamos por claridad)
 
 module.exports = router;

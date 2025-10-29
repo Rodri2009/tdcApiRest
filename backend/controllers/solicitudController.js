@@ -2,7 +2,7 @@
 const pool = require('../db');
 
 const crearSolicitud = async (req, res) => {
-    console.log("-> Ejecutando controlador crearSolicitud...");
+    console.log("-> Controlador crearSolicitud. Body recibido:", req.body);
 
     const {
         tipoEvento,
@@ -45,8 +45,9 @@ const crearSolicitud = async (req, res) => {
 
         if (result.affectedRows > 0) {
             const newId = Number(result.insertId);
-            console.log(`Nueva solicitud creada con ID: ${newId}`);
-            res.status(201).json({ solicitudId: newId });
+            const respuesta = { solicitudId: newId };
+            console.log(`Nueva solicitud creada con ID: ${newId}. Enviando respuesta:`, respuesta);
+            res.status(201).json(respuesta);
         } else {
             throw new Error('La inserción en la base de datos no afectó ninguna fila.');
         }
@@ -64,9 +65,8 @@ const crearSolicitud = async (req, res) => {
  * Obtiene los detalles de una única solicitud por su ID.
  */
 const getSolicitudPorId = async (req, res) => {
-    // Obtenemos el ID de los parámetros de la URL (ej. /api/solicitudes/13)
     const { id } = req.params;
-    console.log(`-> Petición para obtener solicitud con ID: ${id}`);
+    console.log(`-> Controlador getSolicitudPorId. Petición para ID: ${id}`);
 
     let conn;
     try {
@@ -85,20 +85,22 @@ const getSolicitudPorId = async (req, res) => {
         // Consulta para obtener los detalles básicos de la solicitud
         const [solicitud] = await conn.query(sql, [id]);
 
-        if (!solicitud) {
-            return res.status(404).json({ error: 'Solicitud no encontrada.' });
-        }
+    if (!solicitud) {
+        console.warn(`ADVERTENCIA: No se encontró solicitud con ID: ${id}`);
+        return res.status(404).json({ error: 'Solicitud no encontrada.' });
+    }
 
-        // Consulta para obtener los adicionales asociados a esa solicitud
-        const adicionales = await conn.query("SELECT * FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
+    // Consulta para obtener los adicionales asociados a esa solicitud
+    const adicionales = await conn.query("SELECT * FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
 
-        // Combinamos todo en un solo objeto de respuesta
-        const respuesta = {
-            ...solicitud,
-            adicionales: adicionales || []
-        };
+    // Combinamos todo en un solo objeto de respuesta
+    const respuesta = {
+        ...solicitud,
+        adicionales: adicionales || []
+    };
 
-        res.status(200).json(respuesta);
+    console.log(`Enviando detalles completos para la solicitud ID: ${id}`);
+    res.status(200).json(respuesta);
 
     } catch (err) {
         console.error(`Error al obtener la solicitud ${id}:`, err);
@@ -114,6 +116,7 @@ const getSolicitudPorId = async (req, res) => {
  */
 const finalizarSolicitud = async (req, res) => {
     const { id } = req.params;
+    console.log(`-> Controlador finalizarSolicitud para ID: ${id}. Body recibido:`, req.body);
     const { nombreCompleto, celular, email, detallesAdicionales } = req.body;
 
     console.log(`-> Finalizando solicitud con ID: ${id}`);
@@ -147,10 +150,10 @@ const finalizarSolicitud = async (req, res) => {
             return res.status(404).json({ error: 'La solicitud a actualizar no fue encontrada.' });
         }
 
-        // Aquí iría la lógica para enviar los emails.
-        // Por ahora, solo devolvemos un mensaje de éxito.
-        console.log(`Solicitud ${id} actualizada y confirmada.`);
-        res.status(200).json({ message: 'Solicitud confirmada exitosamente.' });
+        const respuesta = { message: 'Solicitud confirmada exitosamente.', solicitudId: parseInt(id) };
+        console.log(`Solicitud ${id} finalizada. Enviando respuesta:`, respuesta);
+        res.status(200).json(respuesta);
+
 
     } catch (err) {
         console.error(`Error al finalizar la solicitud ${id}:`, err);
@@ -209,9 +212,56 @@ const guardarAdicionales = async (req, res) => {
 };
 
 
+/**
+ * Actualiza los datos básicos de una solicitud existente.
+ */
+const actualizarSolicitud = async (req, res) => {
+    const { id } = req.params;
+    console.log(`-> Controlador actualizarSolicitud para ID: ${id}. Body recibido:`, req.body);
+    const {
+        tipoEvento,
+        cantidadPersonas,
+        duracionEvento,
+        fechaEvento,
+        horaInicio,
+        precioBase
+    } = req.body;
+    
+    console.log(`-> Actualizando datos básicos de la solicitud ID: ${id}`);
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const sql = `
+            UPDATE solicitudes SET
+                tipo_de_evento = ?,
+                cantidad_de_personas = ?,
+                duracion = ?,
+                fecha_evento = ?,
+                hora_evento = ?,
+                precio_basico = ?
+            WHERE id_solicitud = ?;
+        `;
+        const params = [tipoEvento, cantidadPersonas, duracionEvento, fechaEvento, horaInicio, parseFloat(precioBase) || 0, id];
+        await conn.query(sql, params);
+        
+        const respuesta = { solicitudId: parseInt(id) };
+        console.log(`Solicitud ${id} actualizada. Enviando respuesta:`, respuesta);
+        res.status(200).json(respuesta);
+
+    } catch (err) {
+        console.error(`Error al actualizar la solicitud ${id}:`, err);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+// Y no olvides exportarla:
 module.exports = {
     crearSolicitud,
     getSolicitudPorId,
+    actualizarSolicitud, // <-- AÑADE ESTO
     finalizarSolicitud,
-    guardarAdicionales, // <-- Añade esto
+    guardarAdicionales
 };
