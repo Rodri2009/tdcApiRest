@@ -85,10 +85,10 @@
       }
     }
 
-    .button-group { 
-      display: flex; 
-      gap: 15px; 
-      margin-top: 20px; 
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
     }
 
     button {
@@ -114,8 +114,13 @@
       background-color: #5a6268;
     }
 
-    button.secondary { background-color: #6c757d; }
-    button.secondary:hover { background-color: #5a6268; }
+    button.secondary {
+      background-color: #6c757d;
+    }
+
+    button.secondary:hover {
+      background-color: #5a6268;
+    }
 
     .loading-overlay {
       position: absolute;
@@ -232,9 +237,9 @@
       <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
     </div>
     <div class="button-group">
-        <button id="btn-volver" class="secondary">Volver a Adicionales</button>
-        <button id="btn-confirmar">Confirmar y Enviar Solicitud</button>
-    </div>  
+      <button id="btn-volver" class="secondary">Volver</button>
+      <button id="btn-confirmar">Confirmar y Enviar Solicitud</button>
+    </div>
   </div>
 
   <script>
@@ -242,6 +247,7 @@
       // 1. Obtener el ID de la solicitud desde la URL
       const params = new URLSearchParams(window.location.search);
       const solicitudId = params.get('solicitudId');
+      const fromPage = params.get('from'); // <-- Leemos el nuevo parámetro
       const btnVolver = document.getElementById('btn-volver');
       const resumenDiv = document.getElementById('resumen-solicitud');
 
@@ -277,11 +283,14 @@
 
       // Lógica para el nuevo botón de volver
       btnVolver.onclick = () => {
-          // Simplemente retrocede en el historial del navegador.
-          // Si el usuario vino de Adicionales.html, volverá ahí.
-          // Si vino de Page.html, volverá ahí.
-          window.history.back();
+        if (fromPage === 'adicionales') {
+          window.location.href = `/Adicionales.html?solicitudId=${solicitudId}`;
+        } else {
+          // Si venimos de 'page' o de ningún lado, volvemos a Page.html
+          window.location.href = `/Page.html?solicitudId=${solicitudId}`;
+        }
       };
+
 
       document.getElementById('btn-confirmar').onclick = () => {
         const solicitudId = params.get('solicitudId');
@@ -295,7 +304,7 @@
         };
 
         // 2. Realizar la llamada a la API con el método PUT
-        fetch(`/api/solicitudes/${solicitudId}`, {
+        fetch(`/api/solicitudes/${solicitudId}/finalizar`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(bodyData)

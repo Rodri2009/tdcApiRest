@@ -389,8 +389,23 @@
                 console.log("App.init(): 1. Inicializando aplicación.");
                 this.bindElements();
                 this.bindEvents();
-                this.cargarOpcionesIniciales();
+
+                // --- ¡NUEVA LÓGICA DE ARRANQUE! ---
+                const params = new URLSearchParams(window.location.search);
+                const idFromUrl = params.get('solicitudId');
+
+                if (idFromUrl) {
+                    console.log(`ID de solicitud encontrado en la URL: ${idFromUrl}. Cargando datos...`);
+                    this.solicitudId = idFromUrl;
+                    // Si tenemos un ID, cargamos los datos iniciales Y LUEGO rellenamos el formulario.
+                    this.cargarOpcionesIniciales(true); // Pasamos 'true' para indicar que no busque sesión
+                } else {
+                    console.log("No hay ID de solicitud en la URL. Buscando sesión por Fingerprint...");
+                    // Si no hay ID, cargamos los datos y dejamos que la búsqueda de sesión se active después.
+                    this.cargarOpcionesIniciales(false);
+                }
             },
+
 
             bindElements: function () {
                 console.log("App.init(): 2. Enlazando elementos del DOM.");
@@ -425,7 +440,7 @@
 
             // REEMPLAZA LA FUNCIÓN ORIGINAL "cargarOpcionesIniciales" CON ESTA VERSIÓN MODERNA
 
-            cargarOpcionesIniciales: function () {
+            cargarOpcionesIniciales: function (skipSessionSearch = false) {
                 console.log("Paso 1: Llamando a la nueva API backend...");
                 this.toggleLoadingOverlay(true, 'Cargando opciones...');
 
@@ -509,9 +524,28 @@
                                     this.inicializarCalendario(this.fechasOcupadasSeguro, this.feriadosGlobal);
 
                                     this.manejarParametroURL();
+
                                     this.toggleLoadingOverlay(false);
+                                    this.habilitarBotones();
+
+                                    if (skipSessionSearch) {
+                                        // Si venimos con un ID de la URL, buscamos los datos de ESA solicitud
+                                        console.log(`Saltando búsqueda de sesión. Obteniendo datos para solicitud ID: ${this.solicitudId}`);
+                                        fetch(`/api/solicitudes/${this.solicitudId}`)
+                                            .then(res => res.json())
+                                            .then(solicitudData => {
+                                                if (solicitudData) this.populateForm(solicitudData);
+                                            });
+                                    } else {
+                                        // Si no, iniciamos la búsqueda por Fingerprint
+                                        this.initFingerprint();
+                                    }
+
+
+
+                                    //this.toggleLoadingOverlay(false);
                                     console.log("Paso 3: Formulario construido. Iniciando Fingerprint...");
-                                    this.initFingerprint();
+                                    //this.initFingerprint();
                                 });
 
                         } catch (e) {
@@ -552,9 +586,9 @@
                         console.error("Error al generar Fingerprint:", error);
                         this.visitorId = 'fingerprint_error';
                     })
-                    .finally(() => {
-                        this.habilitarBotones();
-                    });
+                /*.finally(() => {
+                    this.habilitarBotones();
+                });*/
             },
 
             habilitarBotones: function () {
@@ -569,9 +603,9 @@
                 }
             },
 
-            buscarSesionExistente: function() {
+            buscarSesionExistente: function () {
                 console.log(`[FE] Buscando sesión con Fingerprint: ${this.visitorId}`);
-                fetch(`/api/opciones/sesion?fingerprintId=${this.visitorId}`)
+                fetch(`/api/solicitudes/sesion?fingerprintId=${this.visitorId}`)
                     .then(res => res.json())
                     .then(sessionData => {
                         if (sessionData && sessionData.solicitudId) {
@@ -671,17 +705,17 @@
                     .then(data => {
                         console.log("[FE] JSON de la API procesado. Datos recibidos:", data);
                         const id = data.solicitudId;
-                        
+
                         if (!id) {
                             console.error("¡ERROR CRÍTICO! La respuesta de la API no contiene 'solicitudId'. Respuesta:", data);
                             throw new Error("Respuesta inválida del servidor.");
                         }
 
-                        this.solicitudId = id; 
+                        this.solicitudId = id;
                         console.log(`[FE] ID de solicitud procesado: ${id}. Redirigiendo...`);
-                        
                         const nextPage = (destino === 'adicionales') ? 'Adicionales.html' : 'Contacto.html';
-                        window.location.href = `${nextPage}?solicitudId=${id}`;
+                        const fromParam = (destino === 'contacto') ? '&from=page' : '';
+                        window.location.href = `${nextPage}?solicitudId=${id}${fromParam}`;
                     })
                     .catch(error => {
                         console.error('[FE] Error en la cadena de fetch de validarYEnviar:', error);
@@ -726,15 +760,7 @@
                     //console.log("Combinando 'disableFunction' y 'fechasOcupadas' en el array 'disable'...");
                     // Esta es la línea más sospechosa. La construimos de forma segura.
                     config.disable = [disableFunction, ...(fechasOcupadas || [])];
-
-                    //console.log("Creando la función 'onChange'...");
-
                     config.onChange = () => this.actualizarTodo()
-
-                    // Log 3: Justo antes de llamar a flatpickr
-                    //console.log("Configuración completa. Llamando a flatpickr...");
-                    //console.log("Elemento a usar:", this.elements.fechaEventoInput);
-                    //console.log("Configuración a pasar:", config);
 
                     // Llamada final
                     this.calendario = flatpickr(this.elements.fechaEventoInput, config);

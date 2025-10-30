@@ -1,15 +1,14 @@
 // backend/routes/opcionesRoutes.js
 const express = require('express');
 const router = express.Router();
-const { 
-    getTiposDeEvento, 
+const {
+    getTiposDeEvento,
     getAdicionales,
     getConfig,
     getTarifas,
     getOpcionesDuracion,
     getOpcionesHorarios,
-    getFechasOcupadas,
-    getSesionExistente
+    getFechasOcupadas
 } = require('../controllers/opcionesController');
 
 router.get('/tipos-evento', getTiposDeEvento);
@@ -19,7 +18,5 @@ router.get('/tarifas', getTarifas);
 router.get('/duraciones', getOpcionesDuracion);
 router.get('/horarios', getOpcionesHorarios);
 router.get('/fechas-ocupadas', getFechasOcupadas);
-router.get('/sesion', getSesionExistente);
-
 
 module.exports = router;

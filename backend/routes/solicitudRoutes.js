@@ -1,22 +1,33 @@
-// backend/routes/solicitudRoutes.js
 const express = require('express');
 const router = express.Router();
-const { crearSolicitud, getSolicitudPorId, finalizarSolicitud, guardarAdicionales, actualizarSolicitud } = require('../controllers/solicitudController');
+const {
+    crearSolicitud,
+    getSolicitudPorId,
+    actualizarSolicitud, // <-- La que usa Page.html
+    finalizarSolicitud,   // <-- La que usa Contacto.html
+    guardarAdicionales,
+    getSesionExistente
+} = require('../controllers/solicitudController');
 
-// Mapea la petición POST a la raíz ('/') de este router a la función crearSolicitud.
-
-// POST /api/solicitudes
+// POST /api/solicitudes -> Crear una nueva solicitud
 router.post('/', crearSolicitud);
 
-// GET /api/solicitudes/:id  <-- AÑADE ESTA LÍNEA
+// GET /api/solicitudes/sesion -> Buscar una sesión por fingerprint
+// La movimos aquí para que esté con el resto de las rutas de solicitudes
+router.get('/sesion', getSesionExistente);
+
+// --- RUTAS QUE ACTÚAN SOBRE UN ID ESPECÍFICO ---
+
+// GET /api/solicitudes/:id -> Obtener detalles de una solicitud
 router.get('/:id', getSolicitudPorId);
 
-// PUT /api/solicitudes/:id  <-- AÑADE ESTA LÍNEA
-router.put('/:id', finalizarSolicitud);
+// PUT /api/solicitudes/:id -> Actualizar los datos básicos del presupuesto
+router.put('/:id', actualizarSolicitud);
 
-// POST /api/solicitudes/:id/adicionales  <-- AÑADE ESTA LÍNEA
+// POST /api/solicitudes/:id/adicionales -> Guardar los adicionales
 router.post('/:id/adicionales', guardarAdicionales);
 
-router.put('/:id', actualizarSolicitud); // <-- AÑADE ESTA RUTA (PUEDE SER LA MISMA QUE finalizarSolicitud, pero la separamos por claridad)
+// PUT /api/solicitudes/:id/finalizar -> Confirmar y finalizar la solicitud
+router.put('/:id/finalizar', finalizarSolicitud);
 
 module.exports = router;

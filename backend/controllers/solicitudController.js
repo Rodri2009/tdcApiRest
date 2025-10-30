@@ -85,22 +85,22 @@ const getSolicitudPorId = async (req, res) => {
         // Consulta para obtener los detalles básicos de la solicitud
         const [solicitud] = await conn.query(sql, [id]);
 
-    if (!solicitud) {
-        console.warn(`ADVERTENCIA: No se encontró solicitud con ID: ${id}`);
-        return res.status(404).json({ error: 'Solicitud no encontrada.' });
-    }
+        if (!solicitud) {
+            console.warn(`ADVERTENCIA: No se encontró solicitud con ID: ${id}`);
+            return res.status(404).json({ error: 'Solicitud no encontrada.' });
+        }
 
-    // Consulta para obtener los adicionales asociados a esa solicitud
-    const adicionales = await conn.query("SELECT * FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
+        // Consulta para obtener los adicionales asociados a esa solicitud
+        const adicionales = await conn.query("SELECT * FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
 
-    // Combinamos todo en un solo objeto de respuesta
-    const respuesta = {
-        ...solicitud,
-        adicionales: adicionales || []
-    };
+        // Combinamos todo en un solo objeto de respuesta
+        const respuesta = {
+            ...solicitud,
+            adicionales: adicionales || []
+        };
 
-    console.log(`Enviando detalles completos para la solicitud ID: ${id}`);
-    res.status(200).json(respuesta);
+        console.log(`Enviando detalles completos para la solicitud ID: ${id}`);
+        res.status(200).json(respuesta);
 
     } catch (err) {
         console.error(`Error al obtener la solicitud ${id}:`, err);
@@ -226,7 +226,7 @@ const actualizarSolicitud = async (req, res) => {
         horaInicio,
         precioBase
     } = req.body;
-    
+
     console.log(`-> Actualizando datos básicos de la solicitud ID: ${id}`);
 
     let conn;
@@ -244,7 +244,7 @@ const actualizarSolicitud = async (req, res) => {
         `;
         const params = [tipoEvento, cantidadPersonas, duracionEvento, fechaEvento, horaInicio, parseFloat(precioBase) || 0, id];
         await conn.query(sql, params);
-        
+
         const respuesta = { solicitudId: parseInt(id) };
         console.log(`Solicitud ${id} actualizada. Enviando respuesta:`, respuesta);
         res.status(200).json(respuesta);
@@ -257,11 +257,61 @@ const actualizarSolicitud = async (req, res) => {
     }
 };
 
+// ... (al final del archivo, antes de module.exports)
+const getSesionExistente = async (req, res) => {
+    const { fingerprintId } = req.query;
+    console.log(`-> Buscando sesión para Fingerprint ID: ${fingerprintId}`);
+
+    if (!fingerprintId) {
+        return res.status(400).json({ error: 'fingerprintId es requerido' });
+    }
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // --- ¡CONSULTA SQL CORREGIDA! ---
+        // Usamos los nombres de columna snake_case y los alias correctos que el frontend espera.
+        const sql = `
+            SELECT 
+                id_solicitud as solicitudId, 
+                tipo_de_evento as tipoEvento, 
+                cantidad_de_personas as cantidadPersonas, 
+                duracion as duracionEvento, 
+                DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fechaEvento, 
+                hora_evento as horaInicio 
+            FROM solicitudes 
+            WHERE fingerprintid = ? 
+              AND estado = 'Solicitado' 
+              AND fecha_hora > (NOW() - INTERVAL 24 HOUR) 
+            ORDER BY fecha_hora DESC 
+            LIMIT 1;
+        `;
+
+        const [sesion] = await conn.query(sql, [fingerprintId]);
+
+        if (sesion) {
+            console.log(`Sesión encontrada:`, sesion);
+            res.status(200).json(sesion);
+        } else {
+            console.log("No se encontró ninguna sesión reciente.");
+            // Es importante devolver null para que el frontend sepa que no hay nada que rellenar.
+            res.status(200).json(null);
+        }
+    } catch (err) {
+        console.error("Error al buscar sesión existente:", err);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 // Y no olvides exportarla:
 module.exports = {
     crearSolicitud,
     getSolicitudPorId,
-    actualizarSolicitud, // <-- AÑADE ESTO
+    actualizarSolicitud,
     finalizarSolicitud,
-    guardarAdicionales
+    guardarAdicionales,
+    getSesionExistente
 };

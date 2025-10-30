@@ -128,56 +128,6 @@ const getFechasOcupadas = async (req, res) => {
     }
 };
 
-// ... (al final del archivo, antes de module.exports)
-const getSesionExistente = async (req, res) => {
-    const { fingerprintId } = req.query;
-    console.log(`-> Buscando sesión para Fingerprint ID: ${fingerprintId}`);
-
-    if (!fingerprintId) {
-        return res.status(400).json({ error: 'fingerprintId es requerido' });
-    }
-
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        
-        // --- ¡CONSULTA SQL CORREGIDA! ---
-        // Usamos los nombres de columna snake_case y los alias correctos que el frontend espera.
-        const sql = `
-            SELECT 
-                id_solicitud as solicitudId, 
-                tipo_de_evento as tipoEvento, 
-                cantidad_de_personas as cantidadPersonas, 
-                duracion as duracionEvento, 
-                DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fechaEvento, 
-                hora_evento as horaInicio 
-            FROM solicitudes 
-            WHERE fingerprintid = ? 
-              AND estado = 'Solicitado' 
-              AND fecha_hora > (NOW() - INTERVAL 24 HOUR) 
-            ORDER BY fecha_hora DESC 
-            LIMIT 1;
-        `;
-
-        const [sesion] = await conn.query(sql, [fingerprintId]);
-
-        if (sesion) {
-            console.log(`Sesión encontrada:`, sesion);
-            res.status(200).json(sesion);
-        } else {
-            console.log("No se encontró ninguna sesión reciente.");
-            // Es importante devolver null para que el frontend sepa que no hay nada que rellenar.
-            res.status(200).json(null); 
-        }
-    } catch (err) {
-        console.error("Error al buscar sesión existente:", err);
-        res.status(500).json({ error: 'Error interno del servidor.' });
-    } finally {
-        if (conn) conn.release();
-    }
-};
-
-
 module.exports = {
     getTiposDeEvento,
     getAdicionales,
@@ -185,6 +135,5 @@ module.exports = {
     getTarifas,
     getOpcionesDuracion,
     getOpcionesHorarios,
-    getFechasOcupadas,
-    getSesionExistente
+    getFechasOcupadas
 };
