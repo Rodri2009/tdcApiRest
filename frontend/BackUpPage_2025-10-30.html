@@ -5,7 +5,6 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de Presupuesto</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
@@ -317,12 +316,13 @@
     <div class="container" id="mainContainer">
         <h2>Generador de Presupuesto para Eventos</h2>
         <h3 class="subtitle">El Templo de Claypole</h3>
-
+        <form id="navigationForm" style="display:none;"></form>
         <input type="hidden" id="precioBase" name="precioBase">
         <div class="column-layout">
             <div class="form-group" id="tipoEventoGroup">
                 <div class="form-group-header">
                     <label>Tipo de Evento:</label>
+                    <!-- --- CAMBIO 1: Eliminamos el onclick del HTML --- -->
                     <button id="resetTipoEventoBtn">Cambiar tipo de evento</button>
                 </div>
                 <div id="tipoEventoContainer" class="radio-group"></div>
@@ -365,6 +365,7 @@
         </div>
         <div id="presupuestoTotal"><span>Total Básico: </span> $0</div>
         <div class="button-group">
+            <!-- --- CAMBIO 2: Eliminamos los onclick del HTML --- -->
             <button id="btn-adicionales" disabled>Inicializando...</button>
             <button id="btn-contacto" disabled>Inicializando...</button>
         </div>
@@ -379,26 +380,32 @@
         const App = {
             visitorId: null,
             solicitudId: null,
-            tarifas: [],
-            tiposDeEvento: [],
-            opcionesCantidades: {},
-            opcionesDuraciones: {},
-            opcionesHoras: {},
-            descripcionesTipos: {},
-            calendario: null,
-            feriadosGlobal: [],
+            tarifas: [], tiposDeEvento: [], opcionesCantidades: {}, opcionesDuraciones: {},
+            opcionesHoras: {}, descripcionesTipos: {}, calendario: null, feriadosGlobal: [],
             notificationTimer: null,
             elements: {},
 
-            // =================================================================
-            // 1. INICIALIZACIÓN
-            // =================================================================
             init: function () {
                 console.log("App.init(): 1. Inicializando aplicación.");
                 this.bindElements();
                 this.bindEvents();
-                this.cargarOpcionesIniciales(); // Único punto de entrada del flujo de carga
+
+                // --- ¡NUEVA LÓGICA DE ARRANQUE! ---
+                const params = new URLSearchParams(window.location.search);
+                const idFromUrl = params.get('solicitudId');
+
+                if (idFromUrl) {
+                    console.log(`ID de solicitud encontrado en la URL: ${idFromUrl}. Cargando datos...`);
+                    this.solicitudId = idFromUrl;
+                    // Si tenemos un ID, cargamos los datos iniciales Y LUEGO rellenamos el formulario.
+                    this.cargarOpcionesIniciales(true); // Pasamos 'true' para indicar que no busque sesión
+                } else {
+                    console.log("No hay ID de solicitud en la URL. Buscando sesión por Fingerprint...");
+                    // Si no hay ID, cargamos los datos y dejamos que la búsqueda de sesión se active después.
+                    this.cargarOpcionesIniciales(false);
+                }
             },
+
 
             bindElements: function () {
                 console.log("App.init(): 2. Enlazando elementos del DOM.");
@@ -414,6 +421,7 @@
                     presupuestoTotalDiv: document.getElementById('presupuestoTotal'),
                     loadingOverlay: document.getElementById('loadingOverlay'),
                     precioBaseInput: document.getElementById('precioBase'),
+                    navigationForm: document.getElementById('navigationForm'),
                     notificationBanner: document.getElementById('notification-banner'),
                     resetTipoEventoBtn: document.getElementById('resetTipoEventoBtn'),
                     tipoEventoDescripcionDiv: document.getElementById('tipoEventoDescripcion')
@@ -424,19 +432,19 @@
                 console.log("App.init(): 3. Asignando eventos.");
                 this.elements.btnAdicionales.onclick = () => this.validarYEnviar('adicionales');
                 this.elements.btnContacto.onclick = () => this.validarYEnviar('contacto');
-                this.elements.resetTipoEventoBtn.onclick = () => { window.location.href = '/'; };
+                this.elements.resetTipoEventoBtn.onclick = () => window.top.location.href = '<?= urlDeLaApp ?>';
                 [this.elements.cantidadPersonasSelect, this.elements.duracionEventoSelect, this.elements.horaInicioSelect].forEach(el => {
                     if (el) el.addEventListener('change', () => this.actualizarTodo());
                 });
             },
 
-            // =================================================================
-            // 2. LÓGICA DE CARGA DE DATOS
-            // =================================================================
-            cargarOpcionesIniciales: function () {
+            // REEMPLAZA LA FUNCIÓN ORIGINAL "cargarOpcionesIniciales" CON ESTA VERSIÓN MODERNA
+
+            cargarOpcionesIniciales: function (skipSessionSearch = false) {
                 console.log("Paso 1: Llamando a la nueva API backend...");
                 this.toggleLoadingOverlay(true, 'Cargando opciones...');
 
+                // Definimos todos los endpoints que necesitamos consultar
                 const endpoints = {
                     tipos: '/api/opciones/tipos-evento',
                     tarifas: '/api/opciones/tarifas',
@@ -444,347 +452,143 @@
                     horas: '/api/opciones/horarios',
                     fechasOcupadas: '/api/opciones/fechas-ocupadas',
                     config: '/api/opciones/config'
+                    // Nota: Feriados y Cantidades se manejarán de forma diferente
                 };
 
+                // Usamos Promise.all para hacer todas las peticiones fetch en paralelo
                 Promise.all(
-                    Object.values(endpoints).map(url =>
+                    Object.entries(endpoints).map(([key, url]) =>
                         fetch(url).then(res => {
-                            if (!res.ok) throw new Error(`Error al cargar ${url}: ${res.statusText}`);
+                            if (!res.ok) {
+                                throw new Error(`Error al cargar ${key}: ${res.statusText}`);
+                            }
                             return res.json();
                         })
                     )
                 )
                     .then(results => {
+                        // 'results' es un array con las respuestas JSON en el mismo orden que los endpoints
                         const [tipos, tarifas, duraciones, horas, fechasOcupadas, config] = results;
-                        console.log("PASO 2: Datos crudos recibidos del backend.");
 
-                        this.tarifas = tarifas || [];
-                        this.tiposDeEvento = tipos || [];
-                        this.opcionesDuraciones = duraciones || {};
-                        this.opcionesHoras = horas || {};
-                        this.fechasOcupadasSeguro = fechasOcupadas || [];
+                        // --- INICIO DE LA LÓGICA ORIGINAL (adaptada) ---
+                        // Ahora, reconstruimos el objeto 'response' que el resto del código esperaba.
+                        // La mayor parte de tu código original de `withSuccessHandler` puede permanecer igual.
 
-                        this.opcionesCantidades = this.tarifas.reduce((acc, tarifa) => {
-                            if (!acc[tarifa.tipo]) acc[tarifa.tipo] = new Set();
-                            acc[tarifa.tipo].add(`Hasta ${tarifa.max}`);
-                            return acc;
-                        }, {});
-                        Object.keys(this.opcionesCantidades).forEach(tipo => {
-                            this.opcionesCantidades[tipo] = Array.from(this.opcionesCantidades[tipo]).sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/)));
-                        });
+                        console.log("=====================================================");
+                        console.log("PASO 2: DATOS CRUDOS RECIBIDOS DEL NUEVO BACKEND:");
+                        console.log({ tipos, tarifas, duraciones, horas, fechasOcupadas, config });
+                        console.log("=====================================================");
 
-                        this.descripcionesTipos = {};
-                        this.tiposDeEvento.forEach(tipo => { this.descripcionesTipos[tipo.id] = tipo.descripcion; });
+                        if (!tipos) { this.showNotification('Error: No se pudieron cargar los tipos de evento.', 'error'); this.toggleLoadingOverlay(false); return; }
 
-                        return this.cargarFeriados()
-                            .then(() => {
-                                console.log("Paso 3: Todos los datos cargados. Construyendo UI...");
+                        try {
+                            this.tarifas = tarifas || [];
+                            this.tiposDeEvento = tipos || [];
+                            this.opcionesDuraciones = duraciones || {};
+                            this.opcionesHoras = horas || {};
 
-                                this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento);
-                                this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => this.actualizarTodo()));
-                                this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
-                                this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
-                                this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo...');
-                                this.inicializarCalendario(this.fechasOcupadasSeguro, this.feriadosGlobal);
-
-                                this.decidirEstadoInicial();
+                            // La lógica para generar 'opcionesCantidades' se movió aquí, al frontend,
+                            // ya que depende de las tarifas que ya hemos traído.
+                            this.opcionesCantidades = this.tarifas.reduce((acc, tarifa) => {
+                                if (!acc[tarifa.tipo]) acc[tarifa.tipo] = new Set();
+                                acc[tarifa.tipo].add(`Hasta ${tarifa.max}`);
+                                return acc;
+                            }, {});
+                            Object.keys(this.opcionesCantidades).forEach(tipo => {
+                                this.opcionesCantidades[tipo] = Array.from(this.opcionesCantidades[tipo]).sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/)));
                             });
+
+                            // Obtenemos los feriados (simulando la lógica original)
+                            const anioActual = new Date().getFullYear();
+                            // Esta es una API pública y gratuita de feriados para Argentina
+                            const feriadosUrl = `https://api.argentinadatos.com/v1/feriados/${anioActual}`;
+                            const feriadosUrlSiguiente = `https://api.argentinadatos.com/v1/feriados/${anioActual + 1}`;
+
+                            // Hacemos fetch a la API de feriados
+                            return Promise.all([fetch(feriadosUrl).then(res => res.json()), fetch(feriadosUrlSiguiente).then(res => res.json())])
+                                .then(([feriadosEsteAnio, feriadosSiguienteAnio]) => {
+                                    const feriadosFormateados = [...feriadosEsteAnio, ...feriadosSiguienteAnio].map(f => `${f.fecha.replace(/\//g, '-')}`);
+                                    this.feriadosGlobal = feriadosFormateados;
+
+                                    // --- CONTINÚA LA LÓGICA ORIGINAL ---
+                                    this.descripcionesTipos = {};
+                                    this.tiposDeEvento.forEach(tipo => { this.descripcionesTipos[tipo.id] = tipo.descripcion; });
+
+                                    this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento);
+                                    this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => this.actualizarTodo()));
+                                    this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
+                                    this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
+                                    this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo...');
+
+                                    this.fechasOcupadasSeguro = fechasOcupadas || [];
+                                    this.inicializarCalendario(this.fechasOcupadasSeguro, this.feriadosGlobal);
+
+                                    this.manejarParametroURL();
+
+                                    this.toggleLoadingOverlay(false);
+                                    this.habilitarBotones();
+
+                                    if (skipSessionSearch) {
+                                        // Si venimos con un ID de la URL, buscamos los datos de ESA solicitud
+                                        console.log(`Saltando búsqueda de sesión. Obteniendo datos para solicitud ID: ${this.solicitudId}`);
+                                        fetch(`/api/solicitudes/${this.solicitudId}`)
+                                            .then(res => res.json())
+                                            .then(solicitudData => {
+                                                if (solicitudData) this.populateForm(solicitudData);
+                                            });
+                                    } else {
+                                        // Si no, iniciamos la búsqueda por Fingerprint
+                                        this.initFingerprint();
+                                    }
+
+
+
+                                    //this.toggleLoadingOverlay(false);
+                                    console.log("Paso 3: Formulario construido. Iniciando Fingerprint...");
+                                    //this.initFingerprint();
+                                });
+
+                        } catch (e) {
+                            console.error("¡ERROR! El script se rompió procesando los datos de la API.", e);
+                            this.showNotification("Error procesando los datos del servidor. Ver la consola.", "error");
+                            this.toggleLoadingOverlay(false);
+                        }
                     })
                     .catch(error => {
-                        console.error("Fallo crítico al cargar datos:", error);
+                        // Este .catch manejará cualquier error de red en las llamadas fetch
+                        console.error("Fallo crítico al llamar a la API del backend:", error);
                         this.showNotification('Error de conexión con el servidor: ' + error.message, 'error');
                         this.toggleLoadingOverlay(false);
+                        this.habilitarBotones();
                     });
-            },
-
-            cargarFeriados: function () {
-                const anioActual = new Date().getFullYear();
-                const feriadosUrl1 = `https://api.argentinadatos.com/v1/feriados/${anioActual}`;
-                const feriadosUrl2 = `https://api.argentinadatos.com/v1/feriados/${anioActual + 1}`;
-
-                return Promise.all([fetch(feriadosUrl1).then(res => res.json()), fetch(feriadosUrl2).then(res => res.json())])
-                    .then(([feriados1, feriados2]) => {
-                        this.feriadosGlobal = [...feriados1, ...feriados2].map(f => f.fecha.replace(/\//g, '-'));
-                    });
-            },
-
-            decidirEstadoInicial: function () {
-                const params = new URLSearchParams(window.location.search);
-                const idFromUrl = params.get('solicitudId');
-
-                if (idFromUrl) {
-                    console.log(`Cargando datos para la solicitud existente ID: ${idFromUrl}`);
-                    this.solicitudId = idFromUrl;
-                    this.toggleLoadingOverlay(true, 'Cargando datos guardados...');
-                    fetch(`/api/solicitudes/${this.solicitudId}`)
-                        .then(res => res.json())
-                        .then(solicitudData => {
-                            if (solicitudData) this.populateForm(solicitudData);
-                            this.toggleLoadingOverlay(false);
-                            this.habilitarBotones();
-                        });
-                } else {
-                    this.initFingerprint();
-                }
             },
 
             initFingerprint: function () {
-                console.log("Paso 4: Iniciando Fingerprint...");
+                console.log("Paso 4: Dentro de initFingerprint()...");
+                const fingerprintTimeout = setTimeout(() => {
+                    console.warn("ADVERTENCIA: FingerprintJS tardó demasiado. Habilitando botones por seguridad.");
+                    if (this.visitorId === null) {
+                        this.visitorId = 'fingerprint_timeout';
+                        this.habilitarBotones();
+                    }
+                }, 3000);
+
                 FingerprintJS.load()
-                    .then(fp => fp.get())
+                    .then(agent => agent.get())
                     .then(result => {
+                        clearTimeout(fingerprintTimeout);
                         this.visitorId = result.visitorId;
                         console.log("Paso 5: Fingerprint ID generado:", this.visitorId);
                         this.buscarSesionExistente();
                     })
                     .catch(error => {
+                        clearTimeout(fingerprintTimeout);
                         console.error("Error al generar Fingerprint:", error);
                         this.visitorId = 'fingerprint_error';
-                        this.toggleLoadingOverlay(false);
-                        this.habilitarBotones();
-                    });
-            },
-
-            buscarSesionExistente: function () {
-                console.log(`[FE] Buscando sesión por Fingerprint...`);
-                fetch(`/api/solicitudes/sesion?fingerprintId=${this.visitorId}`)
-                    .then(res => res.json())
-                    .then(sessionData => {
-                        if (sessionData && sessionData.solicitudId) {
-                            console.log("[FE] Sesión encontrada. Rellenando formulario.", sessionData);
-                            this.solicitudId = sessionData.solicitudId;
-                            this.populateForm(sessionData);
-                            this.showNotification("Se cargaron los datos de tu sesión anterior.", "success");
-                        } else {
-                            console.log("[FE] No se encontraron sesiones activas.");
-                        }
                     })
-                    .catch(err => console.error("[FE] Error al buscar sesión:", err))
-                    .finally(() => {
-                        this.toggleLoadingOverlay(false);
-                        this.habilitarBotones();
-                    });
-            },
-
-            // =================================================================
-            // 3. LÓGICA DE INTERACCIÓN Y UI
-            // =================================================================
-            populateForm: function (solicitud) {
-                console.log("--- INICIO populateForm ---");
-                const radio = document.querySelector(`input[name="tipoEvento"][value="${solicitud.tipoEvento}"]`);
-                if (radio) {
-                    radio.checked = true;
-                    this.actualizarTodo(); // Primera actualización para poblar selects
-
-                    setTimeout(() => { // Damos tiempo a que se llenen los selects
-                        this.elements.cantidadPersonasSelect.value = solicitud.cantidadPersonas;
-                        this.elements.duracionEventoSelect.value = solicitud.duracionEvento;
-                        if (solicitud.fechaEvento && this.calendario) {
-                            this.calendario.setDate(solicitud.fechaEvento, true);
-                        }
-
-                        setTimeout(() => { // Damos tiempo a que se actualicen las horas
-                            this.elements.horaInicioSelect.value = solicitud.horaInicio;
-                            this.actualizarTodo(); // Actualización final para calcular el precio
-                            console.log("--- FIN populateForm ---");
-                        }, 150);
-                    }, 150);
-                }
-            },
-
-            validarYEnviar: function (destino) {
-                document.querySelectorAll('.campo-invalido').forEach(el => el.classList.remove('campo-invalido'));
-                const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
-                let hayErrores = false;
-
-                if (!selectedRadio) { this.elements.tipoEventoContainer.classList.add('campo-invalido'); hayErrores = true; }
-                if (!this.elements.cantidadPersonasSelect.value) { this.elements.cantidadPersonasSelect.classList.add('campo-invalido'); hayErrores = true; }
-                if (!this.elements.duracionEventoSelect.value) { this.elements.duracionEventoSelect.classList.add('campo-invalido'); hayErrores = true; }
-                if (!this.elements.horaInicioSelect.value) { this.elements.horaInicioSelect.classList.add('campo-invalido'); hayErrores = true; }
-                if (!this.elements.fechaEventoInput.value) { if (this.calendario && this.calendario.altInput) { this.calendario.altInput.classList.add('campo-invalido'); } hayErrores = true; }
-
-                if (hayErrores) {
-                    this.showNotification('Por favor, completa todos los campos obligatorios.', 'warning');
-                    return;
-                }
-
-                console.log(`[FE] validando y enviando. ID de solicitud actual: ${this.solicitudId}`);
-                this.toggleLoadingOverlay(true, 'Guardando solicitud...');
-
-                const bodyData = {
-                    tipoEvento: selectedRadio.value,
-                    cantidadPersonas: this.elements.cantidadPersonasSelect.value,
-                    duracionEvento: this.elements.duracionEventoSelect.value,
-                    fechaEvento: this.elements.fechaEventoInput.value,
-                    horaInicio: this.elements.horaInicioSelect.value,
-                    precioBase: this.elements.precioBaseInput.value,
-                    fingerprintId: this.visitorId
-                };
-
-                let fetchPromise;
-                if (this.solicitudId) {
-                    console.log(`[FE] DECISIÓN: Actualizar (PUT) solicitud existente ID: ${this.solicitudId}`);
-                    fetchPromise = fetch(`/api/solicitudes/${this.solicitudId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(bodyData)
-                    });
-                } else {
-                    console.log("[FE] DECISIÓN: Crear (POST) nueva solicitud.");
-                    fetchPromise = fetch('/api/solicitudes', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(bodyData)
-                    });
-                }
-
-                fetchPromise
-                    .then(response => {
-                        if (!response.ok) {
-                            console.error("[FE] La respuesta de la API no fue OK.", response);
-                            return response.json().then(err => { throw new Error(err.error || 'Error del servidor') });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        const id = data.solicitudId;
-                        if (!id) throw new Error("Respuesta inválida del servidor.");
-                        this.solicitudId = id;
-                        console.log(`[FE] ID de solicitud procesado: ${id}. Redirigiendo...`);
-
-                        const nextPage = (destino === 'adicionales') ? 'Adicionales.html' : 'Contacto.html';
-                        const fromParam = (destino === 'contacto') ? '&from=page' : '';
-                        window.location.href = `${nextPage}?solicitudId=${id}${fromParam}`;
-                    })
-                    .catch(error => {
-                        console.error('[FE] Error en la cadena de fetch de validarYEnviar:', error);
-                        this.showNotification(`Error: ${error.message}`, 'error');
-                        this.toggleLoadingOverlay(false);
-                    });
-            },
-
-            inicializarCalendario: function (fechasOcupadas, feriados) {
-                console.log("--- INICIO inicializarCalendario ---");
-                try {
-                    const config = {
-                        locale: "es",
-                        altInput: true,
-                        altFormat: "j \\de F, Y",
-                        dateFormat: "Y-m-d",
-                        minDate: "today",
-                        disable: [
-                            (date) => {
-                                const esFinDeSemana = date.getDay() === 0 || date.getDay() === 6;
-                                const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                                const esFeriado = feriados.includes(fechaStr);
-                                return !(esFinDeSemana || esFeriado);
-                            },
-                            ...(fechasOcupadas || [])
-                        ],
-                        onChange: () => this.actualizarTodo()
-                    };
-                    this.calendario = flatpickr(this.elements.fechaEventoInput, config);
-                    console.log("--- FIN inicializarCalendario (Éxito) ---");
-                } catch (e) {
-                    console.error("¡¡¡ERROR CRÍTICO DENTRO DE inicializarCalendario!!!", e);
-                }
-            },
-
-            actualizarTodo: function () {
-                console.groupCollapsed("--- Actualizando Formulario Completo ---");
-
-                const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
-                const tipoId = selectedRadio ? selectedRadio.value : '';
-                const fechaSeleccionada = this.calendario ? this.calendario.selectedDates[0] : null;
-                const cantidad = this.elements.cantidadPersonasSelect.value;
-                const duracion = this.elements.duracionEventoSelect.value;
-                const hora = this.elements.horaInicioSelect.value;
-
-                console.log("Estado actual:", { tipoId, fechaSeleccionada, cantidad, duracion, hora });
-
-                this.elements.tipoEventoDescripcionDiv.innerHTML = tipoId ? this.descripcionesTipos[tipoId] || 'Sin descripción.' : 'Seleccione un tipo de evento.';
-
-                const prevCantidad = this.elements.cantidadPersonasSelect.value;
-                const prevDuracion = this.elements.duracionEventoSelect.value;
-
-                if (tipoId) {
-                    this.llenarSelect(this.elements.cantidadPersonasSelect, this.opcionesCantidades[tipoId] || [], 'Seleccione cantidad...');
-                    this.llenarSelect(this.elements.duracionEventoSelect, this.opcionesDuraciones[tipoId] || [], 'Seleccione duración...');
-                    this.elements.cantidadPersonasSelect.value = prevCantidad;
-                    this.elements.duracionEventoSelect.value = prevDuracion;
-                } else {
-                    this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
-                    this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
-                }
-
-                const prevHora = this.elements.horaInicioSelect.value;
-                if (tipoId && fechaSeleccionada) {
-                    const diaDeLaSemana = fechaSeleccionada.getDay();
-                    const fechaStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
-                    const esFeriado = this.feriadosGlobal.includes(fechaStr);
-                    let tipoDeDia = (diaDeLaSemana === 6 && !esFeriado) ? 'sabado' : 'domingo/feriado';
-
-                    const todosLosHorariosParaTipo = this.opcionesHoras[tipoId] || [];
-                    const horariosFiltrados = todosLosHorariosParaTipo.filter(h => h.tipoDia === 'todos' || h.tipoDia === tipoDeDia).map(h => h.hora).sort();
-
-                    this.llenarSelect(this.elements.horaInicioSelect, horariosFiltrados, 'Seleccione hora...');
-                    this.elements.horaInicioSelect.value = prevHora;
-                } else {
-                    this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo y fecha');
-                }
-
-                const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
-                const nombreParaMostrar = tipoSeleccionado ? tipoSeleccionado.nombreParaMostrar : '';
-                const montoSena = tipoSeleccionado ? tipoSeleccionado.montoSena : 0;
-                const depositoGarantia = tipoSeleccionado ? tipoSeleccionado.depositoGarantia : 0;
-
-                let detalleHtml = '<ul>';
-                if (nombreParaMostrar) detalleHtml += `<li><strong>Tipo:</strong> ${nombreParaMostrar}</li>`;
-                if (fechaSeleccionada) detalleHtml += `<li><strong>Fecha:</strong> ${fechaSeleccionada.toLocaleDateString('es-AR', { timeZone: 'UTC' })}</li>`;
-                if (hora) detalleHtml += `<li><strong>Hora:</strong> ${hora}</li>`;
-                if (duracion) detalleHtml += `<li><strong>Duración:</strong> ${duracion}</li>`;
-                const duracionNum = parseInt((duracion.match(/\d+/) || ['0'])[0]);
-                if (hora && duracionNum > 0) {
-                    const [startHour, startMinute] = hora.replace('hs', '').split(':').map(Number);
-                    if (!isNaN(startHour)) {
-                        const fechaCalculo = new Date();
-                        fechaCalculo.setHours(startHour, startMinute || 0, 0, 0);
-                        fechaCalculo.setHours(fechaCalculo.getHours() + duracionNum);
-                        const horaFinStr = `${fechaCalculo.getHours()}:${String(fechaCalculo.getMinutes()).padStart(2, '0')}`;
-                        detalleHtml += `<li><strong>Fin:</strong> ${horaFinStr} hs.</li>`;
-                    }
-                }
-                if (cantidad) detalleHtml += `<li><strong>Personas:</strong> ${cantidad}</li>`;
-                if (montoSena > 0) detalleHtml += `<li style="margin-top:10px; color: #0056b3;"><strong>Seña:</strong> $${montoSena.toLocaleString('es-AR')}</li>`;
-                if (depositoGarantia > 0) detalleHtml += `<li style="color: #555;"><strong>Depósito:</strong> $${depositoGarantia.toLocaleString('es-AR')} (reint.)</li>`;
-                detalleHtml += '</ul>';
-                this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
-
-                if (tipoId && cantidad && duracion && fechaSeleccionada) {
-                    const cantidadNum = parseInt(cantidad.match(/\d+/)[0]);
-                    const fechaEventoStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
-                    const reglasAplicables = this.tarifas.filter(r => {
-                        const tipoCoincide = r.tipo.toUpperCase() === tipoId.toUpperCase();
-                        const cantidadCoincide = cantidadNum >= r.min && cantidadNum <= r.max;
-                        const fechaCoincide = fechaEventoStr >= r.fechaVigencia;
-                        return tipoCoincide && cantidadCoincide && fechaCoincide;
-                    });
-
-                    if (reglasAplicables.length > 0) {
-                        reglasAplicables.sort((a, b) => new Date(b.fechaVigencia) - new Date(a.fechaVigencia));
-                        const reglaFinal = reglasAplicables[0];
-                        const precioCalculado = reglaFinal.precioPorHora * duracionNum;
-                        this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${precioCalculado.toLocaleString('es-AR')}`;
-                        this.elements.precioBaseInput.value = precioCalculado;
-                    } else {
-                        this.elements.presupuestoDetalleDiv.insertAdjacentHTML('beforeend', '<p style="color:red;">No se encontró tarifa.</p>');
-                        this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $ -`; this.elements.precioBaseInput.value = 0;
-                    }
-                } else {
-                    this.elements.presupuestoDetalleDiv.innerHTML = '<p>Complete las opciones para ver el precio.</p>';
-                    this.elements.presupuestoTotalDiv.innerHTML = `<span>Total Básico: </span> $0`; this.elements.precioBaseInput.value = 0;
-                }
-                console.groupEnd();
+                /*.finally(() => {
+                    this.habilitarBotones();
+                });*/
             },
 
             habilitarBotones: function () {
@@ -798,6 +602,295 @@
                     this.elements.btnContacto.textContent = 'Continuar sin adicionales';
                 }
             },
+
+            buscarSesionExistente: function () {
+                console.log(`[FE] Buscando sesión con Fingerprint: ${this.visitorId}`);
+                fetch(`/api/solicitudes/sesion?fingerprintId=${this.visitorId}`)
+                    .then(res => res.json())
+                    .then(sessionData => {
+                        if (sessionData && sessionData.solicitudId) {
+                            console.log("[FE] Sesión encontrada. Datos recibidos:", sessionData);
+                            this.solicitudId = sessionData.solicitudId;
+                            console.log(`[FE] this.solicitudId guardado como: ${this.solicitudId}`);
+                            this.populateForm(sessionData);
+                            this.showNotification("Se cargaron los datos de tu sesión anterior.", "success", 6000);
+                        } else {
+                            console.log("[FE] No se encontraron sesiones existentes.");
+                            this.solicitudId = null; // Aseguramos que esté nulo
+                        }
+                    })
+                    .catch(err => console.error("[FE] Error al buscar sesión:", err));
+            },
+
+
+            populateForm: function (solicitud) {
+                console.log("--- INICIO populateForm (v5) ---");
+                const radio = document.querySelector(`input[name="tipoEvento"][value="${solicitud.tipoEvento}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    radio.dispatchEvent(new Event('change'));
+                }
+                setTimeout(() => {
+                    this.elements.cantidadPersonasSelect.value = solicitud.cantidadPersonas;
+                    this.elements.duracionEventoSelect.value = solicitud.duracionEvento;
+                    if (solicitud.fechaEvento && this.calendario) {
+                        this.calendario.setDate(solicitud.fechaEvento, true);
+                    }
+                    setTimeout(() => {
+                        this.elements.horaInicioSelect.value = solicitud.horaInicio;
+                        this.actualizarTodo();
+                        console.log("--- FIN populateForm ---");
+                    }, 100);
+                }, 250);
+            },
+
+            validarYEnviar: function (destino) {
+                document.querySelectorAll('.campo-invalido').forEach(el => el.classList.remove('campo-invalido'));
+                const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
+                let hayErrores = false;
+
+                // --- Validación (sin el bloque de código extra) ---
+                if (!selectedRadio) { this.elements.tipoEventoContainer.classList.add('campo-invalido'); hayErrores = true; }
+                if (!this.elements.cantidadPersonasSelect.value) { this.elements.cantidadPersonasSelect.classList.add('campo-invalido'); hayErrores = true; }
+                if (!this.elements.duracionEventoSelect.value) { this.elements.duracionEventoSelect.classList.add('campo-invalido'); hayErrores = true; }
+                if (!this.elements.horaInicioSelect.value) { this.elements.horaInicioSelect.classList.add('campo-invalido'); hayErrores = true; }
+                if (!this.elements.fechaEventoInput.value) { if (this.calendario && this.calendario.altInput) { this.calendario.altInput.classList.add('campo-invalido'); } hayErrores = true; }
+                if (hayErrores) { this.showNotification('Por favor, completa todos los campos obligatorios.', 'warning'); return; }
+
+                console.log(`[FE] validando y enviando. ID de solicitud actual: ${this.solicitudId}`);
+                this.toggleLoadingOverlay(true, 'Guardando solicitud...');
+
+                // 1. Preparamos el cuerpo (body) de la petición.
+                const bodyData = {
+                    tipoEvento: selectedRadio.value,
+                    cantidadPersonas: this.elements.cantidadPersonasSelect.value,
+                    duracionEvento: this.elements.duracionEventoSelect.value,
+                    fechaEvento: this.elements.fechaEventoInput.value,
+                    horaInicio: this.elements.horaInicioSelect.value,
+                    precioBase: this.elements.precioBaseInput.value,
+                    fingerprintId: this.visitorId
+                };
+
+
+                // --- LÓGICA INTELIGENTE: CREAR O ACTUALIZAR ---
+                let fetchPromise;
+                if (this.solicitudId) {
+                    // Si ya tenemos un ID de sesión, ACTUALIZAMOS (PUT)
+                    console.log(`[FE] DECISIÓN: Actualizar (PUT) solicitud existente ID: ${this.solicitudId}`);
+                    fetchPromise = fetch(`/api/solicitudes/${this.solicitudId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bodyData)
+                    });
+                } else {
+                    // Si no hay ID de sesión, CREAMOS una nueva (POST)
+                    console.log("[FE] DECISIÓN: Crear (POST) nueva solicitud.");
+                    fetchPromise = fetch('/api/solicitudes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bodyData)
+                    });
+                }
+
+                // El resto de la lógica es la misma para ambos casos
+                fetchPromise
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error("[FE] La respuesta de la API no fue OK.", response);
+                            return response.json().then(err => { throw new Error(err.error || 'Error del servidor') });
+                        }
+                        console.log("[FE] Respuesta de la API recibida. Procesando JSON...");
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log("[FE] JSON de la API procesado. Datos recibidos:", data);
+                        const id = data.solicitudId;
+
+                        if (!id) {
+                            console.error("¡ERROR CRÍTICO! La respuesta de la API no contiene 'solicitudId'. Respuesta:", data);
+                            throw new Error("Respuesta inválida del servidor.");
+                        }
+
+                        this.solicitudId = id;
+                        console.log(`[FE] ID de solicitud procesado: ${id}. Redirigiendo...`);
+                        const nextPage = (destino === 'adicionales') ? 'Adicionales.html' : 'Contacto.html';
+                        const fromParam = (destino === 'contacto') ? '&from=page' : '';
+                        window.location.href = `${nextPage}?solicitudId=${id}${fromParam}`;
+                    })
+                    .catch(error => {
+                        console.error('[FE] Error en la cadena de fetch de validarYEnviar:', error);
+                        this.showNotification(`Error: ${error.message}`, 'error');
+                        this.toggleLoadingOverlay(false);
+                    });
+
+            },
+
+            inicializarCalendario: function (fechasOcupadas, feriados) {
+                console.log("--- INICIO inicializarCalendario ---");
+                try {
+                    // Log 1: Verificar los datos de entrada
+                    console.log("Datos de entrada - fechasOcupadas:", fechasOcupadas);
+                    //console.log("Es fechasOcupadas un array?", Array.isArray(fechasOcupadas));
+                    console.log("Datos de entrada - feriados:", feriados);
+                    //console.log("Es feriados un array?", Array.isArray(feriados));
+
+                    // Log 2: Crear la configuración paso a paso
+                    //console.log("Creando objeto de configuración...");
+                    const config = {};
+                    //console.log("Añadiendo 'locale'...");
+                    config.locale = "es";
+                    //console.log("Añadiendo 'altInput'...");
+                    config.altInput = true;
+                    //console.log("Añadiendo 'altFormat'...");
+                    config.altFormat = "j \\de F, Y";
+                    //console.log("Añadiendo 'dateFormat'...");
+                    config.dateFormat = "Y-m-d";
+                    //console.log("Añadiendo 'minDate'...");
+                    config.minDate = "today";
+
+                    //console.log("Creando la función 'disable'...");
+                    const disableFunction = (date) => {
+                        const esFinDeSemana = date.getDay() === 0 || date.getDay() === 6;
+                        const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        // Usamos 'feriados' directamente, ya que los logs muestran que es un array válido.
+                        const esFeriado = feriados.includes(fechaStr);
+                        return !(esFinDeSemana || esFeriado);
+                    };
+
+                    //console.log("Combinando 'disableFunction' y 'fechasOcupadas' en el array 'disable'...");
+                    // Esta es la línea más sospechosa. La construimos de forma segura.
+                    config.disable = [disableFunction, ...(fechasOcupadas || [])];
+                    config.onChange = () => this.actualizarTodo()
+
+                    // Llamada final
+                    this.calendario = flatpickr(this.elements.fechaEventoInput, config);
+
+                    console.log("--- FIN inicializarCalendario (Éxito) ---");
+
+                } catch (e) {
+                    console.error("¡¡¡ERROR CRÍTICO DENTRO DE inicializarCalendario!!!", e);
+                }
+            },
+
+
+            actualizarOpcionesDependientes: function () {
+                this.actualizarTodo();
+            },
+
+            actualizarHorariosDisponibles: function () {
+                this.actualizarTodo();
+            },
+
+            actualizarDetallePresupuesto: function () {
+                this.actualizarTodo();
+            },
+
+            actualizarTodo: function () {
+                console.groupCollapsed("--- Actualizando Formulario Completo ---");
+
+                // 1. OBTENER ESTADO ACTUAL
+                const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
+                const tipoId = selectedRadio ? selectedRadio.value : '';
+                const fechaSeleccionada = this.calendario ? this.calendario.selectedDates[0] : null;
+                const cantidad = this.elements.cantidadPersonasSelect.value;
+                const duracion = this.elements.duracionEventoSelect.value;
+                const hora = this.elements.horaInicioSelect.value;
+
+                console.log("Estado actual:", { tipoId, fechaSeleccionada, cantidad, duracion, hora });
+
+                // 2. ACTUALIZAR OPCIONES DEPENDIENTES (lógica de actualizarOpcionesDependientes)
+                this.elements.tipoEventoDescripcionDiv.innerHTML = tipoId ? this.descripcionesTipos[tipoId] || 'Sin descripción.' : 'Seleccione un tipo de evento.';
+
+                const prevCantidad = this.elements.cantidadPersonasSelect.value;
+                const prevDuracion = this.elements.duracionEventoSelect.value;
+
+                if (tipoId) {
+                    this.llenarSelect(this.elements.cantidadPersonasSelect, this.opcionesCantidades[tipoId] || [], 'Seleccione cantidad...');
+                    this.llenarSelect(this.elements.duracionEventoSelect, this.opcionesDuraciones[tipoId] || [], 'Seleccione duración...');
+
+                    // Restaurar valores si es posible
+                    this.elements.cantidadPersonasSelect.value = prevCantidad;
+                    this.elements.duracionEventoSelect.value = prevDuracion;
+
+                } else {
+                    this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
+                    this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
+                }
+
+                // 3. ACTUALIZAR HORARIOS (lógica de actualizarHorariosDisponibles)
+                const prevHora = this.elements.horaInicioSelect.value;
+                if (tipoId && fechaSeleccionada) {
+                    const diaDeLaSemana = fechaSeleccionada.getDay();
+                    const fechaStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
+                    const esFeriado = this.feriadosGlobal.includes(fechaStr);
+                    let tipoDeDia = (diaDeLaSemana === 6 && !esFeriado) ? 'sabado' : 'domingo/feriado';
+
+                    const todosLosHorariosParaTipo = this.opcionesHoras[tipoId] || [];
+                    const horariosFiltrados = todosLosHorariosParaTipo.filter(h => h.tipoDia === 'todos' || h.tipoDia === tipoDeDia).map(h => h.hora).sort();
+
+                    this.llenarSelect(this.elements.horaInicioSelect, horariosFiltrados, 'Seleccione hora...');
+                    this.elements.horaInicioSelect.value = prevHora; // Restaurar valor si es posible
+                } else {
+                    this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo y fecha');
+                }
+
+                // 4. ACTUALIZAR PRESUPUESTO (lógica de actualizarDetallePresupuesto)
+                const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
+                const nombreParaMostrar = tipoSeleccionado ? tipoSeleccionado.nombreParaMostrar : '';
+                const montoSena = tipoSeleccionado ? tipoSeleccionado.montoSena : 0;
+                const depositoGarantia = tipoSeleccionado ? tipoSeleccionado.depositoGarantia : 0;
+
+                let detalleHtml = '<ul>';
+                // (código para construir detalleHtml se puede copiar de tu función original)
+                if (nombreParaMostrar) detalleHtml += `<li><strong>Tipo:</strong> ${nombreParaMostrar}</li>`;
+                if (fechaSeleccionada) detalleHtml += `<li><strong>Fecha:</strong> ${fechaSeleccionada.toLocaleDateString('es-AR')}</li>`;
+                // ... etc ...
+                detalleHtml += '</ul>';
+
+                if (tipoId && cantidad && duracion && fechaSeleccionada) {
+                    //const cantidadNum = parseInt(cantidad.match(/\d+/g).pop());
+                    const cantidadNum = parseInt(cantidad.match(/\d+/)[0]);
+                    const duracionNum = parseInt((duracion.match(/\d+/) || ['0'])[0]);
+                    console.log("Valores para filtrar:", { tipoId, cantidadNum, fechaSeleccionada });
+                    const fechaEventoStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
+
+                    console.log("Valores para filtrar:", { tipoId, cantidadNum, fechaEventoStr });
+
+                    const reglasAplicables = this.tarifas.filter(r => {
+                        const tipoCoincide = r.tipo.toUpperCase() === tipoId.toUpperCase();
+                        const cantidadCoincide = cantidadNum >= r.min && cantidadNum <= r.max;
+                        // 2. Compara los strings directamente. Es infalible.
+                        const fechaCoincide = fechaEventoStr >= r.fechaVigencia;
+
+                        // Log de depuración
+                        if (tipoCoincide && cantidadCoincide) {
+                            console.log(`Evaluando regla para '${r.tipo}', cant ${cantidadNum}: fecha? ${fechaCoincide} (evento: ${fechaEventoStr} >= vigencia: ${r.fechaVigencia})`);
+                        }
+
+                        return tipoCoincide && cantidadCoincide && fechaCoincide;
+                    });
+                    console.log("Reglas de tarifa APLICABLES:", reglasAplicables);
+
+
+                    if (reglasAplicables.length > 0) {
+                        reglasAplicables.sort((a, b) => new Date(b.fechaVigencia) - new Date(a.fechaVigencia));
+                        const reglaFinal = reglasAplicables[0];
+                        const precioCalculado = reglaFinal.precioPorHora * duracionNum;
+                        this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
+                        this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${precioCalculado.toLocaleString('es-AR')}`;
+                        this.elements.precioBaseInput.value = precioCalculado;
+                    } else {
+                        this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
+                        this.elements.presupuestoDetalleDiv.insertAdjacentHTML('beforeend', '<p style="color:red;">No se encontró tarifa.</p>');
+                        this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $ -`; this.elements.precioBaseInput.value = 0;
+                    }
+                } else {
+                    this.elements.presupuestoDetalleDiv.innerHTML = '<p>Complete las opciones para ver el precio.</p>';
+                    this.elements.presupuestoTotalDiv.innerHTML = `<span>Total Básico: </span> $0`; this.elements.precioBaseInput.value = 0;
+                }
+                console.groupEnd();
+            },
+
 
             llenarSelect: function (select, options, placeholder) {
                 if (!select) return;
@@ -834,16 +927,12 @@
                 this.elements.notificationBanner.className = 'show ' + type;
                 this.notificationTimer = setTimeout(() => { this.elements.notificationBanner.className = ''; }, duration);
             },
-
             toggleLoadingOverlay: function (show, message = 'Cargando...') {
                 this.elements.loadingOverlay.querySelector('p').textContent = message;
                 this.elements.loadingOverlay.style.display = show ? 'flex' : 'none';
             },
-
             manejarParametroURL: function () {
-                const params = new URLSearchParams(window.location.search);
-                const tipoParam = params.get('tipo');
-                if (!tipoParam) return;
+                const tipoParam = '<?= tipoEventoDesdeURL ?>'; if (!tipoParam) return;
                 const radio = document.querySelector(`input[name="tipoEvento"][value="${tipoParam.toUpperCase()}"]`);
                 if (!radio) return;
                 radio.checked = true;
@@ -851,7 +940,7 @@
                     if (optionDiv.querySelector('input') !== radio) { optionDiv.style.display = 'none'; }
                 });
                 this.elements.resetTipoEventoBtn.style.display = 'inline-block';
-                this.actualizarTodo();
+                //this.actualizarOpcionesDependientes();
             }
         };
 
