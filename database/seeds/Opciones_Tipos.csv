@@ -1,105 +1,143 @@
 ID_Evento,NombreParaMostrar,Descripcion,MontoSena,Deposito,EsPublico
-INFANTILES,INFANTILES: Cumpleaños Infantiles hasta 12 años,"CUMPLEAÑOS INFANTILES - HASTA 12 AÑOS
+INFANTILES,INFANTILES: Cumpleaños Infantiles hasta 12 años (SERVICIO COMPLETO),"EL SERVICIO INCLUYE: 
+* Encargada general
+* Encargada de puerta
+* Uso de cocina completa con cocinera
+* Inflable 3x3
+* Dos metegoles, Ping Pong, Pool y Jenga gigante
+* Mesas, sillas y mantelería
+* Utensilios de mesa:
+   - Bowls de plástico para palitos, papitas y chisitos
+   - Platos descartables para hamburguesas, panchos, tortas
+   - Servilleteros con servilletas por mesa
+   - Vasos descartables (según cantidad de invitados)
+   - Una botella por mesa para jugo o agua
+* Baño equipado (papel higiénico y toallas de papel)
+* Uso de barra, heladera y freezer
+* Música y juego de luces
+* Cancha de fútbol (exclusiva para niños hasta 12 años)
+* 20 minutos previos sin cargo para decoración
 
-📆 ____DÍAS Y HORARIOS____
-🌅 Mañana: Desde las 11:00hs
-🌇 Tarde: Desde las 16:00hs
-✅ Sábados Domingos y feriados: Mañana y Tarde
+NO INCLUYE:
+* Bebidas ni alimentos
+* Animación, fotografía o servicios similares
+* Vajilla o vasos de cristal
+* Cubiertos de metal
 
-INCLUYE: 
-* Encargada de salón, uso de cocina completa con cocinera y control de entrada
-* Inflable de 3x3, dos metegoles, PingPong, Pool y Jenga gigante
-* Mesas, sillas, mantelería, platos y bowls de plastico
-* Baño equipado (papel higiénico y toallas de papel para manos).
-* Uso de Barra, Heladera y freezer
-* Música y Juego de luces.
-* Cancha de fútbol (sólo para los niños)
-* 20 minutos previos sin cargo para decoración",40000,,TRUE
-INFORMALES,"INFORMALES: Juntadas familiares o entre amigos, con uso de parrilla (sin servicios de cocina, ni de mesa, ni de sonido)","ALQUILER DE BAJO PRESUPUESTO
-
-📆 ____DÍAS Y HORARIOS____
-🌅 Sábados, Domingos y feriados: Desde las 11:00hs
-✅ Sábados, horario nocturno hasta las 03:00hs
-
-IMPORTANTE:
-El Cliente tiene que encargarse de la cocina, de armar las mesas, de preparar y mantener el salón.
-El volumen de la música va a estar limitado (sonido acorde al salón)
-No se permiten Dj ni servicios de animación con parlantes (se usa el propio sonido del salón).
-Se cobra un depósito de garantía que se devuelve al finalizar el evento o se cobra en caso de perdidas o roturas.
-
-INCLUYE:
-* Encargada/o general y/o control de puerta.
+NORMAS:
+1. Realizar el pago de cuotas entre el 1° y 10° de cada mes.
+2. Enviar la lista de invitados con un día de anticipación al evento.
+3. Cancelar el saldo restante un día antes del evento.
+4. Respetar que solo el personal autorizado puede ingresar a la cocina.
+5. El uso de la cancha está destinado únicamente a niños y niñas hasta 12 años de edad.
+6. Asumir responsabilidad por cualquier daño o pérdida de elementos.
+7. Aplicaremos recargos en caso de no seguir estas indicaciones.",40000,,TRUE
+INFORMALES,"INFORMALES: Juntadas familiares o entre amigos, con uso de parrilla (SERVICIO ECONÓMICO)","INCLUYE:
+* Encargada/o general y control de puerta
 * Mesas y sillas
 * Uso de parrilla
-* Baño equipado (papel higiénico y toallas de papel para manos).
-* Uso de Cocina completa, Barra, Heladera y freezer
-* Equipo de Música y Juego de luces.
-* Dos Metegoles, PingPong, Pool y Jenga gigante
+* Uso de cocina completa, barra, heladera y freezer
+* Baño equipado (papel higiénico y toallas de papel)
+* Equipo de música y juego de luces
+* Dos metegoles, Ping Pong, Pool y Jenga gigante
 
 NO INCLUYE:
-* Cocinera, meseras, vajilla, decoración, Dj
-* Tiempo extra para decoración ni cocina",50000,80000,TRUE
-CON_SERVICIO_DE_MESA,FIESTAS de 15 / 18 / casamientos / aniversarios,"FIESTAS DE 15, DE 18, CASAMIENTOS O ANIVERSARIOS
+* Cocinera, meseras o personal de servicio
+* Vajilla, utensilios o decoración
+* Servicios de DJ o animación
+* Tiempo extra para decoración o cocina
 
-📆 ____DÍAS Y HORARIOS____
-🌅 Sábados, Domingos y feriados: Desde las 11:00hs
-✅ Sábados, horario nocturno hasta las 05:00hs
+CONDICIONES DEL SERVICIO:
+* El cliente se encarga de la cocina, preparación de mesas y mantenimiento del salón
+* Volumen de música limitado (sonido acorde al salón)
+* No se permiten DJ ni servicios de animación con parlantes externos
+* Prohibido el uso de la cancha de fútbol
+* Se cobra depósito de garantía reembolsable al finalizar el evento
 
-SERVICIO COMPLETO (sólo tenes que poner comida y bebida)
+NORMAS:
+1. Abonar las cuotas entre el 1° y 10° de cada mes
+2. Enviar lista de invitados con 24 horas de anticipación
+3. Cancelar saldo pendiente un día antes del evento
+4. Responsabilidad por cualquier daño o pérdida de elementos
+5. Recargos por incumplimiento de las normas establecidas",50000,80000,TRUE
+CON_SERVICIO_DE_MESA,FIESTAS de 15 / 18 / casamientos / aniversarios (SERVICIO COMPLETO),"(SERVICIO COMPLETO - Solo debes proveer comida y bebida)
 
-INCLUYE:
-* Encargada de salón, uso de cocina completa con cocinera y ayudantes, meseras y control de entrada.
-* Mesas, sillas, mantelería negra con camino blanco, vajilla de cristal y cubiertos de metal, bowls, centros de mesa.
-* Baño equipado (papel higiénico y toallas de papel para manos).
-* Uso de la Barra, Heladera y freezer
-* Equipo de sonido y Juego de luces.
-* Dos metegoles, PingPong, Pool y Jenga gigante",80000,,TRUE
-SIN_SERVICIO_DE_MESA,"FIESTAS de egresados, despedidas de año o bailes","FIESTAS DE EGRESADOS, DESPEDIDAS DE AÑO O BAILES
-
-📆 ____DÍAS Y HORARIOS____
-🌅 Sábados, Domingos y feriados: Desde las 11:00hs
-✅ Sábados, horario nocturno hasta las 05:00hs
-
-INCLUYE:
-* Encargados de salón y control de puerta.
-* Mesas, sillas y mantelería.
-* Baño equipado (papel higiénico y toallas de papel para manos).
-* Uso de la barra, heladera y freezer.
-* Juego de luces.* Uso del Patio (mesas y sillas).
+EL SERVICIO INCLUYE:
+* Encargada general
+* Encargada de puerta
+* Cocinera y uso completo de cocina
+* Meseras según cantidad de invitados
+* Mesas, sillas y mantelería negra con camino blanco
+* Utensilios de mesa:
+   - Bandejas y bowls de plástico para entradas
+   - Vajilla y vasos de cristal
+   - Cubiertos de metal
+   - Servilleteros con servilletas por mesa
+   - Una botella por mesa para jugo o agua
+* Equipamiento de entretenimiento:
+   - Dos metegoles, Ping Pong, Pool y Jenga gigante
+* Sonido profesional:
+   - Micrófonos y ecualización
+   - Sistema PA JBL (alta definición)
+   - Juego de luces Proton
+   - Backline completo (amplificadores de guitarra, bajo y cuerpo de batería) para bandas en vivo
+* Baño equipado (papel higiénico y toallas de papel)
+* Uso de barra, heladera y freezer
 
 NO INCLUYE:
-* Cocinera, meseras, vajilla, decoración
-* Tiempo extra para decoración ni cocina",50000,80000,TRUE
-BABY_SHOWERS,"Baby Showers, Bautismos o Comuniones","BABY SHOWERS, BAUTISMOS O COMUNIONES
+* DJ, decoración o animación
+* Globología o servicios similares
+* Tiempo extra para decoración (debe considerarse dentro de la duración total del evento)
 
-📆 ____DÍAS Y HORARIOS____
-🌅 Mañana: Desde las 11:00hs
-🌇 Tarde: Desde las 16:00hs
-✅ Sábados Domingos y feriados: Mañana y Tarde
+CONDICIONES DEL SERVICIO:
+* Prohibido el uso de la cancha de fútbol
+* Prohibido permanecer en la vereda después de las 00:00 hs
 
-INCLUYE:
-* Encargada de salón, uso de cocina completa con cocinera y ayudante, meseras y control de entrada
-* Mesas, sillas, mantelería negra, vajilla de cristal y cubiertos de metal, bowls, centros de mesa.
-* Baño equipado (papel higiénico y toallas de papel para manos).
-* Uso de la Barra, Heladera y freezer
-* Equipo de sonido y Juego de luces.
-* Dos metegoles, PingPong, Pool y Jenga gigante
-* Aire acondicionado / calefacción
-* Planos, matafuegos y señalización.
-* Servicio de continuidad eléctrica.
-* Vigilancia con cámaras perimetrales",40000,,TRUE
-FECHA_BANDAS,Fecha de bandas en vivo,"FECHA DE BANDAS EN VIVO
+NORMAS:
+1. Abonar las cuotas entre el 1° y 10° de cada mes
+2. Enviar lista de invitados con 24 horas de anticipación
+3. Cancelar saldo pendiente un día antes del evento
+4. Responsabilidad por cualquier daño o pérdida de elementos
+5. Recargos por incumplimiento de las normas establecidas",50000,80000,TRUE
+BABY_SHOWERS,"BABY SHOWERS / BAUTISMOS / COMUNIONES","(SERVICIO COMPLETO - Solo debes proveer comida y bebida)
 
-📆 ____DÍAS Y HORARIOS____
-✅ Sábados y pre-feriados: Noche
+EL SERVICIO INCLUYE:
+* Encargada general
+* Encargada de puerta
+* Uso de cocina completa con cocinera
+* Inflable 3x3
+* Dos metegoles, Ping Pong, Pool y Jenga gigante
+* Mesas, sillas y mantelería
+* Utensilios de mesa descartables:
+   - Bowls de plástico para palitos, papitas y chisitos
+   - Platos descartables para hamburguesas, panchos, tortas
+   - Servilleteros con servilletas por mesa
+   - Vasos descartables (según cantidad de invitados)
+   - Una botella por mesa para jugo o agua
+* Baño equipado (papel higiénico y toallas de papel)
+* Uso de barra, heladera y freezer
+* Música y juego de luces
+* Cancha de fútbol (exclusiva para niños hasta 12 años)
+* 20 minutos previos sin cargo para decoración
 
-INCLUYE:
-* Control de puerta.
-* Mesas, sillas, mantelería negra, vajilla de cristal y cubiertos de metal, bowls, centros de mesa.
-* Baño equipado (papel higiénico y toallas de papel para manos).
-* Uso de la Barra, Heladera y freezer
-* Equipo de sonido y Juego de luces.
-* Dos metegoles, PingPong, Pool y Jenga gigante",,,FALSE
+NO INCLUYE:
+* Meseras o personal adicional de servicio
+* Animación, fotografía o servicios similares
+* Vajilla o cubiertos de metal
+* Decoración especializada
+
+CONDICIONES DEL SERVICIO:
+* No se requiere depósito de garantía
+* Volumen de música moderado (acorde al tipo de evento)
+* Uso de cancha exclusivo para niños hasta 12 años
+
+NORMAS:
+1. Abonar las cuotas entre el 1° y 10° de cada mes
+2. Enviar lista de invitados con 24 horas de anticipación
+3. Cancelar saldo pendiente un día antes del evento
+4. Solo personal autorizado puede ingresar a la cocina
+5. Responsabilidad por cualquier daño o pérdida de elementos
+6. Recargos por incumplimiento de las normas establecidas",,,FALSE
 ADOLESCENTES,"ADOLESCENTES: Cumpleaños de 13, 14, 15, 16 y 17 años (varones)","CUMPLEAÑOS adolescentes - 13, 14, 15, 16 y 17 AÑOS VARONES
 
 📆 ____DÍAS Y HORARIOS____

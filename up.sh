@@ -57,7 +57,17 @@ docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d
 
 echo ""
 echo "--- 🚀 Entorno levantado con éxito ---"
-echo "Puedes ver el estado de los contenedores con:"
-echo "docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE ps"
 echo "Puedes ver los logs del backend con:"
 echo "docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
+echo "Para detener los contenedores:"
+echo "docker-compose -f docker/docker-compose.yml down --volumes"
+echo ""
+echo "Paso 4: Mostrando estado de los contenedores..."
+echo "Ejecutando: docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE ps"
+sleep 2
+docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE ps
+echo ""
+echo ""
+echo "Paso 5: Mostrando logs del backend en tiempo real..."
+echo "docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
+docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend

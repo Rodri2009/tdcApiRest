@@ -239,7 +239,6 @@
               `;
           });
 
-
           // Actualizamos el total inicial
           actualizarTotal();
 
@@ -253,6 +252,24 @@
           adicionalesContainer.innerHTML = `<p style="color: red;">Error al cargar los adicionales.</p>`;
         });
 
+      function convertirNumero(numero) {
+          const num = typeof numero === 'number' ? numero.toString().trim() : numero.trim();
+          if (num === '') return '';
+          // Detectar formato y convertir a número
+          const esAmericano = /^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(num);
+          const esArgentino = /^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(num);
+          if (esArgentino) return num;
+          let numeroLimpio = num.replace(/[^\d.,-]/g, '');
+          numeroLimpio = esAmericano ? num.replace(/,/g, '') : numeroLimpio.replace('.', ',');
+          // Convertir a número y formatear con separadores de miles
+          const partes = numeroLimpio.split(',');
+          let parteEntera = partes[0].replace(/\D/g, '');
+          const parteDecimal = partes[1] || '00';
+          // Agregar puntos de miles
+          parteEntera = parteEntera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+          return parteDecimal ? `${parteEntera},${parteDecimal}` : parteEntera;
+      }
+
       // Función para calcular y mostrar el total
       function actualizarTotal() {
         let totalAdicionales = 0;
@@ -260,7 +277,7 @@
           totalAdicionales += parseFloat(checkbox.value);
         });
         const totalFinal = precioBase + totalAdicionales;
-        totalSpan.textContent = `$${totalFinal.toLocaleString('es-AR')}`;
+        totalSpan.textContent = `$${convertirNumero(totalFinal)}`;
       }
 
       // Evento para el botón de continuar

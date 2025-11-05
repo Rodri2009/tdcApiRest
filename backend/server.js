@@ -15,6 +15,7 @@ app.use((req, res, next) => {
 });
 
 // --- Rutas de la API ---
+console.log("\n------------INICIANDO BACKEND------------.");
 console.log("Cargando rutas de la API...");
 try {
     const opcionesRoutes = require('./routes/opcionesRoutes');
@@ -39,7 +40,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- FUNCIÓN DE INICIO RESILIENTE ---
 async function startServer() {
-    console.log("--- Iniciando Backend de TDC ---");
+    console.log("Levantando servicio");
 
     // 1. Validar variables críticas (Si esto falla, no tiene sentido seguir)
     const requiredVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];

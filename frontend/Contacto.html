@@ -214,6 +214,7 @@
 </head>
 
 <body>
+  <div id="notification-banner"></div>
   <div class="container">
     <h2>Paso Final: Tus Datos de Contacto</h2>
     <div id="resumen-solicitud">
@@ -244,6 +245,38 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+
+      function resetearCamposInvalidos() {
+        const camposInvalidos = document.querySelectorAll('.campo-invalido');
+        camposInvalidos.forEach(campo => {
+            campo.classList.remove('campo-invalido');
+            campo.style.animation = 'none';
+            void campo.offsetWidth;
+            campo.style.animation = '';
+        });
+      }
+
+      const notificationBanner = document.getElementById('notification-banner'); // <-- Enlazar banner
+      let notificationTimer = null; // <-- Añadir variable para el timer
+
+      function convertirNumero(numero) {
+        const num = typeof numero === 'number' ? numero.toString().trim() : numero.trim();
+        if (num === '') return '';
+        // Detectar formato y convertir a número
+        const esAmericano = /^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(num);
+        const esArgentino = /^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(num);
+        if (esArgentino) return num;
+        let numeroLimpio = num.replace(/[^\d.,-]/g, '');
+        numeroLimpio = esAmericano ? num.replace(/,/g, '') : numeroLimpio.replace('.', ',');
+        // Convertir a número y formatear con separadores de miles
+        const partes = numeroLimpio.split(',');
+        let parteEntera = partes[0].replace(/\D/g, '');
+        const parteDecimal = partes[1] || '00';
+        // Agregar puntos de miles
+        parteEntera = parteEntera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return parteDecimal ? `${parteEntera},${parteDecimal}` : parteEntera;
+      }
+
       // 1. Obtener el ID de la solicitud desde la URL
       const params = new URLSearchParams(window.location.search);
       const solicitudId = params.get('solicitudId');
@@ -260,19 +293,30 @@
       fetch(`/api/solicitudes/${solicitudId}`)
         .then(response => {
           if (!response.ok) throw new Error('No se pudo cargar la solicitud.');
+          showNotification("Datos cargados","success");
           return response.json();
         })
         .then(data => {
+          let totalAdicionales = 0;
+          let listaAdicionales = "";
+          if (data.adicionales && data.adicionales.length > 0) {
+            data.adicionales.forEach(ad => {
+              totalAdicionales += parseFloat(ad.adicional_precio);
+              listaAdicionales = listaAdicionales == "" ? ad.adicional_nombre : listaAdicionales + ", " + ad.adicional_nombre
+              //listaAdicionales += ad.adicional_nombre + " ";
+            });
+          }
+          console.log("total adicionales",totalAdicionales);
+
           // 3. Mostrar los datos en la página
           const fecha = new Date(data.fecha_evento).toLocaleDateString('es-AR', { timeZone: 'UTC' });
           resumenDiv.innerHTML = `
                     <h3>Resumen de tu evento:</h3>
                     <ul>
-                      <!-- ¡CAMBIA ESTA LÍNEA! -->
                       <li><strong>Tipo:</strong> ${data.nombre_para_mostrar || data.tipo_de_evento}</li>
-                      <li><strong>Fecha:</strong> ${fecha}</li>
-                      <li><strong>Hora:</strong> ${data.hora_evento}</li>
-                      <li><strong>Precio Base:</strong> $${parseFloat(data.precio_basico).toLocaleString('es-AR')}</li>
+                      <li><strong>Fecha:</strong> ${fecha}  <strong>Hora:</strong> ${data.hora_evento}</li>
+                      <li><strong>Adicionales:</strong> ${listaAdicionales}</li>
+                      <li><strong>TOTAL:</strong> $${convertirNumero(parseFloat(data.precio_basico) + parseFloat(totalAdicionales))}</li>
                   </ul>
                 `;
         })
@@ -291,9 +335,12 @@
         }
       };
 
-
       document.getElementById('btn-confirmar').onclick = () => {
+
+        resetearCamposInvalidos();
+
         const solicitudId = params.get('solicitudId');
+        let hayErrores = false;
 
         // 1. Recolectar datos del formulario de contacto
         const bodyData = {
@@ -302,6 +349,16 @@
           email: document.getElementById('email').value,
           detallesAdicionales: document.getElementById('detallesAdicionales').value,
         };
+
+        if (!bodyData.nombreCompleto) { document.getElementById('nombreCompleto').classList.add('campo-invalido'); hayErrores = true; }
+        if (!bodyData.celular) { document.getElementById('celular').classList.add('campo-invalido'); hayErrores = true; }
+        if (!bodyData.email) { document.getElementById('email').classList.add('campo-invalido'); hayErrores = true; }
+
+        if (hayErrores) {
+            showNotification('Por favor, completa todos los campos obligatorios.', 'warning');
+            return;
+        }
+
 
         // 2. Realizar la llamada a la API con el método PUT
         fetch(`/api/solicitudes/${solicitudId}/finalizar`, {
@@ -320,10 +377,16 @@
           })
           .catch(error => {
             console.error('Error:', error);
-            alert(error.message); // Muestra un alerta simple al usuario
+            showNotification("Error: "+error);
           });
       };
 
+      function showNotification(message, type = 'error', duration = 4000) {
+        clearTimeout(notificationTimer);
+        notificationBanner.textContent = message;
+        notificationBanner.className = 'show ' + type;
+        notificationTimer = setTimeout(() => { notificationBanner.className = ''; }, duration);
+      }
 
     });
   </script>

@@ -122,7 +122,7 @@
       font-size: 1.1em;
       transition: background-color 0.2s;
     }
-    
+
     .button-link:hover {
       background-color: #0056b3;
     }
@@ -139,22 +139,24 @@
 
     <div class="content" id="comprobante-content" style="display: none;">
       <div class="section">
+
+        <h2>Detalles del Evento</h2>
+        <div class="details-grid">
+          <div class="detail-item"><strong>Tipo de Evento:</strong> <span id="nombre_para_mostrar"></span></div>
+          <div class="detail-item"><strong>Detalles:</strong> <span id="detalles"></span></div>
+          <div class="detail-item"><strong>Fecha:</strong> <span id="fecha_evento"></span></div>
+          <div class="detail-item"><strong>Hora:</strong> <span id="hora_evento"></span></div>
+          <div class="detail-item"><strong>Duración:</strong> <span id="duracion"></span></div>
+          <div class="detail-item"><strong>Cantidad de Personas:</strong> <span id="cantidad_de_personas"></span></div>
+        </div>
+      </div>
+
+      <div class="section">
         <h2>Detalles del Solicitante</h2>
         <div class="details-grid">
           <div class="detail-item"><strong>Nombre:</strong> <span id="nombre_completo"></span></div>
           <div class="detail-item"><strong>Email:</strong> <span id="email"></span></div>
           <div class="detail-item"><strong>Teléfono:</strong> <span id="telefono"></span></div>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2>Detalles del Evento</h2>
-        <div class="details-grid">
-          <div class="detail-item"><strong>Tipo de Evento:</strong> <span id="nombre_para_mostrar"></span></div>
-          <div class="detail-item"><strong>Fecha:</strong> <span id="fecha_evento"></span></div>
-          <div class="detail-item"><strong>Hora:</strong> <span id="hora_evento"></span></div>
-          <div class="detail-item"><strong>Duración:</strong> <span id="duracion"></span></div>
-          <div class="detail-item"><strong>Cantidad de Personas:</strong> <span id="cantidad_de_personas"></span></div>
         </div>
       </div>
 
@@ -169,7 +171,7 @@
             <!-- Los adicionales se insertarán aquí dinámicamente -->
           </ul>
         </div>
-        <div id="total-final">Total Estimado: <span id="precio_final"></span></div>
+        <div id="total-final">Total: <span id="precio_final"></span></div>
       </div>
 
       <div class="section" style="text-align: center; margin-top: 40px;">
@@ -203,55 +205,76 @@
       }
 
       // Llamamos al mismo endpoint que usamos en la página de Contacto
-      fetch(`/api/solicitudes/${solicitudId}`)
-        .then(response => {
-          if (!response.ok) throw new Error('No se pudo cargar la información de la solicitud.');
-          return response.json();
-        })
-        .then(data => {
-          // Función para formatear fechas
-          const formatDate = (dateString) => new Date(dateString).toLocaleDateString('es-AR', { timeZone: 'UTC' });
-          // Función para formatear moneda
-          const formatCurrency = (number) => `$${parseFloat(number).toLocaleString('es-AR')}`;
+      Promise.all([
+            fetch(`/api/solicitudes/${solicitudId}`).then(res => res.json()),
+            fetch('/api/opciones/tipos-evento').then(res => res.json())
+        ])
+        .then(([solicitudData, todosLosTipos]) => {
+            // 'solicitudData' tiene los detalles de la solicitud actual
+            // 'todosLosTipos' es el array completo de tipos de evento
 
-          // Rellenar los campos con los datos de la API
-          document.getElementById('nombre_completo').textContent = data.nombre_completo;
-          document.getElementById('email').textContent = data.email;
-          document.getElementById('telefono').textContent = data.telefono;
-          document.getElementById('nombre_para_mostrar').textContent = data.nombre_para_mostrar;
-          document.getElementById('fecha_evento').textContent = formatDate(data.fecha_evento);
-          document.getElementById('hora_evento').textContent = data.hora_evento;
-          document.getElementById('duracion').textContent = data.duracion;
-          document.getElementById('cantidad_de_personas').textContent = data.cantidad_de_personas;
+            if (!solicitudData || !solicitudData.id_solicitud) {
+                throw new Error('La solicitud solicitada no fue encontrada.');
+            }
 
-          // Rellenar precios
-          document.getElementById('precio_basico').textContent = formatCurrency(data.precio_basico);
+            // Buscamos la descripción completa del tipo de evento
+            const tipoEventoCompleto = todosLosTipos.find(tipo => tipo.id === solicitudData.tipo_de_evento);
+            const descripcionEvento = tipoEventoCompleto ? tipoEventoCompleto.descripcion : 'No disponible.';
+            
+            // Añadimos el nuevo campo al HTML
+            const detalleTipoEventoDiv = document.createElement('div');
+            detalleTipoEventoDiv.className = 'section';
+            detalleTipoEventoDiv.innerHTML = `
+                <h2>Detalles del Tipo de Evento</h2>
+                <div class="detail-item" style="white-space: pre-wrap;">
+                    <span>${descripcionEvento}</span>
+                </div>
+            `;
+            // Insertamos la nueva sección después de los detalles del evento
+            const detallesEventoSection = document.querySelector('.section:nth-of-type(2)');
+            detallesEventoSection.parentNode.insertBefore(detalleTipoEventoDiv, detallesEventoSection.nextSibling);
 
-          let totalAdicionales = 0;
-          if (data.adicionales && data.adicionales.length > 0) {
-            const adicionalesList = document.getElementById('adicionales-list');
-            data.adicionales.forEach(ad => {
-              const li = document.createElement('li');
-              li.innerHTML = `<span>${ad.adicional_nombre}</span><strong>${formatCurrency(ad.adicional_precio)}</strong>`;
-              adicionalesList.appendChild(li);
-              totalAdicionales += parseFloat(ad.adicional_precio);
-            });
-            document.getElementById('adicionales-section').style.display = 'block';
-          }
 
-          const precioFinal = parseFloat(data.precio_basico) + totalAdicionales;
-          document.getElementById('precio_final').textContent = formatCurrency(precioFinal);
+            // --- EL RESTO DEL CÓDIGO ES IGUAL, SOLO USA 'solicitudData' ---
+            const formatDate = (dateString) => new Date(dateString).toLocaleDateString('es-AR', { timeZone: 'UTC' });
+            const formatCurrency = (number) => `$${parseFloat(number).toLocaleString('es-AR')}`;
 
-          // Ocultar carga y mostrar contenido
-          loadingDiv.style.display = 'none';
-          contentDiv.style.display = 'block';
+            document.getElementById('nombre_completo').textContent = solicitudData.nombre_completo;
+            document.getElementById('email').textContent = solicitudData.email;
+            document.getElementById('telefono').textContent = solicitudData.telefono;
+            document.getElementById('nombre_para_mostrar').textContent = solicitudData.nombre_para_mostrar;
+            document.getElementById('fecha_evento').textContent = formatDate(solicitudData.fecha_evento);
+            document.getElementById('hora_evento').textContent = solicitudData.hora_evento;
+            document.getElementById('duracion').textContent = solicitudData.duracion;
+            document.getElementById('cantidad_de_personas').textContent = solicitudData.cantidad_de_personas;
+            
+            document.getElementById('precio_basico').textContent = formatCurrency(solicitudData.precio_basico);
+            
+            let totalAdicionales = 0;
+            if (solicitudData.adicionales && solicitudData.adicionales.length > 0) {
+                const adicionalesList = document.getElementById('adicionales-list');
+                solicitudData.adicionales.forEach(ad => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>${ad.adicional_nombre}</span><strong>${formatCurrency(ad.adicional_precio)}</strong>`;
+                    adicionalesList.appendChild(li);
+                    totalAdicionales += parseFloat(ad.adicional_precio);
+                });
+                document.getElementById('adicionales-section').style.display = 'block';
+            }
+
+            const precioFinal = parseFloat(solicitudData.precio_basico) + totalAdicionales;
+            document.getElementById('precio_final').textContent = formatCurrency(precioFinal);
+            
+            loadingDiv.style.display = 'none';
+            contentDiv.style.display = 'block';
         })
         .catch(error => {
-          console.error('Error:', error);
-          loadingDiv.style.display = 'none';
-          errorDiv.style.display = 'block';
-          errorDiv.querySelector('p').textContent = error.message;
+            console.error('Error:', error);
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'block';
+            errorDiv.querySelector('p').textContent = error.message;
         });
+
     });
   </script>
 

@@ -2,7 +2,7 @@
 const pool = require('../db');
 
 const crearSolicitud = async (req, res) => {
-    console.log("-> Controlador crearSolicitud. Body recibido:", req.body);
+    console.log("\n-> Controlador crearSolicitud. Body recibido:", req.body);
 
     const {
         tipoEvento,
@@ -66,23 +66,34 @@ const crearSolicitud = async (req, res) => {
  */
 const getSolicitudPorId = async (req, res) => {
     const { id } = req.params;
-    console.log(`-> Controlador getSolicitudPorId. Petición para ID: ${id}`);
+    console.log(`\n-> Controlador getSolicitudPorId. Petición para ID: ${id}`);
 
     let conn;
     try {
         conn = await pool.getConnection();
 
+        // --- ¡CONSULTA MEJORADA CON ALIAS CONSISTENTES! ---
+        // Ahora devuelve la misma estructura que `getSesionExistente` y más.
         const sql = `
             SELECT 
-                s.*, 
-                ot.nombre_para_mostrar 
+                s.id_solicitud as solicitudId,
+                s.tipo_de_evento as tipoEvento,
+                s.cantidad_de_personas as cantidadPersonas,
+                s.duracion as duracionEvento,
+                DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                s.hora_evento as horaInicio,
+                s.precio_basico as precioBase,
+                s.nombre_completo as nombreCompleto,
+                s.telefono,
+                s.email,
+                s.descripcion,
+                s.estado,
+                ot.nombre_para_mostrar as nombreParaMostrar
             FROM solicitudes s
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
 
-
-        // Consulta para obtener los detalles básicos de la solicitud
         const [solicitud] = await conn.query(sql, [id]);
 
         if (!solicitud) {
@@ -90,15 +101,13 @@ const getSolicitudPorId = async (req, res) => {
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
         }
 
-        // Consulta para obtener los adicionales asociados a esa solicitud
-        const adicionales = await conn.query("SELECT * FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
+        const adicionales = await conn.query("SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
 
-        // Combinamos todo en un solo objeto de respuesta
         const respuesta = {
             ...solicitud,
             adicionales: adicionales || []
         };
-
+        
         console.log(`Enviando detalles completos para la solicitud ID: ${id}`);
         res.status(200).json(respuesta);
 
@@ -108,6 +117,7 @@ const getSolicitudPorId = async (req, res) => {
     } finally {
         if (conn) conn.release();
     }
+
 };
 
 /**
@@ -116,7 +126,7 @@ const getSolicitudPorId = async (req, res) => {
  */
 const finalizarSolicitud = async (req, res) => {
     const { id } = req.params;
-    console.log(`-> Controlador finalizarSolicitud para ID: ${id}. Body recibido:`, req.body);
+    console.log(`\n-> Controlador finalizarSolicitud para ID: ${id}. Body recibido:`, req.body);
     const { nombreCompleto, celular, email, detallesAdicionales } = req.body;
 
     console.log(`-> Finalizando solicitud con ID: ${id}`);
@@ -151,7 +161,7 @@ const finalizarSolicitud = async (req, res) => {
         }
 
         const respuesta = { message: 'Solicitud confirmada exitosamente.', solicitudId: parseInt(id) };
-        console.log(`Solicitud ${id} finalizada. Enviando respuesta:`, respuesta);
+        console.log(`Solicitud ID: ${id} finalizada. Enviando respuesta:`, respuesta);
         res.status(200).json(respuesta);
 
 
@@ -171,12 +181,13 @@ const finalizarSolicitud = async (req, res) => {
 const guardarAdicionales = async (req, res) => {
     const { id } = req.params;
     const adicionales = req.body;
-
-    console.log(`-> Guardando ${adicionales.length} adicionales para la solicitud ID: ${id}`);
+    console.log("\n-> Controlador guardarAdicionales. Body recibido:", req.body);
 
     if (!id || !Array.isArray(adicionales)) {
         return res.status(400).json({ error: 'Se requiere un ID de solicitud y un array de adicionales.' });
     }
+
+    console.log(`Guardando ${adicionales.length} adicionales para la solicitud ID: ${id}...`);
 
     let conn;
     try {
@@ -199,12 +210,12 @@ const guardarAdicionales = async (req, res) => {
 
         await conn.commit();
 
-        console.log(`Adicionales para la solicitud ${id} guardados correctamente.`);
+        console.log(`Adicionales guardados correctamente, solicitud ID: ${id} .`);
         res.status(200).json({ message: 'Adicionales guardados exitosamente.' });
 
     } catch (err) {
         if (conn) await conn.rollback();
-        console.error(`Error al guardar adicionales para la solicitud ${id}:`, err);
+        console.error(`Error al guardar adicionales para la solicitud ID: ${id}:`, err);
         res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -217,7 +228,7 @@ const guardarAdicionales = async (req, res) => {
  */
 const actualizarSolicitud = async (req, res) => {
     const { id } = req.params;
-    console.log(`-> Controlador actualizarSolicitud para ID: ${id}. Body recibido:`, req.body);
+    console.log(`\n-> Controlador actualizarSolicitud para ID: ${id}. Body recibido:`, req.body);
     const {
         tipoEvento,
         cantidadPersonas,
@@ -227,7 +238,7 @@ const actualizarSolicitud = async (req, res) => {
         precioBase
     } = req.body;
 
-    console.log(`-> Actualizando datos básicos de la solicitud ID: ${id}`);
+    console.log(`Actualizando datos básicos de la solicitud ID: ${id}`);
 
     let conn;
     try {
@@ -246,11 +257,11 @@ const actualizarSolicitud = async (req, res) => {
         await conn.query(sql, params);
 
         const respuesta = { solicitudId: parseInt(id) };
-        console.log(`Solicitud ${id} actualizada. Enviando respuesta:`, respuesta);
+        console.log(`Solicitud ID: ${id} actualizada. Enviando respuesta:`, respuesta);
         res.status(200).json(respuesta);
 
     } catch (err) {
-        console.error(`Error al actualizar la solicitud ${id}:`, err);
+        console.error(`Error al actualizar la solicitud ID: ${id}:`, err);
         res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -260,11 +271,13 @@ const actualizarSolicitud = async (req, res) => {
 // ... (al final del archivo, antes de module.exports)
 const getSesionExistente = async (req, res) => {
     const { fingerprintId } = req.query;
-    console.log(`-> Buscando sesión para Fingerprint ID: ${fingerprintId}`);
-
+    console.log(`\n-> Controlador getSesionExistente. query recibido:`, req.query);
+    
     if (!fingerprintId) {
         return res.status(400).json({ error: 'fingerprintId es requerido' });
     }
+
+    console.log(`Buscando sesión para Fingerprint ID: ${fingerprintId}`);
 
     let conn;
     try {

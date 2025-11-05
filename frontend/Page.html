@@ -132,19 +132,13 @@
         }
 
         @keyframes shake {
-
-            0%,
-            100% {
+            0%, 100% {
                 transform: translateX(0);
             }
-
-            20%,
-            60% {
+            20%, 60% {
                 transform: translateX(-5px);
             }
-
-            40%,
-            80% {
+            40%, 80% {
                 transform: translateX(5px);
             }
         }
@@ -422,11 +416,35 @@
 
             bindEvents: function () {
                 console.log("App.init(): 3. Asignando eventos.");
-                this.elements.btnAdicionales.onclick = () => this.validarYEnviar('adicionales');
-                this.elements.btnContacto.onclick = () => this.validarYEnviar('contacto');
+
+                // --- ¡NUEVO! Forzar recarga al navegar hacia atrás ---
+                window.addEventListener('pageshow', function(event) {
+                    // La propiedad 'persisted' es true si la página se carga desde el bfcache.
+                    if (event.persisted) {
+                        console.warn("Página cargada desde bfcache. Forzando recarga completa para asegurar estado limpio.");
+                        window.location.reload();
+                    }
+                });
+
+                this.elements.btnAdicionales.addEventListener('click', this.validarYEnviar.bind(this, 'adicionales'));
+                this.elements.btnContacto.addEventListener('click', this.validarYEnviar.bind(this, 'contacto'));
+                
                 this.elements.resetTipoEventoBtn.onclick = () => { window.location.href = '/'; };
+                
                 [this.elements.cantidadPersonasSelect, this.elements.duracionEventoSelect, this.elements.horaInicioSelect].forEach(el => {
                     if (el) el.addEventListener('change', () => this.actualizarTodo());
+                });
+            },
+
+
+
+            resetearCamposInvalidos: function() {
+                const camposInvalidos = document.querySelectorAll('.campo-invalido');
+                camposInvalidos.forEach(campo => {
+                    campo.classList.remove('campo-invalido');
+                    campo.style.animation = 'none';
+                    void campo.offsetWidth;
+                    campo.style.animation = '';
                 });
             },
 
@@ -570,30 +588,58 @@
             // 3. LÓGICA DE INTERACCIÓN Y UI
             // =================================================================
             populateForm: function (solicitud) {
-                console.log("--- INICIO populateForm ---");
-                const radio = document.querySelector(`input[name="tipoEvento"][value="${solicitud.tipoEvento}"]`);
+                console.log("--- INICIO populateForm (v-log) ---", solicitud);
+
+                const tipo = solicitud.tipoEvento || solicitud.tipo_de_evento;
+                const cantidad = solicitud.cantidadPersonas || solicitud.cantidad_de_personas;
+                const duracion = solicitud.duracionEvento || solicitud.duracion;
+                const fecha = solicitud.fechaEvento || solicitud.fecha_evento;
+                const hora = solicitud.horaInicio || solicitud.hora_evento;
+
+                console.log("populate: Datos normalizados:", { tipo, cantidad, duracion, fecha, hora });
+
+                const radio = document.querySelector(`input[name="tipoEvento"][value="${tipo}"]`);
                 if (radio) {
+                    console.log("populate: 1. Seleccionando radio:", tipo);
                     radio.checked = true;
-                    this.actualizarTodo(); // Primera actualización para poblar selects
-
-                    setTimeout(() => { // Damos tiempo a que se llenen los selects
-                        this.elements.cantidadPersonasSelect.value = solicitud.cantidadPersonas;
-                        this.elements.duracionEventoSelect.value = solicitud.duracionEvento;
-                        if (solicitud.fechaEvento && this.calendario) {
-                            this.calendario.setDate(solicitud.fechaEvento, true);
-                        }
-
-                        setTimeout(() => { // Damos tiempo a que se actualicen las horas
-                            this.elements.horaInicioSelect.value = solicitud.horaInicio;
-                            this.actualizarTodo(); // Actualización final para calcular el precio
-                            console.log("--- FIN populateForm ---");
-                        }, 150);
-                    }, 150);
+                } else {
+                    console.warn(`populate: No se encontró radio para tipo: ${tipo}`);
                 }
+
+                console.log("populate: 2. Ejecutando primera actualización...");
+                this.actualizarTodo(); 
+                
+                setTimeout(() => { // Usamos un timeout para dar tiempo al DOM a poblar las opciones
+                    console.log("populate: 3. Intentando establecer valores...");
+                    this.elements.cantidadPersonasSelect.value = cantidad;
+                    console.log(`populate: set cantidad a '${cantidad}'. Valor actual:`, this.elements.cantidadPersonasSelect.value);
+
+                    this.elements.duracionEventoSelect.value = duracion;
+                    console.log(`populate: set duracion a '${duracion}'. Valor actual:`, this.elements.duracionEventoSelect.value);
+
+                    if (fecha && this.calendario) {
+                        console.log("populate: 4. Estableciendo fecha:", fecha);
+                        this.calendario.setDate(fecha, true);
+                    }
+                    
+                    setTimeout(() => {
+                        console.log("populate: 5. Intentando establecer hora...");
+                        this.elements.horaInicioSelect.value = hora;
+                        console.log(`populate: set hora a '${hora}'. Valor actual:`, this.elements.horaInicioSelect.value);
+                        
+                        console.log("populate: 6. Ejecutando actualización final.");
+                        this.actualizarTodo();
+                        console.log("--- FIN populateForm ---");
+                    }, 200); // Aumentamos ligeramente el tiempo de espera
+                }, 200);
             },
 
-            validarYEnviar: function (destino) {
-                document.querySelectorAll('.campo-invalido').forEach(el => el.classList.remove('campo-invalido'));
+
+
+
+
+            validarYEnviar: async function (destino) {
+                this.resetearCamposInvalidos();
                 const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
                 let hayErrores = false;
 
@@ -608,8 +654,11 @@
                     return;
                 }
 
-                console.log(`[FE] validando y enviando. ID de solicitud actual: ${this.solicitudId}`);
+                // --- ¡CORRECCIÓN! DESHABILITAMOS LOS BOTONES INMEDIATAMENTE ---
                 this.toggleLoadingOverlay(true, 'Guardando solicitud...');
+                this.elements.btnAdicionales.disabled = true;
+                this.elements.btnContacto.disabled = true;
+                console.log(`[FE] Botones deshabilitados, iniciando fetch. ID de solicitud actual: ${this.solicitudId}`);
 
                 const bodyData = {
                     tipoEvento: selectedRadio.value,
@@ -621,46 +670,62 @@
                     fingerprintId: this.visitorId
                 };
 
-                let fetchPromise;
-                if (this.solicitudId) {
-                    console.log(`[FE] DECISIÓN: Actualizar (PUT) solicitud existente ID: ${this.solicitudId}`);
-                    fetchPromise = fetch(`/api/solicitudes/${this.solicitudId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(bodyData)
-                    });
-                } else {
-                    console.log("[FE] DECISIÓN: Crear (POST) nueva solicitud.");
-                    fetchPromise = fetch('/api/solicitudes', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(bodyData)
-                    });
+                
+                try {
+                    let response;
+                    console.log("[FE] Creando/Actualizando...");
+                    if (this.solicitudId) {
+                        console.log(`[FE] DECISIÓN: Actualizar (PUT) solicitud ID: ${this.solicitudId}`);
+                        response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(bodyData)
+                        });
+                    } else {
+                        console.log("[FE] DECISIÓN: Crear (POST) nueva solicitud.");
+                        response = await fetch('/api/solicitudes', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(bodyData)
+                        });
+                    }
+                    console.log("[FE] Fetch completado.");
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Error del servidor');
+                    }
+                    
+                    const data = await response.json();
+                    const id = data.solicitudId;
+                    if (!id) throw new Error("Respuesta inválida del servidor.");
+
+                    this.solicitudId = id;
+                    
+                    const nextPage = (destino === 'adicionales') ? 'Adicionales.html' : 'Contacto.html';
+                    const fromParam = (destino === 'contacto') ? '&from=page' : '';
+                    const urlFinal = `${nextPage}?solicitudId=${id}${fromParam}`;
+
+                    console.log(`[FE] Redirección inminente a: ${urlFinal}`);
+
+                    
+                    // --- ¡CAMBIO CLAVE! ---
+                    // Forzamos la redirección en un nuevo ciclo de eventos para evitar bloqueos.
+                    setTimeout(() => {
+                        window.location.href = urlFinal;
+                    }, 50); // Una pequeña demora de 50ms es suficiente
+
+
+                } catch (error) {
+                    console.error('[FE] Error en validarYEnviar:', error);
+                    this.showNotification(`Error: ${error.message}`, 'error');
+                    // Si algo falla, volvemos a habilitar todo.
+                    this.toggleLoadingOverlay(false);
+                    this.habilitarBotones(); 
                 }
 
-                fetchPromise
-                    .then(response => {
-                        if (!response.ok) {
-                            console.error("[FE] La respuesta de la API no fue OK.", response);
-                            return response.json().then(err => { throw new Error(err.error || 'Error del servidor') });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        const id = data.solicitudId;
-                        if (!id) throw new Error("Respuesta inválida del servidor.");
-                        this.solicitudId = id;
-                        console.log(`[FE] ID de solicitud procesado: ${id}. Redirigiendo...`);
-
-                        const nextPage = (destino === 'adicionales') ? 'Adicionales.html' : 'Contacto.html';
-                        const fromParam = (destino === 'contacto') ? '&from=page' : '';
-                        window.location.href = `${nextPage}?solicitudId=${id}${fromParam}`;
-                    })
-                    .catch(error => {
-                        console.error('[FE] Error en la cadena de fetch de validarYEnviar:', error);
-                        this.showNotification(`Error: ${error.message}`, 'error');
-                        this.toggleLoadingOverlay(false);
-                    });
+                
+                
             },
 
             inicializarCalendario: function (fechasOcupadas, feriados) {
@@ -693,6 +758,24 @@
             actualizarTodo: function () {
                 console.groupCollapsed("--- Actualizando Formulario Completo ---");
 
+                function convertirNumero(numero) {
+                    const num = typeof numero === 'number' ? numero.toString().trim() : numero.trim();
+                    if (num === '') return '';
+                    // Detectar formato y convertir a número
+                    const esAmericano = /^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(num);
+                    const esArgentino = /^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(num);
+                    if (esArgentino) return num;
+                    let numeroLimpio = num.replace(/[^\d.,-]/g, '');
+                    numeroLimpio = esAmericano ? num.replace(/,/g, '') : numeroLimpio.replace('.', ',');
+                    // Convertir a número y formatear con separadores de miles
+                    const partes = numeroLimpio.split(',');
+                    let parteEntera = partes[0].replace(/\D/g, '');
+                    const parteDecimal = partes[1] || '00';
+                    // Agregar puntos de miles
+                    parteEntera = parteEntera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    return parteDecimal ? `${parteEntera},${parteDecimal}` : parteEntera;
+                }
+                
                 const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
                 const tipoId = selectedRadio ? selectedRadio.value : '';
                 const fechaSeleccionada = this.calendario ? this.calendario.selectedDates[0] : null;
@@ -755,8 +838,8 @@
                     }
                 }
                 if (cantidad) detalleHtml += `<li><strong>Personas:</strong> ${cantidad}</li>`;
-                if (montoSena > 0) detalleHtml += `<li style="margin-top:10px; color: #0056b3;"><strong>Seña:</strong> $${montoSena.toLocaleString('es-AR')}</li>`;
-                if (depositoGarantia > 0) detalleHtml += `<li style="color: #555;"><strong>Depósito:</strong> $${depositoGarantia.toLocaleString('es-AR')} (reint.)</li>`;
+                if (montoSena > 0) detalleHtml += `<li style="margin-top:10px; color: #0056b3;"><strong>Seña:</strong> $${convertirNumero(montoSena)} (no reint.)</li>`;
+                if (depositoGarantia > 0) detalleHtml += `<li style="color: #555;"><strong>Depósito:</strong> $${convertirNumero(depositoGarantia)} (reint.)</li>`;
                 detalleHtml += '</ul>';
                 this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
 
@@ -774,7 +857,7 @@
                         reglasAplicables.sort((a, b) => new Date(b.fechaVigencia) - new Date(a.fechaVigencia));
                         const reglaFinal = reglasAplicables[0];
                         const precioCalculado = reglaFinal.precioPorHora * duracionNum;
-                        this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${precioCalculado.toLocaleString('es-AR')}`;
+                        this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${convertirNumero(precioCalculado)}`;
                         this.elements.precioBaseInput.value = precioCalculado;
                     } else {
                         this.elements.presupuestoDetalleDiv.insertAdjacentHTML('beforeend', '<p style="color:red;">No se encontró tarifa.</p>');
