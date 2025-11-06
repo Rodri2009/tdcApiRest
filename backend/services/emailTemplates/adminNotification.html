@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        .container {
+            padding: 20px;
+            border: 1px solid #ddd;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #0056b3;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .detail-grid strong {
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Nueva Solicitud de Reserva Confirmada</h1>
+        <p>Se ha recibido una nueva solicitud a través del sitio web. ID de Solicitud: <strong>{{id_solicitud}}</strong>
+        </p>
+
+        <h2>Detalles del Cliente</h2>
+        <div class="detail-grid">
+            <strong>Nombre:</strong> <span>{{nombre_completo}}</span>
+            <strong>Teléfono:</strong> <span>{{telefono}}</span>
+            <strong>Email:</strong> <span>{{email}}</span>
+        </div>
+
+        <h2>Detalles del Evento</h2>
+        <div class="detail-grid">
+            <strong>Tipo:</strong> <span>{{nombre_para_mostrar}}</span>
+            <strong>Fecha:</strong> <span>{{fecha_evento}}</span>
+            <strong>Hora:</strong> <span>{{hora_evento}}</span>
+            <strong>Duración:</strong> <span>{{duracion}}</span>
+            <strong>Personas:</strong> <span>{{cantidad_de_personas}}</span>
+        </div>
+
+        <h2>Observaciones del Cliente</h2>
+        <p>{{descripcion}}</p>
+    </div>
+</body>
+
+</html>

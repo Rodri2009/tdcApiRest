@@ -5,7 +5,7 @@ const pool = require('../db');
 
 // Obtener todos los tipos de eventos públicos
 const getTiposDeEvento = async (req, res) => {
-    console.log("\n-> Ejecutando controlador getTiposDeEvento...");
+    //console.log("\n-> Ejecutando controlador getTiposDeEvento...");
     let conn;
     try {
         conn = await pool.getConnection();
@@ -24,7 +24,7 @@ const getTiposDeEvento = async (req, res) => {
 
 // Obtener todas las opciones de adicionales
 const getAdicionales = async (req, res) => {
-    console.log("\n-> Ejecutando controlador getAdicionales...");
+    //console.log("\n-> Ejecutando controlador getAdicionales...");
     let conn;
     try {
         conn = await pool.getConnection();
@@ -39,7 +39,7 @@ const getAdicionales = async (req, res) => {
 };
 
 const getConfig = async (req, res) => {
-    console.log("\n-> Ejecutando controlador getConfig...");
+    //console.log("\n-> Ejecutando controlador getConfig...");
     let conn;
     try {
         conn = await pool.getConnection();
@@ -58,7 +58,7 @@ const getConfig = async (req, res) => {
 };
 
 const getTarifas = async (req, res) => {
-    console.log("\n-> Ejecutando controlador getTarifas...");
+    //console.log("\n-> Ejecutando controlador getTarifas...");
     let conn;
     try {
         conn = await pool.getConnection();
@@ -73,8 +73,8 @@ const getTarifas = async (req, res) => {
 };
 
 const getOpcionesDuracion = async (req, res) => {
-     console.log("\n-> Ejecutando controlador getOpcionesDuracion...");
-   let conn;
+    //console.log("\n-> Ejecutando controlador getOpcionesDuracion...");
+    let conn;
     try {
         conn = await pool.getConnection();
         const rows = await conn.query("SELECT * FROM `opciones_duracion`;");
@@ -95,7 +95,7 @@ const getOpcionesDuracion = async (req, res) => {
 };
 
 const getOpcionesHorarios = async (req, res) => {
-    console.log("\n-> Ejecutando controlador getOpcionesHorarios...");
+    //console.log("\n-> Ejecutando controlador getOpcionesHorarios...");
     let conn;
     try {
         conn = await pool.getConnection();
@@ -117,7 +117,7 @@ const getOpcionesHorarios = async (req, res) => {
 };
 
 const getFechasOcupadas = async (req, res) => {
-    console.log("\n-> Ejecutando controlador getFechasOcupadas...");
+    //console.log("\n-> Ejecutando controlador getFechasOcupadas...");
     let conn;
     try {
         conn = await pool.getConnection();

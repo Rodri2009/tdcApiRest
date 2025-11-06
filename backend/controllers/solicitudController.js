@@ -1,5 +1,6 @@
 // backend/controllers/solicitudController.js
 const pool = require('../db');
+const { sendAdminNotification } = require('../services/emailService');
 
 const crearSolicitud = async (req, res) => {
     console.log("\n-> Controlador crearSolicitud. Body recibido:", req.body);
@@ -107,7 +108,7 @@ const getSolicitudPorId = async (req, res) => {
             ...solicitud,
             adicionales: adicionales || []
         };
-        
+
         console.log(`Enviando detalles completos para la solicitud ID: ${id}`);
         res.status(200).json(respuesta);
 
@@ -126,7 +127,6 @@ const getSolicitudPorId = async (req, res) => {
  */
 const finalizarSolicitud = async (req, res) => {
     const { id } = req.params;
-    console.log(`\n-> Controlador finalizarSolicitud para ID: ${id}. Body recibido:`, req.body);
     const { nombreCompleto, celular, email, detallesAdicionales } = req.body;
 
     console.log(`-> Finalizando solicitud con ID: ${id}`);
@@ -139,39 +139,50 @@ const finalizarSolicitud = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // En el futuro, aquí también recalcularíamos el precio final
-        // por si se añadieron adicionales. Por ahora, solo actualizamos los datos.
-
-        const sql = `
-            UPDATE solicitudes 
-            SET 
-                nombre_completo = ?,
-                telefono = ?,
-                email = ?,
-                descripcion = ?,
-                estado = 'Confirmado' 
+        const sqlUpdate = `
+            UPDATE solicitudes SET nombre_completo = ?, telefono = ?, email = ?, descripcion = ?, estado = 'Confirmado' 
             WHERE id_solicitud = ?;
         `;
-
-        const params = [nombreCompleto, celular, email, detallesAdicionales, id];
-        const result = await conn.query(sql, params);
+        const paramsUpdate = [nombreCompleto, celular, email, detallesAdicionales, id];
+        const result = await conn.query(sqlUpdate, paramsUpdate);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'La solicitud a actualizar no fue encontrada.' });
         }
 
+        // --- LÓGICA DE EMAIL SEPARADA ---
+        // Obtenemos los datos para el email.
+        const sqlSelect = `
+            SELECT s.*, ot.nombre_para_mostrar 
+            FROM solicitudes s
+            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+            WHERE s.id_solicitud = ?;
+        `;
+        const [solicitudCompleta] = await conn.query(sqlSelect, [id]);
+
+        // ENVIAMOS LA RESPUESTA AL CLIENTE INMEDIATAMENTE.
+        // El cliente no tiene que esperar a que se envíe el email.
         const respuesta = { message: 'Solicitud confirmada exitosamente.', solicitudId: parseInt(id) };
-        console.log(`Solicitud ID: ${id} finalizada. Enviando respuesta:`, respuesta);
+        console.log(`Solicitud ${id} actualizada. Enviando respuesta al cliente.`);
         res.status(200).json(respuesta);
 
+        // AHORA, intentamos enviar el email. Si falla, solo se registrará en el log.
+        if (solicitudCompleta) {
+            sendAdminNotification(solicitudCompleta);
+        }
 
     } catch (err) {
         console.error(`Error al finalizar la solicitud ${id}:`, err);
-        res.status(500).json({ error: 'Error interno del servidor.' });
+        // Si ya se ha enviado una respuesta, Express no hará nada.
+        // Si el error ocurrió antes de res.json(), se enviará esta respuesta de error.
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Error interno del servidor.' });
+        }
     } finally {
         if (conn) conn.release();
     }
 };
+
 
 
 /**
@@ -272,7 +283,7 @@ const actualizarSolicitud = async (req, res) => {
 const getSesionExistente = async (req, res) => {
     const { fingerprintId } = req.query;
     console.log(`\n-> Controlador getSesionExistente. query recibido:`, req.query);
-    
+
     if (!fingerprintId) {
         return res.status(400).json({ error: 'fingerprintId es requerido' });
     }

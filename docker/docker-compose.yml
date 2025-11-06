@@ -27,6 +27,10 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      EMAIL_SERVICE: ${EMAIL_SERVICE}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      EMAIL_ADMIN: ${EMAIL_ADMIN}
     ports:
       - "3000:3000"
     #networks:
@@ -47,13 +51,13 @@ services:
       # El 'test' ahora usa las variables del archivo .env
       #test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "${MARIADB_USER}", "-p${MARIADB_PASSWORD}" ]
       #test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MARIADB_ROOT_PASSWORD}"]
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MARIADB_ROOT_PASSWORD"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MARIADB_ROOT_PASSWORD" ]
       interval: 10s
       timeout: 5s
       retries: 10 # Aumentamos los reintentos
     ports:
       - "3306:3306"
-   # La sección 'environment' es crucial aquí. El healthcheck leerá estas variables.
+    # La sección 'environment' es crucial aquí. El healthcheck leerá estas variables.
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}

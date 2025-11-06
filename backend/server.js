@@ -20,14 +20,17 @@ console.log("Cargando rutas de la API...");
 try {
     const opcionesRoutes = require('./routes/opcionesRoutes');
     const solicitudesRoutes = require('./routes/solicitudRoutes');
+    const testRoutes = require('./routes/testRoutes'); // <-- Importar
     app.use('/api/opciones', opcionesRoutes);
     app.use('/api/solicitudes', solicitudesRoutes);
+    app.use('/api/test', testRoutes); // <-- Usar
     console.log("Rutas configuradas correctamente.");
 } catch (error) {
     console.error("¡ERROR CRÍTICO AL CARGAR RUTAS!", error);
     // Aquí sí podríamos querer salir si el código está roto, 
     // pero para seguir tu petición, solo lo logueamos.
 }
+
 
 // --- Manejador de Errores Global ---
 app.use((err, req, res, next) => {
@@ -49,7 +52,7 @@ async function startServer() {
         console.error(`❌ ERROR FATAL: Faltan variables de entorno: ${missingVars.join(', ')}`);
         // Aquí sí debemos salir, porque nunca funcionará sin credenciales.
         // Pero el contenedor se reiniciará si tienes restart_policy.
-        process.exit(1); 
+        process.exit(1);
     }
 
     // 2. Bucle de intentos de conexión
@@ -66,7 +69,7 @@ async function startServer() {
             connected = true;
         } catch (err) {
             console.error(`❌ Falló el intento #${attempts}.`);
-            
+
             // Diagnóstico básico del error para el log
             if (err.code === 'ECONNREFUSED') console.error("   -> Causa: Conexión rechazada. La base de datos podría no estar lista aún.");
             else if (err.code === 'ER_ACCESS_DENIED_ERROR') console.error("   -> Causa: Credenciales incorrectas.");
