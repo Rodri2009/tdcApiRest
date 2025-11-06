@@ -164,6 +164,28 @@
             color: #444;
         }
 
+        #detallePrecios {
+            margin-top: 5px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        #detallePrecios ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 15px 0;
+            text-align: left;
+        }
+
+        #detallePrecios ul li {
+            margin-bottom: 5px;
+            font-size: 1.05em;
+            color: #444;
+        }
+
+
         #presupuestoTotal {
             text-align: right;
             font-size: 1.8em;
@@ -357,6 +379,8 @@
         <div id="presupuestoDetalle">
             <p>Complete las opciones para ver el precio.</p>
         </div>
+        <div id="detallePrecios">
+        </div>
         <div id="presupuestoTotal"><span>Total Básico: </span> $0</div>
         <div class="button-group">
             <button id="btn-adicionales" disabled>Inicializando...</button>
@@ -405,6 +429,7 @@
                     horaInicioSelect: document.getElementById('horaInicio'),
                     fechaEventoInput: document.getElementById('fechaEvento'),
                     presupuestoDetalleDiv: document.getElementById('presupuestoDetalle'),
+                    detallePreciosDiv: document.getElementById('detallePrecios'),
                     presupuestoTotalDiv: document.getElementById('presupuestoTotal'),
                     loadingOverlay: document.getElementById('loadingOverlay'),
                     precioBaseInput: document.getElementById('precioBase'),
@@ -839,7 +864,6 @@
                 }
                 if (cantidad) detalleHtml += `<li><strong>Personas:</strong> ${cantidad}</li>`;
                 if (montoSena > 0) detalleHtml += `<li style="margin-top:10px; color: #0056b3;"><strong>Seña:</strong> $${convertirNumero(montoSena)} (no reint.)</li>`;
-                if (depositoGarantia > 0) detalleHtml += `<li style="color: #555;"><strong>Depósito:</strong> $${convertirNumero(depositoGarantia)} (reint.)</li>`;
                 detalleHtml += '</ul>';
                 this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
 
@@ -857,7 +881,24 @@
                         reglasAplicables.sort((a, b) => new Date(b.fechaVigencia) - new Date(a.fechaVigencia));
                         const reglaFinal = reglasAplicables[0];
                         const precioCalculado = reglaFinal.precioPorHora * duracionNum;
-                        this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${convertirNumero(precioCalculado)}`;
+                        
+                        let detallePrecios = '<ul>';
+                        if (precioCalculado > 0) detallePrecios += `<li style="color: #555;"><strong>Precio básico:</strong> $${convertirNumero(precioCalculado)}</li>`;
+                        if (depositoGarantia > 0) detallePrecios += `<li style="color: #555;"><strong>Depósito reintegrable:</strong> $${convertirNumero(depositoGarantia)}</li>`;
+                        detallePrecios += '</ul>';
+                        this.elements.detallePreciosDiv.innerHTML = detallePrecios;
+
+                        // --- ¡NUEVA LÓGICA DE TOTAL! ---
+                        const totalConDeposito = parseFloat(precioCalculado) + parseFloat(depositoGarantia);
+
+                        this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${convertirNumero(totalConDeposito)}`;
+                        
+                        // Añadimos la línea del depósito si es mayor que cero
+                        if (depositoGarantia > 0) {
+                            this.elements.presupuestoTotalDiv.innerHTML += `<div style="font-size: 0.6em; color: #0056b3; margin-top: 5px;"> Depósito: $${convertirNumero(depositoGarantia)}</div>`;
+                        }
+                        
+                        
                         this.elements.precioBaseInput.value = precioCalculado;
                     } else {
                         this.elements.presupuestoDetalleDiv.insertAdjacentHTML('beforeend', '<p style="color:red;">No se encontró tarifa.</p>');

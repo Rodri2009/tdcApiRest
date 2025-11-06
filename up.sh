@@ -31,19 +31,15 @@ REQUIRED_VARS=(
     "DB_NAME"
     "DB_USER"
     "DB_PASSWORD"
-    
-    # Variables para el Contenedor de MariaDB
     "MARIADB_DATABASE"
     "MARIADB_USER"
     "MARIADB_PASSWORD"
     "MARIADB_ROOT_PASSWORD"
-
-    # --- ¡VARIABLES NUEVAS AÑADIDAS! ---
-    # Variables para el servicio de envío de Emails
     "EMAIL_SERVICE"
     "EMAIL_USER"
     "EMAIL_PASS"
     "EMAIL_ADMIN"
+    "JWT_SECRET"
 )
 
 

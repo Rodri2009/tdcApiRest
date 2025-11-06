@@ -31,6 +31,7 @@ services:
       EMAIL_USER: ${EMAIL_USER}
       EMAIL_PASS: ${EMAIL_PASS}
       EMAIL_ADMIN: ${EMAIL_ADMIN}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "3000:3000"
     #networks:

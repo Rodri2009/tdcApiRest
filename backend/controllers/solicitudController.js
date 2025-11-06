@@ -1,6 +1,7 @@
 // backend/controllers/solicitudController.js
 const pool = require('../db');
 const { sendAdminNotification } = require('../services/emailService');
+const { sendComprobanteEmail } = require('../services/emailService');
 
 const crearSolicitud = async (req, res) => {
     console.log("\n-> Controlador crearSolicitud. Body recibido:", req.body);
@@ -151,24 +152,47 @@ const finalizarSolicitud = async (req, res) => {
         }
 
         // --- LÓGICA DE EMAIL SEPARADA ---
-        // Obtenemos los datos para el email.
+        // Obtenemos los datos completos para los emails
         const sqlSelect = `
-            SELECT s.*, ot.nombre_para_mostrar 
+            SELECT s.*, ot.nombre_para_mostrar, ot.descripcion as descripcion_evento 
             FROM solicitudes s
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
         const [solicitudCompleta] = await conn.query(sqlSelect, [id]);
 
-        // ENVIAMOS LA RESPUESTA AL CLIENTE INMEDIATAMENTE.
-        // El cliente no tiene que esperar a que se envíe el email.
-        const respuesta = { message: 'Solicitud confirmada exitosamente.', solicitudId: parseInt(id) };
-        console.log(`Solicitud ${id} actualizada. Enviando respuesta al cliente.`);
-        res.status(200).json(respuesta);
 
-        // AHORA, intentamos enviar el email. Si falla, solo se registrará en el log.
+        // Obtenemos los adicionales
+        const adicionales = await conn.query("SELECT * FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
+        solicitudCompleta.adicionales = adicionales;
+
+        // Enviamos respuesta al cliente INMEDIATAMENTE
+        res.status(200).json({ message: 'Solicitud confirmada.', solicitudId: parseInt(id) });
+        console.log(`Solicitud ${id} actualizada. Respuesta enviada al cliente.`);
+
+        // AHORA, enviamos los emails "en segundo plano"
         if (solicitudCompleta) {
-            sendAdminNotification(solicitudCompleta);
+            // Email para el Administrador
+            sendComprobanteEmail(
+                process.env.EMAIL_ADMIN,
+                `Nueva Solicitud Confirmada - ID ${id} - ${nombreCompleto}`,
+                solicitudCompleta,
+                {
+                    titulo: "Nueva Solicitud Recibida",
+                    subtitulo: "Un cliente ha confirmado su solicitud de reserva."
+                }
+            );
+
+            // Email para el Cliente
+            sendComprobanteEmail(
+                email, // El email del cliente
+                "Confirmación de tu Solicitud de Reserva - El Templo de Claypole",
+                solicitudCompleta,
+                {
+                    titulo: "¡Gracias por tu Solicitud!",
+                    subtitulo: "Hemos recibido los detalles de tu evento. Nos pondremos en contacto a la brevedad."
+                }
+            );
         }
 
     } catch (err) {

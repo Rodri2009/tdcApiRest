@@ -117,5 +117,14 @@ CREATE TABLE `solicitudes_personal` (
     `estado_asignacion` VARCHAR(50)
 );
 
+CREATE TABLE `usuarios` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `email` VARCHAR(255) NOT NULL UNIQUE,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `nombre` VARCHAR(255),
+  `rol` VARCHAR(50) DEFAULT 'admin',
+  `creado_en` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Mensaje de éxito al final
 SELECT 'Esquema de base de datos creado exitosamente.' AS status;

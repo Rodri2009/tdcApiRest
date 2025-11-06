@@ -1,5 +1,6 @@
 ID_Evento,NombreParaMostrar,Descripcion,MontoSena,Deposito,EsPublico
-INFANTILES,INFANTILES: Cumpleaños Infantiles hasta 12 años (SERVICIO COMPLETO),"EL SERVICIO INCLUYE: 
+INFANTILES,INFANTILES: Cumpleaños Infantiles hasta 12 años (SERVICIO COMPLETO),"
+INCLUYE: 
 * Encargada general
 * Encargada de puerta
 * Uso de cocina completa con cocinera
@@ -32,7 +33,8 @@ NORMAS:
 5. El uso de la cancha está destinado únicamente a niños y niñas hasta 12 años de edad.
 6. Asumir responsabilidad por cualquier daño o pérdida de elementos.
 7. Aplicaremos recargos en caso de no seguir estas indicaciones.",40000,,TRUE
-INFORMALES,"INFORMALES: Juntadas familiares o entre amigos, con uso de parrilla (SERVICIO ECONÓMICO)","INCLUYE:
+INFORMALES,"INFORMALES: Juntadas familiares o entre amigos, con uso de parrilla (SERVICIO ECONÓMICO)","
+INCLUYE:
 * Encargada/o general y control de puerta
 * Mesas y sillas
 * Uso de parrilla
@@ -60,9 +62,8 @@ NORMAS:
 3. Cancelar saldo pendiente un día antes del evento
 4. Responsabilidad por cualquier daño o pérdida de elementos
 5. Recargos por incumplimiento de las normas establecidas",50000,80000,TRUE
-CON_SERVICIO_DE_MESA,FIESTAS de 15 / 18 / casamientos / aniversarios (SERVICIO COMPLETO),"(SERVICIO COMPLETO - Solo debes proveer comida y bebida)
-
-EL SERVICIO INCLUYE:
+CON_SERVICIO_DE_MESA,FIESTAS de 15 / 18 / casamientos / aniversarios (SERVICIO COMPLETO),"
+INCLUYE:
 * Encargada general
 * Encargada de puerta
 * Cocinera y uso completo de cocina
@@ -98,10 +99,9 @@ NORMAS:
 2. Enviar lista de invitados con 24 horas de anticipación
 3. Cancelar saldo pendiente un día antes del evento
 4. Responsabilidad por cualquier daño o pérdida de elementos
-5. Recargos por incumplimiento de las normas establecidas",50000,80000,TRUE
-BABY_SHOWERS,"BABY SHOWERS / BAUTISMOS / COMUNIONES","(SERVICIO COMPLETO - Solo debes proveer comida y bebida)
-
-EL SERVICIO INCLUYE:
+5. Recargos por incumplimiento de las normas establecidas",50000,,TRUE
+BABY_SHOWERS,"BABY SHOWERS / BAUTISMOS / COMUNIONES","
+INCLUYE:
 * Encargada general
 * Encargada de puerta
 * Uso de cocina completa con cocinera
@@ -137,8 +137,9 @@ NORMAS:
 3. Cancelar saldo pendiente un día antes del evento
 4. Solo personal autorizado puede ingresar a la cocina
 5. Responsabilidad por cualquier daño o pérdida de elementos
-6. Recargos por incumplimiento de las normas establecidas",,,FALSE
-ADOLESCENTES,"ADOLESCENTES: Cumpleaños de 13, 14, 15, 16 y 17 años (varones)","CUMPLEAÑOS adolescentes - 13, 14, 15, 16 y 17 AÑOS VARONES
+6. Recargos por incumplimiento de las normas establecidas",,,TRUE
+ADOLESCENTES,"ADOLESCENTES: Cumpleaños de 13, 14, 15, 16 y 17 años (varones)","
+CUMPLEAÑOS adolescentes - 13, 14, 15, 16 y 17 AÑOS VARONES
 
 📆 ____DÍAS Y HORARIOS____
 🌅 Mañana: Desde las 11:00hs

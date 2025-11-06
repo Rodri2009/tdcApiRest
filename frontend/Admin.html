@@ -1,265 +1,146 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base target="_top">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 10px; background-color: #f4f5f7; }
-    h1 { color: #0056b3; text-align: center; }
-    .table-container { max-width: 98%; margin: 20px auto; overflow-x: auto; background-color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background-color: #0056b3; color: white; font-size: 14px; text-transform: uppercase; }
-    tr:nth-child(even) { background-color: #f8f9fa; }
-    tr:hover { background-color: #e9ecef; }
-    select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; }
-    .loader { text-align: center; padding: 50px; font-size: 1.2em; color: #555; }
-    /* --- ESTILOS PARA LOS BOTONES DE ACCIÓN --- */
-    .actions-cell { white-space: nowrap; }
-    .action-btn {
-      padding: 6px 12px;
-      font-size: 13px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      color: white;
-      margin-right: 5px;
-    }
-    .btn-edit { background-color: #ffc107; color: #333; }
-    .btn-delete { background-color: #dc3545; }
-    .btn-assign { background-color: #28a745; }
-    .btn-edit:hover { background-color: #e0a800; }
-    .btn-delete:hover { background-color: #c82333; }
-    .btn-assign:hover { background-color: #218838; }
-    .btn-work-order { background-color: #17a2b8; } /* Celeste/cian */
-    .btn-work-order:hover { background-color: #138496; }
-    #notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #28a745; color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; opacity: 0; transition: opacity 0.5s, transform 0.5s; }
-    #notification.show { opacity: 1; transform: translate(-50%, -10px); }
-    #notification.error { background-color: #dc3545; }
-    #notification.info { background-color: #007bff; }
-  </style>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <style>
+        /* Copiamos los estilos del archivo original */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 10px; background-color: #f4f5f7; }
+        h1 { color: #0056b3; text-align: center; }
+        .table-container { max-width: 98%; margin: 20px auto; overflow-x: auto; background-color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #0056b3; color: white; font-size: 14px; text-transform: uppercase; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        tr:hover { background-color: #e9ecef; }
+        select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; }
+        .loader { text-align: center; padding: 50px; font-size: 1.2em; color: #555; }
+        .actions-cell { white-space: nowrap; }
+        .action-btn { padding: 6px 12px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; color: white; margin-right: 5px; }
+        .btn-edit { background-color: #ffc107; color: #333; }
+        .btn-delete { background-color: #dc3545; }
+        .btn-assign { background-color: #28a745; }
+        .btn-work-order { background-color: #17a2b8; }
+        #notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #28a745; color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; opacity: 0; transition: opacity 0.5s, transform 0.5s; }
+        #notification.show { opacity: 1; transform: translate(-50%, -10px); }
+        #notification.error { background-color: #dc3545; }
+        #notification.info { background-color: #007bff; }
+    </style>
 </head>
 <body>
-  <h1>Panel de Administración de Solicitudes</h1>
-  <div class="table-container" id="admin-table-container">
-    <div class="loader" id="loader">Cargando solicitudes...</div>
-    <table id="solicitudes-table" style="display:none;">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Fecha Solicitud</th>
-          <th>Cliente</th>
-          <th>Tipo Evento</th>
-          <th>Fecha Evento</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="solicitudes-tbody">
-        <!-- Las filas se insertarán aquí con JavaScript -->
-      </tbody>
-    </table>
-  </div>
-  <div id="notification"></div>
-  <!-- --- FORMULARIO OCULTO PARA NAVEGACIÓN --- -->
-  <form id="navigationForm" style="display:none;" method="get" action="<?= urlDeLaApp ?>" target="_top"></form>
+    <h1>Panel de Administración de Solicitudes</h1>
+    <div class="table-container" id="admin-table-container">
+        <div class="loader" id="loader">Cargando solicitudes...</div>
+        <table id="solicitudes-table" style="display:none;">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha Solicitud</th>
+                    <th>Cliente</th>
+                    <th>Tipo Evento</th>
+                    <th>Fecha Evento</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="solicitudes-tbody"></tbody>
+        </table>
+    </div>
+    <div id="notification"></div>
 
-  <script>
-    const tbody = document.getElementById('solicitudes-tbody');
-    const table = document.getElementById('solicitudes-table');
-    const loader = document.getElementById('loader');
-    const notification = document.getElementById('notification');
-    const navigationForm = document.getElementById('navigationForm');
-    let notificationTimer;
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const tbody = document.getElementById('solicitudes-tbody');
+        const table = document.getElementById('solicitudes-table');
+        const loader = document.getElementById('loader');
 
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- CAMBIO CLAVE: Asignamos el listener UNA SOLA VEZ, al cargar la página ---
-        attachEventListeners();
-        cargarSolicitudes();
+        try {
+            // 1. Llamar a la nueva API segura para obtener los datos
+            const response = await fetch('/api/admin/solicitudes');
+
+            // Si el token no es válido o ha expirado, el middleware devolverá un error 401
+            if (response.status === 401) {
+                // Redirigimos a la página de login si no estamos autorizados
+                window.location.href = '/Login.html';
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error('Error del servidor al cargar las solicitudes.');
+            }
+
+            const solicitudes = await response.json();
+
+            // 2. Construir la tabla dinámicamente con los datos recibidos
+            tbody.innerHTML = '';
+            if (solicitudes.length === 0) {
+                loader.textContent = 'No se encontraron solicitudes.';
+                return;
+            }
+
+            solicitudes.forEach(solicitud => {
+                const tr = document.createElement('tr');
+                const fechaSolicitud = new Date(solicitud.fechaSolicitud).toLocaleString('es-AR');
+                const fechaEvento = solicitud.fechaEvento ? new Date(solicitud.fechaEvento).toLocaleDateString('es-AR', { timeZone: 'UTC' }) : 'N/A';
+
+                tr.innerHTML = `
+                    <td>${solicitud.id}</td>
+                    <td>${fechaSolicitud}</td>
+                    <td>${solicitud.nombreCliente || '<em>No completado</em>'}</td>
+                    <td>${solicitud.tipoEvento}</td>
+                    <td>${fechaEvento}</td>
+                    <td>
+                        <select data-id="${solicitud.id}" class="estado-select">
+                            <option value="Solicitado" ${solicitud.estado === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
+                            <option value="Contactado" ${solicitud.estado === 'Contactado' ? 'selected' : ''}>Contactado</option>
+                            <option value="Confirmado" ${solicitud.estado === 'Confirmado' ? 'selected' : ''}>Confirmado</option>
+                            <option value="Cancelado" ${solicitud.estado === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
+                        </select>
+                    </td>
+                    <td class="actions-cell">
+                        <button class="action-btn btn-edit">Modificar</button>
+                        <button class="action-btn btn-delete">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+       
+
+            loader.style.display = 'none';
+            table.style.display = 'table';
+
+        } catch (error) {
+            console.error('Error al cargar el panel de admin:', error);
+            loader.textContent = `Error: ${error.message}`;
+        }
+
+        tbody.addEventListener('click', (event) => {
+            const button = event.target.closest('button.action-btn');
+            if (!button) return;
+
+            const tr = button.closest('tr');
+            const solicitudId = tr.dataset.solicitudId;
+
+            if (button.classList.contains('btn-delete')) {
+                eliminarSolicitud(solicitudId, tr);
+            } else if (button.classList.contains('btn-edit')) {
+                modificarSolicitud(solicitudId);
+            }
+        });
+
+        tbody.addEventListener('change', (event) => {
+            const select = event.target.closest('select.estado-select');
+            if (!select) return;
+            
+            const solicitudId = select.dataset.id;
+            const nuevoEstado = select.value;
+            cambiarEstado(solicitudId, nuevoEstado);
+        });
+
+
     });
-
-    function cargarSolicitudes() {
-      loader.style.display = 'block';
-      table.style.display = 'none';
-      google.script.run
-        .withSuccessHandler(function(solicitudes) {
-          tbody.innerHTML = '';
-          if (solicitudes.length === 0) {
-            loader.innerHTML = 'No se encontraron solicitudes.';
-            return;
-          }
-          
-          solicitudes.forEach(solicitud => {
-            const tr = document.createElement('tr');
-            tr.id = `row-${solicitud.id}`;
-            
-            const assignBtnClass = solicitud.tienePersonalAsignado ? 'btn-assign' : 'btn-work-order';
-            const assignBtnText = solicitud.tienePersonalAsignado ? 'Personal Asignado' : 'Asignar Personal';
-            const workOrderBtnDisplay = solicitud.tienePersonalAsignado ? 'inline-block' : 'none';
-
-            // --- VOLVEMOS A USAR ONCLICK, AHORA FUNCIONARÁN ---
-            tr.innerHTML = `
-              <td>${solicitud.id}</td>
-              <td>${solicitud.fechaSolicitud || 'N/A'}</td>
-              <td>${solicitud.nombreCliente || '<em>No completado</em>'}</td>
-              <td>${solicitud.tipoEvento}</td>
-              <td>${solicitud.fechaEvento || 'N/A'}</td>
-              <td>
-                <select onchange="cambiarEstado(${solicitud.id}, this.value)">
-                  <option value="Solicitado" ${solicitud.estado === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
-                  <option value="Contactado" ${solicitud.estado === 'Contactado' ? 'selected' : ''}>Contactado</option>
-                  <option value="Confirmado" ${solicitud.estado === 'Confirmado' ? 'selected' : ''}>Confirmado</option>
-                  <option value="Cancelado" ${solicitud.estado === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
-                </select>
-              </td>
-              <td class="actions-cell">
-                <button class="action-btn btn-edit" onclick="modificarSolicitud(${solicitud.id})">Modificar</button>
-                <button class="action-btn btn-delete" onclick="eliminarSolicitud(${solicitud.id})">Eliminar</button>
-                <button id="assign-btn-${solicitud.id}" class="action-btn ${assignBtnClass}" 
-                        onclick="asignarPersonal(${solicitud.id}, '${solicitud.tipoEventoId}')"
-                        style="display: ${solicitud.estado === 'Confirmado' ? 'inline-block' : 'none'};">
-                  ${assignBtnText}
-                </button>
-                <button class="action-btn btn-work-order"
-                        onclick="verOrdenDeTrabajo(${solicitud.id})"
-                        style="display: ${workOrderBtnDisplay};">
-                  Orden de Trabajo
-                </button>
-              </td>
-            `;
-            tbody.appendChild(tr);
-          });
-
-          document.getElementById('loader').style.display = 'none';
-          document.getElementById('solicitudes-table').style.display = 'table';
-        })
-        .withFailureHandler(function(error) {
-          loader.innerHTML = `Error al cargar las solicitudes: ${error.message}`;
-        })
-        .getAdminData();
-    }
-
-    // --- CAMBIO 3: Nueva función para manejar todos los eventos de la tabla ---
-    function attachEventListeners() {
-        tbody.addEventListener('click', function(event) {
-            const target = event.target;
-            const id = target.dataset.id;
-            
-            // Verificamos si se hizo clic en un botón con data-id
-            if (id) {
-                if (target.classList.contains('btn-delete')) {
-                    eliminarSolicitud(id);
-                } else if (target.classList.contains('btn-edit')) {
-                    modificarSolicitud(id);
-                } else if (target.dataset.action === 'assign') {
-                    const tipoEventoId = target.dataset.tipoEventoId;
-                    asignarPersonal(id, tipoEventoId);
-                } else if (target.dataset.action === 'work-order') {
-                    verOrdenDeTrabajo(id);
-                }
-            }
-        });
-
-        tbody.addEventListener('change', function(event) {
-            const target = event.target;
-            if (target.classList.contains('estado-select')) {
-                const id = target.dataset.id;
-                const nuevoEstado = target.value;
-                cambiarEstado(id, nuevoEstado);
-            }
-        });
-    }
-
-
-    function cambiarEstado(id, nuevoEstado) {
-      showNotification('Actualizando estado...', 'info');
-      google.script.run
-        .withSuccessHandler(function(response) {
-          if(response.success) {
-            showNotification(response.message);
-            // --- NUEVO: Mostrar/Ocultar el botón de asignar personal dinámicamente ---
-            const assignBtn = document.getElementById(`assign-btn-${id}`);
-            if (assignBtn) {
-              assignBtn.style.display = response.showAssignButton ? 'inline-block' : 'none';
-            }
-          } else {
-            showNotification(response.message, 'error');
-            // Revertir el select al valor anterior si falla
-            document.getElementById(`select-${id}`).value = response.previousState || 'Solicitado';
-          }
-        })
-        .withFailureHandler(function(error) {
-          showNotification(`Error: ${error.message}`, 'error');
-        })
-        .updateSolicitudEstado(id, nuevoEstado);
-    }
-
-    // --- NUEVAS FUNCIONES DE ACCIÓN ---
-    function modificarSolicitud(id) {
-      showNotification(`Cargando editor para la solicitud ID ${id}...`, 'info');
-      // Usamos nuestra función de navegación para ir a la nueva página
-      navegarA('editar_solicitud', { solicitudId: id });
-    }
-
-    function eliminarSolicitud(id) {
-      if (confirm(`¿Estás seguro de que quieres eliminar permanentemente la solicitud ID ${id}? Esta acción no se puede deshacer.`)) {
-        showNotification('Eliminando solicitud...', 'info');
-        google.script.run
-          .withSuccessHandler(function(response) {
-            if (response.success) {
-              showNotification(response.message);
-              // Eliminar la fila de la tabla en el cliente
-              const row = document.getElementById(`row-${id}`);
-              if (row) row.remove();
-            } else {
-              showNotification(response.message, 'error');
-            }
-          })
-          .withFailureHandler(function(error) {
-              showNotification(`Error: ${error.message}`, 'error');
-          })
-          .deleteSolicitudById(id);
-      }
-    }
-
-    function asignarPersonal(id, tipoEventoId) {
-      showNotification('Redirigiendo a la asignación de personal...', 'info');
-      navegarA('asignar_personal', { solicitudId: id, tipoEventoId: tipoEventoId });
-    }
-
-    function verOrdenDeTrabajo(id) {
-        showNotification(`Abriendo orden de trabajo para la solicitud ID ${id}...`, 'info');
-        navegarA('orden_de_trabajo', { solicitudId: id });
-    }
-
-    // --- NUEVA FUNCIÓN DE NAVEGACIÓN ---
-    function navegarA(pagina, params = {}) {
-      navigationForm.innerHTML = ''; // Limpiar el formulario
-      
-      const pageInput = document.createElement('input');
-      pageInput.type = 'hidden';
-      pageInput.name = 'page';
-      pageInput.value = pagina;
-      navigationForm.appendChild(pageInput);
-
-      for (const key in params) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = params[key];
-        navigationForm.appendChild(input);
-      }
-      navigationForm.submit();
-    }
-
-    function showNotification(message, type = 'success', duration = 3000) {
-      clearTimeout(notificationTimer);
-      notification.textContent = message;
-      notification.className = `show ${type}`;
-      notificationTimer = setTimeout(() => {
-        notification.className = '';
-      }, duration);
-    }
-  </script>
+</script>
 </body>
 </html>

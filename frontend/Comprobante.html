@@ -133,8 +133,8 @@
 
   <div class="container">
     <div class="header">
-      <h1>¡Gracias por tu Solicitud! 3</h1>
-      <p>Hemos recibido los detalles de tu evento. Nos pondremos en contacto a la brevedad.</p>
+      <h1>¡Gracias por tu Solicitud!</h1>
+      <p>Se ah enviado un email a su casilla con los siguientes datos. Nos pondremos en contacto a la brevedad.</p>
     </div>
 
     <div class="content" id="comprobante-content" style="display: none;">
@@ -238,24 +238,6 @@
           const formatCurrency = (number) => `$${parseFloat(number).toLocaleString('es-AR')}`;
 
           console.log("solicitudData", solicitudData);
-          /*
-          // Así vienen los datos
-          Object { 
-            solicitudId: 13, 
-            tipoEvento: "INFORMALES", 
-            cantidadPersonas: "Hasta 60", 
-            duracionEvento: "8 horas", 
-            fechaEvento: "2025-11-23", 
-            telefono: "dfgdfgdfg", 
-            email: "villalbarodrigo2009@gmail.com",
-            estado: "Confirmado",
-             horaInicio: "12:00hs",
-             nombreCompleto: "gdfgdfg",
-             nombreParaMostrar: "INFORMALES: Juntadas familiares o entre amigos, con uso de parrilla (SERVICIO ECONÓMICO)",
-             precioBase: "280000.00",
-          }
-          */
-
           console.log("todosLosTipos", todosLosTipos);
           /*
           array[
@@ -278,14 +260,14 @@
             const adicionalesList = document.getElementById('adicionales-list');
             solicitudData.adicionales.forEach(ad => {
               const li = document.createElement('li');
-              li.innerHTML = `<span>${ad.adicional_nombre}</span><strong>${formatCurrency(ad.adicional_precio)}</strong>`;
+              li.innerHTML = `<span>${ad.nombre}</span><strong>${formatCurrency(ad.precio)}</strong>`;
               adicionalesList.appendChild(li);
-              totalAdicionales += parseFloat(ad.adicional_precio);
+              totalAdicionales += parseFloat(ad.precio);
             });
             document.getElementById('adicionales-section').style.display = 'block';
           }
 
-          const precioFinal = parseFloat(solicitudData.precio_basico) + totalAdicionales;
+          const precioFinal = parseFloat(solicitudData.precioBase) + totalAdicionales;
           document.getElementById('precio_final').textContent = formatCurrency(precioFinal);
 
           loadingDiv.style.display = 'none';

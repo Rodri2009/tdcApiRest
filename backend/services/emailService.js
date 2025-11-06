@@ -19,46 +19,65 @@ const transporter = nodemailer.createTransport({
 });
 
 
-
 /**
- * Envía una notificación al administrador con los detalles de una nueva solicitud.
- * @param {object} solicitud - El objeto completo de la solicitud desde la base de datos.
+ * Envía un correo de confirmación/notificación basado en una plantilla HTML.
+ * @param {string} to - El destinatario del correo.
+ * @param {string} subject - El asunto del correo.
+ * @param {object} solicitud - El objeto de la solicitud con todos los datos.
+ * @param {object} headers - Objeto con { titulo, subtitulo } para el encabezado.
  */
-const sendAdminNotification = async (solicitud) => {
-    console.log(`-> Intentando enviar email HTML para la solicitud ID: ${solicitud.id_solicitud}`);
-
-    // 1. Cargar la plantilla HTML
-    let htmlBody = fs.readFileSync(
-        path.join(__dirname, 'emailTemplates/adminNotification.html'),
-        'utf-8'
-    );
-
-    // 2. Formatear los datos y reemplazar los placeholders
-    const formattedSolicitud = {
-        ...solicitud,
-        fecha_evento: new Date(solicitud.fecha_evento).toLocaleDateString('es-AR', { timeZone: 'UTC' }),
-        descripcion: solicitud.descripcion || 'Sin observaciones.'
-    };
-
-    for (const key in formattedSolicitud) {
-        const regex = new RegExp(`{{${key}}}`, 'g');
-        htmlBody = htmlBody.replace(regex, formattedSolicitud[key]);
-    }
-
-    const mailOptions = {
-        from: `"Sistema de Reservas TDC" <${process.env.EMAIL_USER}>`,
-        to: process.env.EMAIL_ADMIN,
-        subject: `Nueva Solicitud Confirmada - ID ${solicitud.id_solicitud} - ${solicitud.nombre_completo}`,
-        html: htmlBody, // <-- Usamos 'html' en lugar de 'text'
-    };
+const sendComprobanteEmail = async (to, subject, solicitud, headers) => {
+    console.log(`-> Preparando email de comprobante para: ${to}`);
 
     try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Email HTML de notificación enviado. Message ID: ${info.messageId}`);
+        // 1. Cargar la plantilla
+        let htmlBody = fs.readFileSync(
+            path.join(__dirname, 'emailTemplates/comprobanteEmail.html'), 'utf-8'
+        );
+
+        // 2. Preparar los datos y formatearlos
+        const formatCurrency = (num) => `$${parseFloat(num || 0).toLocaleString('es-AR')}`;
+        
+        let totalAdicionales = 0;
+        let adicionalesHtml = '';
+        if (solicitud.adicionales && solicitud.adicionales.length > 0) {
+            solicitud.adicionales.forEach(ad => {
+                adicionalesHtml += `<li><span>${ad.nombre || ad.adicional_nombre}</span><strong>${formatCurrency(ad.precio || ad.adicional_precio)}</strong></li>`;
+                totalAdicionales += parseFloat(ad.precio || ad.adicional_precio);
+            });
+        }
+
+        const dataForTemplate = {
+            ...solicitud,
+            header_titulo: headers.titulo,
+            header_subtitulo: headers.subtitulo,
+            fecha_evento: new Date(solicitud.fecha_evento).toLocaleDateString('es-AR', { timeZone: 'UTC' }),
+            precio_basico: formatCurrency(solicitud.precio_basico),
+            adicionales_html: adicionalesHtml,
+            precio_final: formatCurrency(parseFloat(solicitud.precio_basico) + totalAdicionales),
+        };
+        
+        // 3. Reemplazar todos los placeholders en la plantilla
+        for (const key in dataForTemplate) {
+            const regex = new RegExp(`{{${key}}}`, 'g');
+            htmlBody = htmlBody.replace(regex, dataForTemplate[key]);
+        }
+
+        // 4. Enviar el correo
+        await transporter.sendMail({
+            from: `"Sistema de Reservas TDC" <${process.env.EMAIL_USER}>`,
+            to: to,
+            subject: subject,
+            html: htmlBody,
+        });
+
+        console.log(`✅ Email de comprobante enviado exitosamente a ${to}.`);
+
     } catch (error) {
-        console.error("❌ Error al enviar el email HTML:", error);
+        console.error(`❌ Error al enviar el email de comprobante a ${to}:`, error);
     }
 };
+
 
 
 /**
@@ -87,6 +106,6 @@ const sendTestEmail = async () => {
 
 // ... (en module.exports)
 module.exports = {
-    sendAdminNotification,
-    sendTestEmail, // <-- Exporta la nueva función
+    sendTestEmail,
+    sendComprobanteEmail,
 };

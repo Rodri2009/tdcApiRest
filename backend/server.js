@@ -1,4 +1,5 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 // NOTA: Asegúrate de haber eliminado la línea: require('dotenv').config();
 // como hablamos antes, para evitar conflictos con las variables de Docker.
 const pool = require('./db');
@@ -7,6 +8,7 @@ const port = process.env.PORT || 3000;
 
 // --- Middlewares ---
 app.use(express.json());
+app.use(cookieParser()); // <-- USAR
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
@@ -21,9 +23,13 @@ try {
     const opcionesRoutes = require('./routes/opcionesRoutes');
     const solicitudesRoutes = require('./routes/solicitudRoutes');
     const testRoutes = require('./routes/testRoutes'); // <-- Importar
+    const authRoutes = require('./routes/authRoutes'); // <-- IMPORTAR
+    const adminRoutes = require('./routes/adminRoutes'); // <-- IMPORTAR
     app.use('/api/opciones', opcionesRoutes);
     app.use('/api/solicitudes', solicitudesRoutes);
     app.use('/api/test', testRoutes); // <-- Usar
+    app.use('/api/auth', authRoutes); // <-- USAR
+    app.use('/api/admin', adminRoutes); // <-- USAR
     console.log("Rutas configuradas correctamente.");
 } catch (error) {
     console.error("¡ERROR CRÍTICO AL CARGAR RUTAS!", error);

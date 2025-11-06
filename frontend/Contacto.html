@@ -297,26 +297,28 @@
           return response.json();
         })
         .then(data => {
+          //console.log(data);
           let totalAdicionales = 0;
           let listaAdicionales = "";
           if (data.adicionales && data.adicionales.length > 0) {
             data.adicionales.forEach(ad => {
-              totalAdicionales += parseFloat(ad.adicional_precio);
-              listaAdicionales = listaAdicionales == "" ? ad.adicional_nombre : listaAdicionales + ", " + ad.adicional_nombre
+              totalAdicionales += parseFloat(ad.precio);
+              listaAdicionales = listaAdicionales == "" ? ad.nombre : listaAdicionales + ", " + ad.nombre
               //listaAdicionales += ad.adicional_nombre + " ";
             });
           }
-          console.log("total adicionales",totalAdicionales);
+          //console.log("total adicionales",totalAdicionales);
 
           // 3. Mostrar los datos en la página
-          const fecha = new Date(data.fecha_evento).toLocaleDateString('es-AR', { timeZone: 'UTC' });
+          const fecha = new Date(data.fechaEvento).toLocaleDateString('es-AR', { timeZone: 'UTC' });
           resumenDiv.innerHTML = `
                     <h3>Resumen de tu evento:</h3>
                     <ul>
-                      <li><strong>Tipo:</strong> ${data.nombre_para_mostrar || data.tipo_de_evento}</li>
-                      <li><strong>Fecha:</strong> ${fecha}  <strong>Hora:</strong> ${data.hora_evento}</li>
+                      <li><strong>Tipo:</strong> ${data.nombreParaMostrar || data.tipoEvento}</li>
+                      <li><strong>Fecha:</strong> ${fecha}</li>
+                      <li><strong>Hora:</strong> ${data.horaInicio}</li>
                       <li><strong>Adicionales:</strong> ${listaAdicionales}</li>
-                      <li><strong>TOTAL:</strong> $${convertirNumero(parseFloat(data.precio_basico) + parseFloat(totalAdicionales))}</li>
+                      <li><strong>TOTAL:</strong> $${convertirNumero(parseFloat(data.precioBase) + parseFloat(totalAdicionales))}</li>
                   </ul>
                 `;
         })
