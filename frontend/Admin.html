@@ -107,6 +107,29 @@
                 tbody.appendChild(tr);
             });
        
+            tbody.addEventListener('click', (event) => {
+                const button = event.target.closest('button.action-btn');
+                if (!button) return;
+
+                const tr = button.closest('tr');
+                const solicitudId = tr.dataset.solicitudId;
+
+                if (button.classList.contains('btn-delete')) {
+                    eliminarSolicitud(solicitudId, tr);
+                } else if (button.classList.contains('btn-edit')) {
+                    modificarSolicitud(solicitudId);
+                }
+            });
+
+            tbody.addEventListener('change', (event) => {
+                const select = event.target.closest('select.estado-select');
+                if (!select) return;
+                
+                const solicitudId = select.dataset.id;
+                const nuevoEstado = select.value;
+                cambiarEstado(solicitudId, nuevoEstado);
+            });
+
 
             loader.style.display = 'none';
             table.style.display = 'table';
@@ -116,31 +139,17 @@
             loader.textContent = `Error: ${error.message}`;
         }
 
-        tbody.addEventListener('click', (event) => {
-            const button = event.target.closest('button.action-btn');
-            if (!button) return;
-
-            const tr = button.closest('tr');
-            const solicitudId = tr.dataset.solicitudId;
-
-            if (button.classList.contains('btn-delete')) {
-                eliminarSolicitud(solicitudId, tr);
-            } else if (button.classList.contains('btn-edit')) {
-                modificarSolicitud(solicitudId);
-            }
-        });
-
-        tbody.addEventListener('change', (event) => {
-            const select = event.target.closest('select.estado-select');
-            if (!select) return;
-            
-            const solicitudId = select.dataset.id;
-            const nuevoEstado = select.value;
-            cambiarEstado(solicitudId, nuevoEstado);
-        });
-
-
     });
+
+    function modificarSolicitud(id) {
+        // Redirigimos a la página de edición, que refactorizaremos a continuación
+        window.location.href = `/EditarSolicitud.html?solicitudId=${id}`;
+    }
+
+    function showNotification(message, type, duration = 3000) {
+        // ... (función de notificación sin cambios)
+    }
+
 </script>
 </body>
 </html>
