@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <base target="_top">
     <meta charset="UTF-8">
@@ -10,7 +11,7 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
 
- <style>
+    <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -131,13 +132,19 @@
         }
 
         @keyframes shake {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateX(0);
             }
-            20%, 60% {
+
+            20%,
+            60% {
                 transform: translateX(-5px);
             }
-            40%, 80% {
+
+            40%,
+            80% {
                 transform: translateX(5px);
             }
         }
@@ -305,6 +312,22 @@
             background-color: #0056b3;
         }
 
+        select,
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1.5px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+            background-color: #fff;
+            /* Añade estas propiedades si faltan, son específicas para textarea */
+            font-family: Arial, sans-serif;
+            resize: vertical;
+        }
+
+
         @media (min-width: 768px) {
             .column-layout {
                 flex-direction: row;
@@ -327,14 +350,15 @@
         }
     </style>
 </head>
+
 <body>
-  <div class="container" id="mainContainer">
+    <div class="container" id="mainContainer">
         <h2>Editor de Solicitud de Evento</h2>
         <h3 class="subtitle">Modifique los detalles y guarde los cambios</h3>
 
         <fieldset id="edit-fieldset">
             <input type="hidden" id="precioBase" name="precioBase">
-        
+
             <div class="column-layout">
                 <div class="form-group" id="tipoEventoGroup">
                     <div class="form-group-header">
@@ -374,7 +398,7 @@
                     </select>
                 </div>
             </div>
-            
+
             <div class="form-group">
                 <label for="detallesAdicionales">Detalles Adicionales (opcional):</label>
                 <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
@@ -384,32 +408,32 @@
         <hr>
 
         <h3>Resumen de Presupuesto Básico:</h3>
-        <div id="presupuestoDetalle"><p>Cargando datos...</p></div>
+        <div id="presupuestoDetalle">
+            <p>Cargando datos...</p>
+        </div>
         <div id="detallePrecios"></div>
         <div id="presupuestoTotal"><span>Total: </span> $0</div>
-        
+
         <div class="button-group">
             <button id="cancel-button" style="background-color: #6c757d;">Cancelar</button>
             <button id="save-button">Guardar Cambios</button>
         </div>
 
-        <div class="loading-overlay" id="loadingOverlay" style="display: flex;"><p>Cargando datos...</p><div class="spinner"></div></div>
+        <div class="loading-overlay" id="loadingOverlay" style="display: flex;">
+            <p>Cargando datos...</p>
+            <div class="spinner"></div>
+        </div>
     </div>
     <div id="notification-banner"></div>
 
     <script src="/formLogic.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Enlazamos los botones específicos de esta página que no están en Page.html
-            App.elements.saveButton = document.getElementById('save-button');
-            App.elements.cancelButton = document.getElementById('cancel-button');
-            App.elements.editFieldset = document.getElementById('edit-fieldset');
-            App.elements.detallesAdicionalesTextarea = document.getElementById('detallesAdicionales');
-            
-            App.init({
+            initializeApp({
                 mode: 'edit'
             });
         });
     </script>
 </body>
+
 </html>

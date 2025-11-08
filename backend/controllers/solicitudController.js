@@ -270,7 +270,8 @@ const actualizarSolicitud = async (req, res) => {
         duracionEvento,
         fechaEvento,
         horaInicio,
-        precioBase
+        precioBase,
+        detallesAdicionales // <-- NUEVO
     } = req.body;
 
     console.log(`Actualizando datos básicos de la solicitud ID: ${id}`);
@@ -285,10 +286,11 @@ const actualizarSolicitud = async (req, res) => {
                 duracion = ?,
                 fecha_evento = ?,
                 hora_evento = ?,
-                precio_basico = ?
+                precio_basico = ?,
+                descripcion = ? 
             WHERE id_solicitud = ?;
         `;
-        const params = [tipoEvento, cantidadPersonas, duracionEvento, fechaEvento, horaInicio, parseFloat(precioBase) || 0, id];
+        const params = [tipoEvento, cantidadPersonas, duracionEvento, fechaEvento, horaInicio, parseFloat(precioBase) || 0, detallesAdicionales, id];
         await conn.query(sql, params);
 
         const respuesta = { solicitudId: parseInt(id) };

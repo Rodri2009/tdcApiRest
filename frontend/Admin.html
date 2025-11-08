@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <base target="_top">
     <meta charset="UTF-8">
@@ -7,28 +8,135 @@
     <title>Panel de Administración</title>
     <style>
         /* Copiamos los estilos del archivo original */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 10px; background-color: #f4f5f7; }
-        h1 { color: #0056b3; text-align: center; }
-        .table-container { max-width: 98%; margin: 20px auto; overflow-x: auto; background-color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #0056b3; color: white; font-size: 14px; text-transform: uppercase; }
-        tr:nth-child(even) { background-color: #f8f9fa; }
-        tr:hover { background-color: #e9ecef; }
-        select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; }
-        .loader { text-align: center; padding: 50px; font-size: 1.2em; color: #555; }
-        .actions-cell { white-space: nowrap; }
-        .action-btn { padding: 6px 12px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; color: white; margin-right: 5px; }
-        .btn-edit { background-color: #ffc107; color: #333; }
-        .btn-delete { background-color: #dc3545; }
-        .btn-assign { background-color: #28a745; }
-        .btn-work-order { background-color: #17a2b8; }
-        #notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #28a745; color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; opacity: 0; transition: opacity 0.5s, transform 0.5s; }
-        #notification.show { opacity: 1; transform: translate(-50%, -10px); }
-        #notification.error { background-color: #dc3545; }
-        #notification.info { background-color: #007bff; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f4f5f7;
+        }
+
+        h1 {
+            color: #0056b3;
+            text-align: center;
+        }
+
+        .table-container {
+            max-width: 98%;
+            margin: 20px auto;
+            overflow-x: auto;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #0056b3;
+            color: white;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e9ecef;
+        }
+
+        select {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #555;
+        }
+
+        .actions-cell {
+            white-space: nowrap;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            margin-right: 5px;
+        }
+
+        .btn-edit {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+        }
+
+        .btn-assign {
+            background-color: #28a745;
+        }
+
+        .btn-work-order {
+            background-color: #17a2b8;
+        }
+
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.5s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        #notification-banner.error {
+            background-color: #dc3545;
+        }
+
+        #notification-banner.success {
+            background-color: #28a745;
+        }
     </style>
 </head>
+
 <body>
     <h1>Panel de Administración de Solicitudes</h1>
     <div class="table-container" id="admin-table-container">
@@ -48,108 +156,227 @@
             <tbody id="solicitudes-tbody"></tbody>
         </table>
     </div>
-    <div id="notification"></div>
+    <div id="notification-banner"></div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        const tbody = document.getElementById('solicitudes-tbody');
-        const table = document.getElementById('solicitudes-table');
-        const loader = document.getElementById('loader');
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tbody = document.getElementById('solicitudes-tbody');
+            const table = document.getElementById('solicitudes-table');
+            const loader = document.getElementById('loader');
+            const notification = document.getElementById('notification');
+            let notificationTimer;
 
-        try {
-            // 1. Llamar a la nueva API segura para obtener los datos
-            const response = await fetch('/api/admin/solicitudes');
-
-            // Si el token no es válido o ha expirado, el middleware devolverá un error 401
-            if (response.status === 401) {
-                // Redirigimos a la página de login si no estamos autorizados
-                window.location.href = '/Login.html';
-                return;
-            }
-
-            if (!response.ok) {
-                throw new Error('Error del servidor al cargar las solicitudes.');
-            }
-
-            const solicitudes = await response.json();
-
-            // 2. Construir la tabla dinámicamente con los datos recibidos
-            tbody.innerHTML = '';
-            if (solicitudes.length === 0) {
-                loader.textContent = 'No se encontraron solicitudes.';
-                return;
-            }
-
-            solicitudes.forEach(solicitud => {
-                const tr = document.createElement('tr');
-                const fechaSolicitud = new Date(solicitud.fechaSolicitud).toLocaleString('es-AR');
-                const fechaEvento = solicitud.fechaEvento ? new Date(solicitud.fechaEvento).toLocaleDateString('es-AR', { timeZone: 'UTC' }) : 'N/A';
-
-                tr.innerHTML = `
-                    <td>${solicitud.id}</td>
-                    <td>${fechaSolicitud}</td>
-                    <td>${solicitud.nombreCliente || '<em>No completado</em>'}</td>
-                    <td>${solicitud.tipoEvento}</td>
-                    <td>${fechaEvento}</td>
-                    <td>
-                        <select data-id="${solicitud.id}" class="estado-select">
-                            <option value="Solicitado" ${solicitud.estado === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
-                            <option value="Contactado" ${solicitud.estado === 'Contactado' ? 'selected' : ''}>Contactado</option>
-                            <option value="Confirmado" ${solicitud.estado === 'Confirmado' ? 'selected' : ''}>Confirmado</option>
-                            <option value="Cancelado" ${solicitud.estado === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
-                        </select>
-                    </td>
-                    <td class="actions-cell">
-                        <button class="action-btn btn-edit">Modificar</button>
-                        <button class="action-btn btn-delete">Eliminar</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-       
+            // --- MANEJO DE EVENTOS CENTRALIZADO Y CORREGIDO ---
             tbody.addEventListener('click', (event) => {
                 const button = event.target.closest('button.action-btn');
                 if (!button) return;
 
                 const tr = button.closest('tr');
+                if (!tr) return;
+
                 const solicitudId = tr.dataset.solicitudId;
+                const tipoEventoId = tr.dataset.tipoEventoId;
 
                 if (button.classList.contains('btn-delete')) {
-                    eliminarSolicitud(solicitudId, tr);
-                } else if (button.classList.contains('btn-edit')) {
+                    eliminarSolicitud(solicitudId);
+                }
+                // --- ¡ASEGÚRATE DE QUE ESTE BLOQUE EXISTA! ---
+                else if (button.classList.contains('btn-edit')) {
                     modificarSolicitud(solicitudId);
                 }
+                // --- FIN DEL BLOQUE ---
+                else if (button.dataset.action === 'assign') {
+                    asignarPersonal(solicitudId, tipoEventoId);
+                } else if (button.dataset.action === 'work-order') {
+                    verOrdenDeTrabajo(solicitudId);
+                }
             });
+
+
+            function asignarPersonal(id, tipoEventoId) {
+                if (!id || !tipoEventoId) {
+                    showNotification('Error: Faltan datos para la asignación.', 'error');
+                    return;
+                }
+                showNotification('Redirigiendo...', 'info');
+                window.location.href = `/AsignarPersonal.html?solicitudId=${id}&tipoEventoId=${tipoEventoId}`;
+            }
+
+            function verOrdenDeTrabajo(id) {
+                if (!id) return;
+                showNotification(`Generando orden de trabajo para ID ${id}...`, 'info');
+                window.location.href = `/OrdenDeTrabajo.html?solicitudId=${id}`;
+            }
+
+
 
             tbody.addEventListener('change', (event) => {
                 const select = event.target.closest('select.estado-select');
                 if (!select) return;
-                
+
                 const solicitudId = select.dataset.id;
                 const nuevoEstado = select.value;
                 cambiarEstado(solicitudId, nuevoEstado);
             });
 
+            // --- Cargar Solicitudes (Función Principal) ---
+            async function cargarSolicitudes() {
+                loader.style.display = 'block';
+                table.style.display = 'none';
+                try {
+                    const response = await fetch('/api/admin/solicitudes');
+                    if (response.status === 401) {
+                        window.location.href = '/Login.html';
+                        return;
+                    }
+                    if (!response.ok) {
+                        showNotification("Error del servidor al cargar solicitudes", "error");
+                        throw new Error('Error del servidor al cargar solicitudes.');
+                    }
+                    const solicitudes = await response.json();
 
-            loader.style.display = 'none';
-            table.style.display = 'table';
+                    tbody.innerHTML = '';
+                    if (solicitudes.length === 0) {
+                        showNotification("No se encontraron solicitudes", "warning");
+                        loader.textContent = 'No se encontraron solicitudes.';
+                        return;
+                    }
 
-        } catch (error) {
-            console.error('Error al cargar el panel de admin:', error);
-            loader.textContent = `Error: ${error.message}`;
-        }
+                    solicitudes.forEach(solicitud => {
+                        const tr = document.createElement('tr');
+                        tr.dataset.solicitudId = solicitud.id;
+                        tr.dataset.tipoEventoId = solicitud.tipoEventoId;
 
-    });
+                        const fechaSolicitud = new Date(solicitud.fechaSolicitud).toLocaleString('es-AR');
+                        const fechaEvento = solicitud.fechaEvento ? new Date(solicitud.fechaEvento).toLocaleDateString('es-AR', { timeZone: 'UTC' }) : 'N/A';
 
-    function modificarSolicitud(id) {
-        // Redirigimos a la página de edición, que refactorizaremos a continuación
-        window.location.href = `/EditarSolicitud.html?solicitudId=${id}`;
-    }
+                        let botonesDePersonal = '';
+                        if (solicitud.estado === 'Confirmado') {
+                            if (solicitud.tienePersonalAsignado) {
+                                // --- YA TIENE PERSONAL ASIGNADO ---
+                                // 'Editar Personal' será VERDE (usando btn-assign)
+                                // 'Orden de Trabajo' será VERDE (le añadimos la clase btn-assign)
+                                botonesDePersonal = `
+                                    <button class="action-btn btn-assign" data-action="assign" data-id="${solicitud.id}">Editar Personal</button>
+                                    <button class="action-btn btn-assign" data-action="work-order" data-id="${solicitud.id}">Orden de Trabajo</button>
+                                `;
+                            } else {
+                                // --- NO TIENE PERSONAL ASIGNADO ---
+                                // 'Asignar Personal' será CELESTE (usando btn-work-order)
+                                botonesDePersonal = `<button class="action-btn btn-work-order" data-action="assign" data-id="${solicitud.id}">Asignar Personal</button>`;
+                            }
+                        }
 
-    function showNotification(message, type, duration = 3000) {
-        // ... (función de notificación sin cambios)
-    }
 
-</script>
+
+                        // --- ¡CORRECCIÓN CLAVE! AÑADIMOS data-id A CADA BOTÓN ---
+                        tr.innerHTML = `
+                            <td>${solicitud.id}</td>
+                            <td>${fechaSolicitud}</td>
+                            <td>${solicitud.nombreCliente || '<em>No completado</em>'}</td>
+                            <td>${solicitud.tipoEvento}</td>
+                            <td>${fechaEvento}</td>
+                            <td>
+                                <select data-id="${solicitud.id}" class="estado-select">
+                                    <option value="Solicitado" ${solicitud.estado === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
+                                    <option value="Contactado" ${solicitud.estado === 'Contactado' ? 'selected' : ''}>Contactado</option>
+                                    <option value="Confirmado" ${solicitud.estado === 'Confirmado' ? 'selected' : ''}>Confirmado</option>
+                                    <option value="Cancelado" ${solicitud.estado === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
+                                </select>
+                            </td>
+                            <td class="actions-cell">
+                                <button class="action-btn btn-edit" data-id="${solicitud.id}">Modificar</button>
+                                <button class="action-btn btn-delete" data-id="${solicitud.id}">Eliminar</button>
+                                ${botonesDePersonal}
+                            </td>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    loader.style.display = 'none';
+                    table.style.display = 'table';
+
+                    if (solicitudes.length > 0) {
+                        showNotification(solicitudes.length + " solicitudes cargadas", "success");
+                    }
+
+                } catch (error) {
+                    console.error('Error al cargar panel de admin:', error);
+                    loader.textContent = `Error: ${error.message}`;
+                }
+            }
+
+            async function cambiarEstado(id, nuevoEstado) {
+                showNotification('Actualizando estado...', 'info');
+                try {
+                    const response = await fetch(`/api/admin/solicitudes/${id}/estado`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ estado: nuevoEstado })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Error del servidor');
+
+                    showNotification(data.message, 'success');
+
+                    // --- Lógica para mostrar/ocultar botones de acción ---
+                    const assignBtn = document.querySelector(`button[data-action='assign'][data-id='${id}']`);
+                    if (assignBtn) {
+                        assignBtn.style.display = (nuevoEstado === 'Confirmado') ? 'inline-block' : 'none';
+                    }
+
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                    cargarSolicitudes(); // Recarga la tabla para revertir visualmente el cambio en el select
+                }
+            }
+
+            async function eliminarSolicitud(id) {
+                if (!confirm(`¿Estás seguro de que quieres eliminar la solicitud ID ${id}? Esta acción es irreversible.`)) return;
+
+                showNotification('Eliminando solicitud...', 'info');
+                try {
+                    const response = await fetch(`/api/admin/solicitudes/${id}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Error del servidor');
+
+                    showNotification(data.message, 'success');
+
+                    // Elimina la fila de la tabla sin necesidad de recargar toda la página
+                    const rowElement = document.querySelector(`tr[data-solicitud-id='${id}']`);
+                    if (rowElement) {
+                        rowElement.remove();
+                    }
+
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            }
+
+
+            function modificarSolicitud(id) {
+                console.log(`Redirigiendo a editar para la solicitud ID: ${id}`);
+                window.location.href = `/EditarSolicitud.html?solicitudId=${id}`;
+            }
+
+            async function showNotification(message, type = 'warning', duration = 4000) {
+                clearTimeout(this.notificationTimer);
+                const notificationElement = document.getElementById("notification-banner");
+                notificationElement.textContent = message;
+                notificationElement.className = 'show ' + type;
+                notificationTimer = setTimeout(() => { notificationElement.className = ''; }, duration);
+            }
+            // Carga inicial
+            cargarSolicitudes();
+        });
+    </script>
+
+
+
+
 </body>
+
 </html>

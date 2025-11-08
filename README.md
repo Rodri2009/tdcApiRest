@@ -1,166 +1,207 @@
 # TDC - Sistema de Gestión de Salones de Eventos
 
-Este proyecto es la migración de una aplicación originalmente creada en Google Apps Script a una arquitectura moderna basada en Docker, Node.js, Express.js y MariaDB.
+Este proyecto es la migración de una aplicación originalmente creada en Google Apps Script a una arquitectura moderna basada en Docker, con un backend de Node.js/Express y una base de datos MariaDB. El sistema permite a los clientes generar presupuestos y a los administradores gestionar las solicitudes.
 
-## Requisitos Previos
+## Arquitectura del Proyecto
 
-Para ejecutar este proyecto en un nuevo entorno (como Debian 12/13), necesitarás tener instalado lo siguiente:
-
-1.  **Git:** Para clonar el repositorio.
-2.  **Docker:** Para gestionar los contenedores de la aplicación.
-3.  **Docker Compose:** Para orquestar los servicios de Docker.
-
-*Nota: Las instrucciones de instalación para Docker y Docker Compose en sistemas Debian/Ubuntu están detalladas en la sección de "Instalación por Primera Vez".*
+-   **/backend**: Contiene el código fuente de la API RESTful (Node.js/Express).
+    -   `/routes`: Define las rutas de la API.
+    -   `/controllers`: Contiene la lógica de negocio.
+    -   `/services`: Contiene servicios auxiliares, como el envío de emails.
+-   **/frontend**: Contiene todos los archivos estáticos de la aplicación (HTML, CSS y JS del cliente).
+-   **/docker**: Contiene los archivos de configuración de Docker.
+    -   `docker-compose.yml`: Orquesta todos los servicios.
+    -   `Dockerfile.*`: Define cómo construir las imágenes de los servicios.
+-   **/database**: Contiene los scripts de inicialización de la base de datos.
+    -   `schema.sql`: Crea la estructura de tablas.
+    -   `seed.sql`: Carga los datos de configuración iniciales (semillas).
+-   **/scripts**: Contiene scripts de utilidad, como la creación de usuarios administradores.
+-   **/data_migration**: Carpeta local (ignorada por Git) para datos sensibles y scripts de migración de única vez.
 
 ---
 
-## Puesta en Marcha (Desde Cero)
-Sigue estos pasos para clonar y ejecutar el proyecto por primera vez.
+## 🚀 Puesta en Marcha (Desde Cero)
+
+Sigue estos pasos para clonar y ejecutar el proyecto por primera vez en un nuevo entorno (Debian/Ubuntu).
+
+### Requisitos Previos
+
+-   Git
+-   Docker
+-   Docker Compose
 
 ### 1. Clonar el Repositorio
-Abre una terminal y clona el proyecto desde GitHub:
+
 ```bash
-git clone <URL_DE_TU_REPOSITORIO_EN_GITHU>
+git clone <URL_DE_TU_REPOSITORIO_EN_GIT>
 cd <NOMBRE_DEL_DIRECTORIO_DEL_PROYECTO>
 ```
-y agregar los datos sensibles de conexión
 
+### 2. Configurar Variables de Entorno
 
-### 2. Restaurar base de datos de solicitudes
-copiar el archivo datos_sensibles_backup.sql a la carpeta data_migration/
+El sistema necesita un archivo `.env` en la raíz del proyecto para funcionar. Este archivo **no está en Git** por seguridad.
 
+**Crea el archivo `.env`:**
+```bash
+cp ejemplo.env .env
+```
+*(Nota: Se recomienda crear un archivo `ejemplo.env` en el repositorio con las claves pero sin los valores para facilitar este paso).*
 
-### 3. Levantar los Contenedores
-El script comprobará automáticamente tu archivo .env y luego ejecutará docker-compose up con los parámetros correctos: construirá las imágenes, creará los contenedores, y la primera vez que se ejecute, inicializará la base de datos con las tablas y los datos semilla.
+**Abre el archivo `.env` y rellena los valores:**
+```env
+# Variables para el Backend y Docker Compose
+PORT=3000
+
+# Credenciales de la Base de Datos
+DB_HOST=mariadb
+DB_NAME=tdc_db
+DB_USER=userPrincipal
+DB_PASSWORD=passDelUserPrincipal
+
+# Credenciales de MariaDB (usadas para la creación y el healthcheck)
+MARIADB_DATABASE=tdc_db
+MARIADB_USER=userPrincipal
+MARIADB_PASSWORD=passDelUserPrincipal
+MARIADB_ROOT_PASSWORD=passDelRoot
+
+# Credenciales para el envío de Emails (Gmail)
+EMAIL_SERVICE=gmail
+EMAIL_USER=tu_email@gmail.com
+EMAIL_PASS=tu_contraseña_de_aplicacion_de_16_caracteres
+EMAIL_ADMIN=email_destino_para_notificaciones@ejemplo.com
+
+# Clave secreta para firmar los tokens de sesión (JWT)
+JWT_SECRET=una_frase_secreta_muy_larga_y_aleatoria
+```
+
+### 3. Levantar el Entorno
+
+Este proyecto incluye un script de arranque que valida la configuración y levanta todos los servicios.
+
+**Dale permisos de ejecución al script (solo la primera vez):**
+```bash
+chmod +x up.sh
+```
+
+**Ejecuta el script:**
 ```bash
 ./up.sh
 ```
-    Docker ve que no hay un volumen de base de datos (mariadb_data).
-    Crea un contenedor de MariaDB desde cero.
-    El contenedor de MariaDB encuentra los scripts en /docker-entrypoint-initdb.d.
-    Ejecuta 1_schema.sql, creando todas tus tablas.
-    Ejecuta 2_seed.sql, llenando tus tablas de configuración con los datos de los CSV (semillas).
-    Levanta los contenedores de backend y nginx.
+La primera vez que se ejecute, este script construirá las imágenes, creará los contenedores e inicializará la base de datos con las tablas y los datos de configuración.
 
-Verificar los logs del contenedor de MariaDB:
+### 4. Crear el Usuario Administrador (Solo la Primera Vez)
+
+Después de que el entorno esté arriba, crea tu primer usuario para acceder al panel de administración.
+
+**Instala las dependencias del script (solo la primera vez):**
 ```bash
-docker-compose -f docker/docker-compose.yml logs mariadb
-```
-si por algun motivo no fncionó, primero hay que bajar los volumenes con este comando:
-```bash
-docker-compose -f docker/docker-compose.yml down --volumes
+npm install dotenv mariadb bcryptjs
 ```
 
-### 4. Inicializar la Base de Datos (Solo la primera vez)
-Después de levantar los contenedores por primera vez, la base de datos estará vacía. Ejecuta el siguiente comando para crear todas las tablas necesarias:
+**Ejecuta el script de creación:**
 ```bash
-docker-compose -f docker/docker-compose.yml exec -T mariadb mariadb -u rodrigo -pdesa8102test tdc_db < database/schema.sql
+node scripts/crear-admin.js
 ```
+Sigue las instrucciones en la terminal para introducir un email y una contraseña.
 
+---
 
-Para Destruir el Entorno y Hacer un Backup
-Para destruir completamente el entorno (incluyendo la base de datos) y guardar una copia de seguridad de los datos sensibles antes de hacerlo, utiliza el siguiente script:
-code
-```bash
-./down-and-backup.sh
-```
+## 📚 Referencia de Comandos Docker Compose
 
+Para una gestión avanzada, puedes usar estos comandos desde la raíz del proyecto.
 
+-   **Ver el estado de los contenedores:**
+    ```bash
+    docker-compose -f docker/docker-compose.yml --env-file .env ps
+    ```
 
-Referencia de Comandos Docker Compose
-Todos los comandos deben ejecutarse desde el directorio raíz del proyecto (donde se encuentra la carpeta docker/). El flag -f docker/docker-compose.yml es necesario porque nuestro archivo de configuración no está en la raíz, sino en la carpeta docker/.
+-   **Ver los logs de un servicio en tiempo real (ej. `backend`):**
+    ```bash
+    docker-compose -f docker/docker-compose.yml --env-file .env logs -f backend
+    ```
 
-1. Puesta en Marcha y Ciclo de Vida
-docker-compose -f docker/docker-compose.yml up --build -d
-    Este es el comando principal para iniciar la aplicación desde cero.
-    up: Crea y levanta los contenedores, redes y volúmenes definidos en el archivo.
-    --build: Fuerza la reconstrucción de las imágenes de Docker. Es esencial usarlo la primera vez o después de haber hecho cambios en un Dockerfile (ej. al añadir dependencias del sistema).
-    -d (o --detach): Ejecuta los contenedores en "modo detached" (en segundo plano). Esto libera tu terminal para que puedas seguir usándola. Si no usas -d, los logs de todos los servicios se mostrarán directamente en tu terminal y se detendrán si cierras la ventana.
-    ¿Cuándo usarlo?
-    La primera vez que clonas el proyecto en una nueva máquina.
-    Después de hacer cambios en un Dockerfile.
-    Después de hacer cambios en el docker-compose.yml que afecten la construcción de una imagen.
+-   **Detener los servicios (conserva los datos):**
+    ```bash
+    docker-compose -f docker/docker-compose.yml --env-file .env stop
+    ```
 
-2. Monitoreo y Depuración
-docker-compose -f docker/docker-compose.yml ps
-    Muestra el estado de todos los contenedores asociados a tu proyecto.
-    ps (Process Status): Te permite ver rápidamente qué servicios están en ejecución (Up), detenidos (Exited), o en qué puertos están escuchando.
-    ¿Cuándo usarlo?
-    Para verificar rápidamente si todos los servicios se iniciaron correctamente.
-    Para ver si algún contenedor ha fallado y se ha detenido inesperadamente.
-docker-compose -f docker/docker-compose.yml logs -f [nombre-del-servicio]
-    Muestra los logs (la salida de la consola) de uno o todos los servicios. Es tu herramienta de depuración más importante.
-    logs: Recupera los logs de los contenedores.
-    -f (o --follow): Sigue los logs en tiempo real. La terminal se quedará "enganchada" mostrando las nuevas líneas a medida que se generan. Presiona Ctrl + C para salir.
-    [nombre-del-servicio] (opcional): Especifica de qué servicio quieres ver los logs (ej. backend, nginx, mariadb). Si no lo especificas, verás los logs de todos los servicios mezclados.
-    ¿Cuándo usarlo?
-    Cuando el backend falla al iniciar para ver el mensaje de error.
-    Para ver las peticiones que llegan en tiempo real (GET /api/...).
-    Para depurar errores de conexión a la base de datos.
+-   **Iniciar los servicios (si están detenidos):**
+    ```bash
+    docker-compose -f docker/docker-compose.yml --env-file .env start
+    ```
 
-3. Gestión Diaria
-docker-compose -f docker/docker-compose.yml stop y start
-stop: Detiene los contenedores en ejecución sin eliminarlos. Su estado y los datos en los volúmenes se conservan.
-start: Inicia los contenedores que fueron previamente detenidos.
-¿Cuándo usarlo?
-Usa stop al final del día para liberar recursos (RAM, CPU) sin perder nada.
-Usa start al día siguiente para continuar trabajando rápidamente, ya que no necesita reconstruir nada.
-docker-compose -f docker/docker-compose.yml restart [nombre-del-servicio]
-Detiene y vuelve a iniciar inmediatamente uno o más servicios.
-restart: Un atajo para stop seguido de start.
-¿Cuándo usarlo?
-Es muy útil durante el desarrollo. Como montamos el código del backend con un volumen, si haces un cambio en un archivo .js, simplemente ejecutas docker-compose -f docker/docker-compose.yml restart backend para que el servidor Node.js se reinicie y cargue tus cambios.
+-   **Reiniciar un servicio específico (ej. `backend`):**
+    ```bash
+    docker-compose -f docker/docker-compose.yml --env-file .env restart backend
+    ```
 
-4. Limpieza y Re-inicialización
-docker-compose -f docker/docker-compose.yml down
-Detiene y elimina los contenedores y las redes creadas por up.
-down: Es la forma limpia de apagar completamente el entorno. No elimina los volúmenes nombrados (como mariadb_data) por defecto, por lo que tus datos de la base de datos persistirán.
-¿Cuándo usarlo?
-Cuando quieres asegurarte de que todo está limpio antes de volver a levantar el entorno con up.
-docker-compose -f docker/docker-compose.yml down --volumes
-Hace lo mismo que down, pero además elimina los volúmenes nombrados.
---volumes: Le dice a Docker que borre el volumen mariadb_data.
-¿Cuándo usarlo?
-¡Este es el botón de reinicio total! Úsalo cuando quieras borrar completamente la base de datos para forzar la re-ejecución de los scripts de inicialización (1_schema.sql y 2_seed.sql) en el próximo up. Es perfecto para simular una instalación desde cero.
+-   **Abrir una terminal dentro de un contenedor (ej. `backend`):**
+    ```bash
+    docker-compose -f docker/docker-compose.yml --env-file .env exec backend sh
+    ```
 
-5. Comandos Avanzados
-docker-compose -f docker/docker-compose.yml exec -T mariadb ...
-Ejecuta un comando dentro de un contenedor que ya está en ejecución.
-exec: Permite "entrar" a un contenedor para realizar tareas.
--T: Deshabilita la asignación de una pseudo-TTY. Es necesario cuando estás redirigiendo la entrada de un archivo, como hicimos con < database/schema.sql.
-mariadb: El nombre del servicio en el que quieres ejecutar el comando.
-...: El comando a ejecutar (ej. mariadb -u..., o bash para obtener una terminal interactiva).
-¿Cuándo usarlo?
-Para ejecutar manualmente scripts SQL.
-Para abrir una terminal dentro de un contenedor (docker-compose exec backend sh) y explorar su sistema de archivos o ejecutar comandos de depuración.
+-   **Ejecutar una consulta SQL en la base de datos:**
+    ```bash
+    docker-compose -f docker/docker-compose.yml --env-file .env exec mariadb mariadb -u $DB_USER -p$DB_PASSWORD $DB_NAME -e "SELECT * FROM solicitudes;"
+    ```
 
+-   **Destruir el entorno (contenedores y redes, pero CONSERVA los datos):**
+    ```bash
+    docker-compose -f docker/docker-compose.yml --env-file .env down
+    ```
 
+-   **DESTRUCCIÓN TOTAL (borra la base de datos y hace un backup previo):**
+    ```bash
+    ./down-and-backup.sh
+    ```
 
+---
 
-Resumen de Contexto del Proyecto TDC
-Objetivo General: Migración de una aplicación de Google Apps Script a una arquitectura de stack web moderna para la gestión de un salón de eventos.
+## 🧪 Pruebas y Endpoints de la API
 
-1. Arquitectura y Stack Tecnológico:
-Contenerización: Todo el entorno se ejecuta en Docker y se orquesta con Docker Compose.
-Servidor Web / Proxy Inverso: Nginx, que sirve los archivos estáticos del frontend y redirige las llamadas a la API al backend.
-Backend: Una API RESTful construida con Node.js y el framework Express.js.
-Base de Datos: MariaDB, que reemplaza a Google Sheets como el sistema de almacenamiento de datos.
+### Acceso a la Aplicación
 
-2. Estructura del Proyecto:
-backend/: Código fuente de la API de Node.js, con una estructura modular (/routes, /controllers).
-frontend/: Archivos estáticos de la aplicación (HTML, CSS, JS del cliente).
-docker/: Contiene el docker-compose.yml y los Dockerfile para cada servicio.
-database/:
-schema.sql: Script SQL para crear la estructura completa de la base de datos con nombres de columna normalizados a snake_case.
-seeds/: Carpeta con archivos CSV que contienen los datos de configuración no sensibles (tipos de evento, precios, etc.).
-seed.sql: Script SQL que carga los datos de los CSVs de la carpeta seeds/ en la base de datos.
-data_migration/: Carpeta local (ignorada por Git) para scripts de única vez y gestión de datos sensibles.
+-   **Página del Cliente:** `http://localhost/`
+-   **Panel de Administración:** `http://localhost/Login.html`
 
-3. Gestión de la Base de Datos:
-Inicialización Automatizada: Al ejecutar docker-compose up en un entorno nuevo (con el volumen de la base de datos vacío), los scripts schema.sql y seed.sql se ejecutan automáticamente, creando y poblando la base de datos con los datos de configuración esenciales.
-Datos Sensibles: Los datos de clientes (solicitudes, etc.) no están en Git. Se gestionan manualmente mediante un archivo de volcado SQL (datos_sensibles_backup.sql), que se genera con el script generate_sensitive_dump.js y se importa manualmente cuando es necesario.
+### Endpoints de la API
 
-4. Estado Actual del Desarrollo:
-Backend: Se han implementado todos los endpoints GET necesarios (/api/opciones/...) para obtener los datos de configuración (tipos de evento, tarifas, horarios, etc.).
-Frontend: El archivo principal Page.html ha sido refactorizado. Su JavaScript ya no usa google.script.run. En su lugar, utiliza fetch para llamar a la nueva API de Node.js al cargar la página.
-Funcionalidad Migrada: La lógica para cargar el formulario, poblar todas las opciones (tipos de evento, cantidades, duraciones, horas) y calcular dinámicamente el presupuesto básico está 100% funcional usando el nuevo backend.
+#### Autenticación (`/api/auth`)
+-   `POST /login`: Inicia sesión.
+-   `POST /logout`: Cierra sesión.
+
+#### Opciones Generales (`/api/opciones`)
+-   `GET /tipos-evento`: Devuelve la lista de tipos de evento.
+-   `GET /tarifas`: Devuelve todas las reglas de precios.
+-   `GET /duraciones`: Devuelve las duraciones por tipo de evento.
+-   `GET /horarios`: Devuelve los horarios por tipo de evento.
+-   `GET /fechas-ocupadas`: Devuelve las fechas confirmadas.
+-   `GET /config`: Devuelve la configuración general.
+
+#### Solicitudes (`/api/solicitudes`)
+-   `POST /`: Crea una nueva solicitud.
+-   `GET /sesion`: Busca una sesión activa por `fingerprintId`.
+-   `GET /:id`: Obtiene los detalles de una solicitud.
+-   `PUT /:id`: Actualiza los datos básicos de una solicitud.
+-   `POST /:id/adicionales`: Guarda los adicionales para una solicitud.
+-   `PUT /:id/finalizar`: Confirma una solicitud con los datos del cliente.
+
+#### Administración (`/api/admin`) - **Protegido**
+-   `GET /solicitudes`: Obtiene todas las solicitudes.
+-   `PUT /solicitudes/:id/estado`: Actualiza el estado de una solicitud.
+-   `DELETE /solicitudes/:id`: Elimina una solicitud.
+
+### Pruebas desde la Terminal (usando `curl`)
+
+-   **Probar el estado del backend:**
+    ```bash
+    curl http://localhost/api/status
+    ```
+-   **Probar el envío de email de prueba:**
+    ```bash
+    curl -X POST http://localhost/api/test/email
+    ```
+-   **Crear una nueva solicitud:**
+    ```bash
+    curl -X POST -H "Content-Type: application/json" -d '{"tipoEvento": "INFANTILES", "fechaEvento": "2025-12-25", ...}' http://localhost/api/solicitudes
+    ```
