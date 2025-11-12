@@ -470,8 +470,21 @@ const App = {
         const cantidad = overrides.overrideCantidad || this.elements.cantidadPersonasSelect.value;
         const duracion = overrides.overrideDuracion || this.elements.duracionEventoSelect.value;
         const hora = overrides.overrideHora || this.elements.horaInicioSelect.value;
-
         const fechaSeleccionada = fechaStr ? new Date(fechaStr + 'T00:00:00') : null;
+
+        // --- ¡NUEVA LÓGICA DE RESETEO! --- hay que verificar si el tipoId es distinto al tipoIdanterior que hay que crear y no se como
+        // usar chatgpt para esta sentencia
+        if (caller.includes('user-interaction') && tipoId !== tipoAnterior) {
+            console.log("¡Se ha detectado un cambio en el Tipo de Evento! Reseteando campos dependientes.");
+            // Reseteamos los valores de los selects
+            this.elements.cantidadPersonasSelect.value = '';
+            this.elements.duracionEventoSelect.value = '';
+            this.elements.horaInicioSelect.value = '';
+            // Reseteamos la fecha del calendario
+            if (this.calendario) {
+                this.calendario.clear();
+            }
+        }
 
         console.log("actualizarTodo: Estado FINAL a procesar ->", { tipoId, fechaStr, cantidad, duracion, hora });
 
