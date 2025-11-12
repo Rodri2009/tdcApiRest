@@ -582,83 +582,6 @@ const App = {
         console.groupEnd();
     },
 
-
-    /*actualizarTodo: function (caller = 'user-interaction') {
-        console.groupCollapsed(`--- Actualizando Formulario (llamado por: ${caller}) ---`);
-        
-        // Guardamos el tipo de evento ANTERIOR para detectar si ha cambiado.
-        const tipoAnterior = this.elements.tipoEventoContainer.dataset.lastTipoId || '';
-        const tipoId = document.querySelector('input[name="tipoEvento"]:checked')?.value || '';
-
-        // 1. RESETEAR CAMPOS
-        if (caller === 'user-interaction' && tipoId !== tipoAnterior) {
-            this.elements.cantidadPersonasSelect.value = '';
-            this.elements.duracionEventoSelect.value = '';
-            this.elements.horaInicioSelect.value = '';
-            if (this.calendario) this.calendario.clear();
-        }
-        this.elements.tipoEventoContainer.dataset.lastTipoId = tipoId;
-        
-        // Leemos el estado del DOM DESPUÉS del posible reseteo.
-        const fechaStr = this.elements.fechaEventoInput.value;
-        const fechaSeleccionada = fechaStr ? new Date(fechaStr + 'T00:00:00') : null;
-        const cantidad = this.elements.cantidadPersonasSelect.value;
-        const duracion = this.elements.duracionEventoSelect.value;
-        const hora = this.elements.horaInicioSelect.value;
-
-        // 1. Actualizar Descripción
-        this.elements.tipoEventoDescripcionDiv.innerHTML = tipoId ? this.descripcionesTipos[tipoId] || 'Sin descripción.' : 'Seleccione un tipo de evento.';
-
-        // 2. Poblar selects de Cantidad y Duración
-        if (tipoId) {
-            this.llenarSelect(this.elements.cantidadPersonasSelect, this.opcionesCantidades[tipoId] || [], 'Seleccione cantidad...');
-            this.llenarSelect(this.elements.duracionEventoSelect, this.opcionesDuraciones[tipoId] || [], 'Seleccione duración...');
-        } else { 
-            this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
-            this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
-        }
-        // Establecemos el valor (ya sea del override o del propio DOM)
-        this.elements.cantidadPersonasSelect.value = cantidad;
-        this.elements.duracionEventoSelect.value = duracion;
-
-        // --- LÓGICA 2: DESHABILITAR CAMPOS PARA EVENTOS ESPECIALES ---
-        // Reemplaza 'FECHA_BANDAS' por el ID real de tu evento si es diferente.
-        if (tipoId === 'FECHA_BANDAS') {
-            console.log("Detectado tipo de evento especial 'FECHA_BANDAS'. Deshabilitando campos.");
-            this.elements.cantidadPersonasSelect.disabled = true;
-            this.elements.duracionEventoSelect.disabled = true;
-            this.elements.horaInicioSelect.disabled = true;
-        } else {
-            // Nos aseguramos de que no queden deshabilitados si cambiamos a otro tipo de evento.
-            this.elements.cantidadPersonasSelect.disabled = !this.elements.cantidadPersonasSelect.options.length > 1;
-            this.elements.duracionEventoSelect.disabled = !this.elements.duracionEventoSelect.options.length > 1;
-        }
-
-        // 3. Poblar/Actualizar select de Hora
-        if (tipoId && fechaSeleccionada) {
-            const diaDeLaSemana = fechaSeleccionada.getDay();
-            const fechaStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
-            const esFeriado = this.feriadosGlobal.includes(fechaStr);
-            let tipoDeDia = (diaDeLaSemana === 6 && !esFeriado) ? 'sabado' : 'domingo/feriado';
-
-            const todosLosHorariosParaTipo = this.opcionesHoras[tipoId] || [];
-            const horariosFiltrados = todosLosHorariosParaTipo.filter(h => h.tipoDia === 'todos' || h.tipoDia === tipoDeDia).map(h => h.hora).sort();
-
-            this.llenarSelect(this.elements.horaInicioSelect, horariosFiltrados, 'Seleccione hora...');
-            this.elements.horaInicioSelect.value = hora; // Restauramos el valor de la hora
-        } else {
-            this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo y fecha');
-        }
-
-        // Nos aseguramos de restaurar los valores después de repoblar
-        this.elements.cantidadPersonasSelect.value = cantidad;
-        this.elements.duracionEventoSelect.value = duracion;
-        this.elements.horaInicioSelect.value = hora;
-
-        console.groupEnd();
-    },*/
-
-
     habilitarBotones: function () {
         console.log("Paso 6: Habilitando botones de acción.");
 
@@ -802,4 +725,3 @@ function initializeApp(config) {
     }
     App.init(config);
 }
-

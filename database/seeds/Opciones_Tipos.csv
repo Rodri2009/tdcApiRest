@@ -33,25 +33,30 @@ NORMAS:
 5. El uso de la cancha está destinado únicamente a niños y niñas hasta 12 años de edad.
 6. Asumir responsabilidad por cualquier daño o pérdida de elementos.
 7. Aplicaremos recargos en caso de no seguir estas indicaciones.",40000,,TRUE
-INFORMALES,"INFORMALES: Juntadas familiares o entre amigos, con uso de parrilla (SERVICIO ECONÓMICO)","
+INFORMALES,"INFORMALES: Juntadas familiares o entre amigos, con uso de parrilla (SERVICIO ECONÓMICO)","ESTE SERVICIO ESTÁ PENSADO PARA REALIZAR EVENTOS SIMPLES, SIN COMPLEJIDADES Y CON GASTOS MÍNIMOS
+
 INCLUYE:
 * Encargada/o general y control de puerta
 * Mesas y sillas
 * Uso de parrilla
-* Uso de cocina completa, barra, heladera y freezer
+* Uso bachas, mesadas, cubiertos de cocina y barra
+* Uso de pava electrica, heladera y freezer
 * Baño equipado (papel higiénico y toallas de papel)
 * Equipo de música y juego de luces
 * Dos metegoles, Ping Pong, Pool y Jenga gigante
 
 NO INCLUYE:
-* Cocinera, meseras o personal de servicio
+* Uso de horno, hornallas, plancheta o freidora.
+* Cocinera ni ayudantes
+* Meseras o personal de servicio
 * Vajilla, utensilios o decoración
 * Servicios de DJ o animación
 * Tiempo extra para decoración o cocina
+* Cancha de futbol
 
 CONDICIONES DEL SERVICIO:
-* El cliente se encarga de la cocina, preparación de mesas y mantenimiento del salón
-* Volumen de música limitado (sonido acorde al salón)
+* El cliente se debe encargarse del servicio de catering, preparación de mesas y mantenimiento del salón
+* El volumen de música está limitado (sonido acorde al salón)
 * No se permiten DJ ni servicios de animación con parlantes externos
 * Prohibido el uso de la cancha de fútbol
 * Se cobra depósito de garantía reembolsable al finalizar el evento
@@ -89,6 +94,7 @@ NO INCLUYE:
 * DJ, decoración o animación
 * Globología o servicios similares
 * Tiempo extra para decoración (debe considerarse dentro de la duración total del evento)
+* Cancha de futbol
 
 CONDICIONES DEL SERVICIO:
 * Prohibido el uso de la cancha de fútbol
@@ -138,21 +144,43 @@ NORMAS:
 4. Solo personal autorizado puede ingresar a la cocina
 5. Responsabilidad por cualquier daño o pérdida de elementos
 6. Recargos por incumplimiento de las normas establecidas",,,TRUE
-ADOLESCENTES,"ADOLESCENTES: Cumpleaños de 13, 14, 15, 16 y 17 años (varones)","
-CUMPLEAÑOS adolescentes - 13, 14, 15, 16 y 17 AÑOS VARONES
+ADOLESCENTES,"ADOLESCENTES: Cumpleaños de 13, 14, 15, 16 y 17 años (excepto los 15 de chicas)","INCLUYE:
+* Encargada general
+* Encargada de puerta
+* Uso de cocina completa con cocinera
+* Dos metegoles, Ping Pong, Pool y Jenga gigante
+* Mesas, sillas y mantelería
+* Utensilios de mesa descartables:
+   - Bowls de plástico para palitos, papitas y chisitos
+   - Platos descartables para hamburguesas, panchos, tortas
+   - Servilleteros con servilletas por mesa
+   - Vasos descartables (según cantidad de invitados)
+   - Una botella por mesa para jugo o agua
+* Baño equipado (papel higiénico y toallas de papel)
+* Uso de barra, heladera y freezer
+* Música y juego de luces
+* 20 minutos previos sin cargo para decoración
 
-📆 ____DÍAS Y HORARIOS____
-🌅 Mañana: Desde las 11:00hs
-🌇 Tarde: Desde las 16:00hs
-✅ Sábados Domingos y feriados: Mañana y Tarde
+NO INCLUYE:
+* Cancha de futbol",,,TRUE
+FECHA_BANDAS,"Fecha para bandas en vivo","INCLUYE:
+* Coordinación de bandas
+* Flyers y publicaciones
+* Encargada de puerta
+* Uso de cocina completa con cocinera
+* Dos metegoles, Ping Pong, Pool y Jenga gigante
+* Mesas, sillas y mantelería
+* Utensilios de mesa descartables:
+   - Bowls de plástico para palitos, papitas y chisitos
+   - Platos descartables para hamburguesas, panchos, tortas
+   - Servilleteros con servilletas por mesa
+   - Vasos descartables (según cantidad de invitados)
+   - Una botella por mesa para jugo o agua
+* Baño equipado (papel higiénico y toallas de papel)
+* Uso de barra, heladera y freezer
+* Música y juego de luces
+* 20 minutos previos sin cargo para decoración
 
-INCLUYE: 
-* Encargada de salón, uso de cocina completa con cocinera y control de entrada
-* Inflable de 3x3, dos metegoles, PingPong, Pool y Jenga gigante
-* Mesas, sillas, mantelería, platos y bowls de plastico
-* Baño equipado (papel higiénico y toallas de papel para manos).
-* Uso de Barra, Heladera y freezer
-* Música y Juego de luces.
-* Cancha de fútbol (sólo para los niños)
-* 20 minutos previos sin cargo para decoración",,,FALSE
-DEPILACION_DEFINITIVA,DPILACIÓN DEFINITIVA,Completar datos,,,FALSE
+NO INCLUYE:
+* Cancha de futbol",,,FALSE
+DEPILACION_DEFINITIVA,"DPILACIÓN DEFINITIVA",Completar datos,,,FALSE

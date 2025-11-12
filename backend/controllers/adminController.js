@@ -264,7 +264,23 @@ const getOrdenDeTrabajo = async (req, res) => {
 };
 
 
-// No olvides exportar las nuevas funciones
+const getAllTiposDeEvento = async (req, res) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query(
+            "SELECT id_evento as id, nombre_para_mostrar as nombreParaMostrar, descripcion, monto_sena as montoSena, deposito as depositoGarantia, es_publico as esPublico FROM opciones_tipos;"
+        );
+        res.status(200).json(rows);
+    } catch (err) {
+        console.error("Error al obtener todos los tipos de evento para admin:", err);
+        res.status(500).json({ message: 'Error del servidor.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+
 module.exports = {
     getSolicitudes,
     actualizarEstadoSolicitud,
@@ -272,4 +288,5 @@ module.exports = {
     getDatosAsignacion,
     guardarAsignaciones,
     getOrdenDeTrabajo,
+    getAllTiposDeEvento,
 };

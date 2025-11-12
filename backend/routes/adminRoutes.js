@@ -6,7 +6,8 @@ const {
     eliminarSolicitud,
     getDatosAsignacion,
     guardarAsignaciones,
-    getOrdenDeTrabajo
+    getOrdenDeTrabajo,
+    getAllTiposDeEvento
 } = require('../controllers/adminController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -20,5 +21,6 @@ router.delete('/solicitudes/:id', eliminarSolicitud);
 router.get('/asignacion-data', getDatosAsignacion);
 router.post('/solicitudes/:id/asignaciones', guardarAsignaciones);
 router.get('/orden-trabajo/:id', getOrdenDeTrabajo);
+router.get('/tipos-evento/all', getAllTiposDeEvento);
 
 module.exports = router;
