@@ -25,11 +25,15 @@ try {
     const testRoutes = require('./routes/testRoutes'); // <-- Importar
     const authRoutes = require('./routes/authRoutes'); // <-- IMPORTAR
     const adminRoutes = require('./routes/adminRoutes'); // <-- IMPORTAR
+    const ticketsRoutes = require('./routes/ticketsRoutes'); // <-- ¡NUEVA RUTA!
+
     app.use('/api/opciones', opcionesRoutes);
     app.use('/api/solicitudes', solicitudesRoutes);
     app.use('/api/test', testRoutes); // <-- Usar
     app.use('/api/auth', authRoutes); // <-- USAR
     app.use('/api/admin', adminRoutes); // <-- USAR
+    app.use('/api/tickets', ticketsRoutes); // <-- ¡USAR RUTA DE TICKETS!
+    
     console.log("Rutas configuradas correctamente.");
 } catch (error) {
     console.error("¡ERROR CRÍTICO AL CARGAR RUTAS!", error);

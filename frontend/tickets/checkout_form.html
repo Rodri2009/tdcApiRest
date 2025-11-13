@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - El Templo de Claypole</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración de Tailwind para la fuente Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        /* Estilo personalizado para el botón de pago (simulación de MP) */
+        #btn-pagar {
+            background-color: #009ee3; /* Color de Mercado Pago */
+            box-shadow: 0 4px 6px rgba(0, 158, 227, 0.3);
+        }
+        #btn-pagar:hover {
+            background-color: #00b3ff;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Contenedor Principal del Checkout -->
+    <div id="checkout-container" class="w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden md:flex">
+        
+        <!-- Columna de Resumen del Evento (Izquierda) -->
+        <div class="md:w-1/3 bg-gray-900 p-8 text-white flex flex-col justify-between">
+            <h1 class="text-3xl font-extrabold mb-4 text-red-500">Checkout</h1>
+            <div id="event-summary">
+                <!-- Los detalles del evento se cargarán aquí vía JS -->
+                <p class="text-gray-400">Cargando detalles del evento...</p>
+            </div>
+            
+            <div class="mt-8 pt-4 border-t border-gray-700">
+                <p class="text-lg font-semibold">Total a Pagar:</p>
+                <p id="total-price" class="text-4xl font-bold text-green-400 mt-2">$ 0.00</p>
+                <small class="text-gray-500 mt-2 block">Impuestos incluidos.</small>
+            </div>
+        </div>
+
+        <!-- Columna del Formulario de Datos (Derecha) -->
+        <div class="md:w-2/3 p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Completa tus Datos</h2>
+
+            <form id="checkout-form" class="space-y-6">
+
+                <!-- 1. Selección de Tickets -->
+                <div>
+                    <label for="ticket_type" class="block text-sm font-medium text-gray-700 mb-2">Tipo de Ticket</label>
+                    <select id="ticket_type" name="ticket_type" required 
+                            class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150">
+                        <option value="">Selecciona un tipo de ticket</option>
+                        <!-- Opciones de tickets se cargarán aquí vía JS -->
+                    </select>
+                </div>
+
+                <div>
+                    <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
+                    <input type="number" id="quantity" name="quantity" min="1" value="1" required 
+                           class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150">
+                </div>
+
+                <!-- 2. Datos del Comprador -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="full_name" class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo</label>
+                        <input type="text" id="full_name" name="full_name" required 
+                               class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150" placeholder="Ej: Juan Pérez">
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="email" name="email" required 
+                               class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150" placeholder="ejemplo@correo.com">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Teléfono (WhatsApp)</label>
+                    <input type="tel" id="phone" name="phone" 
+                           class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150" placeholder="Ej: +54 9 11 5555-4444">
+                </div>
+
+                <!-- 3. Método de Pago (Simulado) -->
+                <div class="pt-4 border-t border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Método de Pago</h3>
+                    <div class="flex items-center p-3 border border-blue-200 bg-blue-50 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#009ee3] mr-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <p class="font-medium text-gray-700">Pago seguro con Mercado Pago (Simulado)</p>
+                    </div>
+                </div>
+
+                <!-- Botón de Pago -->
+                <button type="submit" id="btn-pagar"
+                        class="w-full p-4 text-white font-bold text-lg rounded-xl shadow-lg transition duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300 mt-6">
+                    Pagar con Mercado Pago
+                </button>
+            </form>
+            
+            <!-- Modal de Mensaje de Éxito/Error (Inicialmente oculto) -->
+            <div id="message-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50">
+                <div class="bg-white p-8 rounded-lg shadow-2xl max-w-sm w-full text-center transform scale-100 transition-transform duration-300">
+                    <svg id="modal-icon" xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    <h3 id="modal-title" class="text-2xl font-bold mt-4 mb-2 text-gray-800">¡Compra Exitosa!</h3>
+                    <p id="modal-text" class="text-gray-600">Tu compra de tickets ha sido procesada correctamente. Recibirás una confirmación por email.</p>
+                    <button onclick="document.getElementById('message-modal').classList.add('hidden')"
+                            class="mt-6 w-full py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition duration-150">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Script de JavaScript -->
+    <script>
+        // Data simulada del evento, usando los datos del seed SQL
+        const MOCK_EVENT = {
+            id: 1,
+            nombre: "Festival de Verano Rock",
+            fecha: "15 de Diciembre de 2025",
+            hora: "20:00 hs",
+            lugar: "El Templo de Claypole",
+            tickets: [
+                { id: 101, nombre: "Entrada General - Etapa 1", precio: 6500.00, stock: 200 },
+                { id: 102, nombre: "VIP Acceso Rápido", precio: 10000.00, stock: 50 },
+                { id: 103, nombre: "Tercera Preventa (Agotada)", precio: 5000.00, stock: 0 }
+            ]
+        };
+
+        const ticketTypeEl = document.getElementById('ticket_type');
+        const quantityEl = document.getElementById('quantity');
+        const totalPriceEl = document.getElementById('total-price');
+        const formEl = document.getElementById('checkout-form');
+        const messageModalEl = document.getElementById('message-modal');
+
+        /**
+         * Inicializa la página cargando los datos del evento simulado.
+         */
+        function initializePage() {
+            // 1. Cargar Resumen del Evento
+            const eventSummaryHtml = `
+                <h2 class="text-2xl font-bold mb-3">${MOCK_EVENT.nombre}</h2>
+                <p class="text-gray-300"><strong class="text-red-400">Fecha:</strong> ${MOCK_EVENT.fecha} ${MOCK_EVENT.hora}</p>
+                <p class="text-gray-300"><strong class="text-red-400">Lugar:</strong> ${MOCK_EVENT.lugar}</p>
+            `;
+            document.getElementById('event-summary').innerHTML = eventSummaryHtml;
+
+            // 2. Cargar Opciones de Tickets en el Select
+            MOCK_EVENT.tickets.forEach(ticket => {
+                const option = document.createElement('option');
+                option.value = ticket.id;
+                option.textContent = `${ticket.nombre} - $${ticket.precio.toFixed(2)}`;
+                
+                if (ticket.stock === 0) {
+                    option.disabled = true;
+                    option.textContent += ' (AGOTADO)';
+                } else {
+                    // Guarda el precio como atributo data para fácil acceso
+                    option.setAttribute('data-price', ticket.precio);
+                }
+                ticketTypeEl.appendChild(option);
+            });
+            
+            // Establecer el stock máximo en el input de cantidad para el primer ticket disponible
+            const firstAvailableTicket = MOCK_EVENT.tickets.find(t => t.stock > 0);
+            if (firstAvailableTicket) {
+                // Selecciona el primer ticket disponible por defecto
+                ticketTypeEl.value = firstAvailableTicket.id;
+                quantityEl.max = firstAvailableTicket.stock;
+            }
+
+            // 3. Inicializar Cálculo
+            updateTotal();
+        }
+
+        /**
+         * Calcula y actualiza el precio total basado en la selección del usuario.
+         */
+        function updateTotal() {
+            const selectedOption = ticketTypeEl.options[ticketTypeEl.selectedIndex];
+            const price = parseFloat(selectedOption?.getAttribute('data-price') || 0);
+            const quantity = parseInt(quantityEl.value) || 0;
+            const stock = parseInt(quantityEl.max) || 0;
+
+            let total = price * quantity;
+
+            // Validación simple de cantidad y stock
+            if (quantity > stock && stock > 0) {
+                total = price * stock; // Ajusta el cálculo al stock máximo
+                quantityEl.value = stock;
+                console.warn(`Cantidad ajustada al stock máximo disponible: ${stock}`);
+            }
+
+            totalPriceEl.textContent = `$ ${total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+        }
+        
+        /**
+         * Maneja el envío del formulario (simulando una llamada a la API y redirección a pago).
+         * @param {Event} e - El evento de envío del formulario.
+         */
+        function handleSubmit(e) {
+            e.preventDefault();
+            
+            // Simulación de validación
+            if (!ticketTypeEl.value || parseInt(quantityEl.value) <= 0) {
+                // Usamos el modal para mostrar errores también, no alert()
+                showMessage('Error de Validación', 'Por favor, selecciona un tipo de ticket y una cantidad válida.', 'red');
+                return;
+            }
+
+            // Datos que se enviarían a la API (simulado)
+            const formData = new FormData(formEl);
+            const data = Object.fromEntries(formData.entries());
+            
+            const selectedTicket = MOCK_EVENT.tickets.find(t => t.id == data.ticket_type);
+            data.ticket_nombre = selectedTicket.nombre;
+            data.precio_unitario = selectedTicket.precio;
+            data.total_final = parseFloat(totalPriceEl.textContent.replace('$', '').replace('.', '').replace(',', '.')); // Obtiene el valor limpio
+            
+            console.log('Datos listos para enviar a la API (Simulado):', data);
+
+            // Simulación de la llamada a la API
+            // En una aplicación real, aquí se llamaría a POST /api/tickets/comprar
+            
+            // 1. Deshabilitar el botón y mostrar loading
+            const btnPagar = document.getElementById('btn-pagar');
+            btnPagar.disabled = true;
+            btnPagar.textContent = 'Procesando Pago...';
+
+            // 2. Simular el tiempo de respuesta del servidor (2 segundos)
+            setTimeout(() => {
+                // 3. Mostrar mensaje de éxito (o redireccionar a la URL de Mercado Pago)
+                showMessage('¡Compra Exitosa!', 
+                            `Se han comprado ${data.quantity} ticket(s) de "${data.ticket_nombre}". Recibirás los detalles en ${data.email}.`, 
+                            'green');
+                
+                // 4. Resetear el botón
+                btnPagar.disabled = false;
+                btnPagar.textContent = 'Pagar con Mercado Pago';
+                
+                // 5. Reiniciar el formulario después de un éxito (opcional)
+                formEl.reset();
+                initializePage(); // Re-inicializa para resetear totales
+                
+            }, 2000); 
+        }
+
+        /**
+         * Muestra el modal de mensaje (éxito o error).
+         * @param {string} title - Título del mensaje.
+         * @param {string} text - Contenido del mensaje.
+         * @param {string} type - 'green' para éxito, 'red' para error.
+         */
+        function showMessage(title, text, type) {
+            const iconEl = document.getElementById('modal-icon');
+            const titleEl = document.getElementById('modal-title');
+            const textEl = document.getElementById('modal-text');
+            const closeBtn = messageModalEl.querySelector('button');
+
+            titleEl.textContent = title;
+            textEl.textContent = text;
+            
+            // Configurar el ícono y color
+            if (type === 'green') {
+                iconEl.classList.remove('text-red-500');
+                iconEl.classList.add('text-green-500');
+                closeBtn.classList.remove('bg-blue-500');
+                closeBtn.classList.add('bg-red-500');
+                iconEl.innerHTML = '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />';
+            } else if (type === 'red') {
+                iconEl.classList.remove('text-green-500');
+                iconEl.classList.add('text-red-500');
+                closeBtn.classList.remove('bg-red-500');
+                closeBtn.classList.add('bg-blue-500');
+                iconEl.innerHTML = '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />';
+            }
+
+            messageModalEl.classList.remove('hidden');
+        }
+
+
+        // Asignación de Event Listeners
+        window.onload = initializePage;
+        ticketTypeEl.addEventListener('change', updateTotal);
+        quantityEl.addEventListener('input', updateTotal);
+        formEl.addEventListener('submit', handleSubmit);
+    </script>
+</body>
+</html>

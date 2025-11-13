@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda y Tickets - El Templo de Claypole</title>
+    <!-- Carga de Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+        .text-neon { color: var(--color-secondary); text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary); }
+        .bg-rustic { background-color: var(--color-rustic); }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+        }
+        .event-card {
+            transition: transform 0.3s ease;
+        }
+        .event-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(240, 171, 252, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navegación --><header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Título --><a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto"> 
+                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">El Templo de Claypole</span>
+                </a>
+                <a href="#contacto-bandas" class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Tocar en el Templo</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Sección 1: Agenda de Eventos --><section id="agenda" class="py-20 md:py-16 bg-stone-950">
+            <div class="max-w-4xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-3">
+                        <span class="block text-neon">Agenda de Bandas en Vivo</span>
+                    </h1>
+                    <p class="text-xl text-stone-300 font-medium">
+                        ¡Asegura tu lugar! Solo Entrada General (18+).
+                    </p>
+                </div>
+                
+                <!-- Lista de Eventos (Simulación de datos dinámicos) -->
+                <div class="space-y-6">
+                    <!-- Evento 1 -->
+                    <div class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 border-fuchsia-500">
+                        <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                            <div class="text-center p-2 rounded-lg bg-fuchsia-900 text-white flex-shrink-0">
+                                <p class="text-xl font-bold">25</p>
+                                <p class="text-xs">NOV</p>
+                            </div>
+                            <div>
+                                <h4 class="text-2xl font-semibold text-white">LA RISA DE CROMO <span class="text-sm text-fuchsia-400">(ID: 1001)</span></h4>
+                                <p class="text-sm text-stone-400">Rock Alternativo | Puertas: 21:00 hs. | Aforo: 80%</p>
+                                <p class="text-xl font-bold text-neon mt-1">$ 5.000 ARS</p>
+                            </div>
+                        </div>
+                        <a href="checkout_form.html?event_id=1001" class="w-full sm:w-auto bg-fuchsia-500 text-gray-900 font-bold py-2 px-6 rounded-full text-md hover:bg-fuchsia-400 transition shadow-lg">
+                            Comprar Entrada
+                        </a>
+                    </div>
+                    
+                    <!-- Evento 2 -->
+                    <div class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 border-fuchsia-500">
+                        <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                            <div class="text-center p-2 rounded-lg bg-fuchsia-900 text-white flex-shrink-0">
+                                <p class="text-xl font-bold">02</p>
+                                <p class="text-xs">DIC</p>
+                            </div>
+                            <div>
+                                <h4 class="text-2xl font-semibold text-white">Noche de Jazz Fusión <span class="text-sm text-fuchsia-400">(ID: 1002)</span></h4>
+                                <p class="text-sm text-stone-400">Ensamble Claypole Jazz | Show acústico: 20:30 hs. | Aforo: 95%</p>
+                                <p class="text-xl font-bold text-neon mt-1">$ 3.500 ARS</p>
+                            </div>
+                        </div>
+                        <a href="checkout_form.html?event_id=1002" class="w-full sm:w-auto bg-fuchsia-500 text-gray-900 font-bold py-2 px-6 rounded-full text-md hover:bg-fuchsia-400 transition shadow-lg">
+                            Comprar Entrada
+                        </a>
+                    </div>
+
+                    <!-- Evento 3 (Entrada Libre, Requiere Reserva - Alternativa 1/3) -->
+                    <div class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 border-emerald-500">
+                        <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                            <div class="text-center p-2 rounded-lg bg-emerald-900 text-white flex-shrink-0">
+                                <p class="text-xl font-bold">10</p>
+                                <p class="text-xs">DIC</p>
+                            </div>
+                            <div>
+                                <h4 class="text-2xl font-semibold text-white">Feria de Diseño y DJ Set <span class="text-sm text-emerald-400">(ID: 1003)</span></h4>
+                                <p class="text-sm text-stone-400">Entrada **GRATIS** con reserva. | Horario: 18:00 hs. | Cupo limitado.</p>
+                                <p class="text-xl font-bold text-emerald-400 mt-1">¡GRATIS!</p>
+                            </div>
+                        </div>
+                        <!-- En este caso, el checkout sólo pide datos sin pago -->
+                        <a href="checkout_form.html?event_id=1003&free=true" class="w-full sm:w-auto bg-emerald-500 text-gray-900 font-bold py-2 px-6 rounded-full text-md hover:bg-emerald-400 transition shadow-lg">
+                            Reservar Lugar
+                        </a>
+                    </div>
+                    
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Sección 2: Contacto para Bandas (Mantenida) --><section id="contacto-bandas" class="py-16 bg-rustic">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-white mb-2">¿Querés Tocar en el Templo?</h2>
+                    <p class="text-stone-300">Buscamos propuestas originales que encajen con nuestra vibración rústico-fluorescente. Envía tu material.</p>
+                </div>
+                
+                <!-- Formulario de Contacto Mock-up --><form class="space-y-6 p-8 bg-stone-800 rounded-xl shadow-2xl border border-fuchsia-500/30">
+                    <div>
+                        <label for="nombre-banda" class="block text-sm font-medium text-neon mb-1">Nombre de la Banda o Proyecto:</label>
+                        <input type="text" id="nombre-banda" name="nombre-banda" class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white" placeholder="Ej: La Risa de Cromo" required>
+                    </div>
+                    <div>
+                        <label for="contacto-email" class="block text-sm font-medium text-neon mb-1">Email de Contacto:</label>
+                        <input type="email" id="contacto-email" name="contacto-email" class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white" placeholder="tu.banda@mail.com" required>
+                    </div>
+                    <div>
+                        <label for="link-musica" class="block text-sm font-medium text-neon mb-1">Link a tu Música (Spotify, YouTube, Bandcamp):</label>
+                        <input type="url" id="link-musica" name="link-musica" class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white" placeholder="https://" required>
+                    </div>
+                    <div>
+                        <label for="propuesta" class="block text-sm font-medium text-neon mb-1">Comentanos tu Propuesta y Requerimientos Técnicos:</label>
+                        <textarea id="propuesta" name="propuesta" rows="4" class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white" placeholder="Estilo musical, cantidad de integrantes, necesidad de backline..."></textarea>
+                    </div>
+                    <!-- Nota: En un sistema real, este botón llamaría a una API de Node.js para enviar el formulario por email/guardarlo en DB -->
+                    <button type="submit" class="w-full bg-fuchsia-500 text-gray-900 font-bold py-3 rounded-lg shadow-xl hover:bg-fuchsia-400 transition duration-300 transform hover:scale-[1.01]">
+                        Enviar Propuesta
+                    </button>
+                    <p class="text-center text-sm text-stone-400 mt-4">Nos pondremos en contacto a la brevedad para coordinar una fecha.</p>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer --><footer class="bg-rustic border-t border-stone-700 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        
+        // Lógica para leer el link de WhatsApp (event_id)
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('event_id');
+
+            if (eventId) {
+                // Aquí va la lógica real:
+                // 1. Llamar a la API de Node.js para obtener los detalles del evento con ese ID.
+                // 2. Desplazar la vista directamente a la tarjeta de ese evento.
+
+                // Simulación de desplazamiento
+                const targetElement = document.querySelector(`a[href*="event_id=${eventId}"]`);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Opcional: Resaltar la tarjeta por unos segundos (ej. añadir una clase temporal de glow)
+                }
+            }
+        });
+    </script>
+</body>
+</html>
