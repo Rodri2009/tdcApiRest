@@ -106,10 +106,10 @@ const App = {
         // --- ¡LÓGICA CONDICIONAL DE ENDPOINTS! ---
         const endpoints = {
             // La URL para 'tipos' ahora depende del modo de la aplicación
-            tipos: this.config.mode === 'edit' 
-                ? '/api/admin/tipos-evento/all' 
+            tipos: this.config.mode === 'edit'
+                ? '/api/admin/tipos-evento/all'
                 : '/api/opciones/tipos-evento',
-            
+
             // El resto de los endpoints son los mismos para ambos modos
             tarifas: '/api/opciones/tarifas',
             duraciones: '/api/opciones/duraciones',
@@ -120,15 +120,6 @@ const App = {
 
         console.log("Endpoints a consultar:", endpoints);
 
-
-        /*Promise.all(
-            Object.values(endpoints).map(url =>
-                fetch(url).then(res => {
-                    if (!res.ok) throw new Error(`Error al cargar ${url}: ${res.statusText}`);
-                    return res.json();
-                })
-            )
-        )*/
         Promise.all(
             Object.values(endpoints).map(url =>
                 fetch(url).then(res => {
@@ -198,7 +189,7 @@ const App = {
             });
     },
 
-    construirUI: function(fechaExcepcion = null) {
+    construirUI: function (fechaExcepcion = null) {
         console.log("Construyendo UI. Excepción de fecha:", fechaExcepcion);
         this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento);
         this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => this.actualizarTodo()));
@@ -209,7 +200,7 @@ const App = {
     },
 
 
-    decidirEstadoInicial: function() {
+    decidirEstadoInicial: function () {
         const params = new URLSearchParams(window.location.search);
         const idFromUrl = params.get('solicitudId');
 
@@ -472,7 +463,7 @@ const App = {
         const hora = overrides.overrideHora || this.elements.horaInicioSelect.value;
         const fechaSeleccionada = fechaStr ? new Date(fechaStr + 'T00:00:00') : null;
 
-        console.log(tipoId,fechaStr,cantidad,duracion,hora,fechaSeleccionada);
+        console.log(tipoId, fechaStr, cantidad, duracion, hora, fechaSeleccionada);
         // --- ¡AGREGAR LÓGICA DE RESETEO! --- 
         //      se deben resetear los campos: 
         //      fechaEventoInput.value = 'Seleccione una fecha...'

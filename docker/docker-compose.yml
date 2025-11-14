@@ -43,6 +43,7 @@ services:
       - ../backend:/app
       # Este volumen anónimo sigue siendo crucial para proteger node_modules.
       - /app/node_modules
+      #- tdc_backend_node_modules:/app/node_modules
 
   mariadb:
     image: mariadb:10.6

@@ -1,102 +1,150 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>El Templo de Claypole - Espacio Cultural y Salón de Eventos Únicos</title>
-    <!-- Carga de Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Configuración de fuentes y colores personalizados para el tema */
         :root {
-            --color-primary: #581c87; /* Morado Oscuro/Templo */
-            --color-secondary: #f0abfc; /* Rosa Fluorescente/Neón */
-            --color-rustic: #44403c; /* Gris Piedra/Madera */
+            --color-primary: #581c87;
+            /* Morado Oscuro/Templo */
+            --color-secondary: #f0abfc;
+            /* Rosa Fluorescente/Neón */
+            --color-rustic: #44403c;
+            /* Gris Piedra/Madera */
         }
-        .text-neon { color: var(--color-secondary); text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary); }
-        .bg-rustic { background-color: var(--color-rustic); }
-        .border-neon { border-color: var(--color-secondary); }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        .border-neon {
+            border-color: var(--color-secondary);
+        }
 
         /* Estilo para simular el brillo de los murales */
         .neon-glow-card {
-            box-shadow: 0 0 15px rgba(240, 171, 252, 0.5); /* Sombra suave neón */
+            box-shadow: 0 0 15px rgba(240, 171, 252, 0.5);
+            /* Sombra suave neón */
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
+
         .neon-glow-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 0 25px rgba(240, 171, 252, 0.8);
         }
+
         /* Fondo con textura sutil de madera/rustico */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0c0a09; /* Negro muy oscuro */
-            color: #d6d3d1; /* Gris claro */
+            background-color: #0c0a09;
+            /* Negro muy oscuro */
+            color: #d6d3d1;
+            /* Gris claro */
         }
 
         /* Estilo para el fondo de la sección Hero con la imagen del frente */
         .hero-background {
             /* RUTA ACTUALIZADA según tu confirmación */
-            background-image: url('./img/foto_frente.jpg'); 
+            background-image: url('./img/foto_frente.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
         }
     </style>
 </head>
+
 <body>
 
-    <!-- Navegación --><header class="bg-rustic sticky top-0 z-50 shadow-lg">
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <!-- Logo/Título --><a href="#inicio" class="flex items-center space-x-3">
                     <!-- RUTA ACTUALIZADA según tu confirmación -->
-                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto"> 
-                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">El Templo de Claypole</span>
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">El Templo de
+                        Claypole</span>
                 </a>
 
-                <!-- Menú Desktop --><nav class="hidden md:flex space-x-8">
-                    <a href="talleres.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
-                    <a href="agenda_bandas.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en Vivo</a>
-                    <a href="#espacio" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">El Espacio</a>
+                <!-- Menú Desktop -->
+                <nav class="hidden md:flex space-x-8">
+                    <a href="talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <a href="agenda_de_bandas.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
+                        Vivo</a>
+                    <a href="#espacio"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">El Espacio</a>
                     <!-- Enlace directo al sistema de reservas Page.html -->
-                    <a href="Page.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Alquilar Salón</a>
+                    <a href="Page.html"
+                        class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Alquilar
+                        Salón</a>
                 </nav>
 
-                <!-- Botón de Menú Móvil --><button id="mobile-menu-button" class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                <!-- Botón de Menú Móvil --><button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
                     <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
             </div>
         </div>
-        <!-- Menú Móvil Desplegable --><div id="mobile-menu" class="hidden md:hidden">
+        <!-- Menú Móvil Desplegable -->
+        <div id="mobile-menu" class="hidden md:hidden">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
-                <a href="talleres.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
-                <a href="agenda_bandas.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas en Vivo</a>
-                <a href="#espacio" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">El Espacio</a>
-                <a href="Page.html" class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">Alquilar Salón</a>
+                <a href="talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <a href="agenda_de_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
+                    en Vivo</a>
+                <a href="#espacio"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">El
+                    Espacio</a>
+                <a href="Page.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">Alquilar
+                    Salón</a>
             </div>
         </div>
     </header>
 
     <main>
-        <!-- Sección 1: Hero / Introducción con imagen de fondo --><section id="inicio" class="relative overflow-hidden pt-16 pb-24 md:pt-32 md:pb-40 text-center hero-background">
-            <!-- Capa de superposición para mejorar la legibilidad del texto --><div class="absolute inset-0 bg-black opacity-60"></div>
-            <!-- Elemento visual para representar la fluorescencia (mantenido) --><div class="absolute inset-0 flex justify-center items-center">
-                <div class="w-96 h-96 bg-fuchsia-900 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse"></div>
+        <!-- Sección 1: Hero / Introducción con imagen de fondo -->
+        <section id="inicio" class="relative overflow-hidden pt-16 pb-24 md:pt-32 md:pb-40 text-center hero-background">
+            <!-- Capa de superposición para mejorar la legibilidad del texto -->
+            <div class="absolute inset-0 bg-black opacity-60"></div>
+            <!-- Elemento visual para representar la fluorescencia (mantenido) -->
+            <div class="absolute inset-0 flex justify-center items-center">
+                <div
+                    class="w-96 h-96 bg-fuchsia-900 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse">
+                </div>
             </div>
             <div class="relative z-10 max-w-4xl mx-auto px-4">
                 <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white mb-4">
                     <span class="block text-neon">El Templo de Claypole</span>
                 </h1>
                 <p class="mt-3 text-xl sm:text-2xl text-stone-300 font-medium max-w-2xl mx-auto">
-                    Donde la atmósfera rústica se fusiona con la vibración fluorescente. Espacio cultural y salón de eventos único en su clase.
+                    Donde la atmósfera rústica se fusiona con la vibración fluorescente. Espacio cultural y salón de
+                    eventos único en su clase.
                 </p>
                 <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-                    <a href="Page.html" class="bg-transparent border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                    <a href="Page.html"
+                        class="bg-transparent border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Alquilar para Eventos
                     </a>
-                    <!-- ENLACE 2: Bandas en Vivo (agenda_bandas.html) -->
-                    <a href="agenda_bandas.html" class="bg-transparent border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                    <!-- ENLACE 2: Bandas en Vivo (agenda_de_bandas.html) -->
+                    <a href="agenda_de_bandas.html"
+                        class="bg-transparent border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Ver Bandas en Vivo
                     </a>
                 </div>
@@ -119,53 +167,67 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
                     <!-- Nueva Tarjeta: Talleres y Actividades -->
                     <div class="p-6 rounded-xl bg-rustic neon-glow-card col-span-1">
-                         <a href="talleres.html">
+                        <a href="talleres.html">
                             <span class="text-4xl block mb-4 text-center cursor-pointer">🎨</span>
                             <h3 class="text-xl font-bold text-white mb-2 text-center">Talleres y Clases</h3>
-                            <p class="text-stone-300 text-sm text-center">Consulta nuestro espacio cultural y las actividades que volverán en 2026.</p>
+                            <p class="text-stone-300 text-sm text-center">Consulta nuestro espacio cultural y las
+                                actividades que volverán en 2026.</p>
                         </a>
                     </div>
-                    
-                    <!-- Característica 1: Exterior Rústico y Deck --><div class="p-6 rounded-xl bg-rustic neon-glow-card">
+
+                    <!-- Característica 1: Exterior Rústico y Deck -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
                         <span class="text-4xl block mb-4 text-center">🌳</span>
                         <h3 class="text-xl font-bold text-white mb-2 text-center">Atmósfera Rústica Exterior</h3>
-                        <p class="text-stone-300 text-sm text-center">Paredes de madera, deck de palets y una parrilla XXL. Ideal para asados y recibimientos al aire libre.</p>
+                        <p class="text-stone-300 text-sm text-center">Paredes de madera, deck de palets y una parrilla
+                            XXL. Ideal para asados y recibimientos al aire libre.</p>
                     </div>
 
-                    <!-- Característica 2: Escenario y PA Profesional --><div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                    <!-- Característica 2: Escenario y PA Profesional -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
                         <span class="text-4xl block mb-4 text-center">🎤</span>
                         <h3 class="text-xl font-bold text-white mb-2 text-center">Sonido e Iluminación Pro</h3>
-                        <p class="text-stone-300 text-sm text-center">PA profesional para música en vivo, escenario principal y cabina de sonido dedicada. ¡Listo para bandas!</p>
+                        <p class="text-stone-300 text-sm text-center">PA profesional para música en vivo, escenario
+                            principal y cabina de sonido dedicada. ¡Listo para bandas!</p>
                     </div>
 
-                    <!-- Característica 3: Murales Flúor y Decoración --><div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                    <!-- Característica 3: Murales Flúor y Decoración -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
                         <span class="text-4xl block mb-4 text-center">👽</span>
                         <h3 class="text-xl font-bold text-white mb-2 text-center">El Efecto Flúor</h3>
-                        <p class="text-stone-300 text-sm text-center">Murales psicodélicos de hongos, acuáticos y extraterrestres que cobran vida bajo las luces UV.</p>
+                        <p class="text-stone-300 text-sm text-center">Murales psicodélicos de hongos, acuáticos y
+                            extraterrestres que cobran vida bajo las luces UV.</p>
                     </div>
 
-                    <!-- Característica 4: Comodidades y Versatilidad --><div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                    <!-- Característica 4: Comodidades y Versatilidad -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
                         <span class="text-4xl block mb-4 text-center">🚻</span>
                         <h3 class="text-xl font-bold text-white mb-2 text-center">Funcionalidad Completa</h3>
-                        <p class="text-stone-300 text-sm text-center">Barra, cocina/buffet, amplio salón, enredaderas internas y baños sin género.</p>
+                        <p class="text-stone-300 text-sm text-center">Barra, cocina/buffet, amplio salón, enredaderas
+                            internas y baños sin género.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Sección 3: Eventos - Bandas en Vivo (Cultural) --><section id="eventos" class="py-20 bg-stone-900">
+        <!-- Sección 3: Eventos - Bandas en Vivo (Cultural) -->
+        <section id="eventos" class="py-20 bg-stone-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
                         Agenda Cultural: Bandas en Vivo
                     </h2>
                     <p class="mt-4 text-xl text-stone-400">
-                        Ven y descubre la mejor música emergente. Próximamente en <a href="agenda_bandas.html" class="text-fuchsia-400 underline hover:text-fuchsia-200">este espacio</a>.
+                        Ven y descubre la mejor música emergente. Próximamente en <a href="agenda_de_bandas.html"
+                            class="text-fuchsia-400 underline hover:text-fuchsia-200">este espacio</a>.
                     </p>
                 </div>
 
-                <!-- Lista de Eventos (Mock-up) --><div class="space-y-6 max-w-3xl mx-auto">
-                    <!-- Evento 1 --><div class="p-4 sm:p-6 bg-stone-800 rounded-xl flex flex-col sm:flex-row items-center justify-between border-l-4 border-fuchsia-500">
+                <!-- Lista de Eventos (Mock-up) -->
+                <div class="space-y-6 max-w-3xl mx-auto">
+                    <!-- Evento 1 -->
+                    <div
+                        class="p-4 sm:p-6 bg-stone-800 rounded-xl flex flex-col sm:flex-row items-center justify-between border-l-4 border-fuchsia-500">
                         <div class="flex items-center space-x-4">
                             <div class="text-center p-2 rounded-lg bg-fuchsia-900 text-white">
                                 <p class="text-xl font-bold">25</p>
@@ -176,12 +238,15 @@
                                 <p class="text-sm text-stone-400">Rock Alternativo - Apertura de puertas: 21:00 hs.</p>
                             </div>
                         </div>
-                        <!-- Enlace 2: Bandas en Vivo (agenda_bandas.html) -->
-                        <a href="agenda_bandas.html" class="mt-3 sm:mt-0 bg-fuchsia-500 text-gray-900 font-medium py-2 px-4 rounded-full text-sm hover:bg-fuchsia-400 transition">
+                        <!-- Enlace 2: Bandas en Vivo (agenda_de_bandas.html) -->
+                        <a href="agenda_de_bandas.html"
+                            class="mt-3 sm:mt-0 bg-fuchsia-500 text-gray-900 font-medium py-2 px-4 rounded-full text-sm hover:bg-fuchsia-400 transition">
                             Sacar Entrada
                         </a>
                     </div>
-                    <!-- Evento 2 --><div class="p-4 sm:p-6 bg-stone-800 rounded-xl flex flex-col sm:flex-row items-center justify-between border-l-4 border-fuchsia-500">
+                    <!-- Evento 2 -->
+                    <div
+                        class="p-4 sm:p-6 bg-stone-800 rounded-xl flex flex-col sm:flex-row items-center justify-between border-l-4 border-fuchsia-500">
                         <div class="flex items-center space-x-4">
                             <div class="text-center p-2 rounded-lg bg-fuchsia-900 text-white">
                                 <p class="text-xl font-bold">02</p>
@@ -192,8 +257,9 @@
                                 <p class="text-sm text-stone-400">Ensamble Claypole Jazz - Show acústico: 20:30 hs.</p>
                             </div>
                         </div>
-                        <!-- Enlace 2: Bandas en Vivo (agenda_bandas.html) -->
-                        <a href="agenda_bandas.html" class="mt-3 sm:mt-0 bg-fuchsia-500 text-gray-900 font-medium py-2 px-4 rounded-full text-sm hover:bg-fuchsia-400 transition">
+                        <!-- Enlace 2: Bandas en Vivo (agenda_de_bandas.html) -->
+                        <a href="agenda_de_bandas.html"
+                            class="mt-3 sm:mt-0 bg-fuchsia-500 text-gray-900 font-medium py-2 px-4 rounded-full text-sm hover:bg-fuchsia-400 transition">
                             Sacar Entrada
                         </a>
                     </div>
@@ -201,7 +267,8 @@
             </div>
         </section>
 
-        <!-- Sección 4: Alquiler de Salón --><section id="alquiler" class="py-20 bg-rustic">
+        <!-- Sección 4: Alquiler de Salón -->
+        <section id="alquiler" class="py-20 bg-rustic">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
@@ -213,26 +280,33 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                    <div class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
+                    <div
+                        class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
                         <span class="text-5xl block mb-4">🥳</span>
                         <h3 class="text-2xl font-bold text-white mb-2">Eventos Infantiles</h3>
-                        <p class="text-stone-300">La cancha de fútbol, la parrilla y el salón amplio lo hacen la opción más fácil y divertida.</p>
+                        <p class="text-stone-300">La cancha de fútbol, la parrilla y el salón amplio lo hacen la opción
+                            más fácil y divertida.</p>
                     </div>
-                    <div class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
+                    <div
+                        class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
                         <span class="text-5xl block mb-4">🥂</span>
                         <h3 class="text-2xl font-bold text-white mb-2">Celebraciones Adultas</h3>
-                        <p class="text-stone-300">La estética, el PA y la barra atraen a quienes buscan un ambiente original y vibrante.</p>
+                        <p class="text-stone-300">La estética, el PA y la barra atraen a quienes buscan un ambiente
+                            original y vibrante.</p>
                     </div>
-                    <div class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
+                    <div
+                        class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
                         <span class="text-5xl block mb-4">💼</span>
                         <h3 class="text-2xl font-bold text-white mb-2">Todo Tipo de Eventos</h3>
-                        <p class="text-stone-300">Reuniones, talleres, ferias, rodajes... el límite lo ponés vos con la versatilidad de nuestro salón.</p>
+                        <p class="text-stone-300">Reuniones, talleres, ferias, rodajes... el límite lo ponés vos con la
+                            versatilidad de nuestro salón.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Sección 5: Reserva (Call to Action) --><section id="reservas" class="py-20 bg-stone-950">
+        <!-- Sección 5: Reserva (Call to Action) -->
+        <section id="reservas" class="py-20 bg-stone-950">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <h2 class="text-4xl font-extrabold text-white">
                     <span class="text-neon block">¿Listo para Celebrar o Tocar?</span>
@@ -241,11 +315,13 @@
                     Reserva tu fecha para eventos privados o consulta la agenda cultural.
                 </p>
                 <div class="mt-8">
-                    <a href="Page.html" class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-10 rounded-xl text-xl shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                    <a href="Page.html"
+                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-10 rounded-xl text-xl shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
                         Alquilar el Salón (Sistema de Solicitudes)
                     </a>
                     <p class="mt-4 text-sm text-stone-500">
-                        Si buscas una fecha para tu banda, <a href="agenda_bandas.html" class="text-fuchsia-400 underline hover:text-fuchsia-200">haz clic aquí</a>.
+                        Si buscas una fecha para tu banda, <a href="agenda_de_bandas.html"
+                            class="text-fuchsia-400 underline hover:text-fuchsia-200">haz clic aquí</a>.
                     </p>
                 </div>
             </div>
@@ -253,9 +329,11 @@
 
     </main>
 
-    <!-- Footer --><footer class="bg-rustic border-t border-stone-700 py-8">
+    <!-- Footer -->
+    <footer class="bg-rustic border-t border-stone-700 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos reservados.</p>
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos
+                reservados.</p>
             <p class="mt-2 text-xs text-stone-500">Seguinos en redes | Claypole, Buenos Aires.</p>
         </div>
     </footer>
@@ -286,4 +364,5 @@
 
     </script>
 </body>
+
 </html>

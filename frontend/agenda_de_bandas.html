@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda y Tickets - El Templo de Claypole</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+        }
+
+        .event-card {
+            transition: transform 0.3s ease;
+        }
+
+        .event-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(240, 171, 252, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Título --><a href="index.html" class="flex items-center space-x-3">
+                    <!-- Usamos un placeholder para la imagen, ya que no puedo acceder a archivos locales como "./img/logo_transparente.png" -->
+                    <div
+                        class="h-10 w-10 bg-fuchsia-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                        T</div>
+                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">El Templo de
+                        Claypole</span>
+                </a>
+                <a href="#contacto-bandas"
+                    class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Tocar
+                    en el Templo</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Sección 1: Agenda de Eventos -->
+        <section id="agenda" class="py-20 md:py-16 bg-stone-950">
+            <div class="max-w-4xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-3">
+                        <span class="block text-neon">Agenda de Bandas en Vivo</span>
+                    </h1>
+                    <p class="text-xl text-stone-300 font-medium">
+                        ¡Asegura tu lugar! Solo Entrada General (18+).
+                    </p>
+                </div>
+
+                <!-- Contenedor donde se inyectarán los eventos cargados por la API -->
+                <div id="events-list" class="space-y-6">
+                    <!-- Aquí se mostrarán los eventos dinámicos o el mensaje de carga/error -->
+                    <p class="text-center text-lg text-stone-500">Cargando eventos...</p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Sección 2: Contacto para Bandas (Mantenida) -->
+        <section id="contacto-bandas" class="py-16 bg-rustic">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-white mb-2">¿Querés Tocar en el Templo?</h2>
+                    <p class="text-stone-300">Buscamos propuestas originales que encajen con nuestra vibración
+                        rústico-fluorescente. Envía tu material.</p>
+                </div>
+
+                <!-- Formulario de Contacto Mock-up -->
+                <form class="space-y-6 p-8 bg-stone-800 rounded-xl shadow-2xl border border-fuchsia-500/30">
+                    <div>
+                        <label for="nombre-banda" class="block text-sm font-medium text-neon mb-1">Nombre de la Banda o
+                            Proyecto:</label>
+                        <input type="text" id="nombre-banda" name="nombre-banda"
+                            class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white"
+                            placeholder="Ej: La Risa de Cromo" required>
+                    </div>
+                    <div>
+                        <label for="contacto-email" class="block text-sm font-medium text-neon mb-1">Email de
+                            Contacto:</label>
+                        <input type="email" id="contacto-email" name="contacto-email"
+                            class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white"
+                            placeholder="tu.banda@mail.com" required>
+                    </div>
+                    <div>
+                        <label for="link-musica" class="block text-sm font-medium text-neon mb-1">Link a tu Música
+                            (Spotify, YouTube, Bandcamp):</label>
+                        <input type="url" id="link-musica" name="link-musica"
+                            class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white"
+                            placeholder="https://" required>
+                    </div>
+                    <div>
+                        <label for="propuesta" class="block text-sm font-medium text-neon mb-1">Comentanos tu Propuesta
+                            y Requerimientos Técnicos:</label>
+                        <textarea id="propuesta" name="propuesta" rows="4"
+                            class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white"
+                            placeholder="Estilo musical, cantidad de integrantes, necesidad de backline..."></textarea>
+                    </div>
+                    <!-- Nota: En un sistema real, este botón llamaría a una API de Node.js para enviar el formulario por email/guardarlo en DB -->
+                    <button type="submit"
+                        class="w-full bg-fuchsia-500 text-gray-900 font-bold py-3 rounded-lg shadow-xl hover:bg-fuchsia-400 transition duration-300 transform hover:scale-[1.01]">
+                        Enviar Propuesta
+                    </button>
+                    <p class="text-center text-sm text-stone-400 mt-4">Nos pondremos en contacto a la brevedad para
+                        coordinar una fecha.</p>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-rustic border-t border-stone-700 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos
+                reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // ----------------------------------------------------
+        // LÓGICA DE CARGA DE EVENTOS DESDE LA API
+        // ----------------------------------------------------
+
+        // La URL de tu API Node.js/Express, asumiendo que el contenedor backend está en el puerto 3000
+        // y se accede a través del host/puerto de Docker Compose (ej: localhost:3000)
+        // Por favor, ajusta esta URL si tu puerto API no es 3000.
+        const API_URL = 'http://localhost/api/tickets/eventos';
+        const eventsListContainer = document.getElementById('events-list');
+
+        /**
+         * Formatea un objeto de fecha y hora (ej: '2025-12-05 21:00:00')
+         * en partes legibles para la tarjeta.
+         * @param {string} dateTimeString - Fecha y hora de MariaDB.
+         * @returns {{day: string, month: string, time: string}}
+         */
+        function formatDateTime(dateTimeString) {
+            const date = new Date(dateTimeString);
+
+            // Opciones de formato
+            const dayOptions = { day: '2-digit' };
+            const monthOptions = { month: 'short' }; // Ej: NOV, DIC
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false }; // Ej: 21:00
+
+            // Convertir a tu zona horaria local o de preferencia (puede variar según dónde se ejecute el script)
+            const day = date.toLocaleDateString('es-AR', dayOptions);
+            const month = date.toLocaleDateString('es-AR', monthOptions).toUpperCase().replace('.', '');
+            const time = date.toLocaleTimeString('es-AR', timeOptions);
+
+            return { day, month, time };
+        }
+
+        /**
+         * Genera la estructura HTML para un solo evento.
+         * @param {object} event - Objeto evento de la API.
+         * @returns {string} HTML del evento.
+         */
+        function generateEventCard(event) {
+            const { id, nombre_banda, fecha_hora, precio_base, descripcion, activo, aforo_maximo } = event;
+            const { day, month, time } = formatDateTime(fecha_hora);
+
+            // Estilo y texto dinámico para precio y botón
+            let priceText = `$ ${precio_base.toLocaleString('es-AR')} ARS`;
+            let buttonText = 'Comprar Entrada';
+            let buttonClass = 'bg-fuchsia-500 hover:bg-fuchsia-400';
+            let borderClass = 'border-fuchsia-500';
+            let dateBgClass = 'bg-fuchsia-900';
+            let dateTextColor = 'text-white';
+            let priceTextColor = 'text-neon';
+            let link = `checkout_form.html?event_id=${id}`;
+
+            if (precio_base === 0) {
+                priceText = '¡GRATIS!';
+                buttonText = 'Reservar Lugar';
+                buttonClass = 'bg-emerald-500 hover:bg-emerald-400';
+                borderClass = 'border-emerald-500';
+                dateBgClass = 'bg-emerald-900';
+                priceTextColor = 'text-emerald-400';
+                link += '&free=true';
+            }
+
+            return `
+                <!-- Evento ID: ${id} - ${nombre_banda} -->
+                <div data-event-id="${id}" class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 ${borderClass}">
+                    <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                        <div class="text-center p-2 rounded-lg ${dateBgClass} ${dateTextColor} flex-shrink-0">
+                            <p class="text-xl font-bold">${day}</p>
+                            <p class="text-xs">${month}</p>
+                        </div>
+                        <div>
+                            <h4 class="text-2xl font-semibold text-white">${nombre_banda} <span class="text-sm text-stone-400">(ID: ${id})</span></h4>
+                            <!-- Nota: Aquí podrías añadir más detalles como género musical si tu API los provee -->
+                            <p class="text-sm text-stone-400">${descripcion.substring(0, 50)}... | Puertas: ${time} hs. | Aforo Máximo: ${aforo_maximo}</p>
+                            <p class="text-xl font-bold ${priceTextColor} mt-1">${priceText}</p>
+                        </div>
+                    </div>
+                    <a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-6 rounded-full text-md transition shadow-lg">
+                        ${buttonText}
+                    </a>
+                </div>
+            `;
+        }
+
+        /**
+         * Procesa y renderiza la lista de eventos.
+         * @param {Array<object>} events - Lista de eventos de la API.
+         */
+        function renderEvents(events) {
+            eventsListContainer.innerHTML = ''; // Limpia el mensaje de carga
+            console.log("Eventos obtenidos:", events.length);
+            if (!events || events.length === 0) {
+                eventsListContainer.innerHTML = `
+                    <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
+                        <p class="text-xl text-stone-400">¡Parece que aún no hay eventos programados!</p>
+                        <p class="text-sm text-stone-500 mt-2">Pronto anunciaremos la nueva agenda.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Filtramos solo los eventos 'activos' (activo = 1)
+            // la propiedad activo no existe, por eso omito este paso
+            const activeEvents = events.filter(event => event.activo === 1);
+            //const activeEvents = events;
+
+            activeEvents.forEach(event => {
+                //console.log("EVENTO:", event);
+                const cardHtml = generateEventCard(event);
+                eventsListContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+
+        /**
+         * Llama a la API para obtener la lista de eventos.
+         */
+        async function fetchEvents() {
+            try {
+                const response = await fetch(API_URL);
+                //console.log(response.statusText);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                renderEvents(data);
+
+            } catch (error) {
+                console.error('Error al cargar la agenda de eventos:', error);
+                eventsListContainer.innerHTML = `
+                    <div class="p-8 text-center bg-red-900/30 text-red-300 rounded-xl border border-red-500">
+                        <p class="text-xl font-bold">Error de Conexión</p>
+                        <p class="text-sm mt-2">No se pudo conectar a la API en ${API_URL}. Asegúrate que el backend de Node.js esté corriendo correctamente en Docker.</p>
+                        <p class="text-xs mt-1">Detalle: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ----------------------------------------------------
+        // INICIALIZACIÓN
+        // ----------------------------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Inicia la carga de datos de la API
+            fetchEvents();
+
+            // 2. Lógica para desplazamiento (mantengo la lógica original)
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('event_id');
+
+            if (eventId) {
+                // El desplazamiento debe ocurrir DEPUÉS de que los eventos se hayan cargado.
+                // Como fetchEvents es async, una forma simple es esperar un momento.
+                setTimeout(() => {
+                    const targetElement = document.querySelector(`[data-event-id="${eventId}"]`);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 500); // Espera 500ms para que se complete el renderizado
+            }
+        });
+    </script>
+</body>
+
+</html>

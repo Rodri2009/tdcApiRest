@@ -1,5 +1,13 @@
 // backend/models/ticketsModel.js
-const { v4: uuidv4 } = require('uuid');
+let uuidv4;
+
+// Carga asíncrona al inicio
+import('uuid').then(module => {
+    uuidv4 = module.v4;
+}).catch(error => {
+    console.error("Error al cargar uuid:", error);
+});
+
 const pool = require('../db');
 
 /**
@@ -13,16 +21,18 @@ const getEventosActivos = async () => {
             e.fecha_hora, 
             e.precio_base, 
             e.aforo_maximo, 
+            e.activo, 
             e.descripcion,
-            (e.aforo_maximo - COUNT(t.evento_id)) as tickets_disponibles
+            -- FORZAMOS el resultado a ser un entero normal (SIGNED), evitando el BigInt (150n)
+            CAST((e.aforo_maximo - COUNT(t.evento_id)) AS SIGNED) as tickets_disponibles
         FROM eventos e
         LEFT JOIN tickets t ON e.id = t.evento_id AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
         WHERE e.activo = TRUE 
         GROUP BY e.id
-        HAVING tickets_disponibles > 0 OR e.precio_base = 0.00 -- Muestra eventos pagados y gratuitos
+        HAVING tickets_disponibles > 0 OR e.precio_base = 0.00
         ORDER BY e.fecha_hora ASC;
     `;
-    const [rows] = await pool.query(query);
+    const rows = await pool.query(query);
     return rows;
 };
 
@@ -74,9 +84,9 @@ const createPendingTicket = async (eventoId, email, nombre, cuponId, precioPagad
         INSERT INTO tickets (id_unico, evento_id, email_comprador, nombre_comprador, cupon_id, precio_pagado, estado)
         VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE_PAGO');
     `;
-    
+
     await pool.query(query, [ticketId, eventoId, email, nombre, cuponId, precioPagado]);
-    
+
     return ticketId;
 };
 
