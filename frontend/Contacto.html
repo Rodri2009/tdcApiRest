@@ -5,6 +5,8 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contacto y Confirmación</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
     /* ------------------------------------- */
     /* DEFINICIÓN DE VARIABLES Y ESTILOS BASE */
@@ -48,7 +50,7 @@
     h2 {
       text-align: center;
       margin-bottom: 5px;
-      font-size: 2.25rem;
+      font-size: 2.25rem !important;
       font-weight: bold;
       color: var(--color-secondary);
       /* Color Neon */
@@ -66,14 +68,29 @@
 
     label {
       display: block;
-      margin-bottom: 8px;
+      /*margin-bottom: 8px;*/
       font-weight: bold;
       color: var(--color-text-light);
     }
 
     .form-group {
+      margin-top: 15px;
       margin-bottom: 15px;
     }
+
+    #resumen {
+      padding: 15px;
+      border: 1px solid var(--color-secondary);
+      border-radius: 5px;
+      background-color: #0f172a;
+    }
+
+    #resumen p,
+    #resumen ul li {
+      color: #f8fafc;
+      /* Texto en resumen */
+    }
+
 
     input[type="text"],
     input[type="tel"],
@@ -239,9 +256,13 @@
 </head>
 
 <body>
+
   <nav id="top-nav">
     <div class="logo">
-      <span class="text-neon">El Templo</span>
+      <a href="index.html" class="flex items-center space-x-3">
+        <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+        <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">Volver al Inicio</span>
+      </a>
     </div>
     <div class="nav-links">
       <a href="#" onclick="redirigir('presupuesto')" class="nav-item">Presupuesto</a>
@@ -253,7 +274,7 @@
   <div id="notification-banner"></div>
   <div class="container">
     <h2>Paso Final: Tus Datos de Contacto</h2>
-    <div id="resumen-solicitud">
+    <div id="resumen">
       <p>Cargando resumen...</p>
     </div>
 
@@ -322,7 +343,7 @@
 
       const fromPage = params.get('from'); // <-- Leemos el nuevo parámetro
       const btnVolver = document.getElementById('btn-volver');
-      const resumenDiv = document.getElementById('resumen-solicitud');
+      const resumenDiv = document.getElementById('resumen');
 
       if (!solicitudId) {
         resumenDiv.innerHTML = '<p style="color: red;">Error: No se encontró un ID de solicitud.</p>';
@@ -352,7 +373,7 @@
           // 3. Mostrar los datos en la página
           const fecha = new Date(data.fechaEvento).toLocaleDateString('es-AR', { timeZone: 'UTC' });
           resumenDiv.innerHTML = `
-                    <h3>Resumen de tu evento:</h3>
+                    <h3>Resumen:</h3>
                     <ul>
                       <li><strong>Tipo:</strong> ${data.nombreParaMostrar || data.tipoEvento}</li>
                       <li><strong>Fecha:</strong> ${fecha}</li>
