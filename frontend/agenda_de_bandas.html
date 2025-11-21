@@ -47,12 +47,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <!-- Logo/Título --><a href="index.html" class="flex items-center space-x-3">
-                    <!-- Usamos un placeholder para la imagen, ya que no puedo acceder a archivos locales como "./img/logo_transparente.png" -->
-                    <div
-                        class="h-10 w-10 bg-fuchsia-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                        T</div>
-                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">El Templo de
-                        Claypole</span>
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">Volver al Inicio</span>
                 </a>
                 <a href="#contacto-bandas"
                     class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Tocar
@@ -140,6 +136,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos
                 reservados.</p>
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> -V 1.0. -</p>
         </div>
     </footer>
 
@@ -153,7 +150,24 @@
         // La URL de tu API Node.js/Express, asumiendo que el contenedor backend está en el puerto 3000
         // y se accede a través del host/puerto de Docker Compose (ej: localhost:3000)
         // Por favor, ajusta esta URL si tu puerto API no es 3000.
-        const API_URL = 'http://localhost/api/tickets/eventos';
+        //const API_URL = 'http://192.168.1.10/api/tickets/eventos';
+
+        // MODIFICACIÓN: URL Dinámica
+        const currentHost = window.location.host;
+        let API_BASE_URL = '';
+
+        if (currentHost.includes('localhost') || currentHost.includes('192.168.1.10')) {
+            // Si estás en desarrollo local (usando localhost o una IP local)
+            // Asume que el proxy/puerta de enlace responde en localhost
+            API_BASE_URL = 'http://192.168.1.10';
+        } else {
+            // Si estás usando el dominio público
+            // Asume que el dominio público (ej: eltemplodeclaypole.com) es el host
+            API_BASE_URL = window.location.protocol + '//' + currentHost;
+        }
+
+        const API_URL = API_BASE_URL + '/api/tickets/eventos';
+
         const eventsListContainer = document.getElementById('events-list');
 
         /**

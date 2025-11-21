@@ -1,43 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 
 <head>
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de Presupuesto</title>
+    <title>Solicitud Reserva para Eventos - El Templo de Claypole</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
 
     <style>
+        :root {
+            --color-primary: #581c87;
+            /* Morado oscuro de Talleres */
+            --color-secondary: #f0abfc;
+            /* Neon/Fucsia de Talleres */
+            --color-rustic: #44403c;
+            /* Gris/Marrón de Talleres */
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        /* Estilos del cuerpo del formulario */
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f4;
-            color: #333;
+            background-color: #0c0a09;
+            /* Fondo de Talleres */
+            color: #d6d3d1;
+            /* Texto claro */
             padding-bottom: 70px;
         }
 
         .container {
             max-width: 98%;
-            margin: 0 auto;
-            background-color: #fff;
+            margin: 20px auto;
+            background-color: #1e293b;
+            /* Un gris/azul oscuro para el contenedor */
             padding: 25px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             position: relative;
+            border: 1px solid var(--color-rustic);
         }
 
         h2 {
-            color: #0056b3;
             text-align: center;
             margin-bottom: 5px;
+            font-size: 2.25rem;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: var(--color-secondary);
+            font-size: 1.5rem;
+            margin-top: 25px;
         }
 
         h3.subtitle {
-            color: #0056b3;
+            color: #ccc;
             text-align: center;
             margin-top: 0;
             margin-bottom: 25px;
@@ -45,15 +78,39 @@
             font-weight: normal;
         }
 
-        .form-group {
-            margin-bottom: 15px;
+        /* Campos de Formulario */
+        label {
+            font-weight: bold;
+            color: #f0abfc;
+            /* Color claro para las etiquetas */
+        }
+
+        /* AJUSTE DE ALTURA DE INPUTS/SELECTS */
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 8px !important;
+            /* Altura forzada */
+            border: 1.5px solid #581c87;
+            /* Borde morado */
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 18px;
+            background-color: #0f172a;
+            /* Fondo de campo oscuro */
+            color: #f8fafc;
+            /* Texto blanco */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            line-height: 1.2;
         }
 
         .radio-group {
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #581c87;
             border-radius: 4px;
-            background-color: #fcfcfc;
+            background-color: #0f172a;
         }
 
         .radio-option {
@@ -66,64 +123,173 @@
         .radio-option input[type="radio"] {
             margin-right: 10px;
             flex-shrink: 0;
+            accent-color: var(--color-secondary);
         }
 
         .radio-option label {
             line-height: 1.4;
             font-weight: normal;
             cursor: pointer;
-        }
-
-        .form-group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .form-group-header label {
-            margin-bottom: 0;
-            font-weight: bold;
-            color: #555;
-        }
-
-        #resetTipoEventoBtn {
-            display: none;
-            background: none;
-            border: none;
-            color: #007bff;
-            font-size: 14px;
-            cursor: pointer;
-            text-decoration: underline;
-            padding: 0 5px;
-        }
-
-        #resetTipoEventoBtn:hover {
-            color: #0056b3;
+            color: #d6d3d1;
+            /* Texto de opción */
         }
 
         #tipoEventoDescripcion {
             padding: 10px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #581c87;
             border-radius: 4px;
-            background-color: #f0f0f0;
-            font-size: 0.9em;
-            color: #666;
+            background-color: #0f172a;
+            font-size: 18px;
+            color: #f8fafc;
             min-height: 120px;
             text-align: left;
             white-space: pre-wrap;
             box-sizing: border-box;
         }
 
-        select,
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            border: 1.5px solid #ccc;
-            border-radius: 4px;
+        /* Detalles de Presupuesto General */
+        #presupuestoDetalle,
+        #detallePrecios {
+            padding: 15px;
+            border: 1px solid var(--color-secondary);
+            border-radius: 5px;
+            background-color: #0f172a;
+        }
+
+        #presupuestoDetalle p,
+        #presupuestoDetalle ul li {
+            color: #f8fafc;
+            /* Texto en resumen */
+        }
+
+        /* ESTILO DE FACTURA PARA DETALLE DE PRECIOS */
+        #detallePrecios ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #detallePrecios ul li {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1.05em;
+            color: #f8fafc !important;
+            /* Mantenemos el !important para sobrescribir estilos en línea */
+        }
+
+        #detallePrecios ul li span:last-child {
+            font-weight: bold;
+            color: #34d399;
+        }
+
+
+        #presupuestoTotal {
+            text-align: right;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #34d399;
+            /* Verde neón/claro para el valor total */
+            margin-top: 15px;
+            border-top: 2px solid #581c87;
+            padding-top: 10px;
+        }
+
+        #presupuestoTotal span {
+            font-size: 0.7em;
+            color: var(--color-secondary);
+            /* Fucsia neón para la etiqueta 'Total Básico:' */
+        }
+
+        /* ------------------------------------------- */
+        /* NUEVO ESTILO DE BOTÓN NEON (TRANSPARENTE) */
+        /* ------------------------------------------- */
+        .button-group button {
+            /* Estilo Base: Transparente con borde neon */
+            background-color: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            /* Simula rounded-lg */
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            /* Añadido para simular la transición de Tailwind */
+            transition: all 0.3s ease-in-out;
+            text-decoration: none;
             box-sizing: border-box;
-            font-size: 16px;
-            background-color: #fff;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .button-group button:hover {
+            /* Simular hover:bg-fuchsia-900 hover:bg-opacity-20 */
+            background-color: rgba(132, 63, 172, 0.2);
+            /* Simular transform: hover:scale-105 */
+            transform: scale(1.05);
+            color: var(--color-secondary);
+            border-color: var(--color-secondary);
+        }
+
+        .button-group button:disabled {
+            background-color: #6b7280;
+            color: #d1d5db;
+            border-color: #6b7280;
+            cursor: not-allowed;
+            transform: scale(1.0);
+            /* Desactivar la escala en disabled */
+        }
+
+        /* ------------------------------------------- */
+
+
+        /* Layout móvil (por defecto) */
+        .column-layout {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+
+        /* Media Query para Escritorio */
+        @media (min-width: 768px) {
+            .column-layout {
+                flex-direction: row;
+                gap: 15px;
+            }
+
+            .column-layout .form-group {
+                flex: 1;
+            }
+
+            /* Alineación de botones para escritorio (fix anterior) */
+            .button-group {
+                flex-direction: row;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .button-group button {
+                width: 49%;
+                font-size: 16px;
+                /* El padding y estilos de hover ya están definidos arriba */
+            }
+        }
+
+        /* Estilos menores */
+        hr {
+            border-color: var(--color-rustic);
+            margin-top: 25px;
         }
 
         .campo-invalido {
@@ -149,89 +315,14 @@
             }
         }
 
-        #presupuestoDetalle {
-            margin-top: 25px;
-            padding: 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-        }
-
-        #presupuestoDetalle ul {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 15px 0;
-            text-align: left;
-        }
-
-        #presupuestoDetalle ul li {
-            margin-bottom: 5px;
-            font-size: 1.05em;
-            color: #444;
-        }
-
-        #detallePrecios {
-            margin-top: 5px;
-            padding: 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-        }
-
-        #detallePrecios ul {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 15px 0;
-            text-align: left;
-        }
-
-        #detallePrecios ul li {
-            margin-bottom: 5px;
-            font-size: 1.05em;
-            color: #444;
-        }
-
-
-        #presupuestoTotal {
-            text-align: right;
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #28a745;
-            margin-top: 15px;
-            border-top: 2px solid #ddd;
-            padding-top: 10px;
-        }
-
-        #presupuestoTotal span {
-            font-size: 0.7em;
-            color: #555;
-        }
-
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            border-radius: 8px;
-            flex-direction: column;
-            display: none;
-        }
-
+        /* Estilos del loader */
         .loading-overlay p {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #0056b3;
+            color: #a855f7;
         }
 
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+            border-top: 4px solid #a855f7;
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -239,15 +330,6 @@
             margin-top: 10px;
         }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
 
         #notification-banner {
             position: fixed;
@@ -256,7 +338,7 @@
             transform: translate(-50%, 150%);
             padding: 12px 25px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
             color: white;
             font-size: 16px;
             font-weight: 500;
@@ -271,75 +353,45 @@
         }
 
         #notification-banner.warning {
-            background-color: #ffc107;
-            color: #333;
+            background-color: #fbbf24;
+            color: #1e293b;
         }
 
         #notification-banner.error {
-            background-color: #dc3545;
+            background-color: #ef4444;
         }
 
         #notification-banner.success {
-            background-color: #28a745;
-        }
-
-        .column-layout {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-        }
-
-        .button-group {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        button {
-            flex: 1;
-            background-color: #007bff;
-            color: white;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        @media (min-width: 768px) {
-            .column-layout {
-                flex-direction: row;
-                gap: 15px;
-            }
-
-            .column-layout .form-group {
-                flex: 1;
-            }
-
-            .button-group {
-                flex-direction: row;
-                gap: 10px;
-            }
-
-            button {
-                font-size: 16px;
-                padding: 12px 20px;
-            }
+            background-color: #10b981;
         }
     </style>
 </head>
 
 <body>
-    <div class="container" id="mainContainer">
-        <h2>Solicitud Reserva para Eventos</h2>
-        <h3 class="subtitle">Generá tu presupuesto personalizado</h3>
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">Volver al Inicio</span>
+                </a>
+            </div>
+        </div>
+    </header>
 
+    <section id="agenda" class="py-20 md:py-16 bg-stone-950">
+        <div class="max-w-4xl mx-auto px-4">
+            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
+                <span class="block text-neon">Solicitud de Reserva para Eventos</span>
+            </h1>
+            <p class="mt-4 text-2xl text-stone-300 font-medium">
+                Generá tu presupuesto personalizado
+            </p>
+        </div>
+    </section>
+
+
+    <div class="container" id="mainContainer">
         <input type="hidden" id="precioBase" name="precioBase">
         <div class="column-layout">
             <div class="form-group" id="tipoEventoGroup">
@@ -380,7 +432,9 @@
                 </select>
             </div>
         </div>
-        <hr>
+        <hr style="margin-top: 25px; color: #34d399;
+            border-top: 2px solid #581c87;
+            padding-top: 10px;">
         <h3>Resumen de Presupuesto Básico:</h3>
         <div id="presupuestoDetalle">
             <p>Complete las opciones para ver el precio.</p>
@@ -409,7 +463,6 @@
             });
         });
     </script>
-
 </body>
 
 </html>

@@ -82,7 +82,13 @@ const App = {
         }
 
         [this.elements.cantidadPersonasSelect, this.elements.duracionEventoSelect, this.elements.horaInicioSelect].forEach(el => {
-            if (el) el.addEventListener('change', () => this.actualizarTodo());
+            if (el) el.addEventListener('change', (e) => {
+                // Si hay un valor seleccionado, removemos la clase de error
+                if (e.target.value) {
+                    e.target.classList.remove('campo-invalido');
+                }
+                this.actualizarTodo();
+            });
         });
     },
 
@@ -159,15 +165,6 @@ const App = {
                 return this.cargarFeriados()
                     .then(() => {
                         console.log("Paso 3: Todos los datos cargados. Construyendo UI...");
-
-
-                        /*this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento);
-                        this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => this.actualizarTodo()));
-                        this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
-                        this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
-                        this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo...');
-                        this.inicializarCalendario(this.fechasOcupadasSeguro, this.feriadosGlobal);*/
-
                         this.decidirEstadoInicial();
                     });
             })
@@ -192,7 +189,12 @@ const App = {
     construirUI: function (fechaExcepcion = null) {
         console.log("Construyendo UI. Excepción de fecha:", fechaExcepcion);
         this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento);
-        this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => this.actualizarTodo()));
+        this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => {
+            // Remover la clase de error del contenedor principal
+            this.elements.tipoEventoContainer.classList.remove('campo-invalido');
+            this.actualizarTodo();
+        }));
+
         this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
         this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
         this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo...');
@@ -423,7 +425,12 @@ const App = {
                     },
                     ...(fechasADeshabilitar || [])
                 ],
-                onChange: () => this.actualizarTodo()
+                onChange: (selectedDates, dateStr, instance) => {
+                    if (dateStr && instance.altInput) {
+                        instance.altInput.classList.remove('campo-invalido');
+                    }
+                    this.actualizarTodo();
+                }
             };
 
             this.calendario = flatpickr(this.elements.fechaEventoInput, config);

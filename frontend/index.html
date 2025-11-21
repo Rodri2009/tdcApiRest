@@ -120,7 +120,8 @@
 
     <main>
         <!-- Sección 1: Hero / Introducción con imagen de fondo -->
-        <section id="inicio" class="relative overflow-hidden pt-16 pb-24 md:pt-32 md:pb-40 text-center hero-background">
+        <section id="inicio"
+            class="relative overflow-hidden min-h-screen pt-16 pb-24 md:pt-32 md:pb-40 text-center hero-background">
             <!-- Capa de superposición para mejorar la legibilidad del texto -->
             <div class="absolute inset-0 bg-black opacity-60"></div>
             <!-- Elemento visual para representar la fluorescencia (mantenido) -->
@@ -151,13 +152,42 @@
             </div>
         </section>
 
+
+        <!-- Sección 3: Eventos - Bandas en Vivo (Cultural) -->
+        <section id="eventos" class="py-20 bg-stone-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
+                        Agenda Cultural
+                    </h2>
+                    <!-- <p class="mt-4 text-xl text-stone-400">
+                        Ven y descubre la mejor música emergente. Próximamente en <a href="agenda_de_bandas.html"
+                            class="text-fuchsia-400 underline hover:text-fuchsia-200">este espacio</a>.
+                    </p> -->
+                </div>
+
+                <!-- Lista de Eventos (Mock-up) -->
+                <div id="events-list" class="space-y-6 max-w-3xl mx-auto">
+                    <p class="text-center text-lg text-stone-500">Cargando agenda...</p>
+                </div>
+                <div class="text-center mt-8">
+                    <a href="agenda_de_bandas.html"
+                        class="bg-fuchsia-500 text-gray-900 font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                        Ver Agenda Completa
+                    </a>
+                </div>
+
+            </div>
+        </section>
+
+
         <!-- Sección 2: El Espacio - Características Únicas -->
         <!-- Se añade un enlace a Talleres en esta sección de características -->
         <section id="espacio" class="py-20 bg-stone-950">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
-                        Un Santuario de 300m² con Personalidad Propia
+                        Un Espacio de 300m² con Personalidad única
                     </h2>
                     <p class="mt-4 text-xl text-stone-400">
                         Descubre los detalles que hacen de El Templo el lugar ideal para tu próxima fecha o celebración.
@@ -210,62 +240,7 @@
             </div>
         </section>
 
-        <!-- Sección 3: Eventos - Bandas en Vivo (Cultural) -->
-        <section id="eventos" class="py-20 bg-stone-900">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
-                        Agenda Cultural: Bandas en Vivo
-                    </h2>
-                    <p class="mt-4 text-xl text-stone-400">
-                        Ven y descubre la mejor música emergente. Próximamente en <a href="agenda_de_bandas.html"
-                            class="text-fuchsia-400 underline hover:text-fuchsia-200">este espacio</a>.
-                    </p>
-                </div>
 
-                <!-- Lista de Eventos (Mock-up) -->
-                <div class="space-y-6 max-w-3xl mx-auto">
-                    <!-- Evento 1 -->
-                    <div
-                        class="p-4 sm:p-6 bg-stone-800 rounded-xl flex flex-col sm:flex-row items-center justify-between border-l-4 border-fuchsia-500">
-                        <div class="flex items-center space-x-4">
-                            <div class="text-center p-2 rounded-lg bg-fuchsia-900 text-white">
-                                <p class="text-xl font-bold">25</p>
-                                <p class="text-xs">NOV</p>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-semibold text-white">LA RISA DE CROMO + Invitados</h4>
-                                <p class="text-sm text-stone-400">Rock Alternativo - Apertura de puertas: 21:00 hs.</p>
-                            </div>
-                        </div>
-                        <!-- Enlace 2: Bandas en Vivo (agenda_de_bandas.html) -->
-                        <a href="agenda_de_bandas.html"
-                            class="mt-3 sm:mt-0 bg-fuchsia-500 text-gray-900 font-medium py-2 px-4 rounded-full text-sm hover:bg-fuchsia-400 transition">
-                            Sacar Entrada
-                        </a>
-                    </div>
-                    <!-- Evento 2 -->
-                    <div
-                        class="p-4 sm:p-6 bg-stone-800 rounded-xl flex flex-col sm:flex-row items-center justify-between border-l-4 border-fuchsia-500">
-                        <div class="flex items-center space-x-4">
-                            <div class="text-center p-2 rounded-lg bg-fuchsia-900 text-white">
-                                <p class="text-xl font-bold">02</p>
-                                <p class="text-xs">DIC</p>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-semibold text-white">Noche de Jazz Fusión</h4>
-                                <p class="text-sm text-stone-400">Ensamble Claypole Jazz - Show acústico: 20:30 hs.</p>
-                            </div>
-                        </div>
-                        <!-- Enlace 2: Bandas en Vivo (agenda_de_bandas.html) -->
-                        <a href="agenda_de_bandas.html"
-                            class="mt-3 sm:mt-0 bg-fuchsia-500 text-gray-900 font-medium py-2 px-4 rounded-full text-sm hover:bg-fuchsia-400 transition">
-                            Sacar Entrada
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!-- Sección 4: Alquiler de Salón -->
         <section id="alquiler" class="py-20 bg-rustic">
@@ -360,6 +335,168 @@
                     mobileMenu.classList.add('hidden');
                 }
             });
+        });
+
+        // ----------------------------------------------------
+        // LÓGICA DE CARGA DE EVENTOS DESDE LA API (COPIADA DE agenda_de_bandas.html)
+        // ----------------------------------------------------
+
+        // MODIFICACIÓN: URL Dinámica
+        const currentHost = window.location.host;
+        let API_BASE_URL = '';
+
+        if (currentHost.includes('localhost') || currentHost.includes('192.168.1.10')) {
+            // Si estás en desarrollo local (usando localhost o una IP local)
+            API_BASE_URL = 'http://192.168.1.10';
+        } else {
+            // Si estás usando el dominio público
+            API_BASE_URL = window.location.protocol + '//' + currentHost;
+        }
+
+        const API_URL = API_BASE_URL + '/api/tickets/eventos';
+
+        const eventsListContainer = document.getElementById('events-list');
+
+        /**
+         * Formatea un objeto de fecha y hora (ej: '2025-12-05 21:00:00')
+         * en partes legibles para la tarjeta.
+         */
+        function formatDateTime(dateTimeString) {
+            const date = new Date(dateTimeString);
+            const dayOptions = { day: '2-digit' };
+            const monthOptions = { month: 'short' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
+
+            // Se usa 'es-AR' para formato de fecha
+            const day = date.toLocaleDateString('es-AR', dayOptions);
+            const month = date.toLocaleDateString('es-AR', monthOptions).toUpperCase().replace('.', '');
+            const time = date.toLocaleTimeString('es-AR', timeOptions);
+
+            return { day, month, time };
+        }
+
+        /**
+         * Genera la estructura HTML para un solo evento.
+         */
+        function generateEventCard(event) {
+            const { id, nombre_banda, fecha_hora, precio_base, descripcion, activo, aforo_maximo } = event;
+            const { day, month, time } = formatDateTime(fecha_hora);
+
+            // Estilo y texto dinámico para precio y botón
+            let priceText = `$ ${precio_base.toLocaleString('es-AR')} ARS`;
+            let buttonText = 'Sacar Entrada';
+            let buttonClass = 'bg-fuchsia-500 hover:bg-fuchsia-400';
+            let borderClass = 'border-fuchsia-500';
+            let dateBgClass = 'bg-fuchsia-900';
+            let priceTextColor = 'text-neon';
+            let link = `agenda_de_bandas.html?event_id=${id}`; // Enlace a la página de agenda
+
+            if (precio_base === 0) {
+                priceText = '¡GRATIS!';
+                buttonText = 'Reservar Lugar';
+                buttonClass = 'bg-emerald-500 hover:bg-emerald-400';
+                borderClass = 'border-emerald-500';
+                dateBgClass = 'bg-emerald-900';
+                priceTextColor = 'text-emerald-400';
+            }
+
+            return `
+            <div data-event-id="${id}" class="p-4 sm:p-6 bg-stone-800 rounded-xl flex flex-col sm:flex-row items-center justify-between border-l-4 ${borderClass}">
+                <div class="flex items-center space-x-4">
+                    <div class="text-center p-2 rounded-lg ${dateBgClass} text-white flex-shrink-0">
+                        <p class="text-xl font-bold">${day}</p>
+                        <p class="text-xs">${month}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white">${nombre_banda}</h4>
+                        <p class="text-sm text-stone-400">${descripcion.substring(0, 50)}... | Puertas: ${time} hs.</p>
+                        <p class="text-lg font-bold ${priceTextColor} mt-1">${priceText}</p>
+                    </div>
+                </div>
+                <a href="${link}" class="mt-3 sm:mt-0 ${buttonClass} text-gray-900 font-medium py-2 px-4 rounded-full text-sm transition shadow-lg">
+                    ${buttonText}
+                </a>
+            </div>
+        `;
+        }
+
+        /**
+         * Procesa y renderiza la lista de eventos.
+         */
+        function renderEvents(events) {
+            eventsListContainer.innerHTML = ''; // Limpia el mensaje de carga
+            if (!events || events.length === 0) {
+                eventsListContainer.innerHTML = `
+                <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
+                    <p class="text-xl text-stone-400">¡Parece que aún no hay eventos programados!</p>
+                    <p class="text-sm text-stone-500 mt-2">Pronto anunciaremos la nueva agenda.</p>
+                </div>
+            `;
+                return;
+            }
+
+            // Filtramos solo los 2 o 3 primeros eventos para la home.
+            const activeEvents = events.filter(event => event.activo === 1);
+            const eventsToShow = activeEvents.slice(0, 3); // Muestra un máximo de 3
+
+            if (eventsToShow.length === 0 && activeEvents.length > 0) {
+                // Esto sucede si solo hay eventos inactivos, aunque la lógica del backend es incierta.
+                eventsToShow = activeEvents.slice(0, 3);
+            } else if (eventsToShow.length === 0 && activeEvents.length === 0 && events.length > 0) {
+                // Si el filtro no funcionó, mostramos los primeros 3 de la lista original como fallback visual.
+                eventsToShow = events.slice(0, 3);
+            }
+
+
+            eventsToShow.forEach(event => {
+                const cardHtml = generateEventCard(event);
+                eventsListContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            // Agrega un mensaje si hay más eventos que no se muestran
+            if (events.length > eventsToShow.length) {
+                eventsListContainer.insertAdjacentHTML('beforeend', `
+                <p class="text-center text-sm text-stone-500 mt-4">
+                    ${events.length - eventsToShow.length} eventos más programados. 
+                    <a href="agenda_de_bandas.html" class="text-fuchsia-400 underline hover:text-fuchsia-200">Ver agenda completa</a>.
+                </p>
+            `);
+            }
+        }
+
+
+        /**
+         * Llama a la API para obtener la lista de eventos.
+         */
+        async function fetchEvents() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                renderEvents(data);
+
+            } catch (error) {
+                console.error('Error al cargar la agenda de eventos:', error);
+                eventsListContainer.innerHTML = `
+                <div class="p-8 text-center bg-red-900/30 text-red-300 rounded-xl border border-red-500 max-w-3xl mx-auto">
+                    <p class="text-xl font-bold">Error de Conexión</p>
+                    <p class="text-sm mt-2">No se pudo cargar la agenda. Asegúrate que el backend de Node.js esté corriendo. </p>
+                    <p class="text-xs mt-1">Detalle: ${error.message}</p>
+                </div>
+            `;
+            }
+        }
+
+        // ----------------------------------------------------
+        // INICIALIZACIÓN
+        // ----------------------------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Inicia la carga de datos de la API
+            fetchEvents();
+            // El resto de la lógica de desplazamiento y menú móvil ya está integrada.
         });
 
     </script>

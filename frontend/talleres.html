@@ -1,39 +1,53 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Talleres y Clases - El Templo de Claypole</title>
-    <!-- Carga de Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
             --color-primary: #581c87;
             --color-secondary: #f0abfc;
             --color-rustic: #44403c;
         }
-        .text-neon { color: var(--color-secondary); text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary); }
-        .bg-rustic { background-color: var(--color-rustic); }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #0c0a09;
             color: #d6d3d1;
         }
+
         .neon-glow-img {
             box-shadow: 0 0 15px rgba(240, 171, 252, 0.4);
             transition: transform 0.3s ease;
         }
+
         .neon-glow-img:hover {
             transform: scale(1.05);
         }
     </style>
 </head>
+
 <body>
 
-    <!-- Navegación --><header class="bg-rustic sticky top-0 z-50 shadow-lg">
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <!-- Logo/Título --><a href="index.html" class="flex items-center space-x-3">
-                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto"> 
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
                     <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">Volver al Inicio</span>
                 </a>
             </div>
@@ -44,10 +58,11 @@
         <section class="py-20 md:py-32 bg-stone-950 text-center">
             <div class="max-w-4xl mx-auto px-4">
                 <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
-                    <span class="block text-neon">Talleres y Espacio Cultural</span>
+                    <span class="block text-neon">Talleres y Actividades</span>
                 </h1>
                 <p class="mt-4 text-2xl text-stone-300 font-medium">
-                    Estamos preparando el espacio y coordinando con profesores y talleristas para el año que viene (2026) arrancar con todo!
+                    Estamos preparando el espacio y coordinando con profesores y talleristas para el año que viene
+                    (2026) arrancar con todo!
                 </p>
                 <p class="mt-6 text-xl text-fuchsia-400">
                     ¡Sé el primero en enterarte! Síguenos en nuestras redes sociales para las novedades.
@@ -58,35 +73,45 @@
         <section class="py-16 bg-stone-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h2 class="text-3xl font-bold text-center text-neon mb-10">Actividades Realizadas Anteriormente</h2>
-                <p class="text-center text-stone-400 mb-8">Aquí te mostramos algunas de las vibras que tuvimos en El Templo. ¡Inspírate!</p>
-                
+                <p class="text-center text-stone-400 mb-8">Aquí te mostramos algunas de las vibras que tuvimos en El
+                    Templo. ¡Inspírate!</p>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
                     <!-- Placeholder para Imagen 1: Murales/Arte -->
                     <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_murales.jpg" alt="Murales Flúor del Templo" class="w-full h-48 object-cover rounded-lg mb-4 border-2 border-fuchsia-500" onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Arte+Visual';">
+                        <img src="./img/foto_murales.jpg" alt="Murales Flúor del Templo"
+                            class="w-full h-48 object-cover rounded-lg mb-4 border-2 border-fuchsia-500"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Arte+Visual';">
                         <p class="text-center text-white font-semibold">Taller de Pintura y FX (2024)</p>
                     </div>
 
                     <!-- Placeholder para Imagen 2: Parrilla/Comunidad -->
                     <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_parrilla.jpg" alt="Comunidad en la Parrilla" class="w-full h-48 object-cover rounded-lg mb-4 border-2 border-fuchsia-500" onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Asado+Comunitario';">
+                        <img src="./img/foto_parrilla.jpg" alt="Comunidad en la Parrilla"
+                            class="w-full h-48 object-cover rounded-lg mb-4 border-2 border-fuchsia-500"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Asado+Comunitario';">
                         <p class="text-center text-white font-semibold">Encuentros de Cerveza Artesanal</p>
                     </div>
 
                     <!-- Placeholder para Imagen 3: Música/Otro Evento -->
                     <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_banda_nombreDeBanda.png" alt="Escenario de Música en Vivo" class="w-full h-48 object-cover rounded-lg mb-4 border-2 border-fuchsia-500" onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Clase+de+Danza';">
+                        <img src="./img/foto_banda_nombreDeBanda.png" alt="Escenario de Música en Vivo"
+                            class="w-full h-48 object-cover rounded-lg mb-4 border-2 border-fuchsia-500"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Clase+de+Danza';">
                         <p class="text-center text-white font-semibold">Clase Abierta de Danza Contemporánea</p>
                     </div>
                 </div>
-                <p class="text-center text-sm text-stone-500 mt-10">Recuerda subir las imágenes a la carpeta `img/` con los nombres correspondientes para verlas.</p>
+                <p class="text-center text-sm text-stone-500 mt-10">Recuerda subir las imágenes a la carpeta `img/` con
+                    los nombres correspondientes para verlas.</p>
             </div>
         </section>
     </main>
 
-    <!-- Footer --><footer class="bg-rustic border-t border-stone-700 py-8">
+    <!-- Footer -->
+    <footer class="bg-rustic border-t border-stone-700 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos reservados.</p>
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos
+                reservados.</p>
         </div>
     </footer>
 
@@ -94,4 +119,5 @@
         document.getElementById('year').textContent = new Date().getFullYear();
     </script>
 </body>
+
 </html>
