@@ -6,136 +6,310 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seleccionar Adicionales</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
+    /* ------------------------------------- */
+    /* DEFINICIÓN DE VARIABLES Y ESTILOS BASE */
+    /* ------------------------------------- */
+    :root {
+      --color-primary: #581c87;
+      /* Morado oscuro de Talleres */
+      --color-secondary: #f0abfc;
+      /* Neon/Fucsia de Talleres */
+      --color-rustic: #44403c;
+      /* Gris/Marrón de Talleres */
+    }
+
+    /* Estilos generales */
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f4f4f4;
-      color: #333;
+      margin: 0;
+      /* Reset de margen */
+      padding: 0 0 70px 0;
+      /* Ajuste de padding: quitamos el superior */
+      background-color: #0c0a09;
+      /* Fondo de Talleres */
+      color: #d6d3d1;
+      /* Texto claro */
     }
+
+    /* ------------------------------------- */
+    /* ESTILOS DE NAVEGACIÓN (NUEVO) */
+    /* ------------------------------------- */
+    #top-nav {
+      background-color: #1e293b;
+      /* Mismo color del contenedor principal */
+      border-bottom: 2px solid var(--color-primary);
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    #top-nav .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    #top-nav .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    #top-nav .nav-item {
+      color: #d6d3d1;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    #top-nav .nav-item:hover {
+      color: var(--color-secondary);
+      background-color: rgba(240, 171, 252, 0.1);
+    }
+
+    #top-nav .active-nav {
+      color: var(--color-secondary);
+      text-shadow: 0 0 5px rgba(240, 171, 252, 0.5);
+      border-bottom: 2px solid var(--color-secondary);
+    }
+
+    .text-neon {
+      color: var(--color-secondary);
+      text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+    }
+
+    /* ------------------------------------- */
+
 
     .container {
       max-width: 800px;
-      margin: 0 auto;
-      background-color: #fff;
+      margin: 20px auto;
+      /* Ajuste el margen superior para la separación del navbar */
+      background-color: #1e293b;
+      /* Gris/azul oscuro */
       padding: 25px;
       border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--color-rustic);
     }
 
     h2 {
-      color: #0056b3;
       text-align: center;
+      margin-bottom: 5px;
+      font-size: 2.25rem !important;
+      font-weight: bold;
+      color: var(--color-secondary);
+      text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
     }
+
+    h3 {
+      color: var(--color-secondary);
+      font-size: 1.5rem;
+      margin-top: 25px;
+      border-bottom: 1px solid var(--color-primary);
+      padding-bottom: 5px;
+    }
+
+    /* ------------------------------------- */
+    /* ESTILOS ESPECÍFICOS DE ADICIONALES */
+    /* ------------------------------------- */
 
     .adicional-item {
       display: flex;
       align-items: center;
       padding: 15px;
-      border: 1px solid #ddd;
+      background-color: #0f172a;
+      border: 1px solid var(--color-primary);
       border-radius: 5px;
       margin-bottom: 10px;
       gap: 15px;
-      /* Añade un espacio entre los elementos */
+      transition: box-shadow 0.3s ease;
+      /* CLAVE: Permite que los elementos se envuelvan a la siguiente línea */
+      flex-wrap: wrap;
     }
+
+    .adicional-item:hover {
+      box-shadow: 0 0 8px rgba(240, 171, 252, 0.3);
+    }
+
 
     .adicional-item input[type="checkbox"] {
       width: 20px;
       height: 20px;
       margin-right: 0;
-      /* Ya no necesitamos el margen derecho gracias a 'gap' */
       flex-shrink: 0;
-      /* Evita que el checkbox se encoja */
+      accent-color: var(--color-secondary);
     }
 
     .adicional-info {
       flex-grow: 1;
+      /* Permite que la información ocupe el espacio principal */
     }
 
     .adicional-info label {
       font-weight: bold;
       font-size: 1.1em;
       display: block;
+      color: #f8fafc;
     }
 
     .adicional-info p {
       margin: 5px 0 0;
-      color: #666;
+      color: #a1a1aa;
     }
 
     .adicional-precio {
       font-size: 1.2em;
       font-weight: bold;
-      color: #28a745;
+      color: #34d399;
+      /* Evita que el precio se encoja o crezca, manteniendo su tamaño natural */
+      flex-shrink: 0;
+      flex-grow: 0;
     }
 
     .adicional-imagen {
-      width: 80px;
-      height: 80px;
+      width: 100px;
+      height: 100px;
       object-fit: cover;
-      /* Asegura que la imagen cubra el espacio sin deformarse */
       border-radius: 4px;
       flex-shrink: 0;
-      /* Evita que la imagen se encoja */
+      border: 1px solid var(--color-secondary);
     }
 
-    #resumen-precios {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: #fff;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-      padding: 15px;
-      box-sizing: border-box;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 15px;
+    /* ------------------------------------- */
+    /* RESPONSIVE: AJUSTE PARA MÓVILES (NUEVO) */
+    /* ------------------------------------- */
+    @media (max-width: 767px) {
+      .adicional-item {
+        /* En pantallas pequeñas, alineamos los elementos a la parte superior */
+        align-items: flex-start;
+      }
+
+      .adicional-precio {
+        /* CLAVE: Forzamos al precio a ocupar el 100% del ancho. 
+               Como el contenedor tiene 'flex-wrap: wrap', el precio pasa a la línea siguiente. */
+        flex-basis: 100%;
+        /* Lo enviamos a la segunda línea del contenedor */
+        order: 2;
+        /* Alineación a la derecha y un poco de espacio superior para separarlo del texto */
+        text-align: right;
+        margin-top: 5px;
+        font-size: 1.3em;
+      }
+
+      .adicional-info {
+        /* Aseguramos que la info ocupe el espacio restante junto a la imagen/checkbox */
+        flex-basis: auto;
+        flex-grow: 1;
+        order: 1;
+      }
+
+      /* Aseguramos que el checkbox y la imagen se mantengan en la parte superior */
+      .adicional-imagen,
+      .adicional-item input[type="checkbox"] {
+        order: 0;
+      }
     }
+
+
+    /* ------------------------------------- */
+    /* TOTAL Y BOTONES */
+    /* ------------------------------------- */
 
     #total {
       font-size: 1.5em;
       font-weight: bold;
+      text-align: right;
+      /* Alineamos el total a la derecha */
+      padding-top: 10px;
+      margin-top: 15px;
+      border-top: 2px solid var(--color-primary);
+    }
+
+    #total span {
+      color: #34d399;
+      /* Color de precio para el valor final */
+    }
+
+
+    /* El div 'totalAdicionales' del código anterior se ha renombrado a 'total-adicionales' */
+    #total-adicionales {
+      text-align: right;
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #f0abfc;
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 2px solid var(--color-primary);
+      display: none;
+      /* Ocultamos el viejo ID si el total se muestra en #total */
     }
 
     .button-group {
       display: flex;
+      flex-direction: column;
       gap: 15px;
-      margin-top: 20px;
+      margin-top: 30px;
     }
 
-    button {
-      flex: 1;
-      background-color: #28a745;
-      color: white;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 4px;
+    /* Estilo de Botón Neon Transparente (igual que en Page.html) */
+    .button-group button {
+      background-color: transparent;
+      color: var(--color-secondary);
+      border: 2px solid var(--color-secondary);
+      padding: 15px 20px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 18px;
+      font-weight: bold;
+      transition: all 0.3s ease-in-out;
+      text-decoration: none;
+      box-sizing: border-box;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    button:hover {
-      background-color: #218838;
+    .button-group button:hover {
+      background-color: rgba(132, 63, 172, 0.2);
+      transform: scale(1.05);
+      color: var(--color-secondary);
+      border-color: var(--color-secondary);
     }
 
-    button.btn-secondary {
-      background-color: #6c757d;
+    .button-group button:disabled {
+      background-color: #6b7280;
+      color: #d1d5db;
+      border-color: #6b7280;
+      cursor: not-allowed;
+      transform: scale(1.0);
     }
 
-    button.btn-secondary:hover {
-      background-color: #5a6268;
+    /* Media Query para Escritorio */
+    @media (min-width: 768px) {
+      .button-group {
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .button-group button {
+        width: 49%;
+        font-size: 16px;
+        padding: 15px 20px;
+      }
     }
 
-    button.secondary {
-      background-color: #6c757d;
-    }
-
-    button.secondary:hover {
-      background-color: #5a6268;
-    }
-
+    /* ------------------------------------- */
+    /* NOTIFICACIONES Y OTROS */
+    /* ------------------------------------- */
     #notification-banner {
       position: fixed;
       bottom: 20px;
@@ -143,7 +317,7 @@
       transform: translate(-50%, 150%);
       padding: 12px 25px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       color: white;
       font-size: 16px;
       font-weight: 500;
@@ -157,42 +331,61 @@
       transform: translate(-50%, 0);
     }
 
-    #notification-banner.warning {
-      background-color: #ffc107;
-      color: #333;
-    }
-
     #notification-banner.error {
-      background-color: #dc3545;
+      background-color: #ef4444;
     }
 
     #notification-banner.success {
-      background-color: #28a745;
+      background-color: #10b981;
     }
   </style>
 </head>
 
 <body>
-  <div id="notification-banner"></div>
-  <div class="container" style="padding-bottom: 100px;">
-    <h2>Selecciona los Adicionales que Desees</h2>
-    <div id="adicionales-container">
-      <p>Cargando adicionales...</p>
-    </div>
-  </div>
 
-  <div id="resumen-precios">
-    <div id="total">Total: <span>$0</span></div>
-    <div class="button-group">
-      <button id="btn-volver" class="secondary">Volver</button>
-      <button id="btn-continuar">Continuar</button>
+  <nav id="top-nav">
+    <div class="logo">
+      <a href="index.html" class="flex items-center space-x-3">
+        <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+        <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">Volver al Inicio</span>
+      </a>
     </div>
+    <div class="nav-links">
+      <a href="#" class="nav-item" onclick="redirigir('presupuesto')">Presupuesto</a>
+      <a href="/Adicionales.html" class="nav-item active-nav">Adicionales</a>
+      <a href="#" class="nav-item" onclick="redirigir('contacto')">Contacto</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h2>Adicionales Disponibles</h2>
+
+    <div id="adicionales-container">
+      <p>Cargando opciones adicionales...</p>
+    </div>
+
+    <div id="total-adicionales">Total Adicional: $0</div>
+
+
+    <div id="notification-banner"></div>
+
+    <div id="resumen-precios">
+      <div id="total">Total: <span>$0</span></div>
+      <div class="button-group">
+        <button id="btn-volver" class="secondary">Volver</button>
+        <button id="btn-continuar">Continuar</button>
+      </div>
+    </div>
+
   </div>
 
   <script>
+    const params = new URLSearchParams(window.location.search);
+    const solicitudId = params.get('solicitudId');
+
     document.addEventListener('DOMContentLoaded', () => {
-      const params = new URLSearchParams(window.location.search);
-      const solicitudId = params.get('solicitudId');
+      //const params = new URLSearchParams(window.location.search);
+      //const solicitudId = params.get('solicitudId');
 
       const adicionalesContainer = document.getElementById('adicionales-container');
       const totalSpan = document.querySelector('#total span');
@@ -230,47 +423,98 @@
 
       // 1. Hacemos dos llamadas en paralelo: una para obtener los adicionales, otra para el precio base de la solicitud.
       Promise.all([
-        fetch('/api/opciones/adicionales').then(res => res.json()),
-        fetch(`/api/solicitudes/${solicitudId}`).then(res => res.json())
+        // A. Opciones de adicionales
+        fetch('/api/opciones/adicionales').then(res => {
+          if (!res.ok) throw new Error(`HTTP Error: ${res.status} al cargar adicionales.`);
+          return res.json();
+        }).catch(error => {
+          console.error("Error fetching adicionales:", error);
+          return { adicionales: [] };
+        }),
+        // B. Precio base de la solicitud
+        fetch(`/api/solicitudes/${solicitudId}`).then(res => {
+          if (!res.ok) throw new Error(`HTTP Error: ${res.status} al cargar solicitud.`);
+          return res.json();
+        }).catch(error => {
+          console.error("Error fetching solicitud:", error);
+          return { precioBase: 0 };
+        }),
+        // C. Selección previa de adicionales para esta solicitud
+        fetch(`/api/solicitudes/${solicitudId}/adicionales`).then(res => {
+          // ASUMIMOS que tu API tiene un endpoint para esto, por ejemplo:
+          // /api/solicitudes/{id}/adicionales-seleccionados
+          if (!res.ok) throw new Error(`HTTP Error: ${res.status} al cargar selección previa.`);
+          return res.json();
+        }).catch(error => {
+          console.error(`Error con endpoin: /api/solicitudes/${solicitudId}/adicionales`, error);
+          return { seleccionados: [] }; // Devuelve un array vacío en caso de fallo
+        })
       ])
-        .then(([adicionales, solicitud]) => {
-          todosLosAdicionales = adicionales;
+        // Recibimos los tres resultados
+        .then(([adicionalesData, solicitud, seleccionadosData]) => {
+          todosLosAdicionales = adicionalesData || [];
           precioBase = parseFloat(solicitud.precioBase) || 0;
 
-          // Limpiamos el contenedor y renderizamos los checkboxes
+          // La selección previa debe ser una lista de objetos {nombre: ..., precio: ...} o solo los nombres/IDs
+          const seleccionadosPrevios = seleccionadosData.seleccionados || seleccionadosData || [];
+
+          // Limpiamos el contenedor
           adicionalesContainer.innerHTML = '';
-          adicionales.forEach(ad => {
-            // Solo mostramos la imagen si la URL existe
+
+          if (todosLosAdicionales.length === 0) {
+            adicionalesContainer.innerHTML = '<p style="color:#a1a1aa; text-align:center;">No hay adicionales disponibles en este momento.</p>';
+            actualizarTotal();
+            return;
+          }
+
+          // Renderizar elementos
+          todosLosAdicionales.forEach(ad => {
+            const itemId = `ad_${ad.nombre.replace(/\s/g, '_')}`; // ID para el input
+
+            // Determinar si el adicional debe estar marcado
+            // Buscamos si el nombre de este adicional existe en la lista de seleccionadosData
+            const isSelected = seleccionadosPrevios.some(sel => sel.nombre === ad.nombre);
+
             const imagenHtml = ad.imageUrl ? `<img src="${ad.imageUrl}" alt="${ad.nombre}" class="adicional-imagen">` : '';
-            console.log("imagen cargada:", imagenHtml);
-            // --- PLANTILLA HTML ACTUALIZADA ---
-            adicionalesContainer.innerHTML += `
-                  <div class="adicional-item">
-                      <input type="checkbox" id="ad_${ad.nombre}" name="adicional" value="${ad.precio}" data-nombre="${ad.nombre}">
-                      ${imagenHtml} 
-                      <div class="adicional-info">
-                          <label for="ad_${ad.nombre}">${ad.nombre}</label>
-                          <p>${ad.descripcion || ''}</p>
-                      </div>
-                      <div class="adicional-precio">$${parseFloat(ad.precio).toLocaleString('es-AR')}</div>
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'adicional-item';
+
+            itemDiv.innerHTML = `
+                  <input type="checkbox" id="${itemId}" name="adicional" value="${ad.precio}" data-nombre="${ad.nombre}" ${isSelected ? 'checked' : ''}>
+                  ${imagenHtml} 
+                  <div class="adicional-info">
+                      <label for="${itemId}">${ad.nombre}</label>
+                      <p>${ad.descripcion || ''}</p>
                   </div>
+                  <div class="adicional-precio">$${parseFloat(ad.precio).toLocaleString('es-AR')}</div>
               `;
+
+            adicionalesContainer.appendChild(itemDiv);
+
+            const checkbox = itemDiv.querySelector('input[type="checkbox"]');
+
+            // 1. Añadimos el evento 'change' al checkbox
+            checkbox.addEventListener('change', actualizarTotal);
+
+            // 2. Añadimos el evento 'click' al contenedor padre
+            itemDiv.addEventListener('click', (e) => {
+              if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL' && e.target.className !== 'adicional-precio') {
+                checkbox.checked = !checkbox.checked;
+                actualizarTotal();
+              }
+            });
           });
 
-          // Actualizamos el total inicial
+          // CLAVE: Llama a actualizarTotal al final. Ahora sí incluye precioBase y las selecciones previas.
           actualizarTotal();
 
-          // Añadimos el evento 'change' a todos los nuevos checkboxes
-          document.querySelectorAll('input[name="adicional"]').forEach(checkbox => {
-            checkbox.addEventListener('change', actualizarTotal);
-          });
         })
         .catch(error => {
           console.error('Error al cargar datos:', error);
-          adicionalesContainer.innerHTML = `<p style="color: red;">Error al cargar los adicionales.</p>`;
+          adicionalesContainer.innerHTML = `<p style="color: red;">Error al cargar los adicionales: ${error.message}</p>`;
         });
 
-      
 
       // Función para calcular y mostrar el total
       function actualizarTotal() {
@@ -331,6 +575,15 @@
       };
 
     });
+
+    function redirigir(fromPage) {
+      if (fromPage === 'presupuesto') {
+        window.location.href = `/Page.html?solicitudId=${solicitudId}`;
+      } else {
+        window.location.href = `/Contacto.html?solicitudId=${solicitudId}`;
+      }
+    }
+
   </script>
 </body>
 

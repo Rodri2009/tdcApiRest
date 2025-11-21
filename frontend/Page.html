@@ -56,11 +56,10 @@
         h2 {
             text-align: center;
             margin-bottom: 5px;
-            font-size: 2.25rem;
+            font-size: 2.25rem !important;
             font-weight: bold;
             color: var(--color-secondary);
             text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-            padding-bottom: 10px;
         }
 
         h3 {
@@ -379,19 +378,9 @@
         </div>
     </header>
 
-    <section id="agenda" class="py-20 md:py-16 bg-stone-950">
-        <div class="max-w-4xl mx-auto px-4">
-            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
-                <span class="block text-neon">Solicitud de Reserva para Eventos</span>
-            </h1>
-            <p class="mt-4 text-2xl text-stone-300 font-medium">
-                Generá tu presupuesto personalizado
-            </p>
-        </div>
-    </section>
-
-
     <div class="container" id="mainContainer">
+        <h2>Generador de presupuesto</h2>
+
         <input type="hidden" id="precioBase" name="precioBase">
         <div class="column-layout">
             <div class="form-group" id="tipoEventoGroup">

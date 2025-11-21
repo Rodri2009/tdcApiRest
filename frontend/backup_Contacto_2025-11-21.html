@@ -4,63 +4,38 @@
 <head>
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contacto y Confirmación</title>
   <style>
-    /* ------------------------------------- */
-    /* DEFINICIÓN DE VARIABLES Y ESTILOS BASE */
-    /* ------------------------------------- */
-    :root {
-      --color-primary: #581c87;
-      /* Morado oscuro de Talleres */
-      --color-secondary: #f0abfc;
-      /* Neon/Fucsia de Talleres */
-      --color-rustic: #44403c;
-      /* Gris/Marrón de Talleres */
-      --color-bg-dark: #0c0a09;
-      /* Fondo principal */
-      --color-card-dark: #1e293b;
-      /* Fondo de la tarjeta/contenedor */
-      --color-text-light: #d6d3d1;
-    }
-
-    /* Estilos generales */
+    /* ... Tus estilos se mantienen exactamente igual ... */
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0 0 70px 0;
-      /* Ajuste para el sticky navbar */
-      background-color: var(--color-bg-dark);
-      color: var(--color-text-light);
+      margin: 20px;
+      background-color: #f4f4f4;
+      color: #333;
+      padding-bottom: 70px;
     }
 
     .container {
       max-width: 500px;
-      margin: 20px auto;
-      /* Ajuste de margen superior */
-      background-color: var(--color-card-dark);
+      margin: 0 auto;
+      background-color: #fff;
       padding: 25px;
       border-radius: 8px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-      border: 1px solid var(--color-rustic);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       position: relative;
     }
 
     h2 {
+      color: #0056b3;
       text-align: center;
       margin-bottom: 5px;
-      font-size: 2.25rem;
-      font-weight: bold;
-      color: var(--color-secondary);
-      /* Color Neon */
-      text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
     }
 
     h3.subtitle {
-      color: var(--color-secondary);
+      color: #0056b3;
       text-align: center;
       margin-top: 0;
       margin-bottom: 25px;
-      font-size: 1.2em;
+      font-size: 1.1em;
       font-weight: normal;
     }
 
@@ -68,7 +43,7 @@
       display: block;
       margin-bottom: 8px;
       font-weight: bold;
-      color: var(--color-text-light);
+      color: #555;
     }
 
     .form-group {
@@ -76,137 +51,118 @@
     }
 
     input[type="text"],
-    input[type="tel"],
     input[type="email"],
-    textarea {
+    input[type="tel"] {
       width: 100%;
-      padding: 12px;
-      border: 1px solid var(--color-primary);
-      background-color: #0f172a;
-      /* Input Dark */
-      color: var(--color-text-light);
-      border-radius: 6px;
+      padding: 10px;
+      border: 1.5px solid #ccc;
+      border-radius: 4px;
       box-sizing: border-box;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-
-    input[type="text"]:focus,
-    input[type="tel"]:focus,
-    input[type="email"]:focus,
-    textarea:focus {
-      border-color: var(--color-secondary);
-      outline: none;
-      box-shadow: 0 0 5px var(--color-secondary);
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 100px;
+      font-size: 16px;
+      transition: border-color 0.3s;
     }
 
     .campo-invalido {
-      border-color: #ef4444 !important;
-      box-shadow: 0 0 5px #ef4444 !important;
+      border-color: #e74c3c !important;
+      animation: shake 0.5s;
     }
 
-    /* ------------------------------------- */
-    /* NAVEGACIÓN SUPERIOR (COPIADA) */
-    /* ------------------------------------- */
-    #top-nav {
-      background-color: var(--color-card-dark);
-      border-bottom: 2px solid var(--color-primary);
-      padding: 15px 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      20%,
+      60% {
+        transform: translateX(-5px);
+      }
+
+      40%,
+      80% {
+        transform: translateX(5px);
+      }
     }
 
-    #top-nav .logo {
-      font-size: 1.5rem;
-      font-weight: bold;
-    }
-
-    #top-nav .nav-links {
-      display: flex;
-      gap: 20px;
-    }
-
-    #top-nav .nav-item {
-      color: #d6d3d1;
-      text-decoration: none;
-      font-weight: 500;
-      padding: 5px 10px;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-
-    #top-nav .nav-item:hover {
-      color: var(--color-secondary);
-      background-color: rgba(240, 171, 252, 0.1);
-    }
-
-    /* La página actual es Contacto */
-    #top-nav .active-nav {
-      color: var(--color-secondary);
-      text-shadow: 0 0 5px rgba(240, 171, 252, 0.5);
-      border-bottom: 2px solid var(--color-secondary);
-    }
-
-    .text-neon {
-      color: var(--color-secondary);
-      text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-    }
-
-
-    /* ------------------------------------- */
-    /* BOTONES */
-    /* ------------------------------------- */
     .button-group {
       display: flex;
-      flex-direction: column;
       gap: 15px;
-      margin-top: 30px;
+      margin-top: 20px;
     }
 
-    .button-group button {
-      background-color: transparent;
-      color: var(--color-secondary);
-      border: 2px solid var(--color-secondary);
-      padding: 15px 20px;
-      border-radius: 8px;
+    button {
+      flex: 1;
+      background-color: #28a745;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
-      font-size: 18px;
-      font-weight: bold;
-      transition: all 0.3s ease-in-out;
-      text-decoration: none;
-      box-sizing: border-box;
-      display: inline-flex;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    button.btn-secondary {
+      background-color: #6c757d;
+    }
+
+    button.btn-secondary:hover {
+      background-color: #5a6268;
+    }
+
+    button.secondary {
+      background-color: #6c757d;
+    }
+
+    button.secondary:hover {
+      background-color: #5a6268;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
       justify-content: center;
       align-items: center;
-      width: 100%;
+      z-index: 10;
+      border-radius: 8px;
+      flex-direction: column;
     }
 
-    .button-group button:hover {
-      background-color: rgba(132, 63, 172, 0.2);
-      transform: scale(1.02);
-      color: var(--color-secondary);
-      border-color: var(--color-secondary);
+    .loading-overlay p {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #0056b3;
     }
 
-    .button-group button:disabled {
-      background-color: #6b7280;
-      color: #d1d5db;
-      border-color: #6b7280;
-      cursor: not-allowed;
-      transform: scale(1.0);
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin-top: 10px;
     }
 
-    /* ------------------------------------- */
-    /* NOTIFICACIONES */
-    /* ------------------------------------- */
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
     #notification-banner {
       position: fixed;
       bottom: 20px;
@@ -214,7 +170,7 @@
       transform: translate(-50%, 150%);
       padding: 12px 25px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       color: white;
       font-size: 16px;
       font-weight: 500;
@@ -228,28 +184,36 @@
       transform: translate(-50%, 0);
     }
 
+    #notification-banner.success {
+      background-color: #28a745;
+    }
+
     #notification-banner.error {
-      background-color: #ef4444;
+      background-color: #dc3545;
     }
 
     #notification-banner.warning {
-      background-color: #f59e0b;
+      background-color: #ffc107;
+      color: #333;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1.5px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      /* Asegura la misma fuente que los inputs */
+      transition: border-color 0.3s;
+      resize: vertical;
+      /* Permite al usuario ajustar la altura */
     }
   </style>
 </head>
 
 <body>
-  <nav id="top-nav">
-    <div class="logo">
-      <span class="text-neon">El Templo</span>
-    </div>
-    <div class="nav-links">
-      <a href="#" onclick="redirigir('presupuesto')" class="nav-item">Presupuesto</a>
-      <a href="#" onclick="redirigir('adicionales')" class="nav-item">Adicionales</a>
-      <a href="/Contacto.html" class="nav-item active-nav">Contacto</a>
-    </div>
-  </nav>
-
   <div id="notification-banner"></div>
   <div class="container">
     <h2>Paso Final: Tus Datos de Contacto</h2>
@@ -280,9 +244,6 @@
   </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const solicitudId = params.get('solicitudId');
-
     document.addEventListener('DOMContentLoaded', () => {
 
       function resetearCamposInvalidos() {
@@ -317,9 +278,8 @@
       }
 
       // 1. Obtener el ID de la solicitud desde la URL
-      //const params = new URLSearchParams(window.location.search);
-      //const solicitudId = params.get('solicitudId');
-
+      const params = new URLSearchParams(window.location.search);
+      const solicitudId = params.get('solicitudId');
       const fromPage = params.get('from'); // <-- Leemos el nuevo parámetro
       const btnVolver = document.getElementById('btn-volver');
       const resumenDiv = document.getElementById('resumen-solicitud');
@@ -431,15 +391,6 @@
       }
 
     });
-
-
-    function redirigir(fromPage) {
-      if (fromPage === 'adicionales') {
-        window.location.href = `/Adicionales.html?solicitudId=${solicitudId}`;
-      } else {
-        window.location.href = `/Page.html?solicitudId=${solicitudId}`;
-      }
-    }
   </script>
 </body>
 
