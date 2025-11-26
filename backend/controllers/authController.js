@@ -22,9 +22,10 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Credenciales inválidas.' });
         }
 
-        // --- Creación del Token JWT ---
-        const payload = { userId: user.id, rol: user.rol };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
+    // --- Creación del Token JWT ---
+    // Normalizamos los campos: 'id' y 'role' para que otros middlewares los consuman fácilmente
+    const payload = { id: user.id, role: user.rol };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
 
         // --- Envío del Token en una Cookie HttpOnly ---
         res.cookie('token', token, {

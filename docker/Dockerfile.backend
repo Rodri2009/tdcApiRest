@@ -12,8 +12,15 @@ COPY ../backend/package*.json ./
 # Instala las dependencias. Esto creará /app/node_modules dentro de la imagen.
 RUN npm install
 
+# Copiamos el resto de la aplicación (para que la imagen tenga un snapshot mínimo de la app)
+COPY ../backend /app
+
+# Copiamos el entrypoint que instalará dependencias si faltan en el contenedor en runtime
+COPY ../backend/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Expone el puerto
 EXPOSE 3000
 
-# El comando se ejecutará sobre los archivos montados desde el host.
-CMD [ "node", "server.js" ]
+# Usamos el entrypoint para garantizar que las dependencias estén instaladas dentro del contenedor
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

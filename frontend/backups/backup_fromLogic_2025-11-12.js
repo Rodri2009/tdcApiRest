@@ -78,7 +78,7 @@ const App = {
             this.elements.resetTipoEventoBtn.onclick = () => { window.location.href = '/'; };
         } else { // modo 'edit'
             this.elements.saveButton.addEventListener('click', this.guardarCambios.bind(this));
-            this.elements.cancelButton.addEventListener('click', () => { window.location.href = '/Admin.html'; });
+            this.elements.cancelButton.addEventListener('click', () => { window.location.href = '/admin_solicitudes.html'; });
         }
 
         [this.elements.cantidadPersonasSelect, this.elements.duracionEventoSelect, this.elements.horaInicioSelect].forEach(el => {

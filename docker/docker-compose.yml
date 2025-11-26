@@ -41,9 +41,8 @@ services:
       # La ruta es relativa al archivo docker-compose.yml.
       # Para apuntar a la carpeta `backend` en la raíz, usamos `../backend`.
       - ../backend:/app
-      # Este volumen anónimo sigue siendo crucial para proteger node_modules.
-      - /app/node_modules
-      #- tdc_backend_node_modules:/app/node_modules
+      # Volumen nombrado para node_modules: preserva los paquetes instalados en la imagen/contenedor
+      - tdc_backend_node_modules:/app/node_modules
 
   mariadb:
     image: mariadb:10.6
@@ -82,3 +81,4 @@ services:
 # Definición de volúmenes persistentes
 volumes:
   mariadb_data:
+  tdc_backend_node_modules:

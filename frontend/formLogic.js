@@ -78,7 +78,7 @@ const App = {
             this.elements.resetTipoEventoBtn.onclick = () => { window.location.href = '/'; };
         } else { // modo 'edit'
             this.elements.saveButton.addEventListener('click', this.guardarCambios.bind(this));
-            this.elements.cancelButton.addEventListener('click', () => { window.location.href = '/Admin.html'; });
+            this.elements.cancelButton.addEventListener('click', () => { window.location.href = '/admin_solicitudes.html'; });
         }
 
         [this.elements.cantidadPersonasSelect, this.elements.duracionEventoSelect, this.elements.horaInicioSelect].forEach(el => {
@@ -131,7 +131,7 @@ const App = {
                 fetch(url).then(res => {
                     // Añadimos un chequeo de 401 para el caso del admin
                     if (res.status === 401) {
-                        window.location.href = '/Login.html';
+                        window.location.href = '/login.html';
                         throw new Error('No autorizado');
                     }
                     if (!res.ok) throw new Error(`Error al cargar ${url}: ${res.statusText}`);
@@ -380,7 +380,7 @@ const App = {
 
             this.solicitudId = id;
 
-            const nextPage = (destino === 'adicionales') ? 'Adicionales.html' : 'Contacto.html';
+            const nextPage = (destino === 'adicionales') ? 'adicionales.html' : 'contacto.html';
             const fromParam = (destino === 'contacto') ? '&from=page' : '';
             const urlFinal = `${nextPage}?solicitudId=${id}${fromParam}`;
 

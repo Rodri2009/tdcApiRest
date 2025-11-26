@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Administración - Panel</title>
+    <style>
+        body {
+            font-family: Inter, Arial;
+            margin: 0;
+            background: #0f172a;
+            color: #e6e6e6
+        }
+
+        .wrap {
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 24px
+        }
+
+        h1 {
+            color: #f0abfc;
+            text-align: center
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 20px
+        }
+
+        a.card {
+            display: block;
+            padding: 18px;
+            border-radius: 10px;
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.15));
+            border: 1px solid rgba(240, 171, 252, 0.08)
+        }
+
+        a.card h3 {
+            margin: 0 0 6px;
+            color: #f0abfc
+        }
+
+        a.card p {
+            margin: 0;
+            color: #cdd6f7
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <h1>Panel de Administración</h1>
+        <div class="grid">
+            <a class="card" href="/admin_solicitudes.html">
+                <h3>Solicitudes</h3>
+                <p>Ver y gestionar solicitudes</p>
+            </a>
+            <a class="card" href="/admin_personal.html">
+                <h3>Personal</h3>
+                <p>Administrar personal y roles</p>
+            </a>
+            <a class="card" href="/admin_usuarios.html">
+                <h3>Usuarios</h3>
+                <p>Gestionar cuentas y permisos</p>
+            </a>
+            <a class="card" href="/config_eventos.html">
+                <h3>Configuración</h3>
+                <p>Opciones de eventos y tarifas</p>
+            </a>
+        </div>
+    </div>
+</body>
+
+</html>

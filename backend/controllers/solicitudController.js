@@ -141,7 +141,7 @@ const finalizarSolicitud = async (req, res) => {
         conn = await pool.getConnection();
 
         const sqlUpdate = `
-            UPDATE solicitudes SET nombre_completo = ?, telefono = ?, email = ?, descripcion = ?, estado = 'Confirmado' 
+            UPDATE solicitudes SET nombre_completo = ?, telefono = ?, email = ?, descripcion = ?, estado = 'Solicitado' 
             WHERE id_solicitud = ?;
         `;
         const paramsUpdate = [nombreCompleto, celular, email, detallesAdicionales, id];
@@ -167,8 +167,8 @@ const finalizarSolicitud = async (req, res) => {
         solicitudCompleta.adicionales = adicionales;
 
         // Enviamos respuesta al cliente INMEDIATAMENTE
-        res.status(200).json({ message: 'Solicitud confirmada.', solicitudId: parseInt(id) });
-        console.log(`Solicitud ${id} actualizada. Respuesta enviada al cliente.`);
+        res.status(200).json({ message: 'Solicitud creada como solicitada.', solicitudId: parseInt(id) });
+        console.log(`Solicitud ${id} creada como solicitada. Respuesta enviada al cliente.`);
 
         // AHORA, enviamos los emails "en segundo plano"
         if (solicitudCompleta) {

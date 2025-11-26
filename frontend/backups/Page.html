@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud Reserva para Eventos - El Templo de Claypole</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
+
+    <style>
+        :root {
+            --color-primary: #581c87;
+            /* Morado oscuro de Talleres */
+            --color-secondary: #f0abfc;
+            /* Neon/Fucsia de Talleres */
+            --color-rustic: #44403c;
+            /* Gris/Marrón de Talleres */
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        /* Estilos del cuerpo del formulario */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0c0a09;
+            /* Fondo de Talleres */
+            color: #d6d3d1;
+            /* Texto claro */
+            padding-bottom: 70px;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 20px auto;
+            background-color: #1e293b;
+            /* Un gris/azul oscuro para el contenedor */
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            border: 1px solid var(--color-rustic);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2.25rem !important;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        h3 {
+            color: var(--color-secondary);
+            font-size: 1.5rem;
+            margin-top: 25px;
+        }
+
+        h3.subtitle {
+            color: #ccc;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            font-weight: normal;
+        }
+
+        /* Campos de Formulario */
+        label {
+            font-weight: bold;
+            color: #f0abfc;
+            /* Color claro para las etiquetas */
+        }
+
+        /* AJUSTE DE ALTURA DE INPUTS/SELECTS */
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 8px !important;
+            /* Altura forzada */
+            border: 1.5px solid #581c87;
+            /* Borde morado */
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 18px;
+            background-color: #0f172a;
+            /* Fondo de campo oscuro */
+            color: #f8fafc;
+            /* Texto blanco */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            line-height: 1.2;
+        }
+
+        .radio-group {
+            padding: 10px;
+            border: 1px solid #581c87;
+            border-radius: 4px;
+            background-color: #0f172a;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 10px;
+            flex-shrink: 0;
+            accent-color: var(--color-secondary);
+        }
+
+        .radio-option label {
+            line-height: 1.4;
+            font-weight: normal;
+            cursor: pointer;
+            color: #d6d3d1;
+            /* Texto de opción */
+        }
+
+        #tipoEventoDescripcion {
+            padding: 10px;
+            border: 1px solid #581c87;
+            border-radius: 4px;
+            background-color: #0f172a;
+            font-size: 18px;
+            color: #f8fafc;
+            min-height: 120px;
+            text-align: left;
+            white-space: pre-wrap;
+            box-sizing: border-box;
+        }
+
+        /* Detalles de Presupuesto General */
+        #presupuestoDetalle,
+        #detallePrecios {
+            padding: 15px;
+            border: 1px solid var(--color-secondary);
+            border-radius: 5px;
+            background-color: #0f172a;
+        }
+
+        #presupuestoDetalle p,
+        #presupuestoDetalle ul li {
+            color: #f8fafc;
+            /* Texto en resumen */
+        }
+
+        /* ESTILO DE FACTURA PARA DETALLE DE PRECIOS */
+        #detallePrecios ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #detallePrecios ul li {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1.05em;
+            color: #f8fafc !important;
+            /* Mantenemos el !important para sobrescribir estilos en línea */
+        }
+
+        #detallePrecios ul li span:last-child {
+            font-weight: bold;
+            color: #34d399;
+        }
+
+
+        #presupuestoTotal {
+            text-align: right;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #34d399;
+            /* Verde neón/claro para el valor total */
+            margin-top: 15px;
+            border-top: 2px solid #581c87;
+            padding-top: 10px;
+        }
+
+        #presupuestoTotal span {
+            font-size: 0.7em;
+            color: var(--color-secondary);
+            /* Fucsia neón para la etiqueta 'Total Básico:' */
+        }
+
+        /* ------------------------------------------- */
+        /* NUEVO ESTILO DE BOTÓN NEON (TRANSPARENTE) */
+        /* ------------------------------------------- */
+        .button-group button {
+            /* Estilo Base: Transparente con borde neon */
+            background-color: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            /* Simula rounded-lg */
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            /* Añadido para simular la transición de Tailwind */
+            transition: all 0.3s ease-in-out;
+            text-decoration: none;
+            box-sizing: border-box;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .button-group button:hover {
+            /* Simular hover:bg-fuchsia-900 hover:bg-opacity-20 */
+            background-color: rgba(132, 63, 172, 0.2);
+            /* Simular transform: hover:scale-105 */
+            transform: scale(1.05);
+            color: var(--color-secondary);
+            border-color: var(--color-secondary);
+        }
+
+        .button-group button:disabled {
+            background-color: #6b7280;
+            color: #d1d5db;
+            border-color: #6b7280;
+            cursor: not-allowed;
+            transform: scale(1.0);
+            /* Desactivar la escala en disabled */
+        }
+
+        /* ------------------------------------------- */
+
+
+        /* Layout móvil (por defecto) */
+        .column-layout {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+
+        /* Media Query para Escritorio */
+        @media (min-width: 768px) {
+            .column-layout {
+                flex-direction: row;
+                gap: 15px;
+            }
+
+            .column-layout .form-group {
+                flex: 1;
+            }
+
+            /* Alineación de botones para escritorio (fix anterior) */
+            .button-group {
+                flex-direction: row;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .button-group button {
+                width: 49%;
+                font-size: 16px;
+                /* El padding y estilos de hover ya están definidos arriba */
+            }
+        }
+
+        /* Estilos menores */
+        hr {
+            border-color: var(--color-rustic);
+            margin-top: 25px;
+        }
+
+        .campo-invalido {
+            border-color: #e74c3c !important;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        /* Estilos del loader */
+        .loading-overlay p {
+            color: #a855f7;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #a855f7;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-top: 10px;
+        }
+
+
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.5s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.warning {
+            background-color: #fbbf24;
+            color: #1e293b;
+        }
+
+        #notification-banner.error {
+            background-color: #ef4444;
+        }
+
+        #notification-banner.success {
+            background-color: #10b981;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">Volver al Inicio</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container" id="mainContainer">
+        <h2>Generador de presupuesto</h2>
+
+        <input type="hidden" id="precioBase" name="precioBase">
+        <div class="column-layout">
+            <div class="form-group" id="tipoEventoGroup">
+                <div class="form-group-header">
+                    <label>Tipo de Evento:</label>
+                    <button id="resetTipoEventoBtn">Cambiar tipo de evento</button>
+                </div>
+                <div id="tipoEventoContainer" class="radio-group"></div>
+            </div>
+            <div class="form-group" id="descripcionGroup">
+                <label>Descripción:</label>
+                <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
+            </div>
+        </div>
+        <div class="column-layout">
+            <div class="form-group">
+                <label for="fechaEvento">Fecha del Evento (Sáb, Dom y Feriados):</label>
+                <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
+            </div>
+            <div class="form-group" id="horaInicioGroup">
+                <label for="horaInicio">Hora de Inicio:</label>
+                <select id="horaInicio">
+                    <option value="">--</option>
+                </select>
+            </div>
+        </div>
+        <div class="column-layout">
+            <div class="form-group" id="cantidadPersonasGroup">
+                <label for="cantidadPersonas">Cantidad de Personas:</label>
+                <select id="cantidadPersonas">
+                    <option value="">--</option>
+                </select>
+            </div>
+            <div class="form-group" id="duracionEventoGroup">
+                <label for="duracionEvento">Duración del Evento:</label>
+                <select id="duracionEvento">
+                    <option value="">--</option>
+                </select>
+            </div>
+        </div>
+        <hr style="margin-top: 25px; color: #34d399;
+            border-top: 2px solid #581c87;
+            padding-top: 10px;">
+        <h3>Resumen de Presupuesto Básico:</h3>
+        <div id="presupuestoDetalle">
+            <p>Complete las opciones para ver el precio.</p>
+        </div>
+        <div id="detallePrecios">
+        </div>
+        <div id="presupuestoTotal"><span>Total Básico: </span> $0</div>
+        <div class="button-group">
+            <button id="btn-adicionales" disabled>Inicializando...</button>
+            <button id="btn-contacto" disabled>Inicializando...</button>
+        </div>
+        <div class="loading-overlay" id="loadingOverlay">
+            <p>Cargando opciones...</p>
+            <div class="spinner"></div>
+        </div>
+    </div>
+    <div id="notification-banner"></div>
+
+    <script src="/formLogic.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Le decimos a nuestra biblioteca compartida que se inicie en modo "creación".
+            // La función `initializeApp` se encuentra en `formLogic.js`.
+            initializeApp({
+                mode: 'create'
+            });
+        });
+    </script>
+</body>
+
+</html>

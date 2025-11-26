@@ -1,12 +1,35 @@
 // backend/models/ticketsModel.js
+// Soporte flexible para 'uuid': intentaremos cargarlo con require (CommonJS)
+// y, si falla por ser un módulo ESM (ERR_REQUIRE_ESM), usaremos import() dinámico.
 let uuidv4;
+const loadUuid = async () => {
+    if (uuidv4) return uuidv4;
 
-// Carga asíncrona al inicio
-import('uuid').then(module => {
-    uuidv4 = module.v4;
-}).catch(error => {
-    console.error("Error al cargar uuid:", error);
-});
+    try {
+        // Intentamos require para compatibilidad con uuid@8 (CommonJS)
+        // Si la instalación es uuid@9+ este require lanzará ERR_REQUIRE_ESM.
+        // eslint-disable-next-line global-require
+        const uuid = require('uuid');
+        uuidv4 = uuid.v4 || uuid;
+        return uuidv4;
+    } catch (err) {
+        // Si el paquete existe pero es ESM, hacemos import dinámico
+        if (err && err.code === 'ERR_REQUIRE_ESM') {
+            try {
+                const mod = await import('uuid');
+                uuidv4 = mod.v4;
+                return uuidv4;
+            } catch (impErr) {
+                console.error("Error al importar 'uuid' como ESM:", impErr);
+                throw impErr;
+            }
+        }
+
+        // Si no se encuentra el paquete, dejamos un mensaje claro
+        console.error("Paquete 'uuid' no encontrado. Instala con 'npm install uuid' o 'npm install uuid@8' para compatibilidad CommonJS.", err);
+        throw err;
+    }
+};
 
 const pool = require('../db');
 
@@ -79,7 +102,11 @@ const checkCupon = async (codigo) => {
  * Retorna el ID único del ticket.
  */
 const createPendingTicket = async (eventoId, email, nombre, cuponId, precioPagado) => {
-    const ticketId = uuidv4();
+    const getUuid = await loadUuid();
+    if (!getUuid) {
+        throw new Error("Dependencia 'uuid' no está disponible. Instala 'uuid' en dependencias.");
+    }
+    const ticketId = getUuid();
     const query = `
         INSERT INTO tickets (id_unico, evento_id, email_comprador, nombre_comprador, cupon_id, precio_pagado, estado)
         VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE_PAGO');

@@ -1,5 +1,10 @@
 const pool = require('../db');
 
+// Función para generar ID único para asignaciones
+function generateAssignmentId() {
+    return `ASG_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
 const getSolicitudes = async (req, res) => {
     let conn;
     try {
@@ -135,9 +140,24 @@ const guardarAsignaciones = async (req, res) => {
     const { id } = req.params; // ID de la solicitud
     const assignments = req.body; // Array de { rol, personalId }
 
+    console.log("[DEBUG] guardarAsignaciones - Inicio");
+    console.log("[DEBUG] ID recibido:", id);
+    console.log("[DEBUG] Asignaciones recibidas:", JSON.stringify(assignments));
+
     if (!Array.isArray(assignments)) {
+        console.log("[DEBUG] ERROR: assignments no es un array");
         return res.status(400).json({ message: 'Se espera un array de asignaciones.' });
     }
+
+    // Validar que el id de la solicitud es un número válido
+    const solicitudId = parseInt(id, 10);
+    if (isNaN(solicitudId)) {
+        console.log("[DEBUG] ERROR: solicitudId es NaN");
+        return res.status(400).json({ message: 'ID de solicitud inválido.' });
+    }
+
+    console.log("[DEBUG] solicitudId válido:", solicitudId);
+    console.log("[DEBUG] Total de asignaciones a procesar:", assignments.length);
 
     let conn;
     try {
@@ -145,21 +165,38 @@ const guardarAsignaciones = async (req, res) => {
         await conn.beginTransaction();
 
         // Borramos las asignaciones anteriores
-        await conn.query("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [id]);
+        console.log("[DEBUG] Eliminando asignaciones anteriores para solicitudId:", solicitudId);
+        await conn.query("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [solicitudId]);
 
         if (assignments.length > 0) {
-            // Insertamos las nuevas
-            const sql = "INSERT INTO solicitudes_personal (id_solicitud, rol_requerido, id_personal_asignado, estado_asignacion) VALUES ?";
-            const values = assignments.map(a => [id, a.rol, a.personalId, 'Asignado']);
-            await conn.query(sql, [values]);
+            // Insertamos las nuevas, una por una para evitar problemas de sintaxis
+            for (const assignment of assignments) {
+                // personalId es VARCHAR(50) en la BD, no es un número
+                const personalId = String(assignment.personalId).trim();
+                if (!personalId || personalId === '') {
+                    throw new Error(`ID de personal vacío o inválido: ${assignment.personalId}`);
+                }
+                
+                const idAsignacion = generateAssignmentId(); // Generar ID único para la asignación
+                console.log(`[DEBUG] Insertando: solicitudId=${solicitudId}, rol=${assignment.rol}, personalId=${personalId}, idAsignacion=${idAsignacion}`);
+                
+                await conn.query(
+                    "INSERT INTO solicitudes_personal (id_asignacion, id_solicitud, rol_requerido, id_personal_asignado, estado_asignacion) VALUES (?, ?, ?, ?, ?)",
+                    [idAsignacion, solicitudId, assignment.rol, personalId, 'Asignado']
+                );
+            }
+        } else {
+            console.log("[DEBUG] No hay asignaciones para insertar (array vacío)");
         }
 
         await conn.commit();
+        console.log("[DEBUG] Transacción completada exitosamente");
         res.status(200).json({ success: true, message: 'Asignaciones guardadas con éxito.' });
 
     } catch (err) {
         if (conn) await conn.rollback();
-        res.status(500).json({ message: 'Error del servidor al guardar asignaciones.' });
+        console.error("Error al guardar asignaciones:", err);
+        res.status(500).json({ message: 'Error del servidor al guardar asignaciones: ' + err.message });
     } finally {
         if (conn) conn.release();
     }
@@ -171,6 +208,7 @@ const guardarAsignaciones = async (req, res) => {
  */
 const getOrdenDeTrabajo = async (req, res) => {
     const { id } = req.params; // ID de la solicitud
+    const solicitudId = parseInt(id, 10);
 
     let conn;
     try {
@@ -185,7 +223,7 @@ const getOrdenDeTrabajo = async (req, res) => {
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
-        const [solicitud] = await conn.query(sqlSolicitud, [id]);
+        const [solicitud] = await conn.query(sqlSolicitud, [solicitudId]);
 
         if (!solicitud) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
@@ -198,7 +236,9 @@ const getOrdenDeTrabajo = async (req, res) => {
             JOIN personal_disponible pd ON sp.id_personal_asignado = pd.id_personal
             WHERE sp.id_solicitud = ?;
         `;
-        const personalAsignado = await conn.query(sqlPersonal, [id]);
+        const personalAsignado = await conn.query(sqlPersonal, [solicitudId]);
+        
+        console.log(`[DEBUG] getOrdenDeTrabajo - solicitudId: ${solicitudId}, personalAsignado encontrado: ${personalAsignado.length}`);
 
         if (personalAsignado.length === 0) {
             return res.status(404).json({ message: 'No hay personal asignado a esta solicitud.' });
