@@ -66,7 +66,7 @@
                         <span class="block text-neon">Agenda de Bandas en Vivo</span>
                     </h1>
                     <p class="text-xl text-stone-300 font-medium">
-                        ¡Asegura tu lugar! Solo Entrada General (18+).
+                        ¡Asegura tu lugar! Entrada General.
                     </p>
                 </div>
 
@@ -156,15 +156,17 @@
         const currentHost = window.location.host;
         let API_BASE_URL = '';
 
-        if (currentHost.includes('localhost') || currentHost.includes('192.168.1.10')) {
+        if (currentHost.includes('localhost')) {
             // Si estás en desarrollo local (usando localhost o una IP local)
-            // Asume que el proxy/puerta de enlace responde en localhost
+            API_BASE_URL = 'http://localhost';
+        } else if (currentHost.includes('192.168.1.10')) {
+            // Si estás en desarrollo local (usando localhost o una IP local)
             API_BASE_URL = 'http://192.168.1.10';
         } else {
             // Si estás usando el dominio público
-            // Asume que el dominio público (ej: eltemplodeclaypole.com) es el host
             API_BASE_URL = window.location.protocol + '//' + currentHost;
         }
+
 
         const API_URL = API_BASE_URL + '/api/tickets/eventos';
 

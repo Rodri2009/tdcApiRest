@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Depilación Definitiva - El Templo de Claypole</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+        }
+
+        .neon-glow-img {
+            box-shadow: 0 0 15px rgba(240, 171, 252, 0.4);
+            transition: transform 0.3s ease;
+        }
+
+        .neon-glow-img:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Título --><a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">Volver al Inicio</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="py-20 md:py-32 bg-stone-950 text-center">
+            <div class="max-w-4xl mx-auto px-4">
+                <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
+                    <span class="block text-neon">Depilación Definitiva</span>
+                </h1>
+                <p class="mt-4 text-2xl text-stone-300 font-medium">
+                    Tratamientos profesionales de depilación definitiva con seguimiento por sesiones mensuales.
+                    Planes personalizados según zona y fototipo. Requiere evaluación previa y reserva de turno.
+                </p>
+                <p class="mt-6 text-xl text-fuchsia-400">
+                    Para concertar una sesión: sacá turno por teléfono o completá el formulario de contacto.
+                </p>
+            </div>
+        </section>
+
+        <section class="py-16 bg-stone-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center text-neon mb-10">Servicios de Depilación</h2>
+                <p class="text-center text-stone-400 mb-8">A continuación mostramos algunas zonas tratadas y ejemplos
+                    de sesiones. Cada tratamiento requiere turno y valoración previa.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_cuidado_personal_1.jpg" alt="foto cuidado personal 1"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto+cuidado+personal+1';">
+                        <p class="text-center text-white font-semibold">Depilación definitiva — Piernas</p>
+                    </div>
+
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_cuidado_personal_2.jpg" alt="foto cuidado personal 2"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto+cuidado+personal+2';">
+                        <p class="text-center text-white font-semibold">Depilación definitiva — Axilas</p>
+                    </div>
+
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_cuidado_personal_3.jpg" alt="foto cuidado personal 3"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto+cuidado+personal+3';">
+                        <p class="text-center text-white font-semibold">Depilación definitiva — Bikini</p>
+                    </div>
+
+                </div>
+                <p class="text-center text-sm text-stone-500 mt-10">Para reservar turno: comunicarse por teléfono o
+                    completar el formulario de contacto. Las sesiones son mensuales según el plan indicado.</p>
+            </div>
+        </section>
+
+    </main>
+    <!-- Lightbox modal -->
+    <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="relative max-w-4xl w-full px-4">
+            <button id="lightbox-close"
+                class="absolute top-2 right-2 bg-white text-black rounded-full p-2 shadow-md">✕</button>
+            <img id="lightbox-img" src="" alt="" class="mx-auto rounded-lg shadow-lg max-h-[80vh] w-auto" />
+            <div class="flex justify-between mt-4">
+                <button id="lightbox-prev" class="px-4 py-2 bg-white text-black rounded shadow">Anterior</button>
+                <button id="lightbox-next" class="px-4 py-2 bg-white text-black rounded shadow">Siguiente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-rustic border-t border-stone-700 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos
+                reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        // year
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Lightbox functionality for images inside the grid
+        (function () {
+            const imgs = Array.from(document.querySelectorAll('.grid img'));
+            if (!imgs.length) return;
+
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const btnPrev = document.getElementById('lightbox-prev');
+            const btnNext = document.getElementById('lightbox-next');
+            const btnClose = document.getElementById('lightbox-close');
+            let currentIndex = 0;
+
+            imgs.forEach((img, idx) => {
+                img.style.cursor = 'zoom-in';
+                img.addEventListener('click', () => open(idx));
+            });
+
+            function open(index) {
+                currentIndex = index;
+                lightboxImg.src = imgs[currentIndex].src;
+                lightboxImg.alt = imgs[currentIndex].alt || '';
+                lightbox.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function close() {
+                lightbox.classList.add('hidden');
+                lightboxImg.src = '';
+                document.body.style.overflow = '';
+            }
+
+            function prev() {
+                currentIndex = (currentIndex - 1 + imgs.length) % imgs.length;
+                lightboxImg.src = imgs[currentIndex].src;
+                lightboxImg.alt = imgs[currentIndex].alt || '';
+            }
+
+            function next() {
+                currentIndex = (currentIndex + 1) % imgs.length;
+                lightboxImg.src = imgs[currentIndex].src;
+                lightboxImg.alt = imgs[currentIndex].alt || '';
+            }
+
+            btnPrev.addEventListener('click', prev);
+            btnNext.addEventListener('click', next);
+            btnClose.addEventListener('click', close);
+
+            // close when clicking outside image
+            lightbox.addEventListener('click', (e) => {
+                if (e.target === lightbox) close();
+            });
+
+            // keyboard support
+            document.addEventListener('keydown', (e) => {
+                if (lightbox.classList.contains('hidden')) return;
+                if (e.key === 'Escape') close();
+                if (e.key === 'ArrowLeft') prev();
+                if (e.key === 'ArrowRight') next();
+            });
+        })();
+    </script>
+</body>
+
+</html>
