@@ -246,7 +246,7 @@ const App = {
         // Si se selecciona un tipo, mostrar solo los sub-tipos de su categoría
         if (!tipoId) {
             // Si se deselecciona, mostrar todos
-            document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
+            document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('radio-hidden'));
             console.log("[FORM][FILTER] Mostrando todos los tipos");
             return;
         }
@@ -263,7 +263,7 @@ const App = {
         
         if (!tipoSeleccionado || !tipoSeleccionado.categoria) {
             console.log("[FORM][FILTER] Tipo sin categoría, mostrando todos", tipoId);
-            document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
+            document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('radio-hidden'));
             return;
         }
 
@@ -285,15 +285,13 @@ const App = {
                 const labelText = radioOption.querySelector('label')?.textContent || 'sin-label';
                 console.log(`[FORM][FILTER] Radio value=${radio.value}, tipo=${tipo?.id}, categoria=${tipo?.categoria}, pertenece=${perteneceLaCategoria}, label=${labelText.substring(0, 50)}`);
                 if (perteneceLaCategoria) {
-                    radioOption.style.display = '';
-                    radioOption.style.visibility = 'visible';
+                    radioOption.classList.remove('radio-hidden');
                     visiblesCount++;
-                    console.log(`[FORM][FILTER]   → MOSTRAR (display='', visibility='visible')`);
+                    console.log(`[FORM][FILTER]   → MOSTRAR (clase radio-hidden eliminada)`);
                 } else {
-                    radioOption.style.display = 'none';
-                    radioOption.style.visibility = 'hidden';
+                    radioOption.classList.add('radio-hidden');
                     ocultosCount++;
-                    console.log(`[FORM][FILTER]   → OCULTAR (display='none', visibility='hidden')`);
+                    console.log(`[FORM][FILTER]   → OCULTAR (clase radio-hidden agregada)`);
                 }
             }
         });
@@ -301,11 +299,11 @@ const App = {
         
         // Asegurar que los cambios se apliquen - forzar un reflow
         setTimeout(() => {
-            console.log("[FORM][FILTER] Verificando estilos aplicados después de 10ms...");
+            console.log("[FORM][FILTER] Verificando clases aplicadas después de 10ms...");
             const radios = this.elements.tipoEventoContainer.querySelectorAll('.radio-option');
-            const visibles = Array.from(radios).filter(r => r.style.display !== 'none').length;
-            const ocultos = Array.from(radios).filter(r => r.style.display === 'none').length;
-            console.log(`[FORM][FILTER] Verificación post-delay: ${visibles} visible styles, ${ocultos} ocultos styles`);
+            const visibles = Array.from(radios).filter(r => !r.classList.contains('radio-hidden')).length;
+            const ocultos = Array.from(radios).filter(r => r.classList.contains('radio-hidden')).length;
+            console.log(`[FORM][FILTER] Verificación post-delay: ${visibles} visibles, ${ocultos} ocultos`);
         }, 10);
     },
 
