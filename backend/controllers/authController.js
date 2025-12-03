@@ -23,8 +23,8 @@ const login = async (req, res) => {
         }
 
     // --- Creación del Token JWT ---
-    // Normalizamos los campos: 'id' y 'role' para que otros middlewares los consuman fácilmente
-    const payload = { id: user.id, role: user.rol };
+    // Normalizamos los campos: 'id', 'email' y 'role' para que otros middlewares los consuman fácilmente
+    const payload = { id: user.id, email: user.email, role: user.rol };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
 
         // --- Envío del Token en una Cookie HttpOnly ---
@@ -34,7 +34,11 @@ const login = async (req, res) => {
             maxAge: 8 * 60 * 60 * 1000 // 8 horas en milisegundos
         });
         
-        res.status(200).json({ message: 'Login exitoso.', user: { nombre: user.nombre, email: user.email } });
+        res.status(200).json({ 
+            message: 'Login exitoso.', 
+            token: token,
+            user: { nombre: user.nombre, email: user.email } 
+        });
 
     } catch (err) {
         res.status(500).json({ message: 'Error del servidor.' });

@@ -4,11 +4,61 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Administración - Usuarios</title>
-  <style>body{font-family:Arial;margin:0;padding:20px;background:#fff}h1{color:#333}a{color:#007bff}</style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --color-primary: #581c87;
+      --color-secondary: #f0abfc;
+      --color-rustic: #44403c;
+    }
+
+    body {
+      background-color: #0c0a09;
+      color: #d6d3d1;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .text-neon {
+      color: var(--color-secondary);
+      text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+    }
+
+    .bg-rustic {
+      background-color: var(--color-rustic);
+    }
+
+    h1 {
+      color: var(--color-secondary);
+      margin-top: 2rem;
+    }
+
+    a {
+      color: var(--color-secondary);
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    a:hover {
+      opacity: 0.8;
+    }
+  </style>
 </head>
 <body>
-  <h1>Administrar Usuarios</h1>
-  <p>Listado y gestión de cuentas. (Página mínima creada)</p>
-  <p><a href="/admin.html">Volver al panel</a></p>
+  <div id="navbar-container"></div>
+  
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h1 class="text-4xl font-bold">Administrar Usuarios</h1>
+    <p class="mt-4 text-gray-400">Listado y gestión de cuentas de usuario del sistema.</p>
+    <p class="mt-4"><a href="/admin.html">← Volver al panel</a></p>
+  </main>
+
+  <script src="/navbar.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const navbar = new NavbarManager();
+      navbar.protectAdminPage();
+      navbar.injectNavbar('#navbar-container');
+    });
+  </script>
 </body>
 </html>

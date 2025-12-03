@@ -1,8 +1,16 @@
 // scripts/crear-admin.js
-require('dotenv').config({ path: './.env' }); // Asegúrate de que lea el .env de la raíz
+require('dotenv').config({ path: '.env' }); // Asegúrate de que lea el .env de la raíz
 const mariadb = require('mariadb');
 const bcrypt = require('bcryptjs');
 const readline = require('readline');
+
+// Debug: verificar que las variables se cargaron
+const dbHost = process.env.DB_HOST || 'localhost';
+console.log('📋 Configuración de BD:');
+console.log(`Host: ${dbHost}`);
+console.log(`BD: ${process.env.DB_NAME}`);
+console.log(`Usuario: ${process.env.DB_USER}`);
+console.log(`Password: ${process.env.DB_PASSWORD ? '***' : 'NO CARGADA'}\n`);
 
 // Interfaz para leer desde la terminal
 const rl = readline.createInterface({
@@ -11,7 +19,7 @@ const rl = readline.createInterface({
 });
 
 const pool = mariadb.createPool({
-    host: '127.0.0.1', // Conectamos al puerto expuesto de Docker
+    host: dbHost,
     port: 3306,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,

@@ -4,77 +4,114 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Administración - Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: Inter, Arial;
-            margin: 0;
-            background: #0f172a;
-            color: #e6e6e6
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
         }
 
-        .wrap {
-            max-width: 960px;
-            margin: 40px auto;
-            padding: 24px
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background: #0c0a09;
+            color: #d6d3d1;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
         }
 
         h1 {
-            color: #f0abfc;
-            text-align: center
+            color: var(--color-secondary);
+            text-align: center;
+            margin-top: 2rem;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            margin-top: 20px
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 32px;
         }
 
         a.card {
             display: block;
-            padding: 18px;
-            border-radius: 10px;
+            padding: 24px;
+            border-radius: 12px;
             text-align: center;
             text-decoration: none;
             color: inherit;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.15));
-            border: 1px solid rgba(240, 171, 252, 0.08)
+            background: linear-gradient(180deg, rgba(240, 171, 252, 0.05), rgba(0, 0, 0, 0.3));
+            border: 1px solid rgba(240, 171, 252, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        a.card:hover {
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 20px rgba(240, 171, 252, 0.3);
+            transform: translateY(-4px);
         }
 
         a.card h3 {
-            margin: 0 0 6px;
-            color: #f0abfc
+            margin: 0 0 8px;
+            color: var(--color-secondary);
+            font-size: 1.25rem;
         }
 
         a.card p {
             margin: 0;
-            color: #cdd6f7
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px;
         }
     </style>
 </head>
 
 <body>
-    <div class="wrap">
-        <h1>Panel de Administración</h1>
+    <div id="navbar-container"></div>
+
+    <main class="wrap">
+        <h1 class="text-4xl font-bold">Panel de Administración</h1>
         <div class="grid">
             <a class="card" href="/admin_solicitudes.html">
-                <h3>Solicitudes</h3>
+                <h3>📝 Solicitudes</h3>
                 <p>Ver y gestionar solicitudes</p>
             </a>
             <a class="card" href="/admin_personal.html">
-                <h3>Personal</h3>
+                <h3>👥 Personal</h3>
                 <p>Administrar personal y roles</p>
             </a>
             <a class="card" href="/admin_usuarios.html">
-                <h3>Usuarios</h3>
+                <h3>👤 Usuarios</h3>
                 <p>Gestionar cuentas y permisos</p>
             </a>
             <a class="card" href="/config_eventos.html">
-                <h3>Configuración</h3>
+                <h3>⚙️ Configuración</h3>
                 <p>Opciones de eventos y tarifas</p>
             </a>
         </div>
-    </div>
+    </main>
+
+    <script src="/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navbar = new NavbarManager();
+            navbar.protectAdminPage();
+            navbar.injectNavbar('#navbar-container');
+        });
+    </script>
 </body>
 
 </html>

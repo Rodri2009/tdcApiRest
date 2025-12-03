@@ -2,37 +2,58 @@
 <html>
 
 <head>
+    <meta charset="utf-8">
     <base target="_top">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f5f7;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
         }
 
         .container {
             max-width: 900px;
             margin: 0 auto;
-            background-color: #fff;
+            background-color: #1a1a1a;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(240, 171, 252, 0.1);
+            margin-top: 2rem;
         }
 
         h1,
         h2,
         h3 {
-            color: #0056b3;
+            color: var(--color-secondary);
             text-align: center;
         }
 
         h1 {
             margin-bottom: 5px;
+            text-shadow: 0 0 5px var(--color-secondary);
         }
 
         h3 {
-            color: #555;
+            color: #9ca3af;
             font-weight: normal;
             margin-top: 0;
         }
@@ -40,17 +61,19 @@
         .loader {
             text-align: center;
             padding: 50px;
+            color: #9ca3af;
         }
 
         .details-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px 25px;
-            background-color: #f8f9fa;
+            background-color: rgba(240, 171, 252, 0.05);
             padding: 20px;
             border-radius: 5px;
             margin-bottom: 30px;
             font-size: 1.1em;
+            border: 1px solid rgba(240, 171, 252, 0.1);
         }
 
         .details-grid div {
@@ -58,19 +81,20 @@
         }
 
         .details-grid strong {
-            color: #333;
+            color: var(--color-secondary);
         }
 
         .notes-section {
-            background-color: #fff8e1;
+            background-color: rgba(240, 171, 252, 0.08);
             padding: 15px;
             border-radius: 5px;
-            border-left: 5px solid #ffc107;
+            border-left: 5px solid var(--color-secondary);
             margin-bottom: 30px;
         }
 
         .notes-section h4 {
             margin-top: 0;
+            color: var(--color-secondary);
         }
 
         table {
@@ -83,12 +107,13 @@
         td {
             padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #333;
         }
 
         th {
-            background-color: #0056b3;
-            color: white;
+            background: linear-gradient(135deg, #581c87 0%, #764ba2 100%);
+            color: var(--color-secondary);
+            font-weight: 600;
         }
 
         td.number {
@@ -98,9 +123,10 @@
         }
 
         .total-row td {
-            border-top: 2px solid #333;
+            border-top: 2px solid rgba(240, 171, 252, 0.2);
             font-weight: bold;
             font-size: 1.2em;
+            color: var(--color-secondary);
         }
 
         .button-group {
@@ -115,9 +141,32 @@
             border: none;
             cursor: pointer;
             color: white;
-            background-color: #6c757d;
+            background-color: #6b7280;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #4b5563;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
         }
     </style>
+    <script src="/navbar.js"></script>
+</head>
+
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <h1>Orden de Trabajo</h1>
 </head>
 
 <body>
@@ -207,6 +256,11 @@
             </div>
         `;
             container.innerHTML = html;
+
+            // Proteger esta página: redirigir a login si no está autenticado
+            const navbar = new NavbarManager();
+            navbar.protectAdminPage();
+            navbar.injectNavbar('#navbar-container');
         }
     </script>
 </body>

@@ -251,13 +251,14 @@
                         </div>
                     </div>
                     <div class="flex flex-col sm:flex-row gap-3 items-center">
-                        <a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-6 rounded-full text-md transition shadow-lg">
+                        <a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-4 rounded-full text-md transition shadow-lg text-center whitespace-nowrap">
                             ${buttonText}
                         </a>
-                        <a href="solicitud_banda.html?tipo=FECHA_EN_VIVO&event_id=${id}&nombre_banda=${encodeURIComponent(nombre_banda)}"
-                            class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-bold py-2 px-4 rounded-full text-md transition shadow-lg">
+
+                        <!--<a href="solicitud_banda.html?tipo=FECHA_EN_VIVO&event_id=${id}&nombre_banda=${encodeURIComponent(nombre_banda)}"
+                            class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-bold py-1 px-4 rounded-full text-md transition shadow-lg text-center"
                             Solicitar Fecha para esta Banda
-                        </a>
+                        </a>-->
                     </div>
                 </div>
             `;
@@ -265,11 +266,13 @@
 
         /**
          * Procesa y renderiza la lista de eventos.
+         * Filtra solo eventos de bandas en vivo que estén activos.
          * @param {Array<object>} events - Lista de eventos de la API.
          */
         function renderEvents(events) {
             eventsListContainer.innerHTML = ''; // Limpia el mensaje de carga
-            console.log("Eventos obtenidos:", events.length);
+            console.log("Eventos obtenidos del API:", events.length);
+            
             if (!events || events.length === 0) {
                 eventsListContainer.innerHTML = `
                     <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
@@ -280,13 +283,30 @@
                 return;
             }
 
-            // Filtramos solo los eventos 'activos' (activo = 1)
-            // la propiedad activo no existe, por eso omito este paso
-            const activeEvents = events.filter(event => event.activo === 1);
-            //const activeEvents = events;
+            // Filtramos solo los eventos de bandas en vivo que estén activos
+            // activo puede ser: 1, true, "1", o true (según cómo lo devuelva la API)
+            const activeBandEvents = events.filter(event => {
+                const isActive = event.activo === 1 || event.activo === true || event.activo === "1";
+                return isActive;
+            });
 
-            activeEvents.forEach(event => {
-                //console.log("EVENTO:", event);
+            console.log("Eventos activos filtrados:", activeBandEvents.length);
+
+            if (activeBandEvents.length === 0) {
+                eventsListContainer.innerHTML = `
+                    <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
+                        <p class="text-xl text-stone-400">¡Parece que aún no hay eventos activos!</p>
+                        <p class="text-sm text-stone-500 mt-2">Los eventos que aparecerán aquí serán solo bandas en vivo.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Renderizar eventos activos ordenados por fecha (más recientes primero)
+            activeBandEvents.sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora));
+
+            activeBandEvents.forEach(event => {
+                console.log("Renderizando evento:", event.nombre_banda, "- Activo:", event.activo);
                 const cardHtml = generateEventCard(event);
                 eventsListContainer.insertAdjacentHTML('beforeend', cardHtml);
             });
