@@ -6,38 +6,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor de Solicitud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
 
     <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f4;
-            color: #333;
+            margin: 0;
+            padding: 20px;
+            background-color: #0c0a09;
+            color: #d6d3d1;
             padding-bottom: 70px;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
         }
 
         .container {
             max-width: 98%;
             margin: 0 auto;
-            background-color: #fff;
+            background-color: #111827;
             padding: 25px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid #374151;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
             position: relative;
         }
 
         h2 {
-            color: #0056b3;
+            color: var(--color-secondary);
             text-align: center;
             margin-bottom: 5px;
         }
 
         h3.subtitle {
-            color: #0056b3;
+            color: var(--color-secondary);
             text-align: center;
             margin-top: 0;
             margin-bottom: 25px;
@@ -51,9 +69,9 @@
 
         .radio-group {
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #4b5563;
             border-radius: 4px;
-            background-color: #fcfcfc;
+            background-color: #1f2937;
         }
 
         .radio-option {
@@ -72,6 +90,7 @@
             line-height: 1.4;
             font-weight: normal;
             cursor: pointer;
+            color: #d6d3d1;
         }
 
         .form-group-header {
@@ -84,14 +103,14 @@
         .form-group-header label {
             margin-bottom: 0;
             font-weight: bold;
-            color: #555;
+            color: var(--color-secondary);
         }
 
         #resetTipoEventoBtn {
             display: none;
             background: none;
             border: none;
-            color: #007bff;
+            color: #f0abfc;
             font-size: 14px;
             cursor: pointer;
             text-decoration: underline;
@@ -99,16 +118,16 @@
         }
 
         #resetTipoEventoBtn:hover {
-            color: #0056b3;
+            color: #e879f9;
         }
 
         #tipoEventoDescripcion {
             padding: 10px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #4b5563;
             border-radius: 4px;
-            background-color: #f0f0f0;
+            background-color: #1f2937;
             font-size: 0.9em;
-            color: #666;
+            color: #d6d3d1;
             min-height: 120px;
             text-align: left;
             white-space: pre-wrap;
@@ -116,18 +135,26 @@
         }
 
         select,
-        input[type="text"] {
+        input[type="text"],
+        input[type="date"],
+        textarea {
             width: 100%;
             padding: 10px;
-            border: 1.5px solid #ccc;
+            border: 1.5px solid #4b5563;
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 16px;
-            background-color: #fff;
+            background-color: #1f2937;
+            color: #d6d3d1;
+        }
+
+        select option {
+            background-color: #1f2937;
+            color: #d6d3d1;
         }
 
         .campo-invalido {
-            border-color: #e74c3c !important;
+            border-color: #ef4444 !important;
             animation: shake 0.5s;
         }
 
@@ -152,9 +179,9 @@
         #presupuestoDetalle {
             margin-top: 25px;
             padding: 15px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #4b5563;
             border-radius: 5px;
-            background-color: #f9f9f9;
+            background-color: #1f2937;
         }
 
         #presupuestoDetalle ul {
@@ -167,15 +194,15 @@
         #presupuestoDetalle ul li {
             margin-bottom: 5px;
             font-size: 1.05em;
-            color: #444;
+            color: #d6d3d1;
         }
 
         #detallePrecios {
             margin-top: 5px;
             padding: 15px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #4b5563;
             border-radius: 5px;
-            background-color: #f9f9f9;
+            background-color: #1f2937;
         }
 
         #detallePrecios ul {
@@ -188,7 +215,7 @@
         #detallePrecios ul li {
             margin-bottom: 5px;
             font-size: 1.05em;
-            color: #444;
+            color: #d6d3d1;
         }
 
 
@@ -196,15 +223,15 @@
             text-align: right;
             font-size: 1.8em;
             font-weight: bold;
-            color: #28a745;
+            color: #10b981;
             margin-top: 15px;
-            border-top: 2px solid #ddd;
+            border-top: 2px solid #4b5563;
             padding-top: 10px;
         }
 
         #presupuestoTotal span {
             font-size: 0.7em;
-            color: #555;
+            color: #9ca3af;
         }
 
         .loading-overlay {
@@ -213,7 +240,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(0, 0, 0, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -226,12 +253,12 @@
         .loading-overlay p {
             font-size: 1.2em;
             font-weight: bold;
-            color: #0056b3;
+            color: var(--color-secondary);
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+            border: 4px solid #4b5563;
+            border-top: 4px solid var(--color-secondary);
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -256,7 +283,7 @@
             transform: translate(-50%, 150%);
             padding: 12px 25px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
             color: white;
             font-size: 16px;
             font-weight: 500;
@@ -271,16 +298,16 @@
         }
 
         #notification-banner.warning {
-            background-color: #ffc107;
-            color: #333;
+            background-color: #f59e0b;
+            color: #fff;
         }
 
         #notification-banner.error {
-            background-color: #dc3545;
+            background-color: #ef4444;
         }
 
         #notification-banner.success {
-            background-color: #28a745;
+            background-color: #10b981;
         }
 
         .column-layout {
@@ -298,7 +325,7 @@
 
         button {
             flex: 1;
-            background-color: #007bff;
+            background-color: #7c3aed;
             color: white;
             padding: 15px 20px;
             border: none;
@@ -306,25 +333,16 @@
             cursor: pointer;
             font-size: 18px;
             font-weight: bold;
+            transition: background-color 0.3s ease;
         }
 
         button:hover {
-            background-color: #0056b3;
+            background-color: #6d28d9;
         }
 
-        select,
-        input[type="text"],
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1.5px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 16px;
-            background-color: #fff;
-            /* Añade estas propiedades si faltan, son específicas para textarea */
-            font-family: Arial, sans-serif;
-            resize: vertical;
+        button:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
         }
 
 
@@ -458,9 +476,18 @@
     </div>
     <div id="notification-banner"></div>
 
+    <script src="/navbar.js"></script>
     <script src="/formLogic.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Proteger esta página: redirigir a login si no está autenticado
+            const navbar = new NavbarManager();
+            if (!navbar.protectAdminPage()) {
+                return; // Salir si no está autenticado
+            }
+            navbar.injectNavbar('body');
+
+            // Inicializar la app de edición
             initializeApp({
                 mode: 'edit'
             });
