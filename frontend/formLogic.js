@@ -536,8 +536,10 @@ const App = {
         if (radio) {
             radio.checked = true;
             console.log('populate: radio seleccionado con value=', radio.value);
-            // No filtrar tipos - mostrar siempre todos disponibles para poder cambiar entre ellos
-            // this.filtrarTiposPorCategoria(radio.value);
+            // Filtrar tipos por categoría SOLO en modo edit
+            if (this.config.mode === 'edit') {
+                this.filtrarTiposPorCategoria(radio.value);
+            }
         } else {
             console.warn('populate: no se encontró un radio coincidente para tipo:', tipo, 'uiTipoId:', uiTipoId);
         }
