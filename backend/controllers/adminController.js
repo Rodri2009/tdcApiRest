@@ -518,11 +518,11 @@ const getAllTiposDeEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query(
-            "SELECT id_evento as id, nombre_para_mostrar as nombreParaMostrar, descripcion, monto_sena as montoSena, deposito as depositoGarantia, es_publico as esPublico FROM opciones_tipos;"
+            "SELECT id_evento as id, nombre_para_mostrar as nombreParaMostrar, descripcion, monto_sena as montoSena, deposito as depositoGarantia, es_publico as esPublico, categoria FROM opciones_tipos ORDER BY categoria, nombre_para_mostrar;"
         );
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error al obtener todos los tipos de evento para admin:", err);
+        console.error("[ADMIN][TIPOS] Error al obtener tipos:", err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();

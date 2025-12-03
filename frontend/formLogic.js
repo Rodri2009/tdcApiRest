@@ -126,7 +126,7 @@ const App = {
     // 2. LÓGICA DE CARGA DE DATOS
     // =================================================================
     cargarOpcionesIniciales: function () {
-        console.log("Paso 1: Llamando a la nueva API backend...");
+        console.log(`[FORM][INIT] Iniciando carga de opciones en modo: ${this.config.mode}`);
         this.toggleLoadingOverlay(true, 'Cargando opciones...');
 
         // --- ¡LÓGICA CONDICIONAL DE ENDPOINTS! ---
@@ -144,12 +144,7 @@ const App = {
             config: '/api/opciones/config'
         };
 
-        // Nota: no añadimos aquí filtros al endpoint por `tipo` porque el parámetro
-        // `tipo` puede referirse tanto a una categoría (BANDA) como a un id concreto
-        // (por ejemplo 'CON_SERVICIO_DE_MESA'). Hacemos el filtrado cliente-side
-        // en `manejarParametroURL()` para mantener compatibilidad con el proyecto original.
-
-        console.log("Endpoints a consultar:", endpoints);
+        console.log("[FORM][LOAD] Consultando endpoints...", Object.keys(endpoints));
 
         Promise.all(
             Object.values(endpoints).map(url =>
@@ -167,7 +162,7 @@ const App = {
 
             .then(results => {
                 const [tipos, tarifas, duraciones, horas, fechasOcupadas, config] = results;
-                console.log("PASO 2: Datos crudos recibidos del backend.");
+                console.log("[FORM][LOAD] Datos recibidos - Tipos:", tipos.length, "Tarifas:", tarifas.length, "Duraciones:", Object.keys(duraciones || {}).length);
 
                 this.tarifas = tarifas || [];
                 this.tiposDeEvento = tipos || [];
@@ -189,12 +184,12 @@ const App = {
 
                 return this.cargarFeriados()
                     .then(() => {
-                        console.log("Paso 3: Todos los datos cargados. Construyendo UI...");
+                        console.log("[FORM][READY] UI lista para mostrar. Total tipos:", this.tiposDeEvento.length);
                         this.decidirEstadoInicial();
                     });
             })
             .catch(error => {
-                console.error("Fallo crítico al cargar datos:", error);
+                console.error("[FORM][ERROR] Fallo crítico:", error.message);
                 this.showNotification('Error de conexión con el servidor: ' + error.message, 'error');
                 this.toggleLoadingOverlay(false);
             });
@@ -212,8 +207,10 @@ const App = {
     },
 
     construirUI: function (fechaExcepcion = null) {
-        console.log("Construyendo UI. Excepción de fecha:", fechaExcepcion);
-        console.log("fechasOcupadasSeguro (muestra 10):", (this.fechasOcupadasSeguro || []).slice(0, 10));
+        console.log("[FORM][UI] Construyendo interfaz de usuario.");
+        console.log("[FORM][UI] Excepción de fecha:", fechaExcepcion);
+        
+        // En modo edición, mostrar todos los tipos; en modo creación, permitir filtrado por categoría
         this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento);
         this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => {
             // Remover la clase de error del contenedor principal
@@ -235,7 +232,7 @@ const App = {
         if (this.config.mode === 'edit' && idFromUrl) {
             // MODO EDICIÓN
             this.solicitudId = idFromUrl;
-            console.log(`Modo Edición: Cargando solicitud ID: ${idFromUrl}`);
+            console.log(`[FORM][EDIT] Cargando solicitud ID: ${idFromUrl}`);
             fetch(`/api/solicitudes/${this.solicitudId}`)
                 .then(res => res.json())
                 .then(solicitudData => {
@@ -246,29 +243,34 @@ const App = {
                     this.populateForm(solicitudData);
                     this.toggleLoadingOverlay(false);
                     this.habilitarBotones();
+                })
+                .catch(err => {
+                    console.error("[FORM][EDIT] Error al cargar solicitud:", err);
+                    this.showNotification('Error: No se pudo cargar la solicitud', 'error');
+                    this.toggleLoadingOverlay(false);
                 });
         } else {
             // MODO CREACIÓN
-            console.log("Modo Creación: Construyendo UI limpia.");
+            console.log("[FORM][CREATE] Construyendo formulario vacío");
             this.construirUI(); // Construimos la UI sin excepción de fecha
             // Procesar si se pasó un parámetro `tipo` en la URL (ej: page.html?tipo=BANDA)
-            try { this.manejarParametroURL(); } catch (e) { console.warn('manejarParametroURL falló:', e); }
+            try { this.manejarParametroURL(); } catch (e) { console.warn('[FORM][URL] Error procesando parámetros:', e); }
             this.initFingerprint(); // Buscamos sesión por fingerprint
         }
     },
 
 
     initFingerprint: function () {
-        console.log("Paso 4: Iniciando Fingerprint...");
+        console.log("[FORM][SESSION] Iniciando detección de sesión...");
         FingerprintJS.load()
             .then(fp => fp.get())
             .then(result => {
                 this.visitorId = result.visitorId;
-                console.log("Paso 5: Fingerprint ID generado:", this.visitorId);
+                console.log("[FORM][SESSION] ID generado:", this.visitorId.substring(0, 10) + '...');
                 this.buscarSesionExistente();
             })
             .catch(error => {
-                console.error("Error al generar Fingerprint:", error);
+                console.error("[FORM][ERROR] Error al generar Fingerprint:", error.message);
                 this.visitorId = 'fingerprint_error';
                 this.toggleLoadingOverlay(false);
                 this.habilitarBotones();
@@ -276,20 +278,20 @@ const App = {
     },
 
     buscarSesionExistente: function () {
-        console.log(`[FE] Buscando sesión por Fingerprint...`);
+        console.log(`[FORM][SESSION] Buscando sesión almacenada...`);
         fetch(`/api/solicitudes/sesion?fingerprintId=${this.visitorId}`)
             .then(res => res.json())
             .then(sessionData => {
                 if (sessionData && sessionData.solicitudId) {
-                    console.log("[FE] Sesión encontrada. Rellenando formulario.", sessionData);
+                    console.log("[FORM][SESSION] Sesión encontrada - Solicitud ID:", sessionData.solicitudId);
                     this.solicitudId = sessionData.solicitudId;
                     this.populateForm(sessionData);
                     this.showNotification("Se cargaron los datos de tu sesión anterior.", "success");
                 } else {
-                    console.log("[FE] No se encontraron sesiones activas.");
+                    console.log("[FORM][SESSION] No hay sesión almacenada");
                 }
             })
-            .catch(err => console.error("[FE] Error al buscar sesión:", err))
+            .catch(err => console.error("[FORM][ERROR] Error al buscar sesión:", err.message))
             .finally(() => {
                 this.toggleLoadingOverlay(false);
                 this.habilitarBotones();
@@ -300,12 +302,10 @@ const App = {
     // 3. LÓGICA DE INTERACCIÓN Y UI
     // =================================================================
     populateForm: function (solicitud) {
-        console.group("--- INICIO populateForm (v-override-final) ---");
-        console.log("Datos de la solicitud recibidos:", solicitud);
+        console.log("[FORM][POPULATE] Cargando datos en formulario...");
 
         if (!solicitud) {
-            console.warn('populateForm: solicitud undefined o null. Abortando populate.');
-            console.groupEnd();
+            console.warn('[FORM][POPULATE] Solicitud vacía, abortando.');
             return;
         }
 
@@ -320,7 +320,7 @@ const App = {
         const detalles = solicitud.descripcion || '';
 
         // 1. Establecer el tipo
-        console.log('populate: tipo recibido (normalizado):', tipo, 'nombreParaMostrar:', solicitud.nombreParaMostrar);
+        console.log('[FORM][POPULATE] Tipo:', tipo, 'Cantidad:', cantidad, 'Duración:', duracion);
         // Intentamos mapear el tipo recibido al id que usa la UI (this.tiposDeEvento)
         let uiTipoId = null;
         if (tipo) {
@@ -476,6 +476,7 @@ const App = {
 
 
     validarYEnviar: async function (destino) {
+        console.log(`[FORM][SUBMIT] Validando formulario para: ${destino}`);
         this.resetearCamposInvalidos();
         const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
         let hayErrores = false;
@@ -487,15 +488,16 @@ const App = {
         if (!this.elements.fechaEventoInput.value) { if (this.calendario && this.calendario.altInput) { this.calendario.altInput.classList.add('campo-invalido'); } hayErrores = true; }
 
         if (hayErrores) {
+            console.warn("[FORM][SUBMIT] Validación fallida - campos obligatorios incompletos");
             this.showNotification('Por favor, completa todos los campos obligatorios.', 'warning');
             return;
         }
 
+        console.log("[FORM][SUBMIT] Validación exitosa - enviando datos");
         // --- ¡CORRECCIÓN! DESHABILITAMOS LOS BOTONES INMEDIATAMENTE ---
         this.toggleLoadingOverlay(true, 'Guardando solicitud...');
         this.elements.btnAdicionales.disabled = true;
         this.elements.btnContacto.disabled = true;
-        console.log(`[FE] Botones deshabilitados, iniciando fetch. ID de solicitud actual: ${this.solicitudId}`);
 
         const bodyData = {
             tipoEvento: selectedRadio.value,
@@ -510,23 +512,21 @@ const App = {
 
         try {
             let response;
-            console.log("[FE] Creando/Actualizando...");
             if (this.solicitudId) {
-                console.log(`[FE] DECISIÓN: Actualizar (PUT) solicitud ID: ${this.solicitudId}`);
+                console.log(`[FORM][API] PUT /api/solicitudes/${this.solicitudId}`);
                 response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(bodyData)
                 });
             } else {
-                console.log("[FE] DECISIÓN: Crear (POST) nueva solicitud.");
+                console.log("[FORM][API] POST /api/solicitudes");
                 response = await fetch('/api/solicitudes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(bodyData)
                 });
             }
-            console.log("[FE] Fetch completado.");
 
             if (!response.ok) {
                 const err = await response.json();
@@ -543,7 +543,7 @@ const App = {
             const fromParam = (destino === 'contacto') ? '&from=page' : '';
             const urlFinal = `${nextPage}?solicitudId=${id}${fromParam}`;
 
-            console.log(`[FE] Redirección inminente a: ${urlFinal}`);
+            console.log(`[FORM][REDIRECT] Redirigiendo a: ${nextPage}`);
 
 
             // --- ¡CAMBIO CLAVE! ---
@@ -554,7 +554,7 @@ const App = {
 
 
         } catch (error) {
-            console.error('[FE] Error en validarYEnviar:', error);
+            console.error(`[FORM][ERROR] Error en envío: ${error.message}`);
             this.showNotification(`Error: ${error.message}`, 'error');
             // Si algo falla, volvemos a habilitar todo.
             this.toggleLoadingOverlay(false);
@@ -656,34 +656,15 @@ const App = {
     },
 
     actualizarTodo: async function (caller = 'user-interaction', overrides = {}) {
-        console.groupCollapsed(`--- Actualizando Formulario (llamado por: ${caller}) ---`);
-        console.log("Overrides recibidos:", overrides);
-
-        // --- ¡LÓGICA CLAVE! Leemos del override O del DOM ---
         const tipoId = overrides.overrideTipo || document.querySelector('input[name="tipoEvento"]:checked')?.value || '';
         const fechaStr = overrides.overrideFechaStr || this.elements.fechaEventoInput.value;
         const cantidad = overrides.overrideCantidad || this.elements.cantidadPersonasSelect.value;
         const duracion = overrides.overrideDuracion || this.elements.duracionEventoSelect.value;
         let hora = overrides.overrideHora || this.elements.horaInicioSelect.value;
 
-        // LOG: información adicional para depuración de por qué no se seleccionan opciones
-        console.log('actualizarTodo: tipoId, fechaStr, cantidad, duracion, hora =>', tipoId, fechaStr, cantidad, duracion, hora);
-        try {
-            console.log('actualizarTodo: opcionesDuraciones keys:', Object.keys(this.opcionesDuraciones || {}));
-            console.log('actualizarTodo: opcionesCantidades keys:', Object.keys(this.opcionesCantidades || {}));
-            console.log('actualizarTodo: opcionesHoras keys:', Object.keys(this.opcionesHoras || {}));
-        } catch (err) {
-            console.warn('actualizarTodo: error mostrando keys de opciones', err);
-        }
+        console.log(`[FORM][UPDATE] Llamado por: ${caller} | Tipo: ${tipoId || '-'} | Cantidad: ${cantidad || '-'} | Duración: ${duracion || '-'}`);
+        
         const fechaSeleccionada = fechaStr ? new Date(fechaStr + 'T00:00:00') : null;
-
-        console.log(tipoId, fechaStr, cantidad, duracion, hora, fechaSeleccionada);
-        // --- ¡AGREGAR LÓGICA DE RESETEO! --- 
-        //      se deben resetear los campos: 
-        //      fechaEventoInput.value = 'Seleccione una fecha...'
-        //      cantidadPersonasSelect.value = 'Seleccione cantidad...'
-        //      duracionEventoSelect.value = 'Seleccione duración...'
-        //      horaInicioSelect.value = 'Seleccione duración...'
 
         // Resolver la clave usable para opciones (duraciones/horas/cantidades)
         const resolvedTipoKey = this.resolveTipoKey(tipoId) || tipoId;
@@ -968,7 +949,11 @@ const App = {
     },
 
     guardarCambios: async function () {
-        if (!confirm("¿Estás seguro de que quieres guardar los cambios?")) return;
+        console.log("[FORM][EDIT] Iniciando guardado de cambios...");
+        if (!confirm("¿Estás seguro de que quieres guardar los cambios?")) {
+            console.log("[FORM][EDIT] Guardado cancelado por usuario");
+            return;
+        }
 
         this.toggleLoadingOverlay(true, 'Guardando cambios...');
         if (this.elements.saveButton) this.elements.saveButton.disabled = true;
@@ -996,7 +981,7 @@ const App = {
         if (this.elements.precioAnticipadaInput) bodyData.precio_anticipada = this.elements.precioAnticipadaInput.value;
         if (this.elements.precioPuertaInput) bodyData.precio_puerta = this.elements.precioPuertaInput.value;
 
-        console.log("Guardando cambios. Datos a enviar:", bodyData);
+        console.log("[FORM][EDIT] Enviando datos actualizados para ID:", this.solicitudId);
 
         try {
             // Usamos el endpoint PUT /api/solicitudes/:id, que llama a 'actualizarSolicitud'
@@ -1011,6 +996,7 @@ const App = {
                 throw new Error(data.error || 'Error del servidor al guardar.');
             }
 
+            console.log("[FORM][EDIT] Cambios guardados exitosamente");
             this.showNotification("Cambios guardados con éxito", 'success');
 
             // Deshabilitamos el formulario y cambiamos los botones
