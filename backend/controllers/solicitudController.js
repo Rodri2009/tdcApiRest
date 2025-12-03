@@ -123,11 +123,54 @@ const crearSolicitud = async (req, res) => {
  */
 const getSolicitudPorId = async (req, res) => {
     const { id } = req.params;
-    console.log(`\n-> Controlador getSolicitudPorId. Petición para ID: ${id}`);
+    console.log(`[SOLICITUD][GET] Obteniendo solicitud/evento ID: ${id}`);
 
     let conn;
     try {
         conn = await pool.getConnection();
+
+        // Verificar si es un evento (prefijo ev_)
+        if (id && id.toString().startsWith('ev_')) {
+            const eventoId = parseInt(id.substring(3)); // Remover 'ev_' y convertir a número
+            console.log(`[SOLICITUD][GET] Detectado evento con ID: ${eventoId}`);
+            
+            const sql = `
+                SELECT 
+                    CONCAT('ev_', e.id) as solicitudId,
+                    e.tipo_evento as tipoEvento,
+                    NULL as cantidadPersonas,
+                    NULL as duracionEvento,
+                    DATE_FORMAT(e.fecha_hora, '%Y-%m-%d') as fechaEvento,
+                    DATE_FORMAT(e.fecha_hora, '%H:%i') as horaInicio,
+                    NULL as precioBase,
+                    e.nombre_banda as nombreCompleto,
+                    NULL as telefono,
+                    NULL as email,
+                    e.descripcion,
+                    COALESCE(e.estado, CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END) as estado,
+                    e.tipo_evento as nombreParaMostrar,
+                    e.nombre_banda as nombreBanda,
+                    e.email as bandaContactoEmail,
+                    e.link_musica as bandaLinkMusica,
+                    e.propuesta as bandaPropuesta,
+                    NULL as bandaEventId,
+                    NULL as bandaInvitados,
+                    NULL as bandaPrecioAnticipada,
+                    NULL as bandaPrecioPuerta
+                FROM eventos e
+                WHERE e.id = ?;
+            `;
+            
+            const [evento] = await conn.query(sql, [eventoId]);
+            
+            if (!evento) {
+                console.warn(`[SOLICITUD][GET] Evento no encontrado: ${eventoId}`);
+                return res.status(404).json({ error: 'Evento no encontrado.' });
+            }
+            
+            console.log(`[SOLICITUD][GET] Evento obtenido: ${evento.nombreCompleto}`);
+            return res.status(200).json(evento);
+        }
 
         // --- Construir consulta de forma dinámica según columnas disponibles ---
         // Algunos entornos aún no tienen las columnas de precio en `bandas_solicitudes`.
@@ -175,7 +218,7 @@ const getSolicitudPorId = async (req, res) => {
         const [solicitud] = await conn.query(sql, [id]);
 
         if (!solicitud) {
-            console.warn(`ADVERTENCIA: No se encontró solicitud con ID: ${id}`);
+            console.warn(`[SOLICITUD][GET] Solicitud no encontrada: ${id}`);
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
         }
 
@@ -186,7 +229,7 @@ const getSolicitudPorId = async (req, res) => {
             adicionales: adicionales || []
         };
 
-        console.log(`Enviando detalles completos para la solicitud ID: ${id}`);
+        console.log(`[SOLICITUD][GET] Datos obtenidos exitosamente para ID: ${id}`);
         res.status(200).json(respuesta);
 
     } catch (err) {

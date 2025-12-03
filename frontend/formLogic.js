@@ -286,17 +286,17 @@ const App = {
         const tipoId = selectedRadio.value;
         const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
         
-        // Determinar si este tipo requiere campos de banda
-        const esAlquilerSalon = tipoId && (tipoId.includes('ALQUILER') || tipoId.includes('INFANTIL') || tipoId.includes('BABY') || tipoId.includes('ADOLESCENTE'));
+        // Determinar si mostrar campos de banda según CATEGORÍA
+        // Mostrar si es: BANDA, TALLER, SERVICIO
+        // Ocultar si es: ALQUILER (alquiler de salón con subcategorías)
         const tieneCategoria = tipoSeleccionado && tipoSeleccionado.categoria;
-        const esAlquilerPorCategoria = tieneCategoria && tipoSeleccionado.categoria.toUpperCase().includes('ALQUIL');
-        
-        const mostrarCamposBanda = !esAlquilerSalon && !esAlquilerPorCategoria;
+        const categoria = tieneCategoria ? tipoSeleccionado.categoria.toUpperCase() : '';
+        const mostrarCamposBanda = categoria === 'BANDA' || categoria === 'TALLER' || categoria === 'SERVICIO';
 
         const bandFieldsContainer = document.getElementById('band-fields');
         if (bandFieldsContainer) {
             bandFieldsContainer.style.display = mostrarCamposBanda ? 'block' : 'none';
-            console.log(`[FORM][CONDITIONAL] Campos de banda: ${mostrarCamposBanda ? 'VISIBLE' : 'OCULTO'} (tipo: ${tipoId})`);
+            console.log(`[FORM][CONDITIONAL] Categoría: ${categoria} | Campos de banda: ${mostrarCamposBanda ? 'VISIBLE' : 'OCULTO'}`);
         }
     },
 
@@ -485,6 +485,10 @@ const App = {
         if (radio) {
             radio.checked = true;
             console.log('populate: radio seleccionado con value=', radio.value);
+            // Filtrar tipos por categoría en modo creación
+            if (this.config.mode === 'create') {
+                this.filtrarTiposPorCategoria(radio.value);
+            }
         } else {
             console.warn('populate: no se encontró un radio coincidente para tipo:', tipo, 'uiTipoId:', uiTipoId);
         }
