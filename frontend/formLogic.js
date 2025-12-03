@@ -281,35 +281,45 @@ const App = {
         let ocultosCount = 0;
         
         radioButtons.forEach((radio, idx) => {
-            const tipo = this.tiposDeEvento.find(t => t.id === radio.value);
-            const perteneceLaCategoria = tipo && tipo.categoria === categoriaSeleccionada;
             const radioOption = radio.closest('.radio-option');
             
-            if (radioOption) {
-                const labelText = radioOption.querySelector('label')?.textContent || 'sin-label';
-                const tieneLaClase = radioOption.classList.contains('radio-hidden');
-                
-                if (perteneceLaCategoria) {
-                    // DEBE estar visible
-                    if (tieneLaClase) {
-                        console.log(`✅ ${idx}: ${radio.value} → MOSTRAR (removiendo radio-hidden)`);
-                        radioOption.classList.remove('radio-hidden');
-                    } else {
-                        console.log(`✅ ${idx}: ${radio.value} → YA VISIBLE`);
-                    }
-                    visiblesCount++;
-                } else {
-                    // DEBE estar oculto
-                    if (!tieneLaClase) {
-                        console.log(`❌ ${idx}: ${radio.value} → OCULTAR (agregando radio-hidden)`);
-                        radioOption.classList.add('radio-hidden');
-                    } else {
-                        console.log(`❌ ${idx}: ${radio.value} → YA OCULTO`);
-                    }
-                    ocultosCount++;
-                }
-            } else {
+            if (!radioOption) {
                 console.warn(`⚠️  Radio ${radio.value} no está en un .radio-option`);
+                return;
+            }
+            
+            // Obtener categoría de dos fuentes: 1) this.tiposDeEvento, 2) atributo data
+            let tipoCategoria = null;
+            const tipo = this.tiposDeEvento.find(t => t.id === radio.value);
+            if (tipo) {
+                tipoCategoria = tipo.categoria;
+            } else {
+                // Fallback: usar data-categoria del elemento
+                tipoCategoria = radioOption.getAttribute('data-categoria');
+            }
+            
+            const perteneceLaCategoria = tipoCategoria === categoriaSeleccionada;
+            const tieneLaClase = radioOption.classList.contains('radio-hidden');
+            const labelText = radioOption.querySelector('label')?.textContent || 'sin-label';
+            
+            if (perteneceLaCategoria) {
+                // DEBE estar visible
+                if (tieneLaClase) {
+                    console.log(`✅ ${idx}: ${radio.value} (cat=${tipoCategoria}) → MOSTRAR (removiendo radio-hidden)`);
+                    radioOption.classList.remove('radio-hidden');
+                } else {
+                    console.log(`✅ ${idx}: ${radio.value} (cat=${tipoCategoria}) → YA VISIBLE`);
+                }
+                visiblesCount++;
+            } else {
+                // DEBE estar oculto
+                if (!tieneLaClase) {
+                    console.log(`❌ ${idx}: ${radio.value} (cat=${tipoCategoria}) → OCULTAR (agregando radio-hidden)`);
+                    radioOption.classList.add('radio-hidden');
+                } else {
+                    console.log(`❌ ${idx}: ${radio.value} (cat=${tipoCategoria}) → YA OCULTO`);
+                }
+                ocultosCount++;
             }
         });
         
@@ -1068,10 +1078,11 @@ const App = {
             const rawId = opt.id || opt.id_evento;
             const optionId = (typeof rawId === 'number' || typeof rawId === 'string') ? String(rawId) : null;
             const optionName = opt.nombreParaMostrar || opt.nombreparamostrar;
+            const categoria = opt.categoria || '';
 
             if (optionId) {
                 const id = `radio_${optionId.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
-                container.innerHTML += `<div class="radio-option"><input type="radio" id="${id}" name="${name}" value="${optionId}"><label for="${id}">${optionName || optionId}</label></div>`;
+                container.innerHTML += `<div class="radio-option" data-categoria="${categoria}" data-tipo-id="${optionId}"><input type="radio" id="${id}" name="${name}" value="${optionId}"><label for="${id}">${optionName || optionId}</label></div>`;
             } else {
                 console.warn("Se encontró un objeto inválido sin ID en el array de opciones:", opt);
             }
