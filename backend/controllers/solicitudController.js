@@ -500,6 +500,41 @@ const getSesionExistente = async (req, res) => {
     }
 };
 
+// ============================================
+// GET /api/solicitudes/:id/adicionales
+// Obtener adicionales seleccionados para una solicitud
+// ============================================
+const obtenerAdicionales = async (req, res) => {
+    const { id } = req.params;
+    
+    if (!id || isNaN(parseInt(id, 10))) {
+        return res.status(400).json({ error: 'ID de solicitud inválido.' });
+    }
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        
+        // Obtener los adicionales guardados para esta solicitud
+        const adicionales = await conn.query(
+            "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?",
+            [id]
+        );
+
+        return res.status(200).json({
+            seleccionados: adicionales || []
+        });
+    } catch (error) {
+        console.error(`Error al obtener adicionales para solicitud ${id}:`, error);
+        return res.status(500).json({ 
+            error: 'Error interno al obtener adicionales.',
+            details: error.message 
+        });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 // Y no olvides exportarla:
 module.exports = {
     crearSolicitud,
@@ -507,5 +542,6 @@ module.exports = {
     actualizarSolicitud,
     finalizarSolicitud,
     guardarAdicionales,
+    obtenerAdicionales,
     getSesionExistente
 };

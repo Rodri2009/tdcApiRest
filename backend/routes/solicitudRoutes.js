@@ -6,6 +6,7 @@ const {
     actualizarSolicitud, // <-- La que usa Page.html
     finalizarSolicitud,   // <-- La que usa Contacto.html
     guardarAdicionales,
+    obtenerAdicionales,   // <-- GET para cargar adicionales previos
     getSesionExistente
 } = require('../controllers/solicitudController');
 
@@ -20,6 +21,9 @@ router.get('/sesion', getSesionExistente);
 
 // GET /api/solicitudes/:id -> Obtener detalles de una solicitud
 router.get('/:id', getSolicitudPorId);
+
+// GET /api/solicitudes/:id/adicionales -> Obtener adicionales seleccionados previos
+router.get('/:id/adicionales', obtenerAdicionales);
 
 // PUT /api/solicitudes/:id -> Actualizar los datos básicos del presupuesto
 router.put('/:id', actualizarSolicitud);
