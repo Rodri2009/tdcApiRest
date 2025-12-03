@@ -485,10 +485,8 @@ const App = {
         if (radio) {
             radio.checked = true;
             console.log('populate: radio seleccionado con value=', radio.value);
-            // Filtrar tipos por categoría en modo creación
-            if (this.config.mode === 'create') {
-                this.filtrarTiposPorCategoria(radio.value);
-            }
+            // Filtrar tipos por categoría (en ambos modos: create y edit)
+            this.filtrarTiposPorCategoria(radio.value);
         } else {
             console.warn('populate: no se encontró un radio coincidente para tipo:', tipo, 'uiTipoId:', uiTipoId);
         }

@@ -142,21 +142,21 @@ const getSolicitudPorId = async (req, res) => {
                     NULL as duracionEvento,
                     DATE_FORMAT(e.fecha_hora, '%Y-%m-%d') as fechaEvento,
                     DATE_FORMAT(e.fecha_hora, '%H:%i') as horaInicio,
-                    NULL as precioBase,
+                    e.precio_base as precioBase,
                     e.nombre_banda as nombreCompleto,
                     NULL as telefono,
                     NULL as email,
                     e.descripcion,
-                    COALESCE(e.estado, CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END) as estado,
+                    CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END as estado,
                     e.tipo_evento as nombreParaMostrar,
                     e.nombre_banda as nombreBanda,
-                    e.email as bandaContactoEmail,
-                    e.link_musica as bandaLinkMusica,
-                    e.propuesta as bandaPropuesta,
+                    NULL as bandaContactoEmail,
+                    NULL as bandaLinkMusica,
+                    NULL as bandaPropuesta,
                     NULL as bandaEventId,
                     NULL as bandaInvitados,
-                    NULL as bandaPrecioAnticipada,
-                    NULL as bandaPrecioPuerta
+                    e.precio_anticipada as bandaPrecioAnticipada,
+                    e.precio_puerta as bandaPrecioPuerta
                 FROM eventos e
                 WHERE e.id = ?;
             `;
