@@ -44,6 +44,15 @@
             text-shadow: 0 0 5px var(--color-secondary);
         }
 
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2.25rem !important;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
         .table-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -327,7 +336,7 @@
 </head>
 
 <body>
-    <h1>Panel de Administración de Solicitudes</h1>
+    <h2>Panel de Administración de Solicitudes</h1>
     <div class="table-container" id="admin-table-container">
         <div id="loader">Cargando solicitudes...</div>
         <table id="solicitudes-table" style="display:none">

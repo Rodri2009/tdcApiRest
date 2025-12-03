@@ -1,52 +1,5 @@
--- Migración 4: Crear subtables y clasificar eventos existentes
-
--- 1) Añadir columnas de tipo y visibilidad
-ALTER TABLE eventos
-  ADD COLUMN tipo_evento ENUM('ALQUILER','BANDA','TALLER','DEPILACION','OTRO') NOT NULL DEFAULT 'OTRO',
-  ADD COLUMN es_publico TINYINT(1) NOT NULL DEFAULT 1;
-
--- 2) Crear subtablas solicitadas
-CREATE TABLE IF NOT EXISTS alquiler_salon (
-  event_id INT PRIMARY KEY,
-  contacto_nombre VARCHAR(255),
-  contacto_telefono VARCHAR(50),
-  empresa VARCHAR(255),
-  duracion_horas INT,
-  deposito DECIMAL(10,2),
-  contrato_url VARCHAR(512),
-  privado_notes TEXT,
-  FOREIGN KEY (event_id) REFERENCES eventos(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS talleres_actividades (
-  event_id INT PRIMARY KEY,
-  instructor VARCHAR(255),
-  cupo INT,
-  duracion_hs INT,
-  materiales_incluidos TEXT,
-  precio_por_participante DECIMAL(10,2),
-  FOREIGN KEY (event_id) REFERENCES eventos(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS servicios (
-  event_id INT PRIMARY KEY,
-  zona VARCHAR(255),
-  sesiones_requeridas INT,
-  intervalo_meses INT,
-  profesional_id INT NULL,
-  notas TEXT,
-  FOREIGN KEY (event_id) REFERENCES eventos(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS bandas_en_vivo (
-  event_id INT PRIMARY KEY,
-  nombre_banda VARCHAR(255),
-  genero VARCHAR(100),
-  promotor VARCHAR(255),
-  rider TEXT,
-  backline_req TEXT,
-  FOREIGN KEY (event_id) REFERENCES eventos(id) ON DELETE CASCADE
-);
+-- Migración 4: Clasificar eventos existentes e insertar datos en subtables
+-- Nota: Las tablas ya fueron creadas en migración 06, solo clasificamos aquí
 
 -- Índices
 CREATE INDEX idx_eventos_tipo_fecha ON eventos(tipo_evento, fecha_hora);
@@ -98,8 +51,8 @@ WHERE e.tipo_evento = 'TALLER'
   AND NOT EXISTS (SELECT 1 FROM talleres_actividades t WHERE t.event_id = e.id);
 
 -- Servicios (depilacion u otros servicios)
-INSERT INTO servicios (event_id, zona)
-SELECT id, NULL
+INSERT INTO servicios (event_id)
+SELECT id
 FROM eventos e
 WHERE e.tipo_evento = 'DEPILACION'
   AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.event_id = e.id);
