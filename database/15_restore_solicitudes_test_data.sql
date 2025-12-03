@@ -22,10 +22,10 @@ INSERT INTO `solicitudes` (id_solicitud, fecha_hora, tipo_servicio, cantidad_de_
 (7,'2025-10-01 22:07:04','INFORMALES','Hasta 50','8 horas','2025-11-29','19:00hs',240000.00,240000.00,'Marcelo Chanca','11 2658-5081','villalbarodrigo2009@gmail.com','Juntada con los pibes de futbol de saturno, lechon','Confirmado',''),
 (8,'2025-10-01 22:16:15','INFORMALES','Hasta 70','10 horas','2025-11-08','19:00hs',400000.00,400000.00,'Jhony Sebas','1158598259','villalbarodrigo2009@gmail.com','Fecha con bandas, toca Las Mentas, atiende la barra María','Confirmado',''),
 (9,'2025-10-09 13:53:19','INFORMALES','Hasta 50','6 horas','2025-10-19','12:00hs',180000.00,180000.00,'Jessica','1123903156','jfuentes1078@gmail.com','','Solicitado','8b2ea5f41aee24f433b0133d263cfb1a'),
-(10,'2025-11-14 02:17:58','INFANTILES',NULL,NULL,'2025-12-25',NULL,0.00,NULL,NULL,NULL,NULL,NULL,'Solicitado',NULL),
-(11,'2025-11-21 03:25:37','INFANTILES','Hasta 50','4 horas','2025-11-23','16:00hs',220000.00,NULL,NULL,NULL,NULL,NULL,'Solicitado','bdaf521be181fd91b0488e2fa80e298f'),
-(12,'2025-11-21 03:56:10','INFANTILES','Hasta 50','4 horas','2025-11-23','13:00hs',220000.00,NULL,NULL,NULL,NULL,NULL,'Solicitado','19f845926e1de6cfef0bf2955113583e'),
-(13,'2025-11-21 04:17:18','INFORMALES','Hasta 60','8 horas','2025-11-23','10:00hs',280000.00,NULL,NULL,NULL,NULL,NULL,'Solicitado','6ea22cea6777c030b5400f678c1e3b52');
+(10,'2025-11-14 02:17:58','INFANTILES','Hasta 40','3 horas','2025-12-25','14:00hs',150000.00,150000.00,'Carlos Martínez','11 2847-3956','carlos.m@gmail.com','Cumpleaños infantil','Solicitado',NULL),
+(11,'2025-11-21 03:25:37','INFANTILES','Hasta 50','4 horas','2025-11-23','16:00hs',220000.00,220000.00,'María García','1165432187','maria.garcia@gmail.com','Fiesta sorpresa','Solicitado','bdaf521be181fd91b0488e2fa80e298f'),
+(12,'2025-11-21 03:56:10','INFANTILES','Hasta 50','4 horas','2025-11-23','13:00hs',220000.00,220000.00,'Ana López','1143987562','ana.lopez@gmail.com','Pijamada infantil','Solicitado','19f845926e1de6cfef0bf2955113583e'),
+(13,'2025-11-21 04:17:18','INFORMALES','Hasta 60','8 horas','2025-11-23','10:00hs',280000.00,280000.00,'Santiago Rodríguez','1156234789','santiago.r@gmail.com','Evento casual','Solicitado','6ea22cea6777c030b5400f678c1e3b52');
 
 -- Restaurar datos de solicitudes_adicionales
 INSERT INTO `solicitudes_adicionales` VALUES 
