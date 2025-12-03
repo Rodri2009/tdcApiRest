@@ -44,8 +44,6 @@
   </style>
 </head>
 <body>
-  <div id="navbar-container"></div>
-  
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <h1 class="text-4xl font-bold">Administrar Personal</h1>
     <p class="mt-4 text-gray-400">Sección para administrar personal. Añade, edita o elimina perfiles de personal.</p>
@@ -56,8 +54,10 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const navbar = new NavbarManager();
-      navbar.protectAdminPage();
-      navbar.injectNavbar('#navbar-container');
+      if (!navbar.protectAdminPage()) {
+        return; // Salir si no está autenticado
+      }
+      navbar.injectNavbar('body');
     });
   </script>
 </body>

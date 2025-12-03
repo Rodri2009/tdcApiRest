@@ -4,11 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Administración - Configuración Eventos</title>
-  <style>body{font-family:Arial;margin:0;padding:20px;background:#fff}h1{color:#333}</style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #0c0a09;
+      color: #d6d3d1;
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
 </head>
 <body>
-  <h1>Configuración de Eventos</h1>
-  <p>Aquí puedes ajustar tipos de eventos, tarifas y duraciones. (Página mínima)</p>
-  <p><a href="/admin.html">Volver al panel</a></p>
+  <h1 class="text-4xl font-bold mt-8 text-center">Configuración de Eventos</h1>
+  <p class="text-center mt-4">Aquí puedes ajustar tipos de eventos, tarifas y duraciones.</p>
+  <p class="text-center mt-4"><a href="/admin.html" class="text-pink-400 hover:underline">← Volver al panel</a></p>
+
+  <script src="/navbar.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const navbar = new NavbarManager();
+      if (!navbar.protectAdminPage()) {
+        return; // Salir si no está autenticado
+      }
+      navbar.injectNavbar('body');
+    });
+  </script>
 </body>
 </html>

@@ -80,8 +80,6 @@
 </head>
 
 <body>
-    <div id="navbar-container"></div>
-
     <main class="wrap">
         <h1 class="text-4xl font-bold">Panel de Administración</h1>
         <div class="grid">
@@ -106,10 +104,20 @@
 
     <script src="/navbar.js"></script>
     <script>
+        // Esperar a que DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
+            // Crear instancia única del navbar
             const navbar = new NavbarManager();
-            navbar.protectAdminPage();
-            navbar.injectNavbar('#navbar-container');
+            
+            // Proteger la página: redirige a login si no está autenticado
+            if (!navbar.protectAdminPage()) {
+                return; // Salir si no está autenticado (protectAdminPage ya redirige)
+            }
+            
+            // Inyectar navbar en el body
+            navbar.injectNavbar('body');
+            
+            console.log('✅ Página admin cargada y protegida');
         });
     </script>
 </body>

@@ -327,8 +327,6 @@
 </head>
 
 <body>
-    <div id="navbar-container"></div>
-    
     <h1>Panel de Administración de Solicitudes</h1>
     <div class="table-container" id="admin-table-container">
         <div id="loader">Cargando solicitudes...</div>
@@ -666,8 +664,10 @@
 
             // Proteger esta página: redirigir a login si no está autenticado
             const navbar = new NavbarManager();
-            navbar.protectAdminPage();
-            navbar.injectNavbar('#navbar-container');
+            if (!navbar.protectAdminPage()) {
+                return; // Salir si no está autenticado
+            }
+            navbar.injectNavbar('body');
 
             // Load solicitudes on page load
             cargarSolicitudes();

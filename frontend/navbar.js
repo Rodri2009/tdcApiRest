@@ -204,24 +204,17 @@ class NavbarManager {
     }
 }
 
-// Instancia global para usar en las páginas
-let navbarManager;
-
 /**
- * Inicializa el navbar cuando el DOM está listo
- * NOTA: Las páginas deben llamar a esto explícitamente
- * NO se ejecuta automáticamente para evitar duplicación
+ * IMPORTANTE: Este archivo NO se auto-inicializa.
+ * Cada página debe instanciar NavbarManager explícitamente.
+ * 
+ * Uso en páginas admin:
+ *   <script src="/navbar.js"></script>
+ *   <script>
+ *     document.addEventListener('DOMContentLoaded', () => {
+ *       const navbar = new NavbarManager();
+ *       navbar.protectAdminPage();
+ *       navbar.injectNavbar('body');
+ *     });
+ *   </script>
  */
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeNavbar);
-} else {
-    // Si el DOM ya está cargado (ej: script cargado tarde)
-    initializeNavbar();
-}
-
-function initializeNavbar() {
-    // Solo inicializar si no existe instancia global
-    if (!navbarManager) {
-        navbarManager = new NavbarManager();
-    }
-}

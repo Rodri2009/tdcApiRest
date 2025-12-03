@@ -169,8 +169,6 @@
 </head>
 
 <body>
-    <div id="navbar-container"></div>
-
     <div class="container">
         <h1>Asignación de Personal</h1>
         <h2 id="solicitud-title"></h2>
@@ -387,10 +385,11 @@
             cargarDatosDeAsignacion();
 
             // Proteger esta página: redirigir a login si no está autenticado
-            // Proteger esta página: redirigir a login si no está autenticado
             const navbar = new NavbarManager();
-            navbar.protectAdminPage();
-            navbar.injectNavbar('#navbar-container');
+            if (!navbar.protectAdminPage()) {
+                return; // Salir si no está autenticado
+            }
+            navbar.injectNavbar('body');
         });
     </script>
 </body>
