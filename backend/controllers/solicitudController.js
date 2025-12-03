@@ -360,7 +360,7 @@ const guardarAdicionales = async (req, res) => {
  */
 const actualizarSolicitud = async (req, res) => {
     const { id } = req.params;
-    console.log(`\n-> Controlador actualizarSolicitud para ID: ${id}. Body recibido:`, req.body);
+    console.log(`[SOLICITUD][EDIT] Actualizando solicitud ID: ${id}`);
     const {
         tipoEvento,
         cantidadPersonas,
@@ -371,7 +371,7 @@ const actualizarSolicitud = async (req, res) => {
         detallesAdicionales // <-- NUEVO
     } = req.body;
 
-    console.log(`Actualizando datos básicos de la solicitud ID: ${id}`);
+    console.log(`[SOLICITUD][EDIT] Campos básicos: tipo=${tipoEvento}, cantidad=${cantidadPersonas}, duración=${duracionEvento}`);
 
     let conn;
     try {
@@ -394,13 +394,14 @@ const actualizarSolicitud = async (req, res) => {
         try {
             if (['FECHA_EN_VIVO', 'FECHA_BANDAS', 'BANDA'].includes((tipoEvento || '').toUpperCase())) {
                 const { nombre_banda, contacto_email, link_musica, propuesta, event_id, precio_anticipada, precio_puerta } = req.body;
+                console.log(`[SOLICITUD][BANDA] Guardando datos de banda para ID: ${id}`);
 
                 // Asegurarnos de que las columnas de precio existan (migración dinámica segura)
                 try {
                     await conn.query("ALTER TABLE bandas_solicitudes ADD COLUMN IF NOT EXISTS precio_anticipada DECIMAL(10,2) NULL;");
                     await conn.query("ALTER TABLE bandas_solicitudes ADD COLUMN IF NOT EXISTS precio_puerta DECIMAL(10,2) NULL;");
                 } catch (alterErr) {
-                    console.warn('Advertencia: no se pudo asegurar columnas de precios en bandas_solicitudes:', alterErr.message || alterErr);
+                    console.warn('[SOLICITUD][BANDA] Advertencia: no se pudo asegurar columnas de precios:', alterErr.message || alterErr);
                 }
 
                 // Validaciones del lado servidor (simples) antes del upsert
@@ -411,9 +412,11 @@ const actualizarSolicitud = async (req, res) => {
                 };
 
                 if (contacto_email && !isValidEmail(contacto_email)) {
+                    console.error('[SOLICITUD][BANDA] Email inválido:', contacto_email);
                     return res.status(400).json({ error: 'contacto_email inválido.' });
                 }
                 if (link_musica && !isValidUrl(link_musica)) {
+                    console.error('[SOLICITUD][BANDA] URL inválida:', link_musica);
                     return res.status(400).json({ error: 'link_musica inválido. Use http(s)://' });
                 }
 
@@ -432,17 +435,18 @@ const actualizarSolicitud = async (req, res) => {
                         updated_at = NOW();
                 `;
                 await conn.query(upsertSql, [id, nombre_banda || null, contacto_email || null, link_musica || null, propuesta || null, event_id || null, precio_anticipada || null, precio_puerta || null]);
+                console.log(`[SOLICITUD][BANDA] Datos de banda guardados exitosamente`);
             }
         } catch (err) {
-            console.warn('Error al persistir datos de banda en bandas_solicitudes:', err.message);
+            console.error('[SOLICITUD][BANDA] Error al persistir datos de banda:', err.message);
         }
 
         const respuesta = { solicitudId: parseInt(id) };
-        console.log(`Solicitud ID: ${id} actualizada. Enviando respuesta:`, respuesta);
+        console.log(`[SOLICITUD][EDIT] Solicitud ID: ${id} actualizada exitosamente`);
         res.status(200).json(respuesta);
 
     } catch (err) {
-        console.error(`Error al actualizar la solicitud ID: ${id}:`, err);
+        console.error(`[SOLICITUD][ERROR] Error al actualizar la solicitud ID: ${id}: ${err.message}`);
         res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
         if (conn) conn.release();
