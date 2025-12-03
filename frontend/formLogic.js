@@ -250,15 +250,24 @@ const App = {
             return;
         }
 
-        const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
+        // Buscar el tipo seleccionado
+        // Puede ser por ID directo (ej: FECHA_BANDAS) o por tipo_evento (ej: BANDA, ALQUILER)
+        let tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
+        
+        // Si no se encuentra por ID directo, buscar por categoría
+        // (para eventos que devuelven tipo_evento en lugar de id específico)
+        if (!tipoSeleccionado) {
+            tipoSeleccionado = this.tiposDeEvento.find(t => t.categoria === tipoId);
+        }
+        
         if (!tipoSeleccionado || !tipoSeleccionado.categoria) {
-            console.log("[FORM][FILTER] Tipo sin categoría, mostrando todos");
+            console.log("[FORM][FILTER] Tipo sin categoría, mostrando todos", tipoId);
             document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
             return;
         }
 
         const categoriaSeleccionada = tipoSeleccionado.categoria;
-        console.log(`[FORM][FILTER] Filtrando tipos por categoría: ${categoriaSeleccionada}`);
+        console.log(`[FORM][FILTER] Filtrando tipos por categoría: ${categoriaSeleccionada} (tipoId: ${tipoId})`);
 
         // Mostrar solo los tipos de la misma categoría
         const radioButtons = this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]');
@@ -297,6 +306,33 @@ const App = {
         if (bandFieldsContainer) {
             bandFieldsContainer.style.display = mostrarCamposBanda ? 'block' : 'none';
             console.log(`[FORM][CONDITIONAL] Categoría: ${categoria} | Campos de banda: ${mostrarCamposBanda ? 'VISIBLE' : 'OCULTO'}`);
+        }
+
+        // Para eventos (tipo_evento como BANDA, ALQUILER, TALLER, SERVICIO):
+        // Ocultar "Cantidad de Personas" y "Duración del evento"
+        // Estos campos no aplican para eventos de tickets
+        const isEventoType = categoria && ['BANDA', 'ALQUILER', 'TALLER', 'SERVICIO', 'OTRO'].includes(categoria);
+        const tipoEsEventoEnum = tipoId && ['BANDA', 'ALQUILER', 'TALLER', 'SERVICIO', 'OTRO'].includes(tipoId);
+        
+        if (isEventoType || tipoEsEventoEnum) {
+            // Verificar si el tipoId es un enum directo (evento) o un id específico (solicitud)
+            // Si el tipoId no existe en tiposDeEvento por ID pero coincide con un ENUM, es un evento
+            const esEventoDirecto = tipoEsEventoEnum && !tipoSeleccionado;
+            
+            if (esEventoDirecto) {
+                // Es un evento puro (ev_*), ocultar cantidad y duración
+                const cantidadGroup = document.getElementById('cantidadPersonasGroup');
+                const duracionGroup = document.getElementById('duracionEventoGroup');
+                if (cantidadGroup) cantidadGroup.style.display = 'none';
+                if (duracionGroup) duracionGroup.style.display = 'none';
+                console.log(`[FORM][CONDITIONAL] Evento directo detectado - ocultando cantidad y duración`);
+            } else {
+                // Es una solicitud normal
+                const cantidadGroup = document.getElementById('cantidadPersonasGroup');
+                const duracionGroup = document.getElementById('duracionEventoGroup');
+                if (cantidadGroup) cantidadGroup.style.display = 'block';
+                if (duracionGroup) duracionGroup.style.display = 'block';
+            }
         }
     },
 
