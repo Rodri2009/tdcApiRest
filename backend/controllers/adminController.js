@@ -17,15 +17,15 @@ const getSolicitudes = async (req, res) => {
                     s.id_solicitud as id,
                     s.fecha_hora as fechaSolicitud,
                     s.nombre_completo as nombreCliente,
-                    COALESCE(ot.nombre_para_mostrar, s.tipo_de_evento) as tipoEvento,
+                    COALESCE(ot.nombre_para_mostrar, s.tipo_servicio) as tipoEvento,
                     DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
                     s.estado,
-                    s.tipo_de_evento as tipoEventoId,
+                    s.tipo_servicio as tipoEventoId,
                     (SELECT COUNT(*) FROM solicitudes_personal sp WHERE sp.id_solicitud = s.id_solicitud) > 0 AS tienePersonalAsignado,
                     'solicitud' as origen,
                     s.hora_evento as horaInicio
                 FROM solicitudes s
-                LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+                LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
                 UNION ALL
                 SELECT
                     CONCAT('ev_', e.id) as id,
@@ -431,7 +431,7 @@ const getOrdenDeTrabajo = async (req, res) => {
                 s.id_solicitud, s.nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
                 ot.nombre_para_mostrar as tipo_evento, ot.id_evento as tipo_evento_id
             FROM solicitudes s
-            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
         const [solicitud] = await conn.query(sqlSolicitud, [solicitudId]);

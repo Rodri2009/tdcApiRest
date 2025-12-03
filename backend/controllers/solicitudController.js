@@ -59,16 +59,17 @@ const crearSolicitud = async (req, res) => {
         conn = await pool.getConnection();
 
         // --- ¡CORRECCIÓN FINAL! ---
-        // Cambiamos `fingerprint_id` a `fingerprintid`
+        // Ahora: tipo_de_evento es ENUM('ALQUILER_SALON') fijo
+        //        tipo_servicio es VARCHAR con el subtipo (CON_SERVICIO_DE_MESA, INFORMALES, etc.)
         const sql = `
             INSERT INTO solicitudes (
-                fecha_hora, tipo_de_evento, cantidad_de_personas, duracion, 
+                fecha_hora, tipo_de_evento, tipo_servicio, cantidad_de_personas, duracion, 
                 fecha_evento, hora_evento, precio_basico, estado, fingerprintid
-            ) VALUES (NOW(), ?, ?, ?, ?, ?, ?, 'Solicitado', ?);
+            ) VALUES (NOW(), 'ALQUILER_SALON', ?, ?, ?, ?, ?, ?, 'Solicitado', ?);
         `;
 
         const params = [
-            tipoEvento,
+            tipoEvento,  // Este va en tipo_servicio (ej: 'CON_SERVICIO_DE_MESA')
             cantidadPersonas,
             duracionEvento,
             fechaEvento,
@@ -146,7 +147,7 @@ const getSolicitudPorId = async (req, res) => {
         const sql = `
             SELECT 
                 s.id_solicitud as solicitudId,
-                s.tipo_de_evento as tipoEvento,
+                s.tipo_servicio as tipoEvento,
                 s.cantidad_de_personas as cantidadPersonas,
                 s.duracion as duracionEvento,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
@@ -166,7 +167,7 @@ const getSolicitudPorId = async (req, res) => {
                 bs.invitados as bandaInvitados,
                 ${extraCols.join(',\n                ')}
             FROM solicitudes s
-            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
             LEFT JOIN bandas_solicitudes bs ON s.id_solicitud = bs.id_solicitud
             WHERE s.id_solicitud = ?;
         `;
@@ -231,7 +232,7 @@ const finalizarSolicitud = async (req, res) => {
         const sqlSelect = `
             SELECT s.*, ot.nombre_para_mostrar, ot.descripcion as descripcion_evento 
             FROM solicitudes s
-            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
         const [solicitudCompleta] = await conn.query(sqlSelect, [id]);
@@ -377,7 +378,7 @@ const actualizarSolicitud = async (req, res) => {
         conn = await pool.getConnection();
         const sql = `
             UPDATE solicitudes SET
-                tipo_de_evento = ?,
+                tipo_servicio = ?,
                 cantidad_de_personas = ?,
                 duracion = ?,
                 fecha_evento = ?,
@@ -468,7 +469,7 @@ const getSesionExistente = async (req, res) => {
         const sql = `
             SELECT 
                 id_solicitud as solicitudId, 
-                tipo_de_evento as tipoEvento, 
+                tipo_servicio as tipoEvento, 
                 cantidad_de_personas as cantidadPersonas, 
                 duracion as duracionEvento, 
                 DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fechaEvento, 
