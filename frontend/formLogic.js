@@ -229,10 +229,10 @@ const App = {
             this.elements.tipoEventoContainer.classList.remove('campo-invalido');
             // Actualizar visibilidad de campos según el tipo
             this.actualizarCamposCondicionales();
-            // Filtrar sub-tipos si corresponde (en modo creación)
-            if (this.config.mode === 'create') {
-                this.filtrarTiposPorCategoria(radio.value);
-            }
+            // No filtrar en modo creación - permitir seleccionar cualquier tipo
+            // if (this.config.mode === 'create') {
+            //     this.filtrarTiposPorCategoria(radio.value);
+            // }
             this.actualizarTodo();
         }));
 
@@ -536,8 +536,8 @@ const App = {
         if (radio) {
             radio.checked = true;
             console.log('populate: radio seleccionado con value=', radio.value);
-            // Filtrar tipos por categoría (en ambos modos: create y edit)
-            this.filtrarTiposPorCategoria(radio.value);
+            // No filtrar tipos - mostrar siempre todos disponibles para poder cambiar entre ellos
+            // this.filtrarTiposPorCategoria(radio.value);
         } else {
             console.warn('populate: no se encontró un radio coincidente para tipo:', tipo, 'uiTipoId:', uiTipoId);
         }
