@@ -269,14 +269,19 @@ const App = {
 
         const categoriaSeleccionada = tipoSeleccionado.categoria;
         console.log(`[FORM][FILTER] Filtrando tipos por categoría: ${categoriaSeleccionada} (tipoId: ${tipoId})`);
+        console.log("[FORM][FILTER] Tipos disponibles en this.tiposDeEvento:", this.tiposDeEvento.map(t => `${t.id}(${t.categoria})`).join(', '));
 
         // Mostrar solo los tipos de la misma categoría
         const radioButtons = this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]');
+        console.log("[FORM][FILTER] Total radios encontrados:", radioButtons.length);
+        
         radioButtons.forEach(radio => {
             const tipo = this.tiposDeEvento.find(t => t.id === radio.value);
             const perteneceLaCategoria = tipo && tipo.categoria === categoriaSeleccionada;
             const radioOption = radio.closest('.radio-option');
             if (radioOption) {
+                const labelText = radioOption.querySelector('label')?.textContent || 'sin-label';
+                console.log(`[FORM][FILTER] Radio value=${radio.value}, tipo=${tipo?.id}, categoria=${tipo?.categoria}, pertenece=${perteneceLaCategoria}, label=${labelText.substring(0, 50)}`);
                 radioOption.style.display = perteneceLaCategoria ? '' : 'none';
             }
         });
