@@ -243,6 +243,8 @@ const App = {
     },
 
     filtrarTiposPorCategoria: function (tipoId) {
+        console.log(`\n🔍 [FILTER-START] filtrarTiposPorCategoria(${tipoId})`);
+        
         // Si se selecciona un tipo, mostrar solo los sub-tipos de su categoría
         if (!tipoId) {
             // Si se deselecciona, mostrar todos
@@ -268,42 +270,74 @@ const App = {
         }
 
         const categoriaSeleccionada = tipoSeleccionado.categoria;
-        console.log(`[FORM][FILTER] Filtrando tipos por categoría: ${categoriaSeleccionada} (tipoId: ${tipoId})`);
-        console.log("[FORM][FILTER] Tipos disponibles en this.tiposDeEvento:", this.tiposDeEvento.map(t => `${t.id}(${t.categoria})`).join(', '));
+        console.log(`📌 Filtrando por categoría: ${categoriaSeleccionada}`);
+        console.log(`📋 Tipos disponibles:`, this.tiposDeEvento.map(t => `${t.id}(${t.categoria})`).join(', '));
 
         // Mostrar solo los tipos de la misma categoría
         const radioButtons = this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]');
-        console.log("[FORM][FILTER] Total radios encontrados:", radioButtons.length);
+        console.log(`📊 Total radios en DOM: ${radioButtons.length}`);
         
         let visiblesCount = 0;
         let ocultosCount = 0;
-        radioButtons.forEach(radio => {
+        
+        radioButtons.forEach((radio, idx) => {
             const tipo = this.tiposDeEvento.find(t => t.id === radio.value);
             const perteneceLaCategoria = tipo && tipo.categoria === categoriaSeleccionada;
             const radioOption = radio.closest('.radio-option');
+            
             if (radioOption) {
                 const labelText = radioOption.querySelector('label')?.textContent || 'sin-label';
-                console.log(`[FORM][FILTER] Radio value=${radio.value}, tipo=${tipo?.id}, categoria=${tipo?.categoria}, pertenece=${perteneceLaCategoria}, label=${labelText.substring(0, 50)}`);
+                const tieneLaClase = radioOption.classList.contains('radio-hidden');
+                
                 if (perteneceLaCategoria) {
-                    radioOption.classList.remove('radio-hidden');
+                    // DEBE estar visible
+                    if (tieneLaClase) {
+                        console.log(`✅ ${idx}: ${radio.value} → MOSTRAR (removiendo radio-hidden)`);
+                        radioOption.classList.remove('radio-hidden');
+                    } else {
+                        console.log(`✅ ${idx}: ${radio.value} → YA VISIBLE`);
+                    }
                     visiblesCount++;
-                    console.log(`[FORM][FILTER]   → MOSTRAR (clase radio-hidden eliminada)`);
                 } else {
-                    radioOption.classList.add('radio-hidden');
+                    // DEBE estar oculto
+                    if (!tieneLaClase) {
+                        console.log(`❌ ${idx}: ${radio.value} → OCULTAR (agregando radio-hidden)`);
+                        radioOption.classList.add('radio-hidden');
+                    } else {
+                        console.log(`❌ ${idx}: ${radio.value} → YA OCULTO`);
+                    }
                     ocultosCount++;
-                    console.log(`[FORM][FILTER]   → OCULTAR (clase radio-hidden agregada)`);
                 }
+            } else {
+                console.warn(`⚠️  Radio ${radio.value} no está en un .radio-option`);
             }
         });
-        console.log(`[FORM][FILTER] RESUMEN: ${visiblesCount} visibles, ${ocultosCount} ocultos`);
         
-        // Asegurar que los cambios se apliquen - forzar un reflow
+        console.log(`📊 RESUMEN FINAL: ${visiblesCount} visibles, ${ocultosCount} ocultos`);
+        
+        // Verificación exhaustiva
         setTimeout(() => {
-            console.log("[FORM][FILTER] Verificando clases aplicadas después de 10ms...");
+            console.log("\n⏱️  [VERIFICATION] Verificación 10ms después...");
             const radios = this.elements.tipoEventoContainer.querySelectorAll('.radio-option');
-            const visibles = Array.from(radios).filter(r => !r.classList.contains('radio-hidden')).length;
-            const ocultos = Array.from(radios).filter(r => r.classList.contains('radio-hidden')).length;
-            console.log(`[FORM][FILTER] Verificación post-delay: ${visibles} visibles, ${ocultos} ocultos`);
+            let verificacionVisibles = 0;
+            let verificacionOcultos = 0;
+            
+            Array.from(radios).forEach((r, idx) => {
+                const tieneClase = r.classList.contains('radio-hidden');
+                const inputValue = r.querySelector('input')?.value;
+                const esVisible = !tieneClase;
+                
+                if (esVisible) verificacionVisibles++;
+                else verificacionOcultos++;
+                
+                const esperado = tipoSeleccionado && this.tiposDeEvento.find(t => t.id === inputValue)?.categoria === categoriaSeleccionada;
+                const match = esVisible === esperado;
+                const icon = match ? '✅' : '❌';
+                
+                console.log(`  ${icon} ${idx}: ${inputValue} - visible=${esVisible}, esperado=${esperado}`);
+            });
+            
+            console.log(`✓ Verificación: ${verificacionVisibles} visibles, ${verificacionOcultos} ocultos\n`);
         }, 10);
     },
 
