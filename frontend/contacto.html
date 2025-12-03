@@ -78,6 +78,10 @@
       margin-bottom: 15px;
     }
 
+    .hidden {
+      display: none;
+    }
+
     #resumen {
       padding: 15px;
       border: 1px solid var(--color-secondary);
@@ -261,7 +265,7 @@
     <div class="logo">
       <a href="index.html" class="flex items-center space-x-3">
         <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-        <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">Volver al Inicio</span>
+        <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al Inicio</span>
       </a>
     </div>
     <div class="nav-links">
@@ -293,6 +297,20 @@
     <div class="form-group">
       <label for="detallesAdicionales">¿Algo más que debamos saber? (Opcional)</label>
       <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
+    </div>
+    <!-- Campos adicionales para eventos de tipo banda -->
+    <div id="band-contacts" class="form-group hidden">
+      <h3 class="subtitle">Contactos para Banda Principal y Invitados</h3>
+      <div>
+        <label for="main_contact_email">Email de contacto de la banda principal</label>
+        <input type="email" id="main_contact_email" name="main_contact_email">
+      </div>
+      <div style="margin-top:12px">
+        <label>Emails de bandas/artistas invitados (hasta 3)</label>
+        <input type="email" id="invitado_1" placeholder="Invitado 1 (email)">
+        <input type="email" id="invitado_2" placeholder="Invitado 2 (email)">
+        <input type="email" id="invitado_3" placeholder="Invitado 3 (email)">
+      </div>
     </div>
     <div class="button-group">
       <button id="btn-volver" class="secondary">Volver</button>
@@ -382,6 +400,28 @@
                       <li><strong>TOTAL:</strong> $${convertirNumero(parseFloat(data.precioBase) + parseFloat(totalAdicionales))}</li>
                   </ul>
                 `;
+
+          // Si es un evento de tipo banda, mostramos campos extra para los contactos
+          const tipo = (data.tipoEvento || '').toUpperCase();
+          if (tipo === 'FECHA_EN_VIVO' || tipo === 'FECHA_BANDAS' || tipo === 'BANDA') {
+            const bandSection = document.getElementById('band-contacts');
+            if (bandSection) bandSection.classList.remove('hidden');
+            // Prefill main contact if exists in bandas_solicitudes
+            if (data.bandaContactoEmail) {
+              document.getElementById('main_contact_email').value = data.bandaContactoEmail;
+            }
+            // Prefill invitados if present as JSON
+            if (data.bandaInvitados) {
+              try {
+                const inv = JSON.parse(data.bandaInvitados);
+                if (Array.isArray(inv)) {
+                  if (inv[0]) document.getElementById('invitado_1').value = inv[0];
+                  if (inv[1]) document.getElementById('invitado_2').value = inv[1];
+                  if (inv[2]) document.getElementById('invitado_3').value = inv[2];
+                }
+              } catch (e) { /* ignore */ }
+            }
+          }
         })
         .catch(error => {
           console.error('Error:', error);
@@ -424,10 +464,19 @@
 
 
         // 2. Realizar la llamada a la API con el método PUT
+        // Recolectar posibles campos de banda si el formulario los muestra
+        const main_contact_email = document.getElementById('main_contact_email') ? document.getElementById('main_contact_email').value : null;
+        const invitados = [];
+        ['invitado_1', 'invitado_2', 'invitado_3'].forEach(id => { const el = document.getElementById(id); if (el && el.value) invitados.push(el.value); });
+
+        const payloadToSend = Object.assign({}, bodyData);
+        if (main_contact_email) payloadToSend.main_contact_email = main_contact_email;
+        if (invitados.length > 0) payloadToSend.invitados_emails = invitados;
+
         fetch(`/api/solicitudes/${solicitudId}/finalizar`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bodyData)
+          body: JSON.stringify(payloadToSend)
         })
           .then(response => {
             if (!response.ok) throw new Error('Error al confirmar la solicitud.');

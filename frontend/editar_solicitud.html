@@ -403,6 +403,38 @@
                 <label for="detallesAdicionales">Detalles Adicionales (opcional):</label>
                 <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
             </div>
+
+            <!-- Campos específicos para solicitudes de banda -->
+            <div id="band-fields"
+                style="margin-top:20px; padding:12px; border:1px solid #e6e6e6; border-radius:6px; background:#fafafa;">
+                <h4 style="margin-top:0;">Datos de Banda / Proyecto</h4>
+                <div class="form-group">
+                    <label for="nombreBandaInput">Nombre de la Banda / Proyecto:</label>
+                    <input type="text" id="nombreBandaInput" name="nombreBanda">
+                </div>
+                <div class="form-group">
+                    <label for="contactoEmailInput">Email de Contacto (banda):</label>
+                    <input type="email" id="contactoEmailInput" name="contactoEmail">
+                </div>
+                <div class="form-group">
+                    <label for="linkMusicaInput">Link de Música (Spotify/YouTube/Bandcamp):</label>
+                    <input type="text" id="linkMusicaInput" name="linkMusica" placeholder="https://">
+                </div>
+                <div class="form-group">
+                    <label for="propuestaInput">Propuesta y Requerimientos Técnicos:</label>
+                    <textarea id="propuestaInput" name="propuesta" rows="4"></textarea>
+                </div>
+                <div class="column-layout">
+                    <div class="form-group">
+                        <label for="precioAnticipadaInput">Precio Anticipada (ARS):</label>
+                        <input type="text" id="precioAnticipadaInput" name="precioAnticipada" placeholder="Ej: 3000">
+                    </div>
+                    <div class="form-group">
+                        <label for="precioPuertaInput">Precio en Puerta (ARS):</label>
+                        <input type="text" id="precioPuertaInput" name="precioPuerta" placeholder="Ej: 4000">
+                    </div>
+                </div>
+            </div>
         </fieldset>
 
         <hr>

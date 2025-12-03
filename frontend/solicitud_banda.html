@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Solicitud para tocar en el templo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
+    <style>
+        body {
+            background: #0c0a09;
+            color: #d6d3d1;
+            font-family: Arial, sans-serif
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #1e293b;
+            border-radius: 8px
+        }
+
+        label {
+            color: #f0abfc;
+            font-weight: 600
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            background: #0f172a;
+            border: 1px solid #581c87;
+            color: #f8fafc
+        }
+
+        .btn {
+            background: #10b981;
+            color: #042014;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-weight: 700
+        }
+
+        .campo-invalido {
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+        }
+
+        .error-text {
+            color: #fcc;
+            font-size: 0.9rem;
+            margin-top: -8px;
+            margin-bottom: 8px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 style="color:#f0abfc;font-size:1.6rem;margin-bottom:8px">Solicitud para tocar en el templo</h1>
+        <p style="color:#cbd5e1">Completa este formulario para solicitar tocar en El Templo. Te enviaremos respuesta por
+            email.</p>
+
+        <form id="bandForm">
+            <input type="hidden" id="event_id" name="event_id">
+            <div id="error_event_id" class="error-text">event_id inválido.</div>
+            <label for="nombre_banda">Nombre de la banda / proyecto</label>
+            <input id="nombre_banda" name="nombre_banda" required>
+            <div id="error_nombre_banda" class="error-text">Nombre inválido.</div>
+
+            <!-- El email de contacto se recopila en contacto.html -->
+
+            <label for="link_musica">Link a tu música (Spotify, YouTube, Bandcamp)</label>
+            <input id="link_musica" name="link_musica" type="url">
+            <div id="error_link_musica" class="error-text">Link inválido.</div>
+
+            <label for="fechaEvento">Fecha preferida</label>
+            <input id="fechaEvento" name="fechaEvento" placeholder="Seleccioná una fecha">
+
+            <label for="horaInicio">Hora preferida (opcional)</label>
+            <select id="horaInicio" name="horaInicio">
+                <option value="">Cargando horarios...</option>
+            </select>
+
+            <label for="duracionEvento">Duración preferida</label>
+            <select id="duracionEvento" name="duracionEvento">
+                <option value="">Cargando duraciones...</option>
+            </select>
+
+            <div id="band-banner"
+                style="margin:12px 0; padding:10px; background:#872d7d; color:#fff; border-radius:6px; display:none">
+                Esta página está en construcción: aún no hay horarios configurados para solicitudes de banda.</div>
+
+            <label for="propuesta">Propuesta y requerimientos técnicos</label>
+            <textarea id="propuesta" name="propuesta" rows="5"
+                placeholder="Estilo, integrantes, rider, necesidades técnicas..."></textarea>
+            <div id="error_propuesta" class="error-text">Propuesta inválida.</div>
+
+            <div style="display:flex;gap:10px;align-items:center">
+                <button class="btn" id="submitBtn" type="submit">Enviar solicitud</button>
+                <button id="backBtn" type="button"
+                    style="background:#6b7280;color:#fff;padding:10px 14px;border-radius:8px;font-weight:700">Volver</button>
+                <span id="status" style="color:#cbd5e1"></span>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Validaciones cliente-side para campos de banda
+        function isValidEmail(email) {
+            if (!email) return false;
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function isValidUrl(url) {
+            if (!url) return false;
+            try {
+                const u = new URL(url);
+                return ['http:', 'https:'].includes(u.protocol);
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function validateBandForm() {
+            const nombreEl = document.getElementById('nombre_banda');
+            // El email puede recogerse en la página de contacto (contacto.html).
+            // Buscamos el elemento por si el mismo formulario incluye el campo en algún fork del flujo.
+            const emailEl = document.getElementById('contacto_email') || null;
+            const linkEl = document.getElementById('link_musica');
+            const eventEl = document.getElementById('event_id');
+
+            const nombre = nombreEl.value || '';
+            const email = (emailEl && typeof emailEl.value !== 'undefined') ? (emailEl.value || '') : '';
+            const link = linkEl.value || '';
+            const eventIdVal = eventEl.value || '';
+
+            // Reset styles/messages
+            ['nombre_banda', 'contacto_email', 'link_musica', 'propuesta', 'event_id'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('campo-invalido');
+                const err = document.getElementById('error_' + id);
+                if (err) err.style.display = 'none';
+            });
+
+            if (!nombre.trim()) {
+                nombreEl.classList.add('campo-invalido');
+                const err = document.getElementById('error_nombre_banda'); if (err) { err.textContent = 'El nombre de la banda es obligatorio.'; err.style.display = 'block'; }
+                return { ok: false, message: 'El nombre de la banda es obligatorio.' };
+            }
+
+            // El email de contacto se solicita en el paso de contacto final (contacto.html)
+
+            if (link && !isValidUrl(link)) {
+                linkEl.classList.add('campo-invalido');
+                const err = document.getElementById('error_link_musica'); if (err) { err.textContent = 'Link inválido. Debe comenzar con http(s)://'; err.style.display = 'block'; }
+                return { ok: false, message: 'Link inválido. Debe comenzar con http(s)://' };
+            }
+
+            if (eventIdVal && isNaN(Number(eventIdVal))) {
+                const err = document.getElementById('error_event_id'); if (err) { err.textContent = 'event_id inválido.'; err.style.display = 'block'; }
+                return { ok: false, message: 'event_id inválido.' };
+            }
+
+            return { ok: true };
+        }
+
+        // Inicializar calendario (guardamos la instancia para reconfigurarla luego)
+        let fechaPicker = null;
+        try { fechaPicker = flatpickr('#fechaEvento', { locale: 'es', altInput: true, altFormat: 'j \\de F, Y', dateFormat: 'Y-m-d' }); } catch (e) { console.warn('flatpickr init failed', e); }
+
+        // Prefill desde parámetros URL
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get('event_id');
+        const nombre = params.get('nombre_banda');
+        if (eventId) document.getElementById('event_id').value = eventId;
+        if (nombre) document.getElementById('nombre_banda').value = decodeURIComponent(nombre);
+
+        // Fingerprint (opcional) y envío
+        let fingerprintId = null;
+        FingerprintJS && FingerprintJS.load().then(fp => fp.get().then(result => fingerprintId = result.visitorId)).catch(() => { });
+
+        // Cargar opciones de horarios, duraciones y tarifas desde el backend
+        async function loadBandOptions() {
+            const horaSel = document.getElementById('horaInicio');
+            const durSel = document.getElementById('duracionEvento');
+            const banner = document.getElementById('band-banner');
+            const submitBtn = document.getElementById('submitBtn');
+
+            console.log('[solicitud_banda] loadBandOptions start', { eventId });
+
+            try {
+                const [hRes, dRes, tRes] = await Promise.all([
+                    fetch('/api/opciones/horarios'),
+                    fetch('/api/opciones/duraciones'),
+                    fetch('/api/opciones/tarifas')
+                ]);
+
+                console.log('[solicitud_banda] raw responses:', { hOk: hRes.ok, dOk: dRes.ok, tOk: tRes.ok });
+
+                const horariosRaw = hRes.ok ? await hRes.json() : [];
+                const duracionesRaw = dRes.ok ? await dRes.json() : [];
+                const tarifasRaw = tRes.ok ? await tRes.json() : [];
+
+                console.log('[solicitud_banda] parsed payloads', { horariosRaw, duracionesRaw, tarifasRaw });
+
+                // Obtener fechas ocupadas (detalle por hora) para excluirlas de allowedDates/hours
+                let fechasOcupadas = [];
+                let occupiedMap = {}; // { 'YYYY-MM-DD': Set(['HH:MM', ...]) }
+                try {
+                    const foRes = await fetch('/api/opciones/fechas-ocupadas?detalle=1');
+                    if (foRes.ok) fechasOcupadas = await foRes.json();
+                } catch (e) {
+                    console.warn('[solicitud_banda] error fetching fechas-ocupadas detalle', e);
+                }
+                console.log('[solicitud_banda] fechasOcupadas detalle raw:', fechasOcupadas);
+                if (Array.isArray(fechasOcupadas)) {
+                    fechasOcupadas.forEach(item => {
+                        if (!item || !item.fecha) return;
+                        const d = String(item.fecha).slice(0, 10);
+                        const h = item.hora ? String(item.hora).slice(0, 5) : null;
+                        if (!occupiedMap[d]) occupiedMap[d] = new Set();
+                        if (h) occupiedMap[d].add(h);
+                    });
+                }
+                // también creamos un set simple de fechas ocupadas (útil para compatibilidad)
+                const occupiedDates = new Set(Object.keys(occupiedMap));
+
+                // Determinar la llave de evento a usar. Preferimos eventId si viene en params,
+                // si no, intentamos 'FECHA_BANDAS' como fallback.
+                const eventKey = eventId || 'FECHA_BANDAS';
+
+                // Normalizar horarios: la API puede devolver un objeto {TIPO: [...] } o un array.
+                let horarios = [];
+                if (Array.isArray(horariosRaw)) {
+                    horarios = horariosRaw;
+                } else if (horariosRaw && typeof horariosRaw === 'object') {
+                    horarios = horariosRaw[eventKey] || horariosRaw['FECHA_BANDAS'] || Object.values(horariosRaw).flat();
+                }
+
+                // Normalizar duraciones
+                let duraciones = [];
+                if (Array.isArray(duracionesRaw)) {
+                    duraciones = duracionesRaw;
+                } else if (duracionesRaw && typeof duracionesRaw === 'object') {
+                    duraciones = duracionesRaw[eventKey] || duracionesRaw['FECHA_BANDAS'] || Object.values(duracionesRaw).flat();
+                }
+
+                // Normalizar tarifas: API suele devolver array de objetos; filtramos por tipo
+                let tarifas = Array.isArray(tarifasRaw) ? tarifasRaw : [];
+                if (Array.isArray(tarifas)) {
+                    tarifas = tarifas.filter(t => (t.tipo || t.tipo_de_evento || t.tipoEvento) === eventKey || (t.tipo || t.tipo_de_evento || t.tipoEvento) === 'FECHA_BANDAS');
+                }
+
+                console.log('[solicitud_banda] normalized', { eventKey, horarios, duraciones, tarifas });
+
+                // Calcular días de la semana permitidos y fechas puntuales
+                const allowedWeekdays = new Set(); // 0 Domingo .. 6 Sabado
+                const allowedDates = new Set(); // 'YYYY-MM-DD'
+                const mapDay = (tipo) => {
+                    if (!tipo) return null;
+                    const t = String(tipo).toLowerCase().trim();
+                    if (t === 'todos' || t === 'all') return 'all';
+                    if (t === 'domingo' || t === 'dom') return 0;
+                    if (t === 'lunes' || t === 'lun') return 1;
+                    if (t === 'martes' || t === 'mar') return 2;
+                    if (t === 'miercoles' || t === 'mier' || t === 'miércoles') return 3;
+                    if (t === 'jueves' || t === 'jue') return 4;
+                    if (t === 'viernes' || t === 'vie') return 5;
+                    if (t === 'sabado' || t === 'sab') return 6;
+                    return null;
+                };
+
+                // Primero detectamos si hay días específicos configurados (lun,mart,...)
+                let hasSpecificDay = false;
+                horarios.forEach(h => {
+                    if (!h) return;
+                    const tipo = h.tipoDia || h.tipo_de_dia || h.tipo || h.tipoDia || h.tipoDeDia;
+                    const mapped = mapDay(tipo);
+                    if (typeof mapped === 'number') hasSpecificDay = true;
+                });
+
+                horarios.forEach(h => {
+                    if (!h) return;
+                    const tipo = h.tipoDia || h.tipo_de_dia || h.tipo || h.tipoDia || h.tipoDeDia;
+                    const fecha = h.fecha || h.date || h.day;
+                    const mapped = mapDay(tipo);
+                    if (mapped === 'all') {
+                        // Si hay días específicos, ignoramos 'Todos' para no habilitar toda la semana
+                        if (!hasSpecificDay) {
+                            for (let i = 0; i < 7; i++) allowedWeekdays.add(i);
+                        }
+                    } else if (typeof mapped === 'number') {
+                        allowedWeekdays.add(mapped);
+                    }
+                    if (fecha) {
+                        const d = String(fecha).trim();
+                        const maybe = d.match(/^\d{4}-\d{2}-\d{2}/) ? d.slice(0, 10) : null;
+                        if (maybe) allowedDates.add(maybe);
+                    }
+                });
+
+                console.log('[solicitud_banda] allowedWeekdays:', Array.from(allowedWeekdays).sort(), 'allowedDates:', Array.from(allowedDates));
+
+                // Excluir fechas ocupadas si la API devolvió alguna
+                if (Array.isArray(fechasOcupadas) && fechasOcupadas.length > 0) {
+                    fechasOcupadas.forEach(f => {
+                        const d = String(f).slice(0, 10);
+                        if (allowedDates.has(d)) {
+                            allowedDates.delete(d);
+                            console.log('[solicitud_banda] excluida fecha ocupada', d);
+                        }
+                    });
+                }
+
+                // Reconfigurar flatpickr para habilitar solo los días/fechas permitidos
+                try {
+                    // Si la configuración permite todos los días, no es necesario reconfigurar
+                    if (!(allowedWeekdays.size === 7)) {
+                        if (fechaPicker && typeof fechaPicker.destroy === 'function') { fechaPicker.destroy(); }
+                        fechaPicker = flatpickr('#fechaEvento', {
+                            locale: 'es',
+                            altInput: true,
+                            altFormat: 'j \\de F, Y',
+                            dateFormat: 'Y-m-d',
+                            minDate: 'today',
+                            enable: [
+                                function (date) {
+                                    const day = date.getDay();
+                                    const y = date.getFullYear();
+                                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                                    const d = String(date.getDate()).padStart(2, '0');
+                                    const formatted = `${y}-${m}-${d}`;
+                                    // Si la fecha está ocupada, no permitirla
+                                    if (occupiedDates.has(formatted)) return false;
+                                    // Si la fecha está ocupada en todas las horas posibles, no permitirla
+                                    const occupiedForDate = occupiedMap[formatted];
+                                    if (occupiedForDate) {
+                                        // Si aún no hemos calculado availableTimes, permitiremos y manejará más abajo
+                                        // aquí comprobamos si todas las horas configuradas están ocupadas
+                                        if (Array.isArray(horarios) && horarios.length > 0) {
+                                            // obtener lista de horas disponibles configuradas
+                                            const cfgTimes = horarios.map(hh => {
+                                                // normalizar igual que al poblar hours
+                                                let s = (hh && (hh.hora || hh.horaInicio || hh.horario)) || hh;
+                                                if (!s) return null;
+                                                s = String(s).replace(/\s*hs\.?$/i, '').trim();
+                                                const m = s.match(/^(\d{1,2})(?::(\d{2}))?$/);
+                                                if (m) {
+                                                    const hhnum = String(m[1]).padStart(2, '0');
+                                                    const mm = m[2] || '00';
+                                                    return hhnum + ':' + mm;
+                                                }
+                                                const m2 = s.match(/(\d{1,2}:\d{2})/);
+                                                if (m2) return m2[1];
+                                                return null;
+                                            }).filter(x => x);
+                                            // si todas las cfgTimes están en occupiedForDate, bloquear fecha
+                                            const allOccupied = cfgTimes.length > 0 && cfgTimes.every(t => occupiedForDate.has(t));
+                                            if (allOccupied) return false;
+                                        }
+                                    }
+                                    if (allowedDates.has(formatted)) return true;
+                                    return allowedWeekdays.has(day);
+                                }
+                            ]
+                        });
+                        console.log('[solicitud_banda] flatpickr reconfigurado con filtro de días');
+                    } else {
+                        console.log('[solicitud_banda] todos los días permitidos, no se reconfigura flatpickr');
+                    }
+                } catch (e) {
+                    console.warn('[solicitud_banda] error reconfigurando flatpickr', e);
+                }
+
+                // Poblar duraciones: intentar ordenar por horas numéricas cuando sea posible
+                durSel.innerHTML = '';
+                if (Array.isArray(duraciones) && duraciones.length > 0) {
+                    // Mapear a {raw, hours}
+                    const mappedDur = duraciones.map(d => {
+                        const raw = d;
+                        const s = (typeof d === 'string') ? d : (d.duracion || d.label || d.nombre || String(d));
+                        const m = String(s).match(/(\d+(?:[\.,]\d+)?)\s*h/i) || String(s).match(/(\d+)\s*hor/i) || String(s).match(/(\d+(?:[\.,]\d+)?)/);
+                        const hours = m ? parseFloat(m[1].replace(',', '.')) : null;
+                        return { raw: s, hours };
+                    });
+                    // Ordenar: primero por hours (si ambos tienen), luego lexicográfico
+                    mappedDur.sort((a, b) => {
+                        if (a.hours != null && b.hours != null) return a.hours - b.hours;
+                        if (a.hours != null) return -1;
+                        if (b.hours != null) return 1;
+                        return String(a.raw).localeCompare(String(b.raw));
+                    });
+                    mappedDur.forEach(d => {
+                        const opt = document.createElement('option'); opt.value = d.raw; opt.textContent = d.raw; durSel.appendChild(opt);
+                    });
+                    console.log('[solicitud_banda] duraciones pobladas (sorted)', mappedDur.map(d => d.raw));
+                } else {
+                    const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'No hay duraciones configuradas'; durSel.appendChild(opt);
+                    console.warn('[solicitud_banda] no hay duraciones para', eventKey, duracionesRaw);
+                }
+
+                // Poblar horarios: normalizar y ordenar
+                horaSel.innerHTML = '';
+                if (Array.isArray(horarios) && horarios.length > 0) {
+                    const normalizeHourString = (h) => {
+                        if (!h) return null;
+                        let s = (typeof h === 'string') ? h.trim() : (h.hora || h.horaInicio || h.horario || h.value || '');
+                        s = String(s).replace(/\s*hs\.?$/i, '').trim();
+                        const m = s.match(/^(\d{1,2})(?::(\d{2}))?$/);
+                        if (m) {
+                            const hh = String(m[1]).padStart(2, '0');
+                            const mm = m[2] || '00';
+                            return hh + ':' + mm;
+                        }
+                        // intentar extraer primera ocurrencia HH:MM
+                        const m2 = s.match(/(\d{1,2}:\d{2})/);
+                        if (m2) return m2[1];
+                        return s;
+                    };
+
+                    const mapped = horarios.map(h => {
+                        const raw = h;
+                        const timeStr = normalizeHourString(h && typeof h === 'object' ? (h.hora || h.horaInicio || h.horario || h.value) : h);
+                        return { raw, timeStr };
+                    }).filter(x => x.timeStr);
+                    mapped.sort((a, b) => a.timeStr.localeCompare(b.timeStr));
+                    mapped.forEach(x => {
+                        const display = x.timeStr + 'hs';
+                        const opt = document.createElement('option'); opt.value = x.timeStr; opt.textContent = display; horaSel.appendChild(opt);
+                    });
+                    console.log('[solicitud_banda] horarios poblados (normalized)', mapped.map(m => m.timeStr));
+                } else {
+                    const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'No hay horarios configurados'; horaSel.appendChild(opt);
+                    console.warn('[solicitud_banda] no hay horarios para', eventKey, horariosRaw);
+                }
+
+                const missing = !(Array.isArray(horarios) && horarios.length > 0) || !(Array.isArray(duraciones) && duraciones.length > 0) || !(Array.isArray(tarifas) && tarifas.length > 0);
+                console.log('[solicitud_banda] missing?', missing);
+                if (missing) {
+                    banner.style.display = 'block';
+                    submitBtn.disabled = true;
+                    console.warn('[solicitud_banda] banner mostrado por falta de configuración', { eventKey, horariosLength: horarios.length, duracionesLength: duraciones.length, tarifasLength: tarifas.length });
+                } else {
+                    banner.style.display = 'none';
+                    submitBtn.disabled = false;
+                    console.log('[solicitud_banda] configuración suficiente, formulario habilitado');
+                }
+
+                // Filtrado simple por fecha: si el horario tiene campo 'fecha' coincidente con la seleccionada
+                const fechaEl = document.getElementById('fechaEvento');
+                fechaEl && fechaEl.addEventListener('change', () => {
+                    const selected = fechaEl.value; // formato Y-m-d
+                    if (!selected) return;
+                    // Intentar filtrar si hay campo 'fecha' en los horarios
+                    const filtered = horarios.filter(h => {
+                        if (!h) return false;
+                        if (h.fecha) return String(h.fecha).startsWith(selected);
+                        if (h.dia) return String(h.dia).toLowerCase() === new Date(selected).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                        return true; // si no hay campo fecha, mantener
+                    });
+                    if (filtered.length > 0) {
+                        horaSel.innerHTML = '';
+                        // horas ocupadas para la fecha seleccionada (si las hubiera)
+                        const occupiedForDate = occupiedMap[selected] || new Set();
+                        let added = 0;
+                        filtered.forEach(h => {
+                            const rawHora = h.hora || h.horaInicio || h.horario || h.value || h.label || JSON.stringify(h);
+                            // normalizar a HH:MM para comparar con occupiedForDate
+                            let s = String(rawHora).replace(/\s*hs\.?$/i, '').trim();
+                            const m = s.match(/^(\d{1,2})(?::(\d{2}))?$/);
+                            let norm = null;
+                            if (m) {
+                                norm = String(m[1]).padStart(2, '0') + ':' + (m[2] || '00');
+                            } else {
+                                const m2 = s.match(/(\d{1,2}:\d{2})/);
+                                if (m2) norm = m2[1];
+                            }
+                            if (norm && occupiedForDate.has(norm)) {
+                                // esta hora está ocupada, omitimos
+                                return;
+                            }
+                            const opt = document.createElement('option'); opt.value = rawHora; opt.textContent = rawHora; horaSel.appendChild(opt);
+                            added++;
+                        });
+                        if (added === 0) {
+                            horaSel.innerHTML = '';
+                            const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'No hay horarios disponibles para esta fecha'; horaSel.appendChild(opt);
+                            // deshabilitar envío si no hay horas libres
+                            submitBtn.disabled = true;
+                        } else {
+                            // re-habilitar botón si la configuración general está OK
+                            submitBtn.disabled = missing;
+                        }
+                    }
+                });
+
+            } catch (e) {
+                console.error('Error cargando opciones de banda', e);
+                document.getElementById('band-banner').style.display = 'block';
+                document.getElementById('submitBtn').disabled = true;
+            }
+        }
+
+        // Ejecutar carga de opciones inmediatamente
+        loadBandOptions().catch(() => { });
+
+        document.getElementById('bandForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            document.getElementById('status').textContent = '';
+
+            // Validación cliente-side antes de enviar
+            const validation = validateBandForm();
+            if (!validation.ok) {
+                document.getElementById('status').textContent = ' ' + validation.message;
+                return;
+            }
+
+            btn.disabled = true; document.getElementById('status').textContent = ' Enviando...';
+
+            const payload = {
+                tipoEvento: 'FECHA_EN_VIVO',
+                cantidadPersonas: '',
+                duracionEvento: '',
+                fechaEvento: document.getElementById('fechaEvento').value || null,
+                horaInicio: document.getElementById('horaInicio').value || null,
+                precioBase: 0,
+                fingerprintId: fingerprintId || ''
+            };
+
+            try {
+                const res = await fetch('/api/solicitudes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!res.ok) throw res;
+                const data = await res.json();
+                const id = data.solicitudId;
+
+                // Actualizar la solicitud con detalles de banda (PUT) enviando campos estructurados
+                const bandPayload = {
+                    tipoEvento: 'FECHA_EN_VIVO',
+                    cantidadPersonas: '',
+                    duracionEvento: '',
+                    fechaEvento: payload.fechaEvento,
+                    horaInicio: payload.horaInicio,
+                    precioBase: 0,
+                    // Mantener el campo texto para compatibilidad con el flujo existente
+                    detallesAdicionales: `Nombre banda: ${document.getElementById('nombre_banda').value}\nLink: ${document.getElementById('link_musica').value || '-'}\nPropuesta:\n${document.getElementById('propuesta').value || '-'}${eventId ? '\nReferencia evento ID: ' + eventId : ''}`,
+                    // Campos estructurados que guardaremos en `bandas_solicitudes`
+                    nombre_banda: document.getElementById('nombre_banda').value || null,
+                    // contacto_email ya no se recoge aquí; se solicita en contacto.html
+                    link_musica: document.getElementById('link_musica').value || null,
+                    propuesta: document.getElementById('propuesta').value || null,
+                    event_id: eventId || null
+                };
+
+                const putRes = await fetch(`/api/solicitudes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bandPayload) });
+                if (!putRes.ok) {
+                    const err = await putRes.json().catch(() => ({}));
+                    document.getElementById('status').textContent = ' Error: ' + (err.error || 'Error al guardar los detalles.');
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Redirigir a contacto para completar datos (misma UX que flow existente)
+                window.location.href = `contacto.html?solicitudId=${id}`;
+            } catch (err) {
+                console.error('Error al crear solicitud de banda', err);
+                document.getElementById('status').textContent = ' Error al enviar. Intenta de nuevo.';
+                btn.disabled = false;
+            }
+        });
+
+        // Botón volver: intenta history.back(), si no hay historial, redirige a la agenda de bandas
+        document.getElementById('backBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (document.referrer && document.referrer.length > 0) {
+                window.history.back();
+                // en algunos contextos history.back() puede no funcionar como se espera; dejamos también un fallback
+                setTimeout(() => { if (window.location.pathname.endsWith('/solicitud_banda.html') || window.location.pathname.endsWith('solicitud_banda.html')) { window.location.href = 'agenda_de_bandas.html'; } }, 300);
+            } else {
+                window.location.href = 'agenda_de_bandas.html';
+            }
+        });
+    </script>
+</body>
+
+</html>

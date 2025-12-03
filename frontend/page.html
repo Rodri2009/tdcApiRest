@@ -372,14 +372,15 @@
             <div class="flex justify-between items-center h-16">
                 <a href="index.html" class="flex items-center space-x-3">
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">Volver al Inicio</span>
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
+                        Inicio</span>
                 </a>
             </div>
         </div>
     </header>
 
     <div class="container" id="mainContainer">
-        <h2>Generador de presupuesto</h2>
+        <h2 id="pageTitle">Generador de presupuesto</h2>
 
         <input type="hidden" id="precioBase" name="precioBase">
         <div class="column-layout">
@@ -444,12 +445,21 @@
 
     <script src="/formLogic.js"></script>
     <script>
+        // Cambiar el título de la página si se abre con ?tipo=BANDA (u otras variantes)
         document.addEventListener('DOMContentLoaded', () => {
-            // Le decimos a nuestra biblioteca compartida que se inicie en modo "creación".
-            // La función `initializeApp` se encuentra en `formLogic.js`.
-            initializeApp({
-                mode: 'create'
-            });
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const tipo = params.get('tipo');
+                if (tipo && typeof tipo === 'string' && tipo.trim().toUpperCase() === 'BANDA') {
+                    const titleEl = document.getElementById('pageTitle');
+                    if (titleEl) titleEl.textContent = 'Solicitud para tocar en el templo';
+                }
+            } catch (e) {
+                console.warn('No se pudo evaluar parámetro tipo para cambiar título:', e);
+            }
+
+            // Iniciar la app en modo creación
+            initializeApp({ mode: 'create' });
         });
     </script>
 </body>

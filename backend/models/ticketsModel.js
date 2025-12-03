@@ -42,7 +42,9 @@ const getEventosActivos = async () => {
             e.id, 
             e.nombre_banda, 
             e.fecha_hora, 
-            e.precio_base, 
+            e.precio_base,
+            e.precio_anticipada,
+            e.precio_puerta,
             e.aforo_maximo, 
             e.activo, 
             e.descripcion,
@@ -52,7 +54,7 @@ const getEventosActivos = async () => {
         LEFT JOIN tickets t ON e.id = t.evento_id AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
         WHERE e.activo = TRUE 
         GROUP BY e.id
-        HAVING tickets_disponibles > 0 OR e.precio_base = 0.00
+        HAVING tickets_disponibles > 0 OR e.precio_base = 0.00 OR e.precio_anticipada = 0.00 OR e.precio_puerta = 0.00
         ORDER BY e.fecha_hora ASC;
     `;
     const rows = await pool.query(query);
@@ -68,7 +70,9 @@ const getEventoById = async (id) => {
             e.id, 
             e.nombre_banda, 
             e.fecha_hora, 
-            e.precio_base, 
+            e.precio_base,
+            e.precio_anticipada,
+            e.precio_puerta,
             e.aforo_maximo, 
             e.descripcion,
             (e.aforo_maximo - COUNT(t.evento_id)) as tickets_disponibles
@@ -101,18 +105,19 @@ const checkCupon = async (codigo) => {
  * Inicia el proceso de checkout creando un ticket en estado PENDIENTE_PAGO.
  * Retorna el ID único del ticket.
  */
-const createPendingTicket = async (eventoId, email, nombre, cuponId, precioPagado) => {
+const createPendingTicket = async (eventoId, email, nombre, cuponId, precioPagado, tipoPrecio = 'ANTICIPADA') => {
     const getUuid = await loadUuid();
     if (!getUuid) {
         throw new Error("Dependencia 'uuid' no está disponible. Instala 'uuid' en dependencias.");
     }
     const ticketId = getUuid();
+
     const query = `
-        INSERT INTO tickets (id_unico, evento_id, email_comprador, nombre_comprador, cupon_id, precio_pagado, estado)
-        VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE_PAGO');
+        INSERT INTO tickets (id_unico, evento_id, email_comprador, nombre_comprador, cupon_id, precio_pagado, tipo_precio, estado)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE_PAGO');
     `;
 
-    await pool.query(query, [ticketId, eventoId, email, nombre, cuponId, precioPagado]);
+    await pool.query(query, [ticketId, eventoId, email, nombre, cuponId, precioPagado, tipoPrecio]);
 
     return ticketId;
 };

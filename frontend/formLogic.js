@@ -51,6 +51,14 @@ const App = {
             tipoEventoDescripcionDiv: document.getElementById('tipoEventoDescripcion'),
         };
 
+        // Campos específicos de banda (edición)
+        this.elements.nombreBandaInput = document.getElementById('nombreBandaInput');
+        this.elements.contactoEmailInput = document.getElementById('contactoEmailInput');
+        this.elements.linkMusicaInput = document.getElementById('linkMusicaInput');
+        this.elements.propuestaInput = document.getElementById('propuestaInput');
+        this.elements.precioAnticipadaInput = document.getElementById('precioAnticipadaInput');
+        this.elements.precioPuertaInput = document.getElementById('precioPuertaInput');
+
         // Elementos condicionales
         if (this.config.mode === 'create') {
             console.log("   -> Enlazando elementos para el modo de creación.");
@@ -63,6 +71,7 @@ const App = {
             this.elements.cancelButton = document.getElementById('cancel-button');
             this.elements.editFieldset = document.getElementById('edit-fieldset');
             this.elements.detallesAdicionalesTextarea = document.getElementById('detallesAdicionales');
+            // band fields already bound above (may be null in non-band pages)
         }
     },
 
@@ -75,7 +84,18 @@ const App = {
         if (this.config.mode === 'create') {
             this.elements.btnAdicionales.addEventListener('click', this.validarYEnviar.bind(this, 'adicionales'));
             this.elements.btnContacto.addEventListener('click', this.validarYEnviar.bind(this, 'contacto'));
-            this.elements.resetTipoEventoBtn.onclick = () => { window.location.href = '/'; };
+            // Nuevo comportamiento: limpiar la selección de tipo sin navegar fuera de la página.
+            if (this.elements.resetTipoEventoBtn) {
+                this.elements.resetTipoEventoBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const selected = document.querySelector('input[name="tipoEvento"]:checked');
+                    if (selected) selected.checked = false;
+                    document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
+                    try { this.elements.resetTipoEventoBtn.style.display = 'none'; } catch (err) { }
+                    try { this.actualizarTodo(); } catch (err) { console.warn('actualizarTodo fallo tras reset:', err); }
+                    try { this.elements.tipoEventoContainer && this.elements.tipoEventoContainer.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { }
+                });
+            }
         } else { // modo 'edit'
             this.elements.saveButton.addEventListener('click', this.guardarCambios.bind(this));
             this.elements.cancelButton.addEventListener('click', () => { window.location.href = '/admin_solicitudes.html'; });
@@ -123,6 +143,11 @@ const App = {
             fechasOcupadas: '/api/opciones/fechas-ocupadas',
             config: '/api/opciones/config'
         };
+
+        // Nota: no añadimos aquí filtros al endpoint por `tipo` porque el parámetro
+        // `tipo` puede referirse tanto a una categoría (BANDA) como a un id concreto
+        // (por ejemplo 'CON_SERVICIO_DE_MESA'). Hacemos el filtrado cliente-side
+        // en `manejarParametroURL()` para mantener compatibilidad con el proyecto original.
 
         console.log("Endpoints a consultar:", endpoints);
 
@@ -188,6 +213,7 @@ const App = {
 
     construirUI: function (fechaExcepcion = null) {
         console.log("Construyendo UI. Excepción de fecha:", fechaExcepcion);
+        console.log("fechasOcupadasSeguro (muestra 10):", (this.fechasOcupadasSeguro || []).slice(0, 10));
         this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento);
         this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => {
             // Remover la clase de error del contenedor principal
@@ -225,6 +251,8 @@ const App = {
             // MODO CREACIÓN
             console.log("Modo Creación: Construyendo UI limpia.");
             this.construirUI(); // Construimos la UI sin excepción de fecha
+            // Procesar si se pasó un parámetro `tipo` en la URL (ej: page.html?tipo=BANDA)
+            try { this.manejarParametroURL(); } catch (e) { console.warn('manejarParametroURL falló:', e); }
             this.initFingerprint(); // Buscamos sesión por fingerprint
         }
     },
@@ -275,7 +303,16 @@ const App = {
         console.group("--- INICIO populateForm (v-override-final) ---");
         console.log("Datos de la solicitud recibidos:", solicitud);
 
-        const tipo = solicitud.tipoEvento || solicitud.tipo_de_evento;
+        if (!solicitud) {
+            console.warn('populateForm: solicitud undefined o null. Abortando populate.');
+            console.groupEnd();
+            return;
+        }
+
+        let tipo = solicitud.tipoEvento || solicitud.tipo_de_evento;
+        // Normalizar tipo a string si es number
+        if (typeof tipo === 'number') tipo = String(tipo);
+        if (tipo && typeof tipo === 'string') tipo = tipo.trim();
         const cantidad = solicitud.cantidadPersonas || solicitud.cantidad_de_personas;
         const duracion = solicitud.duracionEvento || solicitud.duracion;
         const fecha = solicitud.fechaEvento || solicitud.fecha_evento;
@@ -283,21 +320,131 @@ const App = {
         const detalles = solicitud.descripcion || '';
 
         // 1. Establecer el tipo
-        const radio = document.querySelector(`input[name="tipoEvento"][value="${tipo}"]`);
-        if (radio) radio.checked = true;
+        console.log('populate: tipo recibido (normalizado):', tipo, 'nombreParaMostrar:', solicitud.nombreParaMostrar);
+        // Intentamos mapear el tipo recibido al id que usa la UI (this.tiposDeEvento)
+        let uiTipoId = null;
+        if (tipo) {
+            // Buscar coincidencia directa por id (exacta)
+            const direct = this.tiposDeEvento.find(t => String(t.id) === String(tipo) || String(t.id).toLowerCase() === String(tipo).toLowerCase());
+            if (direct) uiTipoId = String(direct.id);
+
+            // Normalizaciones y variantes para intentar coincidir
+            const tipoNorm = String(tipo).trim().toLowerCase();
+            const tipoNormSpaces = tipoNorm.replace(/[_-]+/g, ' ');
+
+            // Buscar por nombreParaMostrar exacto
+            if (!uiTipoId && solicitud.nombreParaMostrar) {
+                const byName = this.tiposDeEvento.find(t => (t.nombreParaMostrar || '').trim().toLowerCase() === String(solicitud.nombreParaMostrar).trim().toLowerCase());
+                if (byName) uiTipoId = String(byName.id);
+            }
+
+            // Buscar por inclusión: nombreParaMostrar contiene tipo o tipo contains nombreParaMostrar
+            if (!uiTipoId) {
+                const incl = this.tiposDeEvento.find(t => {
+                    const nm = (t.nombreParaMostrar || '').toLowerCase();
+                    if (!nm) return false;
+                    return nm.includes(tipoNorm) || nm.includes(tipoNormSpaces) || tipoNorm.includes(nm);
+                });
+                if (incl) uiTipoId = String(incl.id);
+            }
+
+            // Intentar coincidencia por token (palabras clave)
+            if (!uiTipoId) {
+                const tokens = tipoNorm.split(/\s+/).filter(Boolean);
+                for (const tkn of tokens) {
+                    const found = this.tiposDeEvento.find(t => (t.nombreParaMostrar || '').toLowerCase().includes(tkn));
+                    if (found) { uiTipoId = String(found.id); break; }
+                }
+            }
+
+            // Heurística por palabras clave cuando tipo es genérico como 'FECHA_EN_VIVO' o 'BANDA'
+            if (!uiTipoId) {
+                if (tipoNorm.includes('fecha') || tipoNorm.includes('banda') || tipoNorm.includes('en vivo') || tipoNorm.includes('bandas')) {
+                    const prefer = this.tiposDeEvento.find(t => {
+                        const nm = (t.nombreParaMostrar || '').toLowerCase();
+                        return nm.includes('banda') || nm.includes('fecha') || nm.includes('en vivo');
+                    });
+                    if (prefer) uiTipoId = String(prefer.id);
+                }
+            }
+        }
+
+        // Preferir seleccionar un radio que coincida con la clave que usaremos para poblar opciones
+        const resolvedTipoForOptions = this.resolveTipoKey(uiTipoId || tipo) || uiTipoId || tipo;
+        let radio = null;
+        // 1) intentar con resolvedTipoForOptions
+        if (resolvedTipoForOptions) {
+            radio = document.querySelector(`input[name="tipoEvento"][value="${resolvedTipoForOptions}"]`);
+            if (radio) console.log('populate: seleccionado por resolvedTipoForOptions:', resolvedTipoForOptions);
+        }
+        // 2) intentar con el id mapeado (uiTipoId)
+        if (!radio && uiTipoId) {
+            radio = document.querySelector(`input[name="tipoEvento"][value="${uiTipoId}"]`);
+            if (radio) console.log('populate: mapeado tipo -> uiTipoId seleccionado:', uiTipoId);
+        }
+        // 3) intentar con el tipo original
+        if (!radio && tipo) radio = document.querySelector(`input[name="tipoEvento"][value="${tipo}"]`);
+        if (!radio && solicitud.nombreParaMostrar) {
+            // Intentar emparejar por texto de label (nombreParaMostrar)
+            const labelText = String(solicitud.nombreParaMostrar).trim().toLowerCase();
+            const options = Array.from(document.querySelectorAll('.radio-option'));
+            for (const opt of options) {
+                const label = opt.querySelector('label');
+                const input = opt.querySelector('input[name="tipoEvento"]');
+                if (label && input && label.textContent.trim().toLowerCase().includes(labelText)) {
+                    radio = input; break;
+                }
+            }
+        }
+        if (!radio && tipo) {
+            // Buscar por inclusión de tipo en la etiqueta (por si tipo es una clave simbólica)
+            const options = Array.from(document.querySelectorAll('.radio-option'));
+            for (const opt of options) {
+                const label = opt.querySelector('label');
+                const input = opt.querySelector('input[name="tipoEvento"]');
+                if (label && input && label.textContent && tipo && label.textContent.toLowerCase().includes(tipo.toLowerCase())) {
+                    radio = input; break;
+                }
+            }
+        }
+        if (radio) {
+            radio.checked = true;
+            console.log('populate: radio seleccionado con value=', radio.value);
+        } else {
+            console.warn('populate: no se encontró un radio coincidente para tipo:', tipo, 'uiTipoId:', uiTipoId);
+        }
 
         // 2. Sincronizar el calendario (solo visual)
         if (fecha && this.calendario) {
             const fechaObj = new Date(fecha + 'T00:00:00');
+            console.log("populate: intentando setDate en calendario con:", fechaObj.toISOString().slice(0, 10));
             this.calendario.setDate(fechaObj, false);
+            // Comprobamos si la fecha quedó seleccionada
+            if (this.calendario.selectedDates && this.calendario.selectedDates.length > 0) {
+                console.log('populate: fecha seleccionada en calendario OK:', this.calendario.selectedDates[0]);
+            } else {
+                console.warn('populate: la fecha NO quedó seleccionada en el calendario. Intentando forzar...');
+                try {
+                    // Intento alternativo: usar setDate con string
+                    this.calendario.setDate(fecha, false);
+                    if (this.calendario.selectedDates && this.calendario.selectedDates.length > 0) {
+                        console.log('populate: forzado setDate con string funcionó:', this.calendario.selectedDates[0]);
+                    } else {
+                        console.warn('populate: forzado setDate tampoco funcionó. Fecha puede estar deshabilitada por reglas.');
+                    }
+                } catch (err) {
+                    console.error('populate: error intentando forzar setDate:', err);
+                }
+            }
             //this.calendario.setDate(fecha, false);
         }
 
         // 3. Llamar a actualizarTodo pasándole TODOS los datos que conocemos.
         // Esto llenará los selects y calculará el precio inicial.
-        console.log("populate: Ejecutando actualización con TODOS los datos de override...");
+        // Usar la variable ya resuelta arriba `resolvedTipoForOptions` (si existe)
+        console.log("populate: Ejecutando actualización con TODOS los datos de override... (resolvedTipoForOptions)", resolvedTipoForOptions);
         this.actualizarTodo('populate-final', {
-            overrideTipo: tipo,
+            overrideTipo: resolvedTipoForOptions,
             overrideCantidad: cantidad,
             overrideDuracion: duracion,
             overrideFechaStr: fecha,
@@ -308,6 +455,18 @@ const App = {
         if (this.elements.detallesAdicionalesTextarea) {
             this.elements.detallesAdicionalesTextarea.value = detalles;
         }
+
+        // 5. Rellenar datos de banda si existen
+        try {
+            if (solicitud.nombreBanda || solicitud.nombre_banda || solicitud.nombreParaMostrar) {
+                if (this.elements.nombreBandaInput) this.elements.nombreBandaInput.value = solicitud.nombreBanda || solicitud.nombre_banda || solicitud.nombreParaMostrar || '';
+            }
+            if (this.elements.contactoEmailInput) this.elements.contactoEmailInput.value = solicitud.bandaContactoEmail || solicitud.contacto_email || '';
+            if (this.elements.linkMusicaInput) this.elements.linkMusicaInput.value = solicitud.bandaLinkMusica || solicitud.link_musica || '';
+            if (this.elements.propuestaInput) this.elements.propuestaInput.value = solicitud.bandaPropuesta || solicitud.propuesta || '';
+            if (this.elements.precioAnticipadaInput) this.elements.precioAnticipadaInput.value = solicitud.bandaPrecioAnticipada || solicitud.precio_anticipada || '';
+            if (this.elements.precioPuertaInput) this.elements.precioPuertaInput.value = solicitud.bandaPrecioPuerta || solicitud.precio_puerta || '';
+        } catch (err) { console.warn('populateForm: fallo al setear campos de banda:', err); }
 
         console.groupEnd();
     },
@@ -408,22 +567,60 @@ const App = {
         console.log("Fecha a exceptuar de la deshabilitación:", fechaExcepcion); const fechasADeshabilitar = fechaExcepcion
             ? fechasOcupadas.filter(fecha => fecha !== fechaExcepcion)
             : fechasOcupadas;
-
         try {
+            console.log("fechasADeshabilitar (count):", (fechasADeshabilitar || []).length, "muestra:", (fechasADeshabilitar || []).slice(0, 20));
+            // Calcular minDate: por defecto 'today', pero si estamos en modo edición
+            // y la fechaExcepcion es anterior a hoy, permitimos esa fecha ajustando minDate
+            let minDateVal = 'today';
+            try {
+                if (fechaExcepcion) {
+                    const excDate = new Date(fechaExcepcion + 'T00:00:00');
+                    const today = new Date();
+                    // Normalizar ambos a medianoche para comparar solo la fecha
+                    const excNorm = new Date(Date.UTC(excDate.getFullYear(), excDate.getMonth(), excDate.getDate()));
+                    const todayNorm = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+                    if (excNorm < todayNorm) {
+                        minDateVal = fechaExcepcion; // permitir la fecha de excepción pasada
+                    }
+                }
+            } catch (err) {
+                console.warn('Error calculando minDate para calendario:', err);
+            }
+            console.log('[calendario] minDate decidido:', minDateVal);
             const config = {
                 locale: "es",
                 altInput: true,
                 altFormat: "j \\de F, Y",
                 dateFormat: "Y-m-d",
-                minDate: "today",
+                minDate: minDateVal,
                 disable: [
                     (date) => {
-                        const esFinDeSemana = date.getDay() === 0 || date.getDay() === 6;
                         const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        const isException = fechaExcepcion && fechaStr === fechaExcepcion;
+                        const esFinDeSemana = date.getDay() === 0 || date.getDay() === 6;
                         const esFeriado = feriados.includes(fechaStr);
-                        return !(esFinDeSemana || esFeriado);
-                    },
-                    ...(fechasADeshabilitar || [])
+                        const inFechasADeshabilitar = Array.isArray(fechasADeshabilitar) && fechasADeshabilitar.includes(fechaStr);
+
+                        // Log detallado sólo para la fecha de excepción o si la fecha figura en ocupadas
+                        if (isException || inFechasADeshabilitar) {
+                            console.debug('[calendario] check ->', { fechaStr, isException, esFinDeSemana, esFeriado, inFechasADeshabilitar });
+                        }
+
+                        if (isException) {
+                            console.debug('[calendario] fecha excepción encontrada, permitiendo:', fechaStr);
+                            return false;
+                        }
+
+                        if (!(esFinDeSemana || esFeriado)) {
+                            return true;
+                        }
+
+                        if (inFechasADeshabilitar) {
+                            return true;
+                        }
+
+                        return false;
+                    }
                 ],
                 onChange: (selectedDates, dateStr, instance) => {
                     if (dateStr && instance.altInput) {
@@ -467,7 +664,17 @@ const App = {
         const fechaStr = overrides.overrideFechaStr || this.elements.fechaEventoInput.value;
         const cantidad = overrides.overrideCantidad || this.elements.cantidadPersonasSelect.value;
         const duracion = overrides.overrideDuracion || this.elements.duracionEventoSelect.value;
-        const hora = overrides.overrideHora || this.elements.horaInicioSelect.value;
+        let hora = overrides.overrideHora || this.elements.horaInicioSelect.value;
+
+        // LOG: información adicional para depuración de por qué no se seleccionan opciones
+        console.log('actualizarTodo: tipoId, fechaStr, cantidad, duracion, hora =>', tipoId, fechaStr, cantidad, duracion, hora);
+        try {
+            console.log('actualizarTodo: opcionesDuraciones keys:', Object.keys(this.opcionesDuraciones || {}));
+            console.log('actualizarTodo: opcionesCantidades keys:', Object.keys(this.opcionesCantidades || {}));
+            console.log('actualizarTodo: opcionesHoras keys:', Object.keys(this.opcionesHoras || {}));
+        } catch (err) {
+            console.warn('actualizarTodo: error mostrando keys de opciones', err);
+        }
         const fechaSeleccionada = fechaStr ? new Date(fechaStr + 'T00:00:00') : null;
 
         console.log(tipoId, fechaStr, cantidad, duracion, hora, fechaSeleccionada);
@@ -478,13 +685,16 @@ const App = {
         //      duracionEventoSelect.value = 'Seleccione duración...'
         //      horaInicioSelect.value = 'Seleccione duración...'
 
+        // Resolver la clave usable para opciones (duraciones/horas/cantidades)
+        const resolvedTipoKey = this.resolveTipoKey(tipoId) || tipoId;
+
         // 1. Actualizar Descripción
         this.elements.tipoEventoDescripcionDiv.innerHTML = tipoId ? this.descripcionesTipos[tipoId] || 'Sin descripción.' : 'Seleccione un tipo de evento.';
 
         // 2. Poblar selects de Cantidad y Duración
         if (tipoId) {
-            this.llenarSelect(this.elements.cantidadPersonasSelect, this.opcionesCantidades[tipoId] || [], 'Seleccione cantidad...');
-            this.llenarSelect(this.elements.duracionEventoSelect, this.opcionesDuraciones[tipoId] || [], 'Seleccione duración...');
+            this.llenarSelect(this.elements.cantidadPersonasSelect, this.opcionesCantidades[resolvedTipoKey] || [], 'Seleccione cantidad...');
+            this.llenarSelect(this.elements.duracionEventoSelect, this.opcionesDuraciones[resolvedTipoKey] || [], 'Seleccione duración...');
         } else {
             this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
             this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
@@ -500,11 +710,40 @@ const App = {
             const esFeriado = this.feriadosGlobal.includes(fechaStr);
             let tipoDeDia = (diaDeLaSemana === 6 && !esFeriado) ? 'sabado' : 'domingo/feriado';
 
-            const todosLosHorariosParaTipo = this.opcionesHoras[tipoId] || [];
+            // usar resolvedTipoKey para buscar horarios (fallback si la clave no existe)
+            const todosLosHorariosParaTipo = this.opcionesHoras[resolvedTipoKey] || this.opcionesHoras[tipoId] || [];
             const horariosFiltrados = todosLosHorariosParaTipo.filter(h => h.tipoDia === 'todos' || h.tipoDia === tipoDeDia).map(h => h.hora).sort();
 
             this.llenarSelect(this.elements.horaInicioSelect, horariosFiltrados, 'Seleccione hora...');
-            this.elements.horaInicioSelect.value = hora; // Restauramos el valor de la hora
+            // Restauramos el valor de la hora, intentando variantes (con/sin 'hs') si no hay match exacto
+            const setHoraIfPossible = (val) => {
+                if (!val) return false;
+                const opts = Array.from(this.elements.horaInicioSelect.options).map(o => o.value);
+                if (opts.includes(val)) {
+                    this.elements.horaInicioSelect.value = val; return true;
+                }
+                // variantes comunes: '21:00' vs '21:00hs' vs '21:00 hs'
+                const candidates = [];
+                const normalized = String(val).trim();
+                if (!normalized.endsWith('hs')) candidates.push(normalized + 'hs');
+                if (normalized.endsWith('hs')) candidates.push(normalized.replace(/\s*hs\s*$/i, ''));
+                candidates.push(normalized.replace(/\s+/g, ''));
+                for (const c of candidates) {
+                    if (opts.includes(c)) { this.elements.horaInicioSelect.value = c; return true; }
+                }
+                return false;
+            };
+
+            const horaSet = setHoraIfPossible(hora);
+            if (!horaSet && hora) {
+                console.warn('actualizarTodo: no se pudo seleccionar la hora exacta:', hora, ' intentando normalizar...');
+                // intentar extraer hora numérica si viene con texto
+                const m = String(hora).match(/(\d{1,2}:\d{2})/);
+                if (m) {
+                    const ok = setHoraIfPossible(m[1]);
+                    if (ok) console.log('actualizarTodo: hora seleccionada tras normalizar a', m[1]);
+                }
+            }
         } else {
             this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo y fecha');
         }
@@ -615,6 +854,37 @@ const App = {
         options.forEach(opt => { select.innerHTML += `<option value="${opt}">${opt}</option>`; });
     },
 
+    // Resolver una clave usable por las estructuras de opciones (duraciones/horas/cantidades)
+    resolveTipoKey: function (preferred) {
+        if (!preferred) return null;
+        const pref = String(preferred).trim();
+        if (this.opcionesDuraciones && Object.prototype.hasOwnProperty.call(this.opcionesDuraciones, pref)) return pref;
+        if (this.opcionesHoras && Object.prototype.hasOwnProperty.call(this.opcionesHoras, pref)) return pref;
+        if (this.opcionesCantidades && Object.prototype.hasOwnProperty.call(this.opcionesCantidades, pref)) return pref;
+
+        const keys = new Set([...(Object.keys(this.opcionesDuraciones || {})), ...(Object.keys(this.opcionesHoras || {})), ...(Object.keys(this.opcionesCantidades || {}))]);
+        const prefNorm = pref.toLowerCase().replace(/[_-]+/g, ' ');
+
+        // 1) exact match normalized
+        for (const k of keys) {
+            if (k.toLowerCase() === prefNorm || k.toLowerCase() === pref.toLowerCase()) return k;
+        }
+        // 2) inclusion by token
+        const tokens = prefNorm.split(/\s+/).filter(Boolean);
+        for (const token of tokens) {
+            for (const k of keys) {
+                if (k.toLowerCase().includes(token)) return k;
+            }
+        }
+        // 3) fallback heuristics for 'banda'/'fecha'
+        if (prefNorm.includes('banda') || prefNorm.includes('fecha') || prefNorm.includes('en vivo') || prefNorm.includes('bandas')) {
+            for (const k of keys) {
+                if (k.toLowerCase().includes('band') || k.toLowerCase().includes('fecha')) return k;
+            }
+        }
+        return null;
+    },
+
     llenarRadioButtons: function (container, name, options) {
         if (!container) return;
         console.log("Datos recibidos por llenarRadioButtons:", options);
@@ -624,12 +894,13 @@ const App = {
         options.forEach(opt => {
             // ¡ESTE ES EL CAMBIO CLAVE!
             // Aceptamos 'opt.id' o 'opt.id_evento' para ser más robustos.
-            const optionId = opt.id || opt.id_evento;
+            const rawId = opt.id || opt.id_evento;
+            const optionId = (typeof rawId === 'number' || typeof rawId === 'string') ? String(rawId) : null;
             const optionName = opt.nombreParaMostrar || opt.nombreparamostrar;
 
             if (optionId) {
                 const id = `radio_${optionId.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
-                container.innerHTML += `<div class="radio-option"><input type="radio" id="${id}" name="${name}" value="${optionId}"><label for="${id}">${optionName}</label></div>`;
+                container.innerHTML += `<div class="radio-option"><input type="radio" id="${id}" name="${name}" value="${optionId}"><label for="${id}">${optionName || optionId}</label></div>`;
             } else {
                 console.warn("Se encontró un objeto inválido sin ID en el array de opciones:", opt);
             }
@@ -652,13 +923,47 @@ const App = {
         const params = new URLSearchParams(window.location.search);
         const tipoParam = params.get('tipo');
         if (!tipoParam) return;
-        const radio = document.querySelector(`input[name="tipoEvento"][value="${tipoParam.toUpperCase()}"]`);
+        // Intentamos varios métodos para seleccionar el radio: por value exacto, por value uppercase,
+        // o buscando la etiqueta que coincida con el texto (ej: 'BANDA'). Esto hace la URL más tolerante
+        // frente a IDs numéricos o cambios en la API.
+        let radio = document.querySelector(`input[name="tipoEvento"][value="${tipoParam}"]`)
+            || document.querySelector(`input[name="tipoEvento"][value="${tipoParam.toUpperCase()}"]`);
+
+        if (!radio) {
+            // Buscar por etiqueta textual dentro de .radio-option
+            const opciones = Array.from(document.querySelectorAll('.radio-option'));
+            for (const opt of opciones) {
+                const label = opt.querySelector('label');
+                if (label && label.textContent && label.textContent.trim().toLowerCase().includes(tipoParam.toLowerCase())) {
+                    radio = opt.querySelector('input[name="tipoEvento"]');
+                    break;
+                }
+            }
+        }
+
         if (!radio) return;
         radio.checked = true;
         document.querySelectorAll('.radio-option').forEach(optionDiv => {
             if (optionDiv.querySelector('input') !== radio) { optionDiv.style.display = 'none'; }
         });
-        this.elements.resetTipoEventoBtn.style.display = 'inline-block';
+        if (this.elements.resetTipoEventoBtn) {
+            if (tipoParam && typeof tipoParam === 'string' && tipoParam.trim().toUpperCase() === 'BANDA') {
+                // Para solicitudes de banda no mostramos el botón
+                this.elements.resetTipoEventoBtn.style.display = 'none';
+            } else {
+                this.elements.resetTipoEventoBtn.style.display = 'inline-block';
+                // Ajustamos el texto para que sea claro: Ver todos los tipos de evento
+                try { this.elements.resetTipoEventoBtn.textContent = 'Ver todos los tipos de evento'; } catch (e) { }
+            }
+        }
+
+        // Si viene un nombre de banda en la URL mostramos una referencia en la descripción
+        const nombreBanda = params.get('nombre_banda');
+        if (nombreBanda && this.elements.tipoEventoDescripcionDiv) {
+            const current = this.elements.tipoEventoDescripcionDiv.innerHTML || '';
+            this.elements.tipoEventoDescripcionDiv.innerHTML = current + `<p style="margin-top:8px; font-weight:600;">Referencia: ${decodeURIComponent(nombreBanda)}</p>`;
+        }
+
         this.actualizarTodo();
     },
 
@@ -682,6 +987,14 @@ const App = {
             // ¡IMPORTANTE! También enviamos los detalles adicionales
             detallesAdicionales: this.elements.detallesAdicionalesTextarea ? this.elements.detallesAdicionalesTextarea.value : ''
         };
+
+        // Si hay campos de banda en el formulario, los añadimos al body
+        if (this.elements.nombreBandaInput) bodyData.nombre_banda = this.elements.nombreBandaInput.value;
+        if (this.elements.contactoEmailInput) bodyData.contacto_email = this.elements.contactoEmailInput.value;
+        if (this.elements.linkMusicaInput) bodyData.link_musica = this.elements.linkMusicaInput.value;
+        if (this.elements.propuestaInput) bodyData.propuesta = this.elements.propuestaInput.value;
+        if (this.elements.precioAnticipadaInput) bodyData.precio_anticipada = this.elements.precioAnticipadaInput.value;
+        if (this.elements.precioPuertaInput) bodyData.precio_puerta = this.elements.precioPuertaInput.value;
 
         console.log("Guardando cambios. Datos a enviar:", bodyData);
 

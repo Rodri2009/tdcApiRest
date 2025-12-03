@@ -7,7 +7,10 @@ const {
     getDatosAsignacion,
     guardarAsignaciones,
     getOrdenDeTrabajo,
-    getAllTiposDeEvento
+    getAllTiposDeEvento,
+    actualizarEvento,
+    cancelarEvento,
+    eliminarEvento
 } = require('../controllers/adminController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -24,6 +27,10 @@ router.delete('/solicitudes/:id', eliminarSolicitud);
 router.get('/asignacion-data', getDatosAsignacion);
 router.post('/solicitudes/:id/asignaciones', guardarAsignaciones);
 router.get('/orden-trabajo/:id', getOrdenDeTrabajo);
+// Rutas para gestionar eventos desde admin
+router.put('/eventos/:id', requireAdmin, (req, res, next) => next(), (req, res) => actualizarEvento(req, res));
+router.patch('/eventos/:id/cancel', requireAdmin, (req, res, next) => next(), (req, res) => cancelarEvento(req, res));
+router.delete('/eventos/:id', (req, res) => eliminarEvento(req, res));
 router.get('/tipos-evento/all', getAllTiposDeEvento);
 
 // DEBUG: Endpoint para verificar asignaciones guardadas

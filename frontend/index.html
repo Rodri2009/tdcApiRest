@@ -72,7 +72,7 @@
                 <!-- Logo/Título --><a href="#inicio" class="flex items-center space-x-3">
                     <!-- RUTA ACTUALIZADA según tu confirmación -->
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">El Templo de
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">El Templo de
                         Claypole</span>
                 </a>
 
@@ -89,7 +89,8 @@
                     <a href="page.html"
                         class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Alquilar
                         Salón</a>
-                    <a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150 ease-in-out">Login</a>
+                    <a href="login.html"
+                        class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150 ease-in-out">Login</a>
                 </nav>
 
                 <!-- Botón de Menú Móvil --><button id="mobile-menu-button"
@@ -115,7 +116,8 @@
                 <a href="page.html"
                     class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">Alquilar
                     Salón</a>
-                <a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">Login</a>
+                <a href="login.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">Login</a>
             </div>
         </div>
     </header>
@@ -138,7 +140,12 @@
                 </h1>
                 <div
                     class="max-w-4xl mx-auto mt-20 mb-20 text-center text-xl sm:text-2xl md:text-3xl font-light text-purple-300">
-                    Un espacio al aire libre rústico fusionado con un interior flouor que te va a volar la peluca.
+                    Descubre tu nuevo punto de encuentro.<br><br>
+
+                    Un espacio único donde la música, el movimiento y la buena onda se juntan. En nuestro salón suenan
+                    bandas en vivo y en el patio, la juntada sigue entre sillones y parrilla.<br><br>
+
+                    Tu lugar para tocar, bailar, celebrar y conectar.
                 </div>
                 <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                     <a href="page.html"
@@ -398,11 +405,14 @@
          * Genera la estructura HTML para un solo evento.
          */
         function generateEventCard(event) {
-            const { id, nombre_banda, fecha_hora, precio_base, descripcion, activo, aforo_maximo } = event;
+            const { id, nombre_banda, fecha_hora, precio_base, precio_anticipada, precio_puerta, descripcion, activo, aforo_maximo } = event;
             const { day, month, time } = formatDateTime(fecha_hora);
 
             // Estilo y texto dinámico para precio y botón
-            let priceText = `$ ${precio_base.toLocaleString('es-AR')} ARS`;
+            let priceText = `$ ${precio_anticipada !== null && precio_anticipada !== undefined ? parseFloat(precio_anticipada).toLocaleString('es-AR') : parseFloat(precio_base).toLocaleString('es-AR')} ARS (Anticipada)`;
+            if (precio_puerta !== null && precio_puerta !== undefined) {
+                priceText += ` • $ ${parseFloat(precio_puerta).toLocaleString('es-AR')} ARS (Puerta)`;
+            }
             let buttonText = 'Sacar Entrada';
             let buttonClass = 'bg-fuchsia-500 hover:bg-fuchsia-400';
             let borderClass = 'border-fuchsia-500';
@@ -410,7 +420,7 @@
             let priceTextColor = 'text-neon';
             let link = `agenda_de_bandas.html?event_id=${id}`; // Enlace a la página de agenda
 
-            if (precio_base === 0) {
+            if ((precio_anticipada !== null && parseFloat(precio_anticipada) === 0) || (precio_puerta !== null && parseFloat(precio_puerta) === 0) || parseFloat(precio_base) === 0) {
                 priceText = '¡GRATIS!';
                 buttonText = 'Reservar Lugar';
                 buttonClass = 'bg-emerald-500 hover:bg-emerald-400';

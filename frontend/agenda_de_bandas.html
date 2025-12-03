@@ -48,7 +48,8 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Logo/Título --><a href="index.html" class="flex items-center space-x-3">
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-                    <span class="text-2xl font-bold text-neon tracking-wider hidden sm:block">Volver al Inicio</span>
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
+                        Inicio</span>
                 </a>
                 <a href="#contacto-bandas"
                     class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Tocar
@@ -86,6 +87,13 @@
                     <h2 class="text-3xl font-bold text-white mb-2">¿Querés Tocar en el Templo?</h2>
                     <p class="text-stone-300">Buscamos propuestas originales que encajen con nuestra vibración
                         rústico-fluorescente. Envía tu material.</p>
+                </div>
+
+                <div class="text-center mb-6">
+                    <a href="solicitud_banda.html?tipo=FECHA_EN_VIVO"
+                        class="inline-flex items-center justify-center px-4 py-2 bg-emerald-500 text-gray-900 font-bold rounded-full shadow hover:bg-emerald-400 transition">
+                        Generar Solicitud para Banda (Fechas y Presupuesto)
+                    </a>
                 </div>
 
                 <!-- Formulario de Contacto Mock-up -->
@@ -200,11 +208,15 @@
          * @returns {string} HTML del evento.
          */
         function generateEventCard(event) {
-            const { id, nombre_banda, fecha_hora, precio_base, descripcion, activo, aforo_maximo } = event;
+            const { id, nombre_banda, fecha_hora, precio_base, precio_anticipada, precio_puerta, descripcion, activo, aforo_maximo } = event;
             const { day, month, time } = formatDateTime(fecha_hora);
 
             // Estilo y texto dinámico para precio y botón
-            let priceText = `$ ${precio_base.toLocaleString('es-AR')} ARS`;
+            // Mostrar ambos precios si están disponibles
+            let priceText = `$ ${precio_anticipada !== null && precio_anticipada !== undefined ? parseFloat(precio_anticipada).toLocaleString('es-AR') : parseFloat(precio_base).toLocaleString('es-AR')} ARS (Anticipada)`;
+            if (precio_puerta !== null && precio_puerta !== undefined) {
+                priceText += ` • $ ${parseFloat(precio_puerta).toLocaleString('es-AR')} ARS (Puerta)`;
+            }
             let buttonText = 'Comprar Entrada';
             let buttonClass = 'bg-fuchsia-500 hover:bg-fuchsia-400';
             let borderClass = 'border-fuchsia-500';
@@ -213,7 +225,7 @@
             let priceTextColor = 'text-neon';
             let link = `checkout_form.html?event_id=${id}`;
 
-            if (precio_base === 0) {
+            if ((precio_anticipada !== null && parseFloat(precio_anticipada) === 0) || (precio_puerta !== null && parseFloat(precio_puerta) === 0) || parseFloat(precio_base) === 0) {
                 priceText = '¡GRATIS!';
                 buttonText = 'Reservar Lugar';
                 buttonClass = 'bg-emerald-500 hover:bg-emerald-400';
@@ -238,9 +250,15 @@
                             <p class="text-xl font-bold ${priceTextColor} mt-1">${priceText}</p>
                         </div>
                     </div>
-                    <a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-6 rounded-full text-md transition shadow-lg">
-                        ${buttonText}
-                    </a>
+                    <div class="flex flex-col sm:flex-row gap-3 items-center">
+                        <a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-6 rounded-full text-md transition shadow-lg">
+                            ${buttonText}
+                        </a>
+                        <a href="solicitud_banda.html?tipo=FECHA_EN_VIVO&event_id=${id}&nombre_banda=${encodeURIComponent(nombre_banda)}"
+                            class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-bold py-2 px-4 rounded-full text-md transition shadow-lg">
+                            Solicitar Fecha para esta Banda
+                        </a>
+                    </div>
                 </div>
             `;
         }

@@ -22,6 +22,40 @@ const crearSolicitud = async (req, res) => {
 
     let conn;
     try {
+        // --- VALIDACIONES BÁSICAS PARA CAMPOS DE BANDA SI VIENEN EN EL BODY ---
+        const isValidEmail = (email) => {
+            if (!email) return false;
+            // Simple regex para validación básica
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        };
+
+        const isValidUrl = (url) => {
+            if (!url) return false;
+            try {
+                const u = new URL(url);
+                return ['http:', 'https:'].includes(u.protocol);
+            } catch (e) {
+                return false;
+            }
+        };
+
+        const { nombre_banda, contacto_email, link_musica, event_id } = req.body;
+        if (nombre_banda || contacto_email || link_musica || (typeof event_id !== 'undefined' && event_id !== null)) {
+            // Si llegan campos de banda, validamos los obligatorios
+            if (nombre_banda && String(nombre_banda).trim().length === 0) {
+                return res.status(400).json({ error: 'nombre_banda no puede estar vacío.' });
+            }
+            if (contacto_email && !isValidEmail(contacto_email)) {
+                return res.status(400).json({ error: 'contacto_email inválido.' });
+            }
+            if (link_musica && !isValidUrl(link_musica)) {
+                return res.status(400).json({ error: 'link_musica inválido. Use http(s)://' });
+            }
+            if (typeof event_id !== 'undefined' && event_id !== null && isNaN(Number(event_id))) {
+                return res.status(400).json({ error: 'event_id debe ser numérico o null.' });
+            }
+        }
+
         conn = await pool.getConnection();
 
         // --- ¡CORRECCIÓN FINAL! ---
@@ -47,6 +81,26 @@ const crearSolicitud = async (req, res) => {
 
         if (result.affectedRows > 0) {
             const newId = Number(result.insertId);
+            // Si la request trae datos estructurados de banda, los persistimos en bandas_solicitudes
+            try {
+                const { nombre_banda, contacto_email, link_musica, propuesta, event_id, precio_anticipada, precio_puerta } = req.body;
+                if (nombre_banda || contacto_email || link_musica || propuesta || event_id || precio_anticipada || precio_puerta) {
+                    try {
+                        await conn.query("ALTER TABLE bandas_solicitudes ADD COLUMN IF NOT EXISTS precio_anticipada DECIMAL(10,2) NULL;");
+                        await conn.query("ALTER TABLE bandas_solicitudes ADD COLUMN IF NOT EXISTS precio_puerta DECIMAL(10,2) NULL;");
+                    } catch (alterErr) {
+                        console.warn('Advertencia: no se pudo asegurar columnas de precios en bandas_solicitudes al crear:', alterErr.message || alterErr);
+                    }
+                    const insertBandSql = `
+                            INSERT INTO bandas_solicitudes (id_solicitud, nombre_banda, contacto_email, link_musica, propuesta, event_id, precio_anticipada, precio_puerta, created_at, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                        `;
+                    await conn.query(insertBandSql, [newId, nombre_banda || null, contacto_email || null, link_musica || null, propuesta || null, event_id || null, precio_anticipada || null, precio_puerta || null]);
+                }
+            } catch (err) {
+                console.warn('No se pudo insertar en bandas_solicitudes al crear solicitud:', err.message);
+            }
+
             const respuesta = { solicitudId: newId };
             console.log(`Nueva solicitud creada con ID: ${newId}. Enviando respuesta:`, respuesta);
             res.status(201).json(respuesta);
@@ -74,8 +128,21 @@ const getSolicitudPorId = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // --- ¡CONSULTA MEJORADA CON ALIAS CONSISTENTES! ---
-        // Ahora devuelve la misma estructura que `getSesionExistente` y más.
+        // --- Construir consulta de forma dinámica según columnas disponibles ---
+        // Algunos entornos aún no tienen las columnas de precio en `bandas_solicitudes`.
+        const colsInfo = await conn.query(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'bandas_solicitudes' AND COLUMN_NAME IN ('precio_anticipada','precio_puerta')",
+            [process.env.DB_NAME]
+        );
+        const hasPrecioAnt = colsInfo.some(c => c.COLUMN_NAME === 'precio_anticipada');
+        const hasPrecioPuerta = colsInfo.some(c => c.COLUMN_NAME === 'precio_puerta');
+
+        const extraCols = [];
+        if (hasPrecioAnt) extraCols.push('bs.precio_anticipada as bandaPrecioAnticipada');
+        else extraCols.push('NULL as bandaPrecioAnticipada');
+        if (hasPrecioPuerta) extraCols.push('bs.precio_puerta as bandaPrecioPuerta');
+        else extraCols.push('NULL as bandaPrecioPuerta');
+
         const sql = `
             SELECT 
                 s.id_solicitud as solicitudId,
@@ -90,9 +157,17 @@ const getSolicitudPorId = async (req, res) => {
                 s.email,
                 s.descripcion,
                 s.estado,
-                ot.nombre_para_mostrar as nombreParaMostrar
+                ot.nombre_para_mostrar as nombreParaMostrar,
+                bs.nombre_banda as nombreBanda,
+                bs.contacto_email as bandaContactoEmail,
+                bs.link_musica as bandaLinkMusica,
+                bs.propuesta as bandaPropuesta,
+                bs.event_id as bandaEventId,
+                bs.invitados as bandaInvitados,
+                ${extraCols.join(',\n                ')}
             FROM solicitudes s
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+            LEFT JOIN bandas_solicitudes bs ON s.id_solicitud = bs.id_solicitud
             WHERE s.id_solicitud = ?;
         `;
 
@@ -128,7 +203,7 @@ const getSolicitudPorId = async (req, res) => {
  */
 const finalizarSolicitud = async (req, res) => {
     const { id } = req.params;
-    const { nombreCompleto, celular, email, detallesAdicionales } = req.body;
+    const { nombreCompleto, celular, email, detallesAdicionales, main_contact_email, invitados_emails } = req.body;
 
     console.log(`-> Finalizando solicitud con ID: ${id}`);
 
@@ -193,6 +268,27 @@ const finalizarSolicitud = async (req, res) => {
                     subtitulo: "Hemos recibido los detalles de tu evento. Nos pondremos en contacto a la brevedad."
                 }
             );
+        }
+
+        // Persistir contactos de banda si vienen (main_contact_email + invitados_emails)
+        try {
+            if ((solicitudCompleta && solicitudCompleta.tipoEvento) && (solicitudCompleta.tipoEvento.toUpperCase() === 'FECHA_EN_VIVO' || solicitudCompleta.tipoEvento.toUpperCase() === 'FECHA_BANDAS' || solicitudCompleta.tipoEvento.toUpperCase() === 'BANDA')) {
+                const conn2 = await pool.getConnection();
+                try {
+                    // Upsert main contact and invited emails into bandas_solicitudes
+                    const upsertSql = `
+                        INSERT INTO bandas_solicitudes (id_solicitud, contacto_email, invitados, updated_at)
+                        VALUES (?, ?, ?, NOW())
+                        ON DUPLICATE KEY UPDATE contacto_email = VALUES(contacto_email), invitados = VALUES(invitados), updated_at = NOW();
+                    `;
+                    const invitadosJson = invitados_emails ? JSON.stringify(invitados_emails) : null;
+                    await conn2.query(upsertSql, [parseInt(id), main_contact_email || null, invitadosJson]);
+                } finally {
+                    conn2.release();
+                }
+            }
+        } catch (err) {
+            console.warn('No se pudieron persistir contactos de banda tras finalizar solicitud:', err.message);
         }
 
     } catch (err) {
@@ -292,6 +388,53 @@ const actualizarSolicitud = async (req, res) => {
         `;
         const params = [tipoEvento, cantidadPersonas, duracionEvento, fechaEvento, horaInicio, parseFloat(precioBase) || 0, detallesAdicionales, id];
         await conn.query(sql, params);
+
+        // Si es una solicitud de banda, persistimos los campos estructurados en bandas_solicitudes
+        try {
+            if (['FECHA_EN_VIVO', 'FECHA_BANDAS', 'BANDA'].includes((tipoEvento || '').toUpperCase())) {
+                const { nombre_banda, contacto_email, link_musica, propuesta, event_id, precio_anticipada, precio_puerta } = req.body;
+
+                // Asegurarnos de que las columnas de precio existan (migración dinámica segura)
+                try {
+                    await conn.query("ALTER TABLE bandas_solicitudes ADD COLUMN IF NOT EXISTS precio_anticipada DECIMAL(10,2) NULL;");
+                    await conn.query("ALTER TABLE bandas_solicitudes ADD COLUMN IF NOT EXISTS precio_puerta DECIMAL(10,2) NULL;");
+                } catch (alterErr) {
+                    console.warn('Advertencia: no se pudo asegurar columnas de precios en bandas_solicitudes:', alterErr.message || alterErr);
+                }
+
+                // Validaciones del lado servidor (simples) antes del upsert
+                const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '');
+                const isValidUrl = (url) => {
+                    if (!url) return true; // campo opcional
+                    try { const u = new URL(url); return ['http:', 'https:'].includes(u.protocol); } catch (e) { return false; }
+                };
+
+                if (contacto_email && !isValidEmail(contacto_email)) {
+                    return res.status(400).json({ error: 'contacto_email inválido.' });
+                }
+                if (link_musica && !isValidUrl(link_musica)) {
+                    return res.status(400).json({ error: 'link_musica inválido. Use http(s)://' });
+                }
+
+                // Usamos INSERT ... ON DUPLICATE KEY UPDATE para upsert
+                const upsertSql = `
+                    INSERT INTO bandas_solicitudes (id_solicitud, nombre_banda, contacto_email, link_musica, propuesta, event_id, precio_anticipada, precio_puerta, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                    ON DUPLICATE KEY UPDATE
+                        nombre_banda = VALUES(nombre_banda),
+                        contacto_email = VALUES(contacto_email),
+                        link_musica = VALUES(link_musica),
+                        propuesta = VALUES(propuesta),
+                        event_id = VALUES(event_id),
+                        precio_anticipada = VALUES(precio_anticipada),
+                        precio_puerta = VALUES(precio_puerta),
+                        updated_at = NOW();
+                `;
+                await conn.query(upsertSql, [id, nombre_banda || null, contacto_email || null, link_musica || null, propuesta || null, event_id || null, precio_anticipada || null, precio_puerta || null]);
+            }
+        } catch (err) {
+            console.warn('Error al persistir datos de banda en bandas_solicitudes:', err.message);
+        }
 
         const respuesta = { solicitudId: parseInt(id) };
         console.log(`Solicitud ID: ${id} actualizada. Enviando respuesta:`, respuesta);

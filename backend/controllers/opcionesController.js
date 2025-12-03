@@ -9,10 +9,16 @@ const getTiposDeEvento = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        // ¡ESTA ES LA LÍNEA A CORREGIR!
-        const rows = await conn.query("SELECT `id_evento` as id, `nombre_para_mostrar` as nombreParaMostrar, `descripcion` as descripcion, `monto_sena` as montoSena, `deposito` as depositoGarantia, `es_publico` as esPublico FROM `opciones_tipos` WHERE `es_publico` = 1;");
-        // El error estaba en mi copia anterior, la consulta correcta ya estaba, pero vamos a asegurarnos.
-        // La consulta debe tener `AS id`
+        // Permitimos filtrar por categoría: ?categoria=BANDA
+        const categoria = req.query.categoria;
+        let sql = "SELECT `id_evento` as id, `nombre_para_mostrar` as nombreParaMostrar, `descripcion` as descripcion, `monto_sena` as montoSena, `deposito` as depositoGarantia, `es_publico` as esPublico, IFNULL(`categoria`, 'OTRO') as categoria FROM `opciones_tipos` WHERE `es_publico` = 1";
+        let rows;
+        if (categoria) {
+            sql += " AND categoria = ?";
+            rows = await conn.query(sql, [categoria]);
+        } else {
+            rows = await conn.query(sql);
+        }
         res.status(200).json(rows);
     } catch (err) {
         console.error("Error al obtener tipos de evento:", err);
@@ -121,8 +127,52 @@ const getFechasOcupadas = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query("SELECT DATE_FORMAT(`fecha_evento`, '%Y-%m-%d') as fecha FROM `solicitudes` WHERE `estado` = 'Confirmado';");
-        // Devolvemos un array simple de strings de fecha
+        // Soporte para detalle: ?detalle=1 -> devolver {fecha,hora} para cada ocupación
+        const detalle = req.query && (req.query.detalle === '1' || String(req.query.detalle).toLowerCase() === 'true');
+        if (detalle) {
+            const sql = `
+                SELECT DISTINCT fecha, hora FROM (
+                    SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(hora_evento), 'hs', '') AS hora FROM solicitudes WHERE estado = 'Confirmado'
+                    UNION
+                    SELECT DATE_FORMAT(fecha_hora, '%Y-%m-%d') AS fecha, DATE_FORMAT(fecha_hora, '%H:%i') AS hora FROM eventos WHERE activo = 1
+                ) AS todas
+                WHERE fecha IS NOT NULL
+                ORDER BY fecha, hora;
+            `;
+            const rows = await conn.query(sql);
+            // Normalizar hora: devolver en formato HH:MM cuando sea posible
+            const mapped = rows.map(r => {
+                let hora = r.hora || null;
+                if (hora) {
+                    hora = String(hora).trim();
+                    // quitar sufijos comunes
+                    hora = hora.replace(/hs\.?$/i, '').trim();
+                    // intentar extraer HH:MM
+                    const m = hora.match(/(\d{1,2}:\d{2})/);
+                    if (m) hora = m[1];
+                    else {
+                        const m2 = hora.match(/(\d{1,2})/);
+                        if (m2) hora = String(m2[1]).padStart(2, '0') + ':00';
+                        else hora = null;
+                    }
+                }
+                return { fecha: r.fecha, hora };
+            });
+            return res.status(200).json(mapped);
+        }
+
+        // Unificamos fechas ocupadas desde solicitudes confirmadas y desde la tabla `eventos`.
+        // Esto evita discrepancias cuando hay entradas en `eventos` pero no en `solicitudes`.
+        const sql = `
+            SELECT DISTINCT fecha FROM (
+                SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes WHERE estado = 'Confirmado'
+                UNION
+                SELECT DATE_FORMAT(fecha_hora, '%Y-%m-%d') AS fecha FROM eventos WHERE activo = 1
+            ) AS todas
+            WHERE fecha IS NOT NULL
+            ORDER BY fecha;
+        `;
+        const rows = await conn.query(sql);
         const fechas = rows.map(r => r.fecha);
         res.status(200).json(fechas);
     } catch (err) {

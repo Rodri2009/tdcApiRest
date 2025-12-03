@@ -157,7 +157,85 @@ Para una gestión avanzada, puedes usar estos comandos desde la raíz del proyec
 
 ---
 
----
+## **Despliegue Rápido en Tu Trabajo**
+
+Si quieres levantar exactamente el mismo entorno en otra máquina (por ejemplo, tu puesto de trabajo), sigue estos pasos mínimos y rápidos. Esta guía asume que ya tienes Docker y Docker Compose instalados.
+
+- **1) Prepara el archivo `.env`**
+    - Copia el archivo de ejemplo (si existe) o crea uno nuevo en la raíz del repo:
+
+        ```bash
+        cp ejemplo.env .env
+        # o crea .env manualmente y pega las variables necesarias
+        ```
+
+    - Rellena los valores obligatorios: `MARIADB_ROOT_PASSWORD`, `MARIADB_DATABASE`, `MARIADB_USER`, `MARIADB_PASSWORD`, `PORT`, `EMAIL_*`, `JWT_SECRET`. No subas este archivo a Git.
+
+- **2) Levanta los contenedores**
+
+    Desde la raíz del proyecto ejecuta:
+
+    ```bash
+    docker compose -f docker/docker-compose.yml --env-file .env up -d
+    ```
+
+    Espera unos segundos y revisa los logs del backend y de la base de datos:
+
+    ```bash
+    docker compose -f docker/docker-compose.yml --env-file .env logs -f backend
+    docker compose -f docker/docker-compose.yml --env-file .env logs -f mariadb
+    ```
+
+- **3) Aplicar la migración de precios de bandas (recomendado)**
+
+    Este repositorio ya incluye la migración permanente `database/7_migration_add_precios_bandas.sql` y un helper `scripts/apply_migrations.sh` que facilita aplicarla dentro del contenedor MariaDB.
+
+    Ejecuta (desde la raíz del repo):
+
+    ```bash
+    chmod +x scripts/apply_migrations.sh
+    ./scripts/apply_migrations.sh database/7_migration_add_precios_bandas.sql
+    ```
+
+    Nota: el script lee `MARIADB_ROOT_PASSWORD` y `MARIADB_DATABASE` desde `.env`. Si tu contenedor de base de datos no se llama `docker-mariadb-1`, puedes ejecutar manualmente:
+
+    ```bash
+    # ejemplo: si el servicio en docker-compose se llama 'mariadb'
+    docker compose -f docker/docker-compose.yml --env-file .env exec -T mariadb \
+        sh -c 'mysql -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' < database/7_migration_add_precios_bandas.sql
+    ```
+
+    El proyecto incluye código defensivo: el backend también ejecuta ALTER TABLE en tiempo de ejecución como fallback si las columnas no existieran, pero aplicar la migración es lo correcto y persistente.
+
+- **4) Verificaciones rápidas**
+
+    - Página cliente: `http://localhost/`
+    - Panel admin/login: `http://localhost/login.html`
+    - Endpoint de status backend (debe responder):
+
+        ```bash
+        curl http://localhost/api/status
+        ```
+
+    - Verifica que las solicitudes confirmadas aparecen en la agenda (devuelve items `sol_<id>`):
+
+        ```bash
+        curl http://localhost/api/tickets/eventos | jq '.'
+        ```
+
+    - Verifica detalle de una solicitud (ej: id 19):
+
+        ```bash
+        curl http://localhost/api/solicitudes/19 | jq '.'
+        ```
+
+- **5) Notas útiles para entornos corporativos**
+    - No incluyas credenciales reales en repositorios públicos.
+    - Si el puerto `80` o `443` en tu máquina ya está ocupado, ajusta la publicación de puertos en `docker/docker-compose.yml` o cambia `PORT` en `.env`.
+    - Si tu política corporativa impide el uso de `docker compose`, puedes adaptar los pasos para Kubernetes o un servicio de contenedores de tu empresa.
+
+Si quieres, puedo generar un `ejemplo.env` con todas las variables (sin valores sensibles) para que lo traigas a tu equipo y solo rellenes las contraseñas.
+
 
 ## 📝 Cambios Recientes (v1.1.0)
 
@@ -357,6 +435,37 @@ chmod +x scripts/import_sqls.sh
 Nota: ambos scripts leen las variables del archivo `.env` para obtener credenciales y el nombre de la base de datos. Asegúrate de que `.env` exista en la raíz del repo.
 
 ---
+
+## Cambios recientes: precios anticipada / en puerta y cupones por ámbito
+
+Se agregó soporte para tarifas separadas por evento:
+
+- `eventos.precio_anticipada` (precio para venta anticipada)
+- `eventos.precio_puerta` (precio para venta en puerta)
+- `tickets.tipo_precio` (indica si el ticket fue comprado anticipado o en puerta)
+- `cupones.aplica_a` (puede ser `TODAS`, `ANTICIPADA` o `PUERTA`) — determina a qué tarifa aplica el cupón
+
+Migración:
+
+Para aplicar los cambios en una base de datos existente, ejecuta la migración provista:
+
+```bash
+# Ejecutar la migración dentro del contenedor mariadb (requiere .env con credenciales)
+docker compose -f docker/docker-compose.yml --env-file .env exec -T mariadb sh -c 'mysql -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' < database/3_migration_add_event_prices_and_coupon_scope.sql
+```
+
+Notas:
+- La migración añade las columnas y luego copia `precio_base` a `precio_anticipada` y `precio_puerta` para mantener compatibilidad.
+- `scripts/backup_and_stop.sh` realiza un `mysqldump` completo de la base de datos antes de detener los contenedores; úsalo si quieres preservar TODO antes de aplicar la migración.
+- `down-and-backup.sh` por diseño hace dump sólo de tablas listadas (datos sensibles) — no guarda todas las tablas.
+
+Frontend:
+- Se agregó `frontend/checkout_form.html` que permite seleccionar `ANTICIPADA` o `PUERTA`, aplicar un cupón (simulación), y crear el ticket. El frontend enviará `tipo_venta` a los endpoints:
+    - `POST /api/tickets/checkout/simulate` (calcula precio final y valida cupón)
+    - `POST /api/tickets/checkout/init` (crea ticket PENDIENTE_PAGO o marca PAGADO si es gratis)
+
+Si prefieres que adapte un checkout ya existente (en vez de la nueva página), indícame la ruta y lo actualizo.
+
 
 ## 🔧 Troubleshooting y Problemas Comunes
 

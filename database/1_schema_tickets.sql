@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS eventos (
     nombre_banda VARCHAR(255) NOT NULL COMMENT 'Nombre principal del show o banda',
     fecha_hora DATETIME NOT NULL COMMENT 'Fecha y hora del evento',
     precio_base DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT 'Precio de la entrada general antes de impuestos o descuentos',
+    precio_anticipada DECIMAL(10,2) NULL COMMENT 'Precio para venta anticipada (opcional)',
+    precio_puerta DECIMAL(10,2) NULL COMMENT 'Precio aplicado en la puerta (opcional)',
     aforo_maximo INT NOT NULL COMMENT 'Capacidad máxima de tickets a vender',
     descripcion TEXT,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
@@ -27,6 +29,7 @@ CREATE TABLE IF NOT EXISTS cupones (
     usos_actuales INT NOT NULL DEFAULT 0,
     fecha_expiracion DATE NULL COMMENT 'Fecha límite para usar el cupón',
     activo BOOLEAN NOT NULL DEFAULT TRUE,
+    aplica_a ENUM('TODAS','ANTICIPADA','PUERTA') NOT NULL DEFAULT 'TODAS' COMMENT 'A qué tipo de tarifa aplica este cupón',
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     -- Asegura que el porcentaje esté entre 0 y 100
     CHECK (porcentaje_descuento IS NULL OR (porcentaje_descuento >= 0 AND porcentaje_descuento <= 100))
@@ -42,6 +45,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     nombre_comprador VARCHAR(255) NOT NULL COMMENT 'Nombre completo del comprador',
     cupon_id INT NULL COMMENT 'Referencia al cupón usado (si aplica)',
     precio_pagado DECIMAL(10, 2) NOT NULL COMMENT 'Precio final pagado por el ticket',
+    tipo_precio ENUM('ANTICIPADA','PUERTA','OTRO') NOT NULL DEFAULT 'ANTICIPADA' COMMENT 'Indica si el ticket es anticipado o en puerta',
     fecha_compra TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Estado: 
