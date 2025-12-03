@@ -170,6 +170,22 @@
             animation: shake 0.5s;
         }
 
+        #band-fields {
+            margin-top: 20px;
+            padding: 12px;
+            border: 1px solid #e6e6e6;
+            border-radius: 6px;
+            background-color: #1f2937;
+            transition: all 0.3s ease;
+            display: block;
+        }
+
+        #band-fields h4 {
+            margin-top: 0;
+            color: var(--color-secondary);
+            text-shadow: 0 0 3px var(--color-secondary);
+        }
+
         @keyframes shake {
 
             0%,
@@ -430,9 +446,8 @@
             </div>
 
             <!-- Campos específicos para solicitudes de banda -->
-            <div id="band-fields"
-                style="margin-top:20px; padding:12px; border:1px solid #e6e6e6; border-radius:6px;">
-                <h4 style="margin-top:0;">Datos de Banda / Proyecto</h4>
+            <div id="band-fields">
+                <h4>Datos de Banda / Proyecto</h4>
                 <div class="form-group">
                     <label for="nombreBandaInput">Nombre de la Banda / Proyecto:</label>
                     <input type="text" id="nombreBandaInput" name="nombreBanda">

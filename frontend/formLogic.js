@@ -215,6 +215,8 @@ const App = {
         this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => {
             // Remover la clase de error del contenedor principal
             this.elements.tipoEventoContainer.classList.remove('campo-invalido');
+            // Actualizar visibilidad de campos según el tipo
+            this.actualizarCamposCondicionales();
             this.actualizarTodo();
         }));
 
@@ -224,6 +226,33 @@ const App = {
         this.inicializarCalendario(this.fechasOcupadasSeguro, this.feriadosGlobal, fechaExcepcion);
     },
 
+    actualizarCamposCondicionales: function () {
+        const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
+        if (!selectedRadio) {
+            // Si no hay tipo seleccionado, ocultar campos de banda
+            const bandFieldsContainer = document.getElementById('band-fields');
+            if (bandFieldsContainer) {
+                bandFieldsContainer.style.display = 'none';
+            }
+            return;
+        }
+
+        const tipoId = selectedRadio.value;
+        const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
+        
+        // Determinar si este tipo requiere campos de banda
+        const esAlquilerSalon = tipoId && (tipoId.includes('ALQUILER') || tipoId.includes('INFANTIL') || tipoId.includes('BABY') || tipoId.includes('ADOLESCENTE'));
+        const tieneCategoria = tipoSeleccionado && tipoSeleccionado.categoria;
+        const esAlquilerPorCategoria = tieneCategoria && tipoSeleccionado.categoria.toUpperCase().includes('ALQUIL');
+        
+        const mostrarCamposBanda = !esAlquilerSalon && !esAlquilerPorCategoria;
+
+        const bandFieldsContainer = document.getElementById('band-fields');
+        if (bandFieldsContainer) {
+            bandFieldsContainer.style.display = mostrarCamposBanda ? 'block' : 'none';
+            console.log(`[FORM][CONDITIONAL] Campos de banda: ${mostrarCamposBanda ? 'VISIBLE' : 'OCULTO'} (tipo: ${tipoId})`);
+        }
+    },
 
     decidirEstadoInicial: function () {
         const params = new URLSearchParams(window.location.search);
@@ -468,7 +497,8 @@ const App = {
             if (this.elements.precioPuertaInput) this.elements.precioPuertaInput.value = solicitud.bandaPrecioPuerta || solicitud.precio_puerta || '';
         } catch (err) { console.warn('populateForm: fallo al setear campos de banda:', err); }
 
-        console.groupEnd();
+        // 6. Actualizar visibilidad de campos según el tipo
+        this.actualizarCamposCondicionales();
     },
 
 
