@@ -88,6 +88,7 @@ const App = {
             if (this.elements.resetTipoEventoBtn) {
                 this.elements.resetTipoEventoBtn.addEventListener('click', (e) => {
                     e.preventDefault();
+                    console.log("[FORM][RESET] Mostrando todos los tipos");
                     const selected = document.querySelector('input[name="tipoEvento"]:checked');
                     if (selected) selected.checked = false;
                     document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
@@ -99,6 +100,16 @@ const App = {
         } else { // modo 'edit'
             this.elements.saveButton.addEventListener('click', this.guardarCambios.bind(this));
             this.elements.cancelButton.addEventListener('click', () => { window.location.href = '/admin_solicitudes.html'; });
+            
+            // En modo edición, también mostrar un botón de reset si existe
+            if (this.elements.resetTipoEventoBtn) {
+                this.elements.resetTipoEventoBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log("[FORM][RESET] Mostrando todos los tipos");
+                    document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
+                    this.elements.resetTipoEventoBtn.style.display = 'none';
+                });
+            }
         }
 
         [this.elements.cantidadPersonasSelect, this.elements.duracionEventoSelect, this.elements.horaInicioSelect].forEach(el => {
@@ -217,6 +228,10 @@ const App = {
             this.elements.tipoEventoContainer.classList.remove('campo-invalido');
             // Actualizar visibilidad de campos según el tipo
             this.actualizarCamposCondicionales();
+            // Filtrar sub-tipos si corresponde (en modo creación)
+            if (this.config.mode === 'create') {
+                this.filtrarTiposPorCategoria(radio.value);
+            }
             this.actualizarTodo();
         }));
 
@@ -224,6 +239,37 @@ const App = {
         this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
         this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo...');
         this.inicializarCalendario(this.fechasOcupadasSeguro, this.feriadosGlobal, fechaExcepcion);
+    },
+
+    filtrarTiposPorCategoria: function (tipoId) {
+        // Si se selecciona un tipo, mostrar solo los sub-tipos de su categoría
+        if (!tipoId) {
+            // Si se deselecciona, mostrar todos
+            document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
+            console.log("[FORM][FILTER] Mostrando todos los tipos");
+            return;
+        }
+
+        const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
+        if (!tipoSeleccionado || !tipoSeleccionado.categoria) {
+            console.log("[FORM][FILTER] Tipo sin categoría, mostrando todos");
+            document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
+            return;
+        }
+
+        const categoriaSeleccionada = tipoSeleccionado.categoria;
+        console.log(`[FORM][FILTER] Filtrando tipos por categoría: ${categoriaSeleccionada}`);
+
+        // Mostrar solo los tipos de la misma categoría
+        const radioButtons = this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]');
+        radioButtons.forEach(radio => {
+            const tipo = this.tiposDeEvento.find(t => t.id === radio.value);
+            const perteneceLaCategoria = tipo && tipo.categoria === categoriaSeleccionada;
+            const radioOption = radio.closest('.radio-option');
+            if (radioOption) {
+                radioOption.style.display = perteneceLaCategoria ? '' : 'none';
+            }
+        });
     },
 
     actualizarCamposCondicionales: function () {
