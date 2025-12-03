@@ -286,16 +286,27 @@ const App = {
                 console.log(`[FORM][FILTER] Radio value=${radio.value}, tipo=${tipo?.id}, categoria=${tipo?.categoria}, pertenece=${perteneceLaCategoria}, label=${labelText.substring(0, 50)}`);
                 if (perteneceLaCategoria) {
                     radioOption.style.display = '';
+                    radioOption.style.visibility = 'visible';
                     visiblesCount++;
-                    console.log(`[FORM][FILTER]   → MOSTRAR (display='')`);
+                    console.log(`[FORM][FILTER]   → MOSTRAR (display='', visibility='visible')`);
                 } else {
                     radioOption.style.display = 'none';
+                    radioOption.style.visibility = 'hidden';
                     ocultosCount++;
-                    console.log(`[FORM][FILTER]   → OCULTAR (display='none')`);
+                    console.log(`[FORM][FILTER]   → OCULTAR (display='none', visibility='hidden')`);
                 }
             }
         });
         console.log(`[FORM][FILTER] RESUMEN: ${visiblesCount} visibles, ${ocultosCount} ocultos`);
+        
+        // Asegurar que los cambios se apliquen - forzar un reflow
+        setTimeout(() => {
+            console.log("[FORM][FILTER] Verificando estilos aplicados después de 10ms...");
+            const radios = this.elements.tipoEventoContainer.querySelectorAll('.radio-option');
+            const visibles = Array.from(radios).filter(r => r.style.display !== 'none').length;
+            const ocultos = Array.from(radios).filter(r => r.style.display === 'none').length;
+            console.log(`[FORM][FILTER] Verificación post-delay: ${visibles} visible styles, ${ocultos} ocultos styles`);
+        }, 10);
     },
 
     actualizarCamposCondicionales: function () {
