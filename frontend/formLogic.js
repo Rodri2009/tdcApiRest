@@ -19,6 +19,7 @@ const App = {
     calendario: null,
     feriadosGlobal: [],
     notificationTimer: null,
+    loadAbortController: null, // Para cancelar requests pendientes
     elements: {},
 
     // =================================================================
@@ -344,7 +345,16 @@ const App = {
             // MODO EDICIÓN
             this.solicitudId = idFromUrl;
             console.log(`[FORM][EDIT] Cargando solicitud ID: ${idFromUrl}`);
-            fetch(`/api/solicitudes/${this.solicitudId}`)
+            
+            // Cancelar cualquier request anterior pendiente
+            if (this.loadAbortController) {
+                this.loadAbortController.abort();
+            }
+            this.loadAbortController = new AbortController();
+            
+            fetch(`/api/solicitudes/${this.solicitudId}`, {
+                signal: this.loadAbortController.signal
+            })
                 .then(res => res.json())
                 .then(solicitudData => {
                     if (!solicitudData) throw new Error("Solicitud no encontrada");
@@ -356,6 +366,11 @@ const App = {
                     this.habilitarBotones();
                 })
                 .catch(err => {
+                    // No mostrar error si fue cancelado por AbortController
+                    if (err.name === 'AbortError') {
+                        console.log("[FORM][EDIT] Solicitud cancelada (navegación a otra solicitud)");
+                        return;
+                    }
                     console.error("[FORM][EDIT] Error al cargar solicitud:", err);
                     this.showNotification('Error: No se pudo cargar la solicitud', 'error');
                     this.toggleLoadingOverlay(false);
