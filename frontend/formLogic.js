@@ -275,6 +275,8 @@ const App = {
         const radioButtons = this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]');
         console.log("[FORM][FILTER] Total radios encontrados:", radioButtons.length);
         
+        let visiblesCount = 0;
+        let ocultosCount = 0;
         radioButtons.forEach(radio => {
             const tipo = this.tiposDeEvento.find(t => t.id === radio.value);
             const perteneceLaCategoria = tipo && tipo.categoria === categoriaSeleccionada;
@@ -282,9 +284,18 @@ const App = {
             if (radioOption) {
                 const labelText = radioOption.querySelector('label')?.textContent || 'sin-label';
                 console.log(`[FORM][FILTER] Radio value=${radio.value}, tipo=${tipo?.id}, categoria=${tipo?.categoria}, pertenece=${perteneceLaCategoria}, label=${labelText.substring(0, 50)}`);
-                radioOption.style.display = perteneceLaCategoria ? '' : 'none';
+                if (perteneceLaCategoria) {
+                    radioOption.style.display = '';
+                    visiblesCount++;
+                    console.log(`[FORM][FILTER]   → MOSTRAR (display='')`);
+                } else {
+                    radioOption.style.display = 'none';
+                    ocultosCount++;
+                    console.log(`[FORM][FILTER]   → OCULTAR (display='none')`);
+                }
             }
         });
+        console.log(`[FORM][FILTER] RESUMEN: ${visiblesCount} visibles, ${ocultosCount} ocultos`);
     },
 
     actualizarCamposCondicionales: function () {
