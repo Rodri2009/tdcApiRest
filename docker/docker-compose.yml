@@ -85,6 +85,7 @@ services:
       - ../database/15_restore_solicitudes_test_data.sql:/docker-entrypoint-initdb.d/15_restore_solicitudes_test_data.sql
       - ../database/16_restore_sensitive.sql:/docker-entrypoint-initdb.d/16_restore_sensitive.sql
       - ../database/17_fix_opciones_tipos_categorias.sql:/docker-entrypoint-initdb.d/17_fix_opciones_tipos_categorias.sql
+      - ../database/18_insert_sin_servicio_de_mesa.sql:/docker-entrypoint-initdb.d/18_insert_sin_servicio_de_mesa.sql
       - ../data_migration/datos_sensibles_backup.sql:/var/lib/mysql-files/datos_sensibles_backup.sql
       - ../database/seeds:/var/lib/mysql-files
 
