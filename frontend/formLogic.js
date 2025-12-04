@@ -221,9 +221,16 @@ const App = {
     construirUI: function (fechaExcepcion = null) {
         console.log("[FORM][UI] Construyendo interfaz de usuario.");
         console.log("[FORM][UI] Excepción de fecha:", fechaExcepcion);
+        console.log("[FORM][UI] Modo:", this.config.mode, "Categoría filtro:", this.config.categoriaFiltro);
 
-        // En modo edición, mostrar todos los tipos; en modo creación, permitir filtrado por categoría
-        this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento);
+        // Filtrar tipos según la categoría configurada (para page.html usar ALQUILER_SALON)
+        let tiposParaMostrar = this.tiposDeEvento;
+        if (this.config.categoriaFiltro) {
+            tiposParaMostrar = this.tiposDeEvento.filter(t => t.categoria === this.config.categoriaFiltro);
+            console.log(`[FORM][UI] Filtrando por categoría '${this.config.categoriaFiltro}':`, tiposParaMostrar.map(t => t.id));
+        }
+
+        this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', tiposParaMostrar);
         this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => {
             // Remover la clase de error del contenedor principal
             this.elements.tipoEventoContainer.classList.remove('campo-invalido');

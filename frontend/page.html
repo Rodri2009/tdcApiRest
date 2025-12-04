@@ -458,8 +458,11 @@
                 console.warn('No se pudo evaluar parámetro tipo para cambiar título:', e);
             }
 
-            // Iniciar la app en modo creación
-            initializeApp({ mode: 'create' });
+            // Iniciar la app en modo creación, solo mostrar tipos de ALQUILER_SALON
+            initializeApp({ 
+                mode: 'create',
+                categoriaFiltro: 'ALQUILER_SALON'
+            });
         });
     </script>
 </body>

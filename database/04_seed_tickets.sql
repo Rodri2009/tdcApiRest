@@ -14,7 +14,7 @@ ALTER TABLE cupones AUTO_INCREMENT = 1;
 -- Insertando eventos con precio anticipada y precio en puerta para pruebas
 INSERT INTO eventos (nombre_banda, fecha_hora, precio_base, precio_anticipada, precio_puerta, aforo_maximo, descripcion, activo) VALUES
 ('Reite / Pateando Bares / las mentas', '2025-12-06 21:00:00', 4000.00, 3000.00, 4000.00, 150, 'Noche de rock tributo a La Renga, dos bandas invitadas, Apertura 21h.', TRUE),
-('Noche de Jazz Fusión', '2025-12-12 20:30:00', 3500.00, 3000.00, 3800.00, 80, 'Show acústico íntimo del Ensamble Claypole Jazz.', TRUE),
+('HipHop alternative', '2026-02-07 21:00:00', 3500.00, 3000.00, 3800.00, 80, 'Show acústico íntimo del Ensamble Claypole Jazz.', TRUE),
 ('Feria de Diseño y DJ Set', '2025-12-20 18:00:00', 0.00, 0.00, 0.00, 200, 'Evento gratuito con reserva. Entrada libre y musicalización a cargo de DJ Clay.', TRUE);
 
 -- 2. CUPONES DE PRUEBA
