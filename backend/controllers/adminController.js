@@ -11,14 +11,25 @@ const getSolicitudes = async (req, res) => {
         conn = await pool.getConnection();
         // Unificamos solicitudes y eventos para que el panel admin muestre ambas fuentes.
         // Las filas provenientes de `eventos` tienen `origen = 'evento'` y un id prefijado 'ev_<id>' para evitar colisión con solicitudes.
+        // NOTA: tipo_de_evento puede ser:
+        //   - Una categoría directa: 'ALQUILER_SALON', 'FECHA_BANDAS' (solicitudes antiguas)
+        //   - Un subtipo: 'INFANTILES', 'INFORMALES', etc. (solicitudes nuevas)
         const sql = `
             SELECT * FROM (
                 SELECT 
                     s.id_solicitud as id,
                     s.fecha_hora as fechaSolicitud,
                     s.nombre_completo as nombreCliente,
-                    COALESCE(ot.categoria, 'OTRO') as tipoEvento,
-                    COALESCE(ot.nombre_para_mostrar, s.tipo_de_evento) as subtipo,
+                    CASE 
+                        WHEN ot.categoria IS NOT NULL THEN ot.categoria
+                        WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES', 'SERVICIO') THEN s.tipo_de_evento
+                        ELSE 'OTRO'
+                    END as tipoEvento,
+                    CASE 
+                        WHEN ot.nombre_para_mostrar IS NOT NULL THEN ot.nombre_para_mostrar
+                        WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES', 'SERVICIO') THEN NULL
+                        ELSE s.tipo_de_evento
+                    END as subtipo,
                     DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
                     s.estado,
                     s.tipo_de_evento as tipoEventoId,
