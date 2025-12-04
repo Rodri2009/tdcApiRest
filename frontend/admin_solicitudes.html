@@ -502,13 +502,16 @@
                             'OTRO': 'Otro'
                         };
                         const tipoLegible = tiposLegibles[solicitud.tipoEvento] || solicitud.tipoEvento;
+                        
+                        // Si no hay subtipo, mostrar "Sin especificar" para solicitudes antiguas
+                        const subtipoDisplay = solicitud.subtipo || '<em>Sin especificar</em>';
 
                         tr.innerHTML = `
                             <td data-label="ID">${solicitud.id}</td>
                             <td data-label="Fecha Solicitud">${fechaSolicitud}</td>
                             <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
                             <td data-label="Tipo">${tipoLegible}</td>
-                            <td data-label="Subtipo">${solicitud.subtipo || '-'}</td>
+                            <td data-label="Subtipo">${subtipoDisplay}</td>
                             <td data-label="Fecha Evento">${fechaEvento}</td>
                             <td data-label="Estado">
                                 <select data-id="${solicitud.id}" class="estado-select">
