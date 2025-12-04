@@ -46,11 +46,51 @@
     <header class="bg-rustic sticky top-0 z-50 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <!-- Logo/Título --><a href="index.html" class="flex items-center space-x-3">
+                <!-- Logo/Título -->
+                <a href="index.html" class="flex items-center space-x-3">
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
                     <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
                         Inicio</span>
                 </a>
+
+                <!-- Menú Desktop -->
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="agenda_de_bandas.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
+                        Vivo</a>
+                    <a href="index.html#espacio"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">El Espacio</a>
+                    <a href="page.html?tipo=TALLER"
+                        class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Quiero
+                        dar un Taller</a>
+                    <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+
+                <!-- Botón de Menú Móvil -->
+                <button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <!-- Menú Móvil Desplegable -->
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="agenda_de_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
+                    en Vivo</a>
+                <a href="index.html#espacio"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">El
+                    Espacio</a>
+                <a href="page.html?tipo=TALLER"
+                    class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">Quiero
+                    dar un Taller</a>
+                <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
+                <div id="auth-menu-mobile"></div>
             </div>
         </div>
     </header>
@@ -145,6 +185,75 @@
     <script>
         // year
         document.getElementById('year').textContent = new Date().getFullYear();
+
+        // ----------------------------------------------------
+        // MENÚ MÓVIL Y AUTENTICACIÓN
+        // ----------------------------------------------------
+        function setupMobileMenu() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+        }
+
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                const desktopHTML = `
+                    <a href="/admin.html" 
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">
+                        🔐 Admin
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="/admin.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
+                        🔐 Admin Panel
+                    </a>
+                    <button onclick="logout()" 
+                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
+                        🚪 Cerrar Sesión
+                    </button>
+                `;
+                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
+                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+            } else {
+                const desktopHTML = `
+                    <a href="login.html"
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">
+                        Login
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="login.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
+                        Login
+                    </a>
+                `;
+                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
+                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/index.html';
+        }
+
+        window.addEventListener('storage', updateAuthMenu);
+
+        // Inicializar menú y autenticación
+        document.addEventListener('DOMContentLoaded', () => {
+            setupMobileMenu();
+            updateAuthMenu();
+        });
 
         // Lightbox functionality for images inside the grid
         (function () {

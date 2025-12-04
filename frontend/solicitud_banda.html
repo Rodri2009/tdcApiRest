@@ -2,45 +2,88 @@
 <html lang="es">
 
 <head>
+    <base target="_top">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Solicitud para tocar en el templo</title>
+    <title>Solicitud para tocar en el templo - El Templo de Claypole</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
     <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
         body {
             background: #0c0a09;
             color: #d6d3d1;
-            font-family: Arial, sans-serif
+            font-family: Arial, sans-serif;
+            padding-bottom: 70px;
         }
 
         .container {
-            max-width: 800px;
-            margin: 30px auto;
-            padding: 20px;
+            max-width: 98%;
+            margin: 20px auto;
+            padding: 25px;
             background: #1e293b;
-            border-radius: 8px
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--color-rustic);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2.25rem !important;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        h3.subtitle {
+            color: #ccc;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            font-weight: normal;
         }
 
         label {
             color: #f0abfc;
-            font-weight: 600
+            font-weight: bold;
         }
 
         input,
         textarea,
         select {
             width: 100%;
-            padding: 10px;
+            padding: 12px 8px !important;
             margin-top: 6px;
             margin-bottom: 12px;
-            border-radius: 6px;
+            border-radius: 4px;
             background: #0f172a;
-            border: 1px solid #581c87;
-            color: #f8fafc
+            border: 1.5px solid #581c87;
+            color: #f8fafc;
+            font-size: 18px;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            line-height: 1.2;
         }
 
         .btn {
@@ -51,9 +94,44 @@
             font-weight: 700
         }
 
+        .btn:hover {
+            background: #059669;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-weight: 700
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
         .campo-invalido {
-            border-color: #dc2626 !important;
+            border-color: #e74c3c !important;
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+            }
         }
 
         .error-text {
@@ -63,14 +141,150 @@
             margin-bottom: 8px;
             display: none;
         }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .column-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .price-hint {
+            font-size: 0.85em;
+            color: #9ca3af;
+            margin-top: -8px;
+            margin-bottom: 12px;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 9999;
+        }
+
+        .loading-overlay p {
+            color: #a855f7;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #a855f7;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Notification Banner */
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.5s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.warning {
+            background-color: #fbbf24;
+            color: #1e293b;
+        }
+
+        #notification-banner.error {
+            background-color: #ef4444;
+        }
+
+        #notification-banner.success {
+            background-color: #10b981;
+        }
     </style>
 </head>
 
 <body>
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Título -->
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
+                        Inicio</span>
+                </a>
+
+                <!-- Menú Desktop -->
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="agenda_de_bandas.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Ver Agenda</a>
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+
+                <!-- Botón de Menú Móvil -->
+                <button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <!-- Menú Móvil Desplegable -->
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="agenda_de_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Ver
+                    Agenda</a>
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
     <div class="container">
-        <h1 style="color:#f0abfc;font-size:1.6rem;margin-bottom:8px">Solicitud para tocar en el templo</h1>
-        <p style="color:#cbd5e1">Completa este formulario para solicitar tocar en El Templo. Te enviaremos respuesta por
-            email.</p>
+        <h1>Solicitud para tocar en el templo</h1>
+        <h3 class="subtitle">Completa este formulario para solicitar tocar en El Templo. Te enviaremos respuesta por
+            email.</h3>
 
         <form id="bandForm">
             <input type="hidden" id="event_id" name="event_id">
@@ -102,21 +316,66 @@
                 style="margin:12px 0; padding:10px; background:#872d7d; color:#fff; border-radius:6px; display:none">
                 Esta página está en construcción: aún no hay horarios configurados para solicitudes de banda.</div>
 
-            <label for="propuesta">Propuesta y requerimientos técnicos</label>
-            <textarea id="propuesta" name="propuesta" rows="5"
-                placeholder="Estilo, integrantes, rider, necesidades técnicas..."></textarea>
-            <div id="error_propuesta" class="error-text">Propuesta inválida.</div>
+            <div class="form-group">
+                <label for="propuesta">Propuesta y requerimientos técnicos</label>
+                <textarea id="propuesta" name="propuesta" rows="5"
+                    placeholder="Estilo, integrantes, rider, necesidades técnicas..."></textarea>
+                <div id="error_propuesta" class="error-text">Propuesta inválida.</div>
+            </div>
 
-            <div style="display:flex;gap:10px;align-items:center">
+            <div class="column-layout">
+                <div class="form-group">
+                    <label for="precio_anticipada">Precio entrada anticipada (sugerido)</label>
+                    <input id="precio_anticipada" name="precio_anticipada" type="number" min="0" step="100"
+                        placeholder="Ej: 5000">
+                    <p class="price-hint">Opcional. Precio sugerido para venta anticipada.</p>
+                </div>
+                <div class="form-group">
+                    <label for="precio_puerta">Precio entrada en puerta (sugerido)</label>
+                    <input id="precio_puerta" name="precio_puerta" type="number" min="0" step="100"
+                        placeholder="Ej: 7000">
+                    <p class="price-hint">Opcional. Precio sugerido para venta en puerta.</p>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;align-items:center;margin-top:20px">
                 <button class="btn" id="submitBtn" type="submit">Enviar solicitud</button>
-                <button id="backBtn" type="button"
-                    style="background:#6b7280;color:#fff;padding:10px 14px;border-radius:8px;font-weight:700">Volver</button>
-                <span id="status" style="color:#cbd5e1"></span>
+                <button id="backBtn" type="button" class="btn-secondary">Volver</button>
             </div>
         </form>
     </div>
 
     <script>
+        // Utilidades para UI
+        let notificationTimer = null;
+
+        function showNotification(message, type = 'warning', duration = 4000) {
+            const banner = document.getElementById('notification-banner');
+            if (!banner) return;
+            clearTimeout(notificationTimer);
+            banner.textContent = message;
+            banner.className = 'show ' + type;
+            notificationTimer = setTimeout(() => { banner.className = ''; }, duration);
+        }
+
+        function toggleLoadingOverlay(show, message = 'Cargando...') {
+            const overlay = document.getElementById('loadingOverlay');
+            if (!overlay) return;
+            const p = overlay.querySelector('p');
+            if (p) p.textContent = message;
+            overlay.style.display = show ? 'flex' : 'none';
+        }
+
+        function resetCamposInvalidos() {
+            document.querySelectorAll('.campo-invalido').forEach(el => {
+                el.classList.remove('campo-invalido');
+                el.style.animation = 'none';
+                void el.offsetWidth;
+                el.style.animation = '';
+            });
+            document.querySelectorAll('.error-text').forEach(el => el.style.display = 'none');
+        }
+
         // Validaciones cliente-side para campos de banda
         function isValidEmail(email) {
             if (!email) return false;
@@ -134,42 +393,50 @@
         }
 
         function validateBandForm() {
+            resetCamposInvalidos();
+
             const nombreEl = document.getElementById('nombre_banda');
-            // El email puede recogerse en la página de contacto (contacto.html).
-            // Buscamos el elemento por si el mismo formulario incluye el campo en algún fork del flujo.
-            const emailEl = document.getElementById('contacto_email') || null;
             const linkEl = document.getElementById('link_musica');
             const eventEl = document.getElementById('event_id');
+            const fechaEl = document.getElementById('fechaEvento');
 
             const nombre = nombreEl.value || '';
-            const email = (emailEl && typeof emailEl.value !== 'undefined') ? (emailEl.value || '') : '';
             const link = linkEl.value || '';
             const eventIdVal = eventEl.value || '';
-
-            // Reset styles/messages
-            ['nombre_banda', 'contacto_email', 'link_musica', 'propuesta', 'event_id'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.remove('campo-invalido');
-                const err = document.getElementById('error_' + id);
-                if (err) err.style.display = 'none';
-            });
+            const fecha = fechaEl.value || '';
 
             if (!nombre.trim()) {
                 nombreEl.classList.add('campo-invalido');
-                const err = document.getElementById('error_nombre_banda'); if (err) { err.textContent = 'El nombre de la banda es obligatorio.'; err.style.display = 'block'; }
+                const err = document.getElementById('error_nombre_banda');
+                if (err) { err.textContent = 'El nombre de la banda es obligatorio.'; err.style.display = 'block'; }
+                showNotification('El nombre de la banda es obligatorio.', 'warning');
+                nombreEl.focus();
                 return { ok: false, message: 'El nombre de la banda es obligatorio.' };
             }
 
-            // El email de contacto se solicita en el paso de contacto final (contacto.html)
-
             if (link && !isValidUrl(link)) {
                 linkEl.classList.add('campo-invalido');
-                const err = document.getElementById('error_link_musica'); if (err) { err.textContent = 'Link inválido. Debe comenzar con http(s)://'; err.style.display = 'block'; }
+                const err = document.getElementById('error_link_musica');
+                if (err) { err.textContent = 'Link inválido. Debe comenzar con http(s)://'; err.style.display = 'block'; }
+                showNotification('El link a tu música no es válido.', 'warning');
+                linkEl.focus();
                 return { ok: false, message: 'Link inválido. Debe comenzar con http(s)://' };
             }
 
+            if (!fecha) {
+                // Marcar el input altInput de flatpickr si existe
+                if (fechaPicker && fechaPicker.altInput) {
+                    fechaPicker.altInput.classList.add('campo-invalido');
+                } else {
+                    fechaEl.classList.add('campo-invalido');
+                }
+                showNotification('Seleccioná una fecha para tu propuesta.', 'warning');
+                return { ok: false, message: 'La fecha es obligatoria.' };
+            }
+
             if (eventIdVal && isNaN(Number(eventIdVal))) {
-                const err = document.getElementById('error_event_id'); if (err) { err.textContent = 'event_id inválido.'; err.style.display = 'block'; }
+                const err = document.getElementById('error_event_id');
+                if (err) { err.textContent = 'event_id inválido.'; err.style.display = 'block'; }
                 return { ok: false, message: 'event_id inválido.' };
             }
 
@@ -519,16 +786,16 @@
         document.getElementById('bandForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
-            document.getElementById('status').textContent = '';
 
             // Validación cliente-side antes de enviar
             const validation = validateBandForm();
             if (!validation.ok) {
-                document.getElementById('status').textContent = ' ' + validation.message;
                 return;
             }
 
-            btn.disabled = true; document.getElementById('status').textContent = ' Enviando...';
+            // Mostrar loading y deshabilitar botón
+            toggleLoadingOverlay(true, 'Enviando solicitud...');
+            btn.disabled = true;
 
             const payload = {
                 tipoEvento: 'FECHA_EN_VIVO',
@@ -555,28 +822,35 @@
                     horaInicio: payload.horaInicio,
                     precioBase: 0,
                     // Mantener el campo texto para compatibilidad con el flujo existente
-                    detallesAdicionales: `Nombre banda: ${document.getElementById('nombre_banda').value}\nLink: ${document.getElementById('link_musica').value || '-'}\nPropuesta:\n${document.getElementById('propuesta').value || '-'}${eventId ? '\nReferencia evento ID: ' + eventId : ''}`,
+                    detallesAdicionales: `Nombre banda: ${document.getElementById('nombre_banda').value}\nLink: ${document.getElementById('link_musica').value || '-'}\nPropuesta:\n${document.getElementById('propuesta').value || '-'}${eventId ? '\nReferencia evento ID: ' + eventId : ''}\nPrecio anticipada sugerido: ${document.getElementById('precio_anticipada').value || '-'}\nPrecio puerta sugerido: ${document.getElementById('precio_puerta').value || '-'}`,
                     // Campos estructurados que guardaremos en `bandas_solicitudes`
                     nombre_banda: document.getElementById('nombre_banda').value || null,
                     // contacto_email ya no se recoge aquí; se solicita en contacto.html
                     link_musica: document.getElementById('link_musica').value || null,
                     propuesta: document.getElementById('propuesta').value || null,
-                    event_id: eventId || null
+                    event_id: eventId || null,
+                    precio_anticipada: document.getElementById('precio_anticipada').value || null,
+                    precio_puerta: document.getElementById('precio_puerta').value || null
                 };
 
                 const putRes = await fetch(`/api/solicitudes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bandPayload) });
                 if (!putRes.ok) {
                     const err = await putRes.json().catch(() => ({}));
-                    document.getElementById('status').textContent = ' Error: ' + (err.error || 'Error al guardar los detalles.');
+                    toggleLoadingOverlay(false);
+                    showNotification('Error: ' + (err.error || 'Error al guardar los detalles.'), 'error');
                     btn.disabled = false;
                     return;
                 }
 
-                // Redirigir a contacto para completar datos (misma UX que flow existente)
-                window.location.href = `contacto.html?solicitudId=${id}`;
+                // Éxito - redirigir a contacto
+                showNotification('¡Solicitud creada! Redirigiendo...', 'success');
+                setTimeout(() => {
+                    window.location.href = `contacto.html?solicitudId=${id}`;
+                }, 500);
             } catch (err) {
                 console.error('Error al crear solicitud de banda', err);
-                document.getElementById('status').textContent = ' Error al enviar. Intenta de nuevo.';
+                toggleLoadingOverlay(false);
+                showNotification('Error al enviar. Intenta de nuevo.', 'error');
                 btn.disabled = false;
             }
         });
@@ -592,7 +866,83 @@
                 window.location.href = 'agenda_de_bandas.html';
             }
         });
+
+        // ----------------------------------------------------
+        // MENÚ MÓVIL Y AUTENTICACIÓN
+        // ----------------------------------------------------
+        function setupMobileMenu() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+        }
+
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                const desktopHTML = `
+                    <a href="/admin.html" 
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">
+                        🔐 Admin
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="/admin.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
+                        🔐 Admin Panel
+                    </a>
+                    <button onclick="logout()" 
+                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
+                        🚪 Cerrar Sesión
+                    </button>
+                `;
+                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
+                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+            } else {
+                const desktopHTML = `
+                    <a href="login.html"
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">
+                        Login
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="login.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
+                        Login
+                    </a>
+                `;
+                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
+                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/index.html';
+        }
+
+        window.addEventListener('storage', updateAuthMenu);
+
+        // Inicializar menú móvil y autenticación
+        setupMobileMenu();
+        updateAuthMenu();
     </script>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <p>Cargando...</p>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Notification Banner -->
+    <div id="notification-banner"></div>
 </body>
 
 </html>

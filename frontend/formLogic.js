@@ -101,7 +101,7 @@ const App = {
         } else { // modo 'edit'
             this.elements.saveButton.addEventListener('click', this.guardarCambios.bind(this));
             this.elements.cancelButton.addEventListener('click', () => { window.location.href = '/admin_solicitudes.html'; });
-            
+
             // En modo edición, también mostrar un botón de reset si existe
             if (this.elements.resetTipoEventoBtn) {
                 this.elements.resetTipoEventoBtn.addEventListener('click', (e) => {
@@ -221,7 +221,7 @@ const App = {
     construirUI: function (fechaExcepcion = null) {
         console.log("[FORM][UI] Construyendo interfaz de usuario.");
         console.log("[FORM][UI] Excepción de fecha:", fechaExcepcion);
-        
+
         // En modo edición, mostrar todos los tipos; en modo creación, permitir filtrado por categoría
         this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', this.tiposDeEvento);
         this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => {
@@ -244,7 +244,7 @@ const App = {
 
     filtrarTiposPorCategoria: function (tipoId) {
         console.log(`\n🔍 [FILTER-START] filtrarTiposPorCategoria(${tipoId})`);
-        
+
         // Si se selecciona un tipo, mostrar solo los sub-tipos de su categoría
         if (!tipoId) {
             // Si se deselecciona, mostrar todos
@@ -256,13 +256,13 @@ const App = {
         // Buscar el tipo seleccionado
         // Puede ser por ID directo (ej: FECHA_BANDAS) o por tipo_evento (ej: BANDA, ALQUILER)
         let tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
-        
+
         // Si no se encuentra por ID directo, buscar por categoría
         // (para eventos que devuelven tipo_evento en lugar de id específico)
         if (!tipoSeleccionado) {
             tipoSeleccionado = this.tiposDeEvento.find(t => t.categoria === tipoId);
         }
-        
+
         if (!tipoSeleccionado || !tipoSeleccionado.categoria) {
             console.log("[FORM][FILTER] Tipo sin categoría, mostrando todos", tipoId);
             document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('radio-hidden'));
@@ -276,18 +276,18 @@ const App = {
         // Mostrar solo los tipos de la misma categoría
         const radioButtons = this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]');
         console.log(`📊 Total radios en DOM: ${radioButtons.length}`);
-        
+
         let visiblesCount = 0;
         let ocultosCount = 0;
-        
+
         radioButtons.forEach((radio, idx) => {
             const radioOption = radio.closest('.radio-option');
-            
+
             if (!radioOption) {
                 console.warn(`⚠️  Radio ${radio.value} no está en un .radio-option`);
                 return;
             }
-            
+
             // Obtener categoría de dos fuentes: 1) this.tiposDeEvento, 2) atributo data
             let tipoCategoria = null;
             const tipo = this.tiposDeEvento.find(t => t.id === radio.value);
@@ -297,11 +297,11 @@ const App = {
                 // Fallback: usar data-categoria del elemento
                 tipoCategoria = radioOption.getAttribute('data-categoria');
             }
-            
+
             const perteneceLaCategoria = tipoCategoria === categoriaSeleccionada;
             const tieneLaClase = radioOption.classList.contains('radio-hidden');
             const labelText = radioOption.querySelector('label')?.textContent || 'sin-label';
-            
+
             if (perteneceLaCategoria) {
                 // DEBE estar visible
                 if (tieneLaClase) {
@@ -322,31 +322,31 @@ const App = {
                 ocultosCount++;
             }
         });
-        
+
         console.log(`📊 RESUMEN FINAL: ${visiblesCount} visibles, ${ocultosCount} ocultos`);
-        
+
         // Verificación exhaustiva
         setTimeout(() => {
             console.log("\n⏱️  [VERIFICATION] Verificación 10ms después...");
             const radios = this.elements.tipoEventoContainer.querySelectorAll('.radio-option');
             let verificacionVisibles = 0;
             let verificacionOcultos = 0;
-            
+
             Array.from(radios).forEach((r, idx) => {
                 const tieneClase = r.classList.contains('radio-hidden');
                 const inputValue = r.querySelector('input')?.value;
                 const esVisible = !tieneClase;
-                
+
                 if (esVisible) verificacionVisibles++;
                 else verificacionOcultos++;
-                
+
                 const esperado = tipoSeleccionado && this.tiposDeEvento.find(t => t.id === inputValue)?.categoria === categoriaSeleccionada;
                 const match = esVisible === esperado;
                 const icon = match ? '✅' : '❌';
-                
+
                 console.log(`  ${icon} ${idx}: ${inputValue} - visible=${esVisible}, esperado=${esperado}`);
             });
-            
+
             console.log(`✓ Verificación: ${verificacionVisibles} visibles, ${verificacionOcultos} ocultos\n`);
         }, 10);
     },
@@ -364,7 +364,7 @@ const App = {
 
         const tipoId = selectedRadio.value;
         const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
-        
+
         // Determinar si mostrar campos de banda según CATEGORÍA
         // Mostrar si es: BANDA, TALLER, SERVICIO
         // Ocultar si es: ALQUILER (alquiler de salón con subcategorías)
@@ -378,31 +378,20 @@ const App = {
             console.log(`[FORM][CONDITIONAL] Categoría: ${categoria} | Campos de banda: ${mostrarCamposBanda ? 'VISIBLE' : 'OCULTO'}`);
         }
 
-        // Para eventos (tipo_evento como BANDA, ALQUILER, TALLER, SERVICIO):
-        // Ocultar "Cantidad de Personas" y "Duración del evento"
-        // Estos campos no aplican para eventos de tickets
-        const isEventoType = categoria && ['BANDA', 'ALQUILER', 'TALLER', 'SERVICIO', 'OTRO'].includes(categoria);
-        const tipoEsEventoEnum = tipoId && ['BANDA', 'ALQUILER', 'TALLER', 'SERVICIO', 'OTRO'].includes(tipoId);
-        
-        if (isEventoType || tipoEsEventoEnum) {
-            // Verificar si el tipoId es un enum directo (evento) o un id específico (solicitud)
-            // Si el tipoId no existe en tiposDeEvento por ID pero coincide con un ENUM, es un evento
-            const esEventoDirecto = tipoEsEventoEnum && !tipoSeleccionado;
-            
-            if (esEventoDirecto) {
-                // Es un evento puro (ev_*), ocultar cantidad y duración
-                const cantidadGroup = document.getElementById('cantidadPersonasGroup');
-                const duracionGroup = document.getElementById('duracionEventoGroup');
-                if (cantidadGroup) cantidadGroup.style.display = 'none';
-                if (duracionGroup) duracionGroup.style.display = 'none';
-                console.log(`[FORM][CONDITIONAL] Evento directo detectado - ocultando cantidad y duración`);
-            } else {
-                // Es una solicitud normal
-                const cantidadGroup = document.getElementById('cantidadPersonasGroup');
-                const duracionGroup = document.getElementById('duracionEventoGroup');
-                if (cantidadGroup) cantidadGroup.style.display = 'block';
-                if (duracionGroup) duracionGroup.style.display = 'block';
-            }
+        // Ocultar "Cantidad de Personas" y "Duración del evento" para categoría BANDA
+        // Estos campos no aplican para fechas de bandas en vivo
+        const ocultarCantidadYDuracion = categoria === 'BANDA';
+
+        const cantidadGroup = document.getElementById('cantidadPersonasGroup');
+        const duracionGroup = document.getElementById('duracionEventoGroup');
+
+        if (ocultarCantidadYDuracion) {
+            if (cantidadGroup) cantidadGroup.style.display = 'none';
+            if (duracionGroup) duracionGroup.style.display = 'none';
+            console.log(`[FORM][CONDITIONAL] Categoría BANDA - ocultando cantidad y duración`);
+        } else {
+            if (cantidadGroup) cantidadGroup.style.display = 'block';
+            if (duracionGroup) duracionGroup.style.display = 'block';
         }
     },
 
@@ -414,13 +403,13 @@ const App = {
             // MODO EDICIÓN
             this.solicitudId = idFromUrl;
             console.log(`[FORM][EDIT] Cargando solicitud ID: ${idFromUrl}`);
-            
+
             // Cancelar cualquier request anterior pendiente
             if (this.loadAbortController) {
                 this.loadAbortController.abort();
             }
             this.loadAbortController = new AbortController();
-            
+
             fetch(`/api/solicitudes/${this.solicitudId}`, {
                 signal: this.loadAbortController.signal
             })
@@ -863,7 +852,7 @@ const App = {
         let hora = overrides.overrideHora || this.elements.horaInicioSelect.value;
 
         console.log(`[FORM][UPDATE] Llamado por: ${caller} | Tipo: ${tipoId || '-'} | Cantidad: ${cantidad || '-'} | Duración: ${duracion || '-'}`);
-        
+
         const fechaSeleccionada = fechaStr ? new Date(fechaStr + 'T00:00:00') : null;
 
         // Resolver la clave usable para opciones (duraciones/horas/cantidades)

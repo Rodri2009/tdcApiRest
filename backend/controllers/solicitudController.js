@@ -133,7 +133,7 @@ const getSolicitudPorId = async (req, res) => {
         if (id && id.toString().startsWith('ev_')) {
             const eventoId = parseInt(id.substring(3)); // Remover 'ev_' y convertir a número
             console.log(`[SOLICITUD][GET] Detectado evento con ID: ${eventoId}`);
-            
+
             const sql = `
                 SELECT 
                     CONCAT('ev_', e.id) as solicitudId,
@@ -160,14 +160,14 @@ const getSolicitudPorId = async (req, res) => {
                 FROM eventos e
                 WHERE e.id = ?;
             `;
-            
+
             const [evento] = await conn.query(sql, [eventoId]);
-            
+
             if (!evento) {
                 console.warn(`[SOLICITUD][GET] Evento no encontrado: ${eventoId}`);
                 return res.status(404).json({ error: 'Evento no encontrado.' });
             }
-            
+
             console.log(`[SOLICITUD][GET] Evento obtenido: ${evento.nombreCompleto}`);
             return res.status(200).json(evento);
         }
@@ -190,7 +190,7 @@ const getSolicitudPorId = async (req, res) => {
         const sql = `
             SELECT 
                 s.id_solicitud as solicitudId,
-                s.tipo_servicio as tipoEvento,
+                s.tipo_de_evento as tipoEvento,
                 s.cantidad_de_personas as cantidadPersonas,
                 s.duracion as duracionEvento,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
@@ -210,7 +210,7 @@ const getSolicitudPorId = async (req, res) => {
                 bs.invitados as bandaInvitados,
                 ${extraCols.join(',\n                ')}
             FROM solicitudes s
-            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             LEFT JOIN bandas_solicitudes bs ON s.id_solicitud = bs.id_solicitud
             WHERE s.id_solicitud = ?;
         `;
@@ -275,7 +275,7 @@ const finalizarSolicitud = async (req, res) => {
         const sqlSelect = `
             SELECT s.*, ot.nombre_para_mostrar, ot.descripcion as descripcion_evento 
             FROM solicitudes s
-            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
         const [solicitudCompleta] = await conn.query(sqlSelect, [id]);
@@ -516,7 +516,7 @@ const getSesionExistente = async (req, res) => {
         const sql = `
             SELECT 
                 id_solicitud as solicitudId, 
-                tipo_servicio as tipoEvento, 
+                tipo_de_evento as tipoEvento, 
                 cantidad_de_personas as cantidadPersonas, 
                 duracion as duracionEvento, 
                 DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fechaEvento, 
@@ -553,7 +553,7 @@ const getSesionExistente = async (req, res) => {
 // ============================================
 const obtenerAdicionales = async (req, res) => {
     const { id } = req.params;
-    
+
     if (!id || isNaN(parseInt(id, 10))) {
         return res.status(400).json({ error: 'ID de solicitud inválido.' });
     }
@@ -561,7 +561,7 @@ const obtenerAdicionales = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
         // Obtener los adicionales guardados para esta solicitud
         const adicionales = await conn.query(
             "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?",
@@ -573,9 +573,9 @@ const obtenerAdicionales = async (req, res) => {
         });
     } catch (error) {
         console.error(`Error al obtener adicionales para solicitud ${id}:`, error);
-        return res.status(500).json({ 
+        return res.status(500).json({
             error: 'Error interno al obtener adicionales.',
-            details: error.message 
+            details: error.message
         });
     } finally {
         if (conn) conn.release();
