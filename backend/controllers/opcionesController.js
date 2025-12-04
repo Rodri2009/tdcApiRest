@@ -3,18 +3,21 @@ const pool = require('../db');
 // --- LOG DE DEPURACIÓN (NUEVO) ---
 //console.log("Controlador de 'opciones' cargado.");
 
-// Obtener todos los tipos de eventos públicos
+// Obtener todos los tipos de eventos disponibles para solicitudes
+// NOTA: es_publico indica si aparece en la agenda pública de index.html,
+//       NO si está disponible para crear solicitudes.
+//       El filtrado por categoría se hace en el frontend (categoriaFiltro).
 const getTiposDeEvento = async (req, res) => {
     //console.log("\n-> Ejecutando controlador getTiposDeEvento...");
     let conn;
     try {
         conn = await pool.getConnection();
-        // Permitimos filtrar por categoría: ?categoria=BANDA
+        // Permitimos filtrar por categoría: ?categoria=ALQUILER_SALON
         const categoria = req.query.categoria;
-        let sql = "SELECT `id_evento` as id, `nombre_para_mostrar` as nombreParaMostrar, `descripcion` as descripcion, `monto_sena` as montoSena, `deposito` as depositoGarantia, `es_publico` as esPublico, IFNULL(`categoria`, 'OTRO') as categoria FROM `opciones_tipos` WHERE `es_publico` = 1";
+        let sql = "SELECT `id_evento` as id, `nombre_para_mostrar` as nombreParaMostrar, `descripcion` as descripcion, `monto_sena` as montoSena, `deposito` as depositoGarantia, `es_publico` as esPublico, IFNULL(`categoria`, 'OTRO') as categoria FROM `opciones_tipos`";
         let rows;
         if (categoria) {
-            sql += " AND categoria = ?";
+            sql += " WHERE categoria = ?";
             rows = await conn.query(sql, [categoria]);
         } else {
             rows = await conn.query(sql);
