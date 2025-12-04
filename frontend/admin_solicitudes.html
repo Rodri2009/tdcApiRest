@@ -369,7 +369,8 @@
                     <th>ID</th>
                     <th>Fecha Solicitud</th>
                     <th>Cliente</th>
-                    <th>Tipo Evento</th>
+                    <th>Tipo</th>
+                    <th>Subtipo</th>
                     <th>Fecha Evento</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -492,11 +493,22 @@
                             botones += `<button class="action-btn btn-work-order" data-action="work-order" data-id="${solicitud.id}">Orden de Trabajo</button>`;
                         }
 
+                        // Mapear categoría a nombre legible
+                        const tiposLegibles = {
+                            'ALQUILER_SALON': 'Alquiler del Salón',
+                            'FECHA_BANDAS': 'Fecha para Bandas',
+                            'TALLERES': 'Taller',
+                            'SERVICIO': 'Servicio',
+                            'OTRO': 'Otro'
+                        };
+                        const tipoLegible = tiposLegibles[solicitud.tipoEvento] || solicitud.tipoEvento;
+
                         tr.innerHTML = `
                             <td data-label="ID">${solicitud.id}</td>
                             <td data-label="Fecha Solicitud">${fechaSolicitud}</td>
                             <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
-                            <td data-label="Tipo Evento">${solicitud.tipoEvento}</td>
+                            <td data-label="Tipo">${tipoLegible}</td>
+                            <td data-label="Subtipo">${solicitud.subtipo || '-'}</td>
                             <td data-label="Fecha Evento">${fechaEvento}</td>
                             <td data-label="Estado">
                                 <select data-id="${solicitud.id}" class="estado-select">
