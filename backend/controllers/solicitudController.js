@@ -140,8 +140,8 @@ const getSolicitudPorId = async (req, res) => {
                     e.tipo_evento as tipoEvento,
                     NULL as cantidadPersonas,
                     NULL as duracionEvento,
-                    DATE_FORMAT(e.fecha_hora, '%Y-%m-%d') as fechaEvento,
-                    DATE_FORMAT(e.fecha_hora, '%H:%i') as horaInicio,
+                    DATE_FORMAT(e.fecha, '%Y-%m-%d') as fechaEvento,
+                    TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
                     e.precio_base as precioBase,
                     e.nombre_banda as nombreCompleto,
                     NULL as telefono,
@@ -191,6 +191,7 @@ const getSolicitudPorId = async (req, res) => {
             SELECT 
                 s.id_solicitud as solicitudId,
                 s.tipo_de_evento as tipoEvento,
+                s.tipo_servicio as tipoServicio,
                 s.cantidad_de_personas as cantidadPersonas,
                 s.duracion as duracionEvento,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
@@ -202,6 +203,7 @@ const getSolicitudPorId = async (req, res) => {
                 s.descripcion,
                 s.estado,
                 ot.nombre_para_mostrar as nombreParaMostrar,
+                ot.categoria as categoria,
                 bs.nombre_banda as nombreBanda,
                 bs.contacto_email as bandaContactoEmail,
                 bs.link_musica as bandaLinkMusica,
@@ -210,7 +212,7 @@ const getSolicitudPorId = async (req, res) => {
                 bs.invitados as bandaInvitados,
                 ${extraCols.join(',\n                ')}
             FROM solicitudes s
-            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
             LEFT JOIN bandas_solicitudes bs ON s.id_solicitud = bs.id_solicitud
             WHERE s.id_solicitud = ?;
         `;
@@ -275,7 +277,7 @@ const finalizarSolicitud = async (req, res) => {
         const sqlSelect = `
             SELECT s.*, ot.nombre_para_mostrar, ot.descripcion as descripcion_evento 
             FROM solicitudes s
-            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
         const [solicitudCompleta] = await conn.query(sqlSelect, [id]);

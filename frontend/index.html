@@ -408,11 +408,28 @@
             const { id, nombre_banda, fecha_hora, precio_base, precio_anticipada, precio_puerta, descripcion, activo, aforo_maximo } = event;
             const { day, month, time } = formatDateTime(fecha_hora);
 
-            // Estilo y texto dinámico para precio y botón
-            let priceText = `$ ${precio_anticipada !== null && precio_anticipada !== undefined ? parseFloat(precio_anticipada).toLocaleString('es-AR') : parseFloat(precio_base).toLocaleString('es-AR')} ARS (Anticipada)`;
-            if (precio_puerta !== null && precio_puerta !== undefined) {
-                priceText += ` • $ ${parseFloat(precio_puerta).toLocaleString('es-AR')} ARS (Puerta)`;
+            // Determinar precios - priorizar precio_anticipada y precio_puerta sobre precio_base
+            const precioAnticipada = precio_anticipada !== null && precio_anticipada !== undefined ? parseFloat(precio_anticipada) : null;
+            const precioPuerta = precio_puerta !== null && precio_puerta !== undefined ? parseFloat(precio_puerta) : null;
+            const precioBase = precio_base !== null && precio_base !== undefined ? parseFloat(precio_base) : 0;
+            
+            // Es gratis solo si TODOS los precios son 0 o null
+            const esGratis = (precioAnticipada === null || precioAnticipada === 0) && 
+                             (precioPuerta === null || precioPuerta === 0) && 
+                             precioBase === 0;
+            
+            // Mostrar precios
+            let priceText = '';
+            if (precioAnticipada !== null && precioAnticipada > 0) {
+                priceText = `$ ${precioAnticipada.toLocaleString('es-AR')} ARS (Anticipada)`;
             }
+            if (precioPuerta !== null && precioPuerta > 0) {
+                priceText += priceText ? ` • $ ${precioPuerta.toLocaleString('es-AR')} ARS (Puerta)` : `$ ${precioPuerta.toLocaleString('es-AR')} ARS (Puerta)`;
+            }
+            if (!priceText && precioBase > 0) {
+                priceText = `$ ${precioBase.toLocaleString('es-AR')} ARS`;
+            }
+            
             let buttonText = 'Sacar Entrada';
             let buttonClass = 'bg-fuchsia-500 hover:bg-fuchsia-400';
             let borderClass = 'border-fuchsia-500';
@@ -420,7 +437,7 @@
             let priceTextColor = 'text-neon';
             let link = `agenda_de_bandas.html?event_id=${id}`; // Enlace a la página de agenda
 
-            if ((precio_anticipada !== null && parseFloat(precio_anticipada) === 0) || (precio_puerta !== null && parseFloat(precio_puerta) === 0) || parseFloat(precio_base) === 0) {
+            if (esGratis) {
                 priceText = '¡GRATIS!';
                 buttonText = 'Reservar Lugar';
                 buttonClass = 'bg-emerald-500 hover:bg-emerald-400';
@@ -464,16 +481,16 @@
                 return;
             }
 
-            // Filtramos solo los 2 o 3 primeros eventos para la home.
+            // Filtramos solo los primeros eventos para la home.
             const activeEvents = events.filter(event => event.activo === 1);
-            const eventsToShow = activeEvents.slice(0, 3); // Muestra un máximo de 3
+            const eventsToShow = activeEvents.slice(0, 4); // Muestra un máximo de 4
 
             if (eventsToShow.length === 0 && activeEvents.length > 0) {
                 // Esto sucede si solo hay eventos inactivos, aunque la lógica del backend es incierta.
-                eventsToShow = activeEvents.slice(0, 3);
+                eventsToShow = activeEvents.slice(0, 4);
             } else if (eventsToShow.length === 0 && activeEvents.length === 0 && events.length > 0) {
-                // Si el filtro no funcionó, mostramos los primeros 3 de la lista original como fallback visual.
-                eventsToShow = events.slice(0, 3);
+                // Si el filtro no funcionó, mostramos los primeros 4 de la lista original como fallback visual.
+                eventsToShow = events.slice(0, 4);
             }
 
 

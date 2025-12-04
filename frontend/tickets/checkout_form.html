@@ -227,7 +227,6 @@
             data.precio_unitario = selectedTicket.precio;
             data.total_final = parseFloat(totalPriceEl.textContent.replace('$', '').replace('.', '').replace(',', '.')); // Obtiene el valor limpio
             
-            console.log('Datos listos para enviar a la API (Simulado):', data);
 
             // Simulación de la llamada a la API
             // En una aplicación real, aquí se llamaría a POST /api/tickets/comprar

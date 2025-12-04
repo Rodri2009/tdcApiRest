@@ -1,299 +1,163 @@
-# TDC - Sistema de Gestión de Salones de Eventos
+# TDC - Sistema de Gestión de Eventos
 
-Este proyecto es la migración de una aplicación originalmente creada en Google Apps Script a una arquitectura moderna basada en Docker, con un backend de Node.js/Express y una base de datos MariaDB. El sistema permite a los clientes generar presupuestos y a los administradores gestionar las solicitudes.
+Sistema de gestión de solicitudes para eventos del Centro Cultural.
 
-## Arquitectura del Proyecto
+## Arquitectura
 
--   **/backend**: Contiene el código fuente de la API RESTful (Node.js/Express).
-    -   `/routes`: Define las rutas de la API.
-    -   `/controllers`: Contiene la lógica de negocio.
-    -   `/services`: Contiene servicios auxiliares, como el envío de emails.
--   **/frontend**: Contiene todos los archivos estáticos de la aplicación (HTML, CSS y JS del cliente).
--   **/docker**: Contiene los archivos de configuración de Docker.
-    -   `docker-compose.yml`: Orquesta todos los servicios.
-    -   `Dockerfile.*`: Define cómo construir las imágenes de los servicios.
--   **/database**: Contiene los scripts de inicialización de la base de datos.
-    -   `schema.sql`: Crea la estructura de tablas.
-    -   `seed.sql`: Carga los datos de configuración iniciales (semillas).
--   **/scripts**: Contiene scripts de utilidad, como la creación de usuarios administradores.
--   **/data_migration**: Carpeta local (ignorada por Git) para datos sensibles y scripts de migración de única vez.
-
----
-
-## 🚀 Puesta en Marcha (Desde Cero)
-
-Sigue estos pasos para clonar y ejecutar el proyecto por primera vez en un nuevo entorno (Debian/Ubuntu).
-
-### Requisitos Previos
-
--   Git
--   Docker
--   Docker Compose
-
-### 1. Clonar el Repositorio
-
-```bash
-git clone <URL_DE_TU_REPOSITORIO_EN_GIT>
-cd <NOMBRE_DEL_DIRECTORIO_DEL_PROYECTO>
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        NGINX (proxy)                        │
+│                         Puerto 80                           │
+└─────────────────────────────────────────────────────────────┘
+                 ↓                              ↓
+     /api/* (backend)                    /* (frontend)
+                 ↓                              ↓
+┌────────────────────────┐        ┌──────────────────────────┐
+│        BACKEND         │        │         NGINX            │
+│     Node.js/Express    │        │     (sirve estáticos)    │
+│       Puerto 3000      │        │       /app/frontend      │
+└────────────────────────┘        └──────────────────────────┘
+                 ↓
+     ┌───────────────────┐
+     │      MARIADB      │
+     │    Puerto 3306    │
+     └───────────────────┘
 ```
 
-### 2. Configurar Variables de Entorno
+## Requisitos
 
-El sistema necesita un archivo `.env` en la raíz del proyecto para funcionar. Este archivo **no está en Git** por seguridad.
+- Docker y Docker Compose
+- Archivo `.env` en la raíz del proyecto
 
-**Crea el archivo `.env`:**
+## Puesta en Marcha
+
 ```bash
-cp ejemplo.env .env
-```
-*(Nota: Se recomienda crear un archivo `ejemplo.env` en el repositorio con las claves pero sin los valores para facilitar este paso).*
+# 1. Clonar y configurar
+git clone <repo-url>
+cd tdcApiRest
+cp .env.example .env   # Editar con tus variables
 
-**Abre el archivo `.env` y rellena los valores:**
-```env
-# Variables para el Backend y Docker Compose
-PORT=3000
-
-# Credenciales de la Base de Datos
-DB_HOST=mariadb
-DB_NAME=tdc_db
-DB_USER=userPrincipal
-DB_PASSWORD=passDelUserPrincipal
-
-# Credenciales de MariaDB (usadas para la creación y el healthcheck)
-MARIADB_DATABASE=tdc_db
-MARIADB_USER=userPrincipal
-MARIADB_PASSWORD=passDelUserPrincipal
-MARIADB_ROOT_PASSWORD=passDelRoot
-
-# Credenciales para el envío de Emails (Gmail)
-EMAIL_SERVICE=gmail
-EMAIL_USER=tu_email@gmail.com
-EMAIL_PASS=tu_contraseña_de_aplicacion_de_16_caracteres
-EMAIL_ADMIN=email_destino_para_notificaciones@ejemplo.com
-
-# Clave secreta para firmar los tokens de sesión (JWT)
-JWT_SECRET=una_frase_secreta_muy_larga_y_aleatoria
-```
-
-### 3. Levantar el Entorno
-
-Este proyecto incluye un script de arranque que valida la configuración y levanta todos los servicios.
-
-**Dale permisos de ejecución al script (solo la primera vez):**
-```bash
-chmod +x up.sh
-```
-
-**Ejecuta el script:**
-```bash
+# 2. Levantar servicios
 ./up.sh
 ```
-La primera vez que se ejecute, este script construirá las imágenes, creará los contenedores e inicializará la base de datos con las tablas y los datos de configuración.
 
-### 4. Crear el Usuario Administrador (Solo la Primera Vez)
+**URLs:**
+- Frontend: http://localhost
+- API: http://localhost/api
 
-Después de que el entorno esté arriba, crea tu primer usuario para acceder al panel de administración.
+## Scripts Disponibles
 
-**Instala las dependencias del script (solo la primera vez):**
-```bash
-npm install dotenv mariadb bcryptjs
-```
+| Script | Descripción |
+|--------|-------------|
+| `./up.sh` | Levanta todos los servicios |
+| `./down-and-backup.sh` | Detiene servicios y crea backup de la BD |
+| `./reset.sh` | Reinicia completamente (elimina datos y reconstruye) |
 
-**Ejecuta el script de creación:**
-```bash
-node scripts/crear-admin.js
-```
-Sigue las instrucciones en la terminal para introducir un email y una contraseña.
-
----
-
-## 📚 Referencia de Comandos Docker Compose
-
-Para una gestión avanzada, puedes usar estos comandos desde la raíz del proyecto.
-
--   **Ver el estado de los contenedores:**
-    ```bash
-    docker-compose -f docker/docker-compose.yml --env-file .env ps
-    ```
-
--   **Ver los logs de un servicio en tiempo real (ej. `backend`):**
-    ```bash
-    docker-compose -f docker/docker-compose.yml --env-file .env logs -f backend
-    ```
-
--   **Detener los servicios (conserva los datos):**
-    ```bash
-    docker-compose -f docker/docker-compose.yml --env-file .env stop
-    ```
-
--   **Iniciar los servicios (si están detenidos):**
-    ```bash
-    docker-compose -f docker/docker-compose.yml --env-file .env start
-    ```
-
--   **Reiniciar un servicio específico (ej. `backend`):**
-    ```bash
-    docker-compose -f docker/docker-compose.yml --env-file .env restart backend
-    ```
-
--   **Abrir una terminal dentro de un contenedor (ej. `backend`):**
-    ```bash
-    docker-compose -f docker/docker-compose.yml --env-file .env exec backend sh
-    ```
-
--   **Ejecutar una consulta SQL en la base de datos:**
-    ```bash
-    docker-compose -f docker/docker-compose.yml --env-file .env exec mariadb mariadb -u $DB_USER -p$DB_PASSWORD $DB_NAME -e "SELECT * FROM solicitudes;"
-    ```
-
--   **Destruir el entorno (contenedores y redes, pero CONSERVA los datos):**
-    ```bash
-    docker-compose -f docker/docker-compose.yml --env-file .env down
-    ```
-
--   **DESTRUCCIÓN TOTAL (borra la base de datos y hace un backup previo):**
-    ```bash
-    ./down-and-backup.sh
-    ```
-
----
-
-## 🧪 Pruebas y Endpoints de la API
-
-### Acceso a la Aplicación
-
--   **Página del Cliente:** `http://localhost/`
--   **Panel de Administración:** `http://localhost/login.html`
-
-### Endpoints de la API
-
-#### Autenticación (`/api/auth`)
--   `POST /login`: Inicia sesión.
--   `POST /logout`: Cierra sesión.
-
-#### Opciones Generales (`/api/opciones`)
--   `GET /tipos-evento`: Devuelve la lista de tipos de evento.
--   `GET /tarifas`: Devuelve todas las reglas de precios.
--   `GET /duraciones`: Devuelve las duraciones por tipo de evento.
--   `GET /horarios`: Devuelve los horarios por tipo de evento.
--   `GET /fechas-ocupadas`: Devuelve las fechas confirmadas.
--   `GET /config`: Devuelve la configuración general.
-
-#### Solicitudes (`/api/solicitudes`)
--   `POST /`: Crea una nueva solicitud.
--   `GET /sesion`: Busca una sesión activa por `fingerprintId`.
--   `GET /:id`: Obtiene los detalles de una solicitud.
--   `PUT /:id`: Actualiza los datos básicos de una solicitud.
--   `POST /:id/adicionales`: Guarda los adicionales para una solicitud.
--   `PUT /:id/finalizar`: Confirma una solicitud con los datos del cliente.
-
-#### Administración (`/api/admin`) - **Protegido**
--   `GET /solicitudes`: Obtiene todas las solicitudes.
--   `PUT /solicitudes/:id/estado`: Actualiza el estado de una solicitud.
--   `DELETE /solicitudes/:id`: Elimina una solicitud.
-
-### Pruebas desde la Terminal (usando `curl`)
-
--   **Probar el estado del backend:**
-    ```bash
-    curl http://localhost/api/status
-    ```
--   **Probar el envío de email de prueba:**
-    ```bash
-    curl -X POST http://localhost/api/test/email
-    ```
--   **Crear una nueva solicitud:**
-    ```bash
-    curl -X POST -H "Content-Type: application/json" -d '{"tipoEvento": "INFANTILES", "fechaEvento": "2025-12-25", ...}' http://localhost/api/solicitudes
-    ```
-
----
-
-## Dependencia adicional: uuid
-
-El backend usa la librería `uuid` para generar identificadores únicos para tickets. Si al arrancar el servicio ves un error como `Cannot find package 'uuid'`, instala la dependencia desde la raíz del proyecto:
+### Crear usuario administrador
 
 ```bash
-npm install uuid
-# si tu proyecto es CommonJS y quieres compatibilidad con uuid v8:
-npm install uuid@8
+docker exec -it tdc-backend node /app/scripts/crear-admin.js
 ```
 
-Si usas Docker/Compose, reconstruye la imagen del backend para que la dependencia quede incluida:
+### Reiniciar solo el backend
 
 ```bash
-docker-compose -f docker/docker-compose.yml --env-file .env build --no-cache backend
-docker-compose -f docker/docker-compose.yml --env-file .env up -d
+./scripts/restart_backend.sh
 ```
 
----
+## Estructura del Proyecto
 
-## Requisitos del sistema
+```
+tdcApiRest/
+├── backend/
+│   ├── server.js           # Punto de entrada
+│   ├── controllers/        # Lógica de negocio
+│   ├── routes/             # Definición de rutas API
+│   ├── middleware/         # Auth y validaciones
+│   └── services/           # Email, etc.
+├── frontend/
+│   ├── index.html          # Página principal
+│   ├── page.html           # Formulario de solicitud
+│   └── admin*.html         # Paneles de administración
+├── database/
+│   ├── 01_schema.sql       # Estructura de tablas
+│   ├── 02_seed.sql         # Datos iniciales
+│   └── _legacy/            # SQLs obsoletos (referencia)
+├── docker/
+│   ├── docker-compose.yml  # Orquestación de servicios
+│   └── Dockerfile.*        # Imágenes de Docker
+└── docs/
+    └── LOGICA_NEGOCIO.md   # Documentación de reglas de negocio
+```
 
-Antes de levantar el proyecto, asegúrate de tener instaladas estas herramientas en la máquina donde ejecutarás `./up.sh`:
+## Endpoints API
 
-- Docker (daemon en ejecución)
-- Docker Compose (o el plugin `docker compose` incluido en versiones recientes de Docker)
-- Node.js >= 14.0.0
-- npm >= 6.0.0
-- Un archivo `.env` en la raíz del repositorio con las variables de configuración
+### Autenticación
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Iniciar sesión |
+| POST | `/api/auth/logout` | Cerrar sesión |
+| POST | `/api/auth/register` | Registrar usuario |
 
-Ejemplos de instalación en Linux (Debian/Ubuntu):
+### Solicitudes
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/solicitudes` | Listar solicitudes del usuario |
+| POST | `/api/solicitudes` | Crear solicitud |
+| GET | `/api/solicitudes/:id` | Obtener solicitud |
+| PUT | `/api/solicitudes/:id` | Actualizar solicitud |
 
+### Admin
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/admin/solicitudes` | Listar todas las solicitudes |
+| PUT | `/api/admin/solicitudes/:id/estado` | Cambiar estado |
+
+### Opciones
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/opciones/tipos-evento` | Tipos de evento disponibles |
+| GET | `/api/opciones/adicionales` | Servicios adicionales |
+
+## Lógica de Negocio
+
+Ver documentación detallada en `docs/LOGICA_NEGOCIO.md`
+
+**Tipos de eventos principales:**
+1. **ALQUILER_SALON** - Eventos privados (cumpleaños, casamientos, etc.)
+2. **FECHA_BANDAS** - Shows de bandas/artistas
+3. **TALLERES** - Clases y talleres (futuro)
+4. **SERVICIO** - Servicios de catering (futuro)
+
+## Variables de Entorno
+
+Crear archivo `.env` con las siguientes variables:
+
+```env
+# Base de datos
+MYSQL_ROOT_PASSWORD=tu_password
+MYSQL_DATABASE=tdc_db
+MYSQL_USER=tdc_user
+MYSQL_PASSWORD=tu_password
+
+# Backend
+JWT_SECRET=tu_jwt_secret
+NODE_ENV=production
+
+# Email (opcional)
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=tu_email@gmail.com
+SMTP_PASS=tu_app_password
+```
+
+## Desarrollo
+
+Para ver logs del backend:
 ```bash
-# Docker (sigue la guía oficial si necesitas otra distribución):
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg lsb-release
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-# Node.js (usando NodeSource para versiones LTS, por ejemplo Node 18):
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Verifica versiones:
-node --version
-npm --version
+docker logs -f tdc-backend
 ```
 
-### Reconstruir la imagen del backend y levantar los servicios
-
-Si mueves el proyecto a otra máquina, asegúrate de reconstruir la imagen del backend para que las dependencias listadas en `backend/package.json` se instalen en la imagen y, si hace falta, en el contenedor durante el entrypoint:
-
+Para conectar a la base de datos:
 ```bash
-# Desde la raíz del repositorio
-docker-compose -f docker/docker-compose.yml --env-file .env build --no-cache backend
-docker-compose -f docker/docker-compose.yml --env-file .env up -d
-
-# Ver logs del backend
-docker-compose -f docker/docker-compose.yml --env-file .env logs -f backend
+docker exec -it tdc-mariadb mariadb -u root -p
 ```
-
-El `Dockerfile.backend` incluye un entrypoint que ejecuta `npm install` dentro del contenedor si detecta que faltan `node_modules` o paquetes críticos como `uuid`. Esto garantiza que, incluso si no instalas dependencias en el host, el contenedor intentará instalar lo necesario en runtime.
-
----
-
-## Scripts de backup e import
-
-En `scripts/` hay dos utilidades para manejar backups SQL de la base de datos:
-
-- `scripts/backup_and_stop.sh`: crea un dump timestamped de la base de datos (en `backups/<ts>/`) y luego detiene los contenedores.
-- `scripts/import_sqls.sh`: busca archivos `.sql` en `backups/` (recursivo) e intenta importarlos en la base de datos; los movidos a `backups/imported/` o `backups/failed/` según el resultado.
-
-Uso típico:
-
-```bash
-# Crear backup y detener contenedores
-chmod +x scripts/backup_and_stop.sh
-./scripts/backup_and_stop.sh
-
-# Importar SQLs detectados
-chmod +x scripts/import_sqls.sh
-./scripts/import_sqls.sh
-```
-
-Nota: ambos scripts leen las variables del archivo `.env` para obtener credenciales y el nombre de la base de datos. Asegúrate de que `.env` exista en la raíz del repo.

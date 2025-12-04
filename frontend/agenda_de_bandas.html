@@ -115,60 +115,18 @@
         </section>
 
 
-        <!-- Sección 2: Contacto para Bandas (Mantenida) -->
+        <!-- Sección 2: Llamada a la acción para bandas -->
         <section id="contacto-bandas" class="py-16 bg-rustic">
             <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center mb-10">
-                    <h2 class="text-3xl font-bold text-white mb-2">¿Querés Tocar en el Templo?</h2>
-                    <p class="text-stone-300">Buscamos propuestas originales que encajen con nuestra vibración
-                        rústico-fluorescente. Envía tu material.</p>
-                </div>
-
-                <div class="text-center mb-6">
-                    <a href="solicitud_banda.html?tipo=FECHA_EN_VIVO"
-                        class="inline-flex items-center justify-center px-4 py-2 bg-emerald-500 text-gray-900 font-bold rounded-full shadow hover:bg-emerald-400 transition">
-                        Generar Solicitud para Banda (Fechas y Presupuesto)
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold text-white mb-4">¿Querés Tocar en el Templo?</h2>
+                    <p class="text-stone-300 mb-8">Buscamos propuestas originales que encajen con nuestra vibración
+                        rústico-fluorescente.</p>
+                    <a href="solicitud_banda.html"
+                        class="inline-flex items-center justify-center px-8 py-4 bg-fuchsia-500 text-gray-900 text-xl font-bold rounded-full shadow-xl hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                        🎸 Quiero tocar en El Templo
                     </a>
                 </div>
-
-                <!-- Formulario de Contacto Mock-up -->
-                <form class="space-y-6 p-8 bg-stone-800 rounded-xl shadow-2xl border border-fuchsia-500/30">
-                    <div>
-                        <label for="nombre-banda" class="block text-sm font-medium text-neon mb-1">Nombre de la Banda o
-                            Proyecto:</label>
-                        <input type="text" id="nombre-banda" name="nombre-banda"
-                            class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white"
-                            placeholder="Ej: La Risa de Cromo" required>
-                    </div>
-                    <div>
-                        <label for="contacto-email" class="block text-sm font-medium text-neon mb-1">Email de
-                            Contacto:</label>
-                        <input type="email" id="contacto-email" name="contacto-email"
-                            class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white"
-                            placeholder="tu.banda@mail.com" required>
-                    </div>
-                    <div>
-                        <label for="link-musica" class="block text-sm font-medium text-neon mb-1">Link a tu Música
-                            (Spotify, YouTube, Bandcamp):</label>
-                        <input type="url" id="link-musica" name="link-musica"
-                            class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white"
-                            placeholder="https://" required>
-                    </div>
-                    <div>
-                        <label for="propuesta" class="block text-sm font-medium text-neon mb-1">Comentanos tu Propuesta
-                            y Requerimientos Técnicos:</label>
-                        <textarea id="propuesta" name="propuesta" rows="4"
-                            class="w-full px-4 py-3 rounded-lg bg-stone-700 border border-stone-600 focus:ring-fuchsia-500 focus:border-fuchsia-500 text-white"
-                            placeholder="Estilo musical, cantidad de integrantes, necesidad de backline..."></textarea>
-                    </div>
-                    <!-- Nota: En un sistema real, este botón llamaría a una API de Node.js para enviar el formulario por email/guardarlo en DB -->
-                    <button type="submit"
-                        class="w-full bg-fuchsia-500 text-gray-900 font-bold py-3 rounded-lg shadow-xl hover:bg-fuchsia-400 transition duration-300 transform hover:scale-[1.01]">
-                        Enviar Propuesta
-                    </button>
-                    <p class="text-center text-sm text-stone-400 mt-4">Nos pondremos en contacto a la brevedad para
-                        coordinar una fecha.</p>
-                </form>
             </div>
         </section>
 
@@ -247,12 +205,29 @@
             const { day, month, time } = formatDateTime(fecha_hora);
 
             // Estilo y texto dinámico para precio y botón
-            // Mostrar ambos precios si están disponibles
-            let priceText = `$ ${precio_anticipada !== null && precio_anticipada !== undefined ? parseFloat(precio_anticipada).toLocaleString('es-AR') : parseFloat(precio_base).toLocaleString('es-AR')} ARS (Anticipada)`;
-            if (precio_puerta !== null && precio_puerta !== undefined) {
-                priceText += ` • $ ${parseFloat(precio_puerta).toLocaleString('es-AR')} ARS (Puerta)`;
+            // Determinar precios - priorizar precio_anticipada y precio_puerta sobre precio_base
+            const precioAnticipada = precio_anticipada !== null && precio_anticipada !== undefined ? parseFloat(precio_anticipada) : null;
+            const precioPuerta = precio_puerta !== null && precio_puerta !== undefined ? parseFloat(precio_puerta) : null;
+            const precioBase = precio_base !== null && precio_base !== undefined ? parseFloat(precio_base) : 0;
+            
+            // Es gratis solo si TODOS los precios son 0 o null
+            const esGratis = (precioAnticipada === null || precioAnticipada === 0) && 
+                             (precioPuerta === null || precioPuerta === 0) && 
+                             precioBase === 0;
+            
+            // Mostrar precios
+            let priceText = '';
+            if (precioAnticipada !== null && precioAnticipada > 0) {
+                priceText = `$ ${precioAnticipada.toLocaleString('es-AR')} ARS (Anticipada)`;
             }
-            let buttonText = 'Comprar Entrada';
+            if (precioPuerta !== null && precioPuerta > 0) {
+                priceText += priceText ? ` • $ ${precioPuerta.toLocaleString('es-AR')} ARS (Puerta)` : `$ ${precioPuerta.toLocaleString('es-AR')} ARS (Puerta)`;
+            }
+            if (!priceText && precioBase > 0) {
+                priceText = `$ ${precioBase.toLocaleString('es-AR')} ARS`;
+            }
+            
+            let buttonText = 'Sacar Entrada';
             let buttonClass = 'bg-fuchsia-500 hover:bg-fuchsia-400';
             let borderClass = 'border-fuchsia-500';
             let dateBgClass = 'bg-fuchsia-900';
@@ -260,7 +235,7 @@
             let priceTextColor = 'text-neon';
             let link = `checkout_form.html?event_id=${id}`;
 
-            if ((precio_anticipada !== null && parseFloat(precio_anticipada) === 0) || (precio_puerta !== null && parseFloat(precio_puerta) === 0) || parseFloat(precio_base) === 0) {
+            if (esGratis) {
                 priceText = '¡GRATIS!';
                 buttonText = 'Reservar Lugar';
                 buttonClass = 'bg-emerald-500 hover:bg-emerald-400';
@@ -306,7 +281,6 @@
          */
         function renderEvents(events) {
             eventsListContainer.innerHTML = ''; // Limpia el mensaje de carga
-            console.log("Eventos obtenidos del API:", events.length);
 
             if (!events || events.length === 0) {
                 eventsListContainer.innerHTML = `
@@ -320,12 +294,12 @@
 
             // Filtramos solo los eventos de bandas en vivo que estén activos
             // activo puede ser: 1, true, "1", o true (según cómo lo devuelva la API)
+            // Excluimos eventos de tipo SERVICIO (esos solo deben aparecer en index.html)
             const activeBandEvents = events.filter(event => {
                 const isActive = event.activo === 1 || event.activo === true || event.activo === "1";
-                return isActive;
+                const isNotService = event.tipo_de_evento !== 'SERVICIO';
+                return isActive && isNotService;
             });
-
-            console.log("Eventos activos filtrados:", activeBandEvents.length);
 
             if (activeBandEvents.length === 0) {
                 eventsListContainer.innerHTML = `
@@ -341,7 +315,6 @@
             activeBandEvents.sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora));
 
             activeBandEvents.forEach(event => {
-                console.log("Renderizando evento:", event.nombre_banda, "- Activo:", event.activo);
                 const cardHtml = generateEventCard(event);
                 eventsListContainer.insertAdjacentHTML('beforeend', cardHtml);
             });
@@ -354,7 +327,6 @@
         async function fetchEvents() {
             try {
                 const response = await fetch(API_URL);
-                //console.log(response.statusText);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }

@@ -32,49 +32,36 @@ const getSolicitudes = async (req, res) => {
                     END as subtipo,
                     DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
                     s.estado,
-                    s.tipo_de_evento as tipoEventoId,
+                    s.tipo_servicio as tipoServicioId,
                     (SELECT COUNT(*) FROM solicitudes_personal sp WHERE sp.id_solicitud = s.id_solicitud) > 0 AS tienePersonalAsignado,
                     'solicitud' as origen,
-                    s.hora_evento as horaInicio
+                    s.hora_evento as horaInicio,
+                    NULL as nombreBanda
                 FROM solicitudes s
-                LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+                LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
                 UNION ALL
                 SELECT
                     CONCAT('ev_', e.id) as id,
-                    e.fecha_creacion as fechaSolicitud,
-                    e.nombre_banda as nombreCliente,
+                    e.creado_en as fechaSolicitud,
+                    COALESCE(e.nombre_contacto, 'Sin contacto') as nombreCliente,
                     'FECHA_BANDAS' as tipoEvento,
-                    e.nombre_banda as subtipo,
-                    DATE_FORMAT(e.fecha_hora, '%Y-%m-%d') as fechaEvento,
+                    COALESCE(e.genero_musical, 'Sin género') as subtipo,
+                    DATE_FORMAT(e.fecha, '%Y-%m-%d') as fechaEvento,
                     COALESCE(e.estado, CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END) as estado,
-                    e.tipo_evento as tipoEventoId,
+                    e.nombre_banda as tipoServicioId,
                     (SELECT COUNT(*) FROM eventos_personal ep WHERE ep.id_evento = e.id) > 0 AS tienePersonalAsignado,
                     'evento' as origen,
-                    DATE_FORMAT(e.fecha_hora, '%H:%i') as horaInicio
+                    TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
+                    e.nombre_banda as nombreBanda
                 FROM eventos e
             ) t
             ORDER BY COALESCE(t.fechaEvento, t.fechaSolicitud) DESC, t.fechaSolicitud DESC;
         `;
 
         const solicitudes = await conn.query(sql);
-        // DEBUG: registrar resumen para depuración de fechas
-        try {
-            console.log(`[DEBUG] getSolicitudes - total solicitudes encontradas: ${solicitudes.length}`);
-            const matches = solicitudes.filter(s => String(s.fechaEvento) === '2025-12-06');
-            console.log(`[DEBUG] getSolicitudes - solicitudes con fecha 2025-12-06: ${matches.length}`, matches.slice(0, 5));
-            // También consultar la tabla `eventos` directamente para esa fecha
-            // Adaptación: algunos esquemas antiguos usan `id_evento` como PK varchar,
-            // el esquema actual usa `id` (INT). Para evitar errores en entornos mixtos
-            // aliasamos `id AS id_evento` para mantener la estructura del debug.
-            const eventosOnDate = await conn.query("SELECT id AS id_evento, nombre_banda, DATE_FORMAT(fecha_hora,'%Y-%m-%d') as fecha, DATE_FORMAT(fecha_hora,'%H:%i') as hora, activo FROM eventos WHERE DATE(fecha_hora) = ?", ['2025-12-06']);
-            console.log('[DEBUG] getSolicitudes - eventos en 2025-12-06 (tabla eventos):', eventosOnDate);
-        } catch (dbgErr) {
-            console.error('[DEBUG] getSolicitudes - error al obtener datos de depuración:', dbgErr);
-        }
-
         res.status(200).json(solicitudes);
     } catch (err) {
-        console.error("Error al obtener solicitudes de admin:", err); // Log de error mejorado
+        console.error("Error al obtener solicitudes de admin:", err);
         res.status(500).json({ message: 'Error del servidor al obtener solicitudes.' });
     } finally {
         if (conn) conn.release();
@@ -353,7 +340,7 @@ const getOrdenDeTrabajo = async (req, res) => {
 
             // Obtener detalles del evento
             const sqlEvento = `
-                SELECT e.id, e.nombre_banda as nombre_completo, DATE(fecha_hora) as fecha_evento, DATE_FORMAT(fecha_hora,'%H:%i') as hora_evento, '' as duracion, e.descripcion, e.tipo_evento
+                SELECT e.id, e.nombre_banda as nombre_completo, e.fecha as fecha_evento, TIME_FORMAT(e.hora_inicio,'%H:%i') as hora_evento, '' as duracion, e.descripcion, e.tipo_evento
                 FROM eventos e
                 WHERE e.id = ?
             `;
@@ -442,9 +429,10 @@ const getOrdenDeTrabajo = async (req, res) => {
         const sqlSolicitud = `
             SELECT 
                 s.id_solicitud, s.nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
+                s.tipo_servicio,
                 ot.nombre_para_mostrar as tipo_evento, ot.id_evento as tipo_evento_id
             FROM solicitudes s
-            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
         const [solicitud] = await conn.query(sqlSolicitud, [solicitudId]);
@@ -548,7 +536,7 @@ const getAllTiposDeEvento = async (req, res) => {
 
 const actualizarEvento = async (req, res) => {
     const { id } = req.params;
-    const { nombre_banda, fecha_hora, descripcion, tipo_evento, activo, estado } = req.body;
+    const { nombre_banda, fecha, hora_inicio, descripcion, tipo_evento, activo, estado } = req.body;
 
     const eventId = parseInt(id, 10);
     if (isNaN(eventId)) return res.status(400).json({ message: 'ID de evento inválido.' });
@@ -560,7 +548,8 @@ const actualizarEvento = async (req, res) => {
         const updates = [];
         const params = [];
         if (typeof nombre_banda !== 'undefined') { updates.push('nombre_banda = ?'); params.push(nombre_banda); }
-        if (typeof fecha_hora !== 'undefined') { updates.push('fecha_hora = ?'); params.push(fecha_hora); }
+        if (typeof fecha !== 'undefined') { updates.push('fecha = ?'); params.push(fecha); }
+        if (typeof hora_inicio !== 'undefined') { updates.push('hora_inicio = ?'); params.push(hora_inicio); }
         if (typeof descripcion !== 'undefined') { updates.push('descripcion = ?'); params.push(descripcion); }
         if (typeof tipo_evento !== 'undefined') { updates.push('tipo_evento = ?'); params.push(tipo_evento); }
         if (typeof activo !== 'undefined') { updates.push('activo = ?'); params.push(activo ? 1 : 0); }

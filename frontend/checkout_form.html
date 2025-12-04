@@ -173,11 +173,9 @@
                 // Si hay preferencia de pago, redirigir al proceso de pago (simulado)
                 if (json.preference_id) {
                     // Simulación: en producción redirigir a MercadoPago
-                    console.log('Preference:', json.preference_id);
                 }
 
             } catch (err) {
-                console.error(err);
             }
         }
 

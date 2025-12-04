@@ -41,7 +41,7 @@ const getEventosActivos = async () => {
         SELECT 
             e.id, 
             e.nombre_banda, 
-            e.fecha_hora, 
+            CONCAT(e.fecha, ' ', COALESCE(e.hora_inicio, '00:00:00')) as fecha_hora,
             e.precio_base,
             e.precio_anticipada,
             e.precio_puerta,
@@ -55,7 +55,7 @@ const getEventosActivos = async () => {
         WHERE e.activo = TRUE 
         GROUP BY e.id
         HAVING tickets_disponibles > 0 OR e.precio_base = 0.00 OR e.precio_anticipada = 0.00 OR e.precio_puerta = 0.00
-        ORDER BY e.fecha_hora ASC;
+        ORDER BY e.fecha ASC, e.hora_inicio ASC;
     `;
     const rows = await pool.query(query);
     return rows;
@@ -69,7 +69,7 @@ const getEventoById = async (id) => {
         SELECT 
             e.id, 
             e.nombre_banda, 
-            e.fecha_hora, 
+            CONCAT(e.fecha, ' ', COALESCE(e.hora_inicio, '00:00:00')) as fecha_hora,
             e.precio_base,
             e.precio_anticipada,
             e.precio_puerta,

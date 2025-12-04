@@ -549,7 +549,6 @@
             return response.json();
           })
           .then(data => {
-            console.log(data.message);
             // Redirigimos a la página de contacto, manteniendo el ID
             window.location.href = `/contacto.html?solicitudId=${solicitudId}&from=adicionales`;
           })

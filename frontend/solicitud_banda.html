@@ -465,7 +465,6 @@
             const banner = document.getElementById('band-banner');
             const submitBtn = document.getElementById('submitBtn');
 
-            console.log('[solicitud_banda] loadBandOptions start', { eventId });
 
             try {
                 const [hRes, dRes, tRes] = await Promise.all([
@@ -474,13 +473,11 @@
                     fetch('/api/opciones/tarifas')
                 ]);
 
-                console.log('[solicitud_banda] raw responses:', { hOk: hRes.ok, dOk: dRes.ok, tOk: tRes.ok });
 
                 const horariosRaw = hRes.ok ? await hRes.json() : [];
                 const duracionesRaw = dRes.ok ? await dRes.json() : [];
                 const tarifasRaw = tRes.ok ? await tRes.json() : [];
 
-                console.log('[solicitud_banda] parsed payloads', { horariosRaw, duracionesRaw, tarifasRaw });
 
                 // Obtener fechas ocupadas (detalle por hora) para excluirlas de allowedDates/hours
                 let fechasOcupadas = [];
@@ -489,9 +486,7 @@
                     const foRes = await fetch('/api/opciones/fechas-ocupadas?detalle=1');
                     if (foRes.ok) fechasOcupadas = await foRes.json();
                 } catch (e) {
-                    console.warn('[solicitud_banda] error fetching fechas-ocupadas detalle', e);
                 }
-                console.log('[solicitud_banda] fechasOcupadas detalle raw:', fechasOcupadas);
                 if (Array.isArray(fechasOcupadas)) {
                     fechasOcupadas.forEach(item => {
                         if (!item || !item.fecha) return;
@@ -530,7 +525,6 @@
                     tarifas = tarifas.filter(t => (t.tipo || t.tipo_de_evento || t.tipoEvento) === eventKey || (t.tipo || t.tipo_de_evento || t.tipoEvento) === 'FECHA_BANDAS');
                 }
 
-                console.log('[solicitud_banda] normalized', { eventKey, horarios, duraciones, tarifas });
 
                 // Calcular días de la semana permitidos y fechas puntuales
                 const allowedWeekdays = new Set(); // 0 Domingo .. 6 Sabado
@@ -578,7 +572,6 @@
                     }
                 });
 
-                console.log('[solicitud_banda] allowedWeekdays:', Array.from(allowedWeekdays).sort(), 'allowedDates:', Array.from(allowedDates));
 
                 // Excluir fechas ocupadas si la API devolvió alguna
                 if (Array.isArray(fechasOcupadas) && fechasOcupadas.length > 0) {
@@ -586,7 +579,6 @@
                         const d = String(f).slice(0, 10);
                         if (allowedDates.has(d)) {
                             allowedDates.delete(d);
-                            console.log('[solicitud_banda] excluida fecha ocupada', d);
                         }
                     });
                 }
@@ -643,12 +635,9 @@
                                 }
                             ]
                         });
-                        console.log('[solicitud_banda] flatpickr reconfigurado con filtro de días');
                     } else {
-                        console.log('[solicitud_banda] todos los días permitidos, no se reconfigura flatpickr');
                     }
                 } catch (e) {
-                    console.warn('[solicitud_banda] error reconfigurando flatpickr', e);
                 }
 
                 // Poblar duraciones: intentar ordenar por horas numéricas cuando sea posible
@@ -672,10 +661,8 @@
                     mappedDur.forEach(d => {
                         const opt = document.createElement('option'); opt.value = d.raw; opt.textContent = d.raw; durSel.appendChild(opt);
                     });
-                    console.log('[solicitud_banda] duraciones pobladas (sorted)', mappedDur.map(d => d.raw));
                 } else {
                     const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'No hay duraciones configuradas'; durSel.appendChild(opt);
-                    console.warn('[solicitud_banda] no hay duraciones para', eventKey, duracionesRaw);
                 }
 
                 // Poblar horarios: normalizar y ordenar
@@ -707,22 +694,17 @@
                         const display = x.timeStr + 'hs';
                         const opt = document.createElement('option'); opt.value = x.timeStr; opt.textContent = display; horaSel.appendChild(opt);
                     });
-                    console.log('[solicitud_banda] horarios poblados (normalized)', mapped.map(m => m.timeStr));
                 } else {
                     const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'No hay horarios configurados'; horaSel.appendChild(opt);
-                    console.warn('[solicitud_banda] no hay horarios para', eventKey, horariosRaw);
                 }
 
                 const missing = !(Array.isArray(horarios) && horarios.length > 0) || !(Array.isArray(duraciones) && duraciones.length > 0) || !(Array.isArray(tarifas) && tarifas.length > 0);
-                console.log('[solicitud_banda] missing?', missing);
                 if (missing) {
                     banner.style.display = 'block';
                     submitBtn.disabled = true;
-                    console.warn('[solicitud_banda] banner mostrado por falta de configuración', { eventKey, horariosLength: horarios.length, duracionesLength: duraciones.length, tarifasLength: tarifas.length });
                 } else {
                     banner.style.display = 'none';
                     submitBtn.disabled = false;
-                    console.log('[solicitud_banda] configuración suficiente, formulario habilitado');
                 }
 
                 // Filtrado simple por fecha: si el horario tiene campo 'fecha' coincidente con la seleccionada

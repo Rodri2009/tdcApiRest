@@ -33,7 +33,6 @@ class NavbarManager {
             const payload = JSON.parse(jsonPayload);
             this.userEmail = payload.email || payload.id || 'Usuario';
             this.userRole = payload.role || 'user';
-            console.log('JWT Decodificado:', { email: this.userEmail, role: this.userRole });
         } catch (error) {
             console.error('Error decodificando JWT:', error);
             this.clearAuth();
@@ -181,7 +180,6 @@ class NavbarManager {
         const navbarHTML = this.generateNavbarHTML();
         container.insertAdjacentHTML('afterbegin', navbarHTML);
         
-        console.log('Navbar inyectado. Autenticado:', this.isAuthenticated);
     }
 
     /**

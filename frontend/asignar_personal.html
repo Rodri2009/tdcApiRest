@@ -217,7 +217,6 @@
                     }
                     if (!response.ok) throw new Error('No se pudieron cargar los datos del servidor.');
                     const data = await response.json();
-                    console.log("Datos de asignación recibidos:", data);
                     loader.style.display = 'none';
                     if (!data.rolesRequeridos || data.rolesRequeridos.length === 0) {
                         formContainer.innerHTML =
@@ -315,15 +314,11 @@
             }
             // --- SECCIÓN 4: LÓGICA DE GUARDADO ---
             async function guardarAsignaciones() {
-                console.log("Guardando asignaciones...");
-                console.log("formContainer contenido:", formContainer.innerHTML);
                 saveButton.disabled = true;
                 saveButton.textContent = 'Guardando...';
                 
                 // Recolectar todas las selecciones de los selects
                 const selectsElements = Array.from(formContainer.querySelectorAll('select'));
-                console.log("Total de selects encontrados:", selectsElements.length);
-                console.log("Selects encontrados:", selectsElements.map(s => ({ name: s.name, value: s.value })));
                 
                 // Validar que todos los selects tengan un valor seleccionado
                 const selectsSinValor = selectsElements.filter(select => !select.value);
@@ -339,20 +334,13 @@
                 selectsElements.forEach(select => {
                     // NO hacer parseInt - el ID de personal es VARCHAR (string)
                     const personalId = select.value;
-                    console.log(`Procesando select: name=${select.name}, value=${select.value}, personalId=${personalId}`);
                     if (personalId && personalId.trim() !== '') {
                         assignments.push({
                             rol: select.name,
                             personalId: personalId
                         });
-                        console.log(`Asignación agregada: rol=${select.name}, personalId=${personalId}`);
-                    } else {
-                        console.log(`Asignación NO agregada: personalId vacío`);
                     }
                 });
-                
-                console.log("Total de asignaciones a guardar:", assignments.length);
-                console.log("Array de asignaciones:", JSON.stringify(assignments));
                 
                 try {
                     const response = await fetch(`/api/admin/solicitudes/${solicitudId}/asignaciones`, {
@@ -362,12 +350,9 @@
                         },
                         body: JSON.stringify(assignments)
                     });
-                    console.log("Respuesta del servidor:", response.status);
                     const data = await response.json();
-                    console.log("Datos recibidos:", data);
                     if (!response.ok) throw new Error(data.message || 'Error del servidor.');
                     showNotification(data.message, 'success');
-                    console.log("Guardado exitoso. Redirigiendo en 1 segundo...");
                     // Redirigir a orden de trabajo después de un pequeño delay
                     setTimeout(() => {
                         window.location.href = `/orden_de_trabajo.html?solicitudId=${solicitudId}`;

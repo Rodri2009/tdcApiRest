@@ -69,27 +69,9 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql
       # Docker entrypoint ejecuta automáticamente scripts .sql en orden alfabético
-      # Usando prefijo 0X se asegura el orden correcto de ejecución
+      # Schema y seed refactorizados - Diciembre 2025
       - ../database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
-      - ../database/02_schema_tickets.sql:/docker-entrypoint-initdb.d/02_schema_tickets.sql
-      - ../database/03_seed.sql:/docker-entrypoint-initdb.d/03_seed.sql
-      - ../database/04_seed_tickets.sql:/docker-entrypoint-initdb.d/04_seed_tickets.sql
-      - ../database/05_migration_add_event_prices_and_coupon_scope.sql:/docker-entrypoint-initdb.d/05_migration_add_event_prices_and_coupon_scope.sql
-      - ../database/06_create_subtables_eventos.sql:/docker-entrypoint-initdb.d/06_create_subtables_eventos.sql
-      - ../database/07_migration_create_subtables.sql:/docker-entrypoint-initdb.d/07_migration_create_subtables.sql
-      - ../database/08_migration_add_categoria_opciones_tipos.sql:/docker-entrypoint-initdb.d/08_migration_add_categoria_opciones_tipos.sql
-      - ../database/09_migration_bandas_solicitudes.sql:/docker-entrypoint-initdb.d/09_migration_bandas_solicitudes.sql
-      - ../database/10_migration_add_precios_bandas.sql:/docker-entrypoint-initdb.d/10_migration_add_precios_bandas.sql
-      - ../database/11_migration_bandas_invitadas.sql:/docker-entrypoint-initdb.d/11_migration_bandas_invitadas.sql
-      - ../database/12_create_eventos_personal.sql:/docker-entrypoint-initdb.d/12_create_eventos_personal.sql
-      - ../database/13_restructure_solicitudes_tipos.sql:/docker-entrypoint-initdb.d/13_restructure_solicitudes_tipos.sql
-      - ../database/14_add_estado_to_eventos.sql:/docker-entrypoint-initdb.d/14_add_estado_to_eventos.sql
-      - ../database/15_restore_solicitudes_test_data.sql:/docker-entrypoint-initdb.d/15_restore_solicitudes_test_data.sql
-      - ../database/16_restore_sensitive.sql:/docker-entrypoint-initdb.d/16_restore_sensitive.sql
-      - ../database/17_fix_opciones_tipos_categorias.sql:/docker-entrypoint-initdb.d/17_fix_opciones_tipos_categorias.sql
-      - ../database/18_insert_sin_servicio_de_mesa.sql:/docker-entrypoint-initdb.d/18_insert_sin_servicio_de_mesa.sql
-      - ../database/19_fix_categorias_tipos_evento.sql:/docker-entrypoint-initdb.d/19_fix_categorias_tipos_evento.sql
-      - ../data_migration/datos_sensibles_backup.sql:/var/lib/mysql-files/datos_sensibles_backup.sql
+      - ../database/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
       - ../database/seeds:/var/lib/mysql-files
 
 # Definición de redes

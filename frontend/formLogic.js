@@ -27,7 +27,6 @@ const App = {
     // =================================================================
 
     init: function (config) {
-        console.log(`App.init(): Modo '${config.mode}'`, config);
         this.config = config;
         this.bindElements();
         this.bindEvents();
@@ -35,7 +34,6 @@ const App = {
     },
 
     bindElements: function () {
-        console.log("App.init(): 2. Enlazando elementos del DOM.");
         // Elementos comunes a ambas páginas
         this.elements = {
             tipoEventoContainer: document.getElementById('tipoEventoContainer'),
@@ -62,12 +60,10 @@ const App = {
 
         // Elementos condicionales
         if (this.config.mode === 'create') {
-            console.log("   -> Enlazando elementos para el modo de creación.");
             this.elements.btnAdicionales = document.getElementById('btn-adicionales');
             this.elements.btnContacto = document.getElementById('btn-contacto');
             this.elements.resetTipoEventoBtn = document.getElementById('resetTipoEventoBtn');
         } else { // modo 'edit'
-            console.log("   -> Enlazando elementos para el modo de edición.");
             this.elements.saveButton = document.getElementById('save-button');
             this.elements.cancelButton = document.getElementById('cancel-button');
             this.elements.editFieldset = document.getElementById('edit-fieldset');
@@ -77,7 +73,6 @@ const App = {
     },
 
     bindEvents: function () {
-        console.log("App.init(): 3. Asignando eventos.");
         window.addEventListener('pageshow', (event) => {
             if (event.persisted) window.location.reload();
         });
@@ -89,7 +84,6 @@ const App = {
             if (this.elements.resetTipoEventoBtn) {
                 this.elements.resetTipoEventoBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    console.log("[FORM][RESET] Mostrando todos los tipos");
                     const selected = document.querySelector('input[name="tipoEvento"]:checked');
                     if (selected) selected.checked = false;
                     document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
@@ -106,7 +100,6 @@ const App = {
             if (this.elements.resetTipoEventoBtn) {
                 this.elements.resetTipoEventoBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    console.log("[FORM][RESET] Mostrando todos los tipos");
                     document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
                     this.elements.resetTipoEventoBtn.style.display = 'none';
                 });
@@ -138,7 +131,6 @@ const App = {
     // 2. LÓGICA DE CARGA DE DATOS
     // =================================================================
     cargarOpcionesIniciales: function () {
-        console.log(`[FORM][INIT] Iniciando carga de opciones en modo: ${this.config.mode}`);
         this.toggleLoadingOverlay(true, 'Cargando opciones...');
 
         // --- ¡LÓGICA CONDICIONAL DE ENDPOINTS! ---
@@ -156,7 +148,6 @@ const App = {
             config: '/api/opciones/config'
         };
 
-        console.log("[FORM][LOAD] Consultando endpoints...", Object.keys(endpoints));
 
         Promise.all(
             Object.values(endpoints).map(url =>
@@ -174,7 +165,6 @@ const App = {
 
             .then(results => {
                 const [tipos, tarifas, duraciones, horas, fechasOcupadas, config] = results;
-                console.log("[FORM][LOAD] Datos recibidos - Tipos:", tipos.length, "Tarifas:", tarifas.length, "Duraciones:", Object.keys(duraciones || {}).length);
 
                 this.tarifas = tarifas || [];
                 this.tiposDeEvento = tipos || [];
@@ -196,7 +186,6 @@ const App = {
 
                 return this.cargarFeriados()
                     .then(() => {
-                        console.log("[FORM][READY] UI lista para mostrar. Total tipos:", this.tiposDeEvento.length);
                         this.decidirEstadoInicial();
                     });
             })
@@ -219,15 +208,11 @@ const App = {
     },
 
     construirUI: function (fechaExcepcion = null) {
-        console.log("[FORM][UI] Construyendo interfaz de usuario.");
-        console.log("[FORM][UI] Excepción de fecha:", fechaExcepcion);
-        console.log("[FORM][UI] Modo:", this.config.mode, "Categoría filtro:", this.config.categoriaFiltro);
 
         // Filtrar tipos según la categoría configurada (para page.html usar ALQUILER_SALON)
         let tiposParaMostrar = this.tiposDeEvento;
         if (this.config.categoriaFiltro) {
             tiposParaMostrar = this.tiposDeEvento.filter(t => t.categoria === this.config.categoriaFiltro);
-            console.log(`[FORM][UI] Filtrando por categoría '${this.config.categoriaFiltro}':`, tiposParaMostrar.map(t => t.id));
         }
 
         this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', tiposParaMostrar);
@@ -250,13 +235,11 @@ const App = {
     },
 
     filtrarTiposPorCategoria: function (tipoId) {
-        console.log(`\n🔍 [FILTER-START] filtrarTiposPorCategoria(${tipoId})`);
 
         // Si se selecciona un tipo, mostrar solo los sub-tipos de su categoría
         if (!tipoId) {
             // Si se deselecciona, mostrar todos
             document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('radio-hidden'));
-            console.log("[FORM][FILTER] Mostrando todos los tipos");
             return;
         }
 
@@ -271,18 +254,14 @@ const App = {
         }
 
         if (!tipoSeleccionado || !tipoSeleccionado.categoria) {
-            console.log("[FORM][FILTER] Tipo sin categoría, mostrando todos", tipoId);
             document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('radio-hidden'));
             return;
         }
 
         const categoriaSeleccionada = tipoSeleccionado.categoria;
-        console.log(`📌 Filtrando por categoría: ${categoriaSeleccionada}`);
-        console.log(`📋 Tipos disponibles:`, this.tiposDeEvento.map(t => `${t.id}(${t.categoria})`).join(', '));
 
         // Mostrar solo los tipos de la misma categoría
         const radioButtons = this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]');
-        console.log(`📊 Total radios en DOM: ${radioButtons.length}`);
 
         let visiblesCount = 0;
         let ocultosCount = 0;
@@ -312,29 +291,23 @@ const App = {
             if (perteneceLaCategoria) {
                 // DEBE estar visible
                 if (tieneLaClase) {
-                    console.log(`✅ ${idx}: ${radio.value} (cat=${tipoCategoria}) → MOSTRAR (removiendo radio-hidden)`);
                     radioOption.classList.remove('radio-hidden');
                 } else {
-                    console.log(`✅ ${idx}: ${radio.value} (cat=${tipoCategoria}) → YA VISIBLE`);
                 }
                 visiblesCount++;
             } else {
                 // DEBE estar oculto
                 if (!tieneLaClase) {
-                    console.log(`❌ ${idx}: ${radio.value} (cat=${tipoCategoria}) → OCULTAR (agregando radio-hidden)`);
                     radioOption.classList.add('radio-hidden');
                 } else {
-                    console.log(`❌ ${idx}: ${radio.value} (cat=${tipoCategoria}) → YA OCULTO`);
                 }
                 ocultosCount++;
             }
         });
 
-        console.log(`📊 RESUMEN FINAL: ${visiblesCount} visibles, ${ocultosCount} ocultos`);
 
         // Verificación exhaustiva
         setTimeout(() => {
-            console.log("\n⏱️  [VERIFICATION] Verificación 10ms después...");
             const radios = this.elements.tipoEventoContainer.querySelectorAll('.radio-option');
             let verificacionVisibles = 0;
             let verificacionOcultos = 0;
@@ -351,10 +324,8 @@ const App = {
                 const match = esVisible === esperado;
                 const icon = match ? '✅' : '❌';
 
-                console.log(`  ${icon} ${idx}: ${inputValue} - visible=${esVisible}, esperado=${esperado}`);
             });
 
-            console.log(`✓ Verificación: ${verificacionVisibles} visibles, ${verificacionOcultos} ocultos\n`);
         }, 10);
     },
 
@@ -382,7 +353,6 @@ const App = {
         const bandFieldsContainer = document.getElementById('band-fields');
         if (bandFieldsContainer) {
             bandFieldsContainer.style.display = mostrarCamposBanda ? 'block' : 'none';
-            console.log(`[FORM][CONDITIONAL] Categoría: ${categoria} | Campos de banda: ${mostrarCamposBanda ? 'VISIBLE' : 'OCULTO'}`);
         }
 
         // Ocultar "Cantidad de Personas" y "Duración del evento" para categoría BANDA
@@ -395,7 +365,6 @@ const App = {
         if (ocultarCantidadYDuracion) {
             if (cantidadGroup) cantidadGroup.style.display = 'none';
             if (duracionGroup) duracionGroup.style.display = 'none';
-            console.log(`[FORM][CONDITIONAL] Categoría BANDA - ocultando cantidad y duración`);
         } else {
             if (cantidadGroup) cantidadGroup.style.display = 'block';
             if (duracionGroup) duracionGroup.style.display = 'block';
@@ -409,7 +378,6 @@ const App = {
         if (this.config.mode === 'edit' && idFromUrl) {
             // MODO EDICIÓN
             this.solicitudId = idFromUrl;
-            console.log(`[FORM][EDIT] Cargando solicitud ID: ${idFromUrl}`);
 
             // Cancelar cualquier request anterior pendiente
             if (this.loadAbortController) {
@@ -433,7 +401,6 @@ const App = {
                 .catch(err => {
                     // No mostrar error si fue cancelado por AbortController
                     if (err.name === 'AbortError') {
-                        console.log("[FORM][EDIT] Solicitud cancelada (navegación a otra solicitud)");
                         return;
                     }
                     console.error("[FORM][EDIT] Error al cargar solicitud:", err);
@@ -442,7 +409,6 @@ const App = {
                 });
         } else {
             // MODO CREACIÓN
-            console.log("[FORM][CREATE] Construyendo formulario vacío");
             this.construirUI(); // Construimos la UI sin excepción de fecha
             // Procesar si se pasó un parámetro `tipo` en la URL (ej: page.html?tipo=BANDA)
             try { this.manejarParametroURL(); } catch (e) { console.warn('[FORM][URL] Error procesando parámetros:', e); }
@@ -452,12 +418,10 @@ const App = {
 
 
     initFingerprint: function () {
-        console.log("[FORM][SESSION] Iniciando detección de sesión...");
         FingerprintJS.load()
             .then(fp => fp.get())
             .then(result => {
                 this.visitorId = result.visitorId;
-                console.log("[FORM][SESSION] ID generado:", this.visitorId.substring(0, 10) + '...');
                 this.buscarSesionExistente();
             })
             .catch(error => {
@@ -469,17 +433,14 @@ const App = {
     },
 
     buscarSesionExistente: function () {
-        console.log(`[FORM][SESSION] Buscando sesión almacenada...`);
         fetch(`/api/solicitudes/sesion?fingerprintId=${this.visitorId}`)
             .then(res => res.json())
             .then(sessionData => {
                 if (sessionData && sessionData.solicitudId) {
-                    console.log("[FORM][SESSION] Sesión encontrada - Solicitud ID:", sessionData.solicitudId);
                     this.solicitudId = sessionData.solicitudId;
                     this.populateForm(sessionData);
                     this.showNotification("Se cargaron los datos de tu sesión anterior.", "success");
                 } else {
-                    console.log("[FORM][SESSION] No hay sesión almacenada");
                 }
             })
             .catch(err => console.error("[FORM][ERROR] Error al buscar sesión:", err.message))
@@ -493,14 +454,15 @@ const App = {
     // 3. LÓGICA DE INTERACCIÓN Y UI
     // =================================================================
     populateForm: function (solicitud) {
-        console.log("[FORM][POPULATE] Cargando datos en formulario...");
 
         if (!solicitud) {
             console.warn('[FORM][POPULATE] Solicitud vacía, abortando.');
             return;
         }
 
-        let tipo = solicitud.tipoEvento || solicitud.tipo_de_evento;
+        // CORRECCIÓN: tipoServicio es el subtipo (INFANTILES), tipoEvento es la categoría (ALQUILER_SALON)
+        // Para el formulario necesitamos el subtipo (tipoServicio)
+        let tipo = solicitud.tipoServicio || solicitud.tipo_servicio || solicitud.tipoEvento || solicitud.tipo_de_evento;
         // Normalizar tipo a string si es number
         if (typeof tipo === 'number') tipo = String(tipo);
         if (tipo && typeof tipo === 'string') tipo = tipo.trim();
@@ -511,7 +473,6 @@ const App = {
         const detalles = solicitud.descripcion || '';
 
         // 1. Establecer el tipo
-        console.log('[FORM][POPULATE] Tipo:', tipo, 'Cantidad:', cantidad, 'Duración:', duracion);
         // Intentamos mapear el tipo recibido al id que usa la UI (this.tiposDeEvento)
         let uiTipoId = null;
         if (tipo) {
@@ -566,12 +527,10 @@ const App = {
         // 1) intentar con resolvedTipoForOptions
         if (resolvedTipoForOptions) {
             radio = document.querySelector(`input[name="tipoEvento"][value="${resolvedTipoForOptions}"]`);
-            if (radio) console.log('populate: seleccionado por resolvedTipoForOptions:', resolvedTipoForOptions);
         }
         // 2) intentar con el id mapeado (uiTipoId)
         if (!radio && uiTipoId) {
             radio = document.querySelector(`input[name="tipoEvento"][value="${uiTipoId}"]`);
-            if (radio) console.log('populate: mapeado tipo -> uiTipoId seleccionado:', uiTipoId);
         }
         // 3) intentar con el tipo original
         if (!radio && tipo) radio = document.querySelector(`input[name="tipoEvento"][value="${tipo}"]`);
@@ -600,7 +559,6 @@ const App = {
         }
         if (radio) {
             radio.checked = true;
-            console.log('populate: radio seleccionado con value=', radio.value);
             // Filtrar tipos por categoría SOLO en modo edit
             if (this.config.mode === 'edit') {
                 this.filtrarTiposPorCategoria(radio.value);
@@ -612,18 +570,15 @@ const App = {
         // 2. Sincronizar el calendario (solo visual)
         if (fecha && this.calendario) {
             const fechaObj = new Date(fecha + 'T00:00:00');
-            console.log("populate: intentando setDate en calendario con:", fechaObj.toISOString().slice(0, 10));
             this.calendario.setDate(fechaObj, false);
             // Comprobamos si la fecha quedó seleccionada
             if (this.calendario.selectedDates && this.calendario.selectedDates.length > 0) {
-                console.log('populate: fecha seleccionada en calendario OK:', this.calendario.selectedDates[0]);
             } else {
                 console.warn('populate: la fecha NO quedó seleccionada en el calendario. Intentando forzar...');
                 try {
                     // Intento alternativo: usar setDate con string
                     this.calendario.setDate(fecha, false);
                     if (this.calendario.selectedDates && this.calendario.selectedDates.length > 0) {
-                        console.log('populate: forzado setDate con string funcionó:', this.calendario.selectedDates[0]);
                     } else {
                         console.warn('populate: forzado setDate tampoco funcionó. Fecha puede estar deshabilitada por reglas.');
                     }
@@ -637,7 +592,6 @@ const App = {
         // 3. Llamar a actualizarTodo pasándole TODOS los datos que conocemos.
         // Esto llenará los selects y calculará el precio inicial.
         // Usar la variable ya resuelta arriba `resolvedTipoForOptions` (si existe)
-        console.log("populate: Ejecutando actualización con TODOS los datos de override... (resolvedTipoForOptions)", resolvedTipoForOptions);
         this.actualizarTodo('populate-final', {
             overrideTipo: resolvedTipoForOptions,
             overrideCantidad: cantidad,
@@ -672,7 +626,6 @@ const App = {
 
 
     validarYEnviar: async function (destino) {
-        console.log(`[FORM][SUBMIT] Validando formulario para: ${destino}`);
         this.resetearCamposInvalidos();
         const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
         let hayErrores = false;
@@ -689,7 +642,6 @@ const App = {
             return;
         }
 
-        console.log("[FORM][SUBMIT] Validación exitosa - enviando datos");
         // --- ¡CORRECCIÓN! DESHABILITAMOS LOS BOTONES INMEDIATAMENTE ---
         this.toggleLoadingOverlay(true, 'Guardando solicitud...');
         this.elements.btnAdicionales.disabled = true;
@@ -709,14 +661,12 @@ const App = {
         try {
             let response;
             if (this.solicitudId) {
-                console.log(`[FORM][API] PUT /api/solicitudes/${this.solicitudId}`);
                 response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(bodyData)
                 });
             } else {
-                console.log("[FORM][API] POST /api/solicitudes");
                 response = await fetch('/api/solicitudes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -739,7 +689,6 @@ const App = {
             const fromParam = (destino === 'contacto') ? '&from=page' : '';
             const urlFinal = `${nextPage}?solicitudId=${id}${fromParam}`;
 
-            console.log(`[FORM][REDIRECT] Redirigiendo a: ${nextPage}`);
 
 
             // --- ¡CAMBIO CLAVE! ---
@@ -759,12 +708,9 @@ const App = {
     },
 
     inicializarCalendario: function (fechasOcupadas, feriados, fechaExcepcion = null) {
-        console.log("--- INICIO inicializarCalendario ---");
-        console.log("Fecha a exceptuar de la deshabilitación:", fechaExcepcion); const fechasADeshabilitar = fechaExcepcion
             ? fechasOcupadas.filter(fecha => fecha !== fechaExcepcion)
             : fechasOcupadas;
         try {
-            console.log("fechasADeshabilitar (count):", (fechasADeshabilitar || []).length, "muestra:", (fechasADeshabilitar || []).slice(0, 20));
             // Calcular minDate: por defecto 'today', pero si estamos en modo edición
             // y la fechaExcepcion es anterior a hoy, permitimos esa fecha ajustando minDate
             let minDateVal = 'today';
@@ -782,7 +728,6 @@ const App = {
             } catch (err) {
                 console.warn('Error calculando minDate para calendario:', err);
             }
-            console.log('[calendario] minDate decidido:', minDateVal);
             const config = {
                 locale: "es",
                 altInput: true,
@@ -827,7 +772,6 @@ const App = {
             };
 
             this.calendario = flatpickr(this.elements.fechaEventoInput, config);
-            console.log("--- FIN inicializarCalendario (Éxito) ---");
         } catch (e) {
             console.error("¡¡¡ERROR CRÍTICO DENTRO DE inicializarCalendario!!!", e);
         }
@@ -858,7 +802,6 @@ const App = {
         const duracion = overrides.overrideDuracion || this.elements.duracionEventoSelect.value;
         let hora = overrides.overrideHora || this.elements.horaInicioSelect.value;
 
-        console.log(`[FORM][UPDATE] Llamado por: ${caller} | Tipo: ${tipoId || '-'} | Cantidad: ${cantidad || '-'} | Duración: ${duracion || '-'}`);
 
         const fechaSeleccionada = fechaStr ? new Date(fechaStr + 'T00:00:00') : null;
 
@@ -918,7 +861,6 @@ const App = {
                 const m = String(hora).match(/(\d{1,2}:\d{2})/);
                 if (m) {
                     const ok = setHoraIfPossible(m[1]);
-                    if (ok) console.log('actualizarTodo: hora seleccionada tras normalizar a', m[1]);
                 }
             }
         } else {
@@ -1003,7 +945,6 @@ const App = {
 
 
     habilitarBotones: function () {
-        console.log("Paso 6: Habilitando botones de acción.");
 
         // --- ¡LÓGICA CONDICIONAL! ---
         // Solo intenta habilitar los botones si estamos en modo 'create'.
@@ -1019,7 +960,6 @@ const App = {
         } else { // modo 'edit'
             // En modo edición, los botones "Guardar" y "Cancelar" ya están habilitados por defecto.
             // Podríamos añadir lógica aquí si fuera necesario.
-            console.log("   -> Modo edición, no se habilitan botones de creación.");
         }
     },
 
@@ -1064,7 +1004,6 @@ const App = {
 
     llenarRadioButtons: function (container, name, options) {
         if (!container) return;
-        console.log("Datos recibidos por llenarRadioButtons:", options);
         container.innerHTML = '';
         if (!options || options.length === 0) return;
 
@@ -1146,9 +1085,7 @@ const App = {
     },
 
     guardarCambios: async function () {
-        console.log("[FORM][EDIT] Iniciando guardado de cambios...");
         if (!confirm("¿Estás seguro de que quieres guardar los cambios?")) {
-            console.log("[FORM][EDIT] Guardado cancelado por usuario");
             return;
         }
 
@@ -1178,7 +1115,6 @@ const App = {
         if (this.elements.precioAnticipadaInput) bodyData.precio_anticipada = this.elements.precioAnticipadaInput.value;
         if (this.elements.precioPuertaInput) bodyData.precio_puerta = this.elements.precioPuertaInput.value;
 
-        console.log("[FORM][EDIT] Enviando datos actualizados para ID:", this.solicitudId);
 
         try {
             // Usamos el endpoint PUT /api/solicitudes/:id, que llama a 'actualizarSolicitud'
@@ -1193,7 +1129,6 @@ const App = {
                 throw new Error(data.error || 'Error del servidor al guardar.');
             }
 
-            console.log("[FORM][EDIT] Cambios guardados exitosamente");
             this.showNotification("Cambios guardados con éxito", 'success');
 
             // Deshabilitamos el formulario y cambiamos los botones

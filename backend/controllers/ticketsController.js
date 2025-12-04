@@ -29,13 +29,13 @@ const getEventos = async (req, res) => {
             }
             return event;
         });
-        // Además, incluimos solicitudes confirmadas de tipo FECHA_EN_VIVO para que
+        // Además, incluimos solicitudes confirmadas públicas para que
         // aparezcan en la agenda como entradas de solo-visualización (no vinculadas a tickets).
         try {
             const solicitudes = await pool.query(`
-                SELECT id_solicitud, nombre_completo, fecha_evento, hora_evento, COALESCE(precio_final, precio_basico, 0.00) as precio_base, descripcion
+                SELECT id_solicitud, tipo_de_evento, tipo_servicio, nombre_completo, fecha_evento, hora_evento, COALESCE(precio_final, precio_basico, 0.00) as precio_base, descripcion
                 FROM solicitudes
-                WHERE tipo_de_evento IN ('FECHA_EN_VIVO', 'FECHA_BANDAS') AND estado = 'Confirmado'
+                WHERE es_publico = 1 AND estado = 'Confirmado'
                 ORDER BY fecha_evento ASC
             `);
 
@@ -54,9 +54,15 @@ const getEventos = async (req, res) => {
                 }
                 const fechaHora = datePart && horaPart ? `${datePart} ${horaPart}:00` : null;
 
+                // Determinamos el nombre según el tipo de evento
+                let nombreDisplay = s.nombre_completo || 'Evento';
+                if (s.tipo_de_evento === 'SERVICIO') {
+                    nombreDisplay = s.descripcion || 'Servicio';
+                }
+
                 return {
                     id: `sol_${s.id_solicitud}`,
-                    nombre_banda: s.nombre_completo || 'Solicitud de Banda',
+                    nombre_banda: nombreDisplay,
                     fecha_hora: fechaHora,
                     precio_base: s.precio_base !== null ? parseFloat(s.precio_base) : 0.0,
                     precio_anticipada: null,
@@ -64,7 +70,9 @@ const getEventos = async (req, res) => {
                     aforo_maximo: null,
                     activo: 1,
                     descripcion: s.descripcion || '',
-                    tickets_disponibles: null
+                    tickets_disponibles: null,
+                    tipo_de_evento: s.tipo_de_evento || null,
+                    tipo_servicio: s.tipo_servicio || null
                 };
             });
 

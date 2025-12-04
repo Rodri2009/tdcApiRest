@@ -235,13 +235,6 @@
                         timeZone: 'UTC'
                     });
                     const formatCurrency = (number) => `$${parseFloat(number).toLocaleString('es-AR')}`;
-                    console.log("solicitudData", solicitudData);
-                    console.log("todosLosTipos", todosLosTipos);
-                    /*
-                    array[
-                      { id: "CON_SERVICIO_DE_MESA", nombreParaMostrar: "FIESTAS de 15 / 18 / casamientos / aniversarios (SERVICIO COMPLETO)", descripcion: "(SERVICIO COMPLETO - Solo debes proveer comida y bebida)\n\nEL SERVICIO INCLUYE:\n* Encargada general\n* Encargada de puerta\n* Cocinera y uso completo de cocina\n* Meseras según cantidad de invitados\n* Mesas, sillas y mantelería negra con camino blanco\n* Utensilios de mesa:\n   - Bandejas y bowls de plástico para entradas\n   - Vajilla y vasos de cristal\n   - Cubiertos de metal\n   - Servilleteros con servilletas por mesa\n   - Una botella por mesa para jugo o agua\n* Equipamiento de entretenimiento:\n   - Dos metegoles, Ping Pong, Pool y Jenga gigante\n* Sonido profesional:\n   - Micrófonos y ecualización\n   - Sistema PA JBL (alta definición)\n   - Juego de luces Proton\n   - Backline completo (amplificadores de guitarra, bajo y cuerpo de batería) para bandas en vivo\n* Baño equipado (papel higiénico y toallas de papel)\n* Uso de barra, heladera y freezer\n\nNO INCLUYE:\n* DJ, decoración o animación\n* Globología o servicios similares\n* Tiempo extra para decoración (debe considerarse dentro de la duración total del evento)\n\nCONDICIONES DEL SERVICIO:\n* Prohibido el uso de la cancha de fútbol\n* Prohibido permanecer en la vereda después de las 00:00 hs\n\nNORMAS:\n1. Abonar las cuotas entre el 1° y 10° de cada mes\n2. Enviar lista de invitados con 24 horas de anticipación\n3. Cancelar saldo pendiente un día antes del evento\n4. Responsabilidad por cualquier daño o pérdida de elementos\n5. Recargos por incumplimiento de las normas establecidas", … }
-                    ]
-                    */
                     document.getElementById('nombre_completo').textContent = solicitudData.nombreCompleto;
                     document.getElementById('email').textContent = solicitudData.email;
                     document.getElementById('telefono').textContent = solicitudData.telefono;

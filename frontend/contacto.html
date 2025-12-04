@@ -376,7 +376,6 @@
           return response.json();
         })
         .then(data => {
-          //console.log(data);
           let totalAdicionales = 0;
           let listaAdicionales = "";
           if (data.adicionales && data.adicionales.length > 0) {
@@ -386,7 +385,6 @@
               //listaAdicionales += ad.adicional_nombre + " ";
             });
           }
-          //console.log("total adicionales",totalAdicionales);
 
           // 3. Mostrar los datos en la página
           const fecha = new Date(data.fechaEvento).toLocaleDateString('es-AR', { timeZone: 'UTC' });
@@ -483,12 +481,10 @@
             return response.json();
           })
           .then(data => {
-            console.log('Respuesta del servidor:', data.message);
             // 3. Redirigir a la página de comprobante
             window.location.href = `/comprobante.html?solicitudId=${solicitudId}`;
           })
           .catch(error => {
-            console.error('Error:', error);
             showNotification("Error: " + error);
           });
       };
