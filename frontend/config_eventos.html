@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -13,6 +14,7 @@
     }
   </style>
 </head>
+
 <body>
   <h1 class="text-4xl font-bold mt-8 text-center">Configuración de Eventos</h1>
   <p class="text-center mt-4">Aquí puedes ajustar tipos de eventos, tarifas y duraciones.</p>
@@ -21,12 +23,13 @@
   <script src="/navbar.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const navbar = new NavbarManager();
-      if (!navbar.protectAdminPage()) {
+      navbarManager = new NavbarManager();
+      if (!navbarManager.protectAdminPage()) {
         return; // Salir si no está autenticado
       }
-      navbar.injectNavbar('body');
+      navbarManager.injectNavbar('body');
     });
   </script>
 </body>
+
 </html>

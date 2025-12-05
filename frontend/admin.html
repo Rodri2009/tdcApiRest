@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -76,46 +77,177 @@
             margin: 0 auto;
             padding: 24px 16px;
         }
+
+        /* Secciones del admin */
+        .admin-section {
+            margin-top: 40px;
+        }
+
+        .section-title {
+            color: var(--color-secondary);
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(240, 171, 252, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            opacity: 0.8;
+        }
+
+        .badge-soon {
+            font-size: 0.7rem;
+            background: #374151;
+            color: #9ca3af;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+
+        .disabled-section {
+            opacity: 0.5;
+        }
+
+        a.card.disabled {
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+
+        a.card.disabled:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: rgba(240, 171, 252, 0.15);
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
     <main class="wrap">
         <h1 class="text-4xl font-bold">Panel de Administración</h1>
-        <div class="grid">
-            <a class="card" href="/admin_solicitudes.html">
-                <h3>📝 Solicitudes</h3>
-                <p>Ver y gestionar solicitudes</p>
-            </a>
-            <a class="card" href="/admin_personal.html">
-                <h3>👥 Personal</h3>
-                <p>Administrar personal y roles</p>
-            </a>
-            <a class="card" href="/admin_usuarios.html">
-                <h3>👤 Usuarios</h3>
-                <p>Gestionar cuentas y permisos</p>
-            </a>
-            <a class="card" href="/config_eventos.html">
-                <h3>⚙️ Configuración</h3>
-                <p>Opciones de eventos y tarifas</p>
-            </a>
-        </div>
+
+        <!-- Sección General -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-cog"></i> General</h2>
+            <div class="grid">
+                <a class="card" href="/admin_solicitudes.html">
+                    <h3>📝 Solicitudes</h3>
+                    <p>Ver y gestionar solicitudes de alquiler</p>
+                </a>
+                <a class="card" href="/admin_usuarios.html">
+                    <h3>👤 Usuarios</h3>
+                    <p>Gestionar cuentas y permisos</p>
+                </a>
+                <a class="card" href="/config_alquiler.html#personal">
+                    <h3>👥 Personal</h3>
+                    <p>Administrar personal disponible y roles</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Sección Alquiler del Salón -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-building"></i> Alquiler del Salón</h2>
+            <div class="grid">
+                <a class="card" href="/config_alquiler.html#tipos">
+                    <h3>📋 Tipos de Alquiler</h3>
+                    <p>Configurar tipos de eventos y duración</p>
+                </a>
+                <a class="card" href="/config_alquiler.html#precios">
+                    <h3>💰 Precios y Vigencia</h3>
+                    <p>Tarifas por tipo de evento y período</p>
+                </a>
+                <a class="card" href="/config_alquiler.html#adicionales">
+                    <h3>➕ Adicionales</h3>
+                    <p>Servicios adicionales y sus precios</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Sección Bandas/Artistas -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-guitar"></i> Fechas con Bandas</h2>
+            <div class="grid">
+                <a class="card" href="/config_bandas.html#catalogo">
+                    <h3>🎸 Bandas / Artistas</h3>
+                    <p>Catálogo de bandas registradas</p>
+                </a>
+                <a class="card" href="/config_bandas.html#eventos">
+                    <h3>📝 Fechas / Eventos</h3>
+                    <p>Gestionar solicitudes de bandas</p>
+                </a>
+                <a class="card" href="/config_bandas.html#instrumentos">
+                    <h3>🎹 Instrumentos</h3>
+                    <p>Catálogo de instrumentos</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Sección Talleres/Actividades -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-chalkboard-teacher"></i> Talleres / Actividades</h2>
+            <div class="grid">
+                <a class="card" href="/config_talleres.html#tipos">
+                    <h3>📋 Tipos de Taller</h3>
+                    <p>Configurar tipos de talleres</p>
+                </a>
+                <a class="card" href="/config_talleres.html#talleres">
+                    <h3>📚 Talleres / Actividades</h3>
+                    <p>Gestionar cursos y actividades</p>
+                </a>
+                <a class="card" href="/config_talleres.html#talleristas">
+                    <h3>👨‍🏫 Talleristas / Profesores</h3>
+                    <p>Gestionar instructores</p>
+                </a>
+                <a class="card" href="/config_talleres.html#precios">
+                    <h3>💰 Precios y Vigencia</h3>
+                    <p>Tarifas por taller y período</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Sección Servicios -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-spa"></i> Servicios</h2>
+            <div class="grid">
+                <a class="card" href="/config_servicios.html#tipos">
+                    <h3>💆 Tipos de Servicio</h3>
+                    <p>Catálogo de servicios ofrecidos</p>
+                </a>
+                <a class="card" href="/config_servicios.html#profesionales">
+                    <h3>👩‍⚕️ Profesionales</h3>
+                    <p>Gestionar profesionales</p>
+                </a>
+                <a class="card" href="/config_servicios.html#agenda">
+                    <h3>📅 Agenda</h3>
+                    <p>Gestionar horarios y turnos</p>
+                </a>
+                <a class="card" href="/config_servicios.html#precios">
+                    <h3>💰 Precios y Vigencia</h3>
+                    <p>Tarifas por servicio y período</p>
+                </a>
+            </div>
+        </section>
     </main>
 
     <script src="/navbar.js"></script>
     <script>
         // Esperar a que DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
-            // Crear instancia única del navbar
-            const navbar = new NavbarManager();
-            
+            // Crear instancia global del navbar (necesario para logout)
+            navbarManager = new NavbarManager();
+
             // Proteger la página: redirige a login si no está autenticado
-            if (!navbar.protectAdminPage()) {
+            if (!navbarManager.protectAdminPage()) {
                 return; // Salir si no está autenticado (protectAdminPage ya redirige)
             }
-            
+
             // Inyectar navbar en el body
-            navbar.injectNavbar('body');
+            navbarManager.injectNavbar('body');
         });
     </script>
 </body>

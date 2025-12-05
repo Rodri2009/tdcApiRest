@@ -162,9 +162,21 @@ done
 echo "✅ Todas las variables de entorno requeridas están presentes y tienen valor."
 
 
-# --- Fase 2: Arranque de Docker ---
+# --- Fase 2: Limpieza y Arranque de Docker ---
 
-echo "--- Levantando los contenedores de Docker (esto puede tardar la primera vez)... ---"
+echo "--- Deteniendo contenedores existentes y eliminando volumen de base de datos... ---"
+# Detenemos los contenedores primero para poder eliminar el volumen de MariaDB
+eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE down" 2>/dev/null
+
+# Eliminamos el volumen de MariaDB para forzar la recreación de la BD desde los SQLs
+# Esto asegura que 01_schema.sql y 02_seed.sql se ejecuten siempre
+MARIADB_VOLUME="docker_mariadb_data"
+if docker volume ls -q | grep -q "^${MARIADB_VOLUME}$"; then
+    echo "🗑️  Eliminando volumen '$MARIADB_VOLUME' para recrear la base de datos..."
+    docker volume rm "$MARIADB_VOLUME" 2>/dev/null || true
+fi
+
+echo "--- Levantando los contenedores de Docker (la BD se creará desde los SQLs)... ---"
 # Se ejecuta docker-compose pasando explícitamente tanto el archivo de compose como el de entorno.
 # --build: Reconstruye las imágenes si hay cambios en los Dockerfiles.
 # -d: Modo "detached", ejecuta los contenedores en segundo plano.
@@ -190,16 +202,4 @@ eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE ps"
 
 echo ""
 echo "--- Mostrando logs del backend en tiempo real (Presiona Ctrl+C para salir) ---"
-eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend" &
-
-# Ejecutar scripts/import_sqls.sh automáticamente (si no se indica lo contrario)
-if [ "${SKIP_IMPORTS:-0}" != "1" ]; then
-    echo "--- Ejecutando import de SQLs detectados (scripts/import_sqls.sh) ---"
-    # Ejecuta en foreground; el script esperará a que MariaDB responda
-    "$ROOT_DIR/scripts/import_sqls.sh" || echo "⚠️  import_sqls.sh terminó con errores (ver arriba)."
-else
-    echo "--- SKIP_IMPORTS=1 detectado: omitiendo import de SQLs. ---"
-fi
-
-# Mantener el proceso de logs en foreground: esperar al proceso de logs
-wait
+eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"

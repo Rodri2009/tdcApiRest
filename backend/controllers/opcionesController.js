@@ -14,7 +14,7 @@ const getTiposDeEvento = async (req, res) => {
         conn = await pool.getConnection();
         // Permitimos filtrar por categoría: ?categoria=ALQUILER_SALON
         const categoria = req.query.categoria;
-        let sql = "SELECT `id_evento` as id, `nombre_para_mostrar` as nombreParaMostrar, `descripcion` as descripcion, `monto_sena` as montoSena, `deposito` as depositoGarantia, `es_publico` as esPublico, IFNULL(`categoria`, 'OTRO') as categoria FROM `opciones_tipos`";
+        let sql = "SELECT `id_evento` as id, `nombre_para_mostrar` as nombreParaMostrar, `descripcion` as descripcion, `es_publico` as esPublico, IFNULL(`categoria`, 'OTRO') as categoria FROM `opciones_tipos`";
         let rows;
         if (categoria) {
             sql += " WHERE categoria = ?";
@@ -72,9 +72,21 @@ const getTarifas = async (req, res) => {
     try {
         conn = await pool.getConnection();
         // Renombramos las columnas para que coincidan con el código JS original
-        const rows = await conn.query("SELECT `tipo_de_Evento` as tipo, `cantidad_minima` as min, `cantidad_maxima` as max, `fecha_de_vigencia` as fechaVigencia, `precio_por_hora` as precioPorHora FROM `precios_vigencia`;");
+        const rows = await conn.query(`
+            SELECT 
+                pv.id_evento as tipo, 
+                od.duracion_horas as duracion,
+                pv.precio_anticipado as precioAnticipado, 
+                pv.precio_puerta as precioPuerta,
+                pv.vigente_desde as vigenciaDesde,
+                pv.vigente_hasta as vigenciaHasta
+            FROM precios_vigencia pv
+            LEFT JOIN opciones_duracion od ON pv.id_duracion = od.id
+            WHERE pv.vigente_hasta IS NULL OR pv.vigente_hasta >= CURDATE()
+        `);
         res.status(200).json(rows);
     } catch (err) {
+        console.error("Error en getTarifas:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -92,7 +104,7 @@ const getOpcionesDuracion = async (req, res) => {
             if (!acc[row.id_evento]) {
                 acc[row.id_evento] = [];
             }
-            acc[row.id_evento].push(row.duracion);
+            acc[row.id_evento].push(row.duracion_horas);
             return acc;
         }, {});
         res.status(200).json(duracionesObject);
@@ -108,17 +120,25 @@ const getOpcionesHorarios = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query("SELECT `id_de_evento` as tipo, `hora_de_inicio` as hora, `tipo_de_dia` as tipoDia FROM `configuracion_horarios`;");
+        const rows = await conn.query(`
+            SELECT id_evento as tipo, dia_semana as tipoDia, hora_inicio as hora, hora_fin
+            FROM configuracion_horarios
+        `);
         // Reconstruimos el objeto anidado que esperaba el frontend
         const horariosObject = rows.reduce((acc, row) => {
             if (!acc[row.tipo]) {
                 acc[row.tipo] = [];
             }
-            acc[row.tipo].push({ hora: row.hora, tipoDia: row.tipoDia.toLowerCase() });
+            acc[row.tipo].push({
+                hora: row.hora,
+                tipoDia: row.tipoDia.toLowerCase(),
+                horaFin: row.hora_fin
+            });
             return acc;
         }, {});
         res.status(200).json(horariosObject);
     } catch (err) {
+        console.error("Error en getOpcionesHorarios:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();

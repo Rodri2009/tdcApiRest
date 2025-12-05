@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuración - Servicios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+            --color-dark: #0c0a09;
+            --color-card: #1c1917;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background: var(--color-dark);
+            color: #d6d3d1;
+            padding-bottom: 80px;
+        }
+
+        .wrap {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
+        h1 {
+            color: var(--color-secondary);
+            text-align: center;
+            margin: 1rem 0;
+            font-size: 1.8rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--color-rustic);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            font-size: 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover {
+            color: var(--color-secondary);
+        }
+
+        .tab.active {
+            color: var(--color-secondary);
+            border-bottom-color: var(--color-secondary);
+            font-weight: 600;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--color-card);
+            border-radius: 12px;
+            border: 1px solid var(--color-rustic);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--color-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-rustic);
+        }
+
+        th {
+            background: rgba(240, 171, 252, 0.1);
+            color: var(--color-secondary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+
+        .badge-gray {
+            background: #374151;
+            color: #9ca3af;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--color-secondary);
+            color: var(--color-dark);
+        }
+
+        .btn-primary:hover {
+            background: #e879f9;
+        }
+
+        .btn-secondary {
+            background: #374151;
+            color: #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-icon {
+            padding: 8px;
+            background: transparent;
+            color: #9ca3af;
+        }
+
+        .btn-icon:hover {
+            color: var(--color-secondary);
+        }
+
+        input,
+        select,
+        textarea {
+            background: #292524;
+            border: 1px solid var(--color-rustic);
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: #d6d3d1;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 16px;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--color-card);
+            border-radius: 12px;
+            border: 1px solid var(--color-rustic);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-rustic);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            color: var(--color-secondary);
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--color-rustic);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--color-secondary);
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            color: #93c5fd;
+            font-size: 0.9rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filters>div {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .filters label {
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <a href="/admin.html" class="btn btn-secondary" style="text-decoration:none;">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <h1 style="margin:0;flex:1;"><i class="fas fa-spa"></i> Configuración de Servicios</h1>
+            <div style="width:150px;"></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-section="tipos">
+                <i class="fas fa-list"></i> Tipos de Servicio
+            </button>
+            <button class="tab" data-section="profesionales">
+                <i class="fas fa-user-md"></i> Profesionales
+            </button>
+            <button class="tab" data-section="agenda">
+                <i class="fas fa-calendar-alt"></i> Agenda
+            </button>
+            <button class="tab" data-section="precios">
+                <i class="fas fa-dollar-sign"></i> Precios y Vigencia
+            </button>
+        </div>
+
+        <!-- SECCIÓN: Tipos de Servicio -->
+        <div id="section-tipos" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-list"></i> Tipos de Servicio</h3>
+                    <button class="btn btn-primary" onclick="openModal('tipo')">
+                        <i class="fas fa-plus"></i> Nuevo Tipo
+                    </button>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    Categorías de servicios: Depilación, Masajes, Tratamientos faciales, etc.
+                </div>
+                <div class="filters">
+                    <div>
+                        <label>Buscar:</label>
+                        <input type="text" id="filtro-tipo-nombre" placeholder="Nombre..." oninput="filterTipos()">
+                    </div>
+                    <div>
+                        <label>Estado:</label>
+                        <select id="filtro-tipo-estado" onchange="filterTipos()">
+                            <option value="">Todos</option>
+                            <option value="1">Activos</option>
+                            <option value="0">Inactivos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-tipos"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Profesionales -->
+        <div id="section-profesionales" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-user-md"></i> Profesionales</h3>
+                    <button class="btn btn-primary" onclick="openModal('profesional')">
+                        <i class="fas fa-plus"></i> Nuevo Profesional
+                    </button>
+                </div>
+                <div class="filters">
+                    <div>
+                        <label>Buscar:</label>
+                        <input type="text" id="filtro-profesional-nombre" placeholder="Nombre..."
+                            oninput="filterProfesionales()">
+                    </div>
+                    <div>
+                        <label>Estado:</label>
+                        <select id="filtro-profesional-estado" onchange="filterProfesionales()">
+                            <option value="">Todos</option>
+                            <option value="1">Activos</option>
+                            <option value="0">Inactivos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Especialidad</th>
+                                <th>Teléfono</th>
+                                <th>Email</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-profesionales"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Agenda -->
+        <div id="section-agenda" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-calendar-alt"></i> Agenda de Turnos</h3>
+                    <button class="btn btn-primary" onclick="openModal('turno')">
+                        <i class="fas fa-plus"></i> Nuevo Turno
+                    </button>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    Gestiona los turnos y disponibilidad de los profesionales.
+                </div>
+                <div class="filters">
+                    <div>
+                        <label>Profesional:</label>
+                        <select id="filtro-turno-profesional" onchange="filterTurnos()">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Fecha:</label>
+                        <input type="date" id="filtro-turno-fecha" onchange="filterTurnos()">
+                    </div>
+                    <div>
+                        <label>Estado:</label>
+                        <select id="filtro-turno-estado" onchange="filterTurnos()">
+                            <option value="">Todos</option>
+                            <option value="disponible">Disponibles</option>
+                            <option value="reservado">Reservados</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Profesional</th>
+                                <th>Servicio</th>
+                                <th>Cliente</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-turnos"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Precios y Vigencia -->
+        <div id="section-precios" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-dollar-sign"></i> Precios y Vigencia</h3>
+                    <button class="btn btn-primary" onclick="openModal('precio')">
+                        <i class="fas fa-plus"></i> Nuevo Precio
+                    </button>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    Precios por servicio con período de vigencia. El sistema usa el precio vigente automáticamente.
+                </div>
+                <div class="filters">
+                    <div>
+                        <label>Tipo de Servicio:</label>
+                        <select id="filtro-precio-tipo" onchange="filterPrecios()">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Estado:</label>
+                        <select id="filtro-precio-estado" onchange="filterPrecios()">
+                            <option value="">Todos</option>
+                            <option value="vigente">Vigentes</option>
+                            <option value="vencido">Vencidos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tipo de Servicio</th>
+                                <th>Duración</th>
+                                <th>Precio</th>
+                                <th>Vigente Desde</th>
+                                <th>Vigente Hasta</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-precios"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Genérico -->
+    <div id="modal-generic" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Título</h3>
+                <button class="btn btn-icon" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" id="modal-save-btn" onclick="saveModal()">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/navbar.js"></script>
+    <script>
+        const API_SERVICIOS = '/api/servicios';
+
+        let tipos = [];
+        let profesionales = [];
+        let servicios = [];
+        let turnos = [];
+        let precios = [];
+        let currentModalType = null;
+        let editingId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) return;
+            navbarManager.injectNavbar('body');
+
+            initTabs();
+            loadAllData();
+
+            // Manejar hash en URL
+            const hash = window.location.hash.replace('#', '');
+            if (hash) {
+                const tab = document.querySelector(`.tab[data-section="${hash}"]`);
+                if (tab) tab.click();
+            }
+        });
+
+        function authHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            };
+        }
+
+        function initTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const section = tab.dataset.section;
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                    document.getElementById(`section-${section}`).classList.add('active');
+                    window.location.hash = section;
+                });
+            });
+        }
+
+        async function loadAllData() {
+            await Promise.all([
+                loadTipos(),
+                loadProfesionales(),
+                loadServicios(),
+                loadTurnos(),
+                loadPrecios()
+            ]);
+            populateSelects();
+        }
+
+        function populateSelects() {
+            // Filtro profesional para turnos
+            const filtroTurnoProfesional = document.getElementById('filtro-turno-profesional');
+            if (filtroTurnoProfesional) {
+                filtroTurnoProfesional.innerHTML = '<option value="">Todos</option>' +
+                    profesionales.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            }
+
+            // Filtro tipo para precios
+            const filtroPrecioTipo = document.getElementById('filtro-precio-tipo');
+            if (filtroPrecioTipo) {
+                filtroPrecioTipo.innerHTML = '<option value="">Todos</option>' +
+                    tipos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+            }
+        }
+
+        // ============ TIPOS DE SERVICIO ============
+        async function loadTipos() {
+            try {
+                const res = await fetch(`${API_SERVICIOS}/tipos`);
+                if (res.ok) {
+                    tipos = await res.json();
+                    renderTipos();
+                }
+            } catch (err) { console.error('Error:', err); }
+        }
+
+        function renderTipos() {
+            const nombreFiltro = document.getElementById('filtro-tipo-nombre')?.value?.toLowerCase() || '';
+            const estadoFiltro = document.getElementById('filtro-tipo-estado')?.value || '';
+
+            let filtered = tipos;
+            if (nombreFiltro) filtered = filtered.filter(t => t.nombre.toLowerCase().includes(nombreFiltro));
+            if (estadoFiltro !== '') filtered = filtered.filter(t => String(t.esPublico) === estadoFiltro);
+
+            const tbody = document.getElementById('tbody-tipos');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay tipos configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(t => `
+                <tr>
+                    <td><code>${t.id}</code></td>
+                    <td><strong>${t.nombre}</strong></td>
+                    <td>${t.descripcion || '-'}</td>
+                    <td>${t.esPublico ? '<span class="badge badge-success">Público</span>' : '<span class="badge badge-gray">Oculto</span>'}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editTipo('${t.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteTipo('${t.id}')" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTipos() { renderTipos(); }
+
+        // ============ PROFESIONALES ============
+        async function loadProfesionales() {
+            try {
+                const res = await fetch(`${API_SERVICIOS}/profesionales/lista`);
+                if (res.ok) {
+                    profesionales = await res.json();
+                    renderProfesionales();
+                }
+            } catch (err) { console.error('Error:', err); }
+        }
+
+        function renderProfesionales() {
+            const nombreFiltro = document.getElementById('filtro-profesional-nombre')?.value?.toLowerCase() || '';
+            const estadoFiltro = document.getElementById('filtro-profesional-estado')?.value || '';
+
+            let filtered = profesionales;
+            if (nombreFiltro) filtered = filtered.filter(p => p.nombre.toLowerCase().includes(nombreFiltro));
+            if (estadoFiltro !== '') filtered = filtered.filter(p => String(p.activo) === estadoFiltro);
+
+            const tbody = document.getElementById('tbody-profesionales');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay profesionales registrados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(p => {
+                const horario = p.horaInicio && p.horaFin ? `${p.horaInicio} - ${p.horaFin}` : '-';
+                return `
+                <tr>
+                    <td><strong>${p.nombre}</strong></td>
+                    <td>${p.especialidad || '-'}</td>
+                    <td>${p.telefono || '-'}</td>
+                    <td>${p.diasTrabaja || '-'}</td>
+                    <td>${p.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editProfesional(${p.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteProfesional(${p.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function filterProfesionales() { renderProfesionales(); }
+
+        // ============ CATÁLOGO DE SERVICIOS ============
+        async function loadServicios() {
+            try {
+                const res = await fetch(`${API_SERVICIOS}/catalogo`);
+                if (res.ok) {
+                    servicios = await res.json();
+                }
+            } catch (err) { console.error('Error:', err); }
+        }
+
+        // ============ TURNOS (AGENDA) ============
+        async function loadTurnos() {
+            try {
+                const res = await fetch(`${API_SERVICIOS}/turnos`, { headers: authHeaders() });
+                if (res.ok) {
+                    turnos = await res.json();
+                    renderTurnos();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                turnos = [];
+                renderTurnos();
+            }
+        }
+
+        const ESTADOS_TURNO = {
+            'disponible': { label: 'Disponible', class: 'badge-success' },
+            'reservado': { label: 'Reservado', class: 'badge-warning' },
+            'confirmado': { label: 'Confirmado', class: 'badge-success' },
+            'en_curso': { label: 'En curso', class: 'badge-info' },
+            'completado': { label: 'Completado', class: 'badge-gray' },
+            'cancelado': { label: 'Cancelado', class: 'badge-danger' },
+            'no_asistio': { label: 'No asistió', class: 'badge-danger' }
+        };
+
+        function renderTurnos() {
+            const profesionalFiltro = document.getElementById('filtro-turno-profesional')?.value || '';
+            const estadoFiltro = document.getElementById('filtro-turno-estado')?.value || '';
+
+            let filtered = turnos;
+            if (profesionalFiltro) filtered = filtered.filter(t => String(t.profesionalId) === profesionalFiltro);
+            if (estadoFiltro) filtered = filtered.filter(t => t.estado === estadoFiltro);
+
+            const tbody = document.getElementById('tbody-turnos');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;">No hay turnos registrados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(t => {
+                const estado = ESTADOS_TURNO[t.estado] || { label: t.estado, class: 'badge-gray' };
+                return `
+                <tr>
+                    <td>${t.fecha ? new Date(t.fecha).toLocaleDateString('es-AR') : '-'}</td>
+                    <td>${t.horaInicio} - ${t.horaFin}</td>
+                    <td>${t.profesionalNombre || '-'}</td>
+                    <td>${t.servicioNombre || '-'}</td>
+                    <td>${t.clienteNombre || '-'}</td>
+                    <td><span class="badge ${estado.class}">${estado.label}</span></td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editTurno(${t.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteTurno(${t.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function filterTurnos() { renderTurnos(); }
+
+        // ============ PRECIOS ============
+        async function loadPrecios() {
+            try {
+                const res = await fetch(`${API_SERVICIOS}/precios/lista`);
+                if (res.ok) {
+                    precios = await res.json();
+                    renderPrecios();
+                }
+            } catch (err) { console.error('Error:', err); }
+        }
+
+        function renderPrecios() {
+            const tipoFiltro = document.getElementById('filtro-precio-tipo')?.value || '';
+            const estadoFiltro = document.getElementById('filtro-precio-estado')?.value || '';
+
+            let filtered = precios;
+            if (tipoFiltro) filtered = filtered.filter(p => p.tipoServicioId === tipoFiltro);
+            if (estadoFiltro === 'vigente') filtered = filtered.filter(p => p.vigente);
+            else if (estadoFiltro === 'vencido') filtered = filtered.filter(p => !p.vigente);
+
+            const tbody = document.getElementById('tbody-precios');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;">No hay precios configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(p => `
+                <tr>
+                    <td>${p.tipoNombre || '-'}</td>
+                    <td>${p.servicioNombre || '-'}</td>
+                    <td><strong>$${Number(p.precio || 0).toLocaleString('es-AR')}</strong></td>
+                    <td>${p.vigenteDesde ? new Date(p.vigenteDesde).toLocaleDateString('es-AR') : '-'}</td>
+                    <td>${p.vigenteHasta ? new Date(p.vigenteHasta).toLocaleDateString('es-AR') : 'Indefinido'}</td>
+                    <td>${p.vigente ? '<span class="badge badge-success">Vigente</span>' : '<span class="badge badge-gray">Vencido</span>'}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editPrecio(${p.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="deletePrecio(${p.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterPrecios() { renderPrecios(); }
+
+        // ============ MODALES ============
+        function openModal(type, id = null) {
+            currentModalType = type;
+            editingId = id;
+            const modal = document.getElementById('modal-generic');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            let html = '';
+
+            if (type === 'tipo') {
+                title.textContent = id ? 'Editar Tipo de Servicio' : 'Nuevo Tipo de Servicio';
+                const item = id ? tipos.find(t => t.id === id) : {};
+                html = `
+                    <div class="form-group">
+                        <label>ID (código único)</label>
+                        <input type="text" id="modal-id" value="${item.id || ''}" ${id ? 'disabled' : ''} placeholder="Ej: DEPILACION, MASAJES" style="text-transform:uppercase;">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" id="modal-nombre" value="${item.nombre || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="modal-descripcion" rows="3">${item.descripcion || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="modal-publico" ${item.esPublico !== 0 ? 'checked' : ''}> Visible al público</label>
+                    </div>
+                `;
+            } else if (type === 'profesional') {
+                title.textContent = id ? 'Editar Profesional' : 'Nuevo Profesional';
+                const item = id ? profesionales.find(p => p.id === id) : {};
+                html = `
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" id="modal-nombre" value="${item.nombre || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Especialidad</label>
+                        <input type="text" id="modal-especialidad" value="${item.especialidad || ''}" placeholder="Ej: Depilación, Masajes">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="text" id="modal-telefono" value="${item.telefono || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="modal-email" value="${item.email || ''}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Días que trabaja</label>
+                        <input type="text" id="modal-dias" value="${item.diasTrabaja || ''}" placeholder="Ej: lunes,miercoles,viernes">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hora inicio</label>
+                            <input type="time" id="modal-hora-inicio" value="${item.horaInicio || '09:00'}">
+                        </div>
+                        <div class="form-group">
+                            <label>Hora fin</label>
+                            <input type="time" id="modal-hora-fin" value="${item.horaFin || '18:00'}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="modal-activo" ${item.activo !== 0 ? 'checked' : ''}> Activo</label>
+                    </div>
+                `;
+            } else if (type === 'turno') {
+                title.textContent = id ? 'Editar Turno' : 'Nuevo Turno';
+                const item = id ? turnos.find(t => t.id === id) : {};
+                html = `
+                    <div class="form-group">
+                        <label>Profesional</label>
+                        <select id="modal-profesional" required>
+                            <option value="">Seleccionar...</option>
+                            ${profesionales.filter(p => p.activo).map(p => `<option value="${p.id}" ${item.profesionalId == p.id ? 'selected' : ''}>${p.nombre}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Servicio</label>
+                        <select id="modal-servicio" required>
+                            <option value="">Seleccionar...</option>
+                            ${servicios.filter(s => s.activo).map(s => `<option value="${s.id}" ${item.servicioId == s.id ? 'selected' : ''}>${s.nombre} (${s.duracionMinutos}min - $${Number(s.precioVigente || 0).toLocaleString('es-AR')})</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha</label>
+                            <input type="date" id="modal-fecha" value="${item.fecha ? item.fecha.split('T')[0] : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select id="modal-estado">
+                                <option value="disponible" ${item.estado === 'disponible' ? 'selected' : ''}>Disponible</option>
+                                <option value="reservado" ${item.estado === 'reservado' ? 'selected' : ''}>Reservado</option>
+                                <option value="confirmado" ${item.estado === 'confirmado' ? 'selected' : ''}>Confirmado</option>
+                                <option value="completado" ${item.estado === 'completado' ? 'selected' : ''}>Completado</option>
+                                <option value="cancelado" ${item.estado === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hora inicio</label>
+                            <input type="time" id="modal-hora-inicio" value="${item.horaInicio || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Hora fin</label>
+                            <input type="time" id="modal-hora-fin" value="${item.horaFin || ''}" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del cliente</label>
+                        <input type="text" id="modal-cliente-nombre" value="${item.clienteNombre || ''}">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Teléfono cliente</label>
+                            <input type="text" id="modal-cliente-tel" value="${item.clienteTelefono || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Monto</label>
+                            <input type="number" id="modal-monto" value="${item.monto || ''}" min="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notas</label>
+                        <textarea id="modal-notas" rows="2">${item.notas || ''}</textarea>
+                    </div>
+                `;
+            } else if (type === 'precio') {
+                title.textContent = id ? 'Editar Precio' : 'Nuevo Precio';
+                const item = id ? precios.find(p => p.id === id) : {};
+                html = `
+                    <div class="form-group">
+                        <label>Servicio</label>
+                        <select id="modal-servicio" required>
+                            <option value="">Seleccionar servicio...</option>
+                            ${servicios.map(s => `<option value="${s.id}" ${item.servicioId == s.id ? 'selected' : ''}>${s.tipoNombre} - ${s.nombre} (${s.duracionMinutos}min)</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio ($)</label>
+                        <input type="number" id="modal-precio" value="${item.precio || ''}" min="0" step="100" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Vigente Desde</label>
+                            <input type="date" id="modal-desde" value="${item.vigenteDesde ? item.vigenteDesde.split('T')[0] : new Date().toISOString().split('T')[0]}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Vigente Hasta (opcional)</label>
+                            <input type="date" id="modal-hasta" value="${item.vigenteHasta ? item.vigenteHasta.split('T')[0] : ''}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="modal-vigente" ${item.vigente !== 0 ? 'checked' : ''}> Vigente</label>
+                    </div>
+                `;
+            }
+
+            body.innerHTML = html;
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-generic').classList.remove('show');
+            currentModalType = null;
+            editingId = null;
+        }
+
+        async function saveModal() {
+            const type = currentModalType;
+            let url, method, data;
+
+            if (type === 'tipo') {
+                const id = document.getElementById('modal-id').value.toUpperCase().trim();
+                data = {
+                    id: id,
+                    nombre: document.getElementById('modal-nombre').value,
+                    descripcion: document.getElementById('modal-descripcion').value,
+                    esPublico: document.getElementById('modal-publico').checked ? 1 : 0
+                };
+                if (!editingId && !id) {
+                    alert('El ID es obligatorio');
+                    return;
+                }
+                url = editingId ? `${API_SERVICIOS}/tipos/${editingId}` : `${API_SERVICIOS}/tipos`;
+                method = editingId ? 'PUT' : 'POST';
+            } else if (type === 'profesional') {
+                data = {
+                    nombre: document.getElementById('modal-nombre').value,
+                    especialidad: document.getElementById('modal-especialidad').value || null,
+                    telefono: document.getElementById('modal-telefono').value || null,
+                    email: document.getElementById('modal-email').value || null,
+                    diasTrabaja: document.getElementById('modal-dias').value || null,
+                    horaInicio: document.getElementById('modal-hora-inicio').value || null,
+                    horaFin: document.getElementById('modal-hora-fin').value || null,
+                    activo: document.getElementById('modal-activo').checked ? 1 : 0
+                };
+                url = editingId ? `${API_SERVICIOS}/profesionales/${editingId}` : `${API_SERVICIOS}/profesionales`;
+                method = editingId ? 'PUT' : 'POST';
+            } else if (type === 'turno') {
+                data = {
+                    profesionalId: parseInt(document.getElementById('modal-profesional').value),
+                    servicioId: parseInt(document.getElementById('modal-servicio').value),
+                    fecha: document.getElementById('modal-fecha').value,
+                    horaInicio: document.getElementById('modal-hora-inicio').value,
+                    horaFin: document.getElementById('modal-hora-fin').value,
+                    clienteNombre: document.getElementById('modal-cliente-nombre').value || null,
+                    clienteTelefono: document.getElementById('modal-cliente-tel').value || null,
+                    monto: parseFloat(document.getElementById('modal-monto').value) || null,
+                    estado: document.getElementById('modal-estado').value,
+                    notas: document.getElementById('modal-notas').value || null
+                };
+                url = editingId ? `${API_SERVICIOS}/turnos/${editingId}` : `${API_SERVICIOS}/turnos`;
+                method = editingId ? 'PUT' : 'POST';
+            } else if (type === 'precio') {
+                data = {
+                    servicioId: parseInt(document.getElementById('modal-servicio').value),
+                    precio: parseFloat(document.getElementById('modal-precio').value),
+                    vigenteDesde: document.getElementById('modal-desde').value,
+                    vigenteHasta: document.getElementById('modal-hasta').value || null,
+                    vigente: document.getElementById('modal-vigente').checked ? 1 : 0
+                };
+                url = editingId ? `${API_SERVICIOS}/precios/${editingId}` : `${API_SERVICIOS}/precios`;
+                method = editingId ? 'PUT' : 'POST';
+            }
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: authHeaders(),
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    closeModal();
+                    loadAllData();
+                } else {
+                    const err = await res.json();
+                    alert('Error: ' + (err.error || err.message || 'Error al guardar'));
+                }
+            } catch (err) {
+                alert('Error de conexión');
+            }
+        }
+
+        // Funciones de edición y eliminación
+        function editTipo(id) { openModal('tipo', id); }
+        function editProfesional(id) { openModal('profesional', id); }
+        function editTurno(id) { openModal('turno', id); }
+        function editPrecio(id) { openModal('precio', id); }
+
+        async function deleteTipo(id) {
+            if (!confirm('¿Eliminar este tipo de servicio?')) return;
+            try {
+                const res = await fetch(`${API_SERVICIOS}/tipos/${id}`, { method: 'DELETE', headers: authHeaders() });
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    return;
+                }
+                loadTipos();
+            } catch (err) { alert('Error de conexión'); }
+        }
+
+        async function deleteProfesional(id) {
+            if (!confirm('¿Eliminar este profesional?')) return;
+            try {
+                const res = await fetch(`${API_SERVICIOS}/profesionales/${id}`, { method: 'DELETE', headers: authHeaders() });
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    return;
+                }
+                loadProfesionales();
+            } catch (err) { alert('Error de conexión'); }
+        }
+
+        async function deleteTurno(id) {
+            if (!confirm('¿Eliminar este turno?')) return;
+            try {
+                const res = await fetch(`${API_SERVICIOS}/turnos/${id}`, { method: 'DELETE', headers: authHeaders() });
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    return;
+                }
+                loadTurnos();
+            } catch (err) { alert('Error de conexión'); }
+        }
+
+        async function deletePrecio(id) {
+            if (!confirm('¿Eliminar este precio?')) return;
+            try {
+                const res = await fetch(`${API_SERVICIOS}/precios/${id}`, { method: 'DELETE', headers: authHeaders() });
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    return;
+                }
+                loadPrecios();
+            } catch (err) { alert('Error de conexión'); }
+        }
+    </script>
+</body>
+
+</html>

@@ -165,43 +165,43 @@
 <body>
     <div class="container">
         <h1>Orden de Trabajo</h1>
-</head>
+        </head>
 
-<body>
-    <div class="container" id="main-container">
-        <div class="loader" id="loader">
-            <h2>Generando Orden de Trabajo...</h2>
-        </div>
-    </div>
+        <body>
+            <div class="container" id="main-container">
+                <div class="loader" id="loader">
+                    <h2>Generando Orden de Trabajo...</h2>
+                </div>
+            </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const params = new URLSearchParams(window.location.search);
-            const solicitudId = params.get('solicitudId');
-            const container = document.getElementById('main-container');
-            if (!solicitudId) {
-                container.innerHTML = `<h1>Error</h1><p>No se proporcionó un ID de solicitud.</p>`;
-                return;
-            }
-            try {
-                const response = await fetch(`/api/admin/orden-trabajo/${solicitudId}`);
-                if (response.status === 401) {
-                    window.location.href = '/login.html';
-                    return;
-                }
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-                renderWorkOrder(data);
-            } catch (error) {
-                container.innerHTML = `<h1>Error</h1><p>${error.message}</p>`;
-            }
-        });
+            <script>
+                document.addEventListener('DOMContentLoaded', async () => {
+                    const params = new URLSearchParams(window.location.search);
+                    const solicitudId = params.get('solicitudId');
+                    const container = document.getElementById('main-container');
+                    if (!solicitudId) {
+                        container.innerHTML = `<h1>Error</h1><p>No se proporcionó un ID de solicitud.</p>`;
+                        return;
+                    }
+                    try {
+                        const response = await fetch(`/api/admin/orden-trabajo/${solicitudId}`);
+                        if (response.status === 401) {
+                            window.location.href = '/login.html';
+                            return;
+                        }
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.message);
+                        renderWorkOrder(data);
+                    } catch (error) {
+                        container.innerHTML = `<h1>Error</h1><p>${error.message}</p>`;
+                    }
+                });
 
-        function renderWorkOrder(data) {
-            const container = document.getElementById('main-container');
-            let tableRows = '';
-            data.assignedStaff.forEach(person => {
-                tableRows += `
+                function renderWorkOrder(data) {
+                    const container = document.getElementById('main-container');
+                    let tableRows = '';
+                    data.assignedStaff.forEach(person => {
+                        tableRows += `
                 <tr>
                     <td>${person.nombre}</td>
                     <td>${person.rol}</td>
@@ -211,8 +211,8 @@
                     <td class="number">$ ${person.totalPorPersona.toLocaleString('es-AR')}</td>
                 </tr>
             `;
-            });
-            const html = `
+                    });
+                    const html = `
             <h1>Orden de Trabajo</h1>
             <h3>El Templo de Claypole</h3>
 
@@ -253,16 +253,16 @@
                 </button>
             </div>
         `;
-            container.innerHTML = html;
+                    container.innerHTML = html;
 
-            // Proteger esta página: redirigir a login si no está autenticado
-            const navbar = new NavbarManager();
-            if (!navbar.protectAdminPage()) {
-                return; // Salir si no está autenticado
-            }
-            navbar.injectNavbar('body');
-        }
-    </script>
-</body>
+                    // Proteger esta página: redirigir a login si no está autenticado
+                    navbarManager = new NavbarManager();
+                    if (!navbarManager.protectAdminPage()) {
+                        return; // Salir si no está autenticado
+                    }
+                    navbarManager.injectNavbar('body');
+                }
+            </script>
+        </body>
 
 </html>

@@ -708,6 +708,7 @@ const App = {
     },
 
     inicializarCalendario: function (fechasOcupadas, feriados, fechaExcepcion = null) {
+        const fechasADeshabilitar = fechaExcepcion
             ? fechasOcupadas.filter(fecha => fecha !== fechaExcepcion)
             : fechasOcupadas;
         try {

@@ -11,11 +11,14 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --color-primary: #581c87;
             --color-secondary: #f0abfc;
             --color-rustic: #44403c;
+            --color-dark: #0c0a09;
+            --color-card: #1e293b;
         }
 
         .text-neon {
@@ -27,93 +30,162 @@
             background-color: var(--color-rustic);
         }
 
+        .bg-card {
+            background-color: var(--color-card);
+        }
+
         body {
-            background: #0c0a09;
+            background: var(--color-dark);
             color: #d6d3d1;
             font-family: Arial, sans-serif;
             padding-bottom: 70px;
         }
 
         .container {
-            max-width: 98%;
+            max-width: 900px;
             margin: 20px auto;
             padding: 25px;
-            background: #1e293b;
-            border-radius: 8px;
+        }
+
+        .card {
+            background: var(--color-card);
+            border-radius: 12px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             border: 1px solid var(--color-rustic);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--color-secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            opacity: 0.8;
         }
 
         h1 {
             text-align: center;
             margin-bottom: 5px;
-            font-size: 2.25rem !important;
+            font-size: 2rem;
             font-weight: bold;
             color: var(--color-secondary);
             text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
         }
 
-        h3.subtitle {
-            color: #ccc;
+        .subtitle {
+            color: #9ca3af;
             text-align: center;
-            margin-top: 0;
             margin-bottom: 25px;
-            font-size: 1.1em;
-            font-weight: normal;
+            font-size: 1rem;
         }
 
         label {
             color: #f0abfc;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 6px;
         }
 
         input,
         textarea,
         select {
             width: 100%;
-            padding: 12px 8px !important;
-            margin-top: 6px;
-            margin-bottom: 12px;
-            border-radius: 4px;
+            padding: 12px;
+            border-radius: 6px;
             background: #0f172a;
             border: 1.5px solid #581c87;
             color: #f8fafc;
-            font-size: 18px;
+            font-size: 16px;
             box-sizing: border-box;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            line-height: 1.2;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 0 3px rgba(240, 171, 252, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 4px;
         }
 
         .btn {
             background: #10b981;
             color: #042014;
-            padding: 12px 18px;
+            padding: 14px 24px;
             border-radius: 8px;
-            font-weight: 700
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
         }
 
-        .btn:hover {
+        .btn:hover:not(:disabled) {
             background: #059669;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .btn-secondary {
             background: #6b7280;
             color: #fff;
-            padding: 10px 14px;
+            padding: 12px 18px;
             border-radius: 8px;
-            font-weight: 700
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
         }
 
         .btn-secondary:hover {
             background: #4b5563;
         }
 
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--color-secondary);
+            color: var(--color-secondary);
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-outline:hover {
+            background: var(--color-secondary);
+            color: var(--color-dark);
+        }
+
         .campo-invalido {
-            border-color: #e74c3c !important;
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
-            animation: shake 0.5s;
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+            animation: shake 0.4s;
         }
 
         @keyframes shake {
@@ -123,40 +195,153 @@
                 transform: translateX(0);
             }
 
-            20%,
-            60% {
+            25% {
                 transform: translateX(-5px);
             }
 
-            40%,
-            80% {
+            75% {
                 transform: translateX(5px);
             }
         }
 
-        .error-text {
-            color: #fcc;
+        /* Formación/Instrumentos */
+        .formacion-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .formacion-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #374151;
+            padding: 8px 12px;
+            border-radius: 20px;
             font-size: 0.9rem;
-            margin-top: -8px;
-            margin-bottom: 8px;
+        }
+
+        .formacion-item .remove {
+            cursor: pointer;
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .formacion-item .remove:hover {
+            color: #f87171;
+        }
+
+        /* Bandas invitadas */
+        .invitada-card {
+            background: #374151;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .invitada-card .remove-invitada {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: #ef4444;
+            font-size: 1.2rem;
+        }
+
+        .invitada-number {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: var(--color-primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* Autocomplete */
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            border: 1px solid var(--color-primary);
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
             display: none;
         }
 
-        .form-group {
-            margin-bottom: 15px;
+        .autocomplete-results.show {
+            display: block;
         }
 
-        .column-layout {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
+        .autocomplete-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .price-hint {
-            font-size: 0.85em;
-            color: #9ca3af;
-            margin-top: -8px;
-            margin-bottom: 12px;
+        .autocomplete-item:hover {
+            background: #374151;
+        }
+
+        .autocomplete-item img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .autocomplete-item .verified {
+            color: #10b981;
+            font-size: 0.8rem;
+        }
+
+        /* Logo upload preview */
+        .logo-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            border: 2px dashed #581c87;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .logo-preview:hover {
+            border-color: var(--color-secondary);
+        }
+
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-preview .placeholder {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.85rem;
         }
 
         /* Loading Overlay */
@@ -166,7 +351,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             display: none;
             justify-content: center;
             align-items: center;
@@ -181,19 +366,15 @@
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
+            border: 4px solid #333;
             border-top: 4px solid #a855f7;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            width: 50px;
+            height: 50px;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
             100% {
                 transform: rotate(360deg);
             }
@@ -205,14 +386,14 @@
             bottom: 20px;
             left: 50%;
             transform: translate(-50%, 150%);
-            padding: 12px 25px;
+            padding: 14px 28px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
             color: white;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 500;
             z-index: 1000;
-            transition: transform 0.5s ease-in-out;
+            transition: transform 0.4s ease;
             max-width: 90%;
             text-align: center;
         }
@@ -222,16 +403,82 @@
         }
 
         #notification-banner.warning {
-            background-color: #fbbf24;
+            background: #f59e0b;
             color: #1e293b;
         }
 
         #notification-banner.error {
-            background-color: #ef4444;
+            background: #ef4444;
         }
 
         #notification-banner.success {
-            background-color: #10b981;
+            background: #10b981;
+        }
+
+        /* Stepper */
+        .stepper {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 25px;
+        }
+
+        .stepper-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .stepper-step.active {
+            color: var(--color-secondary);
+        }
+
+        .stepper-step.completed {
+            color: #10b981;
+        }
+
+        .stepper-step .step-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #374151;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .stepper-step.active .step-num {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .stepper-step.completed .step-num {
+            background: #10b981;
+            color: white;
+        }
+
+        .stepper-line {
+            width: 30px;
+            height: 2px;
+            background: #374151;
+        }
+
+        .stepper-step.completed+.stepper-line {
+            background: #10b981;
+        }
+
+        /* Fechas ocupadas en el calendario */
+        .flatpickr-day.fecha-ocupada {
+            background: #991b1b !important;
+            color: #fecaca !important;
+            text-decoration: line-through;
+        }
+
+        .flatpickr-day.fecha-ocupada:hover {
+            background: #7f1d1d !important;
         }
     </style>
 </head>
@@ -240,26 +487,18 @@
     <header class="bg-rustic sticky top-0 z-50 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <!-- Logo/Título -->
                 <a href="index.html" class="flex items-center space-x-3">
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
                     <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
                         Inicio</span>
                 </a>
-
-                <!-- Menú Desktop -->
                 <nav class="hidden md:flex space-x-8 items-center">
-                    <a href="agenda_de_bandas.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Ver Agenda</a>
-                    <a href="seccion_talleres.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
-                    <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
+                    <a href="agenda_de_bandas.html" class="text-sm font-medium hover:text-neon transition">Ver
+                        Agenda</a>
+                    <a href="seccion_talleres.html" class="text-sm font-medium hover:text-neon transition">Talleres</a>
                     <div id="auth-menu-desktop"></div>
                 </nav>
-
-                <!-- Botón de Menú Móvil -->
-                <button id="mobile-menu-button"
-                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                <button id="mobile-menu-button" class="md:hidden p-2 rounded-md hover:bg-stone-700">
                     <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 6h16M4 12h16M4 18h16" />
@@ -267,664 +506,866 @@
                 </button>
             </div>
         </div>
-        <!-- Menú Móvil Desplegable -->
         <div id="mobile-menu" class="hidden md:hidden">
-            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+            <div class="px-2 pt-2 pb-3 space-y-1 bg-rustic">
                 <a href="agenda_de_bandas.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Ver
                     Agenda</a>
                 <a href="seccion_talleres.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
-                <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
                 <div id="auth-menu-mobile"></div>
             </div>
         </div>
     </header>
 
     <div class="container">
-        <h1>Solicitud para tocar en el templo</h1>
-        <h3 class="subtitle">Completa este formulario para solicitar tocar en El Templo. Te enviaremos respuesta por
-            email.</h3>
+        <h1><i class="fas fa-guitar"></i> Solicitud para tocar en el templo</h1>
+        <p class="subtitle">Completa este formulario para solicitar una fecha. Te responderemos por email.</p>
 
-        <form id="bandForm">
-            <input type="hidden" id="event_id" name="event_id">
-            <div id="error_event_id" class="error-text">event_id inválido.</div>
-            <label for="nombre_banda">Nombre de la banda / proyecto</label>
-            <input id="nombre_banda" name="nombre_banda" required>
-            <div id="error_nombre_banda" class="error-text">Nombre inválido.</div>
+        <!-- Stepper -->
+        <div class="stepper">
+            <div class="stepper-step active" data-step="1">
+                <span class="step-num">1</span>
+                <span class="hidden sm:inline">Datos de la banda</span>
+            </div>
+            <div class="stepper-line"></div>
+            <div class="stepper-step" data-step="2">
+                <span class="step-num">2</span>
+                <span class="hidden sm:inline">Fecha y propuesta</span>
+            </div>
+            <div class="stepper-line"></div>
+            <div class="stepper-step" data-step="3">
+                <span class="step-num">3</span>
+                <span class="hidden sm:inline">Contacto</span>
+            </div>
+        </div>
 
-            <!-- El email de contacto se recopila en contacto.html -->
+        <form id="bandaSolicitudForm">
+            <!-- SECCIÓN 1: Datos de la Banda -->
+            <div class="card" id="section-banda">
+                <h3 class="card-title"><i class="fas fa-users"></i> Datos de la Banda / Artista</h3>
 
-            <label for="link_musica">Link a tu música (Spotify, YouTube, Bandcamp)</label>
-            <input id="link_musica" name="link_musica" type="url">
-            <div id="error_link_musica" class="error-text">Link inválido.</div>
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label for="nombre_banda">Nombre de la banda / artista *</label>
+                        <div class="autocomplete-wrapper">
+                            <input type="text" id="nombre_banda" name="nombre_banda" required
+                                placeholder="Ej: Los Redonditos del Sur" autocomplete="off">
+                            <div id="banda-autocomplete" class="autocomplete-results"></div>
+                        </div>
+                        <input type="hidden" id="id_banda" name="id_banda">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label for="genero_musical">Género musical</label>
+                        <input type="text" id="genero_musical" name="genero_musical"
+                            placeholder="Ej: Rock, Jazz, Cumbia">
+                    </div>
+                </div>
 
-            <label for="fechaEvento">Fecha preferida</label>
-            <input id="fechaEvento" name="fechaEvento" placeholder="Seleccioná una fecha">
+                <!-- Formación -->
+                <div class="form-group">
+                    <label><i class="fas fa-music"></i> Formación de la banda</label>
+                    <p class="hint">Agregá los instrumentos que usa tu banda. Esto nos ayuda a preparar el escenario.
+                    </p>
+                    <div id="formacion-list" class="formacion-list"></div>
+                    <div class="form-row" style="align-items: flex-end;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <select id="instrumento-select">
+                                <option value="">Seleccionar instrumento...</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0; flex: 0.5;">
+                            <input type="number" id="instrumento-cantidad" min="1" max="5" value="1"
+                                style="width: 70px;">
+                        </div>
+                        <button type="button" id="add-instrumento" class="btn-outline"
+                            style="margin-bottom: 0; height: 46px;">
+                            <i class="fas fa-plus"></i> Agregar
+                        </button>
+                    </div>
+                </div>
 
-            <label for="horaInicio">Hora preferida (opcional)</label>
-            <select id="horaInicio" name="horaInicio">
-                <option value="">Cargando horarios...</option>
-            </select>
+                <!-- Redes sociales -->
+                <div class="form-group">
+                    <label><i class="fas fa-share-alt"></i> Redes sociales y links</label>
+                    <p class="hint">Compartí tus redes para que podamos conocer tu trabajo y difundir el evento.</p>
+                </div>
 
-            <label for="duracionEvento">Duración preferida</label>
-            <select id="duracionEvento" name="duracionEvento">
-                <option value="">Cargando duraciones...</option>
-            </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="instagram"><i class="fab fa-instagram"></i> Instagram</label>
+                        <input type="text" id="instagram" name="instagram" placeholder="@tu_banda">
+                    </div>
+                    <div class="form-group">
+                        <label for="facebook"><i class="fab fa-facebook"></i> Facebook</label>
+                        <input type="text" id="facebook" name="facebook" placeholder="facebook.com/tubanda">
+                    </div>
+                </div>
 
-            <div id="band-banner"
-                style="margin:12px 0; padding:10px; background:#872d7d; color:#fff; border-radius:6px; display:none">
-                Esta página está en construcción: aún no hay horarios configurados para solicitudes de banda.</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="youtube"><i class="fab fa-youtube"></i> YouTube</label>
+                        <input type="url" id="youtube" name="youtube" placeholder="https://youtube.com/...">
+                        <p class="hint">Link a tu canal o video destacado</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="spotify"><i class="fab fa-spotify"></i> Spotify</label>
+                        <input type="url" id="spotify" name="spotify" placeholder="https://open.spotify.com/artist/...">
+                    </div>
+                </div>
 
-            <div class="form-group">
-                <label for="propuesta">Propuesta y requerimientos técnicos</label>
-                <textarea id="propuesta" name="propuesta" rows="5"
-                    placeholder="Estilo, integrantes, rider, necesidades técnicas..."></textarea>
-                <div id="error_propuesta" class="error-text">Propuesta inválida.</div>
+                <div class="form-group">
+                    <label for="otras_redes">Otros links (Bandcamp, SoundCloud, etc.)</label>
+                    <textarea id="otras_redes" name="otras_redes" rows="2" placeholder="Un link por línea"></textarea>
+                </div>
+
+                <!-- Logo -->
+                <div class="form-group">
+                    <label><i class="fas fa-image"></i> Logo de la banda (opcional)</label>
+                    <p class="hint">Subí el logo para usarlo en la difusión del evento.</p>
+                    <div style="display: flex; gap: 15px; align-items: flex-start;">
+                        <div class="logo-preview" id="logo-preview"
+                            onclick="document.getElementById('logo_file').click()">
+                            <div class="placeholder">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 5px;"></i>
+                                <div>Click para subir</div>
+                            </div>
+                        </div>
+                        <input type="file" id="logo_file" accept="image/*" style="display: none;">
+                        <input type="hidden" id="logo_url" name="logo_url">
+                        <div style="flex: 1;">
+                            <p class="hint">O pegá la URL de tu logo:</p>
+                            <input type="url" id="logo_url_manual" placeholder="https://..." style="margin-top: 5px;">
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="column-layout">
-                <div class="form-group">
-                    <label for="precio_anticipada">Precio entrada anticipada (sugerido)</label>
-                    <input id="precio_anticipada" name="precio_anticipada" type="number" min="0" step="100"
-                        placeholder="Ej: 5000">
-                    <p class="price-hint">Opcional. Precio sugerido para venta anticipada.</p>
+            <!-- SECCIÓN 2: Fecha y Propuesta (Colapsable) -->
+            <div class="card" id="section-fecha">
+                <button type="button" id="toggle-fecha-btn" class="btn-outline"
+                    style="width: 100%; padding: 15px; font-size: 1.1rem;">
+                    <i class="fas fa-calendar-plus"></i> Proponer una fecha para tocar
+                </button>
+
+                <div id="fecha-content" style="display: none; margin-top: 20px;">
+                    <h3 class="card-title" style="margin-top: 0;"><i class="fas fa-calendar-alt"></i> Fecha y Propuesta
+                    </h3>
+                    <p class="hint" style="margin-bottom: 15px;">Esta sección es opcional. Si ya tenés una fecha en
+                        mente, completala. Sino, nos contactamos para coordinar.</p>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fecha_preferida">Fecha preferida *</label>
+                            <input type="text" id="fecha_preferida" name="fecha_preferida"
+                                placeholder="Seleccionar fecha...">
+                        </div>
+                        <div class="form-group">
+                            <label for="fecha_alternativa">Fecha alternativa</label>
+                            <input type="text" id="fecha_alternativa" name="fecha_alternativa" placeholder="Opcional">
+                        </div>
+                        <div class="form-group">
+                            <label for="hora_preferida">Hora preferida</label>
+                            <select id="hora_preferida" name="hora_preferida">
+                                <option value="">Seleccionar...</option>
+                                <option value="20:00">20:00 hs</option>
+                                <option value="21:00">21:00 hs</option>
+                                <option value="22:00">22:00 hs</option>
+                                <option value="23:00">23:00 hs</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Bandas invitadas -->
+                    <div class="form-group">
+                        <label><i class="fas fa-user-friends"></i> Bandas invitadas (opcional)</label>
+                        <p class="hint">Podés agregar hasta 3 bandas invitadas. Tu banda será la principal (cierra el
+                            show).
+                        </p>
+                        <div id="invitadas-container"></div>
+                        <button type="button" id="add-invitada" class="btn-outline" style="margin-top: 10px;">
+                            <i class="fas fa-plus"></i> Agregar banda invitada
+                        </button>
+                    </div>
+
+                    <!-- Propuesta económica -->
+                    <div class="form-group">
+                        <label><i class="fas fa-ticket-alt"></i> Propuesta de entradas (sugerido)</label>
+                        <p class="hint">Estos precios son sugeridos. Los confirmamos juntos antes del evento.</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="precio_anticipada">Precio anticipada</label>
+                            <input type="number" id="precio_anticipada" name="precio_anticipada" min="0" step="100"
+                                placeholder="Ej: 5000">
+                        </div>
+                        <div class="form-group">
+                            <label for="precio_puerta">Precio en puerta</label>
+                            <input type="number" id="precio_puerta" name="precio_puerta" min="0" step="100"
+                                placeholder="Ej: 7000">
+                        </div>
+                        <div class="form-group">
+                            <label for="expectativa_publico">Público esperado</label>
+                            <input type="text" id="expectativa_publico" name="expectativa_publico"
+                                placeholder="Ej: 80-100 personas">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mensaje">Mensaje / Propuesta / Requerimientos técnicos</label>
+                        <textarea id="mensaje" name="mensaje" rows="4"
+                            placeholder="Contanos sobre tu propuesta, rider técnico, necesidades especiales..."></textarea>
+                    </div>
+                </div><!-- Fin fecha-content -->
+            </div>
+
+            <!-- SECCIÓN 3: Contacto -->
+            <div class="card" id="section-contacto">
+                <h3 class="card-title"><i class="fas fa-address-card"></i> Datos de Contacto</h3>
+                <p class="hint" style="margin-top: -10px; margin-bottom: 15px;">
+                    Estos datos son para comunicarnos con vos. No se publican.
+                </p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contacto_nombre">Nombre del contacto *</label>
+                        <input type="text" id="contacto_nombre" name="contacto_nombre" required placeholder="Tu nombre">
+                    </div>
+                    <div class="form-group">
+                        <label for="contacto_rol">Rol en la banda</label>
+                        <input type="text" id="contacto_rol" name="contacto_rol"
+                            placeholder="Ej: Manager, Cantante, Productor">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="precio_puerta">Precio entrada en puerta (sugerido)</label>
-                    <input id="precio_puerta" name="precio_puerta" type="number" min="0" step="100"
-                        placeholder="Ej: 7000">
-                    <p class="price-hint">Opcional. Precio sugerido para venta en puerta.</p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contacto_email">Email *</label>
+                        <input type="email" id="contacto_email" name="contacto_email" required
+                            placeholder="tu@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="contacto_whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp *</label>
+                        <input type="tel" id="contacto_whatsapp" name="contacto_whatsapp" required
+                            placeholder="Ej: 1155001122" pattern="[0-9]{10,15}">
+                        <p class="hint">Solo números, sin espacios ni guiones</p>
+                    </div>
                 </div>
             </div>
 
-            <div style="display:flex;gap:10px;align-items:center;margin-top:20px">
-                <button class="btn" id="submitBtn" type="submit">Enviar solicitud</button>
-                <button id="backBtn" type="button" class="btn-secondary">Volver</button>
+            <!-- Botones de acción -->
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 25px;">
+                <button type="button" id="backBtn" class="btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+                <button type="submit" id="submitBtn" class="btn" style="min-width: 200px;">
+                    <i class="fas fa-paper-plane"></i> Enviar Solicitud
+                </button>
             </div>
         </form>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <p>Enviando solicitud...</p>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Notification Banner -->
+    <div id="notification-banner"></div>
+
     <script>
-        // Utilidades para UI
+        // ============================================================
+        // CONFIGURACIÓN Y ESTADO
+        // ============================================================
+        let fingerprintId = null;
+        let instrumentos = [];
+        let formacion = []; // Array de {instrumento, cantidad}
+        let invitadas = []; // Array de {nombre, id_banda?}
+        let fechaPicker1 = null;
+        let fechaPicker2 = null;
+
+        // ============================================================
+        // UTILIDADES UI
+        // ============================================================
         let notificationTimer = null;
 
         function showNotification(message, type = 'warning', duration = 4000) {
             const banner = document.getElementById('notification-banner');
-            if (!banner) return;
             clearTimeout(notificationTimer);
             banner.textContent = message;
             banner.className = 'show ' + type;
             notificationTimer = setTimeout(() => { banner.className = ''; }, duration);
         }
 
-        function toggleLoadingOverlay(show, message = 'Cargando...') {
+        function toggleLoading(show, message = 'Procesando...') {
             const overlay = document.getElementById('loadingOverlay');
-            if (!overlay) return;
             const p = overlay.querySelector('p');
             if (p) p.textContent = message;
             overlay.style.display = show ? 'flex' : 'none';
         }
 
-        function resetCamposInvalidos() {
+        function resetInvalidFields() {
             document.querySelectorAll('.campo-invalido').forEach(el => {
                 el.classList.remove('campo-invalido');
-                el.style.animation = 'none';
-                void el.offsetWidth;
-                el.style.animation = '';
             });
-            document.querySelectorAll('.error-text').forEach(el => el.style.display = 'none');
         }
 
-        // Validaciones cliente-side para campos de banda
-        function isValidEmail(email) {
-            if (!email) return false;
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
-
-        function isValidUrl(url) {
-            if (!url) return false;
+        // ============================================================
+        // CARGAR INSTRUMENTOS
+        // ============================================================
+        async function loadInstrumentos() {
             try {
-                const u = new URL(url);
-                return ['http:', 'https:'].includes(u.protocol);
-            } catch (e) {
-                return false;
-            }
-        }
+                const res = await fetch('/api/bandas/instrumentos');
+                if (res.ok) {
+                    instrumentos = await res.json();
+                    const select = document.getElementById('instrumento-select');
+                    select.innerHTML = '<option value="">Seleccionar instrumento...</option>';
 
-        function validateBandForm() {
-            resetCamposInvalidos();
-
-            const nombreEl = document.getElementById('nombre_banda');
-            const linkEl = document.getElementById('link_musica');
-            const eventEl = document.getElementById('event_id');
-            const fechaEl = document.getElementById('fechaEvento');
-
-            const nombre = nombreEl.value || '';
-            const link = linkEl.value || '';
-            const eventIdVal = eventEl.value || '';
-            const fecha = fechaEl.value || '';
-
-            if (!nombre.trim()) {
-                nombreEl.classList.add('campo-invalido');
-                const err = document.getElementById('error_nombre_banda');
-                if (err) { err.textContent = 'El nombre de la banda es obligatorio.'; err.style.display = 'block'; }
-                showNotification('El nombre de la banda es obligatorio.', 'warning');
-                nombreEl.focus();
-                return { ok: false, message: 'El nombre de la banda es obligatorio.' };
-            }
-
-            if (link && !isValidUrl(link)) {
-                linkEl.classList.add('campo-invalido');
-                const err = document.getElementById('error_link_musica');
-                if (err) { err.textContent = 'Link inválido. Debe comenzar con http(s)://'; err.style.display = 'block'; }
-                showNotification('El link a tu música no es válido.', 'warning');
-                linkEl.focus();
-                return { ok: false, message: 'Link inválido. Debe comenzar con http(s)://' };
-            }
-
-            if (!fecha) {
-                // Marcar el input altInput de flatpickr si existe
-                if (fechaPicker && fechaPicker.altInput) {
-                    fechaPicker.altInput.classList.add('campo-invalido');
-                } else {
-                    fechaEl.classList.add('campo-invalido');
-                }
-                showNotification('Seleccioná una fecha para tu propuesta.', 'warning');
-                return { ok: false, message: 'La fecha es obligatoria.' };
-            }
-
-            if (eventIdVal && isNaN(Number(eventIdVal))) {
-                const err = document.getElementById('error_event_id');
-                if (err) { err.textContent = 'event_id inválido.'; err.style.display = 'block'; }
-                return { ok: false, message: 'event_id inválido.' };
-            }
-
-            return { ok: true };
-        }
-
-        // Inicializar calendario (guardamos la instancia para reconfigurarla luego)
-        let fechaPicker = null;
-        try { fechaPicker = flatpickr('#fechaEvento', { locale: 'es', altInput: true, altFormat: 'j \\de F, Y', dateFormat: 'Y-m-d' }); } catch (e) { console.warn('flatpickr init failed', e); }
-
-        // Prefill desde parámetros URL
-        const params = new URLSearchParams(window.location.search);
-        const eventId = params.get('event_id');
-        const nombre = params.get('nombre_banda');
-        if (eventId) document.getElementById('event_id').value = eventId;
-        if (nombre) document.getElementById('nombre_banda').value = decodeURIComponent(nombre);
-
-        // Fingerprint (opcional) y envío
-        let fingerprintId = null;
-        FingerprintJS && FingerprintJS.load().then(fp => fp.get().then(result => fingerprintId = result.visitorId)).catch(() => { });
-
-        // Cargar opciones de horarios, duraciones y tarifas desde el backend
-        async function loadBandOptions() {
-            const horaSel = document.getElementById('horaInicio');
-            const durSel = document.getElementById('duracionEvento');
-            const banner = document.getElementById('band-banner');
-            const submitBtn = document.getElementById('submitBtn');
-
-
-            try {
-                const [hRes, dRes, tRes] = await Promise.all([
-                    fetch('/api/opciones/horarios'),
-                    fetch('/api/opciones/duraciones'),
-                    fetch('/api/opciones/tarifas')
-                ]);
-
-
-                const horariosRaw = hRes.ok ? await hRes.json() : [];
-                const duracionesRaw = dRes.ok ? await dRes.json() : [];
-                const tarifasRaw = tRes.ok ? await tRes.json() : [];
-
-
-                // Obtener fechas ocupadas (detalle por hora) para excluirlas de allowedDates/hours
-                let fechasOcupadas = [];
-                let occupiedMap = {}; // { 'YYYY-MM-DD': Set(['HH:MM', ...]) }
-                try {
-                    const foRes = await fetch('/api/opciones/fechas-ocupadas?detalle=1');
-                    if (foRes.ok) fechasOcupadas = await foRes.json();
-                } catch (e) {
-                }
-                if (Array.isArray(fechasOcupadas)) {
-                    fechasOcupadas.forEach(item => {
-                        if (!item || !item.fecha) return;
-                        const d = String(item.fecha).slice(0, 10);
-                        const h = item.hora ? String(item.hora).slice(0, 5) : null;
-                        if (!occupiedMap[d]) occupiedMap[d] = new Set();
-                        if (h) occupiedMap[d].add(h);
+                    // Agrupar por categoría
+                    const categorias = {};
+                    instrumentos.forEach(inst => {
+                        const cat = inst.categoria || 'Otros';
+                        if (!categorias[cat]) categorias[cat] = [];
+                        categorias[cat].push(inst);
                     });
-                }
-                // también creamos un set simple de fechas ocupadas (útil para compatibilidad)
-                const occupiedDates = new Set(Object.keys(occupiedMap));
 
-                // Determinar la llave de evento a usar. Preferimos eventId si viene en params,
-                // si no, intentamos 'FECHA_BANDAS' como fallback.
-                const eventKey = eventId || 'FECHA_BANDAS';
-
-                // Normalizar horarios: la API puede devolver un objeto {TIPO: [...] } o un array.
-                let horarios = [];
-                if (Array.isArray(horariosRaw)) {
-                    horarios = horariosRaw;
-                } else if (horariosRaw && typeof horariosRaw === 'object') {
-                    horarios = horariosRaw[eventKey] || horariosRaw['FECHA_BANDAS'] || Object.values(horariosRaw).flat();
-                }
-
-                // Normalizar duraciones
-                let duraciones = [];
-                if (Array.isArray(duracionesRaw)) {
-                    duraciones = duracionesRaw;
-                } else if (duracionesRaw && typeof duracionesRaw === 'object') {
-                    duraciones = duracionesRaw[eventKey] || duracionesRaw['FECHA_BANDAS'] || Object.values(duracionesRaw).flat();
-                }
-
-                // Normalizar tarifas: API suele devolver array de objetos; filtramos por tipo
-                let tarifas = Array.isArray(tarifasRaw) ? tarifasRaw : [];
-                if (Array.isArray(tarifas)) {
-                    tarifas = tarifas.filter(t => (t.tipo || t.tipo_de_evento || t.tipoEvento) === eventKey || (t.tipo || t.tipo_de_evento || t.tipoEvento) === 'FECHA_BANDAS');
-                }
-
-
-                // Calcular días de la semana permitidos y fechas puntuales
-                const allowedWeekdays = new Set(); // 0 Domingo .. 6 Sabado
-                const allowedDates = new Set(); // 'YYYY-MM-DD'
-                const mapDay = (tipo) => {
-                    if (!tipo) return null;
-                    const t = String(tipo).toLowerCase().trim();
-                    if (t === 'todos' || t === 'all') return 'all';
-                    if (t === 'domingo' || t === 'dom') return 0;
-                    if (t === 'lunes' || t === 'lun') return 1;
-                    if (t === 'martes' || t === 'mar') return 2;
-                    if (t === 'miercoles' || t === 'mier' || t === 'miércoles') return 3;
-                    if (t === 'jueves' || t === 'jue') return 4;
-                    if (t === 'viernes' || t === 'vie') return 5;
-                    if (t === 'sabado' || t === 'sab') return 6;
-                    return null;
-                };
-
-                // Primero detectamos si hay días específicos configurados (lun,mart,...)
-                let hasSpecificDay = false;
-                horarios.forEach(h => {
-                    if (!h) return;
-                    const tipo = h.tipoDia || h.tipo_de_dia || h.tipo || h.tipoDia || h.tipoDeDia;
-                    const mapped = mapDay(tipo);
-                    if (typeof mapped === 'number') hasSpecificDay = true;
-                });
-
-                horarios.forEach(h => {
-                    if (!h) return;
-                    const tipo = h.tipoDia || h.tipo_de_dia || h.tipo || h.tipoDia || h.tipoDeDia;
-                    const fecha = h.fecha || h.date || h.day;
-                    const mapped = mapDay(tipo);
-                    if (mapped === 'all') {
-                        // Si hay días específicos, ignoramos 'Todos' para no habilitar toda la semana
-                        if (!hasSpecificDay) {
-                            for (let i = 0; i < 7; i++) allowedWeekdays.add(i);
-                        }
-                    } else if (typeof mapped === 'number') {
-                        allowedWeekdays.add(mapped);
-                    }
-                    if (fecha) {
-                        const d = String(fecha).trim();
-                        const maybe = d.match(/^\d{4}-\d{2}-\d{2}/) ? d.slice(0, 10) : null;
-                        if (maybe) allowedDates.add(maybe);
-                    }
-                });
-
-
-                // Excluir fechas ocupadas si la API devolvió alguna
-                if (Array.isArray(fechasOcupadas) && fechasOcupadas.length > 0) {
-                    fechasOcupadas.forEach(f => {
-                        const d = String(f).slice(0, 10);
-                        if (allowedDates.has(d)) {
-                            allowedDates.delete(d);
-                        }
-                    });
-                }
-
-                // Reconfigurar flatpickr para habilitar solo los días/fechas permitidos
-                try {
-                    // Si la configuración permite todos los días, no es necesario reconfigurar
-                    if (!(allowedWeekdays.size === 7)) {
-                        if (fechaPicker && typeof fechaPicker.destroy === 'function') { fechaPicker.destroy(); }
-                        fechaPicker = flatpickr('#fechaEvento', {
-                            locale: 'es',
-                            altInput: true,
-                            altFormat: 'j \\de F, Y',
-                            dateFormat: 'Y-m-d',
-                            minDate: 'today',
-                            enable: [
-                                function (date) {
-                                    const day = date.getDay();
-                                    const y = date.getFullYear();
-                                    const m = String(date.getMonth() + 1).padStart(2, '0');
-                                    const d = String(date.getDate()).padStart(2, '0');
-                                    const formatted = `${y}-${m}-${d}`;
-                                    // Si la fecha está ocupada, no permitirla
-                                    if (occupiedDates.has(formatted)) return false;
-                                    // Si la fecha está ocupada en todas las horas posibles, no permitirla
-                                    const occupiedForDate = occupiedMap[formatted];
-                                    if (occupiedForDate) {
-                                        // Si aún no hemos calculado availableTimes, permitiremos y manejará más abajo
-                                        // aquí comprobamos si todas las horas configuradas están ocupadas
-                                        if (Array.isArray(horarios) && horarios.length > 0) {
-                                            // obtener lista de horas disponibles configuradas
-                                            const cfgTimes = horarios.map(hh => {
-                                                // normalizar igual que al poblar hours
-                                                let s = (hh && (hh.hora || hh.horaInicio || hh.horario)) || hh;
-                                                if (!s) return null;
-                                                s = String(s).replace(/\s*hs\.?$/i, '').trim();
-                                                const m = s.match(/^(\d{1,2})(?::(\d{2}))?$/);
-                                                if (m) {
-                                                    const hhnum = String(m[1]).padStart(2, '0');
-                                                    const mm = m[2] || '00';
-                                                    return hhnum + ':' + mm;
-                                                }
-                                                const m2 = s.match(/(\d{1,2}:\d{2})/);
-                                                if (m2) return m2[1];
-                                                return null;
-                                            }).filter(x => x);
-                                            // si todas las cfgTimes están en occupiedForDate, bloquear fecha
-                                            const allOccupied = cfgTimes.length > 0 && cfgTimes.every(t => occupiedForDate.has(t));
-                                            if (allOccupied) return false;
-                                        }
-                                    }
-                                    if (allowedDates.has(formatted)) return true;
-                                    return allowedWeekdays.has(day);
-                                }
-                            ]
+                    Object.keys(categorias).sort().forEach(cat => {
+                        const group = document.createElement('optgroup');
+                        group.label = cat;
+                        categorias[cat].forEach(inst => {
+                            const opt = document.createElement('option');
+                            opt.value = inst.nombre;
+                            opt.textContent = inst.nombre;
+                            group.appendChild(opt);
                         });
-                    } else {
-                    }
-                } catch (e) {
+                        select.appendChild(group);
+                    });
                 }
-
-                // Poblar duraciones: intentar ordenar por horas numéricas cuando sea posible
-                durSel.innerHTML = '';
-                if (Array.isArray(duraciones) && duraciones.length > 0) {
-                    // Mapear a {raw, hours}
-                    const mappedDur = duraciones.map(d => {
-                        const raw = d;
-                        const s = (typeof d === 'string') ? d : (d.duracion || d.label || d.nombre || String(d));
-                        const m = String(s).match(/(\d+(?:[\.,]\d+)?)\s*h/i) || String(s).match(/(\d+)\s*hor/i) || String(s).match(/(\d+(?:[\.,]\d+)?)/);
-                        const hours = m ? parseFloat(m[1].replace(',', '.')) : null;
-                        return { raw: s, hours };
-                    });
-                    // Ordenar: primero por hours (si ambos tienen), luego lexicográfico
-                    mappedDur.sort((a, b) => {
-                        if (a.hours != null && b.hours != null) return a.hours - b.hours;
-                        if (a.hours != null) return -1;
-                        if (b.hours != null) return 1;
-                        return String(a.raw).localeCompare(String(b.raw));
-                    });
-                    mappedDur.forEach(d => {
-                        const opt = document.createElement('option'); opt.value = d.raw; opt.textContent = d.raw; durSel.appendChild(opt);
-                    });
-                } else {
-                    const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'No hay duraciones configuradas'; durSel.appendChild(opt);
-                }
-
-                // Poblar horarios: normalizar y ordenar
-                horaSel.innerHTML = '';
-                if (Array.isArray(horarios) && horarios.length > 0) {
-                    const normalizeHourString = (h) => {
-                        if (!h) return null;
-                        let s = (typeof h === 'string') ? h.trim() : (h.hora || h.horaInicio || h.horario || h.value || '');
-                        s = String(s).replace(/\s*hs\.?$/i, '').trim();
-                        const m = s.match(/^(\d{1,2})(?::(\d{2}))?$/);
-                        if (m) {
-                            const hh = String(m[1]).padStart(2, '0');
-                            const mm = m[2] || '00';
-                            return hh + ':' + mm;
-                        }
-                        // intentar extraer primera ocurrencia HH:MM
-                        const m2 = s.match(/(\d{1,2}:\d{2})/);
-                        if (m2) return m2[1];
-                        return s;
-                    };
-
-                    const mapped = horarios.map(h => {
-                        const raw = h;
-                        const timeStr = normalizeHourString(h && typeof h === 'object' ? (h.hora || h.horaInicio || h.horario || h.value) : h);
-                        return { raw, timeStr };
-                    }).filter(x => x.timeStr);
-                    mapped.sort((a, b) => a.timeStr.localeCompare(b.timeStr));
-                    mapped.forEach(x => {
-                        const display = x.timeStr + 'hs';
-                        const opt = document.createElement('option'); opt.value = x.timeStr; opt.textContent = display; horaSel.appendChild(opt);
-                    });
-                } else {
-                    const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'No hay horarios configurados'; horaSel.appendChild(opt);
-                }
-
-                const missing = !(Array.isArray(horarios) && horarios.length > 0) || !(Array.isArray(duraciones) && duraciones.length > 0) || !(Array.isArray(tarifas) && tarifas.length > 0);
-                if (missing) {
-                    banner.style.display = 'block';
-                    submitBtn.disabled = true;
-                } else {
-                    banner.style.display = 'none';
-                    submitBtn.disabled = false;
-                }
-
-                // Filtrado simple por fecha: si el horario tiene campo 'fecha' coincidente con la seleccionada
-                const fechaEl = document.getElementById('fechaEvento');
-                fechaEl && fechaEl.addEventListener('change', () => {
-                    const selected = fechaEl.value; // formato Y-m-d
-                    if (!selected) return;
-                    // Intentar filtrar si hay campo 'fecha' en los horarios
-                    const filtered = horarios.filter(h => {
-                        if (!h) return false;
-                        if (h.fecha) return String(h.fecha).startsWith(selected);
-                        if (h.dia) return String(h.dia).toLowerCase() === new Date(selected).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-                        return true; // si no hay campo fecha, mantener
-                    });
-                    if (filtered.length > 0) {
-                        horaSel.innerHTML = '';
-                        // horas ocupadas para la fecha seleccionada (si las hubiera)
-                        const occupiedForDate = occupiedMap[selected] || new Set();
-                        let added = 0;
-                        filtered.forEach(h => {
-                            const rawHora = h.hora || h.horaInicio || h.horario || h.value || h.label || JSON.stringify(h);
-                            // normalizar a HH:MM para comparar con occupiedForDate
-                            let s = String(rawHora).replace(/\s*hs\.?$/i, '').trim();
-                            const m = s.match(/^(\d{1,2})(?::(\d{2}))?$/);
-                            let norm = null;
-                            if (m) {
-                                norm = String(m[1]).padStart(2, '0') + ':' + (m[2] || '00');
-                            } else {
-                                const m2 = s.match(/(\d{1,2}:\d{2})/);
-                                if (m2) norm = m2[1];
-                            }
-                            if (norm && occupiedForDate.has(norm)) {
-                                // esta hora está ocupada, omitimos
-                                return;
-                            }
-                            const opt = document.createElement('option'); opt.value = rawHora; opt.textContent = rawHora; horaSel.appendChild(opt);
-                            added++;
-                        });
-                        if (added === 0) {
-                            horaSel.innerHTML = '';
-                            const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'No hay horarios disponibles para esta fecha'; horaSel.appendChild(opt);
-                            // deshabilitar envío si no hay horas libres
-                            submitBtn.disabled = true;
-                        } else {
-                            // re-habilitar botón si la configuración general está OK
-                            submitBtn.disabled = missing;
-                        }
-                    }
-                });
-
-            } catch (e) {
-                console.error('Error cargando opciones de banda', e);
-                document.getElementById('band-banner').style.display = 'block';
-                document.getElementById('submitBtn').disabled = true;
+            } catch (err) {
+                console.error('Error cargando instrumentos:', err);
             }
         }
 
-        // Ejecutar carga de opciones inmediatamente
-        loadBandOptions().catch(() => { });
+        // ============================================================
+        // GESTIÓN DE FORMACIÓN
+        // ============================================================
+        function renderFormacion() {
+            const container = document.getElementById('formacion-list');
+            container.innerHTML = '';
 
-        document.getElementById('bandForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
+            formacion.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'formacion-item';
+                div.innerHTML = `
+                    <i class="fas fa-music"></i>
+                    <span>${item.instrumento}${item.cantidad > 1 ? ' x' + item.cantidad : ''}</span>
+                    <span class="remove" onclick="removeFormacion(${idx})">&times;</span>
+                `;
+                container.appendChild(div);
+            });
+        }
 
-            // Validación cliente-side antes de enviar
-            const validation = validateBandForm();
-            if (!validation.ok) {
+        function addFormacion() {
+            const select = document.getElementById('instrumento-select');
+            const cantidadInput = document.getElementById('instrumento-cantidad');
+
+            const instrumento = select.value;
+            const cantidad = parseInt(cantidadInput.value) || 1;
+
+            if (!instrumento) {
+                showNotification('Seleccioná un instrumento', 'warning');
                 return;
             }
 
-            // Mostrar loading y deshabilitar botón
-            toggleLoadingOverlay(true, 'Enviando solicitud...');
-            btn.disabled = true;
+            // Verificar si ya existe
+            const existing = formacion.find(f => f.instrumento === instrumento);
+            if (existing) {
+                existing.cantidad += cantidad;
+            } else {
+                formacion.push({ instrumento, cantidad });
+            }
 
-            const payload = {
-                tipoEvento: 'FECHA_EN_VIVO',
-                cantidadPersonas: '',
-                duracionEvento: '',
-                fechaEvento: document.getElementById('fechaEvento').value || null,
-                horaInicio: document.getElementById('horaInicio').value || null,
-                precioBase: 0,
-                fingerprintId: fingerprintId || ''
-            };
+            renderFormacion();
+            select.value = '';
+            cantidadInput.value = 1;
+        }
+
+        function removeFormacion(idx) {
+            formacion.splice(idx, 1);
+            renderFormacion();
+        }
+
+        // ============================================================
+        // GESTIÓN DE BANDAS INVITADAS
+        // ============================================================
+        function renderInvitadas() {
+            const container = document.getElementById('invitadas-container');
+            container.innerHTML = '';
+
+            invitadas.forEach((inv, idx) => {
+                const div = document.createElement('div');
+                div.className = 'invitada-card';
+                div.innerHTML = `
+                    <span class="invitada-number">${idx + 1}</span>
+                    <span class="remove-invitada" onclick="removeInvitada(${idx})"><i class="fas fa-times"></i></span>
+                    <div style="padding-left: 30px;">
+                        <div class="form-group" style="margin-bottom: 10px;">
+                            <label>Nombre de la banda invitada</label>
+                            <div class="autocomplete-wrapper">
+                                <input type="text" class="invitada-nombre" data-idx="${idx}" 
+                                       value="${inv.nombre || ''}" placeholder="Nombre de la banda" autocomplete="off">
+                                <div class="autocomplete-results invitada-autocomplete" data-idx="${idx}"></div>
+                            </div>
+                            <input type="hidden" class="invitada-id" data-idx="${idx}" value="${inv.id_banda || ''}">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            // Bind autocomplete para invitadas
+            document.querySelectorAll('.invitada-nombre').forEach(input => {
+                input.addEventListener('input', (e) => handleBandaAutocomplete(e, true));
+                input.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        document.querySelectorAll('.invitada-autocomplete').forEach(el => el.classList.remove('show'));
+                    }, 200);
+                });
+            });
+
+            // Actualizar botón
+            const addBtn = document.getElementById('add-invitada');
+            if (invitadas.length >= 3) {
+                addBtn.style.display = 'none';
+            } else {
+                addBtn.style.display = '';
+            }
+        }
+
+        function addInvitada() {
+            if (invitadas.length >= 3) {
+                showNotification('Máximo 3 bandas invitadas', 'warning');
+                return;
+            }
+            invitadas.push({ nombre: '', id_banda: null });
+            renderInvitadas();
+        }
+
+        function removeInvitada(idx) {
+            invitadas.splice(idx, 1);
+            renderInvitadas();
+        }
+
+        // ============================================================
+        // AUTOCOMPLETE DE BANDAS
+        // ============================================================
+        async function handleBandaAutocomplete(e, isInvitada = false) {
+            const input = e.target;
+            const query = input.value.trim();
+
+            let resultsContainer;
+            if (isInvitada) {
+                const idx = input.dataset.idx;
+                resultsContainer = document.querySelector(`.invitada-autocomplete[data-idx="${idx}"]`);
+            } else {
+                resultsContainer = document.getElementById('banda-autocomplete');
+            }
+
+            if (query.length < 2) {
+                resultsContainer.classList.remove('show');
+                return;
+            }
 
             try {
-                const res = await fetch('/api/solicitudes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!res.ok) throw res;
-                const data = await res.json();
-                const id = data.solicitudId;
+                const res = await fetch(`/api/bandas/buscar?q=${encodeURIComponent(query)}`);
+                if (!res.ok) return;
 
-                // Actualizar la solicitud con detalles de banda (PUT) enviando campos estructurados
-                const bandPayload = {
-                    tipoEvento: 'FECHA_EN_VIVO',
-                    cantidadPersonas: '',
-                    duracionEvento: '',
-                    fechaEvento: payload.fechaEvento,
-                    horaInicio: payload.horaInicio,
-                    precioBase: 0,
-                    // Mantener el campo texto para compatibilidad con el flujo existente
-                    detallesAdicionales: `Nombre banda: ${document.getElementById('nombre_banda').value}\nLink: ${document.getElementById('link_musica').value || '-'}\nPropuesta:\n${document.getElementById('propuesta').value || '-'}${eventId ? '\nReferencia evento ID: ' + eventId : ''}\nPrecio anticipada sugerido: ${document.getElementById('precio_anticipada').value || '-'}\nPrecio puerta sugerido: ${document.getElementById('precio_puerta').value || '-'}`,
-                    // Campos estructurados que guardaremos en `bandas_solicitudes`
-                    nombre_banda: document.getElementById('nombre_banda').value || null,
-                    // contacto_email ya no se recoge aquí; se solicita en contacto.html
-                    link_musica: document.getElementById('link_musica').value || null,
-                    propuesta: document.getElementById('propuesta').value || null,
-                    event_id: eventId || null,
-                    precio_anticipada: document.getElementById('precio_anticipada').value || null,
-                    precio_puerta: document.getElementById('precio_puerta').value || null
-                };
+                const bandas = await res.json();
 
-                const putRes = await fetch(`/api/solicitudes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bandPayload) });
-                if (!putRes.ok) {
-                    const err = await putRes.json().catch(() => ({}));
-                    toggleLoadingOverlay(false);
-                    showNotification('Error: ' + (err.error || 'Error al guardar los detalles.'), 'error');
-                    btn.disabled = false;
+                if (bandas.length === 0) {
+                    resultsContainer.classList.remove('show');
                     return;
                 }
 
-                // Éxito - redirigir a contacto
-                showNotification('¡Solicitud creada! Redirigiendo...', 'success');
-                setTimeout(() => {
-                    window.location.href = `contacto.html?solicitudId=${id}`;
-                }, 500);
-            } catch (err) {
-                console.error('Error al crear solicitud de banda', err);
-                toggleLoadingOverlay(false);
-                showNotification('Error al enviar. Intenta de nuevo.', 'error');
-                btn.disabled = false;
-            }
-        });
-
-        // Botón volver: intenta history.back(), si no hay historial, redirige a la agenda de bandas
-        document.getElementById('backBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            if (document.referrer && document.referrer.length > 0) {
-                window.history.back();
-                // en algunos contextos history.back() puede no funcionar como se espera; dejamos también un fallback
-                setTimeout(() => { if (window.location.pathname.endsWith('/solicitud_banda.html') || window.location.pathname.endsWith('solicitud_banda.html')) { window.location.href = 'agenda_de_bandas.html'; } }, 300);
-            } else {
-                window.location.href = 'agenda_de_bandas.html';
-            }
-        });
-
-        // ----------------------------------------------------
-        // MENÚ MÓVIL Y AUTENTICACIÓN
-        // ----------------------------------------------------
-        function setupMobileMenu() {
-            const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-
-            if (mobileMenuButton && mobileMenu) {
-                mobileMenuButton.addEventListener('click', () => {
-                    mobileMenu.classList.toggle('hidden');
+                resultsContainer.innerHTML = '';
+                bandas.forEach(banda => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    div.innerHTML = `
+                        ${banda.logo_url ? `<img src="${banda.logo_url}" alt="">` : '<i class="fas fa-users"></i>'}
+                        <div>
+                            <div>${banda.nombre}</div>
+                            <small style="color: #9ca3af;">${banda.genero_musical || ''}</small>
+                        </div>
+                        ${banda.verificada ? '<span class="verified"><i class="fas fa-check-circle"></i></span>' : ''}
+                    `;
+                    div.onclick = () => selectBanda(banda, isInvitada, isInvitada ? input.dataset.idx : null);
+                    resultsContainer.appendChild(div);
                 });
+
+                // Opción para crear nueva
+                const newDiv = document.createElement('div');
+                newDiv.className = 'autocomplete-item';
+                newDiv.style.borderTop = '2px solid var(--color-primary)';
+                newDiv.innerHTML = `
+                    <i class="fas fa-plus-circle" style="color: var(--color-secondary);"></i>
+                    <div>
+                        <div style="color: var(--color-secondary);">Usar "${query}" como nueva banda</div>
+                    </div>
+                `;
+                newDiv.onclick = () => {
+                    if (isInvitada) {
+                        const idx = parseInt(input.dataset.idx);
+                        invitadas[idx] = { nombre: query, id_banda: null };
+                        input.value = query;
+                        document.querySelector(`.invitada-id[data-idx="${idx}"]`).value = '';
+                    }
+                    resultsContainer.classList.remove('show');
+                };
+                resultsContainer.appendChild(newDiv);
+
+                resultsContainer.classList.add('show');
+            } catch (err) {
+                console.error('Error en autocomplete:', err);
+            }
+        }
+
+        function selectBanda(banda, isInvitada, idx) {
+            if (isInvitada) {
+                invitadas[parseInt(idx)] = { nombre: banda.nombre, id_banda: banda.id };
+                document.querySelector(`.invitada-nombre[data-idx="${idx}"]`).value = banda.nombre;
+                document.querySelector(`.invitada-id[data-idx="${idx}"]`).value = banda.id;
+                document.querySelector(`.invitada-autocomplete[data-idx="${idx}"]`).classList.remove('show');
+            } else {
+                document.getElementById('nombre_banda').value = banda.nombre;
+                document.getElementById('id_banda').value = banda.id;
+                document.getElementById('genero_musical').value = banda.genero_musical || '';
+                document.getElementById('banda-autocomplete').classList.remove('show');
+
+                // Auto-completar redes si existen
+                if (banda.instagram) document.getElementById('instagram').value = banda.instagram;
+                if (banda.facebook) document.getElementById('facebook').value = banda.facebook;
+                if (banda.youtube) document.getElementById('youtube').value = banda.youtube;
+                if (banda.spotify) document.getElementById('spotify').value = banda.spotify;
+            }
+        }
+
+        // ============================================================
+        // LOGO UPLOAD
+        // ============================================================
+        function setupLogoUpload() {
+            const fileInput = document.getElementById('logo_file');
+            const preview = document.getElementById('logo-preview');
+            const manualUrl = document.getElementById('logo_url_manual');
+
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Preview local
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    preview.innerHTML = `<img src="${ev.target.result}" alt="Logo preview">`;
+                };
+                reader.readAsDataURL(file);
+
+                // TODO: Subir a servidor y obtener URL
+                showNotification('Logo cargado (subida a servidor pendiente)', 'success');
+            });
+
+            manualUrl.addEventListener('change', (e) => {
+                const url = e.target.value.trim();
+                if (url) {
+                    preview.innerHTML = `<img src="${url}" alt="Logo preview" onerror="this.src='';this.parentElement.innerHTML='<div class=\\'placeholder\\'><i class=\\'fas fa-exclamation-triangle\\'></i><div>Error al cargar</div></div>'">`;
+                    document.getElementById('logo_url').value = url;
+                }
+            });
+        }
+
+        // ============================================================
+        // CALENDARIOS
+        // ============================================================
+        let fechasOcupadas = []; // Fechas ya ocupadas por eventos
+
+        async function loadFechasOcupadas() {
+            try {
+                const res = await fetch('/api/opciones/fechas-ocupadas');
+                if (res.ok) {
+                    fechasOcupadas = await res.json();
+                    console.log('Fechas ocupadas cargadas:', fechasOcupadas);
+                }
+            } catch (err) {
+                console.error('Error cargando fechas ocupadas:', err);
+            }
+        }
+
+        function setupCalendars() {
+            const config = {
+                locale: 'es',
+                altInput: true,
+                altFormat: 'j \\de F, Y',
+                dateFormat: 'Y-m-d',
+                minDate: 'today',
+                disable: [
+                    function (date) {
+                        // Solo sábados y domingos habilitados
+                        if (date.getDay() !== 0 && date.getDay() !== 6) {
+                            return true;
+                        }
+                        // Deshabilitar fechas ya ocupadas por eventos
+                        const dateStr = date.toISOString().split('T')[0];
+                        return fechasOcupadas.includes(dateStr);
+                    }
+                ],
+                onDayCreate: function (dObj, dStr, fp, dayElem) {
+                    // Marcar visualmente las fechas ocupadas
+                    const dateStr = dayElem.dateObj.toISOString().split('T')[0];
+                    if (fechasOcupadas.includes(dateStr)) {
+                        dayElem.classList.add('fecha-ocupada');
+                        dayElem.title = 'Fecha ocupada por otro evento';
+                    }
+                }
+            };
+
+            fechaPicker1 = flatpickr('#fecha_preferida', config);
+            fechaPicker2 = flatpickr('#fecha_alternativa', config);
+        }
+
+        // ============================================================
+        // VALIDACIÓN
+        // ============================================================
+        function validateForm() {
+            resetInvalidFields();
+
+            const nombre = document.getElementById('nombre_banda').value.trim();
+            const contactoNombre = document.getElementById('contacto_nombre').value.trim();
+            const contactoEmail = document.getElementById('contacto_email').value.trim();
+            const contactoWhatsapp = document.getElementById('contacto_whatsapp').value.trim();
+
+            if (!nombre) {
+                document.getElementById('nombre_banda').classList.add('campo-invalido');
+                showNotification('El nombre de la banda es obligatorio', 'warning');
+                document.getElementById('nombre_banda').focus();
+                return false;
+            }
+
+            if (!contactoNombre) {
+                document.getElementById('contacto_nombre').classList.add('campo-invalido');
+                showNotification('El nombre del contacto es obligatorio', 'warning');
+                document.getElementById('contacto_nombre').focus();
+                return false;
+            }
+
+            if (!contactoEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactoEmail)) {
+                document.getElementById('contacto_email').classList.add('campo-invalido');
+                showNotification('Ingresá un email válido', 'warning');
+                document.getElementById('contacto_email').focus();
+                return false;
+            }
+
+            if (!contactoWhatsapp || !/^[0-9]{10,15}$/.test(contactoWhatsapp)) {
+                document.getElementById('contacto_whatsapp').classList.add('campo-invalido');
+                showNotification('Ingresá un número de WhatsApp válido (solo números, 10-15 dígitos)', 'warning');
+                document.getElementById('contacto_whatsapp').focus();
+                return false;
+            }
+
+            return true;
+        }
+
+        // ============================================================
+        // ENVÍO DEL FORMULARIO
+        // ============================================================
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            if (!validateForm()) return;
+
+            toggleLoading(true, 'Enviando solicitud...');
+            document.getElementById('submitBtn').disabled = true;
+
+            // Recopilar invitadas actualizadas desde el DOM
+            document.querySelectorAll('.invitada-nombre').forEach((input, i) => {
+                const idx = parseInt(input.dataset.idx);
+                if (invitadas[idx]) {
+                    invitadas[idx].nombre = input.value.trim();
+                    const idInput = document.querySelector(`.invitada-id[data-idx="${idx}"]`);
+                    if (idInput) invitadas[idx].id_banda = idInput.value || null;
+                }
+            });
+
+            const payload = {
+                // Datos de banda
+                id_banda: document.getElementById('id_banda').value || null,
+                nombre_banda: document.getElementById('nombre_banda').value.trim(),
+                genero_musical: document.getElementById('genero_musical').value.trim() || null,
+                formacion: formacion.length > 0 ? formacion : null,
+
+                // Redes
+                instagram: document.getElementById('instagram').value.trim() || null,
+                facebook: document.getElementById('facebook').value.trim() || null,
+                youtube: document.getElementById('youtube').value.trim() || null,
+                spotify: document.getElementById('spotify').value.trim() || null,
+                otras_redes: document.getElementById('otras_redes').value.trim() || null,
+                logo_url: document.getElementById('logo_url').value || document.getElementById('logo_url_manual').value.trim() || null,
+
+                // Contacto
+                contacto_nombre: document.getElementById('contacto_nombre').value.trim(),
+                contacto_email: document.getElementById('contacto_email').value.trim(),
+                contacto_whatsapp: document.getElementById('contacto_whatsapp').value.trim(),
+                contacto_rol: document.getElementById('contacto_rol').value.trim() || null,
+
+                // Fecha
+                fecha_preferida: document.getElementById('fecha_preferida').value || null,
+                fecha_alternativa: document.getElementById('fecha_alternativa').value || null,
+                hora_preferida: document.getElementById('hora_preferida').value || null,
+
+                // Invitadas
+                invitadas: invitadas.filter(i => i.nombre),
+
+                // Propuesta económica
+                precio_anticipada_propuesto: document.getElementById('precio_anticipada').value || null,
+                precio_puerta_propuesto: document.getElementById('precio_puerta').value || null,
+                expectativa_publico: document.getElementById('expectativa_publico').value.trim() || null,
+
+                // Mensaje
+                mensaje: document.getElementById('mensaje').value.trim() || null,
+
+                // Fingerprint
+                fingerprintid: fingerprintId
+            };
+
+            try {
+                const res = await fetch('/api/bandas/solicitudes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Error al enviar la solicitud');
+                }
+
+                showNotification('¡Solicitud enviada exitosamente!', 'success', 5000);
+
+                // Redirigir a página de confirmación
+                setTimeout(() => {
+                    window.location.href = `comprobante.html?tipo=banda&id=${data.id}`;
+                }, 1500);
+
+            } catch (err) {
+                console.error('Error:', err);
+                showNotification(err.message || 'Error al enviar. Intentá de nuevo.', 'error');
+                document.getElementById('submitBtn').disabled = false;
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        // ============================================================
+        // MENÚ Y AUTH
+        // ============================================================
+        function setupMobileMenu() {
+            const btn = document.getElementById('mobile-menu-button');
+            const menu = document.getElementById('mobile-menu');
+            if (btn && menu) {
+                btn.addEventListener('click', () => menu.classList.toggle('hidden'));
             }
         }
 
         function updateAuthMenu() {
             const token = localStorage.getItem('authToken');
-            const desktopMenu = document.getElementById('auth-menu-desktop');
-            const mobileMenu = document.getElementById('auth-menu-mobile');
+            const desktop = document.getElementById('auth-menu-desktop');
+            const mobile = document.getElementById('auth-menu-mobile');
 
-            if (token) {
-                const desktopHTML = `
-                    <a href="/admin.html" 
-                       class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">
-                        🔐 Admin
-                    </a>
-                `;
-                const mobileHTML = `
-                    <a href="/admin.html"
-                       class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
-                        🔐 Admin Panel
-                    </a>
-                    <button onclick="logout()" 
-                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
-                        🚪 Cerrar Sesión
-                    </button>
-                `;
-                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
-                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
-            } else {
-                const desktopHTML = `
-                    <a href="login.html"
-                       class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">
-                        Login
-                    </a>
-                `;
-                const mobileHTML = `
-                    <a href="login.html"
-                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
-                        Login
-                    </a>
-                `;
-                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
-                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+            const html = token ? `
+                <a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400">
+                    🔐 Admin
+                </a>
+            ` : `
+                <a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700">
+                    Login
+                </a>
+            `;
+
+            if (desktop) desktop.innerHTML = html;
+            if (mobile) mobile.innerHTML = html.replace('text-sm', 'text-base').replace('px-3 py-1', 'px-3 py-2 block');
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Fingerprint
+            try {
+                const fp = await FingerprintJS.load();
+                const result = await fp.get();
+                fingerprintId = result.visitorId;
+            } catch (e) {
+                console.warn('Fingerprint error:', e);
             }
-        }
 
-        function logout() {
-            localStorage.removeItem('authToken');
-            window.location.href = '/index.html';
-        }
+            // Cargar instrumentos y fechas ocupadas
+            await loadInstrumentos();
+            await loadFechasOcupadas();
 
-        window.addEventListener('storage', updateAuthMenu);
+            // Setup
+            setupCalendars();
+            setupLogoUpload();
+            setupMobileMenu();
+            updateAuthMenu();
 
-        // Inicializar menú móvil y autenticación
-        setupMobileMenu();
-        updateAuthMenu();
+            // Event listeners
+            document.getElementById('add-instrumento').addEventListener('click', addFormacion);
+            document.getElementById('add-invitada').addEventListener('click', addInvitada);
+            document.getElementById('bandaSolicitudForm').addEventListener('submit', handleSubmit);
+
+            // Toggle sección de fecha (colapsable)
+            document.getElementById('toggle-fecha-btn').addEventListener('click', function () {
+                const content = document.getElementById('fecha-content');
+                const btn = this;
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    btn.innerHTML = '<i class="fas fa-calendar-minus"></i> Ocultar propuesta de fecha';
+                    btn.classList.add('active');
+                } else {
+                    content.style.display = 'none';
+                    btn.innerHTML = '<i class="fas fa-calendar-plus"></i> Proponer una fecha para tocar';
+                    btn.classList.remove('active');
+                }
+            });
+
+            document.getElementById('backBtn').addEventListener('click', () => {
+                if (document.referrer) {
+                    window.history.back();
+                } else {
+                    window.location.href = 'agenda_de_bandas.html';
+                }
+            });
+
+            // Autocomplete para banda principal
+            const nombreBandaInput = document.getElementById('nombre_banda');
+            nombreBandaInput.addEventListener('input', (e) => handleBandaAutocomplete(e, false));
+            nombreBandaInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    document.getElementById('banda-autocomplete').classList.remove('show');
+                }, 200);
+            });
+
+            // Limpiar id_banda si se edita manualmente el nombre
+            nombreBandaInput.addEventListener('input', () => {
+                document.getElementById('id_banda').value = '';
+            });
+
+            // Render inicial
+            renderFormacion();
+            renderInvitadas();
+        });
     </script>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <p>Cargando...</p>
-        <div class="spinner"></div>
-    </div>
-
-    <!-- Notification Banner -->
-    <div id="notification-banner"></div>
 </body>
 
 </html>

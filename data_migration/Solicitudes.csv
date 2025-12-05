@@ -1,0 +1,10 @@
+ID_Solicitud,Fecha Hora,Tipo de Evento,Cantidad de Personas,Duración,Fecha Evento,Hora Evento,Precio Basico,Precio Final,Nombre Completo,Telefono,Email,Descripción,Estado,FingerprintID
+1,15/08/2025 20:15:00,SIN_SERVICIO_DE_MESA,Hasta 100,8 horas,2025-09-20,19:00hs,280000,310000,rodrigo villalba,12312312,villalbarodrigo2009@gmail.com,Fiesta de la primavera,Confirmado,
+2,19/08/2025 21:48:02,INFORMALES,Hasta 40,4 horas,2025-09-27,09:00hs,160000,190000,Rodrigo Villalba,1155630357,villalbarodrigo2009@gmail.com,Depilación definitiva desde las 9 hasta las 21hs,Confirmado,
+3,21/08/2025 11:10:33,CON_SERVICIO_DE_MESA,Hasta 60,8 horas,2025-09-06,19:00hs,660000,715000,lorena Callegary,1131455765,villalbarodrigo2009@gmail.com,Cumpleaños de 15 de la hija de Lore,Confirmado,
+4,1/10/2025 10:43:04,INFORMALES,Hasta 50,6 horas,2025-09-07,14:00hs,180000,180000,Noelia Noemi Adra,11 5593-6547,villalbarodrigo2009@gmail.com,Cumpleaños de 13 años sin adicionales,Confirmado,
+5,1/10/2025 19:44:30,INFORMALES,Hasta 50,8 horas,2025-10-11,21:00hs,240000,260000,Melody Aldana Gerez,1132537536,villalbarodrigo2009@gmail.com,,Confirmado,
+6,1/10/2025 22:02:04,INFORMALES,Hasta 50,10 horas,2025-10-25,09:00hs,300000,300000,Giselle,11 4417-6332,villalbarodrigo2009@gmail.com,Depilación definitiva,Confirmado,
+7,1/10/2025 22:07:04,INFORMALES,Hasta 50,8 horas,2025-11-29,19:00hs,240000,240000,Marcelo Chanca,11 2658-5081,villalbarodrigo2009@gmail.com,"Juntada con los pibes de futbol de saturno, lechon",Confirmado,
+8,1/10/2025 22:16:15,FECHA_BANDAS,Hasta 70,10 horas,2025-11-08,19:00hs,400000,400000,Jhony Sebas,1158598259,villalbarodrigo2009@gmail.com,"Fecha con bandas, toca Las Mentas, atiende la barra María",Confirmado,
+9,9/10/2025 13:53:19,INFORMALES,Hasta 50,6 horas,2025-10-19,12:00hs,180000,180000,Jessica,1123903156,jfuentes1078@gmail.com,,Solicitado,8b2ea5f41aee24f433b0133d263cfb1a

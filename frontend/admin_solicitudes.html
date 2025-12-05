@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Panel de Administración - Solicitudes</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --color-primary: #581c87;
@@ -360,7 +361,17 @@
 </head>
 
 <body>
-    <h2>Panel de Administración de Solicitudes</h1>
+    <div style="max-width: 1600px; margin: 0 auto; padding: 0 16px;">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; margin-top: 1rem;">
+            <a href="admin.html"
+                style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <h2 style="margin: 0;">Panel de Administración de Solicitudes</h2>
+            <div style="width: 140px;"></div>
+        </div>
+    </div>
     <div class="table-container" id="admin-table-container">
         <div id="loader">Cargando solicitudes...</div>
         <table id="solicitudes-table" style="display:none">
@@ -399,13 +410,16 @@
                 const solicitudId = tr.dataset.solicitudId;
                 const tipoEventoId = tr.dataset.tipoEventoId;
 
+                const categoria = tr.dataset.categoria;
+                const origen = tr.dataset.origen;
+
                 if (button.classList.contains('btn-delete')) {
                     eliminarSolicitud(solicitudId);
                 } else if (button.classList.contains('btn-edit')) {
-                    modificarSolicitud(solicitudId);
+                    modificarSolicitud(solicitudId, categoria, origen);
                 } else if (button.classList.contains('btn-edit-event')) {
-                    // Redirect to unified editor for both solicitudes and eventos
-                    window.location.href = `/editar_solicitud.html?solicitudId=${encodeURIComponent(solicitudId)}`;
+                    // Eventos de bandas -> editor especializado
+                    window.location.href = `/editar_evento_banda.html?id=${encodeURIComponent(solicitudId)}`;
                 } else if (button.classList.contains('btn-delete-event')) {
                     eliminarEventoClient(solicitudId);
                 } else if (button.dataset.action === 'assign') {
@@ -436,8 +450,20 @@
                 window.location.href = `/orden_de_trabajo.html?solicitudId=${id}`;
             }
 
-            function modificarSolicitud(id) {
-                window.location.href = `/editar_solicitud.html?solicitudId=${id}`;
+            function modificarSolicitud(id, categoria, origen) {
+                // Redirigir al editor correcto según categoría/origen
+                // Si es origen 'solicitud', siempre usar editor genérico
+                // Los editores especializados son para datos ya convertidos (inscripciones, turnos, eventos)
+                if (origen === 'evento') {
+                    window.location.href = `/editar_evento_banda.html?id=${encodeURIComponent(id)}`;
+                } else if (origen === 'inscripcion') {
+                    window.location.href = `/editar_inscripcion_taller.html?id=${encodeURIComponent(id)}`;
+                } else if (origen === 'turno') {
+                    window.location.href = `/editar_turno_servicio.html?id=${encodeURIComponent(id)}`;
+                } else {
+                    // solicitudes normales (incluyendo ALQUILER_SALON, SERVICIOS, TALLERES)
+                    window.location.href = `/editar_solicitud.html?solicitudId=${encodeURIComponent(id)}`;
+                }
             }
 
             async function cargarSolicitudes() {
@@ -466,6 +492,8 @@
                         const tr = document.createElement('tr');
                         tr.dataset.solicitudId = solicitud.id;
                         tr.dataset.tipoEventoId = solicitud.tipoEventoId;
+                        tr.dataset.categoria = solicitud.tipoEvento || '';
+                        tr.dataset.origen = solicitud.origen || 'solicitud';
 
                         const fechaSolicitud = solicitud.fechaSolicitud ? new Date(solicitud.fechaSolicitud).toLocaleString('es-AR') : 'N/A';
                         // Evitar desplazamiento por zona horaria: parsear la fecha evento como local añadiendo 'T00:00:00'
@@ -479,18 +507,39 @@
                         const isEvento = solicitud.origen === 'evento';
                         const isConfirmado = (String(solicitud.estado).toLowerCase() === 'confirmado');
 
-                        // Botones base
-                        if (isEvento) {
-                            botones += `<button class="action-btn btn-edit-event">Modificar</button>`;
-                            botones += `<button class="action-btn btn-delete-event">Eliminar</button>`;
-                        } else {
-                            botones += `<button class="action-btn btn-edit">Modificar</button>`;
-                            botones += `<button class="action-btn btn-delete">Eliminar</button>`;
+                        // Verificar permisos de edición
+                        const puedeEditarSolicitudes = puedeEditar('solicitudes');
+                        const puedeEliminarSolicitudes = tienePermiso('solicitudes.eliminar');
+                        const puedeCambiarEstado = tienePermiso('solicitudes.cambiar_estado');
+                        const puedeGestionarPersonal = tienePermiso('personal.gestionar');
+
+                        // Botones base (solo si tiene permisos)
+                        if (puedeEditarSolicitudes) {
+                            if (isEvento) {
+                                botones += `<button class="action-btn btn-edit-event">Modificar</button>`;
+                            } else {
+                                botones += `<button class="action-btn btn-edit">Modificar</button>`;
+                            }
+                        }
+
+                        if (puedeEliminarSolicitudes) {
+                            if (isEvento) {
+                                botones += `<button class="action-btn btn-delete-event">Eliminar</button>`;
+                            } else {
+                                botones += `<button class="action-btn btn-delete">Eliminar</button>`;
+                            }
                         }
 
                         if (isConfirmado) {
-                            botones += `<button class="action-btn btn-assign" data-action="assign" data-id="${solicitud.id}" data-tipo="${solicitud.tipoEventoId}">Asignar Personal</button>`;
+                            if (puedeGestionarPersonal) {
+                                botones += `<button class="action-btn btn-assign" data-action="assign" data-id="${solicitud.id}" data-tipo="${solicitud.tipoEventoId}">Asignar Personal</button>`;
+                            }
                             botones += `<button class="action-btn btn-work-order" data-action="work-order" data-id="${solicitud.id}">Orden de Trabajo</button>`;
+                        }
+
+                        // Si no tiene ningún permiso de edición, mostrar solo lectura
+                        if (!botones) {
+                            botones = '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
                         }
 
                         // Mapear categoría a nombre legible
@@ -502,10 +551,10 @@
                             'OTRO': 'Otro'
                         };
                         const tipoLegible = tiposLegibles[solicitud.tipoEvento] || solicitud.tipoEvento;
-                        
+
                         // Si no hay subtipo, mostrar "Sin especificar" para solicitudes antiguas
                         const subtipoDisplay = solicitud.subtipo || '<em>Sin especificar</em>';
-                        
+
                         // Banda/Artista: solo para eventos de bandas
                         const bandaDisplay = solicitud.nombreBanda || '-';
 
@@ -518,7 +567,7 @@
                             <td data-label="Banda/Artista">${bandaDisplay}</td>
                             <td data-label="Fecha Evento">${fechaEvento}</td>
                             <td data-label="Estado">
-                                <select data-id="${solicitud.id}" class="estado-select">
+                                <select data-id="${solicitud.id}" class="estado-select" ${puedeCambiarEstado ? '' : 'disabled style="opacity:0.6;cursor:not-allowed;"'}>
                                         <option value="Solicitado" ${solicitud.estado === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
                                         <option value="Contactado" ${solicitud.estado === 'Contactado' ? 'selected' : ''}>Contactado</option>
                                         <option value="Confirmado" ${solicitud.estado === 'Confirmado' ? 'selected' : ''}>Confirmado</option>
@@ -715,11 +764,11 @@
             }
 
             // Proteger esta página: redirigir a login si no está autenticado
-            const navbar = new NavbarManager();
-            if (!navbar.protectAdminPage()) {
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) {
                 return; // Salir si no está autenticado
             }
-            navbar.injectNavbar('body');
+            navbarManager.injectNavbar('body');
 
             // Load solicitudes on page load
             cargarSolicitudes();

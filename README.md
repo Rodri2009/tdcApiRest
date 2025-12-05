@@ -82,6 +82,9 @@ tdcApiRest/
 ├── database/
 │   ├── 01_schema.sql       # Estructura de tablas
 │   ├── 02_seed.sql         # Datos iniciales
+│   ├── 03_talleres_servicios.sql # Talleres y servicios
+│   ├── 04_roles_permisos.sql     # Sistema RBAC
+│   ├── 05_personal_tarifas.sql   # Tarifas y pagos del personal
 │   └── _legacy/            # SQLs obsoletos (referencia)
 ├── docker/
 │   ├── docker-compose.yml  # Orquestación de servicios
@@ -113,6 +116,29 @@ tdcApiRest/
 | GET | `/api/admin/solicitudes` | Listar todas las solicitudes |
 | PUT | `/api/admin/solicitudes/:id/estado` | Cambiar estado |
 
+### Configuración de Alquiler
+| Método | Endpoint | Descripción | Permiso |
+|--------|----------|-------------|---------|
+| GET | `/api/admin/alquiler/tipos` | Listar tipos de evento | Lectura |
+| POST | `/api/admin/alquiler/tipos` | Crear tipo de evento | `config.alquiler` |
+| GET | `/api/admin/alquiler/precios` | Listar precios | Lectura |
+| POST | `/api/admin/alquiler/precios` | Crear precio | `config.alquiler` |
+
+### Tarifas y Pagos del Personal
+| Método | Endpoint | Descripción | Permiso |
+|--------|----------|-------------|---------|
+| GET | `/api/admin/personal/tarifas` | Listar tarifas | Lectura |
+| GET | `/api/admin/personal/tarifas/vigentes` | Tarifas vigentes | Lectura |
+| POST | `/api/admin/personal/tarifas` | Crear tarifa | `config.alquiler` |
+| PUT | `/api/admin/personal/tarifas/:id` | Actualizar tarifa | `config.alquiler` |
+| DELETE | `/api/admin/personal/tarifas/:id` | Desactivar tarifa | `config.alquiler` |
+| GET | `/api/admin/personal/pagos` | Listar pagos | Lectura |
+| GET | `/api/admin/personal/pagos/pendientes` | Pagos pendientes | Lectura |
+| GET | `/api/admin/personal/pagos/resumen` | Resumen por personal | Lectura |
+| POST | `/api/admin/personal/pagos` | Registrar pago | `config.alquiler` |
+| PUT | `/api/admin/personal/pagos/:id` | Actualizar pago | `config.alquiler` |
+| DELETE | `/api/admin/personal/pagos/:id` | Eliminar pago | `config.alquiler` |
+
 ### Opciones
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
@@ -128,6 +154,25 @@ Ver documentación detallada en `docs/LOGICA_NEGOCIO.md`
 2. **FECHA_BANDAS** - Shows de bandas/artistas
 3. **TALLERES** - Clases y talleres (futuro)
 4. **SERVICIO** - Servicios de catering (futuro)
+
+## Sistema de Roles y Permisos (RBAC)
+
+El sistema implementa control de acceso basado en roles:
+
+| Rol | Nivel | Descripción |
+|-----|-------|-------------|
+| SUPER_ADMIN | 100 | Acceso total al sistema |
+| ADMIN | 75 | Gestión completa excepto configuración del sistema |
+| OPERADOR | 50 | Gestión de personal, bandas, talleres y servicios |
+| VIEWER | 25 | Solo lectura |
+
+**Permisos principales:**
+- `solicitudes.*` - Gestión de solicitudes
+- `usuarios.*` - Gestión de usuarios
+- `config.alquiler` - Configuración de precios/duraciones (solo ADMIN+)
+- `config.bandas/talleres/servicios` - Configuración de catálogos (OPERADOR+)
+- `personal.gestionar` - Gestión de personal y roles (OPERADOR+)
+- `personal.costos` - Tarifas y pagos del personal (solo ADMIN+)
 
 ## Variables de Entorno
 

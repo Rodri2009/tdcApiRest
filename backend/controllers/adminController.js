@@ -12,7 +12,7 @@ const getSolicitudes = async (req, res) => {
         // Unificamos solicitudes y eventos para que el panel admin muestre ambas fuentes.
         // Las filas provenientes de `eventos` tienen `origen = 'evento'` y un id prefijado 'ev_<id>' para evitar colisión con solicitudes.
         // NOTA: tipo_de_evento puede ser:
-        //   - Una categoría directa: 'ALQUILER_SALON', 'FECHA_BANDAS' (solicitudes antiguas)
+        //   - Una categoría directa: 'ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS' (solicitudes antiguas)
         //   - Un subtipo: 'INFANTILES', 'INFORMALES', etc. (solicitudes nuevas)
         const sql = `
             SELECT * FROM (
@@ -22,12 +22,17 @@ const getSolicitudes = async (req, res) => {
                     s.nombre_completo as nombreCliente,
                     CASE 
                         WHEN ot.categoria IS NOT NULL THEN ot.categoria
-                        WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES', 'SERVICIO') THEN s.tipo_de_evento
+                        WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN 
+                            CASE s.tipo_de_evento
+                                WHEN 'TALLERES' THEN 'TALLERES_ACTIVIDADES'
+                                WHEN 'SERVICIO' THEN 'SERVICIOS'
+                                ELSE s.tipo_de_evento
+                            END
                         ELSE 'OTRO'
                     END as tipoEvento,
                     CASE 
                         WHEN ot.nombre_para_mostrar IS NOT NULL THEN ot.nombre_para_mostrar
-                        WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES', 'SERVICIO') THEN NULL
+                        WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN NULL
                         ELSE s.tipo_de_evento
                     END as subtipo,
                     DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
@@ -38,7 +43,7 @@ const getSolicitudes = async (req, res) => {
                     s.hora_evento as horaInicio,
                     NULL as nombreBanda
                 FROM solicitudes s
-                LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
+                LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
                 UNION ALL
                 SELECT
                     CONCAT('ev_', e.id) as id,
@@ -531,12 +536,81 @@ const getAllTiposDeEvento = async (req, res) => {
 };
 
 /**
+ * Crea un nuevo evento.
+ */
+const crearEvento = async (req, res) => {
+    const {
+        nombre_banda, genero_musical, descripcion, url_imagen,
+        fecha, hora_inicio, hora_fin, aforo_maximo, es_publico,
+        precio_base, precio_anticipada, precio_puerta,
+        nombre_contacto, email_contacto, telefono_contacto,
+        tipo_evento, activo, estado
+    } = req.body;
+
+    // Validación básica
+    if (!nombre_banda || !fecha) {
+        return res.status(400).json({ error: 'nombre_banda y fecha son obligatorios.' });
+    }
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const result = await conn.query(`
+            INSERT INTO eventos (
+                nombre_banda, genero_musical, descripcion, url_imagen,
+                fecha, hora_inicio, hora_fin, aforo_maximo, es_publico,
+                precio_base, precio_anticipada, precio_puerta,
+                nombre_contacto, email_contacto, telefono_contacto,
+                tipo_evento, activo, estado
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            nombre_banda,
+            genero_musical || null,
+            descripcion || null,
+            url_imagen || null,
+            fecha,
+            hora_inicio || '21:00',
+            hora_fin || '02:00',
+            aforo_maximo || 120,
+            es_publico !== undefined ? es_publico : 1,
+            precio_base || 0,
+            precio_anticipada || null,
+            precio_puerta || null,
+            nombre_contacto || null,
+            email_contacto || null,
+            telefono_contacto || null,
+            tipo_evento || 'BANDA',
+            activo !== undefined ? activo : 1,
+            estado || 'Confirmado'
+        ]);
+
+        const nuevoId = Number(result.insertId);
+        res.status(201).json({
+            message: 'Evento creado correctamente.',
+            id: nuevoId
+        });
+    } catch (err) {
+        console.error("[ADMIN] Error al crear evento:", err);
+        res.status(500).json({ error: 'Error al crear evento.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+/**
  * Actualiza datos básicos de un evento (eventos table).
  */
 
 const actualizarEvento = async (req, res) => {
     const { id } = req.params;
-    const { nombre_banda, fecha, hora_inicio, descripcion, tipo_evento, activo, estado } = req.body;
+    const {
+        nombre_banda, genero_musical, descripcion, url_imagen,
+        fecha, hora_inicio, hora_fin, aforo_maximo, es_publico,
+        precio_base, precio_anticipada, precio_puerta,
+        nombre_contacto, email_contacto, telefono_contacto,
+        tipo_evento, activo, estado
+    } = req.body;
 
     const eventId = parseInt(id, 10);
     if (isNaN(eventId)) return res.status(400).json({ message: 'ID de evento inválido.' });
@@ -548,9 +622,20 @@ const actualizarEvento = async (req, res) => {
         const updates = [];
         const params = [];
         if (typeof nombre_banda !== 'undefined') { updates.push('nombre_banda = ?'); params.push(nombre_banda); }
+        if (typeof genero_musical !== 'undefined') { updates.push('genero_musical = ?'); params.push(genero_musical); }
+        if (typeof descripcion !== 'undefined') { updates.push('descripcion = ?'); params.push(descripcion); }
+        if (typeof url_imagen !== 'undefined') { updates.push('url_imagen = ?'); params.push(url_imagen); }
         if (typeof fecha !== 'undefined') { updates.push('fecha = ?'); params.push(fecha); }
         if (typeof hora_inicio !== 'undefined') { updates.push('hora_inicio = ?'); params.push(hora_inicio); }
-        if (typeof descripcion !== 'undefined') { updates.push('descripcion = ?'); params.push(descripcion); }
+        if (typeof hora_fin !== 'undefined') { updates.push('hora_fin = ?'); params.push(hora_fin); }
+        if (typeof aforo_maximo !== 'undefined') { updates.push('aforo_maximo = ?'); params.push(aforo_maximo); }
+        if (typeof es_publico !== 'undefined') { updates.push('es_publico = ?'); params.push(es_publico); }
+        if (typeof precio_base !== 'undefined') { updates.push('precio_base = ?'); params.push(precio_base); }
+        if (typeof precio_anticipada !== 'undefined') { updates.push('precio_anticipada = ?'); params.push(precio_anticipada); }
+        if (typeof precio_puerta !== 'undefined') { updates.push('precio_puerta = ?'); params.push(precio_puerta); }
+        if (typeof nombre_contacto !== 'undefined') { updates.push('nombre_contacto = ?'); params.push(nombre_contacto); }
+        if (typeof email_contacto !== 'undefined') { updates.push('email_contacto = ?'); params.push(email_contacto); }
+        if (typeof telefono_contacto !== 'undefined') { updates.push('telefono_contacto = ?'); params.push(telefono_contacto); }
         if (typeof tipo_evento !== 'undefined') { updates.push('tipo_evento = ?'); params.push(tipo_evento); }
         if (typeof activo !== 'undefined') { updates.push('activo = ?'); params.push(activo ? 1 : 0); }
         if (typeof estado !== 'undefined') { updates.push('estado = ?'); params.push(estado); }
@@ -594,6 +679,42 @@ const cancelarEvento = async (req, res) => {
     }
 };
 
+/**
+ * Obtiene un evento por su ID.
+ */
+const getEventoById = async (req, res) => {
+    const { id } = req.params;
+    const eventId = parseInt(id, 10);
+    if (isNaN(eventId)) return res.status(400).json({ message: 'ID de evento inválido.' });
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query(`
+            SELECT 
+                id, tipo_evento, nombre_banda, genero_musical, descripcion, url_imagen,
+                nombre_contacto, email_contacto, telefono_contacto,
+                DATE_FORMAT(fecha, '%Y-%m-%d') as fecha,
+                TIME_FORMAT(hora_inicio, '%H:%i:%s') as hora_inicio,
+                TIME_FORMAT(hora_fin, '%H:%i:%s') as hora_fin,
+                precio_base, precio_anticipada, precio_puerta, aforo_maximo,
+                estado, es_publico, activo, creado_en
+            FROM eventos WHERE id = ?
+        `, [eventId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Evento no encontrado.' });
+        }
+
+        res.status(200).json(rows[0]);
+    } catch (err) {
+        console.error('Error al obtener evento:', err);
+        res.status(500).json({ message: 'Error al obtener evento.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 
 module.exports = {
     getSolicitudes,
@@ -603,7 +724,9 @@ module.exports = {
     guardarAsignaciones,
     getOrdenDeTrabajo,
     getAllTiposDeEvento,
+    crearEvento,
     actualizarEvento,
     cancelarEvento,
     eliminarEvento,
+    getEventoById,
 };

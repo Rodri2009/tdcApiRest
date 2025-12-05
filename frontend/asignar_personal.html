@@ -111,6 +111,7 @@
             background-color: #6b7280;
             cursor: not-allowed;
         }
+
         .btn-back {
             background-color: #6c757d;
         }
@@ -210,7 +211,7 @@
                     // Hacemos la llamada a nuestra nueva API para obtener todos los datos necesarios.
                     const response = await fetch(
                         `/api/admin/asignacion-data?solicitudId=${solicitudId}&tipoEventoId=${tipoEventoId}`
-                        );
+                    );
                     if (response.status === 401) {
                         window.location.href = '/login.html';
                         return;
@@ -230,14 +231,14 @@
                     console.error("Error al cargar datos de asignación:", error);
                     loader.style.display = 'none';
                     formContainer.innerHTML =
-                    `<p style="color:red; font-weight:bold;">${error.message}</p>`;
+                        `<p style="color:red; font-weight:bold;">${error.message}</p>`;
                 }
             }
             // --- SECCIÓN 3: LÓGICA DE RENDERIZADO Y UI ---
             function renderizarFormulario(rolesRequeridos, personalPorRol, asignacionesGuardadas) {
                 let formHtml = '';
                 let asignacionesRestantes = [...(asignacionesGuardadas || [])];
-                
+
                 // Si ya hay asignaciones guardadas, cambiamos el botón a "Ver orden de trabajo"
                 if (asignacionesGuardadas && asignacionesGuardadas.length > 0) {
                     saveButton.textContent = 'Ver orden de trabajo';
@@ -251,7 +252,7 @@
                     saveButton.onclick = null;
                     saveButton.addEventListener('click', guardarAsignaciones);
                 }
-                
+
                 rolesRequeridos.forEach(rol => {
                     formHtml +=
                         `<div class="rol-group"><label>${rol.rol} (requeridos: ${rol.cantidad})</label>`;
@@ -316,10 +317,10 @@
             async function guardarAsignaciones() {
                 saveButton.disabled = true;
                 saveButton.textContent = 'Guardando...';
-                
+
                 // Recolectar todas las selecciones de los selects
                 const selectsElements = Array.from(formContainer.querySelectorAll('select'));
-                
+
                 // Validar que todos los selects tengan un valor seleccionado
                 const selectsSinValor = selectsElements.filter(select => !select.value);
                 if (selectsSinValor.length > 0) {
@@ -328,7 +329,7 @@
                     saveButton.textContent = 'Guardar Asignaciones';
                     return;
                 }
-                
+
                 // Construir el array de asignaciones
                 const assignments = [];
                 selectsElements.forEach(select => {
@@ -341,7 +342,7 @@
                         });
                     }
                 });
-                
+
                 try {
                     const response = await fetch(`/api/admin/solicitudes/${solicitudId}/asignaciones`, {
                         method: 'POST',
@@ -370,11 +371,11 @@
             cargarDatosDeAsignacion();
 
             // Proteger esta página: redirigir a login si no está autenticado
-            const navbar = new NavbarManager();
-            if (!navbar.protectAdminPage()) {
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) {
                 return; // Salir si no está autenticado
             }
-            navbar.injectNavbar('body');
+            navbarManager.injectNavbar('body');
         });
     </script>
 </body>

@@ -2,17 +2,21 @@
 -- TDC App - Schema Principal Refactorizado
 -- =============================================================================
 -- LÓGICA DE NEGOCIO:
--- 4 tipos de clientes → 4 categorías de eventos:
---   1. ALQUILER_SALON → 6 subtipos (INFANTILES, ADOLESCENTES, etc.) → page.html
---   2. FECHA_BANDAS   → Para bandas que alquilan el salón → agenda_de_bandas.html
---   3. TALLERES       → Futuro
---   4. SERVICIO       → Depilación, etc. (futuro)
+-- 4 categorías principales de eventos/servicios:
+--   1. ALQUILER_SALON      → Subtipos: INFANTILES, ADOLESCENTES, CON_SERVICIO_DE_MESA, etc.
+--   2. FECHA_BANDAS        → Alquiler para bandas/eventos musicales
+--   3. TALLERES_ACTIVIDADES → Talleres y actividades (futuro)
+--   4. SERVICIOS           → Depilación, etc.
 --
 -- Versión: Diciembre 2025
 -- =============================================================================
 
+-- Configurar charset para soportar emojis (caracteres de 4 bytes)
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 -- Crear y usar la base de datos
-CREATE DATABASE IF NOT EXISTS tdc_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE DATABASE IF NOT EXISTS tdc_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE tdc_db;
 
 -- =============================================================================
@@ -25,10 +29,18 @@ CREATE TABLE IF NOT EXISTS opciones_tipos (
     id_evento VARCHAR(255) PRIMARY KEY COMMENT 'ID del tipo/subtipo: INFANTILES, FECHA_BANDAS, etc.',
     nombre_para_mostrar VARCHAR(255) NOT NULL COMMENT 'Nombre amigable para UI',
     descripcion TEXT COMMENT 'Descripción detallada del tipo de evento',
-    categoria VARCHAR(50) NOT NULL COMMENT 'Categoría: ALQUILER_SALON, FECHA_BANDAS, TALLERES, SERVICIO',
+    categoria VARCHAR(50) NOT NULL COMMENT 'ALQUILER_SALON, FECHA_BANDAS, TALLERES_ACTIVIDADES, SERVICIOS',
     es_publico TINYINT(1) DEFAULT 1 COMMENT '1=Visible para clientes, 0=Solo admin',
+    monto_sena DECIMAL(10,2) DEFAULT NULL COMMENT 'Monto de seña requerido',
+    deposito DECIMAL(10,2) DEFAULT NULL COMMENT 'Depósito de garantía',
     INDEX idx_categoria (categoria),
     INDEX idx_es_publico (es_publico)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Configuración general del sistema
+CREATE TABLE IF NOT EXISTS configuracion (
+    Clave VARCHAR(100) PRIMARY KEY,
+    Valor TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Precios por tipo de evento y duración
@@ -110,6 +122,15 @@ CREATE TABLE IF NOT EXISTS roles_por_evento (
     min_personas INT NOT NULL DEFAULT 0,
     max_personas INT NOT NULL DEFAULT 120,
     INDEX idx_evento (id_evento)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Catálogo de roles de personal (para CRUD independiente)
+CREATE TABLE IF NOT EXISTS catalogo_roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    descripcion VARCHAR(255) DEFAULT NULL,
+    activo TINYINT(1) DEFAULT 1,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
@@ -221,16 +242,175 @@ CREATE TABLE IF NOT EXISTS eventos (
     INDEX idx_es_publico (es_publico)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Bandas invitadas a un evento
-CREATE TABLE IF NOT EXISTS bandas_invitadas (
+-- =============================================================================
+-- 5.1 CATÁLOGO DE BANDAS/ARTISTAS
+-- =============================================================================
+
+-- Catálogo maestro de bandas/artistas (pueden registrarse solos o ser agregados por admin)
+CREATE TABLE IF NOT EXISTS bandas_artistas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL COMMENT 'Nombre de la banda o artista',
+    genero_musical VARCHAR(100) DEFAULT NULL COMMENT 'Rock, Jazz, Cumbia, etc.',
+    bio TEXT COMMENT 'Biografía o descripción',
+    
+    -- Redes sociales y links
+    instagram VARCHAR(255) DEFAULT NULL,
+    facebook VARCHAR(255) DEFAULT NULL,
+    twitter VARCHAR(255) DEFAULT NULL,
+    tiktok VARCHAR(255) DEFAULT NULL,
+    web_oficial VARCHAR(500) DEFAULT NULL,
+    youtube VARCHAR(500) DEFAULT NULL COMMENT 'Canal o video destacado',
+    spotify VARCHAR(500) DEFAULT NULL COMMENT 'Perfil o playlist',
+    otras_redes TEXT COMMENT 'JSON con otras redes/links',
+    
+    -- Imagen/Logo
+    logo_url VARCHAR(500) DEFAULT NULL COMMENT 'URL del logo subido',
+    foto_prensa_url VARCHAR(500) DEFAULT NULL COMMENT 'Foto de prensa',
+    
+    -- Datos de contacto (del manager/representante)
+    contacto_nombre VARCHAR(255) DEFAULT NULL,
+    contacto_email VARCHAR(255) DEFAULT NULL,
+    contacto_telefono VARCHAR(50) DEFAULT NULL,
+    contacto_rol VARCHAR(100) DEFAULT NULL COMMENT 'Manager, Líder, Prensa, etc.',
+    
+    -- Control
+    verificada TINYINT(1) DEFAULT 0 COMMENT '1=Verificada por admin',
+    activa TINYINT(1) DEFAULT 1,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_nombre (nombre),
+    INDEX idx_genero (genero_musical),
+    INDEX idx_activa (activa)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Formación/Integrantes de una banda (instrumentos y roles)
+CREATE TABLE IF NOT EXISTS bandas_formacion (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_banda INT NOT NULL,
+    nombre_integrante VARCHAR(255) DEFAULT NULL COMMENT 'Nombre del músico (opcional)',
+    instrumento VARCHAR(100) NOT NULL COMMENT 'Guitarra, Bajo, Batería, Voz, Teclado, etc.',
+    es_lider TINYINT(1) DEFAULT 0 COMMENT '1=Es el líder/frontman',
+    notas VARCHAR(255) DEFAULT NULL COMMENT 'Ej: Guitarra rítmica, Segunda voz',
+    INDEX idx_banda (id_banda),
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Catálogo de instrumentos disponibles (para autocompletado)
+CREATE TABLE IF NOT EXISTS catalogo_instrumentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    categoria VARCHAR(50) DEFAULT NULL COMMENT 'Cuerdas, Percusión, Vientos, Electrónico, Voz',
+    icono VARCHAR(50) DEFAULT NULL COMMENT 'Nombre del icono (fa-guitar, etc.)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =============================================================================
+-- 5.2 LINEUP DE EVENTOS (Relación entre eventos y bandas)
+-- =============================================================================
+
+-- Lineup: qué bandas tocan en qué evento y en qué orden
+CREATE TABLE IF NOT EXISTS eventos_lineup (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_evento INT NOT NULL,
-    nombre_banda VARCHAR(255) NOT NULL,
-    hora_show TIME DEFAULT NULL,
+    id_banda INT DEFAULT NULL COMMENT 'FK a bandas_artistas (NULL si es solo nombre)',
+    nombre_banda VARCHAR(255) NOT NULL COMMENT 'Nombre (redundante si id_banda existe, necesario si no)',
+    
+    -- Orden y rol en el evento
+    orden_show INT NOT NULL DEFAULT 0 COMMENT '0=telonero, 1,2..., último=principal',
+    es_principal TINYINT(1) DEFAULT 0 COMMENT '1=Banda principal (cierra)',
+    es_solicitante TINYINT(1) DEFAULT 0 COMMENT '1=Es quien solicitó la fecha',
+    
+    -- Horario específico de esta banda
+    hora_inicio TIME DEFAULT NULL,
+    hora_fin TIME DEFAULT NULL,
+    duracion_minutos INT DEFAULT NULL,
+    
+    -- Estado
     estado ENUM('invitada','confirmada','cancelada') DEFAULT 'invitada',
-    orden_show INT DEFAULT 0,
+    notas TEXT,
+    
     INDEX idx_evento (id_evento),
-    FOREIGN KEY (id_evento) REFERENCES eventos(id) ON DELETE CASCADE
+    INDEX idx_banda (id_banda),
+    INDEX idx_orden (id_evento, orden_show),
+    FOREIGN KEY (id_evento) REFERENCES eventos(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Bandas invitadas por evento (hasta 3 adicionales a la principal)
+CREATE TABLE IF NOT EXISTS eventos_bandas_invitadas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_evento INT NOT NULL,
+    id_banda INT DEFAULT NULL COMMENT 'FK si la banda existe en catálogo',
+    nombre_banda VARCHAR(255) NOT NULL,
+    orden TINYINT DEFAULT 1 COMMENT 'Orden de invitada: 1, 2 o 3',
+    
+    INDEX idx_evento (id_evento),
+    INDEX idx_banda (id_banda),
+    FOREIGN KEY (id_evento) REFERENCES eventos(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Eliminar tabla vieja si existe (migración)
+DROP TABLE IF EXISTS bandas_invitadas;
+
+-- =============================================================================
+-- 5.3 SOLICITUDES DE FECHAS PARA BANDAS
+-- =============================================================================
+
+-- Solicitudes de fecha por parte de bandas (antes de ser eventos confirmados)
+CREATE TABLE IF NOT EXISTS bandas_solicitudes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    
+    -- Datos de la banda solicitante
+    id_banda INT DEFAULT NULL COMMENT 'FK si la banda ya existe en catálogo',
+    nombre_banda VARCHAR(255) NOT NULL,
+    genero_musical VARCHAR(100) DEFAULT NULL,
+    formacion_json TEXT COMMENT 'JSON con instrumentos: [{instrumento, cantidad, notas}]',
+    
+    -- Links y redes
+    instagram VARCHAR(255) DEFAULT NULL,
+    facebook VARCHAR(255) DEFAULT NULL,
+    youtube VARCHAR(500) DEFAULT NULL,
+    spotify VARCHAR(500) DEFAULT NULL,
+    otras_redes TEXT,
+    logo_url VARCHAR(500) DEFAULT NULL,
+    
+    -- Contacto del solicitante
+    contacto_nombre VARCHAR(255) NOT NULL,
+    contacto_email VARCHAR(255) NOT NULL,
+    contacto_telefono VARCHAR(50) DEFAULT NULL,
+    contacto_rol VARCHAR(100) DEFAULT NULL,
+    
+    -- Propuesta de fecha
+    fecha_preferida DATE DEFAULT NULL,
+    fecha_alternativa DATE DEFAULT NULL,
+    hora_preferida TIME DEFAULT NULL,
+    
+    -- Bandas invitadas (hasta 3 adicionales)
+    invitadas_json TEXT COMMENT 'JSON: [{nombre, id_banda?, confirmada}]',
+    cantidad_bandas INT DEFAULT 1 COMMENT 'Total bandas incluyendo principal',
+    
+    -- Propuesta económica
+    precio_anticipada_propuesto DECIMAL(10,2) DEFAULT NULL,
+    precio_puerta_propuesto DECIMAL(10,2) DEFAULT NULL,
+    expectativa_publico VARCHAR(100) DEFAULT NULL COMMENT 'Ej: 80-100 personas',
+    
+    -- Mensaje/Propuesta
+    mensaje TEXT COMMENT 'Mensaje o propuesta del solicitante',
+    
+    -- Estado y control
+    estado ENUM('pendiente','en_revision','aprobada','rechazada','cancelada') DEFAULT 'pendiente',
+    notas_admin TEXT COMMENT 'Notas internas del admin',
+    id_evento_generado INT DEFAULT NULL COMMENT 'FK al evento si se aprueba',
+    
+    fingerprintid VARCHAR(255) DEFAULT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_estado (estado),
+    INDEX idx_fecha (fecha_preferida),
+    INDEX idx_banda (id_banda),
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Personal asignado a eventos de bandas
@@ -252,7 +432,7 @@ CREATE TABLE IF NOT EXISTS eventos_personal (
 
 CREATE TABLE IF NOT EXISTS tickets (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    evento_id INT NOT NULL,
+    id_evento INT NOT NULL,
     nombre_comprador VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     cantidad INT DEFAULT 1,
@@ -263,8 +443,8 @@ CREATE TABLE IF NOT EXISTS tickets (
     codigo_confirmacion VARCHAR(20) NOT NULL UNIQUE,
     estado ENUM('pendiente', 'pagado', 'utilizado', 'cancelado') DEFAULT 'pendiente',
     comprado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_evento (evento_id),
-    FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE CASCADE
+    INDEX idx_evento (id_evento),
+    FOREIGN KEY (id_evento) REFERENCES eventos(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS cupones (

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Evento - Bandas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 16px;
+            background: #0c0a09;
+            min-height: 100vh;
+            color: #d6d3d1;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #1a1a1a;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid rgba(240, 171, 252, 0.1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            margin-bottom: 25px;
+        }
+
+        .form-section {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-section h3 {
+            color: var(--color-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 640px) {
+            .form-grid-2 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .form-grid-3 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #d6d3d1;
+            font-size: 0.9rem;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            background-color: #1f2937;
+            color: #d6d3d1;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .estado-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .estado-solicitado {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .estado-contactado {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .estado-confirmado {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .estado-cancelado {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed, #581c87);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+        }
+
+        .btn-secondary {
+            background: #44403c;
+            color: #d6d3d1;
+        }
+
+        .btn-secondary:hover {
+            background: #57534e;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 4px solid #4b5563;
+            border-top: 4px solid var(--color-secondary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1001;
+            transition: transform 0.4s ease;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.success {
+            background: #10b981;
+        }
+
+        #notification-banner.error {
+            background: #ef4444;
+        }
+
+        #notification-banner.warning {
+            background: #f59e0b;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .back-btn {
+            background: #44403c;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #d6d3d1;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #57534e;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #111827;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header-row">
+            <a href="admin_solicitudes.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+            <h2><i class="fas fa-guitar"></i> Evento de Banda</h2>
+            <div style="width: 100px;"></div>
+        </div>
+
+        <div class="info-row">
+            <div>
+                <span style="color: #9ca3af;">ID:</span>
+                <span id="eventoId" style="font-weight: bold;">-</span>
+            </div>
+            <div>
+                <span style="color: #9ca3af;">Estado:</span>
+                <select id="estadoSelect" class="estado-badge" style="width: auto; padding: 4px 12px;">
+                    <option value="Solicitado">Solicitado</option>
+                    <option value="Contactado">Contactado</option>
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Datos de la Banda -->
+        <div class="form-section">
+            <h3><i class="fas fa-users"></i> Datos de la Banda</h3>
+            <div class="form-grid form-grid-2">
+                <div class="form-group">
+                    <label for="nombreBanda">Nombre de la Banda *</label>
+                    <input type="text" id="nombreBanda" placeholder="Ej: Los Redonditos">
+                </div>
+                <div class="form-group">
+                    <label for="generoMusical">Género Musical</label>
+                    <input type="text" id="generoMusical" placeholder="Ej: Rock Nacional">
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="descripcion">Descripción del Evento</label>
+                <textarea id="descripcion" placeholder="Descripción del show, propuesta artística..."></textarea>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="urlImagen">URL de Imagen/Flyer</label>
+                <input type="text" id="urlImagen" placeholder="https://...">
+            </div>
+        </div>
+
+        <!-- Fecha y Horarios -->
+        <div class="form-section">
+            <h3><i class="fas fa-calendar-alt"></i> Fecha y Horarios</h3>
+            <div class="form-grid form-grid-3">
+                <div class="form-group">
+                    <label for="fechaEvento">Fecha del Evento *</label>
+                    <input type="text" id="fechaEvento" placeholder="Seleccionar fecha...">
+                </div>
+                <div class="form-group">
+                    <label for="horaInicio">Hora de Inicio</label>
+                    <input type="time" id="horaInicio" value="21:00">
+                </div>
+                <div class="form-group">
+                    <label for="horaFin">Hora de Fin</label>
+                    <input type="time" id="horaFin" value="02:00">
+                </div>
+            </div>
+            <div class="form-grid form-grid-2" style="margin-top: 15px;">
+                <div class="form-group">
+                    <label for="aforoMaximo">Aforo Máximo</label>
+                    <input type="number" id="aforoMaximo" value="120" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="esPublico">Visibilidad</label>
+                    <select id="esPublico">
+                        <option value="1">Público (visible en agenda)</option>
+                        <option value="0">Privado (solo admin)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Precios -->
+        <div class="form-section">
+            <h3><i class="fas fa-ticket-alt"></i> Precios de Entrada</h3>
+            <div class="form-grid form-grid-3">
+                <div class="form-group">
+                    <label for="precioBase">Precio Base</label>
+                    <input type="number" id="precioBase" value="0" min="0" step="100">
+                </div>
+                <div class="form-group">
+                    <label for="precioAnticipada">Precio Anticipada</label>
+                    <input type="number" id="precioAnticipada" min="0" step="100" placeholder="Ej: 3000">
+                </div>
+                <div class="form-group">
+                    <label for="precioPuerta">Precio en Puerta</label>
+                    <input type="number" id="precioPuerta" min="0" step="100" placeholder="Ej: 4000">
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacto -->
+        <div class="form-section">
+            <h3><i class="fas fa-address-book"></i> Datos de Contacto</h3>
+            <div class="form-grid form-grid-3">
+                <div class="form-group">
+                    <label for="nombreContacto">Nombre del Contacto</label>
+                    <input type="text" id="nombreContacto" placeholder="Responsable/Manager">
+                </div>
+                <div class="form-group">
+                    <label for="emailContacto">Email</label>
+                    <input type="email" id="emailContacto" placeholder="email@ejemplo.com">
+                </div>
+                <div class="form-group">
+                    <label for="telefonoContacto">Teléfono</label>
+                    <input type="tel" id="telefonoContacto" placeholder="11-1234-5678">
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="window.location.href='admin_solicitudes.html'">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn btn-danger" id="btnEliminar" style="flex: 0.5;">
+                <i class="fas fa-trash"></i>
+            </button>
+            <button class="btn btn-primary" id="btnGuardar">
+                <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px; color: var(--color-secondary);">Cargando...</p>
+    </div>
+
+    <div id="notification-banner"></div>
+
+    <script src="/navbar.js"></script>
+    <script>
+        // Variables globales
+        let eventoId = null;
+        let calendario = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Proteger página admin
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) return;
+            navbarManager.injectNavbar('body');
+
+            // Obtener ID de la URL
+            const params = new URLSearchParams(window.location.search);
+            const idParam = params.get('id') || params.get('solicitudId');
+
+            if (!idParam) {
+                showNotification('ID no especificado', 'error');
+                setTimeout(() => window.location.href = 'config_bandas.html#eventos', 2000);
+                return;
+            }
+
+            // Modo nuevo evento
+            if (idParam === 'new') {
+                eventoId = null;
+                document.getElementById('eventoId').textContent = 'Nuevo Evento';
+                document.querySelector('h2').textContent = 'Crear Nuevo Evento';
+                document.getElementById('btnEliminar').style.display = 'none';
+                initCalendario();
+                showLoading(false);
+                document.getElementById('btnGuardar').addEventListener('click', guardarEvento);
+                return;
+            }
+
+            // Extraer ID numérico (puede venir como 'ev_3' o '3')
+            eventoId = idParam.toString().startsWith('ev_')
+                ? parseInt(idParam.substring(3))
+                : parseInt(idParam);
+
+            if (isNaN(eventoId)) {
+                showNotification('ID inválido', 'error');
+                return;
+            }
+
+            document.getElementById('eventoId').textContent = `ev_${eventoId}`;
+
+            // Inicializar calendario
+            initCalendario();
+
+            // Cargar datos del evento
+            cargarEvento();
+
+            // Event listeners
+            document.getElementById('btnGuardar').addEventListener('click', guardarEvento);
+            document.getElementById('btnEliminar').addEventListener('click', eliminarEvento);
+        });
+
+        function initCalendario() {
+            calendario = flatpickr('#fechaEvento', {
+                locale: 'es',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'j \\de F, Y',
+                minDate: 'today'
+            });
+        }
+
+        async function cargarEvento() {
+            showLoading(true);
+            try {
+                const res = await fetch(`/api/admin/eventos/${eventoId}`);
+                if (!res.ok) throw new Error('No se pudo cargar el evento');
+
+                const evento = await res.json();
+
+                // Llenar formulario
+                document.getElementById('nombreBanda').value = evento.nombre_banda || '';
+                document.getElementById('generoMusical').value = evento.genero_musical || '';
+                document.getElementById('descripcion').value = evento.descripcion || '';
+                document.getElementById('urlImagen').value = evento.url_imagen || '';
+
+                if (evento.fecha) {
+                    calendario.setDate(evento.fecha, false);
+                }
+
+                if (evento.hora_inicio) {
+                    document.getElementById('horaInicio').value = evento.hora_inicio.substring(0, 5);
+                }
+                if (evento.hora_fin) {
+                    document.getElementById('horaFin').value = evento.hora_fin.substring(0, 5);
+                }
+
+                document.getElementById('aforoMaximo').value = evento.aforo_maximo || 120;
+                document.getElementById('esPublico').value = evento.es_publico ? '1' : '0';
+
+                document.getElementById('precioBase').value = evento.precio_base || 0;
+                document.getElementById('precioAnticipada').value = evento.precio_anticipada || '';
+                document.getElementById('precioPuerta').value = evento.precio_puerta || '';
+
+                document.getElementById('nombreContacto').value = evento.nombre_contacto || '';
+                document.getElementById('emailContacto').value = evento.email_contacto || '';
+                document.getElementById('telefonoContacto').value = evento.telefono_contacto || '';
+
+                document.getElementById('estadoSelect').value = evento.estado || 'Solicitado';
+
+            } catch (err) {
+                console.error(err);
+                showNotification('Error al cargar el evento: ' + err.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function guardarEvento() {
+            const nombreBanda = document.getElementById('nombreBanda').value.trim();
+            const fecha = document.getElementById('fechaEvento').value;
+
+            if (!nombreBanda) {
+                showNotification('El nombre de la banda es obligatorio', 'warning');
+                return;
+            }
+            if (!fecha) {
+                showNotification('La fecha es obligatoria', 'warning');
+                return;
+            }
+
+            showLoading(true);
+
+            const datos = {
+                nombre_banda: nombreBanda,
+                genero_musical: document.getElementById('generoMusical').value.trim(),
+                descripcion: document.getElementById('descripcion').value.trim(),
+                url_imagen: document.getElementById('urlImagen').value.trim(),
+                fecha: fecha,
+                hora_inicio: document.getElementById('horaInicio').value || '21:00',
+                hora_fin: document.getElementById('horaFin').value || '02:00',
+                aforo_maximo: parseInt(document.getElementById('aforoMaximo').value) || 120,
+                es_publico: document.getElementById('esPublico').value === '1' ? 1 : 0,
+                precio_base: parseFloat(document.getElementById('precioBase').value) || 0,
+                precio_anticipada: parseFloat(document.getElementById('precioAnticipada').value) || null,
+                precio_puerta: parseFloat(document.getElementById('precioPuerta').value) || null,
+                nombre_contacto: document.getElementById('nombreContacto').value.trim(),
+                email_contacto: document.getElementById('emailContacto').value.trim(),
+                telefono_contacto: document.getElementById('telefonoContacto').value.trim(),
+                estado: document.getElementById('estadoSelect').value,
+                activo: document.getElementById('estadoSelect').value !== 'Cancelado' ? 1 : 0,
+                tipo_evento: 'BANDA'
+            };
+
+            try {
+                // Si eventoId es null, es un nuevo evento (POST), sino actualizar (PUT)
+                const url = eventoId ? `/api/admin/eventos/${eventoId}` : '/api/admin/eventos';
+                const method = eventoId ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify(datos)
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || err.error || 'Error al guardar');
+                }
+
+                showNotification(eventoId ? 'Evento actualizado correctamente' : 'Evento creado correctamente', 'success');
+                setTimeout(() => window.location.href = 'config_bandas.html#eventos', 1500);
+
+            } catch (err) {
+                console.error(err);
+                showNotification('Error: ' + err.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function eliminarEvento() {
+            if (!confirm('¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const res = await fetch(`/api/admin/eventos/${eventoId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || err.error || 'Error al eliminar');
+                }
+
+                showNotification('Evento eliminado', 'success');
+                setTimeout(() => window.location.href = 'config_bandas.html#eventos', 1500);
+
+            } catch (err) {
+                console.error(err);
+                showNotification('Error: ' + err.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        function showNotification(message, type = 'success') {
+            const banner = document.getElementById('notification-banner');
+            banner.textContent = message;
+            banner.className = `${type} show`;
+            setTimeout(() => banner.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+
+</html>

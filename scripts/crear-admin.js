@@ -1,13 +1,20 @@
 // scripts/crear-admin.js
-require('dotenv').config({ path: '.env' }); // Asegúrate de que lea el .env de la raíz
+// Puede ejecutarse desde fuera del contenedor conectándose a localhost:3307
+require('dotenv').config({ path: '.env' }); // Lee el .env de la raíz
 const mariadb = require('mariadb');
 const bcrypt = require('bcryptjs');
 const readline = require('readline');
 
-// Debug: verificar que las variables se cargaron
-const dbHost = process.env.DB_HOST || 'localhost';
+// Detectar si estamos dentro del contenedor o en el host
+// Usa LOCAL_DB=1 para forzar conexión local, o detecta automáticamente
+const forceLocal = process.env.LOCAL_DB === '1';
+const isDocker = !forceLocal && process.env.DB_HOST === 'mariadb' && process.env.HOSTNAME; // HOSTNAME existe en containers
+const dbHost = (forceLocal || !isDocker) ? 'localhost' : 'mariadb';
+const dbPort = 3306; // Puerto 3306 tanto dentro como fuera (está mapeado 3306:3306)
+
 console.log('📋 Configuración de BD:');
-console.log(`Host: ${dbHost}`);
+console.log(`Modo: ${forceLocal ? 'LOCAL (forzado)' : isDocker ? 'DOCKER' : 'LOCAL (auto)'}`);
+console.log(`Host: ${dbHost}:${dbPort}`);
 console.log(`BD: ${process.env.DB_NAME}`);
 console.log(`Usuario: ${process.env.DB_USER}`);
 console.log(`Password: ${process.env.DB_PASSWORD ? '***' : 'NO CARGADA'}\n`);
@@ -20,7 +27,7 @@ const rl = readline.createInterface({
 
 const pool = mariadb.createPool({
     host: dbHost,
-    port: 3306,
+    port: dbPort,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
@@ -39,18 +46,35 @@ async function crearAdmin() {
             let conn;
             try {
                 conn = await pool.getConnection();
+                await conn.beginTransaction();
+
                 const salt = await bcrypt.genSalt(10);
                 const passwordHash = await bcrypt.hash(password, salt);
 
-                const sql = 'INSERT INTO usuarios (email, password_hash, nombre, rol) VALUES (?, ?, ?, ?)';
+                // Crear usuario
+                const sql = 'INSERT INTO usuarios (email, password_hash, nombre, rol, activo) VALUES (?, ?, ?, ?, 1)';
                 const result = await conn.query(sql, [email, passwordHash, 'Administrador', 'admin']);
 
                 if (result.affectedRows > 0) {
-                    console.log(`✅ Usuario administrador '${email}' creado con éxito.`);
+                    const usuarioId = result.insertId;
+
+                    // Asignar rol SUPER_ADMIN
+                    const [rolSuperAdmin] = await conn.query("SELECT id FROM roles WHERE codigo = 'SUPER_ADMIN'");
+                    if (rolSuperAdmin) {
+                        await conn.query('INSERT INTO usuarios_roles (id_usuario, id_rol) VALUES (?, ?)',
+                            [usuarioId, rolSuperAdmin.id]);
+                        console.log(`✅ Usuario administrador '${email}' creado con rol SUPER_ADMIN.`);
+                    } else {
+                        console.log(`✅ Usuario administrador '${email}' creado (sin rol - tabla roles no existe).`);
+                    }
+
+                    await conn.commit();
                 } else {
+                    await conn.rollback();
                     console.error('❌ No se pudo crear el usuario.');
                 }
             } catch (err) {
+                if (conn) await conn.rollback();
                 if (err.code === 'ER_DUP_ENTRY') {
                     console.error(`❌ Error: El email '${email}' ya existe en la base de datos.`);
                 } else {

@@ -8,6 +8,7 @@
     <title>Editor de Solicitud</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
@@ -395,6 +396,7 @@
                 justify-content: space-between;
                 gap: 10px;
             }
+
             .button-group button {
                 width: 49%;
                 font-size: 16px;
@@ -405,7 +407,14 @@
 
 <body>
     <div class="container" id="mainContainer">
-        <h2>Editor</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <a href="admin_solicitudes.html"
+                style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
+                <i class="fas fa-arrow-left"></i> Volver a Solicitudes
+            </a>
+            <h2 style="margin: 0;">Editor</h2>
+            <div style="width: 180px;"></div>
+        </div>
 
         <fieldset id="edit-fieldset">
             <input type="hidden" id="precioBase" name="precioBase">
@@ -513,11 +522,11 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Proteger esta página: redirigir a login si no está autenticado
-            const navbar = new NavbarManager();
-            if (!navbar.protectAdminPage()) {
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) {
                 return; // Salir si no está autenticado
             }
-            navbar.injectNavbar('body');
+            navbarManager.injectNavbar('body');
 
             // Inicializar la app de edición
             initializeApp({

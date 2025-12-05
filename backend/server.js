@@ -22,18 +22,26 @@ console.log("Cargando rutas de la API...");
 try {
     const opcionesRoutes = require('./routes/opcionesRoutes');
     const solicitudesRoutes = require('./routes/solicitudRoutes');
-    const testRoutes = require('./routes/testRoutes'); // <-- Importar
-    const authRoutes = require('./routes/authRoutes'); // <-- IMPORTAR
-    const adminRoutes = require('./routes/adminRoutes'); // <-- IMPORTAR
-    const ticketsRoutes = require('./routes/ticketsRoutes'); // <-- ¡NUEVA RUTA!
+    const testRoutes = require('./routes/testRoutes');
+    const authRoutes = require('./routes/authRoutes');
+    const adminRoutes = require('./routes/adminRoutes');
+    const bandasRoutes = require('./routes/bandasRoutes'); // Bandas antes de tickets
+    const ticketsRoutes = require('./routes/ticketsRoutes');
+    const talleresRoutes = require('./routes/talleresRoutes');
+    const serviciosRoutes = require('./routes/serviciosRoutes');
+    const usuariosRoutes = require('./routes/usuariosRoutes');
 
     app.use('/api/opciones', opcionesRoutes);
     app.use('/api/solicitudes', solicitudesRoutes);
-    app.use('/api/test', testRoutes); // <-- Usar
-    app.use('/api/auth', authRoutes); // <-- USAR
-    app.use('/api/admin', adminRoutes); // <-- USAR
-    app.use('/api/tickets', ticketsRoutes); // <-- ¡USAR RUTA DE TICKETS!
-    
+    app.use('/api/test', testRoutes);
+    app.use('/api/auth', authRoutes);
+    app.use('/api/admin', adminRoutes);
+    app.use('/api/bandas', bandasRoutes);
+    app.use('/api/tickets', ticketsRoutes);
+    app.use('/api/talleres', talleresRoutes);
+    app.use('/api/servicios', serviciosRoutes);
+    app.use('/api/usuarios', usuariosRoutes);
+
     console.log("Rutas configuradas correctamente.");
 } catch (error) {
     console.error("¡ERROR CRÍTICO AL CARGAR RUTAS!", error);

@@ -35,6 +35,7 @@ const pool = require('../db');
 
 /**
  * Obtiene todos los eventos activos y disponibles para la venta.
+ * La tabla eventos usa columnas separadas: fecha DATE + hora_inicio TIME
  */
 const getEventosActivos = async () => {
     const query = `
@@ -49,9 +50,9 @@ const getEventosActivos = async () => {
             e.activo, 
             e.descripcion,
             -- FORZAMOS el resultado a ser un entero normal (SIGNED), evitando el BigInt (150n)
-            CAST((e.aforo_maximo - COUNT(t.evento_id)) AS SIGNED) as tickets_disponibles
+            CAST((e.aforo_maximo - COUNT(t.id_evento)) AS SIGNED) as tickets_disponibles
         FROM eventos e
-        LEFT JOIN tickets t ON e.id = t.evento_id AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
+        LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
         WHERE e.activo = TRUE 
         GROUP BY e.id
         HAVING tickets_disponibles > 0 OR e.precio_base = 0.00 OR e.precio_anticipada = 0.00 OR e.precio_puerta = 0.00
@@ -75,13 +76,13 @@ const getEventoById = async (id) => {
             e.precio_puerta,
             e.aforo_maximo, 
             e.descripcion,
-            (e.aforo_maximo - COUNT(t.evento_id)) as tickets_disponibles
+            (e.aforo_maximo - COUNT(t.id_evento)) as tickets_disponibles
         FROM eventos e
-        LEFT JOIN tickets t ON e.id = t.evento_id AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
+        LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
         WHERE e.id = ? AND e.activo = TRUE
         GROUP BY e.id
     `;
-    const [rows] = await pool.query(query, [id]);
+    const rows = await pool.query(query, [id]);
     return rows[0];
 };
 
@@ -113,7 +114,7 @@ const createPendingTicket = async (eventoId, email, nombre, cuponId, precioPagad
     const ticketId = getUuid();
 
     const query = `
-        INSERT INTO tickets (id_unico, evento_id, email_comprador, nombre_comprador, cupon_id, precio_pagado, tipo_precio, estado)
+        INSERT INTO tickets (id_unico, id_evento, email_comprador, nombre_comprador, cupon_id, precio_pagado, tipo_precio, estado)
         VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE_PAGO');
     `;
 

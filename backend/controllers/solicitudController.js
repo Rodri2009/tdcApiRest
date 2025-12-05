@@ -172,21 +172,7 @@ const getSolicitudPorId = async (req, res) => {
             return res.status(200).json(evento);
         }
 
-        // --- Construir consulta de forma dinámica según columnas disponibles ---
-        // Algunos entornos aún no tienen las columnas de precio en `bandas_solicitudes`.
-        const colsInfo = await conn.query(
-            "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'bandas_solicitudes' AND COLUMN_NAME IN ('precio_anticipada','precio_puerta')",
-            [process.env.DB_NAME]
-        );
-        const hasPrecioAnt = colsInfo.some(c => c.COLUMN_NAME === 'precio_anticipada');
-        const hasPrecioPuerta = colsInfo.some(c => c.COLUMN_NAME === 'precio_puerta');
-
-        const extraCols = [];
-        if (hasPrecioAnt) extraCols.push('bs.precio_anticipada as bandaPrecioAnticipada');
-        else extraCols.push('NULL as bandaPrecioAnticipada');
-        if (hasPrecioPuerta) extraCols.push('bs.precio_puerta as bandaPrecioPuerta');
-        else extraCols.push('NULL as bandaPrecioPuerta');
-
+        // --- Consulta simplificada para solicitudes normales (no bandas) ---
         const sql = `
             SELECT 
                 s.id_solicitud as solicitudId,
@@ -202,18 +188,10 @@ const getSolicitudPorId = async (req, res) => {
                 s.email,
                 s.descripcion,
                 s.estado,
-                ot.nombre_para_mostrar as nombreParaMostrar,
-                ot.categoria as categoria,
-                bs.nombre_banda as nombreBanda,
-                bs.contacto_email as bandaContactoEmail,
-                bs.link_musica as bandaLinkMusica,
-                bs.propuesta as bandaPropuesta,
-                bs.event_id as bandaEventId,
-                bs.invitados as bandaInvitados,
-                ${extraCols.join(',\n                ')}
+                COALESCE(ot.nombre_para_mostrar, s.tipo_de_evento) as nombreParaMostrar,
+                COALESCE(ot.categoria, 'ALQUILER_SALON') as categoria
             FROM solicitudes s
-            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
-            LEFT JOIN bandas_solicitudes bs ON s.id_solicitud = bs.id_solicitud
+            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento OR s.tipo_servicio = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
 
@@ -224,7 +202,7 @@ const getSolicitudPorId = async (req, res) => {
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
         }
 
-        const adicionales = await conn.query("SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
+        const adicionales = await conn.query("SELECT nombre_adicional as nombre, precio_adicional as precio FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
 
         const respuesta = {
             ...solicitud,

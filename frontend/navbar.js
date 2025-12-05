@@ -1,6 +1,7 @@
 /**
  * navbar.js - Componente de navegación dinámico y reutilizable
  * Inyecta un navbar en las páginas según el estado de autenticación del usuario
+ * Soporta sistema de roles y permisos
  */
 
 class NavbarManager {
@@ -8,8 +9,11 @@ class NavbarManager {
         this.isAuthenticated = false;
         this.userEmail = null;
         this.userRole = null;
+        this.userRoles = [];
+        this.userPermisos = [];
+        this.userNivel = 0;
         this.jwtToken = localStorage.getItem('authToken');
-        
+
         if (this.jwtToken) {
             this.isAuthenticated = true;
             // Decodificar el JWT para obtener datos del usuario
@@ -33,10 +37,44 @@ class NavbarManager {
             const payload = JSON.parse(jsonPayload);
             this.userEmail = payload.email || payload.id || 'Usuario';
             this.userRole = payload.role || 'user';
+            this.userRoles = payload.roles || [];
+            this.userPermisos = payload.permisos || [];
+            this.userNivel = payload.nivel || 0;
         } catch (error) {
             console.error('Error decodificando JWT:', error);
             this.clearAuth();
         }
+    }
+
+    /**
+     * Verifica si el usuario tiene un permiso específico
+     */
+    tienePermiso(permiso) {
+        // SUPER_ADMIN tiene todos los permisos
+        if (this.userRoles.includes('SUPER_ADMIN')) return true;
+        return this.userPermisos.includes(permiso);
+    }
+
+    /**
+     * Verifica si el usuario tiene alguno de los permisos
+     */
+    tieneAlgunPermiso(permisos) {
+        if (this.userRoles.includes('SUPER_ADMIN')) return true;
+        return permisos.some(p => this.userPermisos.includes(p));
+    }
+
+    /**
+     * Verifica si el usuario tiene un rol específico
+     */
+    tieneRol(rol) {
+        return this.userRoles.includes(rol);
+    }
+
+    /**
+     * Verifica si el usuario tiene nivel mínimo
+     */
+    tieneNivel(nivelMinimo) {
+        return this.userNivel >= nivelMinimo;
     }
 
     /**
@@ -46,6 +84,9 @@ class NavbarManager {
         this.isAuthenticated = false;
         this.userEmail = null;
         this.userRole = null;
+        this.userRoles = [];
+        this.userPermisos = [];
+        this.userNivel = 0;
         localStorage.removeItem('authToken');
     }
 
@@ -105,42 +146,40 @@ class NavbarManager {
                 </a>
             `;
         } else {
-            // Dropdown de admin para usuarios autenticados
+            // Generar menú dinámico según permisos
+            const menuItems = this.generateMenuItems();
+
+            // Determinar color del botón según nivel
+            let btnColor = 'bg-gray-500 hover:bg-gray-400';
+            if (this.userNivel >= 100) btnColor = 'bg-purple-600 hover:bg-purple-500';
+            else if (this.userNivel >= 75) btnColor = 'bg-emerald-500 hover:bg-emerald-400';
+            else if (this.userNivel >= 50) btnColor = 'bg-cyan-500 hover:bg-cyan-400';
+            else if (this.userNivel >= 25) btnColor = 'bg-gray-500 hover:bg-gray-400';
+
+            // Obtener rol principal para mostrar
+            const rolPrincipal = this.userRoles[0] || 'Usuario';
+            const rolEmoji = this.getRolEmoji(rolPrincipal);
+
             authButtonsHTML = `
                 <div class="relative group">
                     <!-- Botón Admin -->
-                    <button class="px-4 py-2 rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150 flex items-center gap-2">
-                        <span>🔐 Admin</span>
-                        <span class="text-xs hidden md:inline">${this.userEmail}</span>
+                    <button class="px-4 py-2 rounded-full font-semibold ${btnColor} text-gray-900 transition duration-150 flex items-center gap-2">
+                        <span>${rolEmoji} ${this.formatRolName(rolPrincipal)}</span>
                         <svg class="w-4 h-4 transition group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
                         </svg>
                     </button>
 
                     <!-- Dropdown Menu -->
-                    <div class="absolute right-0 mt-0 w-48 bg-stone-800 rounded-lg shadow-xl border border-emerald-500 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div class="absolute right-0 mt-0 w-56 bg-stone-800 rounded-lg shadow-xl border border-emerald-500 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                         <div class="p-4 border-b border-stone-700">
                             <p class="text-xs text-stone-400">Sesión activa como:</p>
                             <p class="text-sm font-semibold text-white truncate">${this.userEmail}</p>
+                            <p class="text-xs text-stone-500 mt-1">${this.userRoles.join(', ') || 'Sin rol'}</p>
                         </div>
 
                         <nav class="py-2">
-                            <a href="/admin.html" 
-                               class="block px-4 py-2 text-sm text-stone-300 hover:bg-emerald-600 hover:text-white transition">
-                                📋 Panel Principal
-                            </a>
-                            <a href="/admin_solicitudes.html" 
-                               class="block px-4 py-2 text-sm text-stone-300 hover:bg-emerald-600 hover:text-white transition">
-                                📝 Solicitudes
-                            </a>
-                            <a href="/admin_personal.html" 
-                               class="block px-4 py-2 text-sm text-stone-300 hover:bg-emerald-600 hover:text-white transition">
-                                👥 Personal
-                            </a>
-                            <a href="/admin_usuarios.html" 
-                               class="block px-4 py-2 text-sm text-stone-300 hover:bg-emerald-600 hover:text-white transition">
-                                 Usuarios
-                            </a>
+                            ${menuItems}
                         </nav>
 
                         <div class="border-t border-stone-700 p-2">
@@ -167,6 +206,95 @@ class NavbarManager {
     }
 
     /**
+     * Genera los items del menú según permisos del usuario
+     */
+    generateMenuItems() {
+        const items = [];
+
+        // Panel Principal - todos los autenticados
+        items.push(this.menuItem('/admin.html', '📋', 'Panel Principal'));
+
+        // Solicitudes
+        if (this.tienePermiso('solicitudes.ver')) {
+            items.push(this.menuItem('/admin_solicitudes.html', '📝', 'Solicitudes'));
+        }
+
+        // Personal
+        if (this.tieneAlgunPermiso(['personal.ver', 'personal.gestionar'])) {
+            items.push(this.menuItem('/admin_personal.html', '👥', 'Personal'));
+        }
+
+        // Configuración (submenú)
+        const configItems = [];
+        if (this.tienePermiso('config.alquiler')) {
+            configItems.push(this.menuItem('/config_alquiler.html', '🏠', 'Alquiler de Salón', true));
+        }
+        if (this.tienePermiso('config.talleres')) {
+            configItems.push(this.menuItem('/config_talleres.html', '🎨', 'Talleres', true));
+        }
+        if (this.tienePermiso('config.servicios')) {
+            configItems.push(this.menuItem('/config_servicios.html', '✨', 'Servicios', true));
+        }
+        if (this.tienePermiso('config.bandas')) {
+            configItems.push(this.menuItem('/config_bandas.html', '🎸', 'Bandas', true));
+        }
+
+        if (configItems.length > 0) {
+            items.push(`
+                <div class="px-4 py-1 text-xs text-stone-500 uppercase tracking-wider">Configuración</div>
+                ${configItems.join('')}
+            `);
+        }
+
+        // Usuarios - solo SUPER_ADMIN o con permiso usuarios.ver
+        if (this.tienePermiso('usuarios.ver')) {
+            items.push(`<div class="border-t border-stone-700 my-1"></div>`);
+            items.push(this.menuItem('/admin_usuarios.html', '🔑', 'Usuarios'));
+        }
+
+        return items.join('');
+    }
+
+    /**
+     * Genera HTML de un item de menú
+     */
+    menuItem(href, emoji, text, isSubitem = false) {
+        const padding = isSubitem ? 'pl-8' : 'px-4';
+        return `
+            <a href="${href}" 
+               class="block ${padding} py-2 text-sm text-stone-300 hover:bg-emerald-600 hover:text-white transition">
+                ${emoji} ${text}
+            </a>
+        `;
+    }
+
+    /**
+     * Obtiene emoji para un rol
+     */
+    getRolEmoji(rol) {
+        const emojis = {
+            'SUPER_ADMIN': '🔑',
+            'ADMIN': '⚙️',
+            'OPERADOR': '📋',
+            'VIEWER': '👁️'
+        };
+        return emojis[rol] || '👤';
+    }
+
+    /**
+     * Formatea nombre del rol
+     */
+    formatRolName(rol) {
+        const nombres = {
+            'SUPER_ADMIN': 'Super Admin',
+            'ADMIN': 'Admin',
+            'OPERADOR': 'Operador',
+            'VIEWER': 'Viewer'
+        };
+        return nombres[rol] || rol;
+    }
+
+    /**
      * Inyecta el navbar en la página
      * @param {string} selector - Selector CSS donde inyectar el navbar (ej: 'body')
      */
@@ -179,7 +307,7 @@ class NavbarManager {
 
         const navbarHTML = this.generateNavbarHTML();
         container.insertAdjacentHTML('afterbegin', navbarHTML);
-        
+
     }
 
     /**
@@ -195,12 +323,30 @@ class NavbarManager {
     }
 
     /**
-     * Verifica si el usuario es admin
+     * Protege una página que requiere un permiso específico
+     */
+    protectWithPermiso(permiso) {
+        if (!this.protectAdminPage()) return false;
+
+        if (!this.tienePermiso(permiso)) {
+            console.warn(`Acceso denegado: usuario no tiene permiso '${permiso}'`);
+            alert('No tienes permisos para acceder a esta página.');
+            window.location.href = '/admin.html';
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Verifica si el usuario es admin (legacy - usar tieneRol o tienePermiso)
      */
     isAdmin() {
-        return this.isAuthenticated && this.userRole === 'admin';
+        return this.isAuthenticated && (this.userRole === 'admin' || this.userRoles.includes('SUPER_ADMIN') || this.userRoles.includes('ADMIN'));
     }
 }
+
+// Variable global para que el botón de logout funcione
+let navbarManager = null;
 
 /**
  * IMPORTANTE: Este archivo NO se auto-inicializa.
@@ -210,9 +356,85 @@ class NavbarManager {
  *   <script src="/navbar.js"></script>
  *   <script>
  *     document.addEventListener('DOMContentLoaded', () => {
- *       const navbar = new NavbarManager();
- *       navbar.protectAdminPage();
- *       navbar.injectNavbar('body');
+ *       navbarManager = new NavbarManager();
+ *       navbarManager.protectAdminPage();
+ *       navbarManager.injectNavbar('body');
  *     });
  *   </script>
+ * 
+ * Para proteger con permiso específico:
+ *   navbarManager.protectWithPermiso('usuarios.ver');
+ * 
+ * Para verificar permisos en código:
+ *   if (navbarManager.tienePermiso('solicitudes.editar')) { ... }
  */
+
+// ============================================================
+// FUNCIONES HELPER GLOBALES PARA PERMISOS
+// ============================================================
+
+/**
+ * Verifica si el usuario tiene un permiso específico
+ * @param {string} permiso - El permiso a verificar (ej: 'config.alquiler')
+ * @returns {boolean}
+ */
+function tienePermiso(permiso) {
+    return navbarManager && navbarManager.tienePermiso(permiso);
+}
+
+/**
+ * Verifica si el usuario tiene alguno de los permisos
+ * @param {string[]} permisos - Array de permisos
+ * @returns {boolean}
+ */
+function tieneAlgunPermiso(permisos) {
+    return navbarManager && navbarManager.tieneAlgunPermiso(permisos);
+}
+
+/**
+ * Verifica si el usuario puede editar (tiene permisos de escritura)
+ * @param {string} modulo - El módulo (config, solicitudes, personal, etc)
+ * @returns {boolean}
+ */
+function puedeEditar(modulo) {
+    if (!navbarManager) return false;
+    // SUPER_ADMIN y ADMIN pueden editar todo
+    if (navbarManager.tieneRol('SUPER_ADMIN') || navbarManager.tieneRol('ADMIN')) return true;
+    // Para otros roles, verificar permiso específico
+    const permisosEscritura = {
+        'config': ['config.alquiler', 'config.talleres', 'config.servicios', 'config.bandas'],
+        'alquiler': ['config.alquiler'],
+        'talleres': ['config.talleres'],
+        'servicios': ['config.servicios'],
+        'bandas': ['config.bandas'],
+        'solicitudes': ['solicitudes.crear', 'solicitudes.editar'],
+        'personal': ['personal.gestionar'],
+        'usuarios': ['usuarios.crear', 'usuarios.editar']
+    };
+    const permisos = permisosEscritura[modulo] || [];
+    return permisos.some(p => navbarManager.tienePermiso(p));
+}
+
+/**
+ * Oculta elementos que requieren permisos de escritura
+ * Busca elementos con data-requiere-permiso y los oculta si no tiene el permiso
+ */
+function aplicarPermisosUI() {
+    if (!navbarManager) return;
+
+    // Ocultar elementos con data-requiere-permiso
+    document.querySelectorAll('[data-requiere-permiso]').forEach(el => {
+        const permiso = el.dataset.requierePermiso;
+        if (!navbarManager.tienePermiso(permiso)) {
+            el.style.display = 'none';
+        }
+    });
+
+    // Ocultar elementos con data-requiere-edicion
+    document.querySelectorAll('[data-requiere-edicion]').forEach(el => {
+        const modulo = el.dataset.requiereEdicion;
+        if (!puedeEditar(modulo)) {
+            el.style.display = 'none';
+        }
+    });
+}

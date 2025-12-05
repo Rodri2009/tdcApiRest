@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Administración - Personal</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
       --color-primary: #581c87;
@@ -29,36 +31,36 @@
 
     h1 {
       color: var(--color-secondary);
-      margin-top: 2rem;
-    }
-
-    a {
-      color: var(--color-secondary);
-      text-decoration: none;
-      transition: all 0.3s ease;
-    }
-
-    a:hover {
-      opacity: 0.8;
+      margin: 0;
     }
   </style>
 </head>
+
 <body>
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <h1 class="text-4xl font-bold">Administrar Personal</h1>
-    <p class="mt-4 text-gray-400">Sección para administrar personal. Añade, edita o elimina perfiles de personal.</p>
-    <p class="mt-4"><a href="/admin.html">← Volver al panel</a></p>
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <a href="admin.html"
+        style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
+        <i class="fas fa-arrow-left"></i> Volver al Panel
+      </a>
+      <h1 class="text-4xl font-bold">Administrar Personal</h1>
+      <div style="width: 140px;"></div>
+    </div>
+    <p class="mt-4 text-gray-400">Sección para administrar personal. La gestión completa está disponible en <a
+        href="config_alquiler.html#personal" style="color: var(--color-secondary);">Configuración de Alquiler →
+        Personal</a>.</p>
   </main>
 
   <script src="/navbar.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const navbar = new NavbarManager();
-      if (!navbar.protectAdminPage()) {
+      navbarManager = new NavbarManager();
+      if (!navbarManager.protectAdminPage()) {
         return; // Salir si no está autenticado
       }
-      navbar.injectNavbar('body');
+      navbarManager.injectNavbar('body');
     });
   </script>
 </body>
+
 </html>
