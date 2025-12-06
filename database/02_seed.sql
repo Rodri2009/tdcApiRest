@@ -13,199 +13,206 @@ SET CHARACTER SET utf8mb4;
 -- ---------------------------------------------------------------------------
 INSERT INTO opciones_tipos (id_evento, nombre_para_mostrar, descripcion, categoria, es_publico) VALUES
 -- === ALQUILER_SALON (subtipos para alquiler del salón) ===
-('SIN_SERVICIO_DE_MESA', 'Sin Servicio de Mesa (en desuso)', '🏠 **PACK BÁSICO - ALQUILER SIN SERVICIO**
+('INFANTILES', 'INFANTILES: Cumpleaños Infantiles hasta 12 años (SERVICIO COMPLETO)', '🎈 **CUMPLEAÑOS INFANTILES**
 
-✅ **INCLUYE:**
-🍳 Cocina totalmente equipada:
-   • Cocina a gas y eléctrica
-   • Horno eléctrico y microondas
-   • 2 heladeras + freezer de 200 litros
-
-🍽️ Vajilla completa para 120 personas:
-   • Vasos de vidrio
-   • Platos llanos y platos chicos
-   • Cubiertos (juego completo por persona)
-   • Fuentes de vidrio
-   • Juegos de jarra y balde para hielo
-
-🔥 Parrilla y horno de barro
-
-❌ **NO INCLUYE:**
-   • Personal de servicio
-   • Limpieza post-evento
-
-⚠️ **NOTA:** Este pack está actualmente en desuso.', 'ALQUILER_SALON', 0),
-
-('CON_SERVICIO_DE_MESA', 'Con Servicio de Mesa', '🌟 **PACK INTERMEDIO - CON SERVICIO DE MESA**
-
-✅ **INCLUYE TODO LO DEL PACK BÁSICO:**
-🍽️ Vajilla para 120 personas
-🍳 Cocina completamente equipada
-🔥 Parrilla y horno de barro
-
-➕ **MÁS PERSONAL DE SERVICIO:**
-👩‍🍳 Encargada general
-👨‍🍳 Cocinera
-🚪 Personal de puerta
-🍷 Meseras (según cantidad de invitados)
-👨‍🍳 Ayudante de cocina (para eventos grandes)
-
-💫 **SERVICIO INCLUIDO:**
-   • Servimos TODO lo que el cliente trae
-   • Atención completa a los invitados
-   • 🧹 Limpieza total del salón al finalizar
-
-📌 **IDEAL PARA:** Eventos formales, casamientos, cumpleaños de adultos, aniversarios.', 'ALQUILER_SALON', 1),
-
-('INFORMALES', 'Informales', '🎉 **PACK BÁSICO AMPLIADO - FIESTAS INFORMALES**
-
-✅ **INCLUYE TODO LO DEL PACK BÁSICO:**
-🍽️ Vajilla para 120 personas
-🍳 Cocina completamente equipada
-🔥 Parrilla y horno de barro
-
-➕ **PLUS:**
-👩 Encargada general
-🚪 Personal de puerta (recibe a los invitados)
-🧹 Limpieza del salón al finalizar
-
-💡 **CONCEPTO:**
-Ideal para fiestas más "descontracturadas" donde los invitados se sirven solos (tipo picada, asado informal, etc.)
-
-📌 **IDEAL PARA:** Reuniones de amigos, cumpleaños informales, juntadas familiares, after office.', 'ALQUILER_SALON', 1),
-
-('INFANTILES', 'Infantiles', '🎈 **PACK INFANTIL - CUMPLEAÑOS DE NIÑOS**
-
-✅ **INCLUYE:**
-
-👥 **Personal:**
-   • 👩 Encargada general
-   • 🚪 Encargada de puerta
-   • 👨‍🍳 Cocinera
-
-🎮 **Entretenimiento:**
-   • 🏰 Inflable 3x3
-   • ⚽ Dos metegoles
-   • 🏓 Ping Pong
-   • 🎱 Pool
-   • 🧱 Jenga gigante
-   • ⚽ Cancha de fútbol (exclusiva hasta 12 años)
-   • 🎵 Música y juego de luces
-
-🍽️ **Mobiliario y utensilios:**
-   • Mesas, sillas y mantelería
-   • Bowls para snacks
-   • Platos descartables
-   • Servilleteros con servilletas
-   • Vasos descartables
-   • Botellas para jugo/agua
-
-🏠 **Instalaciones:**
-   • Uso de barra, heladera y freezer
-   • Baño equipado
-   • ⏰ 20 min previos para decorar (sin cargo)
+✅ **INCLUYE:** 
+• 👩 Encargada general
+• 🚪 Encargada de puerta
+• 👨‍🍳 Uso de cocina completa con cocinera
+• 🏰 Inflable 3x3
+• ⚽ Dos metegoles, Ping Pong, Pool y Jenga gigante
+• 🪑 Mesas, sillas y mantelería
+• 🍽️ Utensilios de mesa:
+   - Bowls de plástico para palitos, papitas y chisitos
+   - Platos descartables para hamburguesas, panchos, tortas
+   - Servilleteros con servilletas por mesa
+   - Vasos descartables (según cantidad de invitados)
+   - Una botella por mesa para jugo o agua
+• 🚽 Baño equipado (papel higiénico y toallas de papel)
+• 🍺 Uso de barra, heladera y freezer
+• 🎵 Música y juego de luces
+• ⚽ Cancha de fútbol (exclusiva para niños hasta 12 años)
+• ⏰ 20 minutos previos sin cargo para decoración
 
 ❌ **NO INCLUYE:**
-   • Bebidas ni alimentos
-   • Animación o fotografía
-   • Vajilla de cristal ni cubiertos de metal
+• Bebidas ni alimentos
+• Animación, fotografía o servicios similares
+• Vajilla o vasos de cristal
+• Cubiertos de metal
 
-📋 **NORMAS IMPORTANTES:**
-1️⃣ Pago de cuotas entre el 1° y 10° de cada mes
-2️⃣ Lista de invitados con 1 día de anticipación
-3️⃣ Saldo restante 1 día antes del evento
-4️⃣ Solo personal autorizado en cocina
-5️⃣ Cancha solo para niños hasta 12 años
-6️⃣ Responsabilidad por daños o pérdidas
-7️⃣ Recargos por incumplimiento', 'ALQUILER_SALON', 1),
+📋 **NORMAS:**
+1️⃣ Realizar el pago de cuotas entre el 1° y 10° de cada mes.
+2️⃣ Enviar la lista de invitados con un día de anticipación al evento.
+3️⃣ Cancelar el saldo restante un día antes del evento.
+4️⃣ Respetar que solo el personal autorizado puede ingresar a la cocina.
+5️⃣ El uso de la cancha está destinado únicamente a niños y niñas hasta 12 años de edad.
+6️⃣ Asumir responsabilidad por cualquier daño o pérdida de elementos.
+7️⃣ Aplicaremos recargos en caso de no seguir estas indicaciones.', 'ALQUILER_SALON', 1),
 
-('ADOLESCENTES', 'Adolescentes', '🎧 **PACK ADOLESCENTES - FIESTAS DE 15 Y MÁS**
+('INFORMALES', 'INFORMALES: Juntadas familiares, de amigos, festejos tranquilos, con uso de parrilla (SERVICIO ECONÓMICO)', '🎉 **SERVICIO ECONÓMICO**
 
-🌟 **10 AÑOS DE EXPERIENCIA** en fiestas juveniles
+💡 Este servicio está pensado para realizar eventos simples, sin complejidades, para comidas frías o parrilladas, sin uso de los elementos de la cocina (sólo tablas y cubiertos de cocina)
 
 ✅ **INCLUYE:**
+• 👩 Encargada/o general y control de puerta
+• 🪑 Mesas y sillas
+• 🔥 Uso de parrilla
+• 🚿 Uso bachas, mesadas, cubiertos de cocina y barra
+• ☕ Uso de pava eléctrica, heladera y freezer
+• 🚽 Baño equipado (papel higiénico y toallas de papel)
+• 🎵 Equipo de música
+• ⚽ Dos metegoles, Ping Pong, Pool y Jenga gigante
 
-🔊 **Sonido e Iluminación profesional:**
-   • Sistema de sonido de alta potencia
-   • Luces LED y efectos
-   • Máquina de humo
+❌ **NO INCLUYE:**
+• Uso de horno, hornallas, plancheta o freidora.
+• Cocinera ni ayudantes
+• Meseras o personal de servicio
+• Mantelería ni centros de mesa
+• Vajilla, utensilios o decoración
+• Servicios de DJ o animación
+• Tiempo extra para decoración o cocina
+• Cancha de futbol
 
-🎵 **DJ Profesional:**
-   • El mejor DJ para fiestas de jóvenes
-   • Música actual y pedidos especiales
-   • Conducción de la fiesta
+⚠️ **CONDICIONES DEL SERVICIO:**
+• El cliente se debe encargarse del servicio de catering, preparación de mesas y mantenimiento del salón
+• El volumen de música está limitado (sonido acorde al salón)
+• No se permiten DJ ni servicios de animación con parlantes externos
+• Prohibido el uso de la cancha de fútbol
+• Se cobra depósito de garantía reembolsable al finalizar el evento
 
-💃 **Concepto de la fiesta:**
-   • Formato tipo boliche
-   • La cumpleañera es la PROTAGONISTA de la noche
-   • Entradas controladas
-   • Ambiente seguro
+📋 **NORMAS:**
+1️⃣ Abonar las cuotas entre el 1° y 10° de cada mes
+2️⃣ Enviar lista de invitados con 24 horas de anticipación
+3️⃣ Cancelar saldo pendiente un día antes del evento
+4️⃣ Responsabilidad por cualquier daño o pérdida de elementos
+5️⃣ Recargos por incumplimiento de las normas establecidas', 'ALQUILER_SALON', 1),
 
-📌 **IDEAL PARA:** Fiestas de 15, cumpleaños de adolescentes, egresados.
+('CON_SERVICIO_DE_MESA', 'FIESTAS de 15 / 18 / casamientos / aniversarios (SERVICIO COMPLETO)', '🌟 **SERVICIO COMPLETO**
 
-⚠️ **HORARIOS:** Viernes y Sábados de 20:00 a 04:00', 'ALQUILER_SALON', 1),
+✅ **INCLUYE:**
+• 👩 Encargada general
+• 🚪 Encargada de puerta
+• 👨‍🍳 Cocinera y uso completo de cocina
+• 🍷 Meseras según cantidad de invitados
+• 🪑 Mesas, sillas y mantelería negra con camino blanco
+• 🍽️ Utensilios de mesa:
+   - Bandejas y bowls de plástico para entradas
+   - Vajilla y vasos de cristal
+   - Cubiertos de metal
+   - Servilleteros con servilletas por mesa
+   - Una botella por mesa para jugo o agua
+• 🎮 Equipamiento de entretenimiento:
+   - Dos metegoles, Ping Pong, Pool y Jenga gigante
+• 🔊 Sonido profesional:
+   - Micrófonos y ecualización
+   - Sistema PA JBL (alta definición)
+   - Juego de luces Proton
+   - Backline completo (amplificadores de guitarra, bajo y cuerpo de batería) para bandas en vivo
+• 🚽 Baño equipado (papel higiénico y toallas de papel)
+• 🍺 Uso de barra, heladera y freezer
 
-('BABY_SHOWERS', 'Baby Showers', '👶 **PACK BABY SHOWER**
+❌ **NO INCLUYE:**
+• DJ, decoración o animación
+• Globología o servicios similares
+• Tiempo extra para decoración (debe considerarse dentro de la duración total del evento)
+• Cancha de futbol
 
-🎀 Celebrá la llegada de tu bebé en nuestro hermoso salón
+⚠️ **CONDICIONES DEL SERVICIO:**
+• Prohibido el uso de la cancha de fútbol
+• Prohibido permanecer en la vereda después de las 00:00 hs
 
-✅ **INCLUYE TODO LO DEL PACK INFANTIL:**
+📋 **NORMAS:**
+1️⃣ Abonar las cuotas entre el 1° y 10° de cada mes
+2️⃣ Enviar lista de invitados con 24 horas de anticipación
+3️⃣ Cancelar saldo pendiente un día antes del evento
+4️⃣ Responsabilidad por cualquier daño o pérdida de elementos
+5️⃣ Recargos por incumplimiento de las normas establecidas', 'ALQUILER_SALON', 1),
 
-👥 **Personal:**
-   • 👩 Encargada general
-   • 🚪 Encargada de puerta
-   • 👨‍🍳 Cocinera
+('BABY_SHOWERS', 'BABY SHOWERS / BAUTISMOS / COMUNIONES', '👶 **BABY SHOWERS / BAUTISMOS / COMUNIONES**
 
-🎮 **Entretenimiento disponible:**
-   • Espacio decorable a tu gusto
-   • 🎵 Música ambiental
-   • Zona para juegos y dinámicas
+✅ **INCLUYE:**
+• 👩 Encargada general
+• 🚪 Encargada de puerta
+• 👨‍🍳 Uso de cocina completa con cocinera
+• 🏰 Inflable 3x3
+• ⚽ Dos metegoles, Ping Pong, Pool y Jenga gigante
+• 🪑 Mesas, sillas y mantelería
+• 🍽️ Utensilios de mesa descartables:
+   - Bowls de plástico para palitos, papitas y chisitos
+   - Platos descartables para hamburguesas, panchos, tortas
+   - Servilleteros con servilletas por mesa
+   - Vasos descartables (según cantidad de invitados)
+   - Una botella por mesa para jugo o agua
+• 🚽 Baño equipado (papel higiénico y toallas de papel)
+• 🍺 Uso de barra, heladera y freezer
+• 🎵 Música y juego de luces
+• ⚽ Cancha de fútbol (exclusiva para niños hasta 12 años)
+• ⏰ 20 minutos previos sin cargo para decoración
 
-🍽️ **Mobiliario:**
-   • Mesas y sillas
-   • Mantelería
-   • Vajilla completa
+❌ **NO INCLUYE:**
+• Meseras o personal adicional de servicio
+• Animación, fotografía o servicios similares
+• Vajilla o cubiertos de metal
+• Decoración especializada
 
-💡 **SUGERENCIAS:**
-   • Ideal para 20-60 personas
-   • Podés traer tu propia decoración temática
-   • Mesa dulce, torta y catering por tu cuenta
+⚠️ **CONDICIONES DEL SERVICIO:**
+• No se requiere depósito de garantía
+• Volumen de música moderado (acorde al tipo de evento)
+• Uso de cancha exclusivo para niños hasta 12 años
 
-📌 **IDEAL PARA:** Baby showers, gender reveal, bautismos pequeños.', 'ALQUILER_SALON', 1),
+📋 **NORMAS:**
+1️⃣ Abonar las cuotas entre el 1° y 10° de cada mes
+2️⃣ Enviar lista de invitados con 24 horas de anticipación
+3️⃣ Cancelar saldo pendiente un día antes del evento
+4️⃣ Solo personal autorizado puede ingresar a la cocina
+5️⃣ Responsabilidad por cualquier daño o pérdida de elementos
+6️⃣ Recargos por incumplimiento de las normas establecidas', 'ALQUILER_SALON', 1),
+
+('ADOLESCENTES', 'ADOLESCENTES: Cumpleaños de 13, 14, 15, 16 y 17 años (excepto los 15 de chicas)', '🎧 **CUMPLEAÑOS ADOLESCENTES**
+
+✅ **INCLUYE:**
+• 👩 Encargada general
+• 🚪 Encargada de puerta
+• 👨‍🍳 Uso de cocina completa con cocinera
+• ⚽ Dos metegoles, Ping Pong, Pool y Jenga gigante
+• 🪑 Mesas, sillas y mantelería
+• 🍽️ Utensilios de mesa descartables:
+   - Bowls de plástico para palitos, papitas y chisitos
+   - Platos descartables para hamburguesas, panchos, tortas
+   - Servilleteros con servilletas por mesa
+   - Vasos descartables (según cantidad de invitados)
+   - Una botella por mesa para jugo o agua
+• 🚽 Baño equipado (papel higiénico y toallas de papel)
+• 🍺 Uso de barra, heladera y freezer
+• 🎵 Música y juego de luces
+• ⏰ 20 minutos previos sin cargo para decoración
+
+❌ **NO INCLUYE:**
+• Cancha de futbol', 'ALQUILER_SALON', 1),
 
 -- === FECHA_BANDAS (categoría independiente) ===
-('FECHA_BANDAS', 'Fecha para Bandas', '🎸 **ALQUILER PARA EVENTOS MUSICALES**
-
-🎤 Convertí tu fecha en un show memorable
+('FECHA_BANDAS', 'Fecha para bandas en vivo', '🎸 **FECHA PARA BANDAS EN VIVO**
 
 ✅ **INCLUYE:**
+• 🎤 Coordinación de bandas
+• 📢 Flyers y publicaciones
+• 🚪 Encargada de puerta
+• 👨‍🍳 Uso de cocina completa con cocinera
+• ⚽ Dos metegoles, Ping Pong, Pool y Jenga gigante
+• 🪑 Mesas, sillas y mantelería
+• 🍽️ Utensilios de mesa descartables:
+   - Bowls de plástico para palitos, papitas y chisitos
+   - Platos descartables para hamburguesas, panchos, tortas
+   - Servilleteros con servilletas por mesa
+   - Vasos descartables (según cantidad de invitados)
+   - Una botella por mesa para jugo o agua
+• 🚽 Baño equipado (papel higiénico y toallas de papel)
+• 🍺 Uso de barra, heladera y freezer
+• 🎵 Música y juego de luces
+• ⏰ 20 minutos previos sin cargo para decoración
 
-🔊 **Sonido Profesional:**
-   • Consola de mezcla
-   • Sistema de PA de alta potencia
-   • Monitores de escenario
-   • Microfonería completa
-
-💡 **Iluminación:**
-   • Luces de escenario
-   • Efectos LED
-   • Máquina de humo
-
-🎭 **Escenario:**
-   • Escenario montado
-   • Backline básico disponible
-
-👥 **Personal técnico:**
-   • Sonidista
-   • Personal de puerta
-   • Seguridad (según evento)
-
-📌 **HORARIOS DISPONIBLES:**
-   • Viernes: 18:00 a 04:00
-   • Sábados: 18:00 a 04:00
-   • Domingos: 14:00 a 23:00
-
-💰 **MODALIDAD:** División de puerta o alquiler fijo (a convenir)', 'FECHA_BANDAS', 1),
+❌ **NO INCLUYE:**
+• Cancha de futbol', 'FECHA_BANDAS', 0),
 
 -- === SERVICIOS (cuidado personal) ===
 ('MASAJES', 'Masajes', '💆 **SERVICIO DE MASAJES**
@@ -254,24 +261,7 @@ Depilación profesional con cera
 
 ('DEPILACION_DEFINITIVA', 'Depilación Definitiva', '⚡ **DEPILACIÓN DEFINITIVA**
 
-Olvidate del vello con tecnología láser
-
-✅ **ZONAS TRATABLES:**
-   • Rostro
-   • Axilas  
-   • Brazos
-   • Piernas
-   • Zona íntima
-   • Espalda
-
-🔬 **TECNOLOGÍA:** Láser de última generación
-
-📋 **INCLUYE:**
-   • Evaluación inicial gratuita
-   • Sesiones programadas
-   • Seguimiento personalizado
-
-📍 **ATENCIÓN:** Con turno previo - Consultar disponibilidad', 'SERVICIOS', 1),
+Completar datos', 'SERVICIOS', 0),
 
 -- === TALLERES_ACTIVIDADES ===
 ('ARTE', 'Arte y Manualidades', '🎨 **TALLERES DE ARTE Y MANUALIDADES**
