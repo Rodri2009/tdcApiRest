@@ -144,6 +144,7 @@ const App = {
             tarifas: '/api/opciones/tarifas',
             duraciones: '/api/opciones/duraciones',
             horas: '/api/opciones/horarios',
+            cantidades: '/api/opciones/cantidades',
             fechasOcupadas: '/api/opciones/fechas-ocupadas',
             config: '/api/opciones/config'
         };
@@ -164,21 +165,23 @@ const App = {
         )
 
             .then(results => {
-                const [tipos, tarifas, duraciones, horas, fechasOcupadas, config] = results;
+                const [tipos, tarifas, duraciones, horas, cantidades, fechasOcupadas, config] = results;
 
                 this.tarifas = tarifas || [];
                 this.tiposDeEvento = tipos || [];
                 this.opcionesDuraciones = duraciones || {};
                 this.opcionesHoras = horas || {};
+                this.opcionesCantidades = cantidades || {};
                 this.fechasOcupadasSeguro = fechasOcupadas || [];
 
-                this.opcionesCantidades = this.tarifas.reduce((acc, tarifa) => {
-                    if (!acc[tarifa.tipo]) acc[tarifa.tipo] = new Set();
-                    acc[tarifa.tipo].add(`Hasta ${tarifa.max}`);
-                    return acc;
-                }, {});
+                // Formatear duraciones: convertir números a strings "X horas"
+                Object.keys(this.opcionesDuraciones).forEach(tipo => {
+                    this.opcionesDuraciones[tipo] = this.opcionesDuraciones[tipo].map(d => `${d} horas`);
+                });
+
+                // Formatear cantidades para el select
                 Object.keys(this.opcionesCantidades).forEach(tipo => {
-                    this.opcionesCantidades[tipo] = Array.from(this.opcionesCantidades[tipo]).sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/)));
+                    this.opcionesCantidades[tipo] = this.opcionesCantidades[tipo].map(c => c.label);
                 });
 
                 this.descripcionesTipos = {};
@@ -872,8 +875,8 @@ const App = {
         // (Esta es tu lógica original, que está bien, la adaptamos ligeramente)
         const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
         const nombreParaMostrar = tipoSeleccionado ? tipoSeleccionado.nombreParaMostrar : '';
-        const montoSena = tipoSeleccionado ? tipoSeleccionado.montoSena : 0;
-        const depositoGarantia = tipoSeleccionado ? tipoSeleccionado.depositoGarantia : 0;
+        const montoSena = tipoSeleccionado ? parseFloat(tipoSeleccionado.montoSena) || 0 : 0;
+        const depositoGarantia = tipoSeleccionado ? parseFloat(tipoSeleccionado.depositoGarantia) || 0 : 0;
         const duracionNum = parseInt((duracion.match(/\d+/) || ['0'])[0]);
 
         let detalleHtml = '<ul>';
@@ -900,30 +903,58 @@ const App = {
 
 
         if (tipoId && cantidad && duracion && fechaSeleccionada) {
-            const cantidadNum = parseInt(cantidad.match(/\d+/)[0]);
-            const fechaEventoStr = `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, '0')}-${String(fechaSeleccionada.getDate()).padStart(2, '0')}`;
+            // Extraer el número mínimo del rango seleccionado (ej: "1 a 40 personas" -> 1)
+            const cantidadMatch = cantidad.match(/(\d+)\s*a\s*(\d+)/);
+            if (!cantidadMatch) {
+                this.elements.presupuestoDetalleDiv.insertAdjacentHTML('beforeend', '<p style="color:red;">Formato de cantidad inválido.</p>');
+                return;
+            }
+            const cantidadMin = parseInt(cantidadMatch[1]);
+            const cantidadMax = parseInt(cantidadMatch[2]);
+
+            const fechaEventoDate = new Date(fechaSeleccionada);
+
+            // Buscar la tarifa que coincida con tipo, rango de cantidad y fecha
             const reglasAplicables = this.tarifas.filter(r => {
                 const tipoCoincide = r.tipo.toUpperCase() === tipoId.toUpperCase();
-                const cantidadCoincide = cantidadNum >= r.min && cantidadNum <= r.max;
-                const fechaCoincide = fechaEventoStr >= r.fechaVigencia;
+                // Verificar que el rango seleccionado coincide exactamente con el rango de la tarifa
+                const cantidadCoincide = r.cantidadMin === cantidadMin && r.cantidadMax === cantidadMax;
+                // Comparar fechas correctamente
+                const vigenciaDesde = new Date(r.vigenciaDesde);
+                const fechaCoincide = fechaEventoDate >= vigenciaDesde;
                 return tipoCoincide && cantidadCoincide && fechaCoincide;
             });
 
+            console.log('[DEBUG PRECIO] tipoId:', tipoId, 'cantidadMin:', cantidadMin, 'cantidadMax:', cantidadMax);
+            console.log('[DEBUG PRECIO] tarifas disponibles:', this.tarifas.length);
+            console.log('[DEBUG PRECIO] reglas aplicables:', reglasAplicables.length, reglasAplicables);
+
             if (reglasAplicables.length > 0) {
-                reglasAplicables.sort((a, b) => new Date(b.fechaVigencia) - new Date(a.fechaVigencia));
+                reglasAplicables.sort((a, b) => new Date(b.vigenciaDesde) - new Date(a.vigenciaDesde));
                 const reglaFinal = reglasAplicables[0];
-                const precioCalculado = reglaFinal.precioPorHora * duracionNum;
+                const precioCalculado = parseFloat(reglaFinal.precioPorHora) * duracionNum;
+                console.log('[DEBUG PRECIO] reglaFinal:', reglaFinal, 'duracionNum:', duracionNum, 'precioCalculado:', precioCalculado);
 
                 let detallePrecios = '<ul>';
                 if (precioCalculado > 0) detallePrecios += `<li style="color: #555;"><strong>Precio básico:</strong> $${this.convertirNumero(precioCalculado)}</li>`;
                 if (depositoGarantia > 0) detallePrecios += `<li style="color: #555;"><strong>Depósito reintegrable:</strong> $${this.convertirNumero(depositoGarantia)}</li>`;
                 detallePrecios += '</ul>';
-                this.elements.detallePreciosDiv.innerHTML = detallePrecios;
+
+                console.log('[DEBUG DOM] detallePreciosDiv:', this.elements.detallePreciosDiv);
+                console.log('[DEBUG DOM] presupuestoTotalDiv:', this.elements.presupuestoTotalDiv);
+
+                if (this.elements.detallePreciosDiv) {
+                    this.elements.detallePreciosDiv.innerHTML = detallePrecios;
+                }
 
                 // --- ¡NUEVA LÓGICA DE TOTAL! ---
                 const totalConDeposito = parseFloat(precioCalculado) + parseFloat(depositoGarantia);
+                console.log('[DEBUG DOM] totalConDeposito:', totalConDeposito);
 
-                this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${this.convertirNumero(totalConDeposito)}`;
+                if (this.elements.presupuestoTotalDiv) {
+                    this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${this.convertirNumero(totalConDeposito)}`;
+                    console.log('[DEBUG DOM] Total actualizado a:', this.elements.presupuestoTotalDiv.innerHTML);
+                }
 
                 // Añadimos la línea del depósito si es mayor que cero
                 if (depositoGarantia > 0) {

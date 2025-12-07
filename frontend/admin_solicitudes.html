@@ -371,6 +371,77 @@
             <h2 style="margin: 0;">Panel de Administración de Solicitudes</h2>
             <div style="width: 140px;"></div>
         </div>
+
+        <!-- FILTROS -->
+        <div
+            style="background: #1a1a1a; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid rgba(240, 171, 252, 0.1);">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+                <!-- Búsqueda por texto -->
+                <div style="flex: 1; min-width: 200px;">
+                    <label
+                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Buscar</label>
+                    <input type="text" id="filtro-busqueda" placeholder="Cliente, ID, banda..."
+                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                </div>
+
+                <!-- Filtro por Estado -->
+                <div style="min-width: 150px;">
+                    <label
+                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Estado</label>
+                    <select id="filtro-estado"
+                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                        <option value="">Todos</option>
+                        <option value="Solicitado">Solicitado</option>
+                        <option value="Contactado">Contactado</option>
+                        <option value="Confirmado">Confirmado</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+
+                <!-- Filtro por Tipo -->
+                <div style="min-width: 180px;">
+                    <label
+                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Tipo</label>
+                    <select id="filtro-tipo"
+                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                        <option value="">Todos</option>
+                        <option value="ALQUILER_SALON">Alquiler del Salón</option>
+                        <option value="FECHA_BANDAS">Fecha para Bandas</option>
+                        <option value="TALLERES">Talleres</option>
+                        <option value="SERVICIOS">Servicios</option>
+                    </select>
+                </div>
+
+                <!-- Filtro por Fecha Desde -->
+                <div style="min-width: 150px;">
+                    <label
+                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Fecha
+                        Desde</label>
+                    <input type="date" id="filtro-fecha-desde"
+                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                </div>
+
+                <!-- Filtro por Fecha Hasta -->
+                <div style="min-width: 150px;">
+                    <label
+                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Fecha
+                        Hasta</label>
+                    <input type="date" id="filtro-fecha-hasta"
+                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                </div>
+
+                <!-- Botón Limpiar -->
+                <div>
+                    <button id="btn-limpiar-filtros"
+                        style="padding: 8px 16px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; cursor: pointer; font-size: 14px;">
+                        <i class="fas fa-times"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contador de resultados -->
+            <div id="contador-resultados" style="margin-top: 12px; color: #888; font-size: 13px;"></div>
+        </div>
     </div>
     <div class="table-container" id="admin-table-container">
         <div id="loader">Cargando solicitudes...</div>
@@ -398,6 +469,77 @@
             const table = document.getElementById('solicitudes-table');
             const loader = document.getElementById('loader');
             let notificationTimer;
+
+            // Datos originales para filtrado
+            let todasLasSolicitudes = [];
+
+            // Referencias a filtros
+            const filtroBusqueda = document.getElementById('filtro-busqueda');
+            const filtroEstado = document.getElementById('filtro-estado');
+            const filtroTipo = document.getElementById('filtro-tipo');
+            const filtroFechaDesde = document.getElementById('filtro-fecha-desde');
+            const filtroFechaHasta = document.getElementById('filtro-fecha-hasta');
+            const btnLimpiar = document.getElementById('btn-limpiar-filtros');
+            const contadorResultados = document.getElementById('contador-resultados');
+
+            // Event listeners para filtros
+            filtroBusqueda.addEventListener('input', aplicarFiltros);
+            filtroEstado.addEventListener('change', aplicarFiltros);
+            filtroTipo.addEventListener('change', aplicarFiltros);
+            filtroFechaDesde.addEventListener('change', aplicarFiltros);
+            filtroFechaHasta.addEventListener('change', aplicarFiltros);
+            btnLimpiar.addEventListener('click', limpiarFiltros);
+
+            function limpiarFiltros() {
+                filtroBusqueda.value = '';
+                filtroEstado.value = '';
+                filtroTipo.value = '';
+                filtroFechaDesde.value = '';
+                filtroFechaHasta.value = '';
+                aplicarFiltros();
+            }
+
+            function aplicarFiltros() {
+                const busqueda = filtroBusqueda.value.toLowerCase().trim();
+                const estado = filtroEstado.value;
+                const tipo = filtroTipo.value;
+                const fechaDesde = filtroFechaDesde.value;
+                const fechaHasta = filtroFechaHasta.value;
+
+                const filtradas = todasLasSolicitudes.filter(s => {
+                    // Filtro por búsqueda de texto
+                    if (busqueda) {
+                        const textoCompleto = [
+                            s.id,
+                            s.nombreCliente,
+                            s.subtipo,
+                            s.nombreBanda,
+                            s.tipoEventoId
+                        ].filter(Boolean).join(' ').toLowerCase();
+                        if (!textoCompleto.includes(busqueda)) return false;
+                    }
+
+                    // Filtro por estado
+                    if (estado && s.estado !== estado) return false;
+
+                    // Filtro por tipo (categoría)
+                    if (tipo) {
+                        const tipoNormalizado = tipo === 'TALLERES' ? 'TALLERES_ACTIVIDADES' : tipo;
+                        if (s.tipoEvento !== tipoNormalizado && s.tipoEvento !== tipo) return false;
+                    }
+
+                    // Filtro por fecha desde
+                    if (fechaDesde && s.fechaEvento && s.fechaEvento < fechaDesde) return false;
+
+                    // Filtro por fecha hasta
+                    if (fechaHasta && s.fechaEvento && s.fechaEvento > fechaHasta) return false;
+
+                    return true;
+                });
+
+                renderizarSolicitudes(filtradas);
+                contadorResultados.textContent = `Mostrando ${filtradas.length} de ${todasLasSolicitudes.length} solicitudes`;
+            }
 
             // Event delegation for button clicks
             tbody.addEventListener('click', (event) => {
@@ -481,84 +623,122 @@
                     if (!res.ok) throw new Error('Error al conectar con el servidor');
 
                     const data = await res.json();
-                    tbody.innerHTML = '';
 
                     if (data.length === 0) {
                         loader.textContent = 'No se encontraron solicitudes.';
                         return;
                     }
 
-                    data.forEach((solicitud) => {
-                        const tr = document.createElement('tr');
-                        tr.dataset.solicitudId = solicitud.id;
-                        tr.dataset.tipoEventoId = solicitud.tipoEventoId;
-                        tr.dataset.categoria = solicitud.tipoEvento || '';
-                        tr.dataset.origen = solicitud.origen || 'solicitud';
+                    // Guardar datos para filtrado
+                    todasLasSolicitudes = data;
 
-                        const fechaSolicitud = solicitud.fechaSolicitud ? new Date(solicitud.fechaSolicitud).toLocaleString('es-AR') : 'N/A';
-                        // Evitar desplazamiento por zona horaria: parsear la fecha evento como local añadiendo 'T00:00:00'
-                        const fechaEvento = solicitud.fechaEvento
-                            ? new Date(String(solicitud.fechaEvento) + 'T00:00:00').toLocaleDateString('es-AR')
-                            : 'N/A';
+                    // Renderizar todas las solicitudes
+                    renderizarSolicitudes(data);
+                    contadorResultados.textContent = `Mostrando ${data.length} de ${data.length} solicitudes`;
 
-                        let botones = '';
-                        // Mostrar Modificar y Eliminar siempre. Si está confirmado, mostrar Asignar y Orden.
-                        // Para eventos `id` viene como 'ev_<id>' y `solicitud.origen==='evento'`.
-                        const isEvento = solicitud.origen === 'evento';
-                        const isConfirmado = (String(solicitud.estado).toLowerCase() === 'confirmado');
+                    showNotification(`${data.length} solicitud${data.length !== 1 ? 'es' : ''} cargada${data.length !== 1 ? 's' : ''}`, 'success', 2500);
+                } catch (error) {
+                    console.error(error);
+                    loader.textContent = `Error: ${error.message}`;
+                }
+            }
 
-                        // Verificar permisos de edición
-                        const puedeEditarSolicitudes = puedeEditar('solicitudes');
-                        const puedeEliminarSolicitudes = tienePermiso('solicitudes.eliminar');
-                        const puedeCambiarEstado = tienePermiso('solicitudes.cambiar_estado');
-                        const puedeGestionarPersonal = tienePermiso('personal.gestionar');
+            function renderizarSolicitudes(solicitudes) {
+                tbody.innerHTML = '';
 
-                        // Botones base (solo si tiene permisos)
-                        if (puedeEditarSolicitudes) {
-                            if (isEvento) {
-                                botones += `<button class="action-btn btn-edit-event">Modificar</button>`;
-                            } else {
-                                botones += `<button class="action-btn btn-edit">Modificar</button>`;
-                            }
+                if (solicitudes.length === 0) {
+                    loader.style.display = 'block';
+                    loader.textContent = 'No se encontraron solicitudes con los filtros aplicados.';
+                    table.style.display = 'none';
+                    return;
+                }
+
+                solicitudes.forEach((solicitud) => {
+                    const tr = document.createElement('tr');
+                    tr.dataset.solicitudId = solicitud.id;
+                    tr.dataset.tipoEventoId = solicitud.tipoEventoId;
+                    tr.dataset.categoria = solicitud.tipoEvento || '';
+                    tr.dataset.origen = solicitud.origen || 'solicitud';
+
+                    const fechaSolicitud = solicitud.fechaSolicitud ? new Date(solicitud.fechaSolicitud).toLocaleString('es-AR') : 'N/A';
+                    // Evitar desplazamiento por zona horaria: parsear la fecha evento como local añadiendo 'T00:00:00'
+                    const fechaEvento = solicitud.fechaEvento
+                        ? new Date(String(solicitud.fechaEvento) + 'T00:00:00').toLocaleDateString('es-AR')
+                        : 'N/A';
+
+                    let botones = '';
+                    // Mostrar Modificar y Eliminar siempre. Si está confirmado, mostrar Asignar y Orden.
+                    // Para eventos `id` viene como 'ev_<id>' y `solicitud.origen==='evento'`.
+                    const isEvento = solicitud.origen === 'evento';
+                    const isConfirmado = (String(solicitud.estado).toLowerCase() === 'confirmado');
+
+                    // Verificar permisos de edición
+                    const puedeEditarSolicitudes = puedeEditar('solicitudes');
+                    const puedeEliminarSolicitudes = tienePermiso('solicitudes.eliminar');
+                    const puedeCambiarEstado = tienePermiso('solicitudes.cambiar_estado');
+                    const puedeGestionarPersonal = tienePermiso('personal.gestionar');
+
+                    // Botones base (solo si tiene permisos)
+                    if (puedeEditarSolicitudes) {
+                        if (isEvento) {
+                            botones += `<button class="action-btn btn-edit-event">Modificar</button>`;
+                        } else {
+                            botones += `<button class="action-btn btn-edit">Modificar</button>`;
                         }
+                    }
 
-                        if (puedeEliminarSolicitudes) {
-                            if (isEvento) {
-                                botones += `<button class="action-btn btn-delete-event">Eliminar</button>`;
-                            } else {
-                                botones += `<button class="action-btn btn-delete">Eliminar</button>`;
-                            }
+                    if (puedeEliminarSolicitudes) {
+                        if (isEvento) {
+                            botones += `<button class="action-btn btn-delete-event">Eliminar</button>`;
+                        } else {
+                            botones += `<button class="action-btn btn-delete">Eliminar</button>`;
                         }
+                    }
 
-                        if (isConfirmado) {
-                            if (puedeGestionarPersonal) {
-                                botones += `<button class="action-btn btn-assign" data-action="assign" data-id="${solicitud.id}" data-tipo="${solicitud.tipoEventoId}">Asignar Personal</button>`;
-                            }
-                            botones += `<button class="action-btn btn-work-order" data-action="work-order" data-id="${solicitud.id}">Orden de Trabajo</button>`;
+                    if (isConfirmado) {
+                        if (puedeGestionarPersonal) {
+                            botones += `<button class="action-btn btn-assign" data-action="assign" data-id="${solicitud.id}" data-tipo="${solicitud.tipoEventoId}">Asignar Personal</button>`;
                         }
+                        botones += `<button class="action-btn btn-work-order" data-action="work-order" data-id="${solicitud.id}">Orden de Trabajo</button>`;
+                    }
 
-                        // Si no tiene ningún permiso de edición, mostrar solo lectura
-                        if (!botones) {
-                            botones = '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
-                        }
+                    // Si no tiene ningún permiso de edición, mostrar solo lectura
+                    if (!botones) {
+                        botones = '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                    }
 
-                        // Mapear categoría a nombre legible
-                        const tiposLegibles = {
-                            'ALQUILER_SALON': 'Alquiler del Salón',
-                            'FECHA_BANDAS': 'Fecha para Bandas',
-                            'TALLERES': 'Taller',
-                            'SERVICIO': 'Servicio',
-                            'OTRO': 'Otro'
+                    // Mapear categoría a nombre legible
+                    const tiposLegibles = {
+                        'ALQUILER_SALON': 'Alquiler del Salón',
+                        'FECHA_BANDAS': 'Fecha para Bandas',
+                        'TALLERES': 'Taller',
+                        'TALLERES_ACTIVIDADES': 'Taller',
+                        'SERVICIO': 'Servicio',
+                        'SERVICIOS': 'Servicio',
+                        'OTRO': 'Otro'
+                    };
+                    const tipoLegible = tiposLegibles[solicitud.tipoEvento] || solicitud.tipoEvento;
+
+                    // Para ALQUILER_SALON, mostrar el subtipo específico (INFANTILES, INFORMALES, etc.)
+                    // Si no hay subtipo, usar tipoEventoId si es diferente de la categoría
+                    let subtipoDisplay = solicitud.subtipo;
+                    if (!subtipoDisplay && solicitud.tipoEvento === 'ALQUILER_SALON' && solicitud.tipoEventoId) {
+                        // Mapear IDs a nombres legibles
+                        const subtiposAlquiler = {
+                            'INFANTILES': 'Infantiles',
+                            'INFORMALES': 'Informales',
+                            'CON_SERVICIO_DE_MESA': 'Con servicio de mesa',
+                            'BABY_SHOWERS': 'Baby Showers',
+                            'ADOLESCENTES': 'Adolescentes'
                         };
-                        const tipoLegible = tiposLegibles[solicitud.tipoEvento] || solicitud.tipoEvento;
+                        subtipoDisplay = subtiposAlquiler[solicitud.tipoEventoId] || solicitud.tipoEventoId;
+                    }
+                    subtipoDisplay = subtipoDisplay || '<em>Sin especificar</em>';
 
-                        // Si no hay subtipo, mostrar "Sin especificar" para solicitudes antiguas
-                        const subtipoDisplay = solicitud.subtipo || '<em>Sin especificar</em>';
+                    // Banda/Artista: solo para eventos de bandas
+                    const bandaDisplay = solicitud.nombreBanda || '-';
 
-                        // Banda/Artista: solo para eventos de bandas
-                        const bandaDisplay = solicitud.nombreBanda || '-';
-
-                        tr.innerHTML = `
+                    tr.innerHTML = `
                             <td data-label="ID">${solicitud.id}</td>
                             <td data-label="Fecha Solicitud">${fechaSolicitud}</td>
                             <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
@@ -579,22 +759,15 @@
                             </td>
                         `;
 
-                        tbody.appendChild(tr);
-                    });
+                    tbody.appendChild(tr);
+                });
 
-                    loader.style.display = 'none';
-                    table.style.display = 'table';
-                    showNotification(`${data.length} solicitud${data.length !== 1 ? 'es' : ''} cargada${data.length !== 1 ? 's' : ''}`, 'success', 2500);
-                } catch (error) {
-                    console.error(error);
-                    loader.textContent = `Error: ${error.message}`;
-                }
+                loader.style.display = 'none';
+                table.style.display = 'table';
             }
 
             async function cambiarEstado(id, nuevoEstado) {
-                showNotification('Actualizando estado...', 'info', 1500);
-
-                try {
+                showNotification('Actualizando estado...', 'info', 1500); try {
                     let res;
                     // Si es un evento (id empieza con ev_), usamos endpoints de eventos
                     if (String(id).startsWith('ev_')) {

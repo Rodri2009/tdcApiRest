@@ -20,6 +20,7 @@ const getSolicitudes = async (req, res) => {
                     s.id_solicitud as id,
                     s.fecha_hora as fechaSolicitud,
                     s.nombre_completo as nombreCliente,
+                    s.tipo_de_evento as tipoEventoId,
                     CASE 
                         WHEN ot.categoria IS NOT NULL THEN ot.categoria
                         WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN 
@@ -49,6 +50,7 @@ const getSolicitudes = async (req, res) => {
                     CONCAT('ev_', e.id) as id,
                     e.creado_en as fechaSolicitud,
                     COALESCE(e.nombre_contacto, 'Sin contacto') as nombreCliente,
+                    'FECHA_BANDAS' as tipoEventoId,
                     'FECHA_BANDAS' as tipoEvento,
                     COALESCE(e.genero_musical, 'Sin género') as subtipo,
                     DATE_FORMAT(e.fecha, '%Y-%m-%d') as fechaEvento,

@@ -14,7 +14,15 @@ const getTiposDeEvento = async (req, res) => {
         conn = await pool.getConnection();
         // Permitimos filtrar por categoría: ?categoria=ALQUILER_SALON
         const categoria = req.query.categoria;
-        let sql = "SELECT `id_evento` as id, `nombre_para_mostrar` as nombreParaMostrar, `descripcion` as descripcion, `es_publico` as esPublico, IFNULL(`categoria`, 'OTRO') as categoria FROM `opciones_tipos`";
+        let sql = `SELECT 
+            id_evento as id, 
+            nombre_para_mostrar as nombreParaMostrar, 
+            descripcion, 
+            es_publico as esPublico, 
+            IFNULL(categoria, 'OTRO') as categoria,
+            IFNULL(monto_sena, 0) as montoSena,
+            IFNULL(deposito, 0) as depositoGarantia
+        FROM opciones_tipos`;
         let rows;
         if (categoria) {
             sql += " WHERE categoria = ?";
@@ -71,22 +79,60 @@ const getTarifas = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        // Renombramos las columnas para que coincidan con el código JS original
+        // Nueva estructura: precio por tipo + rango de cantidad
+        // El precio final = precio_por_hora × duracion_horas
         const rows = await conn.query(`
             SELECT 
                 pv.id_evento as tipo, 
-                od.duracion_horas as duracion,
-                pv.precio_anticipado as precioAnticipado, 
-                pv.precio_puerta as precioPuerta,
+                pv.cantidad_min as cantidadMin,
+                pv.cantidad_max as cantidadMax,
+                pv.precio_por_hora as precioPorHora,
                 pv.vigente_desde as vigenciaDesde,
                 pv.vigente_hasta as vigenciaHasta
             FROM precios_vigencia pv
-            LEFT JOIN opciones_duracion od ON pv.id_duracion = od.id
-            WHERE pv.vigente_hasta IS NULL OR pv.vigente_hasta >= CURDATE()
+            WHERE (pv.vigente_hasta IS NULL OR pv.vigente_hasta >= CURDATE())
+              AND pv.vigente_desde <= CURDATE()
+            ORDER BY pv.id_evento, pv.cantidad_min
         `);
         res.status(200).json(rows);
     } catch (err) {
         console.error("Error en getTarifas:", err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+// Obtener opciones de cantidad (rangos) por tipo de evento
+const getOpcionesCantidad = async (req, res) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query(`
+            SELECT DISTINCT
+                id_evento,
+                cantidad_min,
+                cantidad_max
+            FROM precios_vigencia
+            WHERE (vigente_hasta IS NULL OR vigente_hasta >= CURDATE())
+              AND vigente_desde <= CURDATE()
+            ORDER BY id_evento, cantidad_min
+        `);
+        // Agrupar por tipo de evento
+        const cantidadesObject = rows.reduce((acc, row) => {
+            if (!acc[row.id_evento]) {
+                acc[row.id_evento] = [];
+            }
+            acc[row.id_evento].push({
+                min: row.cantidad_min,
+                max: row.cantidad_max,
+                label: `${row.cantidad_min} a ${row.cantidad_max} personas`
+            });
+            return acc;
+        }, {});
+        res.status(200).json(cantidadesObject);
+    } catch (err) {
+        console.error("Error en getOpcionesCantidad:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -123,7 +169,7 @@ const getOpcionesHorarios = async (req, res) => {
         const rows = await conn.query(`
             SELECT id_evento as tipo, dia_semana as tipoDia, hora_inicio as hora, hora_fin
             FROM configuracion_horarios
-        `);
+                `);
         // Reconstruimos el objeto anidado que esperaba el frontend
         const horariosObject = rows.reduce((acc, row) => {
             if (!acc[row.tipo]) {
@@ -154,7 +200,7 @@ const getFechasOcupadas = async (req, res) => {
         const detalle = req.query && (req.query.detalle === '1' || String(req.query.detalle).toLowerCase() === 'true');
         if (detalle) {
             const sql = `
-                SELECT DISTINCT fecha, hora FROM (
+                SELECT DISTINCT fecha, hora FROM(
                     SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(hora_evento), 'hs', '') AS hora FROM solicitudes WHERE estado = 'Confirmado'
                     UNION
                     SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha, TIME_FORMAT(hora_inicio, '%H:%i') AS hora FROM eventos WHERE activo = 1
@@ -187,14 +233,14 @@ const getFechasOcupadas = async (req, res) => {
         // Unificamos fechas ocupadas desde solicitudes confirmadas y desde la tabla `eventos`.
         // Esto evita discrepancias cuando hay entradas en `eventos` pero no en `solicitudes`.
         const sql = `
-            SELECT DISTINCT fecha FROM (
+            SELECT DISTINCT fecha FROM(
                 SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes WHERE estado = 'Confirmado'
                 UNION
                 SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha FROM eventos WHERE activo = 1
             ) AS todas
             WHERE fecha IS NOT NULL
             ORDER BY fecha;
-        `;
+            `;
         const rows = await conn.query(sql);
         const fechas = rows.map(r => r.fecha);
         res.status(200).json(fechas);
@@ -212,5 +258,6 @@ module.exports = {
     getTarifas,
     getOpcionesDuracion,
     getOpcionesHorarios,
+    getOpcionesCantidad,
     getFechasOcupadas
 };
