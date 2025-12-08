@@ -75,6 +75,7 @@ services:
       - ../database/03_talleres_servicios.sql:/docker-entrypoint-initdb.d/03_talleres_servicios.sql
       - ../database/04_roles_permisos.sql:/docker-entrypoint-initdb.d/04_roles_permisos.sql
       - ../database/05_personal_tarifas.sql:/docker-entrypoint-initdb.d/05_personal_tarifas.sql
+      - ../database/06_fix_precios_horarios.sql:/docker-entrypoint-initdb.d/06_fix_precios_horarios.sql
       - ../database/seeds:/var/lib/mysql-files
 
 # Definición de redes

@@ -163,16 +163,18 @@ INSERT INTO precios_vigencia (id_evento, cantidad_min, cantidad_max, precio_por_
 -- FECHA_BANDAS (vigente desde 2025-10-01)
 ('FECHA_BANDAS', 1, 120, 120000, '2025-10-01');
 
+
 -- -----------------------------------------------------------------------------
 -- 4. ACTUALIZAR opciones_tipos con montos de seña y depósito
--- Según CSV Opciones_Tipos.csv
+-- Valores definitivos para alquileres de salón
 -- -----------------------------------------------------------------------------
 
 UPDATE opciones_tipos SET monto_sena = 40000, deposito = NULL WHERE id_evento = 'INFANTILES';
 UPDATE opciones_tipos SET monto_sena = 50000, deposito = 80000 WHERE id_evento = 'INFORMALES';
-UPDATE opciones_tipos SET monto_sena = 50000, deposito = NULL WHERE id_evento = 'CON_SERVICIO_DE_MESA';
-UPDATE opciones_tipos SET monto_sena = NULL, deposito = NULL WHERE id_evento = 'BABY_SHOWERS';
-UPDATE opciones_tipos SET monto_sena = NULL, deposito = NULL WHERE id_evento = 'ADOLESCENTES';
+UPDATE opciones_tipos SET monto_sena = 80000, deposito = 100000 WHERE id_evento = 'CON_SERVICIO_DE_MESA';
+UPDATE opciones_tipos SET monto_sena = 40000, deposito = NULL WHERE id_evento = 'BABY_SHOWERS';
+UPDATE opciones_tipos SET monto_sena = 50000, deposito = 80000 WHERE id_evento = 'ADOLESCENTES';
+UPDATE opciones_tipos SET monto_sena = NULL, deposito = NULL WHERE id_evento = 'FECHA_BANDAS';
 
 -- Verificación final
 SELECT 'Horarios insertados:' as info, COUNT(*) as total FROM configuracion_horarios;
