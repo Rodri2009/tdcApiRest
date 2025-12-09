@@ -69,13 +69,13 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql
       # Docker entrypoint ejecuta automáticamente scripts .sql en orden alfabético
-      # Schema y seed refactorizados - Diciembre 2025
+      # SQL refactorizado - Enero 2025: solo 3 archivos
+      # 01_schema.sql - Estructura de tablas (DDL)
+      # 02_seed.sql - Datos de configuración y catálogos
+      # 03_test_data.sql - Datos de prueba (opcional para desarrollo)
       - ../database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
       - ../database/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
-      - ../database/03_talleres_servicios.sql:/docker-entrypoint-initdb.d/03_talleres_servicios.sql
-      - ../database/04_roles_permisos.sql:/docker-entrypoint-initdb.d/04_roles_permisos.sql
-      - ../database/05_personal_tarifas.sql:/docker-entrypoint-initdb.d/05_personal_tarifas.sql
-      - ../database/06_fix_precios_horarios.sql:/docker-entrypoint-initdb.d/06_fix_precios_horarios.sql
+      - ../database/03_test_data.sql:/docker-entrypoint-initdb.d/03_test_data.sql
       - ../database/seeds:/var/lib/mysql-files
 
 # Definición de redes

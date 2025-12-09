@@ -43,16 +43,17 @@ CREATE TABLE IF NOT EXISTS configuracion (
     Valor TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Precios por tipo de evento y duración
+-- Precios por tipo de evento y rango de cantidad de personas
+-- El precio final se calcula: precio_por_hora × duracion_horas
 CREATE TABLE IF NOT EXISTS precios_vigencia (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_evento VARCHAR(255) NOT NULL COMMENT 'Referencia a opciones_tipos.id_evento',
-    id_duracion INT NOT NULL COMMENT 'Duración en horas (4, 5, 6, etc.)',
-    precio_anticipado DECIMAL(10,2) NOT NULL,
-    precio_puerta DECIMAL(10,2) NOT NULL,
+    cantidad_min INT NOT NULL DEFAULT 1 COMMENT 'Cantidad mínima de personas',
+    cantidad_max INT NOT NULL COMMENT 'Cantidad máxima de personas',
+    precio_por_hora DECIMAL(10,2) NOT NULL COMMENT 'Precio base por hora',
     vigente_desde DATE NOT NULL,
     vigente_hasta DATE DEFAULT NULL COMMENT 'NULL = vigente actualmente',
-    UNIQUE KEY uk_evento_duracion_vigencia (id_evento, id_duracion, vigente_desde),
+    UNIQUE KEY uk_precio (id_evento, cantidad_min, cantidad_max, vigente_desde),
     INDEX idx_evento (id_evento),
     INDEX idx_vigencia (vigente_desde, vigente_hasta)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -68,13 +69,14 @@ CREATE TABLE IF NOT EXISTS opciones_duracion (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Horarios disponibles por tipo de evento y día
+-- dia_semana puede ser 'todos' (aplica a cualquier día) o día específico como 'sabado'
 CREATE TABLE IF NOT EXISTS configuracion_horarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_evento VARCHAR(255) NOT NULL,
-    dia_semana VARCHAR(20) NOT NULL COMMENT 'lunes, martes, etc.',
+    dia_semana VARCHAR(20) NOT NULL COMMENT 'todos, lunes, martes, ..., sabado, domingo',
     hora_inicio TIME NOT NULL,
     hora_fin TIME NOT NULL,
-    UNIQUE KEY uk_evento_dia (id_evento, dia_semana),
+    UNIQUE KEY uk_evento_dia_hora (id_evento, dia_semana, hora_inicio),
     INDEX idx_evento (id_evento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

@@ -4,12 +4,29 @@
 
 ```
 database/
-├── 01_schema.sql      # Estructura de todas las tablas
-├── 02_seed.sql        # Datos iniciales (tipos, precios, etc.)
-├── init.sh            # Script de inicialización
-├── seeds/             # CSVs con datos de referencia
-└── _legacy/           # Archivos SQL obsoletos (backup)
+├── 01_schema.sql      # Estructura de tablas (DDL) - OBLIGATORIO
+├── 02_seed.sql        # Datos de configuración y catálogos - OBLIGATORIO
+├── 03_test_data.sql   # Datos de prueba - OPCIONAL (solo desarrollo)
+├── seeds/             # CSVs con datos de referencia (backup)
+└── README.md          # Esta documentación
 ```
+
+## Archivos SQL
+
+### 01_schema.sql
+- **Propósito**: Creación de todas las tablas (solo DDL)
+- **Contenido**: CREATE TABLE, índices, foreign keys
+- **NUNCA incluye**: INSERT, UPDATE o datos
+
+### 02_seed.sql
+- **Propósito**: Datos de configuración necesarios para el funcionamiento
+- **Contenido**: Tipos de evento, precios, horarios, adicionales, roles, personal
+- **Se ejecuta**: Siempre después del schema
+
+### 03_test_data.sql
+- **Propósito**: Datos de prueba para desarrollo
+- **Contenido**: Solicitudes de ejemplo
+- **Se ejecuta**: Solo en desarrollo (opcional)
 
 ## Lógica de Negocio
 
@@ -19,8 +36,8 @@ La BD soporta **4 tipos de clientes = 4 categorías de eventos**:
 |-----------|----------|----------|-------------|
 | `ALQUILER_SALON` | 6 subtipos | page.html | Alquiler del salón para fiestas |
 | `FECHA_BANDAS` | - | agenda_de_bandas.html | Eventos musicales con bandas |
-| `TALLERES` | (futuro) | - | Talleres y cursos |
-| `SERVICIO` | (futuro) | - | Servicios como depilación |
+| `TALLERES_ACTIVIDADES` | 2 subtipos | seccion_talleres.html | Talleres y cursos |
+| `CUIDADO_PERSONAL` | 2 subtipos | seccion_cuidado_personal.html | Servicios de depilación |
 
 ### Subtipos de ALQUILER_SALON
 
@@ -33,13 +50,22 @@ La BD soporta **4 tipos de clientes = 4 categorías de eventos**:
 | `ADOLESCENTES` | Fiestas de 15 con DJ y sonido |
 | `BABY_SHOWERS` | Baby showers con servicio completo |
 
+### Modelo de Precios
+
+Los precios se calculan como: `precio_por_hora × duracion_horas`
+
+- `precios_vigencia`: Define precio por hora según tipo de evento y rango de cantidad
+  - `cantidad_min`, `cantidad_max`: Rango de personas/participantes
+  - `precio_por_hora`: Tarifa aplicable
+  - `vigente_desde`, `vigente_hasta`: Período de validez
+
 ## Tablas Principales
 
 ### Catálogos
-- `opciones_tipos` - Tipos de eventos y subtipos
-- `precios_vigencia` - Tarifas por tipo y duración
-- `opciones_duracion` - Duraciones disponibles
-- `configuracion_horarios` - Horarios por día
+- `opciones_tipos` - Tipos de eventos con categoría, monto_sena y deposito
+- `precios_vigencia` - Tarifas por tipo y rango de cantidad
+- `opciones_duracion` - Duraciones disponibles por tipo
+- `configuracion_horarios` - Horarios por día y tipo de evento
 - `opciones_adicionales` - Servicios extra (inflables, manteles)
 
 ### Solicitudes
@@ -51,15 +77,12 @@ La BD soporta **4 tipos de clientes = 4 categorías de eventos**:
 
 ### Eventos (FECHA_BANDAS)
 - `eventos` - Eventos de bandas
-  - `nombre_banda`: Título del evento (lo que ve el público)
-  - `nombre_contacto`: Quien organiza (datos de contacto)
-  - `genero_musical`: Rock, Jazz, Cumbia, etc.
 - `bandas_invitadas` - Bandas en un evento
 - `eventos_personal` - Personal asignado
 
 ### Personal
 - `personal_disponible` - Staff disponible
-- `roles_por_evento` - Roles requeridos según tipo y cantidad
+- `catalogo_roles` - Roles de personal disponibles
 
 ### Tickets y Cupones
 - `tickets` - Entradas vendidas
@@ -90,14 +113,7 @@ source /docker-entrypoint-initdb.d/01_schema.sql
 
 # Ejecutar seed
 source /docker-entrypoint-initdb.d/02_seed.sql
+
+# Opcional: datos de prueba
+source /docker-entrypoint-initdb.d/03_test_data.sql
 ```
-
-## Migraciones
-
-Los archivos de migraciones antiguas están en `_legacy/` como referencia.
-El nuevo schema (`01_schema.sql`) ya incluye todas las migraciones aplicadas.
-
-Si necesitas agregar nuevas migraciones:
-1. Crear archivo `03_migration_descripcion.sql`
-2. Aplicar manualmente en producción
-3. Actualizar `01_schema.sql` para nuevas instalaciones
