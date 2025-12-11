@@ -15,6 +15,8 @@ const {
     getEventoById
 } = require('../controllers/adminController');
 
+const { updateVisibilidad } = require('../controllers/solicitudController');
+
 const alquilerAdmin = require('../controllers/alquilerAdminController');
 const personalTarifas = require('../controllers/personalTarifasController');
 
@@ -32,6 +34,7 @@ router.use(requireAdmin);
 // =============================================================================
 router.get('/solicitudes', getSolicitudes);
 router.put('/solicitudes/:id/estado', checkPermiso('solicitudes.cambiar_estado'), actualizarEstadoSolicitud);
+router.put('/solicitudes/:id/visibilidad', checkPermiso('solicitudes.cambiar_estado'), updateVisibilidad);
 router.delete('/solicitudes/:id', checkPermiso('solicitudes.eliminar'), eliminarSolicitud);
 router.get('/asignacion-data', getDatosAsignacion);
 router.post('/solicitudes/:id/asignaciones', checkPermiso('personal.gestionar'), guardarAsignaciones);
@@ -98,6 +101,14 @@ router.get('/personal/tarifas/:id', personalTarifas.getTarifaById);
 router.post('/personal/tarifas', checkPermiso('config.alquiler'), personalTarifas.createTarifa);
 router.put('/personal/tarifas/:id', checkPermiso('config.alquiler'), personalTarifas.updateTarifa);
 router.delete('/personal/tarifas/:id', checkPermiso('config.alquiler'), personalTarifas.deleteTarifa);
+
+// =============================================================================
+// COSTOS DE PERSONAL POR VIGENCIA (solo administradores)
+// =============================================================================
+router.get('/costos', alquilerAdmin.getCostosPersonal);
+router.post('/costos', checkPermiso('config.alquiler'), alquilerAdmin.createCostoPersonal);
+router.put('/costos/:id', checkPermiso('config.alquiler'), alquilerAdmin.updateCostoPersonal);
+router.delete('/costos/:id', checkPermiso('config.alquiler'), alquilerAdmin.deleteCostoPersonal);
 
 // =============================================================================
 // PAGOS DEL PERSONAL (solo administradores)

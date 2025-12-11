@@ -568,8 +568,8 @@
       }
 
       btnVolver.onclick = () => {
-        // Simplemente retrocede en el historial del navegador a page.html
-        window.location.href = `/page.html?solicitudId=${solicitudId}`;
+        // Simplemente retrocede en el historial del navegador a solicitud_alquiler.html
+        window.location.href = `/solicitud_alquiler.html?solicitudId=${solicitudId}`;
         //window.history.back();
       };
 
@@ -577,7 +577,7 @@
 
     function redirigir(fromPage) {
       if (fromPage === 'presupuesto') {
-        window.location.href = `/page.html?solicitudId=${solicitudId}`;
+        window.location.href = `/solicitud_alquiler.html?solicitudId=${solicitudId}`;
       } else {
         window.location.href = `/contacto.html?solicitudId=${solicitudId}`;
       }

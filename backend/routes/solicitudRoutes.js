@@ -7,7 +7,8 @@ const {
     finalizarSolicitud,   // <-- La que usa Contacto.html
     guardarAdicionales,
     obtenerAdicionales,   // <-- GET para cargar adicionales previos
-    getSesionExistente
+    getSesionExistente,
+    getSolicitudesPublicas // <-- Para mostrar en agenda pública
 } = require('../controllers/solicitudController');
 
 // POST /api/solicitudes -> Crear una nueva solicitud
@@ -16,6 +17,9 @@ router.post('/', crearSolicitud);
 // GET /api/solicitudes/sesion -> Buscar una sesión por fingerprint
 // La movimos aquí para que esté con el resto de las rutas de solicitudes
 router.get('/sesion', getSesionExistente);
+
+// GET /api/solicitudes/publicas -> Obtener solicitudes públicas confirmadas para la agenda
+router.get('/publicas', getSolicitudesPublicas);
 
 // --- RUTAS QUE ACTÚAN SOBRE UN ID ESPECÍFICO ---
 

@@ -55,10 +55,12 @@
         }
 
         .table-container {
-            max-width: 1200px;
+            max-width: 1600px;
             margin: 0 auto;
             background: #1a1a1a;
             padding: 20px;
+            padding-left: 32px;
+            padding-right: 32px;
             border-radius: 12px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
             overflow-x: auto;
@@ -453,9 +455,10 @@
                     <th>Cliente</th>
                     <th>Tipo</th>
                     <th>Subtipo / Género</th>
-                    <th>Banda/Artista</th>
+                    <th>Cantidad/Aforo</th>
                     <th>Fecha Evento</th>
                     <th>Estado</th>
+                    <th>Público</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -577,6 +580,13 @@
                 const select = event.target.closest('select.estado-select');
                 if (!select) return;
                 cambiarEstado(select.dataset.id, select.value);
+            });
+
+            // Event delegation for visibility toggle
+            tbody.addEventListener('change', (event) => {
+                const checkbox = event.target.closest('input.publico-checkbox');
+                if (!checkbox) return;
+                cambiarVisibilidad(checkbox.dataset.id, checkbox.checked);
             });
 
             function asignarPersonal(id, tipo) {
@@ -742,13 +752,18 @@
                     // Banda/Artista: solo para eventos de bandas
                     const bandaDisplay = solicitud.nombreBanda || '-';
 
+                    // Cantidad/Aforo: cantidad de personas para alquileres, aforo para bandas
+                    const cantidadAforoDisplay = solicitud.cantidadAforo 
+                        ? `${solicitud.cantidadAforo} personas` 
+                        : '-';
+
                     tr.innerHTML = `
                             <td data-label="ID">${solicitud.id}</td>
                             <td data-label="Fecha Solicitud">${fechaSolicitud}</td>
                             <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
                             <td data-label="Tipo">${tipoLegible}</td>
                             <td data-label="Subtipo / Género">${subtipoDisplay}</td>
-                            <td data-label="Banda/Artista">${bandaDisplay}</td>
+                            <td data-label="Cantidad/Aforo">${cantidadAforoDisplay}</td>
                             <td data-label="Fecha Evento">${fechaEvento}</td>
                             <td data-label="Estado">
                                 <select data-id="${solicitud.id}" class="estado-select" ${puedeCambiarEstado ? '' : 'disabled style="opacity:0.6;cursor:not-allowed;"'}>
@@ -757,6 +772,12 @@
                                         <option value="Confirmado" ${solicitud.estado === 'Confirmado' ? 'selected' : ''}>Confirmado</option>
                                         <option value="Cancelado" ${solicitud.estado === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
                                 </select>
+                            </td>
+                            <td data-label="Público" class="text-center">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="publico-checkbox sr-only peer" data-id="${solicitud.id}" ${solicitud.es_publico ? 'checked' : ''}>
+                                    <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-fuchsia-400 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-fuchsia-500"></div>
+                                </label>
                             </td>
                             <td data-label="Acciones" class="actions-cell">
                                 ${botones}
@@ -811,20 +832,30 @@
 
                     showNotification(data.message, 'success');
 
-                    // Update button visibility if state is Confirmado
-                    // Toggle visibility of assign/work-order buttons for this row
-                    const assignBtn = document.querySelector(
-                        `button[data-action='assign'][data-id='${id}']`
-                    );
-                    const workBtn = document.querySelector(
-                        `button[data-action='work-order'][data-id='${id}']`
-                    );
-                    const shouldShow = (nuevoEstado === 'Confirmado');
-                    if (assignBtn) assignBtn.style.display = shouldShow ? 'inline-block' : 'none';
-                    if (workBtn) workBtn.style.display = shouldShow ? 'inline-block' : 'none';
+                    // Recargar la lista completa para actualizar botones y estado visual
+                    await cargarSolicitudes();
                 } catch (error) {
                     showNotification(error.message, 'error');
                     cargarSolicitudes();
+                }
+            }
+
+            async function cambiarVisibilidad(id, esPublico) {
+                showNotification('Actualizando visibilidad...', 'info', 1500);
+                try {
+                    const res = await fetch(`/api/admin/solicitudes/${id}/visibilidad`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ es_publico: esPublico })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Error al cambiar visibilidad');
+                    showNotification(esPublico ? 'Solicitud visible en agenda pública' : 'Solicitud oculta de agenda pública', 'success');
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                    // Revertir checkbox en caso de error
+                    const checkbox = document.querySelector(`.publico-checkbox[data-id="${id}"]`);
+                    if (checkbox) checkbox.checked = !esPublico;
                 }
             }
 

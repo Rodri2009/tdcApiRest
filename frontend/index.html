@@ -80,14 +80,13 @@
                 <nav class="hidden md:flex space-x-8 items-center">
                     <a href="seccion_talleres.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
-                    <a href="agenda_de_bandas.html"
+                    <a href="seccion_bandas.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
                         Vivo</a>
-                    <a href="#espacio"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">El Espacio</a>
-                    <!-- Enlace directo al sistema de reservas page.html -->
-                    <a href="page.html"
-                        class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Alquilar
+                    <a href="seccion_servicios.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
+                    <a href="seccion_alquiler.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
                         Salón</a>
                     <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
                     <div id="auth-menu-desktop"></div>
@@ -107,15 +106,14 @@
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
                 <a href="seccion_talleres.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
-                <a href="agenda_de_bandas.html"
+                <a href="seccion_bandas.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
                     en Vivo</a>
-                <a href="#espacio"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">El
-                    Espacio</a>
-                <a href="page.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">Alquilar
-                    Salón</a>
+                <a href="seccion_servicios.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
+                <a href="seccion_alquiler.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
+                    del Salón</a>
                 <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
                 <div id="auth-menu-mobile"></div>
             </div>
@@ -148,11 +146,11 @@
                     Tu lugar para tocar, bailar, celebrar y conectar.
                 </div>
                 <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-                    <a href="page.html"
+                    <a href="solicitud_alquiler.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Alquilar para Eventos
                     </a>
-                    <a href="agenda_de_bandas.html"
+                    <a href="seccion_bandas.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Ver Bandas en Vivo
                     </a>
@@ -160,7 +158,7 @@
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Talleres y Actividades
                     </a>
-                    <a href="seccion_cuidado_personal.html"
+                    <a href="seccion_servicios.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Cuidado Personal
                     </a>
@@ -169,21 +167,22 @@
         </section>
 
 
-        <!-- Sección 3: Eventos - Bandas en Vivo (Cultural) -->
-        <section id="eventos" class="py-20 bg-stone-900">
+        <!-- Sección 3: Agenda - Próximos eventos públicos -->
+        <section id="agenda" class="py-20 bg-stone-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
                         Agenda Cultural
                     </h2>
+                    <p class="mt-4 text-lg text-stone-400">Próximos eventos, talleres, bandas y servicios</p>
                 </div>
 
-                <!-- Lista de Eventos (Mock-up) -->
-                <div id="events-list" class="space-y-6 max-w-3xl mx-auto">
+                <!-- Lista de Eventos -->
+                <div id="agenda-list" class="space-y-4 max-w-3xl mx-auto">
                     <p class="text-center text-lg text-stone-500">Cargando agenda...</p>
                 </div>
                 <div class="text-center mt-8">
-                    <a href="agenda_de_bandas.html"
+                    <a href="seccion_bandas.html"
                         class="bg-fuchsia-500 text-gray-900 font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
                         Ver Agenda Completa
                     </a>
@@ -193,9 +192,9 @@
         </section>
 
 
-        <!-- Sección 2: El Espacio - Características Únicas -->
+        <!-- Sección 2: Fotos -->
         <!-- Se añade un enlace a Talleres en esta sección de características -->
-        <section id="espacio" class="py-20 bg-stone-950">
+        <section id="fotos" class="py-20 bg-stone-950">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
@@ -312,16 +311,24 @@
                 <p class="mt-4 text-xl text-stone-400">
                     Reserva tu fecha para eventos privados o consulta la agenda cultural.
                 </p>
-                <div class="mt-8">
-                    <a href="page.html"
-                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-10 rounded-xl text-xl shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
-                        Alquilar el Salón (Armá tu presupuesto)
+                <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="solicitud_alquiler.html"
+                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-glass-cheers mr-2"></i> Alquilar el Salón
                     </a>
-                    <p class="mt-4 text-sm text-stone-500">
-                        Si buscas una fecha para tu banda, <a href="agenda_de_bandas.html"
-                            class="text-fuchsia-400 underline hover:text-fuchsia-200">haz clic aquí</a>.
-                    </p>
+                    <a href="solicitud_taller.html"
+                        class="inline-flex items-center justify-center bg-stone-800/60 border-2 border-neon text-neon font-bold py-4 px-8 rounded-xl text-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-chalkboard-teacher mr-2"></i> Dar un Taller
+                    </a>
+                    <a href="solicitud_servicio.html"
+                        class="inline-flex items-center justify-center bg-stone-800/60 border-2 border-neon text-neon font-bold py-4 px-8 rounded-xl text-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-spa mr-2"></i> Reservar Servicio
+                    </a>
                 </div>
+                <p class="mt-6 text-sm text-stone-500">
+                    Si buscas una fecha para tu banda, <a href="solicitud_banda.html"
+                        class="text-fuchsia-400 underline hover:text-fuchsia-200">haz clic aquí</a>.
+                </p>
             </div>
         </section>
 
@@ -361,178 +368,155 @@
         });
 
         // ----------------------------------------------------
-        // LÓGICA DE CARGA DE EVENTOS DESDE LA API (COPIADA DE agenda_de_bandas.html)
+        // LÓGICA DE CARGA DE AGENDA PÚBLICA
         // ----------------------------------------------------
 
-        // MODIFICACIÓN: URL Dinámica
+        // URL Dinámica
         const currentHost = window.location.host;
         let API_BASE_URL = '';
 
         if (currentHost.includes('localhost')) {
-            // Si estás en desarrollo local (usando localhost o una IP local)
             API_BASE_URL = 'http://localhost';
         } else if (currentHost.includes('192.168.1.10')) {
-            // Si estás en desarrollo local (usando localhost o una IP local)
             API_BASE_URL = 'http://192.168.1.10';
         } else {
-            // Si estás usando el dominio público
             API_BASE_URL = window.location.protocol + '//' + currentHost;
         }
 
-        const API_URL = API_BASE_URL + '/api/tickets/eventos';
+        const agendaListContainer = document.getElementById('agenda-list');
 
-        const eventsListContainer = document.getElementById('events-list');
+        // Categorías y sus estilos
+        const CATEGORIAS = {
+            'BANDA': { icon: '🎸', label: 'Banda en Vivo', color: 'border-orange-500', bgDate: 'bg-orange-900', textColor: 'text-orange-400' },
+            'TALLER': { icon: '🎨', label: 'Taller', color: 'border-cyan-500', bgDate: 'bg-cyan-900', textColor: 'text-cyan-400' },
+            'SERVICIO': { icon: '💆', label: 'Servicio', color: 'border-pink-500', bgDate: 'bg-pink-900', textColor: 'text-pink-400' },
+            'ALQUILER': { icon: '🏛️', label: 'Evento', color: 'border-purple-500', bgDate: 'bg-purple-900', textColor: 'text-purple-400' }
+        };
 
-        /**
-         * Formatea un objeto de fecha y hora (ej: '2025-12-05 21:00:00')
-         * en partes legibles para la tarjeta.
-         */
-        function formatDateTime(dateTimeString) {
-            const date = new Date(dateTimeString);
-            const dayOptions = { day: '2-digit' };
-            const monthOptions = { month: 'short' };
-            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
-
-            // Se usa 'es-AR' para formato de fecha
-            const day = date.toLocaleDateString('es-AR', dayOptions);
-            const month = date.toLocaleDateString('es-AR', monthOptions).toUpperCase().replace('.', '');
-            const time = date.toLocaleTimeString('es-AR', timeOptions);
-
-            return { day, month, time };
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return {
+                day: date.toLocaleDateString('es-AR', { day: '2-digit' }),
+                month: date.toLocaleDateString('es-AR', { month: 'short' }).toUpperCase().replace('.', ''),
+                weekday: date.toLocaleDateString('es-AR', { weekday: 'short' })
+            };
         }
 
-        /**
-         * Genera la estructura HTML para un solo evento.
-         */
-        function generateEventCard(event) {
-            const { id, nombre_banda, fecha_hora, precio_base, precio_anticipada, precio_puerta, descripcion, activo, aforo_maximo } = event;
-            const { day, month, time } = formatDateTime(fecha_hora);
+        function getCategoria(item) {
+            if (item.source === 'evento') return 'BANDA';
+            const tipo = (item.tipo || '').toUpperCase();
+            if (tipo.includes('TALLER')) return 'TALLER';
+            if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) return 'SERVICIO';
+            return 'ALQUILER';
+        }
 
-            // Determinar precios - priorizar precio_anticipada y precio_puerta sobre precio_base
-            const precioAnticipada = precio_anticipada !== null && precio_anticipada !== undefined ? parseFloat(precio_anticipada) : null;
-            const precioPuerta = precio_puerta !== null && precio_puerta !== undefined ? parseFloat(precio_puerta) : null;
-            const precioBase = precio_base !== null && precio_base !== undefined ? parseFloat(precio_base) : 0;
-            
-            // Es gratis solo si TODOS los precios son 0 o null
-            const esGratis = (precioAnticipada === null || precioAnticipada === 0) && 
-                             (precioPuerta === null || precioPuerta === 0) && 
-                             precioBase === 0;
-            
-            // Mostrar precios
-            let priceText = '';
-            if (precioAnticipada !== null && precioAnticipada > 0) {
-                priceText = `$ ${precioAnticipada.toLocaleString('es-AR')} ARS (Anticipada)`;
-            }
-            if (precioPuerta !== null && precioPuerta > 0) {
-                priceText += priceText ? ` • $ ${precioPuerta.toLocaleString('es-AR')} ARS (Puerta)` : `$ ${precioPuerta.toLocaleString('es-AR')} ARS (Puerta)`;
-            }
-            if (!priceText && precioBase > 0) {
-                priceText = `$ ${precioBase.toLocaleString('es-AR')} ARS`;
-            }
-            
-            let buttonText = 'Sacar Entrada';
-            let buttonClass = 'bg-fuchsia-500 hover:bg-fuchsia-400';
-            let borderClass = 'border-fuchsia-500';
-            let dateBgClass = 'bg-fuchsia-900';
-            let priceTextColor = 'text-neon';
-            let link = `agenda_de_bandas.html?event_id=${id}`; // Enlace a la página de agenda
-
-            if (esGratis) {
-                priceText = '¡GRATIS!';
-                buttonText = 'Reservar Lugar';
-                buttonClass = 'bg-emerald-500 hover:bg-emerald-400';
-                borderClass = 'border-emerald-500';
-                dateBgClass = 'bg-emerald-900';
-                priceTextColor = 'text-emerald-400';
-            }
+        function generateAgendaCard(item) {
+            const categoria = getCategoria(item);
+            const cat = CATEGORIAS[categoria];
+            const { day, month } = formatDate(item.fecha);
+            const hora = item.hora || '';
+            const precio = item.precio ? `$${Number(item.precio).toLocaleString('es-AR')}` : '';
 
             return `
-            <div data-event-id="${id}" class="p-4 sm:p-6 bg-stone-800 rounded-xl flex flex-col sm:flex-row items-center justify-between border-l-4 ${borderClass}">
+            <div class="p-4 bg-stone-800 rounded-xl flex items-center justify-between border-l-4 ${cat.color} hover:bg-stone-700/50 transition">
                 <div class="flex items-center space-x-4">
-                    <div class="text-center p-2 rounded-lg ${dateBgClass} text-white flex-shrink-0">
+                    <div class="text-center p-2 rounded-lg ${cat.bgDate} text-white flex-shrink-0 min-w-[50px]">
                         <p class="text-xl font-bold">${day}</p>
                         <p class="text-xs">${month}</p>
                     </div>
                     <div>
-                        <h4 class="text-xl font-semibold text-white">${nombre_banda}</h4>
-                        <p class="text-sm text-stone-400">${descripcion.substring(0, 50)}... | Puertas: ${time} hs.</p>
-                        <p class="text-lg font-bold ${priceTextColor} mt-1">${priceText}</p>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-sm ${cat.textColor}">${cat.icon} ${cat.label}</span>
+                        </div>
+                        <h4 class="text-lg font-semibold text-white">${item.nombre || item.tipo}</h4>
+                        <p class="text-sm text-stone-400">${hora ? hora + ' hs' : ''} ${precio ? '• ' + precio : ''}</p>
                     </div>
                 </div>
-                <a href="${link}" class="mt-3 sm:mt-0 ${buttonClass} text-gray-900 font-medium py-2 px-4 rounded-full text-sm transition shadow-lg">
-                    ${buttonText}
-                </a>
             </div>
-        `;
+            `;
         }
 
-        /**
-         * Procesa y renderiza la lista de eventos.
-         */
-        function renderEvents(events) {
-            eventsListContainer.innerHTML = ''; // Limpia el mensaje de carga
-            if (!events || events.length === 0) {
-                eventsListContainer.innerHTML = `
+        async function fetchAgenda() {
+            try {
+                // Cargar eventos de bandas públicos
+                const resEventos = await fetch(`${API_BASE_URL}/api/tickets/eventos`);
+                let eventos = [];
+                if (resEventos.ok) {
+                    const data = await resEventos.json();
+                    eventos = data.filter(e => e.activo === 1 && e.es_publico === 1).map(e => ({
+                        source: 'evento',
+                        fecha: e.fecha || e.fecha_hora,
+                        hora: e.hora_inicio,
+                        nombre: e.nombre_banda,
+                        tipo: e.genero_musical || 'Banda',
+                        precio: e.precio_anticipada || e.precio_base,
+                        descripcion: e.descripcion
+                    }));
+                }
+
+                // Cargar solicitudes públicas confirmadas
+                const resSolicitudes = await fetch(`${API_BASE_URL}/api/solicitudes/publicas`);
+                let solicitudes = [];
+                if (resSolicitudes.ok) {
+                    const data = await resSolicitudes.json();
+                    solicitudes = data.map(s => ({
+                        source: 'solicitud',
+                        fecha: s.fecha_evento || s.fechaEvento,
+                        hora: s.hora_evento || s.horaEvento,
+                        nombre: s.nombre_completo || s.nombreCompleto || s.descripcion,
+                        tipo: s.tipo_de_evento || s.tipoEvento,
+                        precio: s.precio_basico || s.precio,
+                        descripcion: s.descripcion
+                    }));
+                }
+
+                // Combinar y ordenar por fecha
+                const allItems = [...eventos, ...solicitudes];
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+
+                const proximosItems = allItems
+                    .filter(item => new Date(item.fecha) >= hoy)
+                    .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+                    .slice(0, 6); // Mostrar máximo 6
+
+                renderAgenda(proximosItems, allItems.length);
+
+            } catch (error) {
+                console.error('Error al cargar agenda:', error);
+                agendaListContainer.innerHTML = `
                 <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
-                    <p class="text-xl text-stone-400">¡Parece que aún no hay eventos programados!</p>
-                    <p class="text-sm text-stone-500 mt-2">Pronto anunciaremos la nueva agenda.</p>
+                    <p class="text-xl text-stone-400">No se pudo cargar la agenda</p>
+                    <p class="text-sm text-stone-500 mt-2">${error.message}</p>
                 </div>
-            `;
+                `;
+            }
+        }
+
+        function renderAgenda(items, totalCount) {
+            agendaListContainer.innerHTML = '';
+            
+            if (!items || items.length === 0) {
+                agendaListContainer.innerHTML = `
+                <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
+                    <p class="text-xl text-stone-400">¡Próximamente más eventos!</p>
+                    <p class="text-sm text-stone-500 mt-2">Estamos preparando la agenda cultural.</p>
+                </div>
+                `;
                 return;
             }
 
-            // Filtramos solo los primeros eventos para la home.
-            const activeEvents = events.filter(event => event.activo === 1);
-            const eventsToShow = activeEvents.slice(0, 4); // Muestra un máximo de 4
-
-            if (eventsToShow.length === 0 && activeEvents.length > 0) {
-                // Esto sucede si solo hay eventos inactivos, aunque la lógica del backend es incierta.
-                eventsToShow = activeEvents.slice(0, 4);
-            } else if (eventsToShow.length === 0 && activeEvents.length === 0 && events.length > 0) {
-                // Si el filtro no funcionó, mostramos los primeros 4 de la lista original como fallback visual.
-                eventsToShow = events.slice(0, 4);
-            }
-
-
-            eventsToShow.forEach(event => {
-                const cardHtml = generateEventCard(event);
-                eventsListContainer.insertAdjacentHTML('beforeend', cardHtml);
+            items.forEach(item => {
+                agendaListContainer.insertAdjacentHTML('beforeend', generateAgendaCard(item));
             });
 
-            // Agrega un mensaje si hay más eventos que no se muestran
-            if (events.length > eventsToShow.length) {
-                eventsListContainer.insertAdjacentHTML('beforeend', `
+            if (totalCount > items.length) {
+                agendaListContainer.insertAdjacentHTML('beforeend', `
                 <p class="text-center text-sm text-stone-500 mt-4">
-                    ${events.length - eventsToShow.length} eventos más programados. 
-                    <a href="agenda_de_bandas.html" class="text-fuchsia-400 underline hover:text-fuchsia-200">Ver agenda completa</a>.
+                    Y ${totalCount - items.length} eventos más. 
+                    <a href="seccion_bandas.html" class="text-fuchsia-400 underline hover:text-fuchsia-200">Ver agenda completa</a>.
                 </p>
-            `);
-            }
-        }
-
-
-        /**
-         * Llama a la API para obtener la lista de eventos.
-         */
-        async function fetchEvents() {
-            try {
-                const response = await fetch(API_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                renderEvents(data);
-
-            } catch (error) {
-                console.error('Error al cargar la agenda de eventos:', error);
-                eventsListContainer.innerHTML = `
-                <div class="p-8 text-center bg-red-900/30 text-red-300 rounded-xl border border-red-500 max-w-3xl mx-auto">
-                    <p class="text-xl font-bold">Error de Conexión</p>
-                    <p class="text-sm mt-2">No se pudo cargar la agenda. Asegúrate que el backend de Node.js esté corriendo. </p>
-                    <p class="text-xs mt-1">Detalle: ${error.message}</p>
-                </div>
-            `;
+                `);
             }
         }
 
@@ -595,8 +579,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             // 1. Actualizar menú de autenticación
             updateAuthMenu();
-            // 2. Inicia la carga de datos de la API
-            fetchEvents();
+            // 2. Inicia la carga de la agenda pública
+            fetchAgenda();
             // El resto de la lógica de desplazamiento y menú móvil ya está integrada.
         });
 

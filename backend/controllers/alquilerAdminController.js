@@ -880,6 +880,101 @@ const deleteRol = async (req, res) => {
     }
 };
 
+// =============================================================================
+// COSTOS DE PERSONAL (costos_personal_vigencia)
+// =============================================================================
+
+/**
+ * GET /api/admin/costos-personal
+ * Lista todos los costos por rol
+ */
+const getCostosPersonal = async (req, res) => {
+    try {
+        const costos = await pool.query(`
+            SELECT id, rol, fecha_de_vigencia, costo_por_hora, viaticos
+            FROM costos_personal_vigencia
+            ORDER BY rol, fecha_de_vigencia DESC
+        `);
+        res.json(serializeBigInt(costos));
+    } catch (err) {
+        console.error('Error al obtener costos:', err);
+        res.status(500).json({ error: 'Error al obtener costos de personal' });
+    }
+};
+
+/**
+ * POST /api/admin/costos-personal
+ * Crear un nuevo registro de costo
+ */
+const createCostoPersonal = async (req, res) => {
+    try {
+        const { rol, fecha_de_vigencia, costo_por_hora, viaticos } = req.body;
+
+        if (!rol || !fecha_de_vigencia || !costo_por_hora) {
+            return res.status(400).json({ error: 'Rol, fecha de vigencia y costo por hora son obligatorios' });
+        }
+
+        await pool.query(`
+            INSERT INTO costos_personal_vigencia (rol, fecha_de_vigencia, costo_por_hora, viaticos)
+            VALUES (?, ?, ?, ?)
+        `, [rol.trim(), fecha_de_vigencia, costo_por_hora, viaticos || 0]);
+
+        res.status(201).json({ message: 'Costo creado exitosamente' });
+    } catch (err) {
+        console.error('Error al crear costo:', err);
+        res.status(500).json({ error: 'Error al crear costo de personal' });
+    }
+};
+
+/**
+ * PUT /api/admin/costos-personal/:id
+ * Actualizar un registro de costo
+ */
+const updateCostoPersonal = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rol, fecha_de_vigencia, costo_por_hora, viaticos } = req.body;
+
+        const existing = await pool.query('SELECT id FROM costos_personal_vigencia WHERE id = ?', [id]);
+        if (existing.length === 0) {
+            return res.status(404).json({ error: 'Registro de costo no encontrado' });
+        }
+
+        await pool.query(`
+            UPDATE costos_personal_vigencia
+            SET rol = ?, fecha_de_vigencia = ?, costo_por_hora = ?, viaticos = ?
+            WHERE id = ?
+        `, [rol?.trim(), fecha_de_vigencia, costo_por_hora, viaticos || 0, id]);
+
+        res.json({ message: 'Costo actualizado exitosamente' });
+    } catch (err) {
+        console.error('Error al actualizar costo:', err);
+        res.status(500).json({ error: 'Error al actualizar costo de personal' });
+    }
+};
+
+/**
+ * DELETE /api/admin/costos-personal/:id
+ * Eliminar un registro de costo
+ */
+const deleteCostoPersonal = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const existing = await pool.query('SELECT id FROM costos_personal_vigencia WHERE id = ?', [id]);
+        if (existing.length === 0) {
+            return res.status(404).json({ error: 'Registro de costo no encontrado' });
+        }
+
+        await pool.query('DELETE FROM costos_personal_vigencia WHERE id = ?', [id]);
+
+        res.json({ message: 'Costo eliminado exitosamente' });
+    } catch (err) {
+        console.error('Error al eliminar costo:', err);
+        res.status(500).json({ error: 'Error al eliminar costo de personal' });
+    }
+};
+
 module.exports = {
     // Tipos
     getTipos,
@@ -910,5 +1005,10 @@ module.exports = {
     getRoles,
     createRol,
     updateRol,
-    deleteRol
+    deleteRol,
+    // Costos de Personal
+    getCostosPersonal,
+    createCostoPersonal,
+    updateCostoPersonal,
+    deleteCostoPersonal
 };

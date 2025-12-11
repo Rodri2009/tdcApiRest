@@ -311,11 +311,42 @@ class NavbarManager {
     }
 
     /**
-     * Protege una página admin: redirige a login si no está autenticado
+     * Verifica si el token JWT ha expirado
+     */
+    isTokenExpired() {
+        if (!this.jwtToken) return true;
+        
+        try {
+            const base64Url = this.jwtToken.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split('')
+                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+            );
+            const payload = JSON.parse(jsonPayload);
+            
+            // Verificar si tiene campo exp y si ha expirado
+            if (payload.exp) {
+                const now = Math.floor(Date.now() / 1000);
+                return payload.exp < now;
+            }
+            return false; // Si no tiene exp, asumimos que no expira
+        } catch (error) {
+            console.error('Error verificando expiración del token:', error);
+            return true; // En caso de error, consideramos expirado
+        }
+    }
+
+    /**
+     * Protege una página admin: redirige a login si no está autenticado o token expirado
      */
     protectAdminPage() {
-        if (!this.isAuthenticated) {
-            console.warn('Acceso denegado: usuario no autenticado');
+        // Verificar si hay token y si no ha expirado
+        if (!this.isAuthenticated || this.isTokenExpired()) {
+            console.warn('Acceso denegado: usuario no autenticado o sesión expirada');
+            this.clearAuth(); // Limpiar datos de autenticación
             window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
             return false;
         }

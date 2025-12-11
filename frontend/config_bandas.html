@@ -402,6 +402,27 @@
                 align-items: flex-start;
             }
         }
+
+        /* Banner de notificación */
+        .notification-banner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+        .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
+        .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 
@@ -696,6 +717,134 @@
         </div>
     </div>
 
+    <!-- Modal para Editar/Crear Evento -->
+    <div id="modal-evento" class="modal-overlay">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 id="modal-evento-title">Editar Evento</h3>
+                <button class="btn btn-icon" onclick="closeModal('modal-evento')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form-evento">
+                    <input type="hidden" id="evento-id">
+                    
+                    <!-- Fecha y Hora -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar"></i> Fecha del Evento *</label>
+                            <input type="date" id="evento-fecha" required>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Hora de Inicio</label>
+                            <select id="evento-hora">
+                                <option value="">Seleccionar...</option>
+                                <option value="19:00">19:00 hs</option>
+                                <option value="20:00">20:00 hs</option>
+                                <option value="21:00">21:00 hs</option>
+                                <option value="22:00">22:00 hs</option>
+                                <option value="23:00">23:00 hs</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Hora de Fin</label>
+                            <select id="evento-hora-fin">
+                                <option value="">Seleccionar...</option>
+                                <option value="00:00">00:00 hs</option>
+                                <option value="01:00">01:00 hs</option>
+                                <option value="02:00">02:00 hs</option>
+                                <option value="03:00">03:00 hs</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Banda principal y Género -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-music"></i> Banda Principal *</label>
+                            <input type="text" id="evento-banda" required placeholder="Nombre de la banda">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-guitar"></i> Género Musical</label>
+                            <input type="text" id="evento-genero" placeholder="Ej: Rock, Metal, Pop">
+                        </div>
+                    </div>
+                    
+                    <!-- Bandas invitadas -->
+                    <div class="form-group">
+                        <label><i class="fas fa-user-friends"></i> Bandas Invitadas</label>
+                        <p class="hint" style="margin-top:0;margin-bottom:8px;color:#9ca3af;font-size:0.8rem;">Separar por coma. Ej: Banda1, Banda2, Banda3</p>
+                        <input type="text" id="evento-invitadas" placeholder="Banda invitada 1, Banda invitada 2...">
+                    </div>
+                    
+                    <!-- Precios -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-ticket-alt"></i> Precio Anticipada ($)</label>
+                            <input type="number" id="evento-precio-anticipada" min="0" step="100" placeholder="Ej: 5000">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-ticket-alt"></i> Precio Puerta ($)</label>
+                            <input type="number" id="evento-precio-puerta" min="0" step="100" placeholder="Ej: 7000">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-users"></i> Aforo Máximo</label>
+                            <input type="number" id="evento-aforo" min="0" placeholder="Ej: 150">
+                        </div>
+                    </div>
+                    
+                    <!-- Estado y Visibilidad -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-flag"></i> Estado</label>
+                            <select id="evento-estado">
+                                <option value="Solicitado">Solicitado</option>
+                                <option value="Confirmado">Confirmado</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-globe"></i> Visibilidad</label>
+                            <select id="evento-publico">
+                                <option value="1">Público (visible en agenda)</option>
+                                <option value="0">Privado (solo admin)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Contacto -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-user"></i> Nombre de Contacto</label>
+                            <input type="text" id="evento-contacto-nombre" placeholder="Nombre del contacto">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fab fa-whatsapp"></i> WhatsApp</label>
+                            <input type="text" id="evento-contacto-whatsapp" placeholder="Ej: 1155001122">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-envelope"></i> Email</label>
+                            <input type="email" id="evento-contacto-email" placeholder="email@ejemplo.com">
+                        </div>
+                    </div>
+                    
+                    <!-- Descripción -->
+                    <div class="form-group">
+                        <label><i class="fas fa-comment"></i> Descripción / Notas</label>
+                        <textarea id="evento-descripcion" rows="3" placeholder="Notas adicionales, rider técnico, etc."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-evento')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveEvento()">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="/navbar.js"></script>
     <script>
         // ============================================================
@@ -705,6 +854,20 @@
         let eventos = [];
         let instrumentos = [];
         let currentSection = 'catalogo';
+
+        // Banner de notificación
+        function showBanner(message, type = 'info', duration = 4000) {
+            document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+            const banner = document.createElement('div');
+            banner.className = `notification-banner ${type}`;
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+            document.body.appendChild(banner);
+            setTimeout(() => {
+                banner.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => banner.remove(), 300);
+            }, duration);
+        }
 
         // ============================================================
         // NAVEGACIÓN POR TABS
@@ -919,7 +1082,109 @@
         }
 
         function editEvento(id) {
-            window.location.href = `/editar_evento_banda.html?id=${id}`;
+            const evento = eventos.find(e => e.id === id);
+            if (!evento) {
+                showBanner('Evento no encontrado', 'error');
+                return;
+            }
+            
+            document.getElementById('modal-evento-title').textContent = 'Editar Evento';
+            document.getElementById('evento-id').value = evento.id;
+            document.getElementById('evento-fecha').value = evento.fecha || '';
+            document.getElementById('evento-hora').value = evento.hora_inicio ? evento.hora_inicio.substring(0, 5) : '';
+            document.getElementById('evento-hora-fin').value = evento.hora_fin ? evento.hora_fin.substring(0, 5) : '';
+            document.getElementById('evento-banda').value = evento.nombre_banda || '';
+            document.getElementById('evento-genero').value = evento.genero_musical || '';
+            
+            // Bandas invitadas (convertir array a string separado por comas)
+            const invitadasStr = evento.invitadas && evento.invitadas.length > 0 
+                ? evento.invitadas.map(b => b.nombre_banda).join(', ') 
+                : '';
+            document.getElementById('evento-invitadas').value = invitadasStr;
+            
+            document.getElementById('evento-precio-anticipada').value = evento.precio_anticipada || '';
+            document.getElementById('evento-precio-puerta').value = evento.precio_puerta || '';
+            document.getElementById('evento-aforo').value = evento.aforo_maximo || '';
+            document.getElementById('evento-estado').value = evento.estado || 'Solicitado';
+            document.getElementById('evento-publico').value = evento.es_publico ? '1' : '0';
+            document.getElementById('evento-contacto-nombre').value = evento.nombre_contacto || '';
+            document.getElementById('evento-contacto-whatsapp').value = evento.whatsapp_contacto || '';
+            document.getElementById('evento-contacto-email').value = evento.email_contacto || '';
+            document.getElementById('evento-descripcion').value = evento.descripcion || '';
+            
+            openModal('modal-evento');
+        }
+
+        function openEventoModal() {
+            // Abrir modal para nuevo evento
+            document.getElementById('modal-evento-title').textContent = 'Nuevo Evento';
+            document.getElementById('form-evento').reset();
+            document.getElementById('evento-id').value = '';
+            document.getElementById('evento-estado').value = 'Solicitado';
+            document.getElementById('evento-publico').value = '1';
+            openModal('modal-evento');
+        }
+
+        async function saveEvento() {
+            const id = document.getElementById('evento-id').value;
+            const fecha = document.getElementById('evento-fecha').value;
+            const banda = document.getElementById('evento-banda').value;
+            
+            if (!fecha || !banda) {
+                showBanner('Fecha y banda son obligatorios', 'error');
+                return;
+            }
+            
+            // Preparar datos
+            const body = {
+                fecha: fecha,
+                hora_inicio: document.getElementById('evento-hora').value || null,
+                hora_fin: document.getElementById('evento-hora-fin').value || null,
+                nombre_banda: banda,
+                genero_musical: document.getElementById('evento-genero').value || null,
+                precio_anticipada: parseFloat(document.getElementById('evento-precio-anticipada').value) || null,
+                precio_puerta: parseFloat(document.getElementById('evento-precio-puerta').value) || null,
+                aforo_maximo: parseInt(document.getElementById('evento-aforo').value) || null,
+                estado: document.getElementById('evento-estado').value,
+                es_publico: document.getElementById('evento-publico').value === '1' ? 1 : 0,
+                activo: document.getElementById('evento-estado').value === 'Confirmado' ? 1 : 0,
+                nombre_contacto: document.getElementById('evento-contacto-nombre').value || null,
+                whatsapp_contacto: document.getElementById('evento-contacto-whatsapp').value || null,
+                email_contacto: document.getElementById('evento-contacto-email').value || null,
+                descripcion: document.getElementById('evento-descripcion').value || null
+            };
+            
+            // Bandas invitadas (convertir string a array)
+            const invitadasStr = document.getElementById('evento-invitadas').value;
+            if (invitadasStr) {
+                body.bandas_invitadas = invitadasStr.split(',').map(b => b.trim()).filter(b => b);
+            }
+            
+            try {
+                const url = id ? `/api/admin/eventos/${id}` : '/api/admin/eventos';
+                const method = id ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showBanner(data.message || 'Evento guardado correctamente', 'success');
+                    closeModal('modal-evento');
+                    loadEventos();
+                } else {
+                    throw new Error(data.message || 'Error al guardar');
+                }
+            } catch (err) {
+                showBanner('Error: ' + err.message, 'error');
+            }
         }
 
         async function deleteEvento(id) {
@@ -930,19 +1195,14 @@
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });
                 if (res.ok) {
-                    showNotification('Evento eliminado', 'success');
+                    showBanner('Evento eliminado', 'success');
                     loadEventos();
                 } else {
                     throw new Error('Error al eliminar');
                 }
             } catch (err) {
-                showNotification('Error: ' + err.message, 'error');
+                showBanner('Error: ' + err.message, 'error');
             }
-        }
-
-        function openEventoModal() {
-            // Redirigir al editor de eventos con modo nuevo
-            window.location.href = '/editar_evento_banda.html?id=new';
         }
 
         function renderInstrumentos() {
@@ -1060,13 +1320,14 @@
                 if (res.ok) {
                     closeModal('modal-banda');
                     loadBandas();
+                    showBanner('Banda guardada exitosamente', 'success');
                 } else {
                     const err = await res.json();
-                    alert(err.error || 'Error al guardar');
+                    showBanner(err.error || 'Error al guardar', 'error');
                 }
             } catch (err) {
                 console.error('Error:', err);
-                alert('Error de conexión');
+                showBanner('Error de conexión', 'error');
             }
         }
 
@@ -1100,7 +1361,7 @@
             };
 
             // Por ahora solo mostrar, falta endpoint
-            alert('Funcionalidad de guardado de instrumentos pendiente de implementar en el backend');
+            showBanner('Funcionalidad de guardado de instrumentos pendiente de implementar en el backend', 'info');
             closeModal('modal-instrumento');
         }
 

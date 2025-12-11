@@ -1,66 +1,455 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Administración - Personal</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root {
-      --color-primary: #581c87;
-      --color-secondary: #f0abfc;
-      --color-rustic: #44403c;
-    }
-
-    body {
-      background-color: #0c0a09;
-      color: #d6d3d1;
-      font-family: 'Inter', sans-serif;
-    }
-
-    .text-neon {
-      color: var(--color-secondary);
-      text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-    }
-
-    .bg-rustic {
-      background-color: var(--color-rustic);
-    }
-
-    h1 {
-      color: var(--color-secondary);
-      margin: 0;
-    }
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Administración - Personal y Costos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <style>
+        .modal-overlay.show { display: flex; }
+        h1 { text-align: center; font-size: 1.8rem; }
+        .notification-banner {
+            position: fixed; top: 20px; right: 20px; padding: 12px 20px;
+            border-radius: 8px; color: white; font-weight: 500; z-index: 9999;
+            animation: slideIn 0.3s ease; max-width: 400px;
+        }
+        .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
+        .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
 </head>
-
 <body>
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-      <a href="admin.html"
-        style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
-        <i class="fas fa-arrow-left"></i> Volver al Panel
-      </a>
-      <h1 class="text-4xl font-bold">Administrar Personal</h1>
-      <div style="width: 140px;"></div>
+    <main class="wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <a href="/admin.html" class="btn btn-secondary" style="text-decoration:none;">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <h1 style="margin:0;flex:1;"><i class="fas fa-users"></i> Personal y Costos</h1>
+            <div style="width:150px;"></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-section="personal">
+                <i class="fas fa-users"></i> Personal Disponible
+            </button>
+            <button class="tab" data-section="roles">
+                <i class="fas fa-id-badge"></i> Roles de Personal
+            </button>
+            <button class="tab" data-section="costos">
+                <i class="fas fa-dollar-sign"></i> Costos / Pagos
+            </button>
+        </div>
+
+        <!-- SECCIÓN: Personal Disponible -->
+        <div id="section-personal" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-users"></i> Personal Disponible</span>
+                    <button class="btn btn-primary btn-crear" onclick="openPersonalModal()">
+                        <i class="fas fa-plus"></i> Agregar Personal
+                    </button>
+                </div>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Roles</th>
+                            <th>Teléfono</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-personal">
+                        <tr><td colspan="5" style="text-align:center;color:#9ca3af;">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Roles de Personal -->
+        <div id="section-roles" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-id-badge"></i> Catálogo de Roles</span>
+                    <button class="btn btn-primary btn-crear" onclick="openRolModal()">
+                        <i class="fas fa-plus"></i> Agregar Rol
+                    </button>
+                </div>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre del Rol</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-roles">
+                        <tr><td colspan="4" style="text-align:center;color:#9ca3af;">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Costos / Pagos -->
+        <div id="section-costos" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-dollar-sign"></i> Costos de Personal por Vigencia</span>
+                    <button class="btn btn-primary btn-crear" onclick="openCostoModal()">
+                        <i class="fas fa-plus"></i> Agregar Costo
+                    </button>
+                </div>
+                <p style="color:#9ca3af;margin-bottom:16px;">
+                    Define los costos por hora y viáticos para cada rol de personal. Las tarifas tienen una fecha de vigencia.
+                </p>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Rol</th>
+                            <th>Fecha de Vigencia</th>
+                            <th>Costo por Hora</th>
+                            <th>Viáticos</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-costos">
+                        <tr><td colspan="5" style="text-align:center;color:#9ca3af;">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal genérico -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Modal</h3>
+                <button class="btn btn-icon" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveModal()">Guardar</button>
+            </div>
+        </div>
     </div>
-    <p class="mt-4 text-gray-400">Sección para administrar personal. La gestión completa está disponible en <a
-        href="config_alquiler.html#personal" style="color: var(--color-secondary);">Configuración de Alquiler →
-        Personal</a>.</p>
-  </main>
 
-  <script src="/navbar.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      navbarManager = new NavbarManager();
-      if (!navbarManager.protectAdminPage()) {
-        return; // Salir si no está autenticado
-      }
-      navbarManager.injectNavbar('body');
-    });
-  </script>
+    <script src="/navbar.js"></script>
+    <script>
+        let personal = [];
+        let roles = [];
+        let costos = [];
+        let currentModalType = null;
+        let currentEditId = null;
+        let navbarManager = null;
+        let puedeEditarPersonal = false;
+
+        const API_BASE = '/api/admin';
+        const getToken = () => localStorage.getItem('authToken');
+        const authHeaders = () => ({
+            'Authorization': 'Bearer ' + getToken(),
+            'Content-Type': 'application/json'
+        });
+
+        function showBanner(message, type, duration) {
+            type = type || 'info';
+            duration = duration || 4000;
+            document.querySelectorAll('.notification-banner').forEach(function(n) { n.remove(); });
+            var banner = document.createElement('div');
+            banner.className = 'notification-banner ' + type;
+            var icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-' + icon + '"></i><span>' + message + '</span></div>';
+            document.body.appendChild(banner);
+            setTimeout(function() {
+                banner.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(function() { banner.remove(); }, 300);
+            }, duration);
+        }
+
+        function initTabs() {
+            document.querySelectorAll('.tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    var section = tab.dataset.section;
+                    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+                    tab.classList.add('active');
+                    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+                    document.getElementById('section-' + section).classList.add('active');
+                    history.replaceState(null, '', '#' + section);
+                });
+            });
+            var hash = window.location.hash.replace('#', '');
+            if (hash && ['personal', 'roles', 'costos'].indexOf(hash) !== -1) {
+                var tab = document.querySelector('.tab[data-section="' + hash + '"]');
+                if (tab) tab.click();
+            }
+        }
+
+        function puedeEditar(tipo) {
+            var permisos = JSON.parse(localStorage.getItem('userPermisos') || '[]');
+            if (tipo === 'personal') {
+                return permisos.indexOf('personal.gestionar') !== -1 || permisos.indexOf('*') !== -1;
+            }
+            return false;
+        }
+
+        function aplicarPermisosUI() {
+            if (!puedeEditarPersonal) {
+                document.querySelectorAll('.btn-crear').forEach(function(btn) { btn.style.display = 'none'; });
+            }
+        }
+
+        async function loadPersonal() {
+            try {
+                var res = await fetch(API_BASE + '/personal', { headers: authHeaders() });
+                if (res.ok) {
+                    personal = await res.json();
+                    renderPersonal();
+                }
+            } catch (err) {
+                console.error('Error cargando personal:', err);
+            }
+        }
+
+        async function loadRoles() {
+            try {
+                var res = await fetch(API_BASE + '/roles', { headers: authHeaders() });
+                if (res.ok) {
+                    roles = await res.json();
+                    renderRoles();
+                }
+            } catch (err) {
+                console.error('Error cargando roles:', err);
+            }
+        }
+
+        async function loadCostos() {
+            try {
+                var res = await fetch(API_BASE + '/costos', { headers: authHeaders() });
+                if (res.ok) {
+                    costos = await res.json();
+                    renderCostos();
+                }
+            } catch (err) {
+                console.error('Error cargando costos:', err);
+            }
+        }
+
+        function renderPersonal() {
+            var tbody = document.getElementById('tbody-personal');
+            if (personal.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay personal registrado</td></tr>';
+                return;
+            }
+            tbody.innerHTML = personal.map(function(p) {
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editPersonal(' + p.id + ')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deletePersonal(' + p.id + ')" title="Desactivar" style="color:#f87171;"><i class="fas fa-user-slash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var estado = p.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>';
+                return '<tr><td><strong>' + p.nombre + '</strong></td><td>' + (p.roles || '-') + '</td><td>' + (p.telefono || '-') + '</td><td>' + estado + '</td><td>' + acciones + '</td></tr>';
+            }).join('');
+        }
+
+        function renderRoles() {
+            var tbody = document.getElementById('tbody-roles');
+            if (roles.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;">No hay roles configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = roles.map(function(r) {
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editRol(' + r.id + ')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deleteRol(' + r.id + ')" title="Eliminar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var estado = r.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>';
+                return '<tr><td><strong>' + r.nombre + '</strong></td><td style="max-width:300px;">' + (r.descripcion || '-') + '</td><td>' + estado + '</td><td>' + acciones + '</td></tr>';
+            }).join('');
+        }
+
+        function renderCostos() {
+            var tbody = document.getElementById('tbody-costos');
+            if (costos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay costos configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = costos.map(function(c) {
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editCosto(' + c.id + ')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deleteCosto(' + c.id + ')" title="Eliminar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var fecha = c.fecha_de_vigencia ? new Date(c.fecha_de_vigencia).toLocaleDateString('es-AR') : '-';
+                var costo = '$' + Number(c.costo_por_hora || 0).toLocaleString('es-AR');
+                var viaticos = '$' + Number(c.viaticos || 0).toLocaleString('es-AR');
+                return '<tr><td><strong>' + (c.nombre_rol || c.rol) + '</strong></td><td>' + fecha + '</td><td>' + costo + '</td><td>' + viaticos + '</td><td>' + acciones + '</td></tr>';
+            }).join('');
+        }
+
+        function openModal() { document.getElementById('modal-overlay').classList.add('show'); }
+        function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); currentModalType = null; currentEditId = null; }
+
+        function openPersonalModal(id) {
+            currentModalType = 'personal';
+            currentEditId = id || null;
+            var rolesCheckboxes = roles.map(function(r) {
+                return '<label style="display:inline-block;margin-right:16px;"><input type="checkbox" class="rol-checkbox" value="' + r.nombre + '"> ' + r.nombre + '</label>';
+            }).join('');
+            document.getElementById('modal-title').textContent = id ? 'Editar Personal' : 'Nuevo Personal';
+            document.getElementById('modal-body').innerHTML = '<div class="form-group"><label>Nombre Completo *</label><input type="text" id="form-nombre" placeholder="Nombre completo..."></div><div class="form-group"><label>Roles * (seleccione uno o más)</label><div id="roles-container" style="background:#292524;padding:12px;border-radius:6px;">' + (rolesCheckboxes || '<span style="color:#9ca3af;">No hay roles definidos</span>') + '</div></div><div class="form-group"><label>Teléfono / Celular</label><input type="text" id="form-telefono" placeholder="Número de teléfono..."></div><div class="form-group"><label>CVU / Alias (para pagos)</label><input type="text" id="form-cvu_alias" placeholder="Alias o CVU de pago..."></div><div class="form-group"><label><input type="checkbox" id="form-activo" checked> Activo</label></div>';
+            openModal();
+        }
+
+        function editPersonal(id) {
+            var pers = personal.find(function(p) { return p.id === id; });
+            if (!pers) return;
+            openPersonalModal(id);
+            setTimeout(function() {
+                document.getElementById('form-nombre').value = pers.nombre || '';
+                document.getElementById('form-telefono').value = pers.telefono || '';
+                document.getElementById('form-cvu_alias').value = pers.cvu_alias || '';
+                document.getElementById('form-activo').checked = pers.activo !== 0;
+                var rolesArr = (pers.roles || '').split(',').map(function(r) { return r.trim(); });
+                document.querySelectorAll('.rol-checkbox').forEach(function(cb) {
+                    cb.checked = rolesArr.indexOf(cb.value) !== -1;
+                });
+            }, 50);
+        }
+
+        async function deletePersonal(id) {
+            if (!confirm('¿Desactivar este personal?')) return;
+            try {
+                var res = await fetch(API_BASE + '/personal/' + id, { method: 'DELETE', headers: authHeaders() });
+                if (res.ok) { loadPersonal(); showBanner('Personal desactivado correctamente', 'success'); }
+                else { showBanner('Error al desactivar personal', 'error'); }
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        function openRolModal(id) {
+            currentModalType = 'rol';
+            currentEditId = id || null;
+            document.getElementById('modal-title').textContent = id ? 'Editar Rol' : 'Nuevo Rol';
+            document.getElementById('modal-body').innerHTML = '<div class="form-group"><label>Nombre del Rol *</label><input type="text" id="form-nombre" placeholder="Nombre del rol..."></div><div class="form-group"><label>Descripción</label><textarea id="form-descripcion" rows="4" placeholder="Descripción del rol (opcional)..."></textarea></div><div class="form-group"><label><input type="checkbox" id="form-activo" checked> Activo</label></div>';
+            openModal();
+        }
+
+        function editRol(id) {
+            var rol = roles.find(function(r) { return r.id === id; });
+            if (!rol) return;
+            openRolModal(id);
+            setTimeout(function() {
+                document.getElementById('form-nombre').value = rol.nombre || '';
+                document.getElementById('form-descripcion').value = rol.descripcion || '';
+                document.getElementById('form-activo').checked = rol.activo !== 0;
+            }, 50);
+        }
+
+        async function deleteRol(id) {
+            if (!confirm('¿Desactivar este rol?')) return;
+            try {
+                var res = await fetch(API_BASE + '/roles/' + id, { method: 'DELETE', headers: authHeaders() });
+                if (res.ok) { loadRoles(); showBanner('Rol desactivado correctamente', 'success'); }
+                else { showBanner('Error al desactivar rol', 'error'); }
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        function openCostoModal(id) {
+            currentModalType = 'costo';
+            currentEditId = id || null;
+            var rolesOptions = roles.map(function(r) { return '<option value="' + r.nombre + '">' + r.nombre + '</option>'; }).join('');
+            document.getElementById('modal-title').textContent = id ? 'Editar Costo' : 'Nuevo Costo';
+            document.getElementById('modal-body').innerHTML = '<div class="form-group"><label>Rol *</label><select id="form-rol"><option value="">Seleccione un rol...</option>' + rolesOptions + '</select></div><div class="form-group"><label>Fecha de Vigencia *</label><input type="date" id="form-fecha_vigencia"></div><div class="form-group"><label>Costo por Hora ($)</label><input type="number" id="form-costo_hora" placeholder="0" step="0.01" min="0"></div><div class="form-group"><label>Viáticos ($)</label><input type="number" id="form-viaticos" placeholder="0" step="0.01" min="0"></div>';
+            openModal();
+        }
+
+        function editCosto(id) {
+            var costo = costos.find(function(c) { return c.id === id; });
+            if (!costo) return;
+            openCostoModal(id);
+            setTimeout(function() {
+                document.getElementById('form-rol').value = costo.rol || '';
+                document.getElementById('form-fecha_vigencia').value = costo.fecha_de_vigencia ? costo.fecha_de_vigencia.split('T')[0] : '';
+                document.getElementById('form-costo_hora').value = costo.costo_por_hora || '';
+                document.getElementById('form-viaticos').value = costo.viaticos || '';
+            }, 50);
+        }
+
+        async function deleteCosto(id) {
+            if (!confirm('¿Eliminar este costo?')) return;
+            try {
+                var res = await fetch(API_BASE + '/costos/' + id, { method: 'DELETE', headers: authHeaders() });
+                if (res.ok) { loadCostos(); showBanner('Costo eliminado correctamente', 'success'); }
+                else { showBanner('Error al eliminar costo', 'error'); }
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        async function saveModal() {
+            try {
+                var endpoint, method, body;
+                switch (currentModalType) {
+                    case 'personal':
+                        var rolesSeleccionados = Array.from(document.querySelectorAll('.rol-checkbox:checked')).map(function(cb) { return cb.value; }).join(', ');
+                        endpoint = currentEditId ? API_BASE + '/personal/' + currentEditId : API_BASE + '/personal';
+                        method = currentEditId ? 'PUT' : 'POST';
+                        body = {
+                            nombre: document.getElementById('form-nombre').value,
+                            roles: rolesSeleccionados,
+                            telefono: document.getElementById('form-telefono').value || null,
+                            cvu_alias: document.getElementById('form-cvu_alias').value || null,
+                            activo: document.getElementById('form-activo').checked
+                        };
+                        break;
+                    case 'rol':
+                        endpoint = currentEditId ? API_BASE + '/roles/' + currentEditId : API_BASE + '/roles';
+                        method = currentEditId ? 'PUT' : 'POST';
+                        body = {
+                            nombre: document.getElementById('form-nombre').value,
+                            descripcion: document.getElementById('form-descripcion').value || null,
+                            activo: document.getElementById('form-activo').checked
+                        };
+                        break;
+                    case 'costo':
+                        endpoint = currentEditId ? API_BASE + '/costos/' + currentEditId : API_BASE + '/costos';
+                        method = currentEditId ? 'PUT' : 'POST';
+                        body = {
+                            rol: document.getElementById('form-rol').value,
+                            fecha_de_vigencia: document.getElementById('form-fecha_vigencia').value,
+                            costo_por_hora: parseFloat(document.getElementById('form-costo_hora').value) || 0,
+                            viaticos: parseFloat(document.getElementById('form-viaticos').value) || 0
+                        };
+                        break;
+                    default:
+                        showBanner('Tipo de modal desconocido', 'error');
+                        return;
+                }
+                var res = await fetch(endpoint, { method: method, headers: authHeaders(), body: JSON.stringify(body) });
+                var data = await res.json();
+                if (res.ok) {
+                    var savedType = currentModalType;
+                    closeModal();
+                    if (savedType === 'personal') { loadPersonal(); loadRoles(); }
+                    else if (savedType === 'rol') { loadRoles(); loadPersonal(); }
+                    else if (savedType === 'costo') { loadCostos(); }
+                    showBanner(data.message || 'Guardado exitosamente', 'success');
+                } else {
+                    showBanner(data.error || 'Error al guardar', 'error');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showBanner('Error de conexión', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) return;
+            navbarManager.injectNavbar('body');
+            puedeEditarPersonal = puedeEditar('personal');
+            aplicarPermisosUI();
+            initTabs();
+            loadPersonal();
+            loadRoles();
+            loadCostos();
+        });
+    </script>
 </body>
-
 </html>

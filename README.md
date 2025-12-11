@@ -1,6 +1,16 @@
-# TDC - Sistema de Gestión de Eventos
+# TDC - Sistema de Gestión de Eventos (Versión Beta)
 
-Sistema de gestión de solicitudes para eventos del Centro Cultural.
+
+**Versión Beta**
+
+Esta es la versión beta funcional del sistema. El flujo actual permite:
+- Solicitudes de alquiler, servicios, talleres y fechas de bandas desde el frontend
+- Confirmación y gestión de solicitudes desde el panel de administración
+- Visualización pública de eventos confirmados en la agenda
+- Control de visibilidad pública para solicitudes confirmadas
+- Integración de eventos de bandas y solicitudes en la agenda pública
+
+> **Nota:** En la próxima versión, el sistema migrará a un modelo con tablas especializadas por categoría (ver `README_MIGRACION.md`).
 
 ## Arquitectura
 
@@ -58,6 +68,19 @@ cp .env.example .env   # Editar con tus variables
 ```bash
 docker exec -it tdc-backend node /app/scripts/crear-admin.js
 ```
+
+## Cambios recientes en la versión beta
+
+- Se agregó control de visibilidad pública para solicitudes confirmadas (toggle en admin_solicitudes.html)
+- Se unificó la agenda pública mostrando tanto eventos de bandas como solicitudes públicas confirmadas
+- Se corrigió el error de columna en la consulta de solicitudes públicas
+- Se actualizaron los botones y navegación del panel de administración
+- Se crearon nuevas páginas de configuración para alquileres y servicios confirmados
+- Se implementó endpoint `/api/solicitudes/publicas` para la agenda
+
+---
+
+> **IMPORTANTE:** Esta versión es funcional y estable, pero no es la estructura final recomendada. Consulta `README_MIGRACION.md` para el futuro modelo de datos y lógica de negocio.
 
 ### Reiniciar solo el backend
 
@@ -238,3 +261,65 @@ docker-compose -f docker/docker-compose.yml restart backend
 # Reiniciar todos los servicios
 docker-compose -f docker/docker-compose.yml restart
 ```
+
+---
+
+## Mejoras Pendientes del Panel de Administración
+
+Lista de sugerencias para futuras mejoras del panel de administración:
+
+### 1. Dashboard con métricas
+Agregar un panel principal en `admin.html` con estadísticas rápidas:
+- Total de solicitudes (por estado: Solicitadas, Confirmadas, Canceladas)
+- Próximos eventos de la semana
+- Ingresos estimados del mes
+- Gráficos de tendencias (usando Chart.js o similar)
+
+### 2. Búsqueda global
+Implementar una barra de búsqueda universal en el navbar que permita buscar:
+- Solicitudes por cliente, ID, fecha
+- Personal por nombre
+- Eventos por banda
+
+### 3. Exportar datos
+Agregar botones para exportar información a:
+- **Excel/CSV**: Para análisis en hojas de cálculo
+- **PDF**: Para reportes imprimibles (órdenes de trabajo, listados)
+
+### 4. Notificaciones en tiempo real
+Implementar sistema de notificaciones push o WebSocket para:
+- Nueva solicitud recibida
+- Cambio de estado de una solicitud
+- Recordatorios de eventos próximos
+
+### 5. Calendario visual
+Crear una vista de calendario (usando FullCalendar.js) para visualizar:
+- Eventos confirmados
+- Disponibilidad del salón
+- Asignaciones de personal
+
+### 6. Historial de cambios (Auditoría)
+Registrar y mostrar un log de:
+- Quién modificó cada solicitud
+- Qué campos se cambiaron
+- Fecha y hora de cada cambio
+
+### 7. Configuración de notificaciones por email
+Panel para configurar:
+- Templates de emails
+- Destinatarios automáticos
+- Frecuencia de recordatorios
+
+### 8. Modo oscuro/claro
+Toggle para cambiar entre temas de color según preferencia del usuario.
+
+### 9. Filtros avanzados y guardados
+- Permitir guardar filtros personalizados
+- Filtros por rango de precios
+- Filtros combinados más complejos
+
+### 10. Gestión de archivos adjuntos
+- Subir comprobantes de pago
+- Adjuntar contratos firmados
+- Galería de fotos de eventos anteriores
+

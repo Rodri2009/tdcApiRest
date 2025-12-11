@@ -23,6 +23,27 @@
             text-align: center;
             font-size: 1.8rem;
         }
+
+        /* Banner de notificación */
+        .notification-banner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+        .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
+        .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 
@@ -46,8 +67,8 @@
             <button class="tab" data-section="adicionales">
                 <i class="fas fa-plus-circle"></i> Adicionales
             </button>
-            <button class="tab" data-section="personal">
-                <i class="fas fa-users"></i> Personal
+            <button class="tab" data-section="alquileres">
+                <i class="fas fa-calendar-check"></i> Alquileres Confirmados
             </button>
         </div>
 
@@ -220,57 +241,33 @@
             </div>
         </div>
 
-        <!-- SECCIÓN: Personal -->
-        <div id="section-personal" class="section">
+        <!-- SECCIÓN: Alquileres Confirmados -->
+        <div id="section-alquileres" class="section">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-users"></i> Personal Disponible</h3>
-                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
-                        onclick="openPersonalModal()">
-                        <i class="fas fa-plus"></i> Nuevo Personal
-                    </button>
+                    <h3 class="card-title"><i class="fas fa-calendar-check"></i> Alquileres Confirmados</h3>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    Listado de solicitudes de alquiler confirmadas. Estos eventos ya tienen fecha y hora reservada en el salón.
                 </div>
                 <div class="table-container">
                     <table>
                         <thead>
                             <tr>
-                                <th>Nombre</th>
-                                <th>Roles</th>
-                                <th>Contacto</th>
-                                <th>Estado</th>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Tipo</th>
+                                <th>Cliente</th>
+                                <th>Personas</th>
+                                <th>Duración</th>
+                                <th>Precio</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="tbody-personal">
+                        <tbody id="tbody-alquileres">
                             <tr>
-                                <td colspan="5" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Roles -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-id-badge"></i> Roles de Personal</h3>
-                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal" onclick="openRolModal()">
-                        <i class="fas fa-plus"></i> Nuevo Rol
-                    </button>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Descripción</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-roles">
-                            <tr>
-                                <td colspan="4" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                                <td colspan="8" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -309,14 +306,12 @@
         let duraciones = [];
         let precios = [];
         let adicionales = [];
-        let personal = [];
-        let roles = [];
+        let alquileres = [];
         let currentModalType = null;
         let currentEditId = null;
 
         // Permisos de edición (se inicializan después de navbarManager)
         let puedeEditarAlquiler = false;
-        let puedeEditarPersonal = false;
 
         const API_BASE = '/api/admin';
         const getToken = () => localStorage.getItem('authToken');
@@ -324,6 +319,22 @@
             'Authorization': `Bearer ${getToken()}`,
             'Content-Type': 'application/json'
         });
+
+        // ============================================================
+        // BANNERS DE NOTIFICACIÓN
+        // ============================================================
+        function showBanner(message, type = 'info', duration = 4000) {
+            document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+            const banner = document.createElement('div');
+            banner.className = `notification-banner ${type}`;
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+            document.body.appendChild(banner);
+            setTimeout(() => {
+                banner.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => banner.remove(), 300);
+            }, duration);
+        }
 
         // ============================================================
         // NAVEGACIÓN
@@ -341,7 +352,7 @@
             });
 
             const hash = window.location.hash.replace('#', '');
-            if (hash && ['tipos', 'precios', 'adicionales', 'personal'].includes(hash)) {
+            if (hash && ['tipos', 'precios', 'adicionales', 'alquileres'].includes(hash)) {
                 document.querySelector(`.tab[data-section="${hash}"]`).click();
             }
         }
@@ -383,11 +394,11 @@
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     console.error('Error HTTP al cargar precios:', res.status, errData);
-                    alert(`Error al cargar precios: ${errData.error || res.statusText}`);
+                    showBanner(`Error al cargar precios: ${errData.error || res.statusText}`, 'error');
                 }
             } catch (err) {
                 console.error('Error de red al cargar precios:', err);
-                alert(`Error de conexión al cargar precios: ${err.message}`);
+                showBanner(`Error de conexión al cargar precios: ${err.message}`, 'error');
             }
         }
 
@@ -403,27 +414,17 @@
             }
         }
 
-        async function loadPersonal() {
+        async function loadAlquileres() {
             try {
-                const res = await fetch(`${API_BASE}/personal`, { headers: authHeaders() });
+                // Cargar solicitudes de alquiler confirmadas
+                const res = await fetch(`${API_BASE}/solicitudes?tipo=ALQUILER_SALON&estado=Confirmado`, { headers: authHeaders() });
                 if (res.ok) {
-                    personal = await res.json();
-                    renderPersonal();
+                    alquileres = await res.json();
+                    renderAlquileres();
                 }
             } catch (err) {
                 console.error('Error:', err);
-            }
-        }
-
-        async function loadRoles() {
-            try {
-                const res = await fetch(`${API_BASE}/roles`, { headers: authHeaders() });
-                if (res.ok) {
-                    roles = await res.json();
-                    renderRoles();
-                }
-            } catch (err) {
-                console.error('Error:', err);
+                document.getElementById('tbody-alquileres').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#f87171;">Error al cargar alquileres</td></tr>';
             }
         }
 
@@ -600,59 +601,43 @@
             `).join('');
         }
 
-        function renderPersonal() {
-            const tbody = document.getElementById('tbody-personal');
-            if (personal.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay personal registrado</td></tr>';
+        function renderAlquileres() {
+            const tbody = document.getElementById('tbody-alquileres');
+            if (alquileres.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#9ca3af;">No hay alquileres confirmados</td></tr>';
                 return;
             }
-            tbody.innerHTML = personal.map(p => `
-                <tr>
-                    <td><strong>${p.nombre}</strong></td>
-                    <td>${p.roles || '-'}</td>
-                    <td>${p.telefono || '-'}</td>
-                    <td>${p.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
-                    <td>
-                        ${puedeEditarPersonal ? `
-                        <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editPersonal('${p.id}')" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-icon btn-sm" onclick="deletePersonal('${p.id}')" title="Desactivar" style="color:#f87171;">
-                                <i class="fas fa-user-slash"></i>
-                            </button>
-                        </div>
-                        ` : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>'}
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function renderRoles() {
-            const tbody = document.getElementById('tbody-roles');
-            if (roles.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;">No hay roles configurados</td></tr>';
-                return;
-            }
-            tbody.innerHTML = roles.map(r => `
-                <tr>
-                    <td><strong>${r.nombre}</strong></td>
-                    <td>${r.descripcion || '-'}</td>
-                    <td>${r.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
-                    <td>
-                        ${puedeEditarPersonal ? `
-                        <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editRol(${r.id})" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-icon btn-sm" onclick="deleteRol(${r.id})" title="Eliminar" style="color:#f87171;">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                        ` : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>'}
-                    </td>
-                </tr>
-            `).join('');
+            // Ordenar por fecha más cercana primero
+            const alquileresOrdenados = [...alquileres].sort((a, b) => new Date(a.fechaEvento) - new Date(b.fechaEvento));
+            
+            tbody.innerHTML = alquileresOrdenados.map(a => {
+                const fecha = a.fechaEvento ? new Date(a.fechaEvento).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-';
+                const hora = a.horaEvento || '-';
+                const tipo = a.tipoEvento || '-';
+                const cliente = a.nombreCompleto || '-';
+                const personas = a.cantidad || '-';
+                const duracion = a.duracion || '-';
+                const precio = a.precio ? `$${Number(a.precio).toLocaleString('es-AR')}` : '-';
+                
+                return `
+                    <tr>
+                        <td><strong>${fecha}</strong></td>
+                        <td>${hora}</td>
+                        <td><span class="badge badge-primary">${tipo}</span></td>
+                        <td>${cliente}</td>
+                        <td>${personas} personas</td>
+                        <td>${duracion}</td>
+                        <td>${precio}</td>
+                        <td>
+                            <div class="row-actions">
+                                <a href="editar_solicitud.html?id=${a.id}" class="btn btn-icon btn-sm" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         // ============================================================
@@ -746,9 +731,9 @@
                 const res = await fetch(`${API_BASE}/alquiler/duraciones/${id}`, {
                     method: 'DELETE', headers: authHeaders()
                 });
-                if (res.ok) { loadDuraciones(); alert('Eliminado'); }
-                else alert('Error al eliminar');
-            } catch (err) { alert('Error de conexión'); }
+                if (res.ok) { loadDuraciones(); showBanner('Duración eliminada', 'success'); }
+                else showBanner('Error al eliminar', 'error');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
         }
 
         // --- PRECIOS ---
@@ -814,9 +799,9 @@
                 const res = await fetch(`${API_BASE}/alquiler/precios/${id}`, {
                     method: 'DELETE', headers: authHeaders()
                 });
-                if (res.ok) { loadPrecios(); alert('Eliminado'); }
-                else alert('Error al eliminar');
-            } catch (err) { alert('Error de conexión'); }
+                if (res.ok) { loadPrecios(); showBanner('Precio eliminado', 'success'); }
+                else showBanner('Error al eliminar', 'error');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
         }
 
         // --- ADICIONALES ---
@@ -864,114 +849,9 @@
                 const res = await fetch(`${API_BASE}/alquiler/adicionales/${nombre}`, {
                     method: 'DELETE', headers: authHeaders()
                 });
-                if (res.ok) { loadAdicionales(); alert('Eliminado'); }
-                else alert('Error al eliminar');
-            } catch (err) { alert('Error de conexión'); }
-        }
-
-        // --- PERSONAL ---
-        function openPersonalModal(id = null) {
-            currentModalType = 'personal';
-            currentEditId = id;
-            const rolesCheckboxes = roles.map(r =>
-                `<label style="display:inline-block;margin-right:16px;"><input type="checkbox" class="rol-checkbox" value="${r.nombre}"> ${r.nombre}</label>`
-            ).join('');
-            document.getElementById('modal-title').textContent = id ? 'Editar Personal' : 'Nuevo Personal';
-            document.getElementById('modal-body').innerHTML = `
-                <div class="form-group">
-                    <label>Nombre Completo *</label>
-                    <input type="text" id="form-nombre" placeholder="Nombre completo...">
-                </div>
-                <div class="form-group">
-                    <label>Roles * (seleccione uno o más)</label>
-                    <div id="roles-container" style="background:#292524;padding:12px;border-radius:6px;">
-                        ${rolesCheckboxes || '<span style="color:#9ca3af;">No hay roles definidos</span>'}
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Teléfono / Celular</label>
-                    <input type="text" id="form-telefono" placeholder="Número de teléfono...">
-                </div>
-                <div class="form-group">
-                    <label>CVU / Alias (para pagos)</label>
-                    <input type="text" id="form-cvu_alias" placeholder="Alias o CVU de pago...">
-                </div>
-                <div class="form-group">
-                    <label><input type="checkbox" id="form-activo" checked> Activo</label>
-                </div>
-            `;
-            openModal();
-        }
-
-        function editPersonal(id) {
-            const pers = personal.find(p => p.id === id);
-            if (!pers) return;
-            openPersonalModal(id);
-            setTimeout(() => {
-                document.getElementById('form-nombre').value = pers.nombre || '';
-                document.getElementById('form-telefono').value = pers.telefono || '';
-                document.getElementById('form-cvu_alias').value = pers.cvu_alias || '';
-                document.getElementById('form-activo').checked = pers.activo !== 0;
-                // Marcar roles
-                const rolesArr = (pers.roles || '').split(',').map(r => r.trim());
-                document.querySelectorAll('.rol-checkbox').forEach(cb => {
-                    cb.checked = rolesArr.includes(cb.value);
-                });
-            }, 50);
-        }
-
-        async function deletePersonal(id) {
-            if (!confirm('¿Desactivar este personal?')) return;
-            try {
-                const res = await fetch(`${API_BASE}/personal/${id}`, {
-                    method: 'DELETE', headers: authHeaders()
-                });
-                if (res.ok) { loadPersonal(); alert('Personal desactivado'); }
-                else alert('Error');
-            } catch (err) { alert('Error de conexión'); }
-        }
-
-        // --- ROL ---
-        function openRolModal(id = null) {
-            currentModalType = 'rol';
-            currentEditId = id;
-            document.getElementById('modal-title').textContent = id ? 'Editar Rol' : 'Nuevo Rol';
-            document.getElementById('modal-body').innerHTML = `
-                <div class="form-group">
-                    <label>Nombre del Rol *</label>
-                    <input type="text" id="form-nombre" placeholder="Nombre del rol...">
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea id="form-descripcion" rows="8" placeholder="Descripción del rol (opcional)..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label><input type="checkbox" id="form-activo" checked> Activo</label>
-                </div>
-            `;
-            openModal();
-        }
-
-        function editRol(id) {
-            const rol = roles.find(r => r.id === id);
-            if (!rol) return;
-            openRolModal(id);
-            setTimeout(() => {
-                document.getElementById('form-nombre').value = rol.nombre || '';
-                document.getElementById('form-descripcion').value = rol.descripcion || '';
-                document.getElementById('form-activo').checked = rol.activo !== 0;
-            }, 50);
-        }
-
-        async function deleteRol(id) {
-            if (!confirm('¿Desactivar este rol?')) return;
-            try {
-                const res = await fetch(`${API_BASE}/roles/${id}`, {
-                    method: 'DELETE', headers: authHeaders()
-                });
-                if (res.ok) { loadRoles(); alert('Rol desactivado'); }
-                else alert('Error al desactivar rol');
-            } catch (err) { alert('Error de conexión'); }
+                if (res.ok) { loadAdicionales(); showBanner('Adicional eliminado', 'success'); }
+                else showBanner('Error al eliminar', 'error');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
         }
 
         // ============================================================
@@ -1038,36 +918,8 @@
                         };
                         break;
 
-                    case 'personal':
-                        const rolesSeleccionados = Array.from(document.querySelectorAll('.rol-checkbox:checked'))
-                            .map(cb => cb.value).join(', ');
-                        endpoint = currentEditId
-                            ? `${API_BASE}/personal/${currentEditId}`
-                            : `${API_BASE}/personal`;
-                        method = currentEditId ? 'PUT' : 'POST';
-                        body = {
-                            nombre: document.getElementById('form-nombre').value,
-                            roles: rolesSeleccionados,
-                            telefono: document.getElementById('form-telefono').value || null,
-                            cvu_alias: document.getElementById('form-cvu_alias').value || null,
-                            activo: document.getElementById('form-activo').checked
-                        };
-                        break;
-
-                    case 'rol':
-                        endpoint = currentEditId
-                            ? `${API_BASE}/roles/${currentEditId}`
-                            : `${API_BASE}/roles`;
-                        method = currentEditId ? 'PUT' : 'POST';
-                        body = {
-                            nombre: document.getElementById('form-nombre').value,
-                            descripcion: document.getElementById('form-descripcion').value || null,
-                            activo: document.getElementById('form-activo').checked
-                        };
-                        break;
-
                     default:
-                        alert('Tipo de modal desconocido');
+                        showBanner('Tipo de modal desconocido', 'error');
                         return;
                 }
 
@@ -1088,15 +940,13 @@
                     else if (savedType === 'duracion') loadDuraciones();
                     else if (savedType === 'precio') loadPrecios();
                     else if (savedType === 'adicional') loadAdicionales();
-                    else if (savedType === 'personal') { loadPersonal(); loadRoles(); }
-                    else if (savedType === 'rol') loadRoles();
-                    alert(data.message || 'Guardado exitosamente');
+                    showBanner(data.message || 'Guardado exitosamente', 'success');
                 } else {
-                    alert(data.error || 'Error al guardar');
+                    showBanner(data.error || 'Error al guardar', 'error');
                 }
             } catch (err) {
                 console.error('Error:', err);
-                alert('Error de conexión');
+                showBanner('Error de conexión', 'error');
             }
         }
 
@@ -1110,7 +960,6 @@
 
             // Establecer permisos de edición
             puedeEditarAlquiler = puedeEditar('alquiler');
-            puedeEditarPersonal = puedeEditar('personal');
 
             // Ocultar botones de crear si no tiene permisos
             aplicarPermisosUI();
@@ -1120,8 +969,7 @@
             loadDuraciones();
             loadPrecios();
             loadAdicionales();
-            loadPersonal();
-            loadRoles();
+            loadAlquileres();
         });
     </script>
 </body>

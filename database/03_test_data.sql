@@ -69,11 +69,29 @@ INSERT INTO eventos_lineup (id_evento, id_banda, nombre_banda, orden_show, es_pr
 -- SOLICITUDES DE EJEMPLO (Alquileres)
 -- NOTA: tipo_de_evento = subtipo (INFANTILES, CON_SERVICIO_DE_MESA, etc.)
 -- ---------------------------------------------------------------------------
-INSERT INTO solicitudes (tipo_de_evento, tipo_servicio, es_publico, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, nombre_completo, telefono, email, descripcion, estado) VALUES
-('INFANTILES', NULL, 0, '2025-12-20', '15:00', '4 horas', '25', 200000.00, 'María García', '1155667788', 'maria.garcia@email.com', 'Cumpleaños de 7 años temático de Minecraft', 'Solicitado'),
-('ADOLESCENTES', NULL, 0, '2025-12-22', '20:00', '5 horas', '40', 250000.00, 'Carlos López', '1144556677', 'carlos.lopez@email.com', 'Fiesta de 15 para mi hija Valentina', 'Solicitado'),
-('CON_SERVICIO_DE_MESA', NULL, 0, '2025-12-27', '13:00', '4 horas', '30', 240000.00, 'Roberto Fernández', '1133445566', 'roberto.f@email.com', 'Almuerzo familiar de fin de año', 'Solicitado'),
-('INFORMALES', NULL, 0, '2025-12-29', '12:00', '6 horas', '45', 180000.00, 'Ana Martínez', '1122334455', 'ana.m@email.com', 'Asado familiar de fin de año', 'Solicitado');
+INSERT INTO solicitudes (tipo_de_evento, tipo_servicio, es_publico, fecha_hora, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, nombre_completo, telefono, email, descripcion, estado) VALUES
+('INFANTILES', NULL, 0, NOW(), '2025-12-20', '15:00', '4 horas', '25', 200000.00, 'María García', '1155667788', 'maria.garcia@email.com', 'Cumpleaños de 7 años temático de Minecraft', 'Solicitado'),
+('ADOLESCENTES', NULL, 0, NOW(), '2025-12-22', '20:00', '5 horas', '40', 250000.00, 'Carlos López', '1144556677', 'carlos.lopez@email.com', 'Fiesta de 15 para mi hija Valentina', 'Solicitado'),
+('CON_SERVICIO_DE_MESA', NULL, 0, NOW(), '2025-12-27', '13:00', '4 horas', '30', 240000.00, 'Roberto Fernández', '1133445566', 'roberto.f@email.com', 'Almuerzo familiar de fin de año', 'Solicitado'),
+('INFORMALES', NULL, 0, NOW(), '2025-12-29', '12:00', '6 horas', '45', 180000.00, 'Ana Martínez', '1122334455', 'ana.m@email.com', 'Asado familiar de fin de año', 'Solicitado');
+
+-- ---------------------------------------------------------------------------
+-- SOLICITUDES DE SERVICIOS (Estética, Depilación, Masajes)
+-- ---------------------------------------------------------------------------
+INSERT INTO solicitudes (tipo_de_evento, tipo_servicio, es_publico, fecha_hora, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, nombre_completo, telefono, email, descripcion, estado) VALUES
+('DEPILACION', 'DEPILACION', 1, NOW(), '2025-12-18', '10:00', '1 hora', '1', 5000.00, 'Lucía Méndez', '1177889900', 'lucia.mendez@email.com', 'Depilación piernas completas', 'Confirmado'),
+('ESTETICA', 'ESTETICA', 1, NOW(), '2025-12-19', '11:00', '1.5 horas', '1', 8000.00, 'Valentina Torres', '1166778899', 'val.torres@email.com', 'Limpieza facial profunda + hidratación', 'Solicitado'),
+('MASAJES', 'MASAJES', 1, NOW(), '2025-12-21', '16:00', '1 hora', '1', 7000.00, 'Patricia Ruiz', '1155667788', 'patricia.r@email.com', 'Masaje descontracturante espalda y cuello', 'Confirmado'),
+('DEPILACION_DEFINITIVA', 'DEPILACION_DEFINITIVA', 0, NOW(), '2025-12-27', '09:30', '8 horas', '1', 50000.00, 'Centro Estética Laura', '1123456789', 'estetica.laura@email.com', 'Jornada completa depilación definitiva - Servicio privado', 'Confirmado');
+
+-- ---------------------------------------------------------------------------
+-- SOLICITUDES DE TALLERES (Yoga, Música, Danza, Arte)
+-- ---------------------------------------------------------------------------
+INSERT INTO solicitudes (tipo_de_evento, tipo_servicio, es_publico, fecha_hora, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, nombre_completo, telefono, email, descripcion, estado) VALUES
+('TALLER_YOGA', 'TALLER_YOGA', 1, NOW(), '2025-12-16', '09:00', '1.5 horas', '15', 3000.00, 'Marina Paz', '1144556677', 'marina.yoga@email.com', 'Clase de Yoga Hatha - Todos los niveles', 'Confirmado'),
+('TALLER_MUSICA', 'TALLER_MUSICA', 1, NOW(), '2025-12-17', '18:00', '2 horas', '8', 5000.00, 'Prof. Ricardo Música', '1133445566', 'ricardo.musica@email.com', 'Taller de guitarra para principiantes', 'Confirmado'),
+('TALLER_DANZA', 'TALLER_DANZA', 1, NOW(), '2025-12-23', '20:00', '1.5 horas', '20', 4000.00, 'Academia Ritmo Sur', '1122334455', 'ritmo.sur@email.com', 'Clase de Salsa y Bachata', 'Solicitado'),
+('TALLER_ARTE', 'TALLER_ARTE', 1, NOW(), '2025-12-26', '15:00', '3 horas', '12', 6000.00, 'Taller Creativo Lomas', '1111223344', 'taller.creativo@email.com', 'Taller de cerámica navideña', 'Confirmado');
 
 -- ---------------------------------------------------------------------------
 -- SOLICITUDES DE BANDAS (pendientes de aprobación)

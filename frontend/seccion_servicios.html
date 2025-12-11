@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios de Cuidado Personal - El Templo de Claypole</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+        }
+
+        .service-card {
+            background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
+            border: 1px solid var(--color-rustic);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .service-card:hover {
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 20px rgba(240, 171, 252, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .service-card i {
+            font-size: 3rem;
+            color: var(--color-secondary);
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al Inicio</span>
+                </a>
+
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="seccion_talleres.html" class="text-sm font-medium hover:text-neon transition">Talleres</a>
+                    <a href="seccion_bandas.html" class="text-sm font-medium hover:text-neon transition">Bandas en Vivo</a>
+                    <a href="solicitud_servicio.html"
+                        class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition">
+                        <i class="fas fa-calendar-plus mr-1"></i> Reservar Turno
+                    </a>
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+
+                <button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="seccion_talleres.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <a href="seccion_bandas.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas en Vivo</a>
+                <a href="solicitud_servicio.html" class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">
+                    <i class="fas fa-calendar-plus mr-1"></i> Reservar Turno
+                </a>
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="py-20 md:py-32 bg-stone-950 text-center">
+            <div class="max-w-4xl mx-auto px-4">
+                <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
+                    <span class="block text-neon"><i class="fas fa-spa mr-3"></i>Cuidado Personal</span>
+                </h1>
+                <p class="mt-4 text-2xl text-stone-300 font-medium">
+                    Un espacio para relajarte, renovarte y conectar con vos mismo
+                </p>
+                <p class="mt-6 text-xl text-fuchsia-400">
+                    Masajes, tarot, reiki y más servicios para tu bienestar
+                </p>
+                <div class="mt-8">
+                    <a href="solicitud_servicio.html"
+                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-calendar-check mr-2"></i> Reservar un Turno
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Servicios Disponibles -->
+        <section class="py-16 bg-stone-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center text-neon mb-4">
+                    <i class="fas fa-heart mr-2"></i> Nuestros Servicios
+                </h2>
+                <p class="text-center text-stone-400 mb-10">Atendidos por profesionales con experiencia</p>
+
+                <div id="servicios-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Se cargan dinámicamente -->
+                    <div class="service-card">
+                        <i class="fas fa-hands"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Masajes</h3>
+                        <p class="text-stone-400 text-sm">Relajantes, descontracturantes y terapéuticos</p>
+                    </div>
+                    <div class="service-card">
+                        <i class="fas fa-moon"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Tarot</h3>
+                        <p class="text-stone-400 text-sm">Lecturas personalizadas para guiarte</p>
+                    </div>
+                    <div class="service-card">
+                        <i class="fas fa-hand-sparkles"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Reiki</h3>
+                        <p class="text-stone-400 text-sm">Equilibra tu energía y bienestar</p>
+                    </div>
+                    <div class="service-card">
+                        <i class="fas fa-star"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Y más...</h3>
+                        <p class="text-stone-400 text-sm">Consultá por otros servicios disponibles</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Próximos Turnos / Disponibilidad -->
+        <section class="py-16 bg-stone-950">
+            <div class="max-w-5xl mx-auto px-4">
+                <h2 class="text-3xl font-bold text-center text-neon mb-10">
+                    <i class="fas fa-calendar-alt mr-2"></i> Disponibilidad
+                </h2>
+                <div class="bg-stone-900 p-8 rounded-xl border border-stone-700 text-center">
+                    <i class="fas fa-clock text-5xl text-fuchsia-400 mb-4"></i>
+                    <h3 class="text-xl font-bold text-white mb-4">Horarios de Atención</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-stone-300">
+                        <div>
+                            <p class="font-semibold text-fuchsia-400">Lunes a Viernes</p>
+                            <p>10:00 - 20:00 hs</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-fuchsia-400">Sábados</p>
+                            <p>10:00 - 18:00 hs</p>
+                        </div>
+                    </div>
+                    <p class="mt-6 text-stone-400">Los turnos se coordinan según disponibilidad del profesional</p>
+                    <a href="solicitud_servicio.html"
+                        class="inline-block mt-6 bg-stone-800 border-2 border-fuchsia-400 text-fuchsia-400 font-bold py-3 px-6 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition">
+                        <i class="fas fa-whatsapp mr-2"></i> Consultar Disponibilidad
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Info Adicional -->
+        <section class="py-16 bg-stone-900">
+            <div class="max-w-5xl mx-auto px-4">
+                <h2 class="text-3xl font-bold text-center text-neon mb-10">
+                    <i class="fas fa-info-circle mr-2"></i> Información
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-stone-950 p-6 rounded-xl border border-stone-700">
+                        <h3 class="text-xl font-bold text-fuchsia-400 mb-4"><i class="fas fa-map-marker-alt mr-2"></i> Ubicación</h3>
+                        <p class="text-stone-300">
+                            Los servicios se brindan en nuestro espacio de El Templo de Claypole, 
+                            en un ambiente tranquilo y preparado para tu comodidad.
+                        </p>
+                    </div>
+                    <div class="bg-stone-950 p-6 rounded-xl border border-stone-700">
+                        <h3 class="text-xl font-bold text-fuchsia-400 mb-4"><i class="fas fa-user-md mr-2"></i> Profesionales</h3>
+                        <p class="text-stone-300">
+                            Todos nuestros servicios son brindados por profesionales certificados 
+                            con años de experiencia en sus áreas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-rustic border-t border-stone-700 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Menú móvil
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenuButton && mobileMenu) {
+            mobileMenuButton.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+        }
+
+        // Auth menu
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                if (desktopMenu) desktopMenu.innerHTML = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition">🔐 Admin</a>`;
+                if (mobileMenu) mobileMenu.innerHTML = `<a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐 Admin</a>`;
+            } else {
+                if (desktopMenu) desktopMenu.innerHTML = `<a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition">Login</a>`;
+                if (mobileMenu) mobileMenu.innerHTML = `<a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon text-neon">Login</a>`;
+            }
+        }
+        updateAuthMenu();
+    </script>
+</body>
+
+</html>

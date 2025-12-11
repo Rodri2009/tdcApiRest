@@ -562,6 +562,87 @@ const obtenerAdicionales = async (req, res) => {
     }
 };
 
+/**
+ * Obtiene solicitudes públicas y confirmadas para mostrar en la agenda pública.
+ * Solo devuelve talleres, servicios y alquileres que sean públicos (es_publico = 1) y confirmados.
+ */
+const getSolicitudesPublicas = async (req, res) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        
+        // Seleccionar solicitudes públicas y confirmadas, con fecha futura
+        const query = `
+            SELECT 
+                id_solicitud as id,
+                tipo_de_evento as tipoEvento,
+                tipo_servicio as tipoServicio,
+                fecha_evento as fechaEvento,
+                hora_evento as horaEvento,
+                duracion,
+                cantidad_de_personas as cantidad,
+                precio_basico as precio,
+                nombre_completo as nombreCompleto,
+                descripcion,
+                es_publico as esPublico
+            FROM solicitudes 
+            WHERE es_publico = 1 
+              AND estado = 'Confirmado'
+              AND fecha_evento >= CURDATE()
+            ORDER BY fecha_evento ASC
+            LIMIT 50
+        `;
+        
+        const rows = await conn.query(query);
+        
+        return res.status(200).json(rows || []);
+    } catch (error) {
+        console.error('Error al obtener solicitudes públicas:', error);
+        return res.status(500).json({
+            error: 'Error interno al obtener solicitudes públicas.',
+            details: error.message
+        });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+/**
+ * Actualiza la visibilidad pública de una solicitud (es_publico).
+ */
+const updateVisibilidad = async (req, res) => {
+    const { id } = req.params;
+    const { es_publico } = req.body;
+    
+    if (typeof es_publico === 'undefined') {
+        return res.status(400).json({ message: 'Falta el campo es_publico' });
+    }
+    
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        
+        const result = await conn.query(
+            'UPDATE solicitudes SET es_publico = ? WHERE id_solicitud = ?',
+            [es_publico ? 1 : 0, id]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Solicitud no encontrada' });
+        }
+        
+        return res.status(200).json({ 
+            message: es_publico ? 'Solicitud visible en agenda pública' : 'Solicitud oculta de agenda pública',
+            es_publico: es_publico ? 1 : 0
+        });
+    } catch (error) {
+        console.error('Error al actualizar visibilidad:', error);
+        return res.status(500).json({ message: 'Error interno al actualizar visibilidad' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 // Y no olvides exportarla:
 module.exports = {
     crearSolicitud,
@@ -570,5 +651,7 @@ module.exports = {
     finalizarSolicitud,
     guardarAdicionales,
     obtenerAdicionales,
-    getSesionExistente
+    getSesionExistente,
+    getSolicitudesPublicas,
+    updateVisibilidad
 };

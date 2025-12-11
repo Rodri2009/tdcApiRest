@@ -23,6 +23,27 @@
       font-size: 0.75rem;
       color: #78716c;
     }
+
+    /* Banner de notificación */
+    .notification-banner {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 500;
+      z-index: 9999;
+      animation: slideIn 0.3s ease;
+      max-width: 400px;
+    }
+    .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
+    .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
   </style>
 </head>
 
@@ -161,6 +182,20 @@
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${getToken()}`
       };
+    }
+
+    // Banner de notificación
+    function showBanner(message, type = 'info', duration = 4000) {
+      document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+      const banner = document.createElement('div');
+      banner.className = `notification-banner ${type}`;
+      const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+      banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+      document.body.appendChild(banner);
+      setTimeout(() => {
+        banner.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => banner.remove(), 300);
+      }, duration);
     }
 
     // Cargar datos iniciales
@@ -357,7 +392,7 @@
 
         document.getElementById('modal-usuario').classList.add('active');
       } catch (error) {
-        alert('Error al cargar usuario: ' + error.message);
+        showBanner('Error al cargar usuario: ' + error.message, 'error');
       }
     }
 
@@ -449,15 +484,15 @@
         const result = await res.json();
 
         if (!res.ok) {
-          alert(result.message);
+          showBanner(result.message, 'error');
           return;
         }
 
         cerrarModalEliminar();
         cargarDatos();
-        mostrarMensaje('success', 'Usuario eliminado exitosamente');
+        showBanner('Usuario eliminado exitosamente', 'success');
       } catch (error) {
-        alert('Error al eliminar: ' + error.message);
+        showBanner('Error al eliminar: ' + error.message, 'error');
       }
     }
 

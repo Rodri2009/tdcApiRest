@@ -316,6 +316,27 @@
             font-size: 0.85rem;
             color: #9ca3af;
         }
+
+        /* Banner de notificación */
+        .notification-banner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+        .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
+        .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 
@@ -336,8 +357,8 @@
             <button class="tab" data-section="profesionales">
                 <i class="fas fa-user-md"></i> Profesionales
             </button>
-            <button class="tab" data-section="agenda">
-                <i class="fas fa-calendar-alt"></i> Agenda
+            <button class="tab" data-section="servicios">
+                <i class="fas fa-calendar-check"></i> Servicios Confirmados
             </button>
             <button class="tab" data-section="precios">
                 <i class="fas fa-dollar-sign"></i> Precios y Vigencia
@@ -430,37 +451,26 @@
             </div>
         </div>
 
-        <!-- SECCIÓN: Agenda -->
-        <div id="section-agenda" class="section">
+        <!-- SECCIÓN: Servicios Confirmados -->
+        <div id="section-servicios" class="section">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-calendar-alt"></i> Agenda de Turnos</h3>
-                    <button class="btn btn-primary" onclick="openModal('turno')">
-                        <i class="fas fa-plus"></i> Nuevo Turno
-                    </button>
+                    <h3 class="card-title"><i class="fas fa-calendar-check"></i> Servicios Confirmados</h3>
                 </div>
                 <div class="info-box">
                     <i class="fas fa-info-circle"></i>
-                    Gestiona los turnos y disponibilidad de los profesionales.
+                    Listado de servicios (masajes, depilación, estética) confirmados con fecha y hora reservada.
                 </div>
                 <div class="filters">
                     <div>
-                        <label>Profesional:</label>
-                        <select id="filtro-turno-profesional" onchange="filterTurnos()">
+                        <label>Tipo de Servicio:</label>
+                        <select id="filtro-servicio-tipo" onchange="filterServiciosConfirmados()">
                             <option value="">Todos</option>
                         </select>
                     </div>
                     <div>
                         <label>Fecha:</label>
-                        <input type="date" id="filtro-turno-fecha" onchange="filterTurnos()">
-                    </div>
-                    <div>
-                        <label>Estado:</label>
-                        <select id="filtro-turno-estado" onchange="filterTurnos()">
-                            <option value="">Todos</option>
-                            <option value="disponible">Disponibles</option>
-                            <option value="reservado">Reservados</option>
-                        </select>
+                        <input type="date" id="filtro-servicio-fecha" onchange="filterServiciosConfirmados()">
                     </div>
                 </div>
                 <div class="table-container">
@@ -469,14 +479,14 @@
                             <tr>
                                 <th>Fecha</th>
                                 <th>Hora</th>
-                                <th>Profesional</th>
-                                <th>Servicio</th>
+                                <th>Tipo</th>
                                 <th>Cliente</th>
-                                <th>Estado</th>
+                                <th>Descripción</th>
+                                <th>Precio</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="tbody-turnos"></tbody>
+                        <tbody id="tbody-servicios-confirmados"></tbody>
                     </table>
                 </div>
             </div>
@@ -585,6 +595,20 @@
             };
         }
 
+        // Banner de notificación
+        function showBanner(message, type = 'info', duration = 4000) {
+            document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+            const banner = document.createElement('div');
+            banner.className = `notification-banner ${type}`;
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+            document.body.appendChild(banner);
+            setTimeout(() => {
+                banner.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => banner.remove(), 300);
+            }, duration);
+        }
+
         function initTabs() {
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', () => {
@@ -603,18 +627,20 @@
                 loadTipos(),
                 loadProfesionales(),
                 loadServicios(),
-                loadTurnos(),
+                loadServiciosConfirmados(),
                 loadPrecios()
             ]);
             populateSelects();
         }
 
         function populateSelects() {
-            // Filtro profesional para turnos
-            const filtroTurnoProfesional = document.getElementById('filtro-turno-profesional');
-            if (filtroTurnoProfesional) {
-                filtroTurnoProfesional.innerHTML = '<option value="">Todos</option>' +
-                    profesionales.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            // Filtro tipo para servicios confirmados
+            const filtroServicioTipo = document.getElementById('filtro-servicio-tipo');
+            if (filtroServicioTipo) {
+                // Tipos de servicio comunes
+                const tiposServicio = ['DEPILACION', 'MASAJES', 'ESTETICA', 'DEPILACION_DEFINITIVA', 'TAROT', 'REIKI'];
+                filtroServicioTipo.innerHTML = '<option value="">Todos</option>' +
+                    tiposServicio.map(t => `<option value="${t}">${t.replace('_', ' ')}</option>`).join('');
             }
 
             // Filtro tipo para precios
@@ -722,65 +748,68 @@
             } catch (err) { console.error('Error:', err); }
         }
 
-        // ============ TURNOS (AGENDA) ============
-        async function loadTurnos() {
+        // ============ SERVICIOS CONFIRMADOS ============
+        let serviciosConfirmados = [];
+
+        async function loadServiciosConfirmados() {
             try {
-                const res = await fetch(`${API_SERVICIOS}/turnos`, { headers: authHeaders() });
+                // Cargar solicitudes de servicios confirmados (DEPILACION, MASAJES, ESTETICA, etc.)
+                const res = await fetch(`/api/admin/solicitudes?tipo=SERVICIOS&estado=Confirmado`, { headers: authHeaders() });
                 if (res.ok) {
-                    turnos = await res.json();
-                    renderTurnos();
+                    serviciosConfirmados = await res.json();
+                    renderServiciosConfirmados();
                 }
             } catch (err) {
                 console.error('Error:', err);
-                turnos = [];
-                renderTurnos();
+                serviciosConfirmados = [];
+                renderServiciosConfirmados();
             }
         }
 
-        const ESTADOS_TURNO = {
-            'disponible': { label: 'Disponible', class: 'badge-success' },
-            'reservado': { label: 'Reservado', class: 'badge-warning' },
-            'confirmado': { label: 'Confirmado', class: 'badge-success' },
-            'en_curso': { label: 'En curso', class: 'badge-info' },
-            'completado': { label: 'Completado', class: 'badge-gray' },
-            'cancelado': { label: 'Cancelado', class: 'badge-danger' },
-            'no_asistio': { label: 'No asistió', class: 'badge-danger' }
-        };
+        function renderServiciosConfirmados() {
+            const tipoFiltro = document.getElementById('filtro-servicio-tipo')?.value || '';
+            const fechaFiltro = document.getElementById('filtro-servicio-fecha')?.value || '';
 
-        function renderTurnos() {
-            const profesionalFiltro = document.getElementById('filtro-turno-profesional')?.value || '';
-            const estadoFiltro = document.getElementById('filtro-turno-estado')?.value || '';
+            let filtered = serviciosConfirmados;
+            if (tipoFiltro) filtered = filtered.filter(s => s.tipoEvento === tipoFiltro);
+            if (fechaFiltro) filtered = filtered.filter(s => s.fechaEvento && s.fechaEvento.split('T')[0] === fechaFiltro);
 
-            let filtered = turnos;
-            if (profesionalFiltro) filtered = filtered.filter(t => String(t.profesionalId) === profesionalFiltro);
-            if (estadoFiltro) filtered = filtered.filter(t => t.estado === estadoFiltro);
+            // Ordenar por fecha más cercana primero
+            filtered = [...filtered].sort((a, b) => new Date(a.fechaEvento) - new Date(b.fechaEvento));
 
-            const tbody = document.getElementById('tbody-turnos');
+            const tbody = document.getElementById('tbody-servicios-confirmados');
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;">No hay turnos registrados</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;">No hay servicios confirmados</td></tr>';
                 return;
             }
-            tbody.innerHTML = filtered.map(t => {
-                const estado = ESTADOS_TURNO[t.estado] || { label: t.estado, class: 'badge-gray' };
+            tbody.innerHTML = filtered.map(s => {
+                const fecha = s.fechaEvento ? new Date(s.fechaEvento).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-';
+                const hora = s.horaEvento || '-';
+                const tipo = s.tipoEvento || s.tipoServicio || '-';
+                const cliente = s.nombreCompleto || '-';
+                const descripcion = s.descripcion ? (s.descripcion.length > 50 ? s.descripcion.substring(0, 50) + '...' : s.descripcion) : '-';
+                const precio = s.precio ? `$${Number(s.precio).toLocaleString('es-AR')}` : '-';
+                
                 return `
                 <tr>
-                    <td>${t.fecha ? new Date(t.fecha).toLocaleDateString('es-AR') : '-'}</td>
-                    <td>${t.horaInicio} - ${t.horaFin}</td>
-                    <td>${t.profesionalNombre || '-'}</td>
-                    <td>${t.servicioNombre || '-'}</td>
-                    <td>${t.clienteNombre || '-'}</td>
-                    <td><span class="badge ${estado.class}">${estado.label}</span></td>
+                    <td><strong>${fecha}</strong></td>
+                    <td>${hora}</td>
+                    <td><span class="badge badge-primary">${tipo}</span></td>
+                    <td>${cliente}</td>
+                    <td title="${s.descripcion || ''}">${descripcion}</td>
+                    <td>${precio}</td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editTurno(${t.id})"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-icon btn-sm" onclick="deleteTurno(${t.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                            <a href="editar_solicitud.html?id=${s.id}" class="btn btn-icon btn-sm" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </a>
                         </div>
                     </td>
                 </tr>
             `}).join('');
         }
 
-        function filterTurnos() { renderTurnos(); }
+        function filterServiciosConfirmados() { renderServiciosConfirmados(); }
 
         // ============ PRECIOS ============
         async function loadPrecios() {
@@ -1014,7 +1043,7 @@
                     esPublico: document.getElementById('modal-publico').checked ? 1 : 0
                 };
                 if (!editingId && !id) {
-                    alert('El ID es obligatorio');
+                    showBanner('El ID es obligatorio', 'error');
                     return;
                 }
                 url = editingId ? `${API_SERVICIOS}/tipos/${editingId}` : `${API_SERVICIOS}/tipos`;
@@ -1068,12 +1097,13 @@
                 if (res.ok) {
                     closeModal();
                     loadAllData();
+                    showBanner('Guardado exitosamente', 'success');
                 } else {
                     const err = await res.json();
-                    alert('Error: ' + (err.error || err.message || 'Error al guardar'));
+                    showBanner('Error: ' + (err.error || err.message || 'Error al guardar'), 'error');
                 }
             } catch (err) {
-                alert('Error de conexión');
+                showBanner('Error de conexión', 'error');
             }
         }
 
@@ -1089,11 +1119,12 @@
                 const res = await fetch(`${API_SERVICIOS}/tipos/${id}`, { method: 'DELETE', headers: authHeaders() });
                 if (!res.ok) {
                     const err = await res.json();
-                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
                     return;
                 }
                 loadTipos();
-            } catch (err) { alert('Error de conexión'); }
+                showBanner('Tipo eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
         }
 
         async function deleteProfesional(id) {
@@ -1102,24 +1133,12 @@
                 const res = await fetch(`${API_SERVICIOS}/profesionales/${id}`, { method: 'DELETE', headers: authHeaders() });
                 if (!res.ok) {
                     const err = await res.json();
-                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
                     return;
                 }
                 loadProfesionales();
-            } catch (err) { alert('Error de conexión'); }
-        }
-
-        async function deleteTurno(id) {
-            if (!confirm('¿Eliminar este turno?')) return;
-            try {
-                const res = await fetch(`${API_SERVICIOS}/turnos/${id}`, { method: 'DELETE', headers: authHeaders() });
-                if (!res.ok) {
-                    const err = await res.json();
-                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
-                    return;
-                }
-                loadTurnos();
-            } catch (err) { alert('Error de conexión'); }
+                showBanner('Profesional eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
         }
 
         async function deletePrecio(id) {
@@ -1128,11 +1147,12 @@
                 const res = await fetch(`${API_SERVICIOS}/precios/${id}`, { method: 'DELETE', headers: authHeaders() });
                 if (!res.ok) {
                     const err = await res.json();
-                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
                     return;
                 }
                 loadPrecios();
-            } catch (err) { alert('Error de conexión'); }
+                showBanner('Precio eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
         }
     </script>
 </body>

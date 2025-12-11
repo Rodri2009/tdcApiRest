@@ -42,7 +42,8 @@ const getSolicitudes = async (req, res) => {
                     (SELECT COUNT(*) FROM solicitudes_personal sp WHERE sp.id_solicitud = s.id_solicitud) > 0 AS tienePersonalAsignado,
                     'solicitud' as origen,
                     s.hora_evento as horaInicio,
-                    NULL as nombreBanda
+                    NULL as nombreBanda,
+                    s.cantidad_de_personas as cantidadAforo
                 FROM solicitudes s
                 LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
                 UNION ALL
@@ -59,7 +60,8 @@ const getSolicitudes = async (req, res) => {
                     (SELECT COUNT(*) FROM eventos_personal ep WHERE ep.id_evento = e.id) > 0 AS tienePersonalAsignado,
                     'evento' as origen,
                     TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
-                    e.nombre_banda as nombreBanda
+                    e.nombre_banda as nombreBanda,
+                    e.aforo_maximo as cantidadAforo
                 FROM eventos e
             ) t
             ORDER BY COALESCE(t.fechaEvento, t.fechaSolicitud) DESC, t.fechaSolicitud DESC;

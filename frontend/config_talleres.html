@@ -316,6 +316,27 @@
             font-size: 0.85rem;
             color: #9ca3af;
         }
+
+        /* Banner de notificación */
+        .notification-banner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+        .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
+        .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 
@@ -578,6 +599,20 @@
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             };
+        }
+
+        // Banner de notificación
+        function showBanner(message, type = 'info', duration = 4000) {
+            document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+            const banner = document.createElement('div');
+            banner.className = `notification-banner ${type}`;
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+            document.body.appendChild(banner);
+            setTimeout(() => {
+                banner.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => banner.remove(), 300);
+            }, duration);
         }
 
         function initTabs() {
@@ -1016,7 +1051,7 @@
                     esPublico: document.getElementById('modal-publico').checked ? 1 : 0
                 };
                 if (!editingId && !id) {
-                    alert('El ID es obligatorio');
+                    showBanner('El ID es obligatorio', 'error');
                     return;
                 }
                 url = editingId ? `${API_TALLERES}/tipos/${editingId}` : `${API_TALLERES}/tipos`;
@@ -1073,12 +1108,13 @@
                 if (res.ok) {
                     closeModal();
                     loadAllData();
+                    showBanner('Guardado exitosamente', 'success');
                 } else {
                     const err = await res.json();
-                    alert('Error: ' + (err.error || err.message || 'Error al guardar'));
+                    showBanner('Error: ' + (err.error || err.message || 'Error al guardar'), 'error');
                 }
             } catch (err) {
-                alert('Error de conexión');
+                showBanner('Error de conexión', 'error');
             }
         }
 
@@ -1094,11 +1130,12 @@
                 const res = await fetch(`${API_TALLERES}/tipos/${id}`, { method: 'DELETE', headers: authHeaders() });
                 if (!res.ok) {
                     const err = await res.json();
-                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
                     return;
                 }
                 loadTipos();
-            } catch (err) { alert('Error de conexión'); }
+                showBanner('Tipo eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
         }
 
         async function deleteTallerista(id) {
@@ -1107,11 +1144,12 @@
                 const res = await fetch(`${API_TALLERES}/talleristas/${id}`, { method: 'DELETE', headers: authHeaders() });
                 if (!res.ok) {
                     const err = await res.json();
-                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
                     return;
                 }
                 loadTalleristas();
-            } catch (err) { alert('Error de conexión'); }
+                showBanner('Tallerista eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
         }
 
         async function deleteTaller(id) {
@@ -1120,11 +1158,12 @@
                 const res = await fetch(`${API_TALLERES}/${id}`, { method: 'DELETE', headers: authHeaders() });
                 if (!res.ok) {
                     const err = await res.json();
-                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
                     return;
                 }
                 loadTalleres();
-            } catch (err) { alert('Error de conexión'); }
+                showBanner('Taller eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
         }
 
         async function deletePrecio(id) {
@@ -1133,11 +1172,12 @@
                 const res = await fetch(`${API_TALLERES}/precios/${id}`, { method: 'DELETE', headers: authHeaders() });
                 if (!res.ok) {
                     const err = await res.json();
-                    alert('Error: ' + (err.error || 'No se pudo eliminar'));
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
                     return;
                 }
                 loadPrecios();
-            } catch (err) { alert('Error de conexión'); }
+                showBanner('Precio eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
         }
     </script>
 </body>
