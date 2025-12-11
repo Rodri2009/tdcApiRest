@@ -1,6 +1,7 @@
 /**
  * middleware/checkPermiso.js
  * Middleware para verificar permisos específicos del usuario
+ * Sistema simplificado: roles = admin (tiene todos), staff (limitados), cliente (solo propias)
  * 
  * Uso:
  *   const { checkPermiso, checkAnyPermiso } = require('./middleware/checkPermiso');
@@ -14,13 +15,13 @@
  */
 const checkPermiso = (permisoRequerido) => {
     return (req, res, next) => {
-        // El usuario debe estar autenticado (protect middleware ejecutado antes)
         if (!req.user) {
             return res.status(401).json({ message: 'No autorizado.' });
         }
 
-        // SUPER_ADMIN siempre tiene acceso (verificar por roles)
-        if (req.user.roles && req.user.roles.includes('SUPER_ADMIN')) {
+        // Admin siempre tiene acceso total
+        const rol = req.user.role || (req.user.roles && req.user.roles[0]);
+        if (rol === 'admin') {
             return next();
         }
 
@@ -47,8 +48,9 @@ const checkAnyPermiso = (permisosRequeridos) => {
             return res.status(401).json({ message: 'No autorizado.' });
         }
 
-        // SUPER_ADMIN siempre tiene acceso
-        if (req.user.roles && req.user.roles.includes('SUPER_ADMIN')) {
+        // Admin siempre tiene acceso total
+        const rol = req.user.role || (req.user.roles && req.user.roles[0]);
+        if (rol === 'admin') {
             return next();
         }
 
@@ -79,8 +81,9 @@ const checkAllPermisos = (permisosRequeridos) => {
             return res.status(401).json({ message: 'No autorizado.' });
         }
 
-        // SUPER_ADMIN siempre tiene acceso
-        if (req.user.roles && req.user.roles.includes('SUPER_ADMIN')) {
+        // Admin siempre tiene acceso total
+        const rol = req.user.role || (req.user.roles && req.user.roles[0]);
+        if (rol === 'admin') {
             return next();
         }
 
@@ -111,12 +114,14 @@ const checkRol = (rolRequerido) => {
             return res.status(401).json({ message: 'No autorizado.' });
         }
 
-        if (req.user.roles && req.user.roles.includes(rolRequerido)) {
+        const rolActual = req.user.role || (req.user.roles && req.user.roles[0]);
+
+        // Admin siempre tiene acceso a todo
+        if (rolActual === 'admin') {
             return next();
         }
 
-        // SUPER_ADMIN siempre tiene acceso a todo
-        if (req.user.roles && req.user.roles.includes('SUPER_ADMIN')) {
+        if (rolActual === rolRequerido) {
             return next();
         }
 
@@ -130,7 +135,7 @@ const checkRol = (rolRequerido) => {
 
 /**
  * Verifica que el usuario tenga nivel de rol igual o superior al especificado
- * @param {number} nivelMinimo - Nivel mínimo requerido (25=VIEWER, 50=OPERADOR, 75=ADMIN, 100=SUPER_ADMIN)
+ * @param {number} nivelMinimo - Nivel mínimo requerido (10=cliente, 50=staff, 100=admin)
  */
 const checkNivel = (nivelMinimo) => {
     return (req, res, next) => {

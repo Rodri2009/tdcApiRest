@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     password_hash VARCHAR(255) NOT NULL,
     nombre VARCHAR(255),
     rol ENUM('admin', 'staff', 'cliente') DEFAULT 'cliente',
+    activo TINYINT(1) NOT NULL DEFAULT 1,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -133,6 +134,18 @@ CREATE TABLE IF NOT EXISTS catalogo_roles (
     descripcion VARCHAR(255) DEFAULT NULL,
     activo TINYINT(1) DEFAULT 1,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Costos de personal por rol y fecha de vigencia
+CREATE TABLE IF NOT EXISTS costos_personal_vigencia (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    rol VARCHAR(100) NOT NULL,
+    fecha_de_vigencia DATE NOT NULL,
+    costo_por_hora DECIMAL(10,2) NOT NULL,
+    viaticos DECIMAL(10,2) DEFAULT 0,
+    UNIQUE KEY uk_rol_vigencia (rol, fecha_de_vigencia),
+    INDEX idx_rol (rol),
+    INDEX idx_vigencia (fecha_de_vigencia)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================

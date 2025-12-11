@@ -3,36 +3,47 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 /**
- * Obtiene los roles y permisos de un usuario
+ * Obtiene el rol y permisos de un usuario basado en el campo 'rol' de usuarios
+ * Sistema simplificado sin tablas adicionales de roles/permisos
  */
-const obtenerRolesYPermisos = async (conn, userId) => {
-    // Obtener roles del usuario
-    const roles = await conn.query(`
-        SELECT r.codigo, r.nombre, r.nivel
-        FROM roles r
-        INNER JOIN usuarios_roles ur ON r.id = ur.id_rol
-        WHERE ur.id_usuario = ?
-    `, [userId]);
+const obtenerRolYPermisos = (rol) => {
+    // Definir permisos por rol (formato: recurso.accion)
+    const permisosPorRol = {
+        admin: [
+            // Usuarios
+            'usuarios.ver', 'usuarios.crear', 'usuarios.editar', 'usuarios.eliminar', 'usuarios.asignar_roles',
+            // Solicitudes
+            'solicitudes.ver', 'solicitudes.crear', 'solicitudes.editar', 'solicitudes.eliminar',
+            // Configuración general
+            'configuracion.ver', 'configuracion.editar',
+            // Configuración específica por módulo
+            'config.alquiler', 'config.talleres', 'config.servicios', 'config.bandas',
+            // Personal
+            'personal.ver', 'personal.gestionar',
+            // Reportes
+            'reportes.ver'
+        ],
+        staff: [
+            'solicitudes.ver', 'solicitudes.editar',
+            'configuracion.ver',
+            'personal.ver',
+            'reportes.ver'
+        ],
+        cliente: [
+            'solicitudes.ver_propias', 'solicitudes.crear'
+        ]
+    };
 
-    // Obtener permisos del usuario (a través de sus roles)
-    const permisos = await conn.query(`
-        SELECT DISTINCT p.codigo
-        FROM permisos p
-        INNER JOIN roles_permisos rp ON p.id = rp.id_permiso
-        INNER JOIN usuarios_roles ur ON rp.id_rol = ur.id_rol
-        WHERE ur.id_usuario = ?
-    `, [userId]);
-
-    // Determinar el nivel máximo del usuario
-    const nivelMaximo = roles.length > 0
-        ? Math.max(...roles.map(r => r.nivel))
-        : 0;
+    const nivelesPorRol = {
+        admin: 100,
+        staff: 50,
+        cliente: 10
+    };
 
     return {
-        roles: roles.map(r => r.codigo),
-        rolesDetalle: roles,
-        permisos: permisos.map(p => p.codigo),
-        nivel: nivelMaximo
+        roles: [rol],
+        permisos: permisosPorRol[rol] || [],
+        nivel: nivelesPorRol[rol] || 0
     };
 };
 
@@ -48,7 +59,7 @@ const login = async (req, res) => {
         const [user] = await conn.query("SELECT * FROM usuarios WHERE email = ?", [email]);
 
         if (!user) {
-            return res.status(401).json({ message: 'Credenciales inválidas.' }); // 401 Unauthorized
+            return res.status(401).json({ message: 'Credenciales inválidas.' });
         }
 
         // Verificar si el usuario está activo
@@ -61,18 +72,14 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Credenciales inválidas.' });
         }
 
-        // Obtener roles y permisos
-        const { roles, permisos, nivel } = await obtenerRolesYPermisos(conn, user.id);
-
-        // Actualizar último acceso
-        await conn.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = ?', [user.id]);
+        // Obtener rol y permisos basado en el campo 'rol'
+        const { roles, permisos, nivel } = obtenerRolYPermisos(user.rol);
 
         // --- Creación del Token JWT ---
-        // Incluimos roles y permisos en el payload
         const payload = {
             id: user.id,
             email: user.email,
-            role: user.rol,  // Mantener compatibilidad con campo legacy
+            role: user.rol,
             roles: roles,
             permisos: permisos,
             nivel: nivel
@@ -81,9 +88,9 @@ const login = async (req, res) => {
 
         // --- Envío del Token en una Cookie HttpOnly ---
         res.cookie('token', token, {
-            httpOnly: true, // El token no es accesible por JavaScript en el navegador
-            secure: process.env.NODE_ENV === 'production', // En producción, solo enviar por HTTPS
-            maxAge: 8 * 60 * 60 * 1000 // 8 horas en milisegundos
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 8 * 60 * 60 * 1000 // 8 horas
         });
 
         res.status(200).json({
@@ -93,6 +100,7 @@ const login = async (req, res) => {
                 id: user.id,
                 nombre: user.nombre,
                 email: user.email,
+                rol: user.rol,
                 roles: roles,
                 permisos: permisos,
                 nivel: nivel
@@ -124,7 +132,7 @@ const me = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const [user] = await conn.query(
-            "SELECT id, email, nombre, activo FROM usuarios WHERE id = ?",
+            "SELECT id, email, nombre, rol, activo FROM usuarios WHERE id = ?",
             [req.user.id]
         );
 
@@ -132,16 +140,16 @@ const me = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        // Obtener roles y permisos actualizados
-        const { roles, rolesDetalle, permisos, nivel } = await obtenerRolesYPermisos(conn, user.id);
+        // Obtener rol y permisos
+        const { roles, permisos, nivel } = obtenerRolYPermisos(user.rol);
 
         res.json({
             id: user.id,
             email: user.email,
             nombre: user.nombre,
+            rol: user.rol,
             activo: user.activo,
             roles: roles,
-            rolesDetalle: rolesDetalle,
             permisos: permisos,
             nivel: nivel
         });

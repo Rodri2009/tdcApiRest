@@ -197,12 +197,44 @@ SMTP_PASS=tu_app_password
 
 ## Desarrollo
 
-Para ver logs del backend:
+### Ver Logs
+
 ```bash
-docker logs -f tdc-backend
+# Logs del backend (en tiempo real)
+docker logs -f docker-backend-1
+
+# Últimos 50 logs del backend
+docker logs docker-backend-1 --tail 50
+
+# Filtrar solo errores
+docker logs docker-backend-1 2>&1 | grep -i error
+
+# Logs de la base de datos
+docker logs docker-mariadb-1 --tail 50
+
+# Logs de nginx
+docker logs docker-nginx-1 --tail 50
+
+# Ver logs de todos los servicios
+docker-compose -f docker/docker-compose.yml logs -f
 ```
 
-Para conectar a la base de datos:
+### Conectar a la Base de Datos
+
 ```bash
-docker exec -it tdc-mariadb mariadb -u root -p
+# Conectar como root
+docker exec -it docker-mariadb-1 mysql -u root -p tdc_db
+
+# Ejecutar query directamente
+docker exec docker-mariadb-1 mysql -u root -p<password> tdc_db -e "SELECT * FROM usuarios;"
+```
+
+### Reiniciar Servicios
+
+```bash
+# Reiniciar solo backend
+docker-compose -f docker/docker-compose.yml restart backend
+
+# Reiniciar todos los servicios
+docker-compose -f docker/docker-compose.yml restart
 ```

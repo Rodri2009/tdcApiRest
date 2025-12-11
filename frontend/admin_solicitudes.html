@@ -696,10 +696,14 @@
                     }
 
                     if (isConfirmado) {
+                        // Mostrar botón "Asignar Personal" siempre que esté confirmado (si tiene permiso)
                         if (puedeGestionarPersonal) {
                             botones += `<button class="action-btn btn-assign" data-action="assign" data-id="${solicitud.id}" data-tipo="${solicitud.tipoEventoId}">Asignar Personal</button>`;
                         }
-                        botones += `<button class="action-btn btn-work-order" data-action="work-order" data-id="${solicitud.id}">Orden de Trabajo</button>`;
+                        // Solo mostrar "Orden de Trabajo" si ya tiene personal asignado
+                        if (solicitud.tienePersonalAsignado) {
+                            botones += `<button class="action-btn btn-work-order" data-action="work-order" data-id="${solicitud.id}">Orden de Trabajo</button>`;
+                        }
                     }
 
                     // Si no tiene ningún permiso de edición, mostrar solo lectura

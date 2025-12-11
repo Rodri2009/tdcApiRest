@@ -50,8 +50,8 @@ class NavbarManager {
      * Verifica si el usuario tiene un permiso específico
      */
     tienePermiso(permiso) {
-        // SUPER_ADMIN tiene todos los permisos
-        if (this.userRoles.includes('SUPER_ADMIN')) return true;
+        // SUPER_ADMIN o admin tienen todos los permisos
+        if (this.userRoles.includes('SUPER_ADMIN') || this.userRoles.includes('admin')) return true;
         return this.userPermisos.includes(permiso);
     }
 
@@ -59,7 +59,7 @@ class NavbarManager {
      * Verifica si el usuario tiene alguno de los permisos
      */
     tieneAlgunPermiso(permisos) {
-        if (this.userRoles.includes('SUPER_ADMIN')) return true;
+        if (this.userRoles.includes('SUPER_ADMIN') || this.userRoles.includes('admin')) return true;
         return permisos.some(p => this.userPermisos.includes(p));
     }
 
@@ -398,15 +398,15 @@ function tieneAlgunPermiso(permisos) {
  */
 function puedeEditar(modulo) {
     if (!navbarManager) return false;
-    // SUPER_ADMIN y ADMIN pueden editar todo
-    if (navbarManager.tieneRol('SUPER_ADMIN') || navbarManager.tieneRol('ADMIN')) return true;
+    // SUPER_ADMIN, ADMIN, admin pueden editar todo
+    if (navbarManager.tieneRol('SUPER_ADMIN') || navbarManager.tieneRol('ADMIN') || navbarManager.tieneRol('admin')) return true;
     // Para otros roles, verificar permiso específico
     const permisosEscritura = {
-        'config': ['config.alquiler', 'config.talleres', 'config.servicios', 'config.bandas'],
-        'alquiler': ['config.alquiler'],
-        'talleres': ['config.talleres'],
-        'servicios': ['config.servicios'],
-        'bandas': ['config.bandas'],
+        'config': ['config.alquiler', 'config.talleres', 'config.servicios', 'config.bandas', 'configuracion.editar'],
+        'alquiler': ['config.alquiler', 'configuracion.editar'],
+        'talleres': ['config.talleres', 'configuracion.editar'],
+        'servicios': ['config.servicios', 'configuracion.editar'],
+        'bandas': ['config.bandas', 'configuracion.editar'],
         'solicitudes': ['solicitudes.crear', 'solicitudes.editar'],
         'personal': ['personal.gestionar'],
         'usuarios': ['usuarios.crear', 'usuarios.editar']

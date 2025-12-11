@@ -7,350 +7,21 @@
     <title>Configuración - Alquiler del Salón</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
     <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-            --color-dark: #0c0a09;
-            --color-card: #1c1917;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            background: var(--color-dark);
-            color: #d6d3d1;
-            padding-bottom: 80px;
-        }
-
-        .text-neon {
-            color: var(--color-secondary);
-            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-        }
-
-        .wrap {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px 16px;
-        }
-
-        h1 {
-            color: var(--color-secondary);
-            text-align: center;
-            margin: 1rem 0;
-            font-size: 1.8rem;
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            border-bottom: 2px solid var(--color-rustic);
-            flex-wrap: wrap;
-        }
-
-        .tab {
-            padding: 12px 20px;
-            background: transparent;
-            border: none;
-            color: #9ca3af;
-            font-size: 1rem;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tab:hover {
-            color: var(--color-secondary);
-        }
-
-        .tab.active {
-            color: var(--color-secondary);
-            border-bottom-color: var(--color-secondary);
-            font-weight: 600;
-        }
-
-        .section {
-            display: none;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        .card {
-            background: var(--color-card);
-            border-radius: 12px;
-            border: 1px solid var(--color-rustic);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .card-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--color-secondary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .table-container {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--color-rustic);
-        }
-
-        th {
-            background: rgba(240, 171, 252, 0.1);
-            color: var(--color-secondary);
-            font-weight: 600;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-        }
-
-        tr:hover {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .badge {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .badge-success {
-            background: #065f46;
-            color: #6ee7b7;
-        }
-
-        .badge-warning {
-            background: #92400e;
-            color: #fcd34d;
-        }
-
-        .badge-info {
-            background: #1e40af;
-            color: #93c5fd;
-        }
-
-        .badge-danger {
-            background: #991b1b;
-            color: #fca5a5;
-        }
-
-        .badge-gray {
-            background: #374151;
-            color: #9ca3af;
-        }
-
-        .btn {
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-        }
-
-        .btn-primary {
-            background: var(--color-secondary);
-            color: var(--color-dark);
-        }
-
-        .btn-primary:hover {
-            background: #e879f9;
-        }
-
-        .btn-secondary {
-            background: #374151;
-            color: #d1d5db;
-        }
-
-        .btn-secondary:hover {
-            background: #4b5563;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-        }
-
-        .btn-icon {
-            padding: 8px;
-            background: transparent;
-            color: #9ca3af;
-        }
-
-        .btn-icon:hover {
-            color: var(--color-secondary);
-        }
-
-        input,
-        select,
-        textarea {
-            background: #292524;
-            border: 1px solid var(--color-rustic);
-            border-radius: 6px;
-            padding: 10px 12px;
-            color: #d6d3d1;
-            font-size: 0.95rem;
-            width: 100%;
-        }
-
-        textarea {
-            min-height: 150px;
-            resize: vertical;
-            line-height: 1.5;
-            font-family: inherit;
-        }
-
-        input:focus,
-        select:focus,
-        textarea:focus {
-            outline: none;
-            border-color: var(--color-secondary);
-        }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 40px 16px;
-            z-index: 1000;
-            overflow-y: auto;
-        }
-
+        /* Estilos específicos de esta página */
         .modal-overlay.show {
             display: flex;
         }
 
-        .modal {
-            background: var(--color-card);
-            border-radius: 12px;
-            border: 1px solid var(--color-rustic);
-            max-width: 600px;
-            width: 100%;
+        textarea {
+            min-height: 150px;
+            line-height: 1.5;
         }
 
-        .modal-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--color-rustic);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            color: var(--color-secondary);
-            margin: 0;
-            font-size: 1.2rem;
-        }
-
-        .modal-body {
-            padding: 20px;
-        }
-
-        .modal-footer {
-            padding: 16px 20px;
-            border-top: 1px solid var(--color-rustic);
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            color: var(--color-secondary);
-            font-weight: 600;
-            margin-bottom: 6px;
-            font-size: 0.9rem;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .loading {
+        h1 {
             text-align: center;
-            padding: 40px;
-            color: #9ca3af;
-        }
-
-        .loading i {
-            font-size: 2rem;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .row-actions {
-            display: flex;
-            gap: 4px;
-        }
-
-        .info-box {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid #3b82f6;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 16px;
-            color: #93c5fd;
-            font-size: 0.9rem;
-        }
-
-        .info-box i {
-            margin-right: 8px;
+            font-size: 1.8rem;
         }
     </style>
 </head>
@@ -499,8 +170,8 @@
                         <thead>
                             <tr>
                                 <th>Tipo</th>
-                                <th>Duración</th>
-                                <th>Precio</th>
+                                <th>Rango Personas</th>
+                                <th>Precio/Hora</th>
                                 <th>Vigencia Desde</th>
                                 <th>Vigencia Hasta</th>
                                 <th>Estado</th>
@@ -709,9 +380,14 @@
                 if (res.ok) {
                     precios = await res.json();
                     renderPrecios();
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    console.error('Error HTTP al cargar precios:', res.status, errData);
+                    alert(`Error al cargar precios: ${errData.error || res.statusText}`);
                 }
             } catch (err) {
-                console.error('Error:', err);
+                console.error('Error de red al cargar precios:', err);
+                alert(`Error de conexión al cargar precios: ${err.message}`);
             }
         }
 
@@ -869,11 +545,8 @@
                 return `
                     <tr>
                         <td>${p.tipo_evento || p.id_evento || '-'}</td>
-                        <td>${p.duracion_horas}hs</td>
-                        <td>
-                            <strong>Ant: $${Number(p.precio_anticipado || 0).toLocaleString('es-AR')}</strong><br>
-                            <span style="color:#9ca3af;font-size:0.85rem;">Puerta: $${Number(p.precio_puerta || 0).toLocaleString('es-AR')}</span>
-                        </td>
+                        <td>${p.cantidad_min} - ${p.cantidad_max} personas</td>
+                        <td>$${Number(p.precio_por_hora || 0).toLocaleString('es-AR')}/hora</td>
                         <td>${desde}</td>
                         <td>${hasta}</td>
                         <td>${p.activo ? '<span class="badge badge-success">Vigente</span>' : '<span class="badge badge-gray">Vencido</span>'}</td>
@@ -1004,16 +677,16 @@
             document.getElementById('modal-body').innerHTML = `
                 <div class="form-group">
                     <label>Código * ${isEdit ? '(no editable)' : ''}</label>
-                    <input type="text" id="form-codigo" placeholder="Ej: CUMPLE_15" ${isEdit ? 'disabled style="opacity:0.6"' : ''}>
+                    <input type="text" id="form-codigo" placeholder="Escriba un código único..." ${isEdit ? 'disabled style="opacity:0.6"' : ''}>
                 </div>
                 <div class="form-group">
                     <label>Nombre *</label>
-                    <input type="text" id="form-nombre" placeholder="Ej: Cumpleaños de 15">
+                    <input type="text" id="form-nombre" placeholder="Escriba el nombre del tipo...">
                 </div>
                 <input type="hidden" id="form-categoria" value="ALQUILER_SALON">
                 <div class="form-group">
                     <label>Descripción</label>
-                    <textarea id="form-descripcion" rows="8" placeholder="Descripción detallada del tipo de evento..."></textarea>
+                    <textarea id="form-descripcion" rows="8" placeholder="Escriba una descripción (opcional)..."></textarea>
                 </div>
                 <div class="form-group">
                     <label><input type="checkbox" id="form-activo" checked> Activo (visible para clientes)</label>
@@ -1046,11 +719,11 @@
                 </div>
                 <div class="form-group">
                     <label>Horas *</label>
-                    <input type="number" id="form-horas" min="1" max="24" placeholder="Ej: 4">
+                    <input type="number" id="form-horas" min="1" max="24" placeholder="Número de horas...">
                 </div>
                 <div class="form-group">
                     <label>Descripción</label>
-                    <input type="text" id="form-descripcion" placeholder="Ej: Media jornada">
+                    <input type="text" id="form-descripcion" placeholder="Descripción corta (opcional)...">
                 </div>
             `;
             openModal();
@@ -1090,19 +763,21 @@
                         <label>Tipo de Evento *</label>
                         <select id="form-id_evento">${tiposOptions}</select>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
-                        <label>Duración (horas) *</label>
-                        <input type="number" id="form-duracion_horas" min="1" max="24" placeholder="4">
+                        <label>Cantidad Mínima *</label>
+                        <input type="number" id="form-cantidad_min" min="1" placeholder="Mínimo personas...">
+                    </div>
+                    <div class="form-group">
+                        <label>Cantidad Máxima *</label>
+                        <input type="number" id="form-cantidad_max" min="1" placeholder="Máximo personas...">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Precio Anticipado *</label>
-                        <input type="number" id="form-precio_anticipado" min="0" placeholder="50000">
-                    </div>
-                    <div class="form-group">
-                        <label>Precio Puerta *</label>
-                        <input type="number" id="form-precio_puerta" min="0" placeholder="60000">
+                        <label>Precio por Hora *</label>
+                        <input type="number" id="form-precio_por_hora" min="0" placeholder="Precio en pesos...">
                     </div>
                 </div>
                 <div class="form-row">
@@ -1125,9 +800,9 @@
             openPrecioModal(id);
             setTimeout(() => {
                 document.getElementById('form-id_evento').value = precio.id_evento || '';
-                document.getElementById('form-duracion_horas').value = precio.duracion_horas || '';
-                document.getElementById('form-precio_anticipado').value = precio.precio_anticipado || '';
-                document.getElementById('form-precio_puerta').value = precio.precio_puerta || '';
+                document.getElementById('form-cantidad_min').value = precio.cantidad_min || '';
+                document.getElementById('form-cantidad_max').value = precio.cantidad_max || '';
+                document.getElementById('form-precio_por_hora').value = precio.precio_por_hora || '';
                 document.getElementById('form-vigente_desde').value = precio.vigente_desde ? precio.vigente_desde.split('T')[0] : '';
                 document.getElementById('form-vigente_hasta').value = precio.vigente_hasta ? precio.vigente_hasta.split('T')[0] : '';
             }, 50);
@@ -1152,19 +827,19 @@
             document.getElementById('modal-body').innerHTML = `
                 <div class="form-group">
                     <label>Nombre *</label>
-                    <input type="text" id="form-nombre" placeholder="Ej: Inflable grande">
+                    <input type="text" id="form-nombre" placeholder="Nombre del adicional...">
                 </div>
                 <div class="form-group">
                     <label>Precio *</label>
-                    <input type="number" id="form-precio" min="0" placeholder="15000">
+                    <input type="number" id="form-precio" min="0" placeholder="Precio en pesos...">
                 </div>
                 <div class="form-group">
                     <label>Descripción</label>
-                    <textarea id="form-descripcion" rows="8" placeholder="Descripción del servicio adicional"></textarea>
+                    <textarea id="form-descripcion" rows="8" placeholder="Descripción del adicional (opcional)..."></textarea>
                 </div>
                 <div class="form-group">
                     <label>URL de Imagen</label>
-                    <input type="text" id="form-url_imagen" placeholder="https://...">
+                    <input type="text" id="form-url_imagen" placeholder="URL de la imagen (opcional)...">
                 </div>
             `;
             openModal();
@@ -1205,7 +880,7 @@
             document.getElementById('modal-body').innerHTML = `
                 <div class="form-group">
                     <label>Nombre Completo *</label>
-                    <input type="text" id="form-nombre" placeholder="Nombre y apellido">
+                    <input type="text" id="form-nombre" placeholder="Nombre completo...">
                 </div>
                 <div class="form-group">
                     <label>Roles * (seleccione uno o más)</label>
@@ -1215,11 +890,11 @@
                 </div>
                 <div class="form-group">
                     <label>Teléfono / Celular</label>
-                    <input type="text" id="form-telefono" placeholder="11-1234-5678">
+                    <input type="text" id="form-telefono" placeholder="Número de teléfono...">
                 </div>
                 <div class="form-group">
                     <label>CVU / Alias (para pagos)</label>
-                    <input type="text" id="form-cvu_alias" placeholder="alias.pago">
+                    <input type="text" id="form-cvu_alias" placeholder="Alias o CVU de pago...">
                 </div>
                 <div class="form-group">
                     <label><input type="checkbox" id="form-activo" checked> Activo</label>
@@ -1264,11 +939,11 @@
             document.getElementById('modal-body').innerHTML = `
                 <div class="form-group">
                     <label>Nombre del Rol *</label>
-                    <input type="text" id="form-nombre" placeholder="Ej: Encargada, Mesera, DJ...">
+                    <input type="text" id="form-nombre" placeholder="Nombre del rol...">
                 </div>
                 <div class="form-group">
                     <label>Descripción</label>
-                    <textarea id="form-descripcion" rows="8" placeholder="Descripción opcional del rol"></textarea>
+                    <textarea id="form-descripcion" rows="8" placeholder="Descripción del rol (opcional)..."></textarea>
                 </div>
                 <div class="form-group">
                     <label><input type="checkbox" id="form-activo" checked> Activo</label>
@@ -1340,9 +1015,9 @@
                         method = currentEditId ? 'PUT' : 'POST';
                         body = {
                             id_evento: document.getElementById('form-id_evento').value,
-                            duracion_horas: parseInt(document.getElementById('form-duracion_horas').value),
-                            precio_anticipado: parseFloat(document.getElementById('form-precio_anticipado').value),
-                            precio_puerta: parseFloat(document.getElementById('form-precio_puerta').value),
+                            cantidad_min: parseInt(document.getElementById('form-cantidad_min').value),
+                            cantidad_max: parseInt(document.getElementById('form-cantidad_max').value),
+                            precio_por_hora: parseFloat(document.getElementById('form-precio_por_hora').value),
                             vigente_desde: document.getElementById('form-vigente_desde').value,
                             vigente_hasta: document.getElementById('form-vigente_hasta').value || null
                         };

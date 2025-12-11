@@ -82,7 +82,6 @@ const getEventos = async (req, res) => {
             console.warn('No se pudieron cargar solicitudes confirmadas para la agenda:', errSolic.message || errSolic);
         }
         // --- FIN DE LA CORRECCIÓN ---
-        console.log('[DEBUG] getEventos - total items para agenda:', Array.isArray(serializedEvents) ? serializedEvents.length : 0);
         res.json(serializedEvents);
 
     } catch (error) {

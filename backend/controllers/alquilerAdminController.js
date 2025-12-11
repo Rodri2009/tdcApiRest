@@ -316,9 +316,9 @@ const getPrecios = async (req, res) => {
                 p.id,
                 p.id_evento,
                 t.nombre_para_mostrar as tipo_evento,
-                p.id_duracion as duracion_horas,
-                p.precio_anticipado,
-                p.precio_puerta,
+                p.cantidad_min,
+                p.cantidad_max,
+                p.precio_por_hora,
                 p.vigente_desde,
                 p.vigente_hasta,
                 CASE 
@@ -344,7 +344,7 @@ const getPrecios = async (req, res) => {
             query += ' WHERE ' + conditions.join(' AND ');
         }
 
-        query += ' ORDER BY p.id_evento, p.id_duracion, p.vigente_desde DESC';
+        query += ' ORDER BY p.id_evento, p.cantidad_min, p.vigente_desde DESC';
 
         const precios = await pool.query(query, params);
         res.json(serializeBigInt(precios));
@@ -360,18 +360,18 @@ const getPrecios = async (req, res) => {
  */
 const createPrecio = async (req, res) => {
     try {
-        const { id_evento, duracion_horas, precio_anticipado, precio_puerta, vigente_desde, vigente_hasta } = req.body;
+        const { id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta } = req.body;
 
-        if (!id_evento || !duracion_horas || precio_anticipado === undefined || precio_puerta === undefined || !vigente_desde) {
+        if (!id_evento || cantidad_min === undefined || cantidad_max === undefined || precio_por_hora === undefined || !vigente_desde) {
             return res.status(400).json({
-                error: 'Se requieren: id_evento, duracion_horas, precio_anticipado, precio_puerta, vigente_desde'
+                error: 'Se requieren: id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde'
             });
         }
 
         const result = await pool.query(`
-            INSERT INTO precios_vigencia (id_evento, id_duracion, precio_anticipado, precio_puerta, vigente_desde, vigente_hasta)
+            INSERT INTO precios_vigencia (id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta)
             VALUES (?, ?, ?, ?, ?, ?)
-        `, [id_evento, duracion_horas, precio_anticipado, precio_puerta, vigente_desde, vigente_hasta || null]);
+        `, [id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta || null]);
 
         res.status(201).json({
             message: 'Precio creado exitosamente',
@@ -393,7 +393,7 @@ const createPrecio = async (req, res) => {
 const updatePrecio = async (req, res) => {
     try {
         const { id } = req.params;
-        const { id_evento, duracion_horas, precio_anticipado, precio_puerta, vigente_desde, vigente_hasta } = req.body;
+        const { id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta } = req.body;
 
         const setClauses = [];
         const params = [];
@@ -402,17 +402,17 @@ const updatePrecio = async (req, res) => {
             setClauses.push('id_evento = ?');
             params.push(id_evento);
         }
-        if (duracion_horas !== undefined) {
-            setClauses.push('id_duracion = ?');
-            params.push(duracion_horas);
+        if (cantidad_min !== undefined) {
+            setClauses.push('cantidad_min = ?');
+            params.push(cantidad_min);
         }
-        if (precio_anticipado !== undefined) {
-            setClauses.push('precio_anticipado = ?');
-            params.push(precio_anticipado);
+        if (cantidad_max !== undefined) {
+            setClauses.push('cantidad_max = ?');
+            params.push(cantidad_max);
         }
-        if (precio_puerta !== undefined) {
-            setClauses.push('precio_puerta = ?');
-            params.push(precio_puerta);
+        if (precio_por_hora !== undefined) {
+            setClauses.push('precio_por_hora = ?');
+            params.push(precio_por_hora);
         }
         if (vigente_desde !== undefined) {
             setClauses.push('vigente_desde = ?');

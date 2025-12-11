@@ -13,30 +13,26 @@ SET CHARACTER SET utf8mb4;
 -- ---------------------------------------------------------------------------
 INSERT INTO opciones_tipos (id_evento, nombre_para_mostrar, descripcion, categoria, es_publico, monto_sena, deposito) VALUES
 -- === ALQUILER_SALON ===
-('INFANTILES', 'INFANTILES: Cumpleaños hasta 12 años (SERVICIO COMPLETO)', '🎈 **CUMPLEAÑOS INFANTILES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina completa con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool y Jenga gigante\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Baño equipado\n• Música y juego de luces\n• Cancha de fútbol (niños hasta 12 años)\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Bebidas, alimentos, animación, vajilla de cristal', 'ALQUILER_SALON', 1, 40000, NULL),
-
+('INFANTILES', 'INFANTILES: Cumpleaños hasta 12 años (SERVICIO COMPLETO)', '🎈 **CUMPLEAÑOS INFANTILES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina completa con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool y Jenga gigante\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Baño equipado\n• Música y juego de luces\n• Cancha de fútbol (niños hasta 12 años)\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Bebidas, alimentos, animación, vajilla de cristal', 'ALQUILER_SALON', 1, 50000, NULL),
 ('INFORMALES', 'INFORMALES: Juntadas, parrilladas (SERVICIO ECONÓMICO)', '🎉 **SERVICIO ECONÓMICO**\n\n✅ **INCLUYE:**\n• Encargada/o general y control de puerta\n• Mesas y sillas\n• Uso de parrilla\n• Uso de bachas, mesadas, barra\n• Heladera y freezer\n• Baño equipado\n• Equipo de música\n• Metegoles, Ping Pong, Pool\n\n❌ **NO INCLUYE:** Horno, hornallas, cocinera, mantelería, vajilla', 'ALQUILER_SALON', 1, 50000, 80000),
-
-('CON_SERVICIO_DE_MESA', 'FIESTAS de 15/18/casamientos (SERVICIO COMPLETO)', '🌟 **SERVICIO COMPLETO**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Cocinera y uso completo de cocina\n• Meseras según cantidad\n• Mesas, sillas y mantelería\n• Vajilla y cubiertos de metal\n• Sonido profesional PA JBL\n• Backline para bandas\n• Baño equipado\n\n❌ **NO INCLUYE:** DJ, decoración, cancha de fútbol', 'ALQUILER_SALON', 1, 80000, 100000),
-
-('BABY_SHOWERS', 'BABY SHOWERS / BAUTISMOS / COMUNIONES', '👶 **BABY SHOWERS / BAUTISMOS / COMUNIONES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Música y luces\n• Cancha (niños hasta 12)\n\n❌ **NO INCLUYE:** Meseras, animación, vajilla de metal', 'ALQUILER_SALON', 1, 40000, NULL),
-
+('CON_SERVICIO_DE_MESA', 'FIESTAS de 15 / 18 / casamientos (SERVICIO COMPLETO)', '🌟 **SERVICIO COMPLETO**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Cocinera y uso completo de cocina\n• Meseras según cantidad\n• Mesas, sillas y mantelería\n• Vajilla de cristal y cubiertos de metal\n• Sonido profesional PA JBL\n• Backline para bandas\n• Baño equipado\n\n❌ **NO INCLUYE:** DJ, decoración, cancha de fútbol', 'ALQUILER_SALON', 1, 80000, NULL),
+('BABY_SHOWERS', 'BABY SHOWERS / BAUTISMOS / COMUNIONES', '👶 **BABY SHOWERS / BAUTISMOS / COMUNIONES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Música y luces\n• Cancha (niños hasta 12)\n\n❌ **NO INCLUYE:** Meseras, animación, vajilla de metal', 'ALQUILER_SALON', 1, 50000, NULL),
 ('ADOLESCENTES', 'ADOLESCENTES: Cumpleaños de 13 a 17 años', '🎧 **CUMPLEAÑOS ADOLESCENTES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina con cocinera\n• Metegoles, Ping Pong, Pool, Jenga\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Música y juego de luces\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Cancha de fútbol', 'ALQUILER_SALON', 1, 50000, 80000),
 
 -- === FECHA_BANDAS ===
 ('FECHA_BANDAS', 'Fecha para bandas en vivo', '🎸 **FECHA PARA BANDAS**\n\n✅ **INCLUYE:**\n• Coordinación de bandas\n• Flyers y publicaciones\n• Encargada de puerta\n• Uso de cocina\n• Sonido profesional\n• Backline completo', 'FECHA_BANDAS', 0, NULL, NULL),
 
--- === SERVICIOS (cuidado personal) ===
+-- === SERVICIOS (cuidado personal) - cada uno con id_evento único ===
 ('MASAJES', 'Masajes', '💆 **MASAJES PROFESIONALES**\n\nTipos: Descontracturante, Relajante, Reflexología, Piedras calientes\nDuración: 45 a 90 min', 'SERVICIOS', 1, NULL, NULL),
 ('ESTETICA', 'Estética', '✨ **ESTÉTICA**\n\nTratamientos: Limpieza facial, Hidratación, Anti-age, Acné', 'SERVICIOS', 1, NULL, NULL),
 ('DEPILACION', 'Depilación', '🌸 **DEPILACIÓN**\n\nZonas: Piernas, Brazos, Cavado, Bozo, Axilas\nMétodo: Cera tibia descartable', 'SERVICIOS', 1, NULL, NULL),
 ('DEPILACION_DEFINITIVA', 'Depilación Definitiva', '⚡ **DEPILACIÓN DEFINITIVA**', 'SERVICIOS', 0, NULL, NULL),
 
--- === TALLERES_ACTIVIDADES ===
-('ARTE', 'Arte y Manualidades', '🎨 **TALLERES DE ARTE**\n\nPintura, Dibujo, Cerámica, Manualidades, Tejido', 'TALLERES_ACTIVIDADES', 1, NULL, NULL),
-('YOGA', 'Yoga', '🧘 **YOGA**\n\nEstilos: Hatha, Vinyasa, Restaurativo, Embarazadas', 'TALLERES_ACTIVIDADES', 1, NULL, NULL),
-('DANZA', 'Danza', '💃 **DANZA**\n\nEstilos: Folklore, Tango, Contemporánea, Salsa, Bachata', 'TALLERES_ACTIVIDADES', 1, NULL, NULL),
-('MUSICA', 'Música', '🎵 **MÚSICA**\n\nInstrumentos: Guitarra, Teclado, Batería, Canto, Vientos', 'TALLERES_ACTIVIDADES', 1, NULL, NULL);
+-- === TALLERES_ACTIVIDADES - cada uno con id_evento único ===
+('TALLER_ARTE', 'Arte y Manualidades', '🎨 **TALLERES DE ARTE**\n\nPintura, Dibujo, Cerámica, Manualidades, Tejido', 'TALLERES_ACTIVIDADES', 1, NULL, NULL),
+('TALLER_YOGA', 'Yoga', '🧘 **YOGA**\n\nEstilos: Hatha, Vinyasa, Restaurativo, Embarazadas', 'TALLERES_ACTIVIDADES', 1, NULL, NULL),
+('TALLER_DANZA', 'Danza', '💃 **DANZA**\n\nEstilos: Folklore, Tango, Contemporánea, Salsa, Bachata', 'TALLERES_ACTIVIDADES', 1, NULL, NULL),
+('TALLER_MUSICA', 'Música', '🎵 **MÚSICA**\n\nInstrumentos: Guitarra, Teclado, Batería, Canto, Vientos', 'TALLERES_ACTIVIDADES', 1, NULL, NULL);
 
 -- ---------------------------------------------------------------------------
 -- CONFIGURACIÓN GENERAL
@@ -61,14 +57,19 @@ INSERT INTO precios_vigencia (id_evento, cantidad_min, cantidad_max, precio_por_
 ('INFANTILES', 61, 70, 65000, '2025-08-01'),
 ('INFANTILES', 71, 80, 70000, '2025-08-01'),
 ('INFANTILES', 81, 90, 75000, '2025-08-01'),
+('INFANTILES', 91, 100, 75000, '2025-08-01'),
+('INFANTILES', 101, 110, 75000, '2025-08-01'),
 -- INFORMALES
 ('INFORMALES', 1, 50, 30000, '2025-08-01'),
-('INFORMALES', 51, 60, 35000, '2025-08-01'),
-('INFORMALES', 61, 70, 40000, '2025-08-01'),
+('INFORMALES', 51, 70, 40000, '2025-08-01'),
+('INFORMALES', 71, 90, 50000, '2025-08-01'),
+('INFORMALES', 91, 110, 60000, '2025-08-01'),
 -- CON_SERVICIO_DE_MESA
 ('CON_SERVICIO_DE_MESA', 1, 40, 60000, '2025-08-01'),
 ('CON_SERVICIO_DE_MESA', 41, 60, 80000, '2025-08-01'),
 ('CON_SERVICIO_DE_MESA', 61, 80, 100000, '2025-08-01'),
+('CON_SERVICIO_DE_MESA', 81, 100, 120000, '2025-08-01'),
+('CON_SERVICIO_DE_MESA', 101, 120, 140000, '2025-08-01'),
 -- BABY_SHOWERS
 ('BABY_SHOWERS', 1, 40, 50000, '2025-08-01'),
 ('BABY_SHOWERS', 41, 50, 55000, '2025-08-01'),
@@ -229,7 +230,11 @@ INSERT INTO roles_por_evento (id_evento, rol_requerido, cantidad, min_personas, 
 ('BABY_SHOWERS', 'Ayudante de cocina', 2, 81, 120),
 -- INFORMALES
 ('INFORMALES', 'Encargada', 1, 0, 120),
-('INFORMALES', 'Puerta', 1, 0, 120);
+('INFORMALES', 'Puerta', 1, 0, 120),
+-- FECHA_BANDAS (eventos musicales)
+('FECHA_BANDAS', 'Encargado', 1, 0, 500),
+('FECHA_BANDAS', 'Puerta', 1, 0, 500),
+('FECHA_BANDAS', 'Sonido', 1, 0, 500);
 
 -- ---------------------------------------------------------------------------
 -- CATÁLOGO DE ROLES
@@ -247,6 +252,22 @@ INSERT INTO catalogo_roles (nombre, descripcion) VALUES
 ('DJ', 'Disc Jockey'),
 ('Bartender', 'Servicio de bar'),
 ('Seguridad', 'Personal de seguridad');
+
+-- ---------------------------------------------------------------------------
+-- COSTOS DE PERSONAL POR ROL Y VIGENCIA
+-- ---------------------------------------------------------------------------
+INSERT INTO costos_personal_vigencia (rol, fecha_de_vigencia, costo_por_hora, viaticos) VALUES
+('Encargada', '2025-08-01', 5000, 0),
+('Encargado', '2025-08-01', 5000, 0),
+('Cocinera', '2025-08-01', 3500, 0),
+('Puerta', '2025-08-01', 3500, 1000),
+('Ayudante de cocina', '2025-08-01', 3000, 0),
+('Mesera', '2025-08-01', 3000, 0),
+('Limpieza', '2025-09-01', 3500, 1200),
+('Sonido', '2025-08-01', 4000, 500),
+('DJ', '2025-08-01', 4500, 0),
+('Bartender', '2025-08-01', 3500, 0),
+('Seguridad', '2025-08-01', 4000, 1000);
 
 -- ---------------------------------------------------------------------------
 -- CATÁLOGO DE INSTRUMENTOS (para bandas)

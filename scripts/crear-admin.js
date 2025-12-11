@@ -51,24 +51,13 @@ async function crearAdmin() {
                 const salt = await bcrypt.genSalt(10);
                 const passwordHash = await bcrypt.hash(password, salt);
 
-                // Crear usuario
+                // Crear usuario admin
                 const sql = 'INSERT INTO usuarios (email, password_hash, nombre, rol, activo) VALUES (?, ?, ?, ?, 1)';
                 const result = await conn.query(sql, [email, passwordHash, 'Administrador', 'admin']);
 
                 if (result.affectedRows > 0) {
-                    const usuarioId = result.insertId;
-
-                    // Asignar rol SUPER_ADMIN
-                    const [rolSuperAdmin] = await conn.query("SELECT id FROM roles WHERE codigo = 'SUPER_ADMIN'");
-                    if (rolSuperAdmin) {
-                        await conn.query('INSERT INTO usuarios_roles (id_usuario, id_rol) VALUES (?, ?)',
-                            [usuarioId, rolSuperAdmin.id]);
-                        console.log(`✅ Usuario administrador '${email}' creado con rol SUPER_ADMIN.`);
-                    } else {
-                        console.log(`✅ Usuario administrador '${email}' creado (sin rol - tabla roles no existe).`);
-                    }
-
                     await conn.commit();
+                    console.log(`✅ Usuario administrador '${email}' creado correctamente.`);
                 } else {
                     await conn.rollback();
                     console.error('❌ No se pudo crear el usuario.');

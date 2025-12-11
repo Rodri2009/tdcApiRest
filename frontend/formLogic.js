@@ -469,11 +469,52 @@ const App = {
         // Normalizar tipo a string si es number
         if (typeof tipo === 'number') tipo = String(tipo);
         if (tipo && typeof tipo === 'string') tipo = tipo.trim();
-        const cantidad = solicitud.cantidadPersonas || solicitud.cantidad_de_personas;
+        let cantidadRaw = solicitud.cantidadPersonas || solicitud.cantidad_de_personas;
         const duracion = solicitud.duracionEvento || solicitud.duracion;
         const fecha = solicitud.fechaEvento || solicitud.fecha_evento;
-        const hora = solicitud.horaInicio || solicitud.hora_evento;
+        let horaRaw = solicitud.horaInicio || solicitud.hora_evento;
         const detalles = solicitud.descripcion || '';
+
+        // Helper: Convertir cantidad numérica al label del rango correspondiente
+        const convertirCantidadALabel = (cantidadNum, tipoKey) => {
+            if (!cantidadNum) return cantidadNum;
+            const num = parseInt(cantidadNum);
+            if (isNaN(num)) return cantidadNum; // Ya es un label
+
+            // Buscar en tarifas el rango que contiene este número
+            const tarifasTipo = this.tarifas.filter(t => t.tipo.toUpperCase() === tipoKey.toUpperCase());
+            for (const t of tarifasTipo) {
+                if (num >= t.cantidadMin && num <= t.cantidadMax) {
+                    return `${t.cantidadMin} a ${t.cantidadMax} personas`;
+                }
+            }
+            // Fallback: buscar en opcionesCantidades
+            const opciones = this.opcionesCantidades[tipoKey] || [];
+            for (const label of opciones) {
+                const match = label.match(/(\d+)\s*a\s*(\d+)/);
+                if (match) {
+                    const min = parseInt(match[1]);
+                    const max = parseInt(match[2]);
+                    if (num >= min && num <= max) return label;
+                }
+            }
+            return cantidadNum; // Devolver original si no encontramos match
+        };
+
+        // Helper: Normalizar hora a formato HH:MM:SS
+        const normalizarHora = (hora) => {
+            if (!hora) return hora;
+            // Si ya tiene el formato completo HH:MM:SS
+            if (/^\d{2}:\d{2}:\d{2}$/.test(hora)) return hora;
+            // Si tiene formato HH:MM, agregar :00
+            if (/^\d{2}:\d{2}$/.test(hora)) return hora + ':00';
+            // Si tiene formato H:MM, agregar 0 al inicio y :00
+            if (/^\d{1}:\d{2}$/.test(hora)) return '0' + hora + ':00';
+            return hora;
+        };
+
+        // Normalizar hora para el select
+        const hora = normalizarHora(horaRaw);
 
         // 1. Establecer el tipo
         // Intentamos mapear el tipo recibido al id que usa la UI (this.tiposDeEvento)
@@ -591,6 +632,11 @@ const App = {
             }
             //this.calendario.setDate(fecha, false);
         }
+
+        // Convertir cantidad numérica al label del rango usando el tipo resuelto
+        const cantidad = convertirCantidadALabel(cantidadRaw, resolvedTipoForOptions || tipo);
+        console.log('[populate] cantidad raw:', cantidadRaw, '-> label:', cantidad, 'para tipo:', resolvedTipoForOptions || tipo);
+        console.log('[populate] hora raw:', horaRaw, '-> normalizada:', hora);
 
         // 3. Llamar a actualizarTodo pasándole TODOS los datos que conocemos.
         // Esto llenará los selects y calculará el precio inicial.
@@ -896,7 +942,7 @@ const App = {
             }
         }
         if (cantidad) detalleHtml += `<li><strong>Personas:</strong> ${cantidad}</li>`;
-        if (montoSena > 0) detalleHtml += `<li style="margin-top:10px; color: #0056b3;"><strong>Seña:</strong> $${this.convertirNumero(montoSena)} (no reint.)</li>`;
+        if (montoSena > 0) detalleHtml += `<li style="margin-top:10px; color: #0056b3;"><strong>Seña:</strong> $${this.convertirNumero(montoSena)} (no reintigrable)</li>`;
         detalleHtml += '</ul>';
 
         this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
@@ -925,23 +971,15 @@ const App = {
                 return tipoCoincide && cantidadCoincide && fechaCoincide;
             });
 
-            console.log('[DEBUG PRECIO] tipoId:', tipoId, 'cantidadMin:', cantidadMin, 'cantidadMax:', cantidadMax);
-            console.log('[DEBUG PRECIO] tarifas disponibles:', this.tarifas.length);
-            console.log('[DEBUG PRECIO] reglas aplicables:', reglasAplicables.length, reglasAplicables);
-
             if (reglasAplicables.length > 0) {
                 reglasAplicables.sort((a, b) => new Date(b.vigenciaDesde) - new Date(a.vigenciaDesde));
                 const reglaFinal = reglasAplicables[0];
                 const precioCalculado = parseFloat(reglaFinal.precioPorHora) * duracionNum;
-                console.log('[DEBUG PRECIO] reglaFinal:', reglaFinal, 'duracionNum:', duracionNum, 'precioCalculado:', precioCalculado);
 
                 let detallePrecios = '<ul>';
                 if (precioCalculado > 0) detallePrecios += `<li style="color: #555;"><strong>Precio básico:</strong> $${this.convertirNumero(precioCalculado)}</li>`;
                 if (depositoGarantia > 0) detallePrecios += `<li style="color: #555;"><strong>Depósito reintegrable:</strong> $${this.convertirNumero(depositoGarantia)}</li>`;
                 detallePrecios += '</ul>';
-
-                console.log('[DEBUG DOM] detallePreciosDiv:', this.elements.detallePreciosDiv);
-                console.log('[DEBUG DOM] presupuestoTotalDiv:', this.elements.presupuestoTotalDiv);
 
                 if (this.elements.detallePreciosDiv) {
                     this.elements.detallePreciosDiv.innerHTML = detallePrecios;
@@ -949,11 +987,9 @@ const App = {
 
                 // --- ¡NUEVA LÓGICA DE TOTAL! ---
                 const totalConDeposito = parseFloat(precioCalculado) + parseFloat(depositoGarantia);
-                console.log('[DEBUG DOM] totalConDeposito:', totalConDeposito);
 
                 if (this.elements.presupuestoTotalDiv) {
                     this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $${this.convertirNumero(totalConDeposito)}`;
-                    console.log('[DEBUG DOM] Total actualizado a:', this.elements.presupuestoTotalDiv.innerHTML);
                 }
 
                 // Añadimos la línea del depósito si es mayor que cero
