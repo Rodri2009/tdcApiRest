@@ -237,7 +237,7 @@
         async function loadEventos() {
             const container = document.getElementById('eventos-container');
             try {
-                const res = await fetch('/api/bandas/eventos?estado=Confirmado');
+                const res = await fetch('/api/bandas/fechas_bandas_confirmadas?estado=Confirmado');
                 if (!res.ok) throw new Error('Error al cargar eventos');
                 const eventos = await res.json();
 

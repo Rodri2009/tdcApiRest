@@ -922,7 +922,7 @@
         async function loadEventos() {
             try {
                 const estado = document.getElementById('filter-estado-evento').value;
-                const url = estado ? `/api/bandas/eventos?estado=${estado}` : '/api/bandas/eventos';
+                const url = estado ? `/api/bandas/fechas_bandas_confirmadas?estado=${estado}` : '/api/bandas/fechas_bandas_confirmadas';
                 const res = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });
@@ -930,6 +930,13 @@
                     eventos = await res.json();
                     renderEventos();
                     updateEventosCount();
+                } else {
+                    let msg = 'Error al cargar eventos';
+                    if (res.status === 404) msg = 'No se encontró el endpoint de eventos (404)';
+                    else if (res.status === 401) msg = 'No autorizado para ver los eventos (401)';
+                    else if (res.status === 500) msg = 'Error interno del servidor (500)';
+                    document.getElementById('tbody-eventos').innerHTML = `<tr><td colspan="8" style="color:#ef4444;">${msg}</td></tr>`;
+                    console.error(msg, res.status);
                 }
             } catch (err) {
                 console.error('Error cargando eventos:', err);
@@ -1161,7 +1168,7 @@
             }
             
             try {
-                const url = id ? `/api/admin/eventos/${id}` : '/api/admin/eventos';
+                const url = id ? `/api/admin/fechas_bandas_confirmadas/${id}` : '/api/admin/fechas_bandas_confirmadas';
                 const method = id ? 'PUT' : 'POST';
                 
                 const res = await fetch(url, {
@@ -1190,7 +1197,7 @@
         async function deleteEvento(id) {
             if (!confirm('¿Estás seguro de eliminar este evento?')) return;
             try {
-                const res = await fetch(`/api/admin/eventos/${id}`, {
+                const res = await fetch(`/api/admin/fechas_bandas_confirmadas/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });

@@ -214,12 +214,9 @@ CREATE TABLE IF NOT EXISTS solicitudes_personal (
     FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- =============================================================================
--- 5. TABLAS DE EVENTOS (Para FECHA_BANDAS)
--- =============================================================================
 
--- Eventos de bandas confirmados
-CREATE TABLE IF NOT EXISTS eventos (
+-- Fechas de bandas confirmadas
+CREATE TABLE IF NOT EXISTS fechas_bandas_confirmadas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tipo_evento ENUM('ALQUILER','BANDA','TALLER','SERVICIO','OTRO') NOT NULL DEFAULT 'BANDA',
     
@@ -347,7 +344,7 @@ CREATE TABLE IF NOT EXISTS eventos_lineup (
     INDEX idx_evento (id_evento),
     INDEX idx_banda (id_banda),
     INDEX idx_orden (id_evento, orden_show),
-    FOREIGN KEY (id_evento) REFERENCES eventos(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_evento) REFERENCES fechas_bandas_confirmadas(id) ON DELETE CASCADE,
     FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -361,7 +358,7 @@ CREATE TABLE IF NOT EXISTS eventos_bandas_invitadas (
     
     INDEX idx_evento (id_evento),
     INDEX idx_banda (id_banda),
-    FOREIGN KEY (id_evento) REFERENCES eventos(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_evento) REFERENCES fechas_bandas_confirmadas(id) ON DELETE CASCADE,
     FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -438,7 +435,7 @@ CREATE TABLE IF NOT EXISTS eventos_personal (
     hora_inicio TIME DEFAULT NULL,
     hora_fin TIME DEFAULT NULL,
     INDEX idx_evento (id_evento),
-    FOREIGN KEY (id_evento) REFERENCES eventos(id) ON DELETE CASCADE
+    FOREIGN KEY (id_evento) REFERENCES fechas_bandas_confirmadas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
@@ -459,7 +456,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     estado ENUM('pendiente', 'pagado', 'utilizado', 'cancelado') DEFAULT 'pendiente',
     comprado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_evento (id_evento),
-    FOREIGN KEY (id_evento) REFERENCES eventos(id) ON DELETE CASCADE
+    FOREIGN KEY (id_evento) REFERENCES fechas_bandas_confirmadas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS cupones (

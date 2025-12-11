@@ -49,9 +49,8 @@ const getEventosActivos = async () => {
             e.aforo_maximo, 
             e.activo, 
             e.descripcion,
-            -- FORZAMOS el resultado a ser un entero normal (SIGNED), evitando el BigInt (150n)
             CAST((e.aforo_maximo - COUNT(t.id_evento)) AS SIGNED) as tickets_disponibles
-        FROM eventos e
+        FROM fechas_bandas_confirmadas e
         LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
         WHERE e.activo = TRUE 
         GROUP BY e.id
@@ -77,7 +76,7 @@ const getEventoById = async (id) => {
             e.aforo_maximo, 
             e.descripcion,
             (e.aforo_maximo - COUNT(t.id_evento)) as tickets_disponibles
-        FROM eventos e
+        FROM fechas_bandas_confirmadas e
         LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
         WHERE e.id = ? AND e.activo = TRUE
         GROUP BY e.id

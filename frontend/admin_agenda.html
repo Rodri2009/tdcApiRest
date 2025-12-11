@@ -493,7 +493,7 @@
                 }
 
                 // Cargar eventos de bandas
-                const resEv = await fetch(`${API_BASE}/eventos`, { headers: authHeaders() });
+                const resEv = await fetch(`${API_BASE}/fechas_bandas_confirmadas`, { headers: authHeaders() });
                 if (resEv.ok) {
                     eventos = await resEv.json();
                 }

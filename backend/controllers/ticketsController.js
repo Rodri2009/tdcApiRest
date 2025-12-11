@@ -7,7 +7,7 @@ const pool = require('../db');
  * GET /api/tickets/eventos
  * Obtiene la lista de eventos activos.
  */
-const getEventos = async (req, res) => {
+const getFechasBandasConfirmadas = async (req, res) => {
     try {
         // Ejecución de la consulta SQL...
         const rows = await ticketsModel.getEventosActivos();
@@ -238,7 +238,7 @@ const initCheckout = async (req, res) => {
 // const validateTicket = async (req, res) => { ... };
 
 module.exports = {
-    getEventos,
+    getFechasBandasConfirmadas,
     simulateCheckout,
     initCheckout,
 };

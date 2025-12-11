@@ -50,10 +50,8 @@ INSERT INTO bandas_formacion (id_banda, nombre_integrante, instrumento, es_lider
 (4, NULL, 'Bajo eléctrico', 0, NULL),
 (4, NULL, 'Batería', 0, NULL);
 
--- ---------------------------------------------------------------------------
--- EVENTOS DE EJEMPLO (Fechas de bandas)
--- ---------------------------------------------------------------------------
-INSERT INTO eventos (tipo_evento, nombre_banda, genero_musical, descripcion, fecha, hora_inicio, hora_fin, precio_anticipada, precio_puerta, aforo_maximo, estado, es_publico, activo) VALUES
+-- FECHAS DE BANDAS DE EJEMPLO
+INSERT INTO fechas_bandas_confirmadas (tipo_evento, nombre_banda, genero_musical, descripcion, fecha, hora_inicio, hora_fin, precio_anticipada, precio_puerta, aforo_maximo, estado, es_publico, activo) VALUES
 ('BANDA', 'Reite', 'Rock nacional', 'Gran noche de rock nacional con Tributo a La Renga', '2025-12-20', '21:00:00', '02:00:00', 3000.00, 4000.00, 150, 'Confirmado', 1, 1),
 ('BANDA', 'Jazz en el Templo', 'Jazz', 'Noche de jazz con los mejores músicos de la zona sur', '2025-12-21', '20:00:00', '01:00:00', 2500.00, 3500.00, 100, 'Confirmado', 1, 1),
 ('BANDA', 'Cumbia Power', 'Cumbia', 'La mejor cumbia para cerrar el año bailando!', '2025-12-28', '22:00:00', '04:00:00', 2000.00, 3000.00, 180, 'Confirmado', 1, 1);

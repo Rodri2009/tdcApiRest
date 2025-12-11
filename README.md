@@ -71,12 +71,15 @@ docker exec -it tdc-backend node /app/scripts/crear-admin.js
 
 ## Cambios recientes en la versión beta
 
-- Se agregó control de visibilidad pública para solicitudes confirmadas (toggle en admin_solicitudes.html)
-- Se unificó la agenda pública mostrando tanto eventos de bandas como solicitudes públicas confirmadas
-- Se corrigió el error de columna en la consulta de solicitudes públicas
-- Se actualizaron los botones y navegación del panel de administración
-- Se crearon nuevas páginas de configuración para alquileres y servicios confirmados
-- Se implementó endpoint `/api/solicitudes/publicas` para la agenda
+---
+
+## Cambios importantes (Migración Diciembre 2025)
+
+- Se migró la tabla principal `eventos` a `fechas_bandas_confirmadas`.
+- Todas las claves foráneas que referenciaban `eventos(id)` ahora apuntan a `fechas_bandas_confirmadas(id)`.
+- Se actualizaron los scripts de datos de prueba y el schema para reflejar estos cambios.
+- El backend y frontend consumen los nuevos endpoints y estructura.
+- Si tienes scripts personalizados, revisa y actualiza cualquier referencia a la tabla `eventos`.
 
 ---
 

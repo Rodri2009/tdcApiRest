@@ -148,19 +148,27 @@
                 <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                     <a href="solicitud_alquiler.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Alquilar para Eventos
+                        Alquilar el Salón
                     </a>
                     <a href="seccion_bandas.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Ver Bandas en Vivo
                     </a>
-                    <a href="seccion_talleres.html"
+                        <a href="solicitud_banda.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Talleres y Actividades
+                        Quiero tocar en El templo
                     </a>
+                    <a href="solicitud_taller.html"
+                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        Quiero dar un taller
+                    </a>
+                    <a href="solicitud_taller.html"
+                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        Quiero dar clases
+                    </a>        
                     <a href="seccion_servicios.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Cuidado Personal
+                        Depilación Definitiva
                     </a>
                 </div>
             </div>
@@ -439,7 +447,7 @@
         async function fetchAgenda() {
             try {
                 // Cargar eventos de bandas públicos
-                const resEventos = await fetch(`${API_BASE_URL}/api/tickets/eventos`);
+                const resEventos = await fetch(`${API_BASE_URL}/api/tickets/fechas_bandas_confirmadas`);
                 let eventos = [];
                 if (resEventos.ok) {
                     const data = await resEventos.json();

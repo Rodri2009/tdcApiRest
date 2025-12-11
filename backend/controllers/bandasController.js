@@ -791,45 +791,45 @@ const getEventosBandas = async (req, res) => {
 
         let query = `
             SELECT 
-                e.id,
-                e.nombre_banda,
-                e.genero_musical,
-                e.descripcion,
-                e.url_imagen,
-                e.fecha,
-                e.hora_inicio,
-                e.hora_fin,
-                e.aforo_maximo,
-                e.es_publico,
-                e.precio_base,
-                e.precio_anticipada,
-                e.precio_puerta,
-                e.nombre_contacto,
-                e.email_contacto,
-                e.telefono_contacto,
-                e.tipo_evento,
-                e.activo,
-                e.estado,
-                e.creado_en,
-                (SELECT COUNT(*) FROM tickets WHERE id_evento = e.id) as entradas_vendidas
-            FROM eventos e
-            WHERE e.tipo_evento = 'BANDA'
+                fbc.id,
+                fbc.nombre_banda,
+                fbc.genero_musical,
+                fbc.descripcion,
+                fbc.url_imagen,
+                fbc.fecha,
+                fbc.hora_inicio,
+                fbc.hora_fin,
+                fbc.aforo_maximo,
+                fbc.es_publico,
+                fbc.precio_base,
+                fbc.precio_anticipada,
+                fbc.precio_puerta,
+                fbc.nombre_contacto,
+                fbc.email_contacto,
+                fbc.telefono_contacto,
+                fbc.tipo_evento,
+                fbc.activo,
+                fbc.estado,
+                fbc.creado_en,
+                (SELECT COUNT(*) FROM tickets WHERE id_evento = fbc.id) as entradas_vendidas
+            FROM fechas_bandas_confirmadas fbc
+            WHERE 1=1
         `;
         const params = [];
 
         // Filtrar por estado
         if (estado) {
-            query += ' AND e.estado = ?';
+            query += ' AND fbc.estado = ?';
             params.push(estado);
         }
 
         // Búsqueda por nombre de banda
         if (buscar) {
-            query += ' AND e.nombre_banda LIKE ?';
+            query += ' AND fbc.nombre_banda LIKE ?';
             params.push(`%${buscar}%`);
         }
 
-        query += ' ORDER BY e.fecha DESC, e.hora_inicio ASC';
+        query += ' ORDER BY fbc.fecha DESC, fbc.hora_inicio ASC';
 
         const eventos = await pool.query(query, params);
 

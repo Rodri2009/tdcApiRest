@@ -48,8 +48,8 @@ router.post('/solicitudes/:id/aprobar', protect, requireAdmin, checkPermiso('con
 router.post('/solicitudes/:id/rechazar', protect, requireAdmin, checkPermiso('config.bandas'), bandasController.rechazarSolicitud);
 
 // --- Eventos de bandas (lectura para admin, escritura con permiso) ---
-router.get('/eventos', protect, requireAdmin, bandasController.getEventosBandas);
-router.get('/eventos/:id', protect, requireAdmin, bandasController.getEventoBandaById);
+router.get('/fechas_bandas_confirmadas', protect, requireAdmin, bandasController.getEventosBandas);
+router.get('/fechas_bandas_confirmadas/:id', protect, requireAdmin, bandasController.getEventoBandaById);
 
 // --- Bandas individuales (rutas con parámetros al final) ---
 // Detalle de una banda
