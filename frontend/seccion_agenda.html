@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Completa - El Templo de Claypole</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+        }
+
+        .event-card {
+            transition: transform 0.3s ease;
+        }
+
+        .event-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(240, 171, 252, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Título -->
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
+                        Inicio</span>
+                </a>
+
+                <!-- Menú Desktop -->
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <a href="seccion_bandas.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
+                        Vivo</a>
+                    <a href="seccion_servicios.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
+                    <a href="seccion_alquiler.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
+                        Salón</a>
+                    <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+
+                <!-- Botón de Menú Móvil -->
+                <button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <!-- Menú Móvil Desplegable -->
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <a href="seccion_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
+                    en Vivo</a>
+                <a href="seccion_servicios.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
+                <a href="seccion_alquiler.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
+                    del Salón</a>
+                <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Sección 1: Agenda Completa -->
+        <section id="agenda" class="py-20 md:py-16 bg-stone-950">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-3">
+                        <span class="block text-neon">Agenda Completa</span>
+                    </h1>
+                    <p class="text-xl text-stone-300 font-medium">
+                        Todos los eventos públicos: bandas, talleres, servicios y alquileres
+                    </p>
+                </div>
+
+                <!-- Contenedor donde se inyectarán los eventos cargados por la API -->
+                <div id="events-list" class="space-y-6">
+                    <!-- Aquí se mostrarán los eventos dinámicos o el mensaje de carga/error -->
+                    <p class="text-center text-lg text-stone-500">Cargando eventos...</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-rustic border-t border-stone-700 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos
+                reservados.</p>
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> -V 1.0. -</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // ----------------------------------------------------
+        // LÓGICA DE CARGA DE EVENTOS DESDE LA API
+        // ----------------------------------------------------
+
+        // URL Dinámica
+        const currentHost = window.location.host;
+        let API_BASE_URL = '';
+
+        if (currentHost.includes('localhost')) {
+            API_BASE_URL = 'http://localhost';
+        } else if (currentHost.includes('192.168.1.10')) {
+            API_BASE_URL = 'http://192.168.1.10';
+        } else {
+            API_BASE_URL = window.location.protocol + '//' + currentHost;
+        }
+
+        const eventsListContainer = document.getElementById('events-list');
+
+        // Categorías y sus estilos
+        const CATEGORIAS = {
+            'BANDA': { icon: '🎸', label: 'Banda en Vivo', color: 'border-orange-500', bgDate: 'bg-orange-900', textColor: 'text-orange-400', buttonClass: 'bg-orange-500 hover:bg-orange-400', borderClass: 'border-orange-500' },
+            'TALLER': { icon: '🎨', label: 'Taller', color: 'border-cyan-500', bgDate: 'bg-cyan-900', textColor: 'text-cyan-400', buttonClass: 'bg-cyan-500 hover:bg-cyan-400', borderClass: 'border-cyan-500' },
+            'SERVICIO': { icon: '💆', label: 'Servicio', color: 'border-pink-500', bgDate: 'bg-pink-900', textColor: 'text-pink-400', buttonClass: 'bg-pink-500 hover:bg-pink-400', borderClass: 'border-pink-500' },
+            'ALQUILER': { icon: '🏛️', label: 'Evento', color: 'border-purple-500', bgDate: 'bg-purple-900', textColor: 'text-purple-400', buttonClass: 'bg-purple-500 hover:bg-purple-400', borderClass: 'border-purple-500' }
+        };
+
+        /**
+         * Formatea un objeto de fecha y hora (ej: '2025-12-05 21:00:00')
+         * en partes legibles para la tarjeta.
+         * @param {string} dateTimeString - Fecha y hora de MariaDB.
+         * @returns {{day: string, month: string, time: string}}
+         */
+        function formatDateTime(dateTimeString) {
+            const date = new Date(dateTimeString);
+
+            // Opciones de formato
+            const dayOptions = { day: '2-digit' };
+            const monthOptions = { month: 'short' }; // Ej: NOV, DIC
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false }; // Ej: 21:00
+
+            // Convertir a tu zona horaria local o de preferencia (puede variar según dónde se ejecute el script)
+            const day = date.toLocaleDateString('es-AR', dayOptions);
+            const month = date.toLocaleDateString('es-AR', monthOptions).toUpperCase().replace('.', '');
+            const time = date.toLocaleTimeString('es-AR', timeOptions);
+
+            return { day, month, time };
+        }
+
+        function getCategoria(item) {
+            if (item.source === 'evento') return 'BANDA';
+            const tipo = (item.tipo || '').toUpperCase();
+            if (tipo.includes('TALLER')) return 'TALLER';
+            if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) return 'SERVICIO';
+            return 'ALQUILER';
+        }
+
+        /**
+         * Genera la estructura HTML para un solo evento.
+         * @param {object} event - Objeto evento de la API.
+         * @returns {string} HTML del evento.
+         */
+        function generateEventCard(event) {
+            const categoria = getCategoria(event);
+            const cat = CATEGORIAS[categoria];
+            const { day, month, time } = formatDateTime(event.fecha_hora || event.fecha);
+            const hora = event.hora_evento || event.hora || time;
+            const precio = event.precio_base || event.precio_basico || event.precio_final || 0;
+            const nombre = event.nombre_banda || event.nombre_completo || event.descripcion || 'Evento';
+
+            // Estilo y texto dinámico para precio y botón
+            const esGratis = precio === 0 || precio === null;
+            let priceText = '';
+            if (precio > 0) {
+                priceText = `$ ${precio.toLocaleString('es-AR')} ARS`;
+            }
+
+            let buttonText = 'Más Info';
+            let buttonClass = cat.buttonClass;
+            let borderClass = cat.color;
+            let dateBgClass = cat.bgDate;
+            let priceTextColor = cat.textColor;
+            let link = '#'; // Placeholder, ajustar según necesidad
+
+            if (esGratis) {
+                priceText = '¡GRATIS!';
+                buttonText = 'Reservar';
+            }
+
+            return `
+                <!-- Evento - ${nombre} -->
+                <div class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 ${borderClass}">
+                    <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                        <div class="text-center p-2 rounded-lg ${dateBgClass} flex-shrink-0">
+                            <p class="text-xl font-bold">${day}</p>
+                            <p class="text-xs">${month}</p>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm ${cat.textColor}">${cat.icon} ${cat.label}</span>
+                            </div>
+                            <h4 class="text-2xl font-semibold text-white">${nombre}</h4>
+                            <p class="text-sm text-stone-400">${hora ? hora + ' hs' : ''} | ${event.descripcion ? event.descripcion.substring(0, 50) + '...' : ''}</p>
+                            <p class="text-xl font-bold ${priceTextColor} mt-1">${priceText}</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3 items-center">
+                        <a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-4 rounded-full text-md transition shadow-lg text-center whitespace-nowrap">
+                            ${buttonText}
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Procesa y renderiza la lista de eventos.
+         * @param {Array<object>} events - Lista de eventos de la API.
+         */
+        function renderEvents(events) {
+            eventsListContainer.innerHTML = ''; // Limpia el mensaje de carga
+
+            if (!events || events.length === 0) {
+                eventsListContainer.innerHTML = `
+                    <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
+                        <p class="text-xl text-stone-400">¡Parece que aún no hay eventos programados!</p>
+                        <p class="text-sm text-stone-500 mt-2">Pronto anunciaremos la nueva agenda.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Ordenar por fecha
+            events.sort((a, b) => new Date(a.fecha_hora || a.fecha) - new Date(b.fecha_hora || b.fecha));
+
+            events.forEach(event => {
+                const cardHtml = generateEventCard(event);
+                eventsListContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+
+        /**
+         * Llama a la API para obtener la lista de eventos.
+         */
+        async function fetchEvents() {
+            try {
+                // Cargar eventos de bandas públicos
+                const resEventos = await fetch(`${API_BASE_URL}/api/tickets/fechas_bandas_confirmadas`);
+                let eventos = [];
+                if (resEventos.ok) {
+                    const data = await resEventos.json();
+                    eventos = data.filter(e => e.activo === 1).map(e => ({
+                        source: 'evento',
+                        fecha_hora: e.fecha_hora,
+                        fecha: e.fecha,
+                        hora: e.hora_inicio,
+                        nombre_banda: e.nombre_banda,
+                        tipo: e.genero_musical || 'Banda',
+                        precio_base: e.precio_anticipada || e.precio_base,
+                        descripcion: e.descripcion
+                    }));
+                }
+
+                // Cargar solicitudes públicas confirmadas
+                const resSolicitudes = await fetch(`${API_BASE_URL}/api/solicitudes/publicas`);
+                let solicitudes = [];
+                if (resSolicitudes.ok) {
+                    const data = await resSolicitudes.json();
+                    solicitudes = data.map(s => ({
+                        source: 'solicitud',
+                        fecha: s.fecha_evento || s.fechaEvento,
+                        hora_evento: s.hora_evento || s.horaEvento,
+                        nombre_completo: s.nombre_completo || s.nombreCompleto,
+                        tipo_de_evento: s.tipo_de_evento || s.tipoEvento,
+                        precio_basico: s.precio_basico || s.precio,
+                        descripcion: s.descripcion
+                    }));
+                }
+
+                // Combinar
+                const allEvents = [...eventos, ...solicitudes];
+
+                renderEvents(allEvents);
+
+            } catch (error) {
+                console.error('Error al cargar la agenda:', error);
+                eventsListContainer.innerHTML = `
+                    <div class="p-8 text-center bg-red-900/30 text-red-300 rounded-xl border border-red-500">
+                        <p class="text-xl font-bold">Error de Conexión</p>
+                        <p class="text-sm mt-2">No se pudo conectar a la API. Asegúrate que el backend esté corriendo.</p>
+                        <p class="text-xs mt-1">Detalle: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ----------------------------------------------------
+        // MENÚ MÓVIL Y AUTENTICACIÓN
+        // ----------------------------------------------------
+        function setupMobileMenu() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+        }
+
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                const desktopHTML = `
+                    <a href="/admin.html" 
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">
+                        🔐 Admin
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="/admin.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
+                        🔐 Admin Panel
+                    </a>
+                    <button onclick="logout()" 
+                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
+                        🚪 Cerrar Sesión
+                    </button>
+                `;
+                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
+                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+            } else {
+                const desktopHTML = `
+                    <a href="login.html"
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">
+                        Login
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="login.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
+                        Login
+                    </a>
+                `;
+                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
+                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/index.html';
+        }
+
+        window.addEventListener('storage', updateAuthMenu);
+
+        // ----------------------------------------------------
+        // INICIALIZACIÓN
+        // ----------------------------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Configurar menú móvil y autenticación
+            setupMobileMenu();
+            updateAuthMenu();
+
+            // 2. Inicia la carga de datos de la API
+            fetchEvents();
+
+            // 2. Lógica para desplazamiento (mantengo la lógica original)
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('event_id');
+
+            if (eventId) {
+                // El desplazamiento debe ocurrir DEPUÉS de que los eventos se hayan cargado.
+                // Como fetchEvents es async, una forma simple es esperar un momento.
+                setTimeout(() => {
+                    const targetElement = document.querySelector(`[data-event-id="${eventId}"]`);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 500); // Espera 500ms para que se complete el renderizado
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -494,18 +494,19 @@ const getSesionExistente = async (req, res) => {
         // --- ¡CONSULTA SQL CORREGIDA! ---
         // Usamos los nombres de columna snake_case y los alias correctos que el frontend espera.
         const sql = `
-            SELECT 
-                id_solicitud as solicitudId, 
-                tipo_de_evento as tipoEvento, 
-                cantidad_de_personas as cantidadPersonas, 
-                duracion as duracionEvento, 
-                DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fechaEvento, 
-                hora_evento as horaInicio 
-            FROM solicitudes 
-            WHERE fingerprintid = ? 
-              AND estado = 'Solicitado' 
-              AND fecha_hora > (NOW() - INTERVAL 24 HOUR) 
-            ORDER BY fecha_hora DESC 
+            SELECT
+                id_solicitud as solicitudId,
+                tipo_de_evento as tipoEvento,
+                tipo_servicio as tipoServicio,
+                cantidad_de_personas as cantidadPersonas,
+                duracion as duracionEvento,
+                DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fechaEvento,
+                hora_evento as horaInicio
+            FROM solicitudes
+            WHERE fingerprintid = ?
+              AND estado = 'Solicitado'
+              AND fecha_hora > (NOW() - INTERVAL 24 HOUR)
+            ORDER BY fecha_hora DESC
             LIMIT 1;
         `;
 

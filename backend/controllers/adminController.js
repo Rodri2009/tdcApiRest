@@ -9,62 +9,39 @@ const getSolicitudes = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        // Unificamos solicitudes y eventos para que el panel admin muestre ambas fuentes.
-        // Las filas provenientes de `eventos` tienen `origen = 'evento'` y un id prefijado 'ev_<id>' para evitar colisión con solicitudes.
-        // NOTA: tipo_de_evento puede ser:
-        //   - Una categoría directa: 'ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS' (solicitudes antiguas)
-        //   - Un subtipo: 'INFANTILES', 'INFORMALES', etc. (solicitudes nuevas)
+        // Solo solicitudes
         const sql = `
-            SELECT * FROM (
-                SELECT 
-                    s.id_solicitud as id,
-                    s.fecha_hora as fechaSolicitud,
-                    s.nombre_completo as nombreCliente,
-                    s.tipo_de_evento as tipoEventoId,
-                    CASE 
-                        WHEN ot.categoria IS NOT NULL THEN ot.categoria
-                        WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN 
-                            CASE s.tipo_de_evento
-                                WHEN 'TALLERES' THEN 'TALLERES_ACTIVIDADES'
-                                WHEN 'SERVICIO' THEN 'SERVICIOS'
-                                ELSE s.tipo_de_evento
-                            END
-                        ELSE 'OTRO'
-                    END as tipoEvento,
-                    CASE 
-                        WHEN ot.nombre_para_mostrar IS NOT NULL THEN ot.nombre_para_mostrar
-                        WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN NULL
-                        ELSE s.tipo_de_evento
-                    END as subtipo,
-                    DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
-                    s.estado,
-                    s.tipo_servicio as tipoServicioId,
-                    (SELECT COUNT(*) FROM solicitudes_personal sp WHERE sp.id_solicitud = s.id_solicitud) > 0 AS tienePersonalAsignado,
-                    'solicitud' as origen,
-                    s.hora_evento as horaInicio,
-                    NULL as nombreBanda,
-                    s.cantidad_de_personas as cantidadAforo
-                FROM solicitudes s
-                LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
-                UNION ALL
-                SELECT
-                    CONCAT('ev_', e.id) as id,
-                    e.creado_en as fechaSolicitud,
-                    COALESCE(e.nombre_contacto, 'Sin contacto') as nombreCliente,
-                    'FECHA_BANDAS' as tipoEventoId,
-                    'FECHA_BANDAS' as tipoEvento,
-                    COALESCE(e.genero_musical, 'Sin género') as subtipo,
-                    DATE_FORMAT(e.fecha, '%Y-%m-%d') as fechaEvento,
-                    COALESCE(e.estado, CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END) as estado,
-                    e.nombre_banda as tipoServicioId,
-                    (SELECT COUNT(*) FROM eventos_personal ep WHERE ep.id_evento = e.id) > 0 AS tienePersonalAsignado,
-                    'evento' as origen,
-                    TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
-                    e.nombre_banda as nombreBanda,
-                    e.aforo_maximo as cantidadAforo
-                FROM fechas_bandas_confirmadas e
-            ) t
-            ORDER BY COALESCE(t.fechaEvento, t.fechaSolicitud) DESC, t.fechaSolicitud DESC;
+            SELECT
+                s.id_solicitud as id,
+                s.fecha_hora as fechaSolicitud,
+                s.nombre_completo as nombreCliente,
+                s.tipo_de_evento as tipoEventoId,
+                CASE
+                    WHEN ot.categoria IS NOT NULL THEN ot.categoria
+                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN
+                        CASE s.tipo_de_evento
+                            WHEN 'TALLERES' THEN 'TALLERES_ACTIVIDADES'
+                            WHEN 'SERVICIO' THEN 'SERVICIOS'
+                            ELSE s.tipo_de_evento
+                        END
+                    ELSE 'OTRO'
+                END as tipoEvento,
+                CASE
+                    WHEN ot.nombre_para_mostrar IS NOT NULL THEN ot.nombre_para_mostrar
+                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN NULL
+                    ELSE s.tipo_de_evento
+                END as subtipo,
+                DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                s.estado,
+                s.tipo_servicio as tipoServicioId,
+                (SELECT COUNT(*) FROM solicitudes_personal sp WHERE sp.id_solicitud = s.id_solicitud) > 0 AS tienePersonalAsignado,
+                'solicitud' as origen,
+                s.hora_evento as horaInicio,
+                NULL as nombreBanda,
+                s.cantidad_de_personas as cantidadAforo
+            FROM solicitudes s
+            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+            ORDER BY COALESCE(s.fecha_evento, s.fecha_hora) DESC, s.fecha_hora DESC;
         `;
 
         const solicitudes = await conn.query(sql);
@@ -93,14 +70,50 @@ const actualizarEstadoSolicitud = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const result = await conn.query("UPDATE solicitudes SET estado = ? WHERE id_solicitud = ?", [estado, id]);
 
+        // Obtener la solicitud para verificar si es FECHA_BANDAS
+        const [solicitud] = await conn.query("SELECT * FROM solicitudes WHERE id_solicitud = ?", [id]);
+        if (!solicitud) {
+            return res.status(404).json({ message: 'Solicitud no encontrada.' });
+        }
+
+        // Actualizar estado de la solicitud
+        const result = await conn.query("UPDATE solicitudes SET estado = ? WHERE id_solicitud = ?", [estado, id]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
 
+        // Si es FECHA_BANDAS, manejar fechas_bandas_confirmadas
+        if (solicitud.tipo_de_evento === 'FECHA_BANDAS') {
+            if (estado === 'Confirmado') {
+                // Insertar en fechas_bandas_confirmadas si no existe
+                const [existe] = await conn.query("SELECT id FROM fechas_bandas_confirmadas WHERE nombre_banda = ? AND fecha = ?", [solicitud.nombre_completo, solicitud.fecha_evento]);
+                if (!existe) {
+                    await conn.query(`
+                        INSERT INTO fechas_bandas_confirmadas (
+                            tipo_evento, nombre_banda, genero_musical, descripcion,
+                            fecha, hora_inicio, precio_base, aforo_maximo, estado, es_publico, activo
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Confirmado', 1, 1)
+                    `, [
+                        'BANDA',
+                        solicitud.nombre_completo,
+                        solicitud.tipo_servicio || null,
+                        solicitud.descripcion || null,
+                        solicitud.fecha_evento,
+                        solicitud.hora_evento || '21:00:00',
+                        solicitud.precio_basico || 0,
+                        solicitud.cantidad_de_personas || 120
+                    ]);
+                }
+            } else if (estado === 'Cancelado' || estado === 'Solicitado') {
+                // Eliminar de fechas_bandas_confirmadas
+                await conn.query("DELETE FROM fechas_bandas_confirmadas WHERE nombre_banda = ? AND fecha = ?", [solicitud.nombre_completo, solicitud.fecha_evento]);
+            }
+        }
+
         res.status(200).json({ success: true, message: `Estado de la solicitud ${id} actualizado a ${estado}.` });
     } catch (err) {
+        console.error('Error al actualizar estado:', err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();

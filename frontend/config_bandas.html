@@ -503,10 +503,10 @@
                     <input type="text" id="search-eventos" placeholder="Buscar banda/evento..."
                         oninput="filterEventos()">
                     <select id="filter-estado-evento" onchange="loadEventos()">
-                        <option value="">Todos los estados</option>
-                        <option value="Confirmado" selected>Confirmados</option>
+                        <option value="Confirmado">Confirmados</option>
                         <option value="Solicitado">Solicitados</option>
                         <option value="Cancelado">Cancelados</option>
+                        <option value="">Todos los estados</option>
                     </select>
                     <select id="filter-mes-evento" onchange="filterEventos()">
                         <option value="">Todos los meses</option>
@@ -921,8 +921,8 @@
 
         async function loadEventos() {
             try {
-                const estado = document.getElementById('filter-estado-evento').value;
-                const url = estado ? `/api/bandas/fechas_bandas_confirmadas?estado=${estado}` : '/api/bandas/fechas_bandas_confirmadas';
+                const estado = document.getElementById('filter-estado-evento').value || 'Confirmado';
+                const url = `/api/bandas/fechas_bandas_confirmadas?estado=${estado}`;
                 const res = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });
@@ -1084,8 +1084,7 @@
         }
 
         function updateEventosCount() {
-            const confirmados = eventos.filter(e => e.estado === 'Confirmado').length;
-            document.getElementById('eventos-count').textContent = confirmados;
+            document.getElementById('eventos-count').textContent = eventos.length;
         }
 
         function editEvento(id) {

@@ -190,7 +190,7 @@
                     <p class="text-center text-lg text-stone-500">Cargando agenda...</p>
                 </div>
                 <div class="text-center mt-8">
-                    <a href="seccion_bandas.html"
+                    <a href="seccion_agenda.html"
                         class="bg-fuchsia-500 text-gray-900 font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
                         Ver Agenda Completa
                     </a>
@@ -518,14 +518,14 @@
                 agendaListContainer.insertAdjacentHTML('beforeend', generateAgendaCard(item));
             });
 
-            if (totalCount > items.length) {
+            /*if (totalCount > items.length) {
                 agendaListContainer.insertAdjacentHTML('beforeend', `
                 <p class="text-center text-sm text-stone-500 mt-4">
                     Y ${totalCount - items.length} eventos más. 
-                    <a href="seccion_bandas.html" class="text-fuchsia-400 underline hover:text-fuchsia-200">Ver agenda completa</a>.
+                    <a href="seccion_agenda.html" class="text-fuchsia-400 underline hover:text-fuchsia-200">Ver agenda completa</a>.
                 </p>
                 `);
-            }
+            }*/
         }
 
         // Manejo de autenticación en el navbar

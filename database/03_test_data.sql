@@ -50,6 +50,12 @@ INSERT INTO bandas_formacion (id_banda, nombre_integrante, instrumento, es_lider
 (4, NULL, 'Bajo eléctrico', 0, NULL),
 (4, NULL, 'Batería', 0, NULL);
 
+-- SOLICITUDES CORRESPONDIENTES A LAS FECHAS DE BANDAS (para mantener consistencia)
+INSERT INTO solicitudes (tipo_de_evento, tipo_servicio, es_publico, fecha_hora, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, nombre_completo, telefono, email, descripcion, estado) VALUES
+('FECHA_BANDAS', 'FECHA_BANDAS', 1, NOW(), '2025-12-20', '21:00', '5 horas', '150', 3000.00, 'Reite', NULL, NULL, 'Gran noche de rock nacional con Tributo a La Renga', 'Confirmado'),
+('FECHA_BANDAS', 'FECHA_BANDAS', 1, NOW(), '2025-12-21', '20:00', '5 horas', '100', 2500.00, 'Jazz en el Templo', NULL, NULL, 'Noche de jazz con los mejores músicos de la zona sur', 'Confirmado'),
+('FECHA_BANDAS', 'FECHA_BANDAS', 1, NOW(), '2025-12-28', '22:00', '6 horas', '180', 2000.00, 'Cumbia Power', NULL, NULL, 'La mejor cumbia para cerrar el año bailando!', 'Confirmado');
+
 -- FECHAS DE BANDAS DE EJEMPLO
 INSERT INTO fechas_bandas_confirmadas (tipo_evento, nombre_banda, genero_musical, descripcion, fecha, hora_inicio, hora_fin, precio_anticipada, precio_puerta, aforo_maximo, estado, es_publico, activo) VALUES
 ('BANDA', 'Reite', 'Rock nacional', 'Gran noche de rock nacional con Tributo a La Renga', '2025-12-20', '21:00:00', '02:00:00', 3000.00, 4000.00, 150, 'Confirmado', 1, 1),

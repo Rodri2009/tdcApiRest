@@ -1132,13 +1132,14 @@ const App = {
             if (optionDiv.querySelector('input') !== radio) { optionDiv.style.display = 'none'; }
         });
         if (this.elements.resetTipoEventoBtn) {
-            if (tipoParam && typeof tipoParam === 'string' && tipoParam.trim().toUpperCase() === 'BANDA') {
-                // Para solicitudes de banda no mostramos el botón
-                this.elements.resetTipoEventoBtn.style.display = 'none';
-            } else {
+            if (tipoParam && typeof tipoParam === 'string' && tipoParam.trim().length > 0) {
+                // Mostrar el botón solo si hay un tipoParam
                 this.elements.resetTipoEventoBtn.style.display = 'inline-block';
                 // Ajustamos el texto para que sea claro: Ver todos los tipos de evento
                 try { this.elements.resetTipoEventoBtn.textContent = 'Ver todos los tipos de evento'; } catch (e) { }
+            } else {
+                // Ocultar si no hay tipoParam
+                this.elements.resetTipoEventoBtn.style.display = 'none';
             }
         }
 

@@ -52,7 +52,7 @@ const getEventosActivos = async () => {
             CAST((e.aforo_maximo - COUNT(t.id_evento)) AS SIGNED) as tickets_disponibles
         FROM fechas_bandas_confirmadas e
         LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
-        WHERE e.activo = TRUE 
+        WHERE e.activo = TRUE AND e.estado = 'Confirmado'
         GROUP BY e.id
         HAVING tickets_disponibles > 0 OR e.precio_base = 0.00 OR e.precio_anticipada = 0.00 OR e.precio_puerta = 0.00
         ORDER BY e.fecha ASC, e.hora_inicio ASC;
@@ -78,7 +78,7 @@ const getEventoById = async (id) => {
             (e.aforo_maximo - COUNT(t.id_evento)) as tickets_disponibles
         FROM fechas_bandas_confirmadas e
         LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
-        WHERE e.id = ? AND e.activo = TRUE
+        WHERE e.id = ? AND e.activo = TRUE AND e.estado = 'Confirmado'
         GROUP BY e.id
     `;
     const rows = await pool.query(query, [id]);
