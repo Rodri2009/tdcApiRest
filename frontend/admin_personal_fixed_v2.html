@@ -132,8 +132,7 @@
             <div class="card">
                 <div class="card-header">
                     <span><i class="fas fa-users"></i> Personal Disponible</span>
-                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
-                        onclick="openPersonalModal()">
+                    <button class="btn btn-primary btn-crear" onclick="openPersonalModal()">
                         <i class="fas fa-plus"></i> Agregar Personal
                     </button>
                 </div>
@@ -161,7 +160,7 @@
             <div class="card">
                 <div class="card-header">
                     <span><i class="fas fa-id-badge"></i> Catálogo de Roles</span>
-                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal" onclick="openRolModal()">
+                    <button class="btn btn-primary btn-crear" onclick="openRolModal()">
                         <i class="fas fa-plus"></i> Agregar Rol
                     </button>
                 </div>
@@ -188,8 +187,7 @@
             <div class="card">
                 <div class="card-header">
                     <span><i class="fas fa-dollar-sign"></i> Tarifas del Personal</span>
-                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
-                        onclick="openTarifaModal()">
+                    <button class="btn btn-primary btn-crear" onclick="openTarifaModal()">
                         <i class="fas fa-plus"></i> Agregar Tarifa
                     </button>
                 </div>
@@ -221,8 +219,7 @@
             <div class="card">
                 <div class="card-header">
                     <span><i class="fas fa-money-bill-wave"></i> Pagos del Personal</span>
-                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
-                        onclick="openPagoModal()">
+                    <button class="btn btn-primary btn-crear" onclick="openPagoModal()">
                         <i class="fas fa-plus"></i> Registrar Pago
                     </button>
                 </div>
@@ -264,25 +261,22 @@
         </div>
     </div>
 
-    <script src="/navbar.js"></script>
     <script>
-        // ============================================================
-        // ESTADO
-        // ============================================================
+        // Variables globales
         let personal = [];
         let roles = [];
         let tarifas = [];
         let pagos = [];
         let currentModalType = null;
         let currentEditId = null;
-
-        // Permisos de edición (se inicializan después de navbarManager)
         let puedeEditarPersonal = false;
+        let navbarManager = null;
 
+        // Configuración de API
         const API_BASE = '/api/admin';
         const getToken = () => localStorage.getItem('authToken');
         const authHeaders = () => ({
-            'Authorization': `Bearer ${getToken()}`,
+            'Authorization': 'Bearer ' + getToken(),
             'Content-Type': 'application/json'
         });
 
@@ -349,9 +343,7 @@
             }
         }
 
-        // ============================================================
-        // PERMISOS Y AUTENTICACIÓN
-        // ============================================================
+        // Verificación de permisos
         function puedeEditar(tipo) {
             var permisos = JSON.parse(localStorage.getItem('userPermisos') || '[]');
             if (tipo === 'personal') {
@@ -362,7 +354,7 @@
 
         function aplicarPermisosUI() {
             if (!puedeEditarPersonal) {
-                document.querySelectorAll('.btn-crear[data-requiere-edicion="personal"]').forEach(function (btn) { btn.style.display = 'none'; });
+                document.querySelectorAll('.btn-crear').forEach(function (btn) { btn.style.display = 'none'; });
             }
         }
 
@@ -669,40 +661,39 @@
             }
         }
 
-        // ============================================================
-        // INICIALIZACIÓN
-        // ============================================================
+        // Función de inicialización principal
         document.addEventListener('DOMContentLoaded', function () {
             console.log('DOMContentLoaded disparado');
             console.log('Iniciando aplicación de administración de personal');
 
             try {
-                // Inicializar NavbarManager como en config_alquiler
-                navbarManager = new NavbarManager();
-                if (!navbarManager.protectAdminPage()) {
-                    console.log('Acceso denegado por protectAdminPage');
-                    return;
-                }
-                console.log('Acceso permitido');
-                navbarManager.injectNavbar('body');
-                console.log('Navbar inyectado');
-
-                // Establecer permisos de edición
-                console.log('Debugging permisos...');
-                console.log('navbarManager:', navbarManager);
-                console.log('navbarManager.userPermisos:', navbarManager ? navbarManager.userPermisos : 'null');
-                console.log('navbarManager.userRoles:', navbarManager ? navbarManager.userRoles : 'null');
-                console.log('localStorage userPermisos:', localStorage.getItem('userPermisos'));
-                puedeEditarPersonal = puedeEditar('personal');
-                console.log('Permisos de edición personal:', puedeEditarPersonal);
-
-                // Ocultar botones de crear si no tiene permisos
-                aplicarPermisosUI();
-                console.log('Permisos UI aplicados');
-
                 // Inicializar pestañas
                 initTabs();
                 console.log('Pestañas inicializadas');
+
+                // Verificar si navbar.js está disponible
+                if (typeof NavbarManager !== 'undefined') {
+                    navbarManager = new NavbarManager();
+                    console.log('NavbarManager creado');
+
+                    if (!navbarManager.protectAdminPage()) {
+                        console.log('Acceso denegado por protectAdminPage');
+                        return;
+                    }
+                    console.log('Acceso permitido');
+
+                    navbarManager.injectNavbar('body');
+                    console.log('Navbar inyectado');
+                } else {
+                    console.warn('NavbarManager no disponible, continuando sin navbar');
+                }
+
+                // Verificar permisos
+                puedeEditarPersonal = puedeEditar('personal');
+                console.log('Permisos de edición:', puedeEditarPersonal);
+
+                aplicarPermisosUI();
+                console.log('Permisos UI aplicados');
 
                 console.log('Iniciando carga de datos...');
                 loadPersonal();

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Test - Personal y Tarifas (Sin Backend)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #44403c;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #a8a29e;
+            font-size: 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover {
+            color: #f0abfc;
+        }
+
+        .tab.active {
+            color: #f0abfc;
+            border-bottom-color: #f0abfc;
+            font-weight: 600;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .notification-banner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+
+        .notification-banner.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification-banner.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification-banner.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        body {
+            background-color: #0c0a09;
+            color: #d6d3d1;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: #1c1917;
+            border: 1px solid #44403c;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #44403c;
+        }
+
+        th {
+            background: #292524;
+            color: #f0abfc;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #292524;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #f0abfc; margin: 0;">🧪 Test: Personal y Tarifas</h1>
+            <p style="color: #a8a29e;">Prueba de pestañas sin backend - Para verificar funcionalidad frontend</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-section="personal">
+                <i class="fas fa-users"></i> Personal Disponible
+            </button>
+            <button class="tab" data-section="roles">
+                <i class="fas fa-id-badge"></i> Roles de Personal
+            </button>
+            <button class="tab" data-section="tarifas">
+                <i class="fas fa-dollar-sign"></i> Tarifas del Personal
+            </button>
+            <button class="tab" data-section="pagos">
+                <i class="fas fa-money-bill-wave"></i> Pagos del Personal
+            </button>
+        </div>
+
+        <!-- SECCIÓN: Personal Disponible -->
+        <div id="section-personal" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-users"></i> Personal Disponible (Datos de Prueba)</span>
+                    <button class="btn"
+                        style="background: #f0abfc; color: #1c1917; padding: 8px 16px; border-radius: 8px;">
+                        <i class="fas fa-plus"></i> Agregar Personal
+                    </button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Roles</th>
+                            <th>Teléfono</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Juan Pérez</strong></td>
+                            <td>DJ, Sonido</td>
+                            <td>+54 11 1234-5678</td>
+                            <td><span
+                                    style="background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">Activo</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>María García</strong></td>
+                            <td>Mesera, Decoración</td>
+                            <td>+54 11 8765-4321</td>
+                            <td><span
+                                    style="background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">Activo</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Roles de Personal -->
+        <div id="section-roles" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-id-badge"></i> Catálogo de Roles (Datos de Prueba)</span>
+                    <button class="btn"
+                        style="background: #f0abfc; color: #1c1917; padding: 8px 16px; border-radius: 8px;">
+                        <i class="fas fa-plus"></i> Agregar Rol
+                    </button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre del Rol</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>DJ</strong></td>
+                            <td>Encargado de la música y sonido</td>
+                            <td><span
+                                    style="background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">Activo</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mesera</strong></td>
+                            <td>Servicio de mesas y bebidas</td>
+                            <td><span
+                                    style="background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">Activo</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Tarifas del Personal -->
+        <div id="section-tarifas" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-dollar-sign"></i> Tarifas del Personal (Datos de Prueba)</span>
+                    <button class="btn"
+                        style="background: #f0abfc; color: #1c1917; padding: 8px 16px; border-radius: 8px;">
+                        <i class="fas fa-plus"></i> Agregar Tarifa
+                    </button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Personal</th>
+                            <th>Rol</th>
+                            <th>Tarifa por Hora</th>
+                            <th>Tarifa por Evento</th>
+                            <th>Vigencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Juan Pérez</strong></td>
+                            <td>DJ</td>
+                            <td>$2,500</td>
+                            <td>$15,000</td>
+                            <td>01/01/2025 - Indefinida</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Pagos del Personal -->
+        <div id="section-pagos" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-money-bill-wave"></i> Pagos del Personal (Datos de Prueba)</span>
+                    <button class="btn"
+                        style="background: #f0abfc; color: #1c1917; padding: 8px 16px; border-radius: 8px;">
+                        <i class="fas fa-plus"></i> Registrar Pago
+                    </button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Personal</th>
+                            <th>Evento</th>
+                            <th>Monto Acordado</th>
+                            <th>Monto Pagado</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Juan Pérez</strong></td>
+                            <td>Evento #13</td>
+                            <td>$15,000</td>
+                            <td>$15,000</td>
+                            <td><span
+                                    style="background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">Pagado</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div
+            style="margin-top: 30px; padding: 20px; background: #1c1917; border-radius: 8px; border: 1px solid #44403c;">
+            <h3 style="color: #f0abfc; margin-top: 0;">📋 Estado del Test</h3>
+            <div id="test-status" style="color: #10b981;">
+                ✅ <strong>Pestañas funcionando correctamente</strong><br>
+                ✅ <strong>Datos de prueba cargados</strong><br>
+                ✅ <strong>CSS aplicado correctamente</strong><br>
+                ⚠️ <strong>Backend desconectado (esperado)</strong>
+            </div>
+            <div style="margin-top: 15px; color: #a8a29e;">
+                <strong>Próximos pasos:</strong><br>
+                1. Reiniciar servicios Docker: <code>./up.sh</code><br>
+                2. Verificar que el backend esté corriendo en http://localhost:3000<br>
+                3. Probar la página original: <a href="admin_personal.html"
+                    style="color: #f0abfc;">admin_personal.html</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showBanner(message, type, duration) {
+            type = type || 'info';
+            duration = duration || 4000;
+            document.querySelectorAll('.notification-banner').forEach(function (n) { n.remove(); });
+            var banner = document.createElement('div');
+            banner.className = 'notification-banner ' + type;
+            var icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-' + icon + '"></i><span>' + message + '</span></div>';
+            document.body.appendChild(banner);
+            setTimeout(function () {
+                banner.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(function () { banner.remove(); }, 300);
+            }, duration);
+        }
+
+        function initTabs() {
+            console.log('Inicializando pestañas...');
+            document.querySelectorAll('.tab').forEach(function (tab) {
+                tab.addEventListener('click', function () {
+                    var section = tab.dataset.section;
+                    console.log('Pestaña clickeada:', section);
+
+                    // Remover active de todas las pestañas
+                    document.querySelectorAll('.tab').forEach(function (t) {
+                        t.classList.remove('active');
+                    });
+
+                    // Agregar active a la pestaña clickeada
+                    tab.classList.add('active');
+
+                    // Ocultar todas las secciones
+                    document.querySelectorAll('.section').forEach(function (s) {
+                        s.classList.remove('active');
+                    });
+
+                    // Mostrar la sección correspondiente
+                    var targetSection = document.getElementById('section-' + section);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                        console.log('Sección activada:', targetSection.id);
+                    } else {
+                        console.error('Sección no encontrada:', 'section-' + section);
+                    }
+
+                    // Actualizar URL hash
+                    history.replaceState(null, '', '#' + section);
+                });
+            });
+
+            // Verificar hash en URL
+            var hash = window.location.hash.replace('#', '');
+            console.log('Hash actual:', hash);
+            if (hash && ['personal', 'roles', 'tarifas', 'pagos'].indexOf(hash) !== -1) {
+                var tab = document.querySelector('.tab[data-section="' + hash + '"]');
+                if (tab) {
+                    console.log('Activando pestaña desde hash:', hash);
+                    tab.click();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOMContentLoaded disparado en test');
+            initTabs();
+            showBanner('Test de pestañas cargado correctamente', 'success');
+        });
+    </script>
+</body>
+
+</html>

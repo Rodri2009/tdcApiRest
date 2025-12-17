@@ -54,51 +54,6 @@
                 opacity: 1;
             }
         }
-
-        body {
-            background-color: #0c0a09;
-            color: #d6d3d1;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .card {
-            background: #1c1917;
-            border: 1px solid #44403c;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #44403c;
-        }
-
-        th {
-            background: #292524;
-            color: #f0abfc;
-            font-weight: 600;
-        }
-
-        tr:hover {
-            background: #292524;
-        }
     </style>
 </head>
 
@@ -132,8 +87,7 @@
             <div class="card">
                 <div class="card-header">
                     <span><i class="fas fa-users"></i> Personal Disponible</span>
-                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
-                        onclick="openPersonalModal()">
+                    <button class="btn btn-primary btn-crear" onclick="openPersonalModal()">
                         <i class="fas fa-plus"></i> Agregar Personal
                     </button>
                 </div>
@@ -161,7 +115,7 @@
             <div class="card">
                 <div class="card-header">
                     <span><i class="fas fa-id-badge"></i> Catálogo de Roles</span>
-                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal" onclick="openRolModal()">
+                    <button class="btn btn-primary btn-crear" onclick="openRolModal()">
                         <i class="fas fa-plus"></i> Agregar Rol
                     </button>
                 </div>
@@ -188,8 +142,7 @@
             <div class="card">
                 <div class="card-header">
                     <span><i class="fas fa-dollar-sign"></i> Tarifas del Personal</span>
-                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
-                        onclick="openTarifaModal()">
+                    <button class="btn btn-primary btn-crear" onclick="openTarifaModal()">
                         <i class="fas fa-plus"></i> Agregar Tarifa
                     </button>
                 </div>
@@ -221,8 +174,7 @@
             <div class="card">
                 <div class="card-header">
                     <span><i class="fas fa-money-bill-wave"></i> Pagos del Personal</span>
-                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
-                        onclick="openPagoModal()">
+                    <button class="btn btn-primary btn-crear" onclick="openPagoModal()">
                         <i class="fas fa-plus"></i> Registrar Pago
                     </button>
                 </div>
@@ -266,27 +218,22 @@
 
     <script src="/navbar.js"></script>
     <script>
-        // ============================================================
-        // ESTADO
-        // ============================================================
         let personal = [];
         let roles = [];
         let tarifas = [];
         let pagos = [];
         let currentModalType = null;
         let currentEditId = null;
-
-        // Permisos de edición (se inicializan después de navbarManager)
+        let navbarManager = null;
         let puedeEditarPersonal = false;
 
         const API_BASE = '/api/admin';
         const getToken = () => localStorage.getItem('authToken');
         const authHeaders = () => ({
-            'Authorization': `Bearer ${getToken()}`,
+            'Authorization': 'Bearer ' + getToken(),
             'Content-Type': 'application/json'
         });
 
-        // Función para mostrar notificaciones
         function showBanner(message, type, duration) {
             type = type || 'info';
             duration = duration || 4000;
@@ -302,56 +249,24 @@
             }, duration);
         }
 
-        // Inicialización de pestañas
         function initTabs() {
-            console.log('Inicializando pestañas...');
             document.querySelectorAll('.tab').forEach(function (tab) {
                 tab.addEventListener('click', function () {
                     var section = tab.dataset.section;
-                    console.log('Pestaña clickeada:', section);
-
-                    // Remover active de todas las pestañas
-                    document.querySelectorAll('.tab').forEach(function (t) {
-                        t.classList.remove('active');
-                    });
-
-                    // Agregar active a la pestaña clickeada
+                    document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
                     tab.classList.add('active');
-
-                    // Ocultar todas las secciones
-                    document.querySelectorAll('.section').forEach(function (s) {
-                        s.classList.remove('active');
-                    });
-
-                    // Mostrar la sección correspondiente
-                    var targetSection = document.getElementById('section-' + section);
-                    if (targetSection) {
-                        targetSection.classList.add('active');
-                        console.log('Sección activada:', targetSection.id);
-                    } else {
-                        console.error('Sección no encontrada:', 'section-' + section);
-                    }
-
-                    // Actualizar URL hash
+                    document.querySelectorAll('.section').forEach(function (s) { s.classList.remove('active'); });
+                    document.getElementById('section-' + section).classList.add('active');
                     history.replaceState(null, '', '#' + section);
                 });
             });
-
-            // Verificar hash en URL
             var hash = window.location.hash.replace('#', '');
-            console.log('Hash actual:', hash);
             if (hash && ['personal', 'roles', 'tarifas', 'pagos'].indexOf(hash) !== -1) {
                 var tab = document.querySelector('.tab[data-section="' + hash + '"]');
-                if (tab) {
-                    console.log('Activando pestaña desde hash:', hash);
-                    tab.click();
-                }
+                if (tab) tab.click();
             }
         }
 
-        // ============================================================
-        // PERMISOS Y AUTENTICACIÓN
-        // ============================================================
         function puedeEditar(tipo) {
             var permisos = JSON.parse(localStorage.getItem('userPermisos') || '[]');
             if (tipo === 'personal') {
@@ -362,97 +277,58 @@
 
         function aplicarPermisosUI() {
             if (!puedeEditarPersonal) {
-                document.querySelectorAll('.btn-crear[data-requiere-edicion="personal"]').forEach(function (btn) { btn.style.display = 'none'; });
+                document.querySelectorAll('.btn-crear').forEach(function (btn) { btn.style.display = 'none'; });
             }
         }
 
-        // Funciones de carga de datos
         async function loadPersonal() {
             try {
-                console.log('Cargando personal desde:', API_BASE + '/personal');
                 var res = await fetch(API_BASE + '/personal', { headers: authHeaders() });
-                console.log('Respuesta personal:', res.status, res.statusText);
                 if (res.ok) {
                     personal = await res.json();
-                    console.log('Personal cargado:', personal);
                     renderPersonal();
-                } else {
-                    console.error('Error HTTP:', res.status, res.statusText);
-                    var tbody = document.getElementById('tbody-personal');
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error al cargar personal: ' + res.status + '</td></tr>';
                 }
             } catch (err) {
                 console.error('Error cargando personal:', err);
-                var tbody = document.getElementById('tbody-personal');
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error de conexión. Verifica que el servidor esté funcionando.</td></tr>';
-                showBanner('Error de conexión al cargar personal', 'error');
             }
         }
 
         async function loadRoles() {
             try {
-                console.log('Cargando roles desde:', API_BASE + '/roles');
                 var res = await fetch(API_BASE + '/roles', { headers: authHeaders() });
-                console.log('Respuesta roles:', res.status, res.statusText);
                 if (res.ok) {
                     roles = await res.json();
-                    console.log('Roles cargados:', roles);
                     renderRoles();
-                } else {
-                    console.error('Error HTTP:', res.status, res.statusText);
-                    var tbody = document.getElementById('tbody-roles');
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#f87171;">Error al cargar roles: ' + res.status + '</td></tr>';
                 }
             } catch (err) {
                 console.error('Error cargando roles:', err);
-                var tbody = document.getElementById('tbody-roles');
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
             }
         }
 
         async function loadTarifas() {
             try {
-                console.log('Cargando tarifas desde:', API_BASE + '/personal/tarifas');
                 var res = await fetch(API_BASE + '/personal/tarifas', { headers: authHeaders() });
-                console.log('Respuesta tarifas:', res.status, res.statusText);
                 if (res.ok) {
                     tarifas = await res.json();
-                    console.log('Tarifas cargadas:', tarifas);
                     renderTarifas();
-                } else {
-                    console.error('Error HTTP:', res.status, res.statusText);
-                    var tbody = document.getElementById('tbody-tarifas');
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error al cargar tarifas: ' + res.status + '</td></tr>';
                 }
             } catch (err) {
                 console.error('Error cargando tarifas:', err);
-                var tbody = document.getElementById('tbody-tarifas');
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
             }
         }
 
         async function loadPagos() {
             try {
-                console.log('Cargando pagos desde:', API_BASE + '/personal/pagos');
                 var res = await fetch(API_BASE + '/personal/pagos', { headers: authHeaders() });
-                console.log('Respuesta pagos:', res.status, res.statusText);
                 if (res.ok) {
                     pagos = await res.json();
-                    console.log('Pagos cargados:', pagos);
                     renderPagos();
-                } else {
-                    console.error('Error HTTP:', res.status, res.statusText);
-                    var tbody = document.getElementById('tbody-pagos');
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error al cargar pagos: ' + res.status + '</td></tr>';
                 }
             } catch (err) {
                 console.error('Error cargando pagos:', err);
-                var tbody = document.getElementById('tbody-pagos');
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
             }
         }
 
-        // Funciones de renderizado
         function renderPersonal() {
             var tbody = document.getElementById('tbody-personal');
             if (personal.length === 0) {
@@ -509,7 +385,6 @@
             }).join('');
         }
 
-        // Funciones de modales
         function openModal() { document.getElementById('modal-overlay').classList.add('show'); }
         function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); currentModalType = null; currentEditId = null; }
 
@@ -669,52 +544,17 @@
             }
         }
 
-        // ============================================================
-        // INICIALIZACIÓN
-        // ============================================================
         document.addEventListener('DOMContentLoaded', function () {
-            console.log('DOMContentLoaded disparado');
-            console.log('Iniciando aplicación de administración de personal');
-
-            try {
-                // Inicializar NavbarManager como en config_alquiler
-                navbarManager = new NavbarManager();
-                if (!navbarManager.protectAdminPage()) {
-                    console.log('Acceso denegado por protectAdminPage');
-                    return;
-                }
-                console.log('Acceso permitido');
-                navbarManager.injectNavbar('body');
-                console.log('Navbar inyectado');
-
-                // Establecer permisos de edición
-                console.log('Debugging permisos...');
-                console.log('navbarManager:', navbarManager);
-                console.log('navbarManager.userPermisos:', navbarManager ? navbarManager.userPermisos : 'null');
-                console.log('navbarManager.userRoles:', navbarManager ? navbarManager.userRoles : 'null');
-                console.log('localStorage userPermisos:', localStorage.getItem('userPermisos'));
-                puedeEditarPersonal = puedeEditar('personal');
-                console.log('Permisos de edición personal:', puedeEditarPersonal);
-
-                // Ocultar botones de crear si no tiene permisos
-                aplicarPermisosUI();
-                console.log('Permisos UI aplicados');
-
-                // Inicializar pestañas
-                initTabs();
-                console.log('Pestañas inicializadas');
-
-                console.log('Iniciando carga de datos...');
-                loadPersonal();
-                loadRoles();
-                loadTarifas();
-                loadPagos();
-
-                console.log('Inicialización completada');
-            } catch (error) {
-                console.error('Error durante la inicialización:', error);
-                showBanner('Error al inicializar la página', 'error');
-            }
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) return;
+            navbarManager.injectNavbar('body');
+            puedeEditarPersonal = puedeEditar('personal');
+            aplicarPermisosUI();
+            initTabs();
+            loadPersonal();
+            loadRoles();
+            loadTarifas();
+            loadPagos();
         });
     </script>
 </body>
