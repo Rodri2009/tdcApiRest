@@ -62,8 +62,8 @@ const crearSolicitud = async (req, res) => {
         // Ahora: tipo_de_evento es ENUM('ALQUILER_SALON') fijo
         //        tipo_servicio es VARCHAR con el subtipo (CON_SERVICIO_DE_MESA, INFORMALES, etc.)
         const sql = `
-            INSERT INTO solicitudes (
-                fecha_hora, tipo_de_evento, tipo_servicio, cantidad_de_personas, duracion, 
+            INSERT INTO solicitudes_alquiler (
+                fecha_hora, tipo_de_evento, tipo_servicio, cantidad_de_personas, duracion,
                 fecha_evento, hora_evento, precio_basico, estado, fingerprintid
             ) VALUES (NOW(), 'ALQUILER_SALON', ?, ?, ?, ?, ?, ?, 'Solicitado', ?);
         `;
@@ -174,7 +174,7 @@ const getSolicitudPorId = async (req, res) => {
 
         // --- Consulta simplificada para solicitudes normales (no bandas) ---
         const sql = `
-            SELECT 
+            SELECT
                 s.id_solicitud as solicitudId,
                 s.tipo_de_evento as tipoEvento,
                 s.tipo_servicio as tipoServicio,
@@ -190,7 +190,7 @@ const getSolicitudPorId = async (req, res) => {
                 s.estado,
                 COALESCE(ot.nombre_para_mostrar, s.tipo_de_evento) as nombreParaMostrar,
                 COALESCE(ot.categoria, 'ALQUILER_SALON') as categoria
-            FROM solicitudes s
+            FROM solicitudes_alquiler s
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento OR s.tipo_servicio = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
@@ -240,7 +240,7 @@ const finalizarSolicitud = async (req, res) => {
         conn = await pool.getConnection();
 
         const sqlUpdate = `
-            UPDATE solicitudes SET nombre_completo = ?, telefono = ?, email = ?, descripcion = ?, estado = 'Solicitado' 
+            UPDATE solicitudes_alquiler SET nombre_completo = ?, telefono = ?, email = ?, descripcion = ?, estado = 'Solicitado'
             WHERE id_solicitud = ?;
         `;
         const paramsUpdate = [nombreCompleto, celular, email, detallesAdicionales, id];
@@ -253,8 +253,8 @@ const finalizarSolicitud = async (req, res) => {
         // --- LÓGICA DE EMAIL SEPARADA ---
         // Obtenemos los datos completos para los emails
         const sqlSelect = `
-            SELECT s.*, ot.nombre_para_mostrar, ot.descripcion as descripcion_evento 
-            FROM solicitudes s
+            SELECT s.*, ot.nombre_para_mostrar, ot.descripcion as descripcion_evento
+            FROM solicitudes_alquiler s
             LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
@@ -400,14 +400,14 @@ const actualizarSolicitud = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const sql = `
-            UPDATE solicitudes SET
+            UPDATE solicitudes_alquiler SET
                 tipo_servicio = ?,
                 cantidad_de_personas = ?,
                 duracion = ?,
                 fecha_evento = ?,
                 hora_evento = ?,
                 precio_basico = ?,
-                descripcion = ? 
+                descripcion = ?
             WHERE id_solicitud = ?;
         `;
         const params = [tipoEvento, cantidadPersonas, duracionEvento, fechaEvento, horaInicio, parseFloat(precioBase) || 0, detallesAdicionales, id];
@@ -502,7 +502,7 @@ const getSesionExistente = async (req, res) => {
                 duracion as duracionEvento,
                 DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fechaEvento,
                 hora_evento as horaInicio
-            FROM solicitudes
+            FROM solicitudes_alquiler
             WHERE fingerprintid = ?
               AND estado = 'Solicitado'
               AND fecha_hora > (NOW() - INTERVAL 24 HOUR)
@@ -574,7 +574,7 @@ const getSolicitudesPublicas = async (req, res) => {
         
         // Seleccionar solicitudes públicas y confirmadas, con fecha futura
         const query = `
-            SELECT 
+            SELECT
                 id_solicitud as id,
                 tipo_de_evento as tipoEvento,
                 tipo_servicio as tipoServicio,
@@ -586,8 +586,8 @@ const getSolicitudesPublicas = async (req, res) => {
                 nombre_completo as nombreCompleto,
                 descripcion,
                 es_publico as esPublico
-            FROM solicitudes 
-            WHERE es_publico = 1 
+            FROM solicitudes_alquiler
+            WHERE es_publico = 1
               AND estado = 'Confirmado'
               AND fecha_evento >= CURDATE()
             ORDER BY fecha_evento ASC
@@ -614,25 +614,32 @@ const getSolicitudesPublicas = async (req, res) => {
 const updateVisibilidad = async (req, res) => {
     const { id } = req.params;
     const { es_publico } = req.body;
-    
+
     if (typeof es_publico === 'undefined') {
         return res.status(400).json({ message: 'Falta el campo es_publico' });
     }
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
+        // Determinar la tabla
+        let [solicitud] = await conn.query("SELECT 'alquiler' as tabla FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
+        if (!solicitud) {
+            solicitud = { tabla: 'bandas' };
+        }
+        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes';
+
         const result = await conn.query(
-            'UPDATE solicitudes SET es_publico = ? WHERE id_solicitud = ?',
+            `UPDATE ${tabla} SET es_publico = ? WHERE id_solicitud = ?`,
             [es_publico ? 1 : 0, id]
         );
-        
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada' });
         }
-        
-        return res.status(200).json({ 
+
+        return res.status(200).json({
             message: es_publico ? 'Solicitud visible en agenda pública' : 'Solicitud oculta de agenda pública',
             es_publico: es_publico ? 1 : 0
         });

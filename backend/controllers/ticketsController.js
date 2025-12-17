@@ -34,7 +34,7 @@ const getFechasBandasConfirmadas = async (req, res) => {
         try {
             const solicitudes = await pool.query(`
                 SELECT id_solicitud, tipo_de_evento, tipo_servicio, nombre_completo, fecha_evento, hora_evento, COALESCE(precio_final, precio_basico, 0.00) as precio_base, descripcion
-                FROM solicitudes
+                FROM solicitudes_alquiler
                 WHERE es_publico = 1 AND estado = 'Confirmado'
                 ORDER BY fecha_evento ASC
             `);

@@ -9,7 +9,7 @@ const getSolicitudes = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        // Solo solicitudes
+        // Unión de solicitudes de alquiler y fechas de bandas
         const sql = `
             SELECT
                 s.id_solicitud as id,
@@ -39,9 +39,41 @@ const getSolicitudes = async (req, res) => {
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo
-            FROM solicitudes s
+            FROM solicitudes_alquiler s
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
-            ORDER BY COALESCE(s.fecha_evento, s.fecha_hora) DESC, s.fecha_hora DESC;
+            UNION ALL
+            SELECT
+                s.id_solicitud as id,
+                s.fecha_hora as fechaSolicitud,
+                s.nombre_completo as nombreCliente,
+                s.tipo_de_evento as tipoEventoId,
+                CASE
+                    WHEN ot.categoria IS NOT NULL THEN ot.categoria
+                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN
+                        CASE s.tipo_de_evento
+                            WHEN 'TALLERES' THEN 'TALLERES_ACTIVIDADES'
+                            WHEN 'SERVICIO' THEN 'SERVICIOS'
+                            ELSE s.tipo_de_evento
+                        END
+                    ELSE 'OTRO'
+                END as tipoEvento,
+                CASE
+                    WHEN ot.nombre_para_mostrar IS NOT NULL THEN ot.nombre_para_mostrar
+                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN NULL
+                    ELSE s.tipo_de_evento
+                END as subtipo,
+                DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                s.estado,
+                s.tipo_servicio as tipoServicioId,
+                (SELECT COUNT(*) FROM solicitudes_personal sp WHERE sp.id_solicitud = s.id_solicitud) > 0 AS tienePersonalAsignado,
+                'solicitud' as origen,
+                s.hora_evento as horaInicio,
+                NULL as nombreBanda,
+                s.cantidad_de_personas as cantidadAforo
+            FROM solicitudes_bandas s
+            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
+            WHERE s.tipo_de_evento = 'FECHA_BANDAS'
+            ORDER BY fechaEvento DESC, fechaSolicitud DESC;
         `;
 
         const solicitudes = await conn.query(sql);
@@ -71,14 +103,18 @@ const actualizarEstadoSolicitud = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // Obtener la solicitud para verificar si es FECHA_BANDAS
-        const [solicitud] = await conn.query("SELECT * FROM solicitudes WHERE id_solicitud = ?", [id]);
+        // Obtener la solicitud, primero en solicitudes_alquiler, luego en solicitudes_bandas
+        let [solicitud] = await conn.query("SELECT *, 'alquiler' as tabla FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
+        if (!solicitud) {
+            [solicitud] = await conn.query("SELECT *, 'bandas' as tabla FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+        }
         if (!solicitud) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
 
         // Actualizar estado de la solicitud
-        const result = await conn.query("UPDATE solicitudes SET estado = ? WHERE id_solicitud = ?", [estado, id]);
+        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes';
+        const result = await conn.query(`UPDATE ${tabla} SET estado = ? WHERE id_solicitud = ?`, [estado, id]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
@@ -129,10 +165,18 @@ const eliminarSolicitud = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
+
+        // Determinar la tabla
+        let [solicitud] = await conn.query("SELECT 'alquiler' as tabla FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
+        if (!solicitud) {
+            [solicitud] = await conn.query("SELECT 'bandas' as tabla FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+        }
+        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes';
+
         // Por seguridad, borramos en cascada (primero los hijos, luego el padre)
         await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
         await conn.query("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [id]);
-        const result = await conn.query("DELETE FROM solicitudes WHERE id_solicitud = ?", [id]);
+        const result = await conn.query(`DELETE FROM ${tabla} WHERE id_solicitud = ?`, [id]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
@@ -406,17 +450,31 @@ const getOrdenDeTrabajo = async (req, res) => {
         const solicitudId = parseInt(id, 10);
         if (isNaN(solicitudId)) return res.status(400).json({ message: 'ID inválido.' });
 
-        // 1. Obtener los detalles de la solicitud y el tipo de evento
-        const sqlSolicitud = `
-            SELECT 
+        // 1. Obtener los detalles de la solicitud y el tipo de evento, primero en alquiler, luego en bandas
+        let sqlSolicitud = `
+            SELECT
                 s.id_solicitud, s.nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
                 s.tipo_servicio,
                 ot.nombre_para_mostrar as tipo_evento, ot.id_evento as tipo_evento_id
-            FROM solicitudes s
+            FROM solicitudes_alquiler s
             LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
-        const [solicitud] = await conn.query(sqlSolicitud, [solicitudId]);
+        let solicitudResult = await conn.query(sqlSolicitud, [solicitudId]);
+        let solicitud = solicitudResult[0];
+        if (!solicitud) {
+            sqlSolicitud = `
+                SELECT
+                    s.id_solicitud, s.nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
+                    s.tipo_servicio,
+                    ot.nombre_para_mostrar as tipo_evento, ot.id_evento as tipo_evento_id
+                FROM solicitudes_bandas s
+                LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
+                WHERE s.id_solicitud = ?;
+            `;
+            solicitudResult = await conn.query(sqlSolicitud, [solicitudId]);
+            solicitud = solicitudResult[0];
+        }
 
         if (!solicitud) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
