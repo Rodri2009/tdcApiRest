@@ -38,7 +38,8 @@ const getSolicitudes = async (req, res) => {
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
-                s.cantidad_de_personas as cantidadAforo
+                s.cantidad_de_personas as cantidadAforo,
+                s.es_publico as es_publico
             FROM solicitudes_alquiler s
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             UNION ALL
@@ -69,10 +70,29 @@ const getSolicitudes = async (req, res) => {
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
-                s.cantidad_de_personas as cantidadAforo
+                s.cantidad_de_personas as cantidadAforo,
+                s.es_publico as es_publico
             FROM solicitudes_bandas s
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             WHERE s.tipo_de_evento = 'FECHA_BANDAS'
+            UNION ALL
+            SELECT
+                CONCAT('ev_', e.id) as id,
+                e.creado_en as fechaSolicitud,
+                e.nombre_contacto as nombreCliente,
+                e.tipo_evento as tipoEventoId,
+                'FECHA_BANDAS' as tipoEvento,
+                e.genero_musical as subtipo,
+                DATE_FORMAT(e.fecha, '%Y-%m-%d') as fechaEvento,
+                e.estado,
+                NULL as tipoServicioId,
+                (SELECT COUNT(*) FROM eventos_personal ep WHERE ep.id_evento = e.id) > 0 AS tienePersonalAsignado,
+                'evento' as origen,
+                TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
+                e.nombre_banda as nombreBanda,
+                e.aforo_maximo as cantidadAforo,
+                e.es_publico as es_publico
+            FROM fechas_bandas_confirmadas e
             ORDER BY fechaEvento DESC, fechaSolicitud DESC;
         `;
 
@@ -113,7 +133,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
         }
 
         // Actualizar estado de la solicitud
-        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes';
+        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes_bandas';
         const result = await conn.query(`UPDATE ${tabla} SET estado = ? WHERE id_solicitud = ?`, [estado, id]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
@@ -171,11 +191,15 @@ const eliminarSolicitud = async (req, res) => {
         if (!solicitud) {
             [solicitud] = await conn.query("SELECT 'bandas' as tabla FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
         }
-        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes';
+        if (!solicitud) {
+            return res.status(404).json({ message: 'Solicitud no encontrada.' });
+        }
+        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes_bandas';
 
         // Por seguridad, borramos en cascada (primero los hijos, luego el padre)
         await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
         await conn.query("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [id]);
+        await conn.query("DELETE FROM bandas_solicitudes WHERE id_solicitud = ?", [id]);
         const result = await conn.query(`DELETE FROM ${tabla} WHERE id_solicitud = ?`, [id]);
 
         if (result.affectedRows === 0) {
@@ -204,7 +228,7 @@ const eliminarEvento = async (req, res) => {
         // Borrar asignaciones relacionadas en eventos_personal si existen
         await conn.query("DELETE FROM eventos_personal WHERE id_evento = ?", [eventId]);
         // Borrar subtables que referencien a eventos (si existen) - ON DELETE CASCADE debería encargarse
-    const result = await conn.query("DELETE FROM fechas_bandas_confirmadas WHERE id = ?", [eventId]);
+        const result = await conn.query("DELETE FROM fechas_bandas_confirmadas WHERE id = ?", [eventId]);
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado.' });
         res.status(200).json({ success: true, message: 'Evento eliminado correctamente.' });
     } catch (err) {
@@ -674,7 +698,7 @@ const actualizarEvento = async (req, res) => {
 
         if (updates.length === 0) return res.status(400).json({ message: 'No hay campos para actualizar.' });
 
-    const sql = `UPDATE fechas_bandas_confirmadas SET ${updates.join(', ')} WHERE id = ?`;
+        const sql = `UPDATE fechas_bandas_confirmadas SET ${updates.join(', ')} WHERE id = ?`;
         params.push(eventId);
         const result = await conn.query(sql, params);
 

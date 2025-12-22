@@ -64,8 +64,8 @@ const crearSolicitud = async (req, res) => {
         const sql = `
             INSERT INTO solicitudes_alquiler (
                 fecha_hora, tipo_de_evento, tipo_servicio, cantidad_de_personas, duracion,
-                fecha_evento, hora_evento, precio_basico, estado, fingerprintid
-            ) VALUES (NOW(), 'ALQUILER_SALON', ?, ?, ?, ?, ?, ?, 'Solicitado', ?);
+                fecha_evento, hora_evento, precio_basico, estado, fingerprintid, es_publico
+            ) VALUES (NOW(), 'ALQUILER_SALON', ?, ?, ?, ?, ?, ?, 'Solicitado', ?, ?);
         `;
 
         const params = [
@@ -75,7 +75,8 @@ const crearSolicitud = async (req, res) => {
             fechaEvento,
             horaInicio,
             parseFloat(precioBase) || 0,
-            fingerprintId
+            fingerprintId,
+            tipoEvento === 'FECHA_BANDAS' ? 1 : 0  // Público por defecto para bandas
         ];
 
         const result = await conn.query(sql, params);
@@ -571,7 +572,7 @@ const getSolicitudesPublicas = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
         // Seleccionar solicitudes públicas y confirmadas, con fecha futura
         const query = `
             SELECT
@@ -593,9 +594,9 @@ const getSolicitudesPublicas = async (req, res) => {
             ORDER BY fecha_evento ASC
             LIMIT 50
         `;
-        
+
         const rows = await conn.query(query);
-        
+
         return res.status(200).json(rows || []);
     } catch (error) {
         console.error('Error al obtener solicitudes públicas:', error);
@@ -628,7 +629,7 @@ const updateVisibilidad = async (req, res) => {
         if (!solicitud) {
             solicitud = { tabla: 'bandas' };
         }
-        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes';
+        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes_bandas';
 
         const result = await conn.query(
             `UPDATE ${tabla} SET es_publico = ? WHERE id_solicitud = ?`,

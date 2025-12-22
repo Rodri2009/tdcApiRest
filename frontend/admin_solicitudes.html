@@ -604,7 +604,7 @@
 
             function modificarSolicitud(id, categoria, origen) {
                 // Redirigir al editor correcto según categoría/origen
-                // Si es origen 'solicitud', siempre usar editor genérico
+                // Si es origen 'solicitud', usar editor específico según tipo
                 // Los editores especializados son para datos ya convertidos (inscripciones, turnos, eventos)
                 if (origen === 'evento') {
                     window.location.href = `/editar_evento_banda.html?id=${encodeURIComponent(id)}`;
@@ -612,8 +612,16 @@
                     window.location.href = `/editar_inscripcion_taller.html?id=${encodeURIComponent(id)}`;
                 } else if (origen === 'turno') {
                     window.location.href = `/editar_turno_servicio.html?id=${encodeURIComponent(id)}`;
+                } else if (categoria === 'FECHA_BANDAS') {
+                    window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
+                } else if (categoria === 'ALQUILER_SALON') {
+                    window.location.href = `/editar_solicitud_alquiler.html?solicitudId=${encodeURIComponent(id)}`;
+                } else if (categoria === 'TALLERES_ACTIVIDADES') {
+                    window.location.href = `/editar_solicitud_talleres.html?solicitudId=${encodeURIComponent(id)}`;
+                } else if (categoria === 'SERVICIOS') {
+                    window.location.href = `/editar_solicitud_servicios.html?solicitudId=${encodeURIComponent(id)}`;
                 } else {
-                    // solicitudes normales (incluyendo ALQUILER_SALON, SERVICIOS, TALLERES)
+                    // solicitudes normales
                     window.location.href = `/editar_solicitud.html?solicitudId=${encodeURIComponent(id)}`;
                 }
             }
@@ -753,8 +761,8 @@
                     const bandaDisplay = solicitud.nombreBanda || '-';
 
                     // Cantidad/Aforo: cantidad de personas para alquileres, aforo para bandas
-                    const cantidadAforoDisplay = solicitud.cantidadAforo 
-                        ? `${solicitud.cantidadAforo} personas` 
+                    const cantidadAforoDisplay = solicitud.cantidadAforo
+                        ? `${solicitud.cantidadAforo} personas`
                         : '-';
 
                     tr.innerHTML = `
@@ -950,10 +958,8 @@
 
                     showNotification(data.message, 'success');
 
-                    const row = document.querySelector(`tr[data-solicitud-id='${id}']`);
-                    if (row) {
-                        row.remove();
-                    }
+                    // Recargar la lista completa para asegurar consistencia
+                    await cargarSolicitudes();
                 } catch (error) {
                     showNotification(error.message, 'error');
                 }
