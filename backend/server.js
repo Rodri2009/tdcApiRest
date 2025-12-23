@@ -11,6 +11,9 @@ app.use(express.json());
 app.use(cookieParser()); // <-- USAR
 app.use(express.urlencoded({ extended: true }));
 
+// Servir archivos estáticos del frontend
+app.use(express.static('frontend'));
+
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] Petición recibida: ${req.method} ${req.originalUrl}`);
     next();

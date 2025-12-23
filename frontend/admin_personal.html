@@ -170,13 +170,14 @@
                         <tr>
                             <th>Nombre del Rol</th>
                             <th>Descripción</th>
+                            <th>Tarifas Vigentes</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tbody-roles">
                         <tr>
-                            <td colspan="4" style="text-align:center;color:#9ca3af;">Cargando...</td>
+                            <td colspan="5" style="text-align:center;color:#9ca3af;">Cargando...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -401,12 +402,12 @@
                 } else {
                     console.error('Error HTTP:', res.status, res.statusText);
                     var tbody = document.getElementById('tbody-roles');
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#f87171;">Error al cargar roles: ' + res.status + '</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error al cargar roles: ' + res.status + '</td></tr>';
                 }
             } catch (err) {
                 console.error('Error cargando roles:', err);
                 var tbody = document.getElementById('tbody-roles');
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
             }
         }
 
@@ -460,7 +461,7 @@
                 return;
             }
             tbody.innerHTML = personal.map(function (p) {
-                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editPersonal(' + p.id + ')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deletePersonal(' + p.id + ')" title="Desactivar" style="color:#f87171;"><i class="fas fa-user-slash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editPersonal(\'' + p.id + '\')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deletePersonal(\'' + p.id + '\')" title="Desactivar" style="color:#f87171;"><i class="fas fa-user-slash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
                 var estado = p.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>';
                 return '<tr><td><strong>' + p.nombre + '</strong></td><td>' + (p.roles || '-') + '</td><td>' + (p.telefono || '-') + '</td><td>' + estado + '</td><td>' + acciones + '</td></tr>';
             }).join('');
@@ -469,13 +470,30 @@
         function renderRoles() {
             var tbody = document.getElementById('tbody-roles');
             if (roles.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;">No hay roles configurados</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay roles configurados</td></tr>';
                 return;
             }
             tbody.innerHTML = roles.map(function (r) {
-                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editRol(' + r.id + ')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deleteRol(' + r.id + ')" title="Eliminar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editRol(\'' + r.id + '\')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deleteRol(\'' + r.id + '\')" title="Eliminar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
                 var estado = r.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>';
-                return '<tr><td><strong>' + r.nombre + '</strong></td><td style="max-width:300px;">' + (r.descripcion || '-') + '</td><td>' + estado + '</td><td>' + acciones + '</td></tr>';
+
+                // Mostrar tarifas por rol
+                var tarifasHtml = '-';
+                if (r.tarifas && r.tarifas.length > 0) {
+                    tarifasHtml = r.tarifas.map(function (tarifa) {
+                        var porHora = tarifa.monto_por_hora ? '$' + Number(tarifa.monto_por_hora).toLocaleString('es-AR') + '/hora' : '';
+                        var porEvento = tarifa.monto_fijo_evento ? '$' + Number(tarifa.monto_fijo_evento).toLocaleString('es-AR') + '/evento' : '';
+                        var vigencia = tarifa.vigente_desde ? new Date(tarifa.vigente_desde).toLocaleDateString('es-AR') + (tarifa.vigente_hasta ? ' - ' + new Date(tarifa.vigente_hasta).toLocaleDateString('es-AR') : '') : '-';
+
+                        var partes = [];
+                        if (porHora) partes.push(porHora);
+                        if (porEvento) partes.push(porEvento);
+
+                        return '<div style="font-size:0.85rem;margin-bottom:4px;"><strong>' + partes.join(' + ') + '</strong><br><span style="color:#9ca3af;">Vigencia: ' + vigencia + '</span></div>';
+                    }).join('');
+                }
+
+                return '<tr><td><strong>' + r.nombre + '</strong></td><td style="max-width:300px;">' + (r.descripcion || '-') + '</td><td>' + tarifasHtml + '</td><td>' + estado + '</td><td>' + acciones + '</td></tr>';
             }).join('');
         }
 
@@ -486,7 +504,7 @@
                 return;
             }
             tbody.innerHTML = tarifas.map(function (t) {
-                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editTarifa(' + t.id + ')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deleteTarifa(' + t.id + ')" title="Desactivar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editTarifa(\'' + t.id + '\')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deleteTarifa(\'' + t.id + '\')" title="Desactivar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
                 var vigencia = t.vigente_desde ? new Date(t.vigente_desde).toLocaleDateString('es-AR') + (t.vigente_hasta ? ' - ' + new Date(t.vigente_hasta).toLocaleDateString('es-AR') : '') : '-';
                 var tarifaHora = '$' + Number(t.monto_por_hora || 0).toLocaleString('es-AR');
                 var tarifaEvento = '$' + Number(t.monto_fijo_evento || 0).toLocaleString('es-AR');
@@ -501,7 +519,7 @@
                 return;
             }
             tbody.innerHTML = pagos.map(function (p) {
-                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editPago(' + p.id + ')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deletePago(' + p.id + ')" title="Eliminar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editPago(\'' + p.id + '\')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deletePago(\'' + p.id + '\')" title="Eliminar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
                 var estadoClass = p.estado === 'pagado' ? 'badge-success' : (p.estado === 'parcial' ? 'badge-warning' : 'badge-gray');
                 var acordado = '$' + Number(p.monto_acordado || 0).toLocaleString('es-AR');
                 var pagado = '$' + Number(p.monto_pagado || 0).toLocaleString('es-AR');
@@ -525,7 +543,7 @@
         }
 
         function editPersonal(id) {
-            var pers = personal.find(function (p) { return p.id === id; });
+            var pers = personal.find(function (p) { return p.id == id; });
             if (!pers) return;
             openPersonalModal(id);
             setTimeout(function () {
@@ -552,13 +570,42 @@
         function openRolModal(id) {
             currentModalType = 'rol';
             currentEditId = id || null;
+            var rol = id ? roles.find(r => r.id == id) : null;
+            var tarifasHtml = '';
+
+            if (rol && rol.tarifas && rol.tarifas.length > 0) {
+                tarifasHtml = rol.tarifas.map(function (tarifa, index) {
+                    return '<div class="tarifa-item" data-index="' + index + '" style="background:#292524;padding:12px;margin:8px 0;border-radius:6px;border:1px solid #44403c;">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                        '<strong>Tarifa ' + (index + 1) + '</strong>' +
+                        '<button type="button" class="btn btn-icon btn-sm" onclick="removeTarifa(' + index + ')" style="color:#f87171;" title="Eliminar tarifa"><i class="fas fa-trash"></i></button>' +
+                        '</div>' +
+                        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+                        '<div class="form-group"><label>Por Hora ($) *</label><input type="number" id="tarifa-hora-' + index + '" value="' + (tarifa.monto_por_hora || '') + '" placeholder="0" step="0.01" min="0" required></div>' +
+                        '<div class="form-group"><label>Por Evento ($) *</label><input type="number" id="tarifa-evento-' + index + '" value="' + (tarifa.monto_fijo_evento || '') + '" placeholder="0" step="0.01" min="0" required></div>' +
+                        '<div class="form-group"><label>Mínimo Garantizado ($)</label><input type="number" id="tarifa-minimo-' + index + '" value="' + (tarifa.monto_minimo || '') + '" placeholder="0" step="0.01" min="0"><small style="color:#9ca3af;font-size:0.8rem;display:block;margin-top:4px;">Monto mínimo garantizado por evento</small></div>' +
+                        '<div class="form-group"><label>Vigente Desde *</label><input type="date" id="tarifa-desde-' + index + '" value="' + (tarifa.vigente_desde || '') + '" required></div>' +
+                        '<div class="form-group"><label>Vigente Hasta</label><input type="date" id="tarifa-hasta-' + index + '" value="' + (tarifa.vigente_end || '') + '"></div>' +
+                        '<div class="form-group"><label>Descripción</label><input type="text" id="tarifa-desc-' + index + '" value="' + (tarifa.descripcion || '') + '" placeholder="Descripción de la tarifa"></div>' +
+                        '</div>' +
+                        '</div>';
+                }).join('');
+            }
+
             document.getElementById('modal-title').textContent = id ? 'Editar Rol' : 'Nuevo Rol';
-            document.getElementById('modal-body').innerHTML = '<div class="form-group"><label>Nombre del Rol *</label><input type="text" id="form-nombre" placeholder="Nombre del rol..."></div><div class="form-group"><label>Descripción</label><textarea id="form-descripcion" rows="4" placeholder="Descripción del rol (opcional)..."></textarea></div><div class="form-group"><label><input type="checkbox" id="form-activo" checked> Activo</label></div>';
+            document.getElementById('modal-body').innerHTML =
+                '<div class="form-group"><label>Nombre del Rol *</label><input type="text" id="form-nombre" placeholder="Nombre del rol..." value="' + (rol ? rol.nombre : '') + '"></div>' +
+                '<div class="form-group"><label>Descripción</label><textarea id="form-descripcion" rows="3" placeholder="Descripción del rol (opcional)...">' + (rol ? (rol.descripcion || '') : '') + '</textarea></div>' +
+                '<div class="form-group"><label><input type="checkbox" id="form-activo" ' + (rol ? (rol.activo ? 'checked' : '') : 'checked') + '> Activo</label></div>' +
+                '<div class="form-group"><label>Tarifas del Rol</label>' +
+                '<div id="tarifas-container">' + tarifasHtml + '</div>' +
+                '<button type="button" class="btn btn-secondary" onclick="addTarifaField()" style="margin-top:8px;"><i class="fas fa-plus"></i> Agregar Tarifa</button>' +
+                '</div>';
             openModal();
         }
 
         function editRol(id) {
-            var rol = roles.find(function (r) { return r.id === id; });
+            var rol = roles.find(function (r) { return r.id == id; });
             if (!rol) return;
             openRolModal(id);
             setTimeout(function () {
@@ -575,6 +622,64 @@
                 if (res.ok) { loadRoles(); showBanner('Rol desactivado correctamente', 'success'); }
                 else { showBanner('Error al desactivar rol', 'error'); }
             } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        // Funciones para gestionar tarifas en el modal de roles
+        function addTarifaField() {
+            var container = document.getElementById('tarifas-container');
+            var index = container.children.length;
+
+            var tarifaHtml = '<div class="tarifa-item" data-index="' + index + '" style="background:#292524;padding:12px;margin:8px 0;border-radius:6px;border:1px solid #44403c;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                '<strong>Tarifa ' + (index + 1) + '</strong>' +
+                '<button type="button" class="btn btn-icon btn-sm" onclick="removeTarifa(' + index + ')" style="color:#f87171;" title="Eliminar tarifa"><i class="fas fa-trash"></i></button>' +
+                '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+                '<div class="form-group"><label>Por Hora ($) *</label><input type="number" id="tarifa-hora-' + index + '" placeholder="0" step="0.01" min="0" required></div>' +
+                '<div class="form-group"><label>Por Evento ($) *</label><input type="number" id="tarifa-evento-' + index + '" placeholder="0" step="0.01" min="0" required></div>' +
+                '<div class="form-group"><label>Mínimo Garantizado ($)</label><input type="number" id="tarifa-minimo-' + index + '" placeholder="0" step="0.01" min="0"><small style="color:#9ca3af;font-size:0.8rem;display:block;margin-top:4px;">Monto mínimo garantizado por evento</small></div>' +
+                '<div class="form-group"><label>Vigente Desde *</label><input type="date" id="tarifa-desde-' + index + '" required></div>' +
+                '<div class="form-group"><label>Vigente Hasta</label><input type="date" id="tarifa-hasta-' + index + '"></div>' +
+                '<div class="form-group"><label>Descripción</label><input type="text" id="tarifa-desc-' + index + '" placeholder="Descripción de la tarifa"></div>' +
+                '</div>' +
+                '</div>';
+
+            container.insertAdjacentHTML('beforeend', tarifaHtml);
+        }
+
+        function removeTarifa(index) {
+            var container = document.getElementById('tarifas-container');
+            var tarifaItem = container.querySelector('[data-index="' + index + '"]');
+            if (tarifaItem) {
+                tarifaItem.remove();
+                // Renumerar los índices
+                Array.from(container.children).forEach(function (item, newIndex) {
+                    item.setAttribute('data-index', newIndex);
+                    var title = item.querySelector('strong');
+                    if (title) {
+                        title.textContent = 'Tarifa ' + (newIndex + 1);
+                    }
+                    var button = item.querySelector('button[onclick*="removeTarifa"]');
+                    if (button) {
+                        button.setAttribute('onclick', 'removeTarifa(' + newIndex + ')');
+                    }
+                    // Actualizar IDs de inputs
+                    var inputs = item.querySelectorAll('input');
+                    inputs.forEach(function (input) {
+                        var oldId = input.id;
+                        var fieldType = oldId.split('-')[1]; // hora, evento, minimo, desde, hasta, desc
+                        input.id = 'tarifa-' + fieldType + '-' + newIndex;
+                    });
+                });
+            }
+        }
+
+        function editTarifa(id) {
+            openTarifaModal(id);
+        }
+
+        function editPago(id) {
+            openPagoModal(id);
         }
 
         function openTarifaModal(id) {
@@ -618,10 +723,42 @@
                     case 'rol':
                         endpoint = currentEditId ? API_BASE + '/roles/' + currentEditId : API_BASE + '/roles';
                         method = currentEditId ? 'PUT' : 'POST';
+
+                        // Recopilar tarifas del formulario
+                        var tarifas = [];
+                        var container = document.getElementById('tarifas-container');
+                        if (container) {
+                            Array.from(container.children).forEach(function (tarifaItem) {
+                                var index = tarifaItem.getAttribute('data-index');
+                                var tarifa = {
+                                    monto_por_hora: parseFloat(document.getElementById('tarifa-hora-' + index).value) || null,
+                                    monto_fijo_evento: parseFloat(document.getElementById('tarifa-evento-' + index).value) || null,
+                                    monto_minimo: parseFloat(document.getElementById('tarifa-minimo-' + index).value) || null,
+                                    vigente_desde: document.getElementById('tarifa-desde-' + index).value || null,
+                                    vigente_hasta: document.getElementById('tarifa-hasta-' + index).value || null,
+                                    descripcion: document.getElementById('tarifa-desc-' + index).value || null
+                                };
+                                // Validar que cada tarifa tenga al menos un monto
+                                if (!tarifa.monto_por_hora && !tarifa.monto_fijo_evento) {
+                                    showBanner('Error: Cada tarifa debe tener al menos un monto (por hora o por evento)', 'error');
+                                    return;
+                                }
+
+                                // Si no tiene fecha de vigencia, usar fecha actual
+                                if (!tarifa.vigente_desde) {
+                                    var fechaActual = new Date().toISOString().split('T')[0];
+                                    tarifa.vigente_desde = fechaActual;
+                                    showBanner('Tarifa agregada con fecha de vigencia actual (' + fechaActual + ')', 'info');
+                                }
+                                tarifas.push(tarifa);
+                            });
+                        }
+
                         body = {
                             nombre: document.getElementById('form-nombre').value,
                             descripcion: document.getElementById('form-descripcion').value || null,
-                            activo: document.getElementById('form-activo').checked
+                            activo: document.getElementById('form-activo').checked,
+                            tarifas: tarifas
                         };
                         break;
                     case 'tarifa':

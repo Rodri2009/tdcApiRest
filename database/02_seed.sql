@@ -192,7 +192,7 @@ INSERT INTO personal_disponible (id_personal, nombre_completo, rol, celular, act
 ('P004', 'Belen', 'Ayudante de cocina,Mesera', '11 2672-0497', 1),
 ('P005', 'Amelia', 'Mesera', '11 5064-1123', 1),
 ('P006', 'Giselle', 'Depiladora', NULL, 0),
-('P007', 'Rodrigo', 'Encargado,Puerta,Cocinera,Mesera,Sonido', NULL, 0);
+('P007', 'Rodrigo', 'Bartender,Puerta,Cocinera,Mesera,Sonido', NULL, 0);
 
 -- ---------------------------------------------------------------------------
 -- ROLES REQUERIDOS POR EVENTO (según cantidad de personas)
@@ -232,7 +232,7 @@ INSERT INTO roles_por_evento (id_evento, rol_requerido, cantidad, min_personas, 
 ('INFORMALES', 'Encargada', 1, 0, 120),
 ('INFORMALES', 'Puerta', 1, 0, 120),
 -- FECHA_BANDAS (eventos musicales)
-('FECHA_BANDAS', 'Encargado', 1, 0, 500),
+('FECHA_BANDAS', 'Bartender', 1, 0, 500),
 ('FECHA_BANDAS', 'Puerta', 1, 0, 500),
 ('FECHA_BANDAS', 'Sonido', 1, 0, 500);
 
@@ -247,7 +247,7 @@ INSERT INTO catalogo_roles (nombre, descripcion) VALUES
 ('Ayudante de cocina', 'Asistente en cocina'),
 ('Limpieza', 'Limpieza del salón'),
 ('Depiladora', 'Servicio de depilación'),
-('Encargado', 'Responsable general (masculino)'),
+('Bartender', 'Manejo completo de barra, bebidas y comidas'),
 ('Sonido', 'Técnico de sonido'),
 ('DJ', 'Disc Jockey'),
 ('Bartender', 'Servicio de bar'),
@@ -258,7 +258,7 @@ INSERT INTO catalogo_roles (nombre, descripcion) VALUES
 -- ---------------------------------------------------------------------------
 INSERT INTO costos_personal_vigencia (rol, fecha_de_vigencia, costo_por_hora, viaticos) VALUES
 ('Encargada', '2025-08-01', 5000, 0),
-('Encargado', '2025-08-01', 5000, 0),
+('Bartender', '2025-08-01', 5000, 0),
 ('Cocinera', '2025-08-01', 3500, 0),
 ('Puerta', '2025-08-01', 3500, 1000),
 ('Ayudante de cocina', '2025-08-01', 3000, 0),

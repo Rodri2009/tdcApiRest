@@ -18,6 +18,12 @@ class NavbarManager {
             this.isAuthenticated = true;
             // Decodificar el JWT para obtener datos del usuario
             this.decodeJWT();
+            // Guardar datos en localStorage para acceso rápido
+            localStorage.setItem('userPermisos', JSON.stringify(this.userPermisos));
+            localStorage.setItem('userRoles', JSON.stringify(this.userRoles));
+            localStorage.setItem('userRole', this.userRole);
+            localStorage.setItem('userEmail', this.userEmail);
+            localStorage.setItem('userNivel', this.userNivel);
         }
     }
 
@@ -88,6 +94,11 @@ class NavbarManager {
         this.userPermisos = [];
         this.userNivel = 0;
         localStorage.removeItem('authToken');
+        localStorage.removeItem('userPermisos');
+        localStorage.removeItem('userRoles');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userNivel');
     }
 
     /**

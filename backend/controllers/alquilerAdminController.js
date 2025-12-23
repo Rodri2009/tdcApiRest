@@ -764,16 +764,55 @@ const deletePersonal = async (req, res) => {
 
 /**
  * GET /api/admin/roles
- * Lista todos los roles del catálogo
+ * Lista todos los roles del catálogo con sus tarifas vigentes
  */
 const getRoles = async (req, res) => {
     try {
+        // Primero obtenemos los roles básicos
         const roles = await pool.query(`
-            SELECT id, nombre, descripcion, activo
-            FROM catalogo_roles
-            ORDER BY nombre
+            SELECT 
+                cr.id, 
+                cr.nombre, 
+                cr.descripcion, 
+                cr.activo
+            FROM catalogo_roles cr
+            ORDER BY cr.nombre
         `);
-        res.json(serializeBigInt(roles));
+
+        // Luego obtenemos las tarifas vigentes
+        const tarifas = await pool.query(`
+            SELECT 
+                pt.nombre_rol,
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'id', pt.id,
+                        'monto_por_hora', pt.monto_por_hora,
+                        'monto_fijo_evento', pt.monto_fijo_evento,
+                        'monto_minimo', pt.monto_minimo,
+                        'vigente_desde', pt.vigente_desde,
+                        'vigente_hasta', pt.vigente_hasta,
+                        'descripcion', pt.descripcion
+                    )
+                ) as tarifas_array
+            FROM personal_tarifas pt
+            WHERE pt.activo = 1 
+                AND pt.vigente_desde <= CURDATE() 
+                AND (pt.vigente_hasta IS NULL OR pt.vigente_hasta >= CURDATE())
+            GROUP BY pt.nombre_rol
+        `);
+
+        //console.log('Tarifas obtenidas:', tarifas);
+
+        // Combinamos los datos
+        const rolesConTarifas = roles.map(rol => {
+            const tarifaData = tarifas.find(t => t.nombre_rol === rol.nombre);
+            return {
+                ...rol,
+                tarifas: tarifaData ? tarifaData.tarifas_array : []
+            };
+        });
+
+        res.json(serializeBigInt(rolesConTarifas));
     } catch (err) {
         console.error('Error al obtener roles:', err);
         res.status(500).json({ error: 'Error al obtener roles' });
@@ -785,34 +824,69 @@ const getRoles = async (req, res) => {
  * Crear un nuevo rol
  */
 const createRol = async (req, res) => {
+    let conn;
     try {
-        const { nombre, descripcion } = req.body;
+        const { nombre, descripcion, activo, tarifas } = req.body;
 
         if (!nombre || !nombre.trim()) {
             return res.status(400).json({ error: 'El nombre del rol es requerido' });
         }
 
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
         // Verificar si ya existe
-        const existing = await pool.query(
+        const existing = await conn.query(
             'SELECT id FROM catalogo_roles WHERE nombre = ?',
             [nombre.trim()]
         );
-        if (existing.length > 0) {
+        if (existing && existing.length > 0) {
+            await conn.rollback();
             return res.status(400).json({ error: 'Ya existe un rol con ese nombre' });
         }
 
-        const result = await pool.query(
-            'INSERT INTO catalogo_roles (nombre, descripcion) VALUES (?, ?)',
-            [nombre.trim(), descripcion || null]
+        const result = await conn.query(
+            'INSERT INTO catalogo_roles (nombre, descripcion, activo) VALUES (?, ?, ?)',
+            [nombre.trim(), descripcion || null, activo !== false ? 1 : 0]
         );
+
+        const rolId = result.insertId;
+
+        // Insertar tarifas si existen
+        if (tarifas && Array.isArray(tarifas) && tarifas.length > 0) {
+            for (const tarifa of tarifas) {
+                if (tarifa.vigente_desde) {
+                    await conn.query(
+                        `INSERT INTO personal_tarifas 
+                        (nombre_rol, monto_por_hora, monto_fijo_evento, monto_minimo, 
+                         vigente_desde, vigente_hasta, descripcion, activo) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+                        [
+                            nombre.trim(),
+                            tarifa.monto_por_hora || null,
+                            tarifa.monto_fijo_evento || null,
+                            tarifa.monto_minimo || null,
+                            tarifa.vigente_desde,
+                            tarifa.vigente_hasta || null,
+                            tarifa.descripcion || null
+                        ]
+                    );
+                }
+            }
+        }
+
+        await conn.commit();
 
         res.status(201).json({
             message: 'Rol creado exitosamente',
-            id: Number(result.insertId)
+            id: rolId
         });
     } catch (err) {
+        if (conn) await conn.rollback();
         console.error('Error al crear rol:', err);
         res.status(500).json({ error: 'Error al crear rol' });
+    } finally {
+        if (conn) conn.release();
     }
 };
 
@@ -821,28 +895,37 @@ const createRol = async (req, res) => {
  * Actualizar un rol existente
  */
 const updateRol = async (req, res) => {
+    let conn;
     try {
         const { id } = req.params;
-        const { nombre, descripcion, activo } = req.body;
+        const { nombre, descripcion, activo, tarifas } = req.body;
+
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
 
         // Verificar que existe
-        const existing = await pool.query('SELECT id FROM catalogo_roles WHERE id = ?', [id]);
-        if (existing.length === 0) {
+        const existing = await conn.query('SELECT id, nombre FROM catalogo_roles WHERE id = ?', [id]);
+        if (!existing || existing.length === 0) {
+            await conn.rollback();
             return res.status(404).json({ error: 'Rol no encontrado' });
         }
 
+        const nombreActual = existing[0].nombre;
+
         // Verificar nombre duplicado
         if (nombre) {
-            const duplicate = await pool.query(
+            const duplicate = await conn.query(
                 'SELECT id FROM catalogo_roles WHERE nombre = ? AND id != ?',
                 [nombre.trim(), id]
             );
-            if (duplicate.length > 0) {
+            if (duplicate && duplicate.length > 0) {
+                await conn.rollback();
                 return res.status(400).json({ error: 'Ya existe otro rol con ese nombre' });
             }
         }
 
-        await pool.query(`
+        // Actualizar el rol
+        await conn.query(`
             UPDATE catalogo_roles SET
                 nombre = COALESCE(?, nombre),
                 descripcion = ?,
@@ -850,10 +933,44 @@ const updateRol = async (req, res) => {
             WHERE id = ?
         `, [nombre?.trim(), descripcion, activo, id]);
 
+        // Si se envían tarifas, actualizar la tabla de tarifas
+        if (tarifas && Array.isArray(tarifas)) {
+            // Desactivar tarifas existentes para este rol
+            await conn.query(
+                'UPDATE personal_tarifas SET activo = 0 WHERE nombre_rol = ?',
+                [nombre || nombreActual]
+            );
+
+            // Insertar nuevas tarifas activas
+            for (const tarifa of tarifas) {
+                if (tarifa.vigente_desde) {
+                    await conn.query(
+                        `INSERT INTO personal_tarifas 
+                        (nombre_rol, monto_por_hora, monto_fijo_evento, monto_minimo, 
+                         vigente_desde, vigente_hasta, descripcion, activo) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+                        [
+                            (nombre || nombreActual).trim(),
+                            tarifa.monto_por_hora || null,
+                            tarifa.monto_fijo_evento || null,
+                            tarifa.monto_minimo || null,
+                            tarifa.vigente_desde,
+                            tarifa.vigente_hasta || null,
+                            tarifa.descripcion || null
+                        ]
+                    );
+                }
+            }
+        }
+
+        await conn.commit();
         res.json({ message: 'Rol actualizado exitosamente' });
     } catch (err) {
+        if (conn) await conn.rollback();
         console.error('Error al actualizar rol:', err);
         res.status(500).json({ error: 'Error al actualizar rol' });
+    } finally {
+        if (conn) conn.release();
     }
 };
 

@@ -10,8 +10,7 @@
 -- =======================================
 CREATE TABLE IF NOT EXISTS personal_tarifas (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    id_personal VARCHAR(50) NOT NULL COMMENT 'ID del empleado',
-    id_rol INT NULL COMMENT 'ID del rol (DJ, Mesera, etc.)',
+    nombre_rol VARCHAR(100) NOT NULL COMMENT 'Nombre del rol (DJ, Mesera, etc.)',
     monto_por_hora DECIMAL(10,2) NULL COMMENT 'Tarifa por hora trabajada',
     monto_fijo_evento DECIMAL(10,2) NULL COMMENT 'Tarifa fija por evento completo',
     monto_minimo DECIMAL(10,2) NULL COMMENT 'Monto mínimo garantizado',
@@ -22,12 +21,11 @@ CREATE TABLE IF NOT EXISTS personal_tarifas (
     activo BOOLEAN DEFAULT TRUE COMMENT 'Si la tarifa está activa',
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    INDEX idx_personal (id_personal),
+
+    INDEX idx_rol (nombre_rol),
     INDEX idx_vigencia (vigente_desde, vigente_hasta),
-    INDEX idx_activo (activo),
-    INDEX idx_rol (id_rol)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tarifas del personal por período';
+    INDEX idx_activo (activo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tarifas por rol';
 
 -- =======================================
 -- TABLA: personal_pagos
@@ -88,10 +86,10 @@ CREATE TABLE IF NOT EXISTS personal_pagos (
 -- =======================================
 
 -- Insertar algunas tarifas de ejemplo
-INSERT INTO personal_tarifas (id_personal, id_rol, monto_por_hora, monto_fijo_evento, monto_minimo, vigente_desde, descripcion) VALUES
-('EMP001', 1, 2500.00, 15000.00, 10000.00, '2025-01-01', 'DJ - Tarifa estándar'),
-('EMP002', 2, 1800.00, 8000.00, 6000.00, '2025-01-01', 'Mesera - Tarifa estándar'),
-('EMP003', 3, 2200.00, 12000.00, 8000.00, '2025-01-01', 'Encargado - Tarifa estándar')
+INSERT INTO personal_tarifas (nombre_rol, monto_por_hora, monto_fijo_evento, monto_minimo, vigente_desde, descripcion) VALUES
+('DJ', 2500.00, 15000.00, 10000.00, '2025-01-01', 'DJ - Tarifa estándar'),
+('Mesera', 1800.00, 8000.00, 6000.00, '2025-01-01', 'Mesera - Tarifa estándar'),
+('Bartender', 2200.00, 12000.00, 8000.00, '2025-01-01', 'Bartender - Tarifa estándar')
 ON DUPLICATE KEY UPDATE
     monto_por_hora = VALUES(monto_por_hora),
     monto_fijo_evento = VALUES(monto_fijo_evento),

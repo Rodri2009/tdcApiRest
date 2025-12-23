@@ -12,12 +12,9 @@ const getTarifas = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const tarifas = await conn.query(`
-            SELECT 
+            SELECT
                 t.id,
-                t.id_personal,
-                p.nombre_completo,
-                t.id_rol,
-                r.nombre as nombre_rol,
+                t.nombre_rol,
                 t.monto_por_hora,
                 t.monto_fijo_evento,
                 t.monto_minimo,
@@ -29,9 +26,7 @@ const getTarifas = async (req, res) => {
                 t.creado_en,
                 t.actualizado_en
             FROM personal_tarifas t
-            LEFT JOIN personal_disponible p ON t.id_personal COLLATE utf8mb4_unicode_ci = p.id_personal COLLATE utf8mb4_unicode_ci
-            LEFT JOIN catalogo_roles r ON t.id_rol = r.id
-            ORDER BY t.activo DESC, p.nombre_completo, t.vigente_desde DESC
+            ORDER BY t.activo DESC, t.nombre_rol, t.vigente_desde DESC
         `);
         res.status(200).json(tarifas);
     } catch (err) {
@@ -50,12 +45,9 @@ const getTarifasVigentes = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const tarifas = await conn.query(`
-            SELECT 
+            SELECT
                 t.id,
-                t.id_personal,
-                p.nombre_completo,
-                t.id_rol,
-                r.nombre as nombre_rol,
+                t.nombre_rol,
                 t.monto_por_hora,
                 t.monto_fijo_evento,
                 t.monto_minimo,
@@ -64,12 +56,10 @@ const getTarifasVigentes = async (req, res) => {
                 t.moneda,
                 t.descripcion
             FROM personal_tarifas t
-            LEFT JOIN personal_disponible p ON t.id_personal COLLATE utf8mb4_unicode_ci = p.id_personal COLLATE utf8mb4_unicode_ci
-            LEFT JOIN catalogo_roles r ON t.id_rol = r.id
-            WHERE t.activo = 1 
+            WHERE t.activo = 1
               AND t.vigente_desde <= CURDATE()
               AND (t.vigente_hasta IS NULL OR t.vigente_hasta >= CURDATE())
-            ORDER BY p.nombre_completo, r.nombre
+            ORDER BY t.nombre_rol
         `);
         res.status(200).json(tarifas);
     } catch (err) {
@@ -89,13 +79,9 @@ const getTarifaById = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const [tarifa] = await conn.query(`
-            SELECT 
-                t.*,
-                p.nombre_completo,
-                r.nombre as nombre_rol
+            SELECT
+                t.*
             FROM personal_tarifas t
-            LEFT JOIN personal_disponible p ON t.id_personal COLLATE utf8mb4_unicode_ci = p.id_personal COLLATE utf8mb4_unicode_ci
-            LEFT JOIN catalogo_roles r ON t.id_rol = r.id
             WHERE t.id = ?
         `, [id]);
 
@@ -117,8 +103,7 @@ const getTarifaById = async (req, res) => {
  */
 const createTarifa = async (req, res) => {
     const {
-        id_personal,
-        id_rol,
+        nombre_rol,
         monto_por_hora,
         monto_fijo_evento,
         monto_minimo,
@@ -128,31 +113,21 @@ const createTarifa = async (req, res) => {
         descripcion
     } = req.body;
 
-    if (!id_personal || !vigente_desde) {
-        return res.status(400).json({ message: 'id_personal y vigente_desde son requeridos.' });
+    if (!nombre_rol || !vigente_desde) {
+        return res.status(400).json({ message: 'nombre_rol y vigente_desde son requeridos.' });
     }
 
     let conn;
     try {
         conn = await pool.getConnection();
 
-        // Verificar que el personal existe
-        const [personal] = await conn.query(
-            "SELECT id_personal FROM personal_disponible WHERE id_personal = ?",
-            [id_personal]
-        );
-        if (!personal) {
-            return res.status(400).json({ message: 'El personal especificado no existe.' });
-        }
-
         const result = await conn.query(`
-            INSERT INTO personal_tarifas 
-            (id_personal, id_rol, monto_por_hora, monto_fijo_evento, monto_minimo, 
+            INSERT INTO personal_tarifas
+            (nombre_rol, monto_por_hora, monto_fijo_evento, monto_minimo,
              vigente_desde, vigente_hasta, moneda, descripcion, activo)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
         `, [
-            id_personal,
-            id_rol || null,
+            nombre_rol,
             monto_por_hora || null,
             monto_fijo_evento || null,
             monto_minimo || null,
@@ -181,8 +156,7 @@ const createTarifa = async (req, res) => {
 const updateTarifa = async (req, res) => {
     const { id } = req.params;
     const {
-        id_personal,
-        id_rol,
+        nombre_rol,
         monto_por_hora,
         monto_fijo_evento,
         monto_minimo,
@@ -208,8 +182,7 @@ const updateTarifa = async (req, res) => {
 
         await conn.query(`
             UPDATE personal_tarifas SET
-                id_personal = COALESCE(?, id_personal),
-                id_rol = ?,
+                nombre_rol = COALESCE(?, nombre_rol),
                 monto_por_hora = ?,
                 monto_fijo_evento = ?,
                 monto_minimo = ?,
@@ -220,8 +193,7 @@ const updateTarifa = async (req, res) => {
                 activo = COALESCE(?, activo)
             WHERE id = ?
         `, [
-            id_personal,
-            id_rol,
+            nombre_rol,
             monto_por_hora,
             monto_fijo_evento,
             monto_minimo,
