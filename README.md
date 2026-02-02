@@ -63,6 +63,18 @@ cp .env.example .env   # Editar con tus variables
 | `./down-and-backup.sh` | Detiene servicios y crea backup de la BD |
 | `./reset.sh` | Reinicia completamente (elimina datos y reconstruye) |
 
+### Migraciones adicionales y `reset.sh` ⚠️
+
+- Hemos añadido migraciones adicionales (06–09) que crean y rellenan tablas usadas por el módulo de `servicios` y la migración de `solicitudes` (`database/06_migrate_solicitudes.sql`, `07_create_servicios_tables.sql`, `08_create_profesionales_servicios.sql`, `09_fix_turnos_servicios.sql`). Estas migraciones están montadas en `mariadb` y se ejecutan automáticamente durante la **primera inicialización** de la base de datos (scripts en `/docker-entrypoint-initdb.d`).
+
+- `./reset.sh` borra volúmenes y reconstruye desde cero; es la forma recomendada para recrear un entorno local con todas las migraciones aplicadas. **ADVERTENCIA:** esto elimina TODOS los datos de la base de datos (úsalo solo en desarrollo o con backups).
+
+- Para entornos de producción: no confíes en la inicialización automática de contenedores para migraciones críticas. Ejecuta las migraciones manualmente y controla el orden y backups (ej. `mysql -u root -p"$MARIADB_ROOT_PASSWORD" $MARIADB_DATABASE < database/07_create_servicios_tables.sql`).
+
+- Si añades nuevas migraciones SQL que deban ejecutarse en la creación del contenedor, agrégalas a la sección `volumes` para `mariadb` en `docker/docker-compose.yml` siguiendo el patrón `../database/NN_nombre.sql:/docker-entrypoint-initdb.d/NN_nombre.sql`.
+
+---
+
 ### Crear usuario administrador
 
 ```bash
