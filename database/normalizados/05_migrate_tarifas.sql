@@ -1,5 +1,10 @@
 -- Migración: Cambiar personal_tarifas para usar nombre_rol en lugar de id_personal
 -- Fecha: 2025-12-23
+-- NOTA: NORMALIZADO
+-- Las acciones de migración y los INSERTs de ejemplo se consolidaron en:
+--   - Estructura: database/01_schema.sql (la tabla `personal_tarifas` ya incluye `nombre_rol`)
+--   - Datos de prueba: database/03_test_data.sql
+-- Puedes eliminar este archivo si no necesitas conservar el histórico de migración local.
 
 -- Agregar la nueva columna
 ALTER TABLE personal_tarifas ADD COLUMN nombre_rol VARCHAR(100) NOT NULL AFTER id;

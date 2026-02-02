@@ -77,7 +77,7 @@ services:
       - ../database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
       - ../database/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
       - ../database/03_test_data.sql:/docker-entrypoint-initdb.d/03_test_data.sql
-      - ../database/04_personal_tarifas_pagos.sql:/docker-entrypoint-initdb.d/04_personal_tarifas_pagos.sql
+      #- ../database/04_personal_tarifas_pagos.sql:/docker-entrypoint-initdb.d/04_personal_tarifas_pagos.sql
       - ../database/seeds:/var/lib/mysql-files
 
 # Definición de redes

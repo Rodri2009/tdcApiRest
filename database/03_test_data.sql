@@ -130,6 +130,50 @@ INSERT INTO solicitudes_bandas (
     'Solicitado'
 );
 
+-- ---------------------------------------------------------------------------
+-- DATOS DE PRUEBA: TARIFAS Y PAGOS DEL PERSONAL
+-- Movido desde: 04_personal_tarifas_pagos.sql y 05_migrate_tarifas.sql
+-- Estos INSERTS son datos de prueba / ejemplo y NO deben usarse en producción
+-- ---------------------------------------------------------------------------
+
+INSERT INTO personal_tarifas (nombre_rol, monto_por_hora, monto_fijo_evento, monto_minimo, vigente_desde, descripcion) VALUES
+('DJ', 2500.00, 15000.00, 10000.00, '2025-01-01', 'DJ - Tarifa estándar'),
+('Mesera', 1800.00, 8000.00, 6000.00, '2025-01-01', 'Mesera - Tarifa estándar'),
+('Bartender', 2200.00, 12000.00, 8000.00, '2025-01-01', 'Bartender - Tarifa estándar')
+ON DUPLICATE KEY UPDATE
+    monto_por_hora = VALUES(monto_por_hora),
+    monto_fijo_evento = VALUES(monto_fijo_evento),
+    monto_minimo = VALUES(monto_minimo),
+    descripcion = VALUES(descripcion);
+
+INSERT INTO personal_pagos (id_personal, id_solicitud, monto_acordado, monto_pagado, fecha_trabajo, fecha_pago, metodo_pago, estado, descripcion) VALUES
+('EMP001', 13, 15000.00, 15000.00, '2025-12-20', '2025-12-21', 'transferencia', 'pagado', 'DJ para evento del 20/12'),
+('EMP002', 13, 8000.00, 4000.00, '2025-12-20', '2025-12-21', 'efectivo', 'parcial', 'Mesera para evento del 20/12 - Pago parcial')
+ON DUPLICATE KEY UPDATE
+    monto_acordado = VALUES(monto_acordado),
+    monto_pagado = VALUES(monto_pagado),
+    fecha_trabajo = VALUES(fecha_trabajo),
+    fecha_pago = VALUES(fecha_pago),
+    metodo_pago = VALUES(metodo_pago),
+    estado = VALUES(estado),
+    descripcion = VALUES(descripcion);
+
+-- ---------------------------------------------------------------------------
+-- DATOS DE PRUEBA: SOLICITUDES NORMALIZADAS
+-- Ejemplos de inserción en la tabla base `solicitudes` y tablas específicas
+-- (Usamos LAST_INSERT_ID() para asociar metadata específica al registro base)
+-- ---------------------------------------------------------------------------
+
+INSERT INTO solicitudes (tipo_de_evento, tipo_servicio, es_publico, fecha_hora, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, nombre_completo, telefono, email, descripcion, estado) VALUES
+('TALLERES_ACTIVIDADES', 'TALLER_YOGA', 1, NOW(), '2025-12-16', '09:00', '1.5 horas', '15', 3000.00, 'Marina Paz', '1144556677', 'marina.yoga@email.com', 'Clase de Yoga Hatha - Todos los niveles', 'Confirmado');
+SET @sol1 = LAST_INSERT_ID();
+INSERT INTO solicitudes_talleres (id_solicitud, taller_id, tallerista_id, modalidad, cupo) VALUES (@sol1, 1, 1, 'clase_suelta', 15);
+
+INSERT INTO solicitudes (tipo_de_evento, tipo_servicio, es_publico, fecha_hora, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, nombre_completo, telefono, email, descripcion, estado) VALUES
+('SERVICIOS', 'DEPILACION', 1, NOW(), '2025-12-18', '10:00', '1 hora', '1', 5000.00, 'Lucía Méndez', '1177889900', 'lucia.mendez@email.com', 'Depilación piernas completas', 'Confirmado');
+SET @sol2 = LAST_INSERT_ID();
+INSERT INTO solicitudes_servicios (id_solicitud, servicio_id, profesional_id, duracion_minutos, notas_servicio) VALUES (@sol2, 'DEPILACION', NULL, 60, 'Depilación piernas completas - turno matutino');
+
 -- ===========================================================================
 -- FIN DE LOS DATOS DE PRUEBA
 -- ===========================================================================

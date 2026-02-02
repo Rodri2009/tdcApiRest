@@ -108,4 +108,9 @@ async function startServer() {
     });
 }
 
-startServer();
+// Exportar app para pruebas y permitir arranque condicional
+if (require.main === module) {
+    startServer();
+} else {
+    module.exports = app;
+}

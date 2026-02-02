@@ -404,7 +404,7 @@
           if (tipo === 'FECHA_EN_VIVO' || tipo === 'FECHA_BANDAS' || tipo === 'BANDA') {
             const bandSection = document.getElementById('band-contacts');
             if (bandSection) bandSection.classList.remove('hidden');
-            // Prefill main contact if exists in bandas_solicitudes
+            // Prefill main contact if exists in solicitudes_bandas
             if (data.bandaContactoEmail) {
               document.getElementById('main_contact_email').value = data.bandaContactoEmail;
             }

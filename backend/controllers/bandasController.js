@@ -421,7 +421,7 @@ const getSolicitudes = async (req, res) => {
                 s.*,
                 b.nombre as banda_registrada_nombre,
                 b.verificada as banda_verificada
-            FROM bandas_solicitudes s
+            FROM solicitudes_bandas s
             LEFT JOIN bandas_artistas b ON s.id_banda = b.id
             WHERE 1=1
         `;
@@ -455,7 +455,7 @@ const getSolicitudById = async (req, res) => {
                 s.*,
                 b.nombre as banda_registrada_nombre,
                 b.verificada as banda_verificada
-            FROM bandas_solicitudes s
+            FROM solicitudes_bandas s
             LEFT JOIN bandas_artistas b ON s.id_banda = b.id
             WHERE s.id = ?
         `, [id]);
@@ -534,7 +534,7 @@ const createSolicitud = async (req, res) => {
         }
 
         const result = await pool.query(`
-            INSERT INTO bandas_solicitudes (
+            INSERT INTO solicitudes_bandas (
                 id_banda, nombre_banda, genero_musical, formacion_json,
                 instagram, facebook, youtube, spotify, otras_redes, logo_url,
                 contacto_nombre, contacto_email, contacto_telefono, contacto_rol,
@@ -616,7 +616,7 @@ const updateSolicitud = async (req, res) => {
         params.push(id);
 
         await pool.query(
-            `UPDATE bandas_solicitudes SET ${setClauses.join(', ')} WHERE id = ?`,
+            `UPDATE solicitudes_bandas SET ${setClauses.join(', ')} WHERE id = ?`,
             params
         );
 
@@ -642,7 +642,7 @@ const aprobarSolicitud = async (req, res) => {
 
         // Obtener la solicitud
         const [solicitud] = await pool.query(
-            'SELECT * FROM bandas_solicitudes WHERE id = ?',
+            'SELECT * FROM solicitudes_bandas WHERE id = ?',
             [id]
         );
 
@@ -740,7 +740,7 @@ const aprobarSolicitud = async (req, res) => {
 
         // Actualizar solicitud
         await pool.query(`
-            UPDATE bandas_solicitudes 
+            UPDATE solicitudes_bandas 
             SET estado = 'aprobada', id_evento_generado = ?, id_banda = ?
             WHERE id = ?
         `, [eventoId, bandaId, id]);
@@ -765,7 +765,7 @@ const rechazarSolicitud = async (req, res) => {
         const { notas_admin } = req.body;
 
         await pool.query(`
-            UPDATE bandas_solicitudes 
+            UPDATE solicitudes_bandas 
             SET estado = 'rechazada', notas_admin = CONCAT(COALESCE(notas_admin, ''), '\n[RECHAZADA] ', ?)
             WHERE id = ?
         `, [notas_admin || 'Sin motivo especificado', id]);

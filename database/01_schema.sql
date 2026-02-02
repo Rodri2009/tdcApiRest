@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS precios_vigencia (
     cantidad_min INT NOT NULL DEFAULT 1 COMMENT 'Cantidad mínima de personas',
     cantidad_max INT NOT NULL COMMENT 'Cantidad máxima de personas',
     precio_por_hora DECIMAL(10,2) NOT NULL COMMENT 'Precio base por hora',
+    monto_sena DECIMAL(10,2) DEFAULT NULL COMMENT 'Precio de la seña (aplicar a futuro y quitar de opciones_tipos)',
+    deposito DECIMAL(10,2) DEFAULT NULL COMMENT 'Precio del deposito de garantía (aplicar a futuro y quitar de opciones_tipos)',
     vigente_desde DATE NOT NULL,
     vigente_hasta DATE DEFAULT NULL COMMENT 'NULL = vigente actualmente',
     UNIQUE KEY uk_precio (id_evento, cantidad_min, cantidad_max, vigente_desde),
@@ -148,16 +150,124 @@ CREATE TABLE IF NOT EXISTS costos_personal_vigencia (
     INDEX idx_vigencia (fecha_de_vigencia)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Tarifas y pagos del personal
+-- (Agregado desde 04_personal_tarifas_pagos.sql — normalizado en el schema principal)
+CREATE TABLE IF NOT EXISTS personal_tarifas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_rol VARCHAR(100) NOT NULL COMMENT 'Nombre del rol (DJ, Mesera, etc.)',
+    monto_por_hora DECIMAL(10,2) NULL COMMENT 'Tarifa por hora trabajada',
+    monto_fijo_evento DECIMAL(10,2) NULL COMMENT 'Tarifa fija por evento completo',
+    monto_minimo DECIMAL(10,2) NULL COMMENT 'Monto mínimo garantizado',
+    vigente_desde DATE NOT NULL COMMENT 'Fecha desde cuando es válida esta tarifa',
+    vigente_hasta DATE NULL COMMENT 'Fecha hasta cuando es válida (NULL = indefinida)',
+    moneda VARCHAR(3) DEFAULT 'ARS' COMMENT 'Moneda (ARS, USD, EUR)',
+    descripcion TEXT NULL COMMENT 'Descripción de la tarifa',
+    activo TINYINT(1) DEFAULT 1 COMMENT 'Si la tarifa está activa',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_rol (nombre_rol),
+    INDEX idx_vigencia (vigente_desde, vigente_hasta),
+    INDEX idx_activo (activo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Tarifas por rol';
+
+CREATE TABLE IF NOT EXISTS personal_pagos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_personal VARCHAR(50) NOT NULL COMMENT 'ID del empleado',
+    id_solicitud INT NULL COMMENT 'ID del evento/solicitud (opcional)',
+    monto_acordado DECIMAL(10,2) NOT NULL COMMENT 'Monto acordado para este trabajo',
+    monto_pagado DECIMAL(10,2) DEFAULT 0 COMMENT 'Monto realmente pagado',
+    fecha_trabajo DATE NULL COMMENT 'Fecha en que se realizó el trabajo',
+    fecha_pago DATE NULL COMMENT 'Fecha en que se realizó el pago',
+    metodo_pago VARCHAR(50) DEFAULT 'efectivo' COMMENT 'efectivo, transferencia, cheque, etc.',
+    comprobante VARCHAR(255) NULL COMMENT 'Número de comprobante o referencia',
+    estado ENUM('pendiente', 'parcial', 'pagado') DEFAULT 'pendiente' COMMENT 'Estado del pago',
+    descripcion TEXT NULL COMMENT 'Descripción del trabajo realizado',
+    notas TEXT NULL COMMENT 'Notas adicionales',
+    creado_por INT NULL COMMENT 'ID del usuario que creó el registro',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_personal (id_personal),
+    INDEX idx_solicitud (id_solicitud),
+    INDEX idx_estado (estado),
+    INDEX idx_fecha_trabajo (fecha_trabajo),
+    INDEX idx_fecha_pago (fecha_pago),
+    INDEX idx_metodo_pago (metodo_pago),
+    INDEX idx_creado_por (creado_por)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Pagos realizados al personal';
+
+-- FOREIGN KEYS (opcional, descomentar si desea enforcement):
+-- ALTER TABLE personal_pagos ADD CONSTRAINT fk_personal_pagos_personal FOREIGN KEY (id_personal) REFERENCES personal_disponible(id_personal) ON DELETE RESTRICT ON UPDATE CASCADE;
+-- ALTER TABLE personal_pagos ADD CONSTRAINT fk_personal_pagos_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes_alquiler(id_solicitud) ON DELETE SET NULL ON UPDATE CASCADE;
+
 -- =============================================================================
 -- 4. TABLAS DE SOLICITUDES
 -- =============================================================================
+
+-- Tabla normalizada: `solicitudes` (base para todos los tipos de solicitud)
+-- Motivo: separar campos comunes y almacenar metadata específica por tipo
+-- (talleres, servicios, bandas, alquileres). Esto mejora integridad, consultas
+-- y facilita migraciones futuro. Durante la transición mantenemos las tablas
+-- legacy para compatibilidad y backfill.
+CREATE TABLE IF NOT EXISTS solicitudes (
+    id_solicitud INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_de_evento VARCHAR(50) NOT NULL COMMENT 'ALQUILER_SALON, FECHA_BANDAS, TALLERES_ACTIVIDADES, SERVICIOS',
+    tipo_servicio VARCHAR(255) DEFAULT NULL COMMENT 'Subtipo (INFANTILES, DEPILACION, etc.)',
+    es_publico TINYINT(1) DEFAULT 0,
+    fecha_hora DATETIME DEFAULT NULL,
+    fecha_evento DATE DEFAULT NULL,
+    hora_evento VARCHAR(20) DEFAULT NULL,
+    duracion VARCHAR(100) DEFAULT NULL,
+    cantidad_de_personas VARCHAR(100) DEFAULT NULL,
+    precio_basico DECIMAL(10,2) DEFAULT NULL,
+    precio_final DECIMAL(10,2) DEFAULT NULL,
+    nombre_completo VARCHAR(255) DEFAULT NULL,
+    telefono VARCHAR(50) DEFAULT NULL,
+    email VARCHAR(255) DEFAULT NULL,
+    descripcion TEXT,
+    estado VARCHAR(50) DEFAULT 'Solicitado',
+    fingerprintid VARCHAR(255) DEFAULT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_tipo (tipo_de_evento),
+    INDEX idx_fecha (fecha_evento),
+    INDEX idx_estado (estado),
+    INDEX idx_es_publico (es_publico)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla específica: solicitudes_talleres (metadata para talleres/inscripciones)
+CREATE TABLE IF NOT EXISTS solicitudes_talleres (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT NOT NULL,
+    taller_id INT DEFAULT NULL,
+    tallerista_id INT DEFAULT NULL,
+    modalidad VARCHAR(50) DEFAULT NULL,
+    cupo INT DEFAULT NULL,
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla específica: solicitudes_servicios (metadata para servicios/profesionales)
+CREATE TABLE IF NOT EXISTS solicitudes_servicios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT NOT NULL,
+    servicio_id VARCHAR(255) DEFAULT NULL,
+    profesional_id INT DEFAULT NULL,
+    duracion_minutos INT DEFAULT NULL,
+    notas_servicio TEXT,
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- (Temporal) Tabla legacy para compatibilidad durante migración
+-- Mantener `solicitudes_alquiler` para rollback o scripts de backfill
 
 -- Solicitudes de alquiler de salón (sin bandas)
 CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     id_solicitud INT AUTO_INCREMENT PRIMARY KEY,
 
     -- Tipo de evento (CLAVE: debe ser el subtipo como INFANTILES, no la categoría)
-    tipo_de_evento VARCHAR(50) NOT NULL DEFAULT 'ALQUILER_SALON' COMMENT 'Categoría: ALQUILER_SALON, etc.',
+    tipo_de_evento VARCHAR(50) NOT NULL DEFAULT 'ALQUILER_SALON' COMMENT 'Categoría: ALQUILER_SALON, FECHA_BANDAS, TALLERES_ACTIVIDADES, SERVICIOS.',
     tipo_servicio VARCHAR(255) DEFAULT NULL COMMENT 'Subtipo: INFANTILES, CON_SERVICIO_DE_MESA, etc.',
 
     -- Visibilidad
@@ -252,6 +362,60 @@ CREATE TABLE IF NOT EXISTS fechas_bandas_confirmadas (
     INDEX idx_fecha (fecha),
     INDEX idx_activo (activo),
     INDEX idx_es_publico (es_publico)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla para solicitudes de bandas (peticiones de fechas / propuestas)
+CREATE TABLE IF NOT EXISTS solicitudes_bandas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT DEFAULT NULL,
+    id_banda INT DEFAULT NULL,
+    nombre_banda VARCHAR(255) NOT NULL,
+    genero_musical VARCHAR(100) DEFAULT NULL,
+    formacion_json TEXT DEFAULT NULL,
+    instagram VARCHAR(255) DEFAULT NULL,
+    facebook VARCHAR(255) DEFAULT NULL,
+    youtube VARCHAR(255) DEFAULT NULL,
+    spotify VARCHAR(255) DEFAULT NULL,
+    otras_redes TEXT DEFAULT NULL,
+    logo_url VARCHAR(500) DEFAULT NULL,
+
+    contacto_nombre VARCHAR(255) DEFAULT NULL,
+    contacto_email VARCHAR(255) DEFAULT NULL,
+    contacto_telefono VARCHAR(50) DEFAULT NULL,
+    contacto_rol VARCHAR(100) DEFAULT NULL,
+
+    fecha_preferida DATE DEFAULT NULL,
+    fecha_alternativa DATE DEFAULT NULL,
+    hora_preferida VARCHAR(20) DEFAULT NULL,
+
+    invitadas_json TEXT DEFAULT NULL,
+    cantidad_bandas INT DEFAULT 1,
+
+    precio_anticipada_propuesto DECIMAL(10,2) DEFAULT NULL,
+    precio_puerta_propuesto DECIMAL(10,2) DEFAULT NULL,
+    expectativa_publico INT DEFAULT NULL,
+
+    mensaje TEXT DEFAULT NULL,
+    link_musica VARCHAR(500) DEFAULT NULL,
+    propuesta TEXT DEFAULT NULL,
+    event_id INT DEFAULT NULL,
+
+    fingerprintid VARCHAR(255) DEFAULT NULL,
+
+    estado VARCHAR(50) DEFAULT 'Solicitado',
+    notas_admin TEXT DEFAULT NULL,
+    id_evento_generado INT DEFAULT NULL,
+
+    precio_anticipada DECIMAL(10,2) DEFAULT NULL,
+    precio_puerta DECIMAL(10,2) DEFAULT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_estado (estado),
+    INDEX idx_fecha_preferida (fecha_preferida),
+    INDEX idx_id_solicitud (id_solicitud),
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
@@ -366,11 +530,11 @@ CREATE TABLE IF NOT EXISTS eventos_bandas_invitadas (
 DROP TABLE IF EXISTS bandas_invitadas;
 
 -- =============================================================================
--- 5.3 SOLICITUDES DE FECHAS PARA BANDAS
+-- 5.3 SOLICITUDES DE FECHAS PARA BANDAS (LEGACY)
 -- =============================================================================
 
--- Solicitudes de bandas (consolidado con campos comunes)
-CREATE TABLE IF NOT EXISTS solicitudes_bandas (
+-- Solicitudes de bandas legacy (se mantiene como respaldo durante la migración)
+CREATE TABLE IF NOT EXISTS solicitudes_bandas_legacy (
     id_solicitud INT AUTO_INCREMENT PRIMARY KEY,
 
     -- Campos comunes con solicitudes_alquiler

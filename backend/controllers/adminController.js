@@ -72,7 +72,7 @@ const getSolicitudes = async (req, res) => {
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo,
                 s.es_publico as es_publico
-            FROM solicitudes_bandas s
+            FROM solicitudes_bandas_legacy s
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             WHERE s.tipo_de_evento = 'FECHA_BANDAS'
             UNION ALL
@@ -133,7 +133,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
             tabla = 'solicitudes_alquiler';
         } else if (String(id).startsWith('bnd_')) {
             realId = id.replace('bnd_', '');
-            [solicitud] = await conn.query("SELECT * FROM solicitudes_bandas WHERE id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT * FROM solicitudes_bandas_legacy WHERE id_solicitud = ?", [realId]);
             tabla = 'solicitudes_bandas';
         } else {
             // Fallback para IDs antiguos sin prefijo
@@ -219,7 +219,7 @@ const eliminarSolicitud = async (req, res) => {
             if (solicitud) {
                 tabla = 'solicitudes_alquiler';
             } else {
-                [solicitud] = await conn.query("SELECT 'solicitudes_bandas' as tabla_name FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+                [solicitud] = await conn.query("SELECT 'solicitudes_bandas' as tabla_name FROM solicitudes_bandas_legacy WHERE id_solicitud = ?", [id]);
                 if (solicitud) tabla = 'solicitudes_bandas';
             }
         }
@@ -231,7 +231,8 @@ const eliminarSolicitud = async (req, res) => {
         // Por seguridad, borramos en cascada (primero los hijos, luego el padre)
         await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [realId]);
         await conn.query("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [realId]);
-        await conn.query("DELETE FROM bandas_solicitudes WHERE id_solicitud = ?", [realId]);
+        await conn.query("DELETE FROM solicitudes_bandas WHERE id_solicitud = ?", [realId]);
+        await conn.query("DELETE FROM solicitudes_bandas_legacy WHERE id_solicitud = ?", [realId]);
         const result = await conn.query(`DELETE FROM ${tabla} WHERE id_solicitud = ?`, [realId]);
 
         if (result.affectedRows === 0) {

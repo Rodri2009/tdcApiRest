@@ -1,7 +1,10 @@
 -- =======================================
 -- ARCHIVO: 04_personal_tarifas_pagos.sql
--- FECHA: 2025-12-12
--- PROPÓSITO: Crear tablas para gestión de tarifas y pagos del personal
+-- NOTA: NORMALIZADO
+-- Las definiciones de tablas y los datos de ejemplo fueron movidos a:
+--   - Estructura (tablas): database/01_schema.sql (tablas `personal_tarifas` y `personal_pagos`)
+--   - Datos de prueba: database/03_test_data.sql
+-- Este archivo ya no se usa; puedes eliminarlo con seguridad después de la verificación.
 -- =======================================
 
 -- =======================================

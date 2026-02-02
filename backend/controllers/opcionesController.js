@@ -203,7 +203,7 @@ const getFechasOcupadas = async (req, res) => {
                 SELECT DISTINCT fecha, hora FROM(
                     SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(hora_evento), 'hs', '') AS hora FROM solicitudes_alquiler WHERE estado = 'Confirmado'
                     UNION
-                    SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(hora_evento), 'hs', '') AS hora FROM solicitudes_bandas WHERE estado = 'Confirmado'
+                    SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(hora_evento), 'hs', '') AS hora FROM solicitudes_bandas_legacy WHERE estado = 'Confirmado'
                     UNION
                     SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha, TIME_FORMAT(hora_inicio, '%H:%i') AS hora FROM fechas_bandas_confirmadas WHERE activo = 1
                 ) AS todas
@@ -238,7 +238,7 @@ const getFechasOcupadas = async (req, res) => {
             SELECT DISTINCT fecha FROM(
                 SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_alquiler WHERE estado = 'Confirmado'
                 UNION
-                SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_bandas WHERE estado = 'Confirmado'
+                SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_bandas_legacy WHERE estado = 'Confirmado'
                 UNION
                 SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha FROM fechas_bandas_confirmadas WHERE activo = 1
             ) AS todas
