@@ -73,10 +73,14 @@ services:
       # 01_schema.sql - Estructura de tablas (DDL)
       # 02_seed.sql - Datos de configuración y catálogos
       # 03_test_data.sql - Datos de prueba (opcional para desarrollo)
-      # 04_personal_tarifas_pagos.sql - Tablas de tarifas y pagos del personal
+      # Migraciones adicionales (se ejecutan solo en la primera inicialización):
       - ../database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
       - ../database/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
       - ../database/03_test_data.sql:/docker-entrypoint-initdb.d/03_test_data.sql
+      - ../database/06_migrate_solicitudes.sql:/docker-entrypoint-initdb.d/06_migrate_solicitudes.sql
+      - ../database/07_create_servicios_tables.sql:/docker-entrypoint-initdb.d/07_create_servicios_tables.sql
+      - ../database/08_create_profesionales_servicios.sql:/docker-entrypoint-initdb.d/08_create_profesionales_servicios.sql
+      - ../database/09_fix_turnos_servicios.sql:/docker-entrypoint-initdb.d/09_fix_turnos_servicios.sql
       #- ../database/04_personal_tarifas_pagos.sql:/docker-entrypoint-initdb.d/04_personal_tarifas_pagos.sql
       - ../database/seeds:/var/lib/mysql-files
 
