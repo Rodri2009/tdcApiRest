@@ -1,7 +1,0 @@
-ID_Asignacion (PK),ID_Solicitud (FK),RolRequerido,ID_Personal_Asignado (FK),EstadoAsignacion
-A0001,1,Cocinera,P004,Pendiente
-A0002,1,Encargada,P001,Pendiente
-A0003,2,Encargada,P001,Asignado
-A0004,2,Puerta,P003,Asignado
-A0005,5,Encargada,P001,Asignado
-A0006,5,Puerta,P003,Asignado

@@ -14,12 +14,28 @@
             --color-rustic: #44403c;
         }
 
-        * { box-sizing: border-box; }
+        /* Mantener navbar fija y dejar espacio superior */
+        header.bg-rustic {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+
+        body {
+            padding: calc(16px + 4rem);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 16px;
+            /* Mantener el offset superior para la navbar fija (h-16 = 4rem) */
+            padding: calc(16px + 4rem) 16px 16px 16px;
             background: #0c0a09;
             min-height: 100vh;
             color: #d6d3d1;
@@ -61,6 +77,7 @@
             background: var(--color-rustic);
             color: #d6d3d1;
         }
+
         .btn-secondary:hover {
             background: #57534e;
         }
@@ -90,15 +107,23 @@
             gap: 8px;
         }
 
-        .tab:hover { color: var(--color-secondary); }
+        .tab:hover {
+            color: var(--color-secondary);
+        }
+
         .tab.active {
             color: var(--color-secondary);
             border-bottom-color: var(--color-secondary);
             font-weight: 600;
         }
 
-        .section { display: none; }
-        .section.active { display: block; }
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
 
         .agenda-container {
             max-width: 1600px;
@@ -120,7 +145,7 @@
             border-radius: 8px;
         }
 
-        .filters > div {
+        .filters>div {
             flex: 1;
             min-width: 150px;
         }
@@ -132,7 +157,8 @@
             margin-bottom: 4px;
         }
 
-        .filters select, .filters input {
+        .filters select,
+        .filters input {
             width: 100%;
             padding: 8px 12px;
             border: 1px solid var(--color-rustic);
@@ -146,7 +172,8 @@
             border-collapse: collapse;
         }
 
-        th, td {
+        th,
+        td {
             padding: 12px 16px;
             border-bottom: 1px solid #333;
             text-align: left;
@@ -173,17 +200,55 @@
             display: inline-block;
         }
 
-        .badge-success { background: #065f46; color: #6ee7b7; }
-        .badge-warning { background: #92400e; color: #fcd34d; }
-        .badge-danger { background: #7f1d1d; color: #fca5a5; }
-        .badge-info { background: #1e40af; color: #93c5fd; }
-        .badge-gray { background: #374151; color: #9ca3af; }
-        .badge-primary { background: rgba(88, 28, 135, 0.6); color: var(--color-secondary); }
+        .badge-success {
+            background: #065f46;
+            color: #6ee7b7;
+        }
 
-        .badge-alquiler { background: #7c3aed; color: white; }
-        .badge-taller { background: #0891b2; color: white; }
-        .badge-servicio { background: #db2777; color: white; }
-        .badge-banda { background: #ea580c; color: white; }
+        .badge-warning {
+            background: #92400e;
+            color: #fcd34d;
+        }
+
+        .badge-danger {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+
+        .badge-info {
+            background: #1e40af;
+            color: #93c5fd;
+        }
+
+        .badge-gray {
+            background: #374151;
+            color: #9ca3af;
+        }
+
+        .badge-primary {
+            background: rgba(88, 28, 135, 0.6);
+            color: var(--color-secondary);
+        }
+
+        .badge-alquiler {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .badge-taller {
+            background: #0891b2;
+            color: white;
+        }
+
+        .badge-servicio {
+            background: #db2777;
+            color: white;
+        }
+
+        .badge-banda {
+            background: #ea580c;
+            color: white;
+        }
 
         .row-actions {
             display: flex;
@@ -199,6 +264,7 @@
             cursor: pointer;
             transition: all 0.2s;
         }
+
         .btn-icon:hover {
             background: rgba(240, 171, 252, 0.2);
         }
@@ -248,22 +314,42 @@
             z-index: 9999;
             animation: slideIn 0.3s ease;
         }
-        .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
-        .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+        .notification-banner.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification-banner.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification-banner.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
         @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="header-row">
-        <a href="/admin.html" class="btn btn-secondary">
+    <div class="header-row"
+        style="max-width:1600px; margin:0 auto; margin-top:1rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
+        <a href="/admin.html" class="btn btn-secondary"
+            style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
             <i class="fas fa-arrow-left"></i> Volver al Panel
         </a>
-        <h1><i class="fas fa-calendar-alt"></i> Agenda General</h1>
+        <h1 class="text-4xl font-bold text-neon" style="margin:0; text-align:center;"><i
+                class="fas fa-calendar-alt"></i> Agenda General</h1>
         <div style="width:150px;"></div>
     </div>
 
@@ -335,7 +421,9 @@
                     </tr>
                 </thead>
                 <tbody id="tbody-proximos">
-                    <tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>
+                    <tr>
+                        <td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -370,7 +458,9 @@
                     </tr>
                 </thead>
                 <tbody id="tbody-pendientes">
-                    <tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>
+                    <tr>
+                        <td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -422,7 +512,9 @@
                     </tr>
                 </thead>
                 <tbody id="tbody-todos">
-                    <tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>
+                    <tr>
+                        <td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -430,6 +522,10 @@
 
     <script src="/navbar.js"></script>
     <script>
+        // Activar logs detallados añadiendo ?debug=1 a la URL
+        const debug = new URLSearchParams(window.location.search).get('debug') === '1';
+        if (debug) console.info('DEBUG MODE ON: se mostrarán logs detallados de la agenda');
+
         // ============================================================
         // ESTADO
         // ============================================================
@@ -490,12 +586,29 @@
                 const resSol = await fetch(`${API_BASE}/solicitudes`, { headers: authHeaders() });
                 if (resSol.ok) {
                     solicitudes = await resSol.json();
+                    if (debug) console.log('API /solicitudes -> raw:', solicitudes);
                 }
 
                 // Cargar eventos de bandas
-                const resEv = await fetch(`${API_BASE}/fechas_bandas_confirmadas`, { headers: authHeaders() });
+                // Intentamos endpoint admin primero (si existe). Si responde 404, caemos al endpoint público de bandas.
+                let resEv = await fetch(`${API_BASE}/fechas_bandas_confirmadas`, { headers: authHeaders() });
                 if (resEv.ok) {
                     eventos = await resEv.json();
+                    if (debug) console.log('API /admin/fechas_bandas_confirmadas -> raw:', eventos);
+                } else if (resEv.status === 404) {
+                    if (debug) console.warn('/api/admin/fechas_bandas_confirmadas no existe (404). Probando /api/bandas/eventos?estado=Confirmado');
+                    const fallback = await fetch('/api/bandas/eventos?estado=Confirmado');
+                    if (fallback.ok) {
+                        eventos = await fallback.json();
+                        if (debug) console.log('Fallback /api/bandas/eventos -> raw:', eventos);
+                    } else {
+                        // Si ambos fallan, dejar eventos en []
+                        eventos = [];
+                        if (debug) console.error('Fallback /api/bandas/eventos también falló', fallback.status);
+                    }
+                } else {
+                    // Otro error (ej: 401/500)
+                    if (debug) console.error('Error al consultar /api/admin/fechas_bandas_confirmadas:', resEv.status);
                 }
 
                 // Combinar y normalizar
@@ -508,8 +621,12 @@
         }
 
         function getCategoria(item) {
+            // Si viene directamente como evento, es Banda
             if (item.source === 'evento') return 'BANDA';
-            const tipo = (item.tipoEvento || item.tipo_evento || '').toUpperCase();
+
+            const tipo = (item.tipoEvento || item.tipo_evento || item.tipo || '').toString().toUpperCase();
+            // Detectar explícitamente solicitudes de tipo FECHA_BANDAS o cualquier mención a 'BANDA'
+            if (tipo === 'FECHA_BANDAS' || tipo.includes('BANDA')) return 'BANDA';
             if (tipo.includes('TALLER')) return 'TALLER';
             if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) return 'SERVICIO';
             return 'ALQUILER';
@@ -522,8 +639,9 @@
                 source: 'solicitud',
                 fecha: s.fechaEvento || s.fecha_evento,
                 hora: s.horaEvento || s.hora_evento,
-                tipo: s.tipoEvento || s.tipo_evento,
-                nombre: s.nombreCompleto || s.nombre_completo,
+                tipo: s.tipoEvento || s.tipo_evento || s.tipo,
+                // Asegurarnos de tomar nombre de banda cuando exista (nombre_banda / nombreBanda / fallback)
+                nombre: s.nombreCompleto || s.nombre_completo || s.nombre_banda || s.nombreBanda,
                 telefono: s.telefono,
                 email: s.email,
                 descripcion: s.descripcion,
@@ -547,11 +665,25 @@
             }));
 
             allItems = [...normalizedSolicitudes, ...normalizedEventos];
-            
+
             // Agregar categoría
             allItems.forEach(item => {
+                const before = { source: item.source, tipo: item.tipo, nombre: item.nombre };
                 item.categoria = getCategoria(item);
+                if (debug) {
+                    console.log('Normalizado:', before, '-> categoría asignada:', item.categoria, ' (item):', item);
+                    // Warn si algo parece inconsistente (ej: source 'evento' pero categoría ALQUILER)
+                    if (item.categoria === 'ALQUILER' && (item.source === 'evento' || (item.tipo && item.tipo.toUpperCase().includes('BANDA')))) {
+                        console.warn('Inconsistencia detectada: evento mapeado como ALQUILER', { item });
+                    }
+                }
             });
+
+            // Resumen por categoría para facilitar diagnóstico
+            if (debug) {
+                const summary = allItems.reduce((acc, it) => { acc[it.categoria] = (acc[it.categoria] || 0) + 1; return acc; }, {});
+                console.info('Resumen categorías (allItems):', summary);
+            }
         }
 
         // ============================================================
@@ -567,15 +699,15 @@
         function updateSummary() {
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
-            
+
             const finSemana = new Date(hoy);
             finSemana.setDate(hoy.getDate() + 7);
-            
+
             const finMes = new Date(hoy);
             finMes.setMonth(finMes.getMonth() + 1);
 
             const confirmados = allItems.filter(i => i.estado === 'Confirmado');
-            
+
             const countHoy = confirmados.filter(i => {
                 const fecha = new Date(i.fecha);
                 return fecha.toDateString() === hoy.toDateString();
@@ -606,7 +738,7 @@
             hoy.setHours(0, 0, 0, 0);
 
             let filtered = allItems.filter(i => i.estado === 'Confirmado' && new Date(i.fecha) >= hoy);
-            
+
             if (categoriaFiltro) filtered = filtered.filter(i => i.categoria === categoriaFiltro);
             if (desdeFiltro) filtered = filtered.filter(i => new Date(i.fecha) >= new Date(desdeFiltro));
             if (hastaFiltro) filtered = filtered.filter(i => new Date(i.fecha) <= new Date(hastaFiltro));
@@ -627,7 +759,7 @@
             const categoriaFiltro = document.getElementById('filtro-pendiente-categoria')?.value || '';
 
             let filtered = allItems.filter(i => i.estado === 'Solicitado' || i.estado === 'pendiente');
-            
+
             if (categoriaFiltro) filtered = filtered.filter(i => i.categoria === categoriaFiltro);
 
             // Ordenar por fecha
@@ -665,7 +797,7 @@
             const hastaFiltro = document.getElementById('filtro-todos-hasta')?.value || '';
 
             let filtered = [...allItems];
-            
+
             if (categoriaFiltro) filtered = filtered.filter(i => i.categoria === categoriaFiltro);
             if (estadoFiltro) filtered = filtered.filter(i => i.estado === estadoFiltro);
             if (desdeFiltro) filtered = filtered.filter(i => new Date(i.fecha) >= new Date(desdeFiltro));

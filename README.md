@@ -1,4 +1,4 @@
-# TDC - Sistema de Gestión de Eventos (Versión Beta)
+# TDC - Sistema de Gestión Total (Versión Beta)
 
 
 **Versión Beta**

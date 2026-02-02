@@ -60,6 +60,19 @@
             background-position: center;
             background-repeat: no-repeat;
         }
+
+        /* Asegurar que los botones en el Hero estén centrados vertical y horizontalmente en escritorio */
+        @media (min-width: 768px) {
+            #inicio .mt-10 a {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 64px;
+                padding: 0 1.5rem;
+                white-space: normal;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 
@@ -138,7 +151,7 @@
                 </h1>
                 <div
                     class="max-w-4xl mx-auto mt-20 mb-20 text-center text-xl sm:text-2xl md:text-3xl font-light text-purple-300">
-                    Descubre tu nuevo punto de encuentro.<br><br>
+                    Descubre este nuevo punto de encuentro.<br><br>
 
                     Un espacio único donde la música, el movimiento y la buena onda se juntan. En nuestro salón suenan
                     bandas en vivo y en el patio, la juntada sigue entre sillones y parrilla.<br><br>
@@ -154,18 +167,18 @@
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Ver Bandas en Vivo
                     </a>
-                        <a href="solicitud_banda.html"
+                    <a href="solicitud_banda.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Quiero tocar en El templo
+                        Tocar en El templo
                     </a>
                     <a href="solicitud_taller.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Quiero dar un taller
+                        Dar un taller
                     </a>
                     <a href="solicitud_taller.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Quiero dar clases
-                    </a>        
+                        Dar clases
+                    </a>
                     <a href="seccion_servicios.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Depilación Definitiva
@@ -410,6 +423,22 @@
             };
         }
 
+        // Parseo robusto de fechas: admite "YYYY-MM-DD", "YYYY-MM-DD HH:mm", "YYYY-MM-DDTHH:mm" y combina hora por separado
+        function parseDateString(s, hora) {
+            if (!s) return null;
+            let str = String(s).trim();
+            if (hora && !str.includes('T')) {
+                const horaPart = String(hora).trim().split(':').slice(0, 2).join(':');
+                str = `${str}T${horaPart}`;
+            } else if (str.includes(' ') && !str.includes('T')) {
+                str = str.replace(' ', 'T');
+            } else if (!str.includes('T') && /^\d{4}-\d{2}-\d{2}$/.test(str)) {
+                str = str + 'T00:00:00';
+            }
+            const d = new Date(str);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
         function getCategoria(item) {
             if (item.source === 'evento') return 'BANDA';
             const tipo = (item.tipo || '').toUpperCase();
@@ -421,9 +450,22 @@
         function generateAgendaCard(item) {
             const categoria = getCategoria(item);
             const cat = CATEGORIAS[categoria];
-            const { day, month } = formatDate(item.fecha);
+            const fechaObj = item._fechaObj ? item._fechaObj : (item.fecha ? new Date(item.fecha) : null);
+            const { day, month } = fechaObj ? formatDate(fechaObj) : { day: '--', month: '--' };
             const hora = item.hora || '';
             const precio = item.precio ? `$${Number(item.precio).toLocaleString('es-AR')}` : '';
+
+            // Acción según categoría
+            let actionHtml = '';
+            if (categoria === 'BANDA') {
+                const link = item.id ? `checkout_form.html?event_id=${item.id}` : 'seccion_bandas.html';
+                actionHtml = `<a href="${link}" class="w-full sm:w-auto bg-fuchsia-500 hover:bg-fuchsia-400 text-gray-900 font-bold py-3 px-6 rounded-full transition shadow-lg text-center whitespace-normal flex items-center justify-center h-16">Sacar entrada</a>`;
+            } else if (categoria === 'TALLER' || categoria === 'SERVICIO') {
+                const link = categoria === 'TALLER' ? 'seccion_talleres.html' : 'seccion_servicios.html';
+                actionHtml = `<a href="${link}" class="w-full sm:w-auto bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-6 rounded-full transition shadow-lg text-center whitespace-normal flex items-center justify-center h-16">Más información</a>`;
+            } else {
+                actionHtml = `<a href="solicitud_alquiler.html" class="w-full sm:w-auto bg-stone-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg flex items-center justify-center h-16">Ver detalles</a>`;
+            }
 
             return `
             <div class="p-4 bg-stone-800 rounded-xl flex items-center justify-between border-l-4 ${cat.color} hover:bg-stone-700/50 transition">
@@ -440,6 +482,7 @@
                         <p class="text-sm text-stone-400">${hora ? hora + ' hs' : ''} ${precio ? '• ' + precio : ''}</p>
                     </div>
                 </div>
+                <div class="flex-shrink-0 ml-4">${actionHtml}</div>
             </div>
             `;
         }
@@ -451,15 +494,21 @@
                 let eventos = [];
                 if (resEventos.ok) {
                     const data = await resEventos.json();
-                    eventos = data.filter(e => e.activo === 1 && e.es_publico === 1).map(e => ({
-                        source: 'evento',
-                        fecha: e.fecha || e.fecha_hora,
-                        hora: e.hora_inicio,
-                        nombre: e.nombre_banda,
-                        tipo: e.genero_musical || 'Banda',
-                        precio: e.precio_anticipada || e.precio_base,
-                        descripcion: e.descripcion
-                    }));
+                    eventos = data.filter(e => e.activo === 1 && e.es_publico === 1).map(e => {
+                        const fechaRaw = e.fecha || e.fecha_hora;
+                        const fechaObj = parseDateString(fechaRaw, e.hora_inicio);
+                        return {
+                            source: 'evento',
+                            id: e.id,
+                            fecha: fechaRaw,
+                            _fechaObj: fechaObj,
+                            hora: e.hora_inicio,
+                            nombre: e.nombre_banda,
+                            tipo: e.genero_musical || 'Banda',
+                            precio: e.precio_anticipada || e.precio_base,
+                            descripcion: e.descripcion
+                        };
+                    });
                 }
 
                 // Cargar solicitudes públicas confirmadas
@@ -467,26 +516,32 @@
                 let solicitudes = [];
                 if (resSolicitudes.ok) {
                     const data = await resSolicitudes.json();
-                    solicitudes = data.map(s => ({
-                        source: 'solicitud',
-                        fecha: s.fecha_evento || s.fechaEvento,
-                        hora: s.hora_evento || s.horaEvento,
-                        nombre: s.nombre_completo || s.nombreCompleto || s.descripcion,
-                        tipo: s.tipo_de_evento || s.tipoEvento,
-                        precio: s.precio_basico || s.precio,
-                        descripcion: s.descripcion
-                    }));
+                    solicitudes = data.map(s => {
+                        const fechaRaw = s.fecha_evento || s.fechaEvento;
+                        const horaRaw = s.hora_evento || s.horaEvento;
+                        const fechaObj = parseDateString(fechaRaw, horaRaw);
+                        return {
+                            source: 'solicitud',
+                            id: s.id,
+                            fecha: fechaRaw,
+                            _fechaObj: fechaObj,
+                            hora: horaRaw,
+                            nombre: s.nombre_completo || s.nombreCompleto || s.descripcion,
+                            tipo: s.tipo_de_evento || s.tipoEvento,
+                            precio: s.precio_basico || s.precio,
+                            descripcion: s.descripcion
+                        };
+                    });
                 }
 
-                // Combinar y ordenar por fecha
+                // Combinar y ordenar por fecha (solo futuros con fecha estrictamente mayor a hoy)
                 const allItems = [...eventos, ...solicitudes];
                 const hoy = new Date();
                 hoy.setHours(0, 0, 0, 0);
 
                 const proximosItems = allItems
-                    .filter(item => new Date(item.fecha) >= hoy)
-                    .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
-                    .slice(0, 6); // Mostrar máximo 6
+                    .filter(item => item._fechaObj && item._fechaObj > hoy)
+                    .sort((a, b) => a._fechaObj - b._fechaObj); // Mostrar todos los futuros
 
                 renderAgenda(proximosItems, allItems.length);
 
@@ -503,7 +558,7 @@
 
         function renderAgenda(items, totalCount) {
             agendaListContainer.innerHTML = '';
-            
+
             if (!items || items.length === 0) {
                 agendaListContainer.innerHTML = `
                 <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">

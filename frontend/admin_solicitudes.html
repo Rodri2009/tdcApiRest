@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Panel de Administración - Solicitudes</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --color-primary: #581c87;
@@ -21,10 +20,20 @@
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 16px;
+            /* conservar el padding base y añadir el offset del header (4rem) */
+            padding: calc(16px + 4rem) 16px 16px 16px;
             background: #0c0a09;
             min-height: 100vh;
             color: #d6d3d1;
+        }
+
+        /* Si la navbar está presente, dejarla fija en el top */
+        header.bg-rustic {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
         }
 
         .text-neon {
@@ -359,18 +368,21 @@
             background-color: var(--color-rustic);
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="./navbar.js"></script>
 </head>
 
 <body>
-    <div style="max-width: 1600px; margin: 0 auto; padding: 0 16px;">
+    <div style="max-width: 1600px; margin: 0 auto; padding: 0;">
         <div
             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; margin-top: 1rem;">
             <a href="admin.html"
                 style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
                 <i class="fas fa-arrow-left"></i> Volver al Panel
             </a>
-            <h2 style="margin: 0;">Panel de Administración de Solicitudes</h2>
+            <!-- <h2 style="margin: 0;">Panel de Administración de Solicitudes</h2> -->
+            <h1 class="text-4xl font-bold">Administración de Solicitudes</h1>
+
             <div style="width: 140px;"></div>
         </div>
 
@@ -564,7 +576,7 @@
                     modificarSolicitud(solicitudId, categoria, origen);
                 } else if (button.classList.contains('btn-edit-event')) {
                     // Eventos de bandas -> editor especializado
-                    window.location.href = `/editar_evento_banda.html?id=${encodeURIComponent(solicitudId)}`;
+                    window.location.href = `/editar_solicitud_fecha_bandas.html?id=${encodeURIComponent(solicitudId)}`;
                 } else if (button.classList.contains('btn-delete-event')) {
                     eliminarEventoClient(solicitudId);
                 } else if (button.dataset.action === 'assign') {
@@ -579,7 +591,18 @@
             tbody.addEventListener('change', (event) => {
                 const select = event.target.closest('select.estado-select');
                 if (!select) return;
-                cambiarEstado(select.dataset.id, select.value);
+
+                const id = select.dataset.id;
+                const nuevoEstado = select.value;
+
+                // Buscar el estado anterior en los datos cargados para revertir si falla
+                const solicitud = todasLasSolicitudes.find(s => String(s.id) === String(id));
+                const estadoAnterior = solicitud ? solicitud.estado : select.value;
+
+                // Actualizar visualmente el estado inmediatamente
+                select.dataset.estadoAnterior = estadoAnterior;
+
+                cambiarEstado(id, nuevoEstado, select, estadoAnterior);
             });
 
             // Event delegation for visibility toggle
@@ -603,30 +626,38 @@
             }
 
             function modificarSolicitud(id, categoria, origen) {
+                console.log('modificarSolicitud:', { id, categoria, origen });
+                // Limpiar prefijos para los editores que esperan IDs numéricos
+                const realId = String(id).replace(/^(alq_|bnd_)/, '');
+                console.log('realId:', realId);
+
                 // Redirigir al editor correcto según categoría/origen
                 // Si es origen 'solicitud', usar editor específico según tipo
                 // Los editores especializados son para datos ya convertidos (inscripciones, turnos, eventos)
                 if (origen === 'evento') {
-                    window.location.href = `/editar_evento_banda.html?id=${encodeURIComponent(id)}`;
+                    console.log('Redirigiendo a editor de evento banda con id:', id);
+                    window.location.href = `/editar_solicitud_fecha_bandas.html?id=${encodeURIComponent(id)}`;
                 } else if (origen === 'inscripcion') {
                     window.location.href = `/editar_inscripcion_taller.html?id=${encodeURIComponent(id)}`;
                 } else if (origen === 'turno') {
                     window.location.href = `/editar_turno_servicio.html?id=${encodeURIComponent(id)}`;
                 } else if (categoria === 'FECHA_BANDAS') {
-                    window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
+                    console.log('Redirigiendo a editor de solicitud fecha bandas con realId:', realId);
+                    window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(realId)}`;
                 } else if (categoria === 'ALQUILER_SALON') {
-                    window.location.href = `/editar_solicitud_alquiler.html?solicitudId=${encodeURIComponent(id)}`;
+                    window.location.href = `/editar_solicitud_alquiler.html?solicitudId=${encodeURIComponent(realId)}`;
                 } else if (categoria === 'TALLERES_ACTIVIDADES') {
-                    window.location.href = `/editar_solicitud_talleres.html?solicitudId=${encodeURIComponent(id)}`;
+                    window.location.href = `/editar_solicitud_talleres.html?solicitudId=${encodeURIComponent(realId)}`;
                 } else if (categoria === 'SERVICIOS') {
-                    window.location.href = `/editar_solicitud_servicios.html?solicitudId=${encodeURIComponent(id)}`;
+                    window.location.href = `/editar_solicitud_servicios.html?solicitudId=${encodeURIComponent(realId)}`;
                 } else {
                     // solicitudes normales
-                    window.location.href = `/editar_solicitud.html?solicitudId=${encodeURIComponent(id)}`;
+                    window.location.href = `/editar_solicitud.html?solicitudId=${encodeURIComponent(realId)}`;
                 }
             }
 
             async function cargarSolicitudes() {
+                console.log('Iniciando carga de solicitudes...');
                 loader.style.display = 'block';
                 table.style.display = 'none';
 
@@ -641,6 +672,7 @@
                     if (!res.ok) throw new Error('Error al conectar con el servidor');
 
                     const data = await res.json();
+                    console.log('Solicitudes recibidas:', data);
 
                     if (data.length === 0) {
                         loader.textContent = 'No se encontraron solicitudes.';
@@ -799,7 +831,7 @@
                 table.style.display = 'table';
             }
 
-            async function cambiarEstado(id, nuevoEstado) {
+            async function cambiarEstado(id, nuevoEstado, selectElement, estadoAnterior) {
                 showNotification('Actualizando estado...', 'info', 1500); try {
                     let res;
                     // Si es un evento (id empieza con ev_), usamos endpoints de eventos
@@ -844,6 +876,13 @@
                     await cargarSolicitudes();
                 } catch (error) {
                     showNotification(error.message, 'error');
+
+                    // Revertir el cambio visual si la API falla
+                    if (selectElement && estadoAnterior !== undefined) {
+                        selectElement.value = estadoAnterior;
+                    }
+
+                    // Recargar para asegurar que el estado de la UI y los datos coincidan
                     cargarSolicitudes();
                 }
             }

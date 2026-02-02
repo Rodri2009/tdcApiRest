@@ -29,58 +29,6 @@ const getFechasBandasConfirmadas = async (req, res) => {
             }
             return event;
         });
-        // Además, incluimos solicitudes confirmadas públicas para que
-        // aparezcan en la agenda como entradas de solo-visualización (no vinculadas a tickets).
-        try {
-            const solicitudes = await pool.query(`
-                SELECT id_solicitud, tipo_de_evento, tipo_servicio, nombre_completo, fecha_evento, hora_evento, COALESCE(precio_final, precio_basico, 0.00) as precio_base, descripcion
-                FROM solicitudes_alquiler
-                WHERE es_publico = 1 AND estado = 'Confirmado'
-                ORDER BY fecha_evento ASC
-            `);
-
-            const mappedSolicitudes = (solicitudes || []).map(s => {
-                // Construimos un objeto compatible con lo que espera el frontend
-                // Normalizamos la fecha y hora a formato 'YYYY-MM-DD HH:MM:SS'
-                const datePart = s.fecha_evento ? (s.fecha_evento instanceof Date ? s.fecha_evento.toISOString().slice(0, 10) : String(s.fecha_evento)) : null;
-                let horaRaw = s.hora_evento ? String(s.hora_evento).trim() : '';
-                horaRaw = horaRaw.replace(/hs\.?$/i, '').trim();
-                let horaPart = null;
-                const m = horaRaw.match(/(\d{1,2}:\d{2})/);
-                if (m) horaPart = m[1];
-                else {
-                    const m2 = horaRaw.match(/(\d{1,2})/);
-                    if (m2) horaPart = String(m2[1]).padStart(2, '0') + ':00';
-                }
-                const fechaHora = datePart && horaPart ? `${datePart} ${horaPart}:00` : null;
-
-                // Determinamos el nombre según el tipo de evento
-                let nombreDisplay = s.nombre_completo || 'Evento';
-                if (s.tipo_de_evento === 'SERVICIO') {
-                    nombreDisplay = s.descripcion || 'Servicio';
-                }
-
-                return {
-                    id: `sol_${s.id_solicitud}`,
-                    nombre_banda: nombreDisplay,
-                    fecha_hora: fechaHora,
-                    precio_base: s.precio_base !== null ? parseFloat(s.precio_base) : 0.0,
-                    precio_anticipada: null,
-                    precio_puerta: null,
-                    aforo_maximo: null,
-                    activo: 1,
-                    descripcion: s.descripcion || '',
-                    tickets_disponibles: null,
-                    tipo_de_evento: s.tipo_de_evento || null,
-                    tipo_servicio: s.tipo_servicio || null
-                };
-            });
-
-            // Concatenamos las solicitudes al listado de eventos (visualización solamente)
-            serializedEvents.push(...mappedSolicitudes);
-        } catch (errSolic) {
-            console.warn('No se pudieron cargar solicitudes confirmadas para la agenda:', errSolic.message || errSolic);
-        }
         // --- FIN DE LA CORRECCIÓN ---
         res.json(serializedEvents);
 

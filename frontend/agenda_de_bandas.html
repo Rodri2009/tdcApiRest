@@ -37,6 +37,19 @@
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(240, 171, 252, 0.1);
         }
+
+        /* Barra de navegación pegada y espacio superior para el contenido */
+        header.bg-rustic {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+
+        main {
+            padding-top: 4rem;
+        }
     </style>
 </head>
 
@@ -57,8 +70,6 @@
                 <nav class="hidden md:flex space-x-8 items-center">
                     <a href="seccion_talleres.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
-                    <a href="index.html#fotos"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Fotos</a>
                     <a href="solicitud_banda.html"
                         class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Quiero
                         tocar en El Templo</a>
@@ -169,9 +180,23 @@
         }
 
 
-    const API_URL = API_BASE_URL + '/api/tickets/fechas_bandas_confirmadas';
+        const API_URL = API_BASE_URL + '/api/tickets/fechas_bandas_confirmadas';
 
         const eventsListContainer = document.getElementById('events-list');
+
+        /**
+         * Normaliza y parsea 'YYYY-MM-DD HH:MM:SS' a objeto Date local
+         * @param {string} dateTimeString - Fecha y hora en formato MySQL.
+         * @returns {Date|null} Objeto Date o null si no es válido.
+         */
+        function parseDateTimeString(dateTimeString) {
+            if (!dateTimeString) return null;
+            let s = String(dateTimeString).trim();
+            // Reemplaza primer espacio por 'T' para forzar formato ISO local (ej: "2025-12-20T21:00:00")
+            if (s.includes(' ') && !s.includes('T')) s = s.replace(' ', 'T');
+            const d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;
+        }
 
         /**
          * Formatea un objeto de fecha y hora (ej: '2025-12-05 21:00:00')
@@ -180,7 +205,7 @@
          * @returns {{day: string, month: string, time: string}}
          */
         function formatDateTime(dateTimeString) {
-            const date = new Date(dateTimeString);
+            const date = parseDateTimeString(dateTimeString) || new Date();
 
             // Opciones de formato
             const dayOptions = { day: '2-digit' };
@@ -203,18 +228,21 @@
         function generateEventCard(event) {
             const { id, nombre_banda, fecha_hora, precio_base, precio_anticipada, precio_puerta, descripcion, activo, aforo_maximo } = event;
             const { day, month, time } = formatDateTime(fecha_hora);
+            const eventDate = parseDateTimeString(fecha_hora);
+            const now = new Date();
+            const isPast = eventDate ? eventDate < now : false;
 
             // Estilo y texto dinámico para precio y botón
             // Determinar precios - priorizar precio_anticipada y precio_puerta sobre precio_base
             const precioAnticipada = precio_anticipada !== null && precio_anticipada !== undefined ? parseFloat(precio_anticipada) : null;
             const precioPuerta = precio_puerta !== null && precio_puerta !== undefined ? parseFloat(precio_puerta) : null;
             const precioBase = precio_base !== null && precio_base !== undefined ? parseFloat(precio_base) : 0;
-            
+
             // Es gratis solo si TODOS los precios son 0 o null
-            const esGratis = (precioAnticipada === null || precioAnticipada === 0) && 
-                             (precioPuerta === null || precioPuerta === 0) && 
-                             precioBase === 0;
-            
+            const esGratis = (precioAnticipada === null || precioAnticipada === 0) &&
+                (precioPuerta === null || precioPuerta === 0) &&
+                precioBase === 0;
+
             // Mostrar precios
             let priceText = '';
             if (precioAnticipada !== null && precioAnticipada > 0) {
@@ -226,23 +254,35 @@
             if (!priceText && precioBase > 0) {
                 priceText = `$ ${precioBase.toLocaleString('es-AR')} ARS`;
             }
-            
-            let buttonText = 'Sacar Entrada';
-            let buttonClass = 'bg-fuchsia-500 hover:bg-fuchsia-400';
+
+            // Colores y acciones según si el evento ya pasó o es futuro
             let borderClass = 'border-fuchsia-500';
             let dateBgClass = 'bg-fuchsia-900';
             let dateTextColor = 'text-white';
             let priceTextColor = 'text-neon';
+            let actionHtml = '';
             let link = `checkout_form.html?event_id=${id}`;
 
             if (esGratis) {
                 priceText = '¡GRATIS!';
-                buttonText = 'Reservar Lugar';
-                buttonClass = 'bg-emerald-500 hover:bg-emerald-400';
+                // si es gratis se prioriza color verde para evento activo (se ajusta abajo según isPast)
+                link += '&free=true';
+            }
+
+            // Si el evento ya pasó, marcar en rojo y quitar acción de compra
+            if (isPast) {
+                borderClass = 'border-rose-500';
+                dateBgClass = 'bg-rose-900';
+                priceTextColor = 'text-rose-400';
+                actionHtml = `<div class="px-3 py-2 rounded-full text-sm font-semibold text-rose-200 bg-rose-900/30">Evento finalizado</div>`;
+            } else {
+                // Evento futuro: destacar en verde
                 borderClass = 'border-emerald-500';
                 dateBgClass = 'bg-emerald-900';
-                priceTextColor = 'text-emerald-400';
-                link += '&free=true';
+                priceTextColor = esGratis ? 'text-emerald-400' : 'text-neon';
+                const buttonClass = esGratis ? 'bg-emerald-500 hover:bg-emerald-400' : 'bg-fuchsia-500 hover:bg-fuchsia-400';
+                const buttonText = esGratis ? 'Reservar Lugar' : 'Sacar Entrada';
+                actionHtml = `<a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-4 rounded-full text-md transition shadow-lg text-center whitespace-nowrap">${buttonText}</a>`;
             }
 
             return `
@@ -261,9 +301,7 @@
                         </div>
                     </div>
                     <div class="flex flex-col sm:flex-row gap-3 items-center">
-                        <a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-4 rounded-full text-md transition shadow-lg text-center whitespace-nowrap">
-                            ${buttonText}
-                        </a>
+                        ${actionHtml}
 
                         <!--<a href="solicitud_banda.html?tipo=FECHA_EN_VIVO&event_id=${id}&nombre_banda=${encodeURIComponent(nombre_banda)}"
                             class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-bold py-1 px-4 rounded-full text-md transition shadow-lg text-center"
@@ -312,7 +350,11 @@
             }
 
             // Renderizar eventos activos ordenados por fecha (más recientes primero)
-            activeBandEvents.sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora));
+            activeBandEvents.sort((a, b) => {
+                const da = parseDateTimeString(a.fecha_hora);
+                const db = parseDateTimeString(b.fecha_hora);
+                return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+            });
 
             activeBandEvents.forEach(event => {
                 const cardHtml = generateEventCard(event);

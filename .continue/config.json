@@ -1,0 +1,11 @@
+{
+  "models": [
+    {
+      "title": "Qwen Local",
+      "provider": "openai",
+      "model": "qwen2.5-coder",
+      "apiBase": "http://192.168.1.15:3002/v1",
+      "apiKey": "local"
+    }
+  ]
+}

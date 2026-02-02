@@ -12,7 +12,7 @@ const getSolicitudes = async (req, res) => {
         // Unión de solicitudes de alquiler y fechas de bandas
         const sql = `
             SELECT
-                s.id_solicitud as id,
+                CONCAT('alq_', s.id_solicitud) as id,
                 s.fecha_hora as fechaSolicitud,
                 s.nombre_completo as nombreCliente,
                 s.tipo_de_evento as tipoEventoId,
@@ -44,7 +44,7 @@ const getSolicitudes = async (req, res) => {
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             UNION ALL
             SELECT
-                s.id_solicitud as id,
+                CONCAT('bnd_', s.id_solicitud) as id,
                 s.fecha_hora as fechaSolicitud,
                 s.nombre_completo as nombreCliente,
                 s.tipo_de_evento as tipoEventoId,
@@ -123,18 +123,36 @@ const actualizarEstadoSolicitud = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // Obtener la solicitud, primero en solicitudes_alquiler, luego en solicitudes_bandas
-        let [solicitud] = await conn.query("SELECT *, 'alquiler' as tabla FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
-        if (!solicitud) {
-            [solicitud] = await conn.query("SELECT *, 'bandas' as tabla FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+        let solicitud;
+        let tabla;
+        let realId;
+
+        if (String(id).startsWith('alq_')) {
+            realId = id.replace('alq_', '');
+            [solicitud] = await conn.query("SELECT * FROM solicitudes_alquiler WHERE id_solicitud = ?", [realId]);
+            tabla = 'solicitudes_alquiler';
+        } else if (String(id).startsWith('bnd_')) {
+            realId = id.replace('bnd_', '');
+            [solicitud] = await conn.query("SELECT * FROM solicitudes_bandas WHERE id_solicitud = ?", [realId]);
+            tabla = 'solicitudes_bandas';
+        } else {
+            // Fallback para IDs antiguos sin prefijo
+            realId = id;
+            [solicitud] = await conn.query("SELECT *, 'solicitudes_alquiler' as tabla_name FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
+            if (solicitud) {
+                tabla = 'solicitudes_alquiler';
+            } else {
+                [solicitud] = await conn.query("SELECT *, 'solicitudes_bandas' as tabla_name FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+                if (solicitud) tabla = 'solicitudes_bandas';
+            }
         }
+
         if (!solicitud) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
 
         // Actualizar estado de la solicitud
-        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes_bandas';
-        const result = await conn.query(`UPDATE ${tabla} SET estado = ? WHERE id_solicitud = ?`, [estado, id]);
+        const result = await conn.query(`UPDATE ${tabla} SET estado = ? WHERE id_solicitud = ?`, [estado, realId]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
@@ -186,21 +204,35 @@ const eliminarSolicitud = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // Determinar la tabla
-        let [solicitud] = await conn.query("SELECT 'alquiler' as tabla FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
-        if (!solicitud) {
-            [solicitud] = await conn.query("SELECT 'bandas' as tabla FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+        let tabla;
+        let realId;
+
+        if (String(id).startsWith('alq_')) {
+            realId = id.replace('alq_', '');
+            tabla = 'solicitudes_alquiler';
+        } else if (String(id).startsWith('bnd_')) {
+            realId = id.replace('bnd_', '');
+            tabla = 'solicitudes_bandas';
+        } else {
+            realId = id;
+            let [solicitud] = await conn.query("SELECT 'solicitudes_alquiler' as tabla_name FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
+            if (solicitud) {
+                tabla = 'solicitudes_alquiler';
+            } else {
+                [solicitud] = await conn.query("SELECT 'solicitudes_bandas' as tabla_name FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+                if (solicitud) tabla = 'solicitudes_bandas';
+            }
         }
-        if (!solicitud) {
+
+        if (!tabla) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
-        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes_bandas';
 
         // Por seguridad, borramos en cascada (primero los hijos, luego el padre)
-        await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
-        await conn.query("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [id]);
-        await conn.query("DELETE FROM bandas_solicitudes WHERE id_solicitud = ?", [id]);
-        const result = await conn.query(`DELETE FROM ${tabla} WHERE id_solicitud = ?`, [id]);
+        await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [realId]);
+        await conn.query("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [realId]);
+        await conn.query("DELETE FROM bandas_solicitudes WHERE id_solicitud = ?", [realId]);
+        const result = await conn.query(`DELETE FROM ${tabla} WHERE id_solicitud = ?`, [realId]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
@@ -725,8 +757,9 @@ const cancelarEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
         // Actualizar tanto el estado como el campo activo
+        // La tabla es fechas_bandas_confirmadas, no 'eventos'
         const result = await conn.query(
-            "UPDATE eventos SET activo = 0, estado = 'Cancelado' WHERE id = ?",
+            "UPDATE fechas_bandas_confirmadas SET activo = 0, estado = 'Cancelado' WHERE id = ?",
             [eventId]
         );
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado.' });

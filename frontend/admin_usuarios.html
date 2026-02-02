@@ -9,6 +9,24 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/styles/admin.css">
   <style>
+    :root {
+      --color-primary: #581c87;
+      --color-secondary: #f0abfc;
+      --color-rustic: #44403c;
+    }
+
+    header.bg-rustic {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+    }
+
+    body {
+      padding: calc(20px + 4rem);
+    }
+
     /* Estilos específicos de esta página */
     .checkbox-item .rol-info {
       flex: 1;
@@ -37,24 +55,43 @@
       animation: slideIn 0.3s ease;
       max-width: 400px;
     }
-    .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
-    .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
-    .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+    .notification-banner.success {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .notification-banner.error {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .notification-banner.info {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+
     @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
   </style>
 </head>
 
 <body>
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-    <!-- Header -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-      <a href="admin.html" class="btn btn-secondary">
+    <!-- Header (estilo unificado) -->
+    <div
+      style="max-width:1600px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; margin-top:1rem;">
+      <a href="admin.html" class="btn btn-secondary"
+        style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
         <i class="fas fa-arrow-left"></i> Volver al Panel
       </a>
-      <h1 class="text-4xl font-bold">👥 Administrar Usuarios</h1>
+      <h1 class="text-4xl font-bold text-neon" style="margin:0; text-align:center;">👥 Administrar Usuarios</h1>
       <div style="width: 140px;"></div>
     </div>
     <p class="mt-2 mb-6 text-gray-400">Gestión de cuentas de usuario y asignación de roles del sistema.</p>

@@ -247,10 +247,9 @@ INSERT INTO catalogo_roles (nombre, descripcion) VALUES
 ('Ayudante de cocina', 'Asistente en cocina'),
 ('Limpieza', 'Limpieza del salón'),
 ('Depiladora', 'Servicio de depilación'),
-('Bartender', 'Manejo completo de barra, bebidas y comidas'),
+('Bartender', 'Manejo completo del Servicio de bar'),
 ('Sonido', 'Técnico de sonido'),
 ('DJ', 'Disc Jockey'),
-('Bartender', 'Servicio de bar'),
 ('Seguridad', 'Personal de seguridad');
 
 -- ---------------------------------------------------------------------------
@@ -266,7 +265,6 @@ INSERT INTO costos_personal_vigencia (rol, fecha_de_vigencia, costo_por_hora, vi
 ('Limpieza', '2025-09-01', 3500, 1200),
 ('Sonido', '2025-08-01', 4000, 500),
 ('DJ', '2025-08-01', 4500, 0),
-('Bartender', '2025-08-01', 3500, 0),
 ('Seguridad', '2025-08-01', 4000, 1000);
 
 -- ---------------------------------------------------------------------------

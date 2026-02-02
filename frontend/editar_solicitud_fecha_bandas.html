@@ -20,10 +20,18 @@
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 16px;
+            padding: calc(16px + 4rem);
             background: #0c0a09;
             min-height: 100vh;
             color: #d6d3d1;
+        }
+
+        header.bg-rustic {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
         }
 
         .text-neon {
@@ -300,7 +308,7 @@
             <a href="admin_solicitudes.html" class="back-btn">
                 <i class="fas fa-arrow-left"></i> Volver
             </a>
-            <h2><i class="fas fa-guitar"></i> Evento de Banda</h2>
+            <h2><i class="fas fa-guitar"></i> Editar Solicitud Banda / Fecha</h2>
             <div style="width: 100px;"></div>
         </div>
 
@@ -505,6 +513,7 @@
             showLoading(true);
             try {
                 const res = await fetch(`/api/admin/fechas_bandas_confirmadas/${eventoId}`);
+                console.log(res);
                 if (!res.ok) throw new Error('No se pudo cargar el evento');
 
                 const evento = await res.json();

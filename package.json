@@ -1,7 +1,17 @@
 {
+  "name": "tdc-scripts",
+  "version": "1.0.0",
+  "description": "Scripts de utilidad para el proyecto TDC",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "contexto": "node ./scripts/generar-contexto.js",
+    "crear-admin": "node ./scripts/crear-admin.js"
+  },
   "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "dotenv": "^17.2.3",
-    "mariadb": "^3.4.5"
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "mariadb": "^3.3.0",
+    "iconv-lite": "^0.6.3"
   }
 }
