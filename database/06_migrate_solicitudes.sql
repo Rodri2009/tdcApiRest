@@ -132,11 +132,20 @@ SELECT 'adicionales_new' as label, COUNT(*) as cnt FROM solicitudes_adicionales 
 -- 8) Migrar bandas_solicitudes: asociar a los nuevos IDs creados desde solicitudes_bandas
 -- Insertar sólo si no existe una fila equivalente para evitar duplicados
 INSERT INTO solicitudes_bandas (id_solicitud, nombre_banda, contacto_email, link_musica, propuesta, event_id, precio_anticipada, precio_puerta, created_at, updated_at)
-SELECT DISTINCT s.id_solicitud, b.nombre_banda, b.contacto_email, b.link_musica, b.propuesta, b.event_id, b.precio_anticipada, b.precio_puerta, NOW(), NOW()
+SELECT DISTINCT
+    s.id_solicitud,
+    b.nombre_completo AS nombre_banda,
+    b.email AS contacto_email,
+    COALESCE(b.youtube, b.instagram, b.facebook) AS link_musica,
+    b.descripcion AS propuesta,
+    NULL AS event_id,
+    NULL AS precio_anticipada,
+    b.precio_puerta_propuesto AS precio_puerta,
+    NOW(), NOW()
 FROM backup_solicitudes_bandas_20260202 b
 JOIN solicitudes_bandas_legacy sb ON b.id_solicitud = sb.id_solicitud
 JOIN solicitudes s ON s.migration_key = CONCAT('bd_', sb.id_solicitud)
-LEFT JOIN solicitudes_bandas sb2 ON sb2.id_solicitud = s.id_solicitud AND sb2.nombre_banda = b.nombre_banda
+LEFT JOIN solicitudes_bandas sb2 ON sb2.id_solicitud = s.id_solicitud AND sb2.nombre_banda = b.nombre_completo
 WHERE sb2.id IS NULL;
 
 -- Verificación

@@ -50,8 +50,8 @@ INSERT INTO bandas_formacion (id_banda, nombre_integrante, instrumento, es_lider
 (4, NULL, 'Bajo eléctrico', 0, NULL),
 (4, NULL, 'Batería', 0, NULL);
 
--- SOLICITUDES CORRESPONDIENTES A LAS FECHAS DE BANDAS (para mantener consistencia) - Ahora en solicitudes_bandas
-INSERT INTO solicitudes_bandas (tipo_de_evento, es_publico, fecha_hora, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, nombre_completo, descripcion, estado) VALUES
+-- SOLICITUDES CORRESPONDIENTES A LAS FECHAS DE BANDAS (para mantener consistencia) - Ahora en solicitudes_bandas_legacy
+INSERT INTO solicitudes_bandas_legacy (tipo_de_evento, es_publico, fecha_hora, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, nombre_completo, descripcion, estado) VALUES
 ('FECHA_BANDAS', 1, NOW(), '2025-12-20', '21:00', '5 horas', '150', 3000.00, 'Reite', 'Gran noche de rock nacional con Tributo a La Renga', 'Confirmado'),
 ('FECHA_BANDAS', 1, NOW(), '2025-12-21', '20:00', '5 horas', '100', 2500.00, 'Jazz en el Templo', 'Noche de jazz con los mejores músicos de la zona sur', 'Confirmado'),
 ('FECHA_BANDAS', 1, NOW(), '2025-12-28', '22:00', '6 horas', '180', 2000.00, 'Cumbia Power', 'La mejor cumbia para cerrar el año bailando!', 'Confirmado');
@@ -100,7 +100,7 @@ INSERT INTO solicitudes_alquiler (tipo_de_evento, tipo_servicio, es_publico, fec
 -- ---------------------------------------------------------------------------
 -- SOLICITUDES DE BANDAS (pendientes de aprobación)
 -- ---------------------------------------------------------------------------
-INSERT INTO solicitudes_bandas (
+INSERT INTO solicitudes_bandas_legacy (
     tipo_de_evento, nombre_completo, genero_musical, formacion_json,
     instagram, youtube, spotify,
     contacto_rol, email, telefono,

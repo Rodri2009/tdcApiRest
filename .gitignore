@@ -19,3 +19,9 @@ npm-debug.log*
 Thumbs.db
 
 contexto_negocio.md
+.continue/
+.vscode/
+.roo/
+
+gemini-env/
+database/seeds/

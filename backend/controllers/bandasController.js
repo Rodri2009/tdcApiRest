@@ -660,27 +660,40 @@ const aprobarSolicitud = async (req, res) => {
             return res.status(400).json({ error: 'Se requiere una fecha para el evento' });
         }
 
-        const eventoResult = await pool.query(`
-            INSERT INTO eventos (
-                tipo_evento, nombre_banda, genero_musical, descripcion,
-                fecha, hora_inicio, hora_fin,
-                precio_anticipada, precio_puerta, aforo_maximo,
-                estado, es_publico, activo
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Confirmado', 1, 1)
-        `, [
-            'BANDA',
-            solicitud.nombre_banda,
-            solicitud.genero_musical,
-            descripcion || solicitud.mensaje,
-            fechaFinal,
-            hora_inicio || solicitud.hora_preferida || '21:00:00',
-            hora_fin || '02:00:00',
-            precio_anticipada || solicitud.precio_anticipada_propuesto || 0,
-            precio_puerta || solicitud.precio_puerta_propuesto || 0,
-            aforo_maximo || 150
-        ]);
+        // Evitar duplicados: si ya existe una fecha confirmada para ese día, usarla
+        const [existing] = await pool.query("SELECT id FROM fechas_bandas_confirmadas WHERE tipo_evento = 'BANDA' AND fecha = ?", [fechaFinal]);
+        let eventoId;
+        if (existing && existing.id) {
+            eventoId = existing.id;
+        } else {
+            const eventoResult = await pool.query(`
+                INSERT INTO fechas_bandas_confirmadas (
+                    tipo_evento, nombre_banda, genero_musical, descripcion, url_imagen,
+                    nombre_contacto, email_contacto, telefono_contacto,
+                    fecha, hora_inicio, hora_fin,
+                    precio_base, precio_anticipada, precio_puerta, aforo_maximo,
+                    estado, es_publico, activo
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Confirmado', 1, 1)
+            `, [
+                'BANDA',
+                solicitud.nombre_banda,
+                solicitud.genero_musical,
+                descripcion || solicitud.mensaje,
+                null,
+                solicitud.contacto_nombre || null,
+                solicitud.contacto_email || null,
+                solicitud.contacto_telefono || null,
+                fechaFinal,
+                hora_inicio || solicitud.hora_preferida || '21:00:00',
+                hora_fin || '02:00:00',
+                precio_anticipada || solicitud.precio_anticipada_propuesto || 0,
+                precio_anticipada || solicitud.precio_anticipada_propuesto || 0,
+                precio_puerta || solicitud.precio_puerta_propuesto || 0,
+                aforo_maximo || 150
+            ]);
 
-        const eventoId = Number(eventoResult.insertId);
+            eventoId = Number(eventoResult.insertId);
+        }
 
         // Crear/obtener la banda en el catálogo si no existe
         let bandaId = solicitud.id_banda;

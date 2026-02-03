@@ -447,8 +447,10 @@
         // Variables globales
         let eventoId = null;
         let calendario = null;
+        let isSolicitudMode = false; // Si cargamos desde una solicitud que no tiene evento
+        let solicitudFallbackId = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // Proteger página admin
             navbarManager = new NavbarManager();
             if (!navbarManager.protectAdminPage()) return;
@@ -476,23 +478,28 @@
                 return;
             }
 
-            // Extraer ID numérico (puede venir como 'ev_3' o '3')
-            eventoId = idParam.toString().startsWith('ev_')
-                ? parseInt(idParam.substring(3))
-                : parseInt(idParam);
+            // Si la URL vino como ?solicitudId, asumimos que el usuario quiere editar la solicitud
+            if (params.has('solicitudId')) {
+                // Mostrar ID con prefijo de solicitud desde el principio para evitar confusiones
+                document.getElementById('eventoId').textContent = `sol_${idParam}`;
+                initCalendario();
+                // Cargar directamente la solicitud pública (evitamos el 404 al pedir el evento)
+                await cargarSolicitudPublic(idParam);
+            } else {
+                // Extraer ID numérico (puede venir como 'ev_3' o '3')
+                eventoId = idParam.toString().startsWith('ev_')
+                    ? parseInt(idParam.substring(3))
+                    : parseInt(idParam);
 
-            if (isNaN(eventoId)) {
-                showNotification('ID inválido', 'error');
-                return;
+                if (isNaN(eventoId)) {
+                    showNotification('ID inválido', 'error');
+                    return;
+                }
+
+                document.getElementById('eventoId').textContent = `ev_${eventoId}`;
+                initCalendario();
+                await cargarEvento();
             }
-
-            document.getElementById('eventoId').textContent = `ev_${eventoId}`;
-
-            // Inicializar calendario
-            initCalendario();
-
-            // Cargar datos del evento
-            cargarEvento();
 
             // Event listeners
             document.getElementById('btnGuardar').addEventListener('click', guardarEvento);
@@ -509,11 +516,108 @@
             });
         }
 
+        async function cargarSolicitudPublic(id) {
+            showLoading(true);
+            try {
+                const resSol = await fetch(`/api/solicitudes/${id}`);
+                if (!resSol.ok) throw new Error('Solicitud no encontrada');
+                const sol = await resSol.json();
+
+                // Marcar que estamos en modo "editar desde solicitud"
+                isSolicitudMode = true;
+                solicitudFallbackId = sol.solicitudId || id;
+                eventoId = null; // forzar POST al guardar
+
+                // Prefillar formulario con datos de la solicitud
+                document.getElementById('eventoId').textContent = `sol_${sol.solicitudId}`;
+                document.getElementById('nombreBanda').value = sol.nombreBanda || sol.nombreCompleto || '';
+                document.getElementById('generoMusical').value = sol.genero_musical || '';
+                document.getElementById('descripcion').value = sol.mensaje || sol.descripcion || '';
+                document.getElementById('urlImagen').value = '';
+
+                if (sol.fechaEvento) calendario.setDate(sol.fechaEvento, false);
+                if (sol.horaInicio) document.getElementById('horaInicio').value = sol.horaInicio.substring(0, 5);
+
+                document.getElementById('aforoMaximo').value = sol.cantidadPersonas || sol.cantidad_bandas || 120;
+                document.getElementById('esPublico').value = sol.es_publico ? '1' : '0';
+
+                document.getElementById('precioBase').value = sol.precioBase || sol.precio_basico || 0;
+                document.getElementById('precioAnticipada').value = sol.bandaPrecioAnticipada || sol.precio_anticipada_propuesto || '';
+                document.getElementById('precioPuerta').value = sol.bandaPrecioPuerta || sol.precio_puerta_propuesto || '';
+
+                document.getElementById('nombreContacto').value = sol.bandaContactoEmail || sol.contacto_nombre || '';
+                document.getElementById('emailContacto').value = sol.bandaContactoEmail || sol.contacto_email || '';
+                document.getElementById('telefonoContacto').value = sol.telefono || sol.contacto_telefono || '';
+
+                document.getElementById('estadoSelect').value = sol.estado || 'Solicitado';
+
+                // Ocultar el botón eliminar porque no existe un evento todavía
+                document.getElementById('btnEliminar').style.display = 'none';
+
+                showNotification('Cargando datos de la solicitud. Guardar creará el evento.', 'warning');
+            } catch (err) {
+                console.error(err);
+                showNotification('Error al cargar la solicitud: ' + err.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
         async function cargarEvento() {
             showLoading(true);
             try {
-                const res = await fetch(`/api/admin/fechas_bandas_confirmadas/${eventoId}`);
-                console.log(res);
+                // Intentar cargar evento confirmado
+                const res = await fetch(`/api/admin/fechas_bandas_confirmadas/${eventoId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                });
+
+                console.log('Respuesta evento:', res);
+
+                if (res.status === 404) {
+                    // Si no existe evento, intentar cargar la solicitud pública como fallback
+                    const resSol = await fetch(`/api/solicitudes/${eventoId}`);
+
+                    if (resSol.ok) {
+                        const sol = await resSol.json();
+
+                        // Marcar que estamos en modo "editar desde solicitud"
+                        isSolicitudMode = true;
+                        solicitudFallbackId = sol.solicitudId || eventoId;
+                        eventoId = null; // forzar POST al guardar
+
+                        // Prefillar formulario con datos de la solicitud
+                        document.getElementById('eventoId').textContent = `sol_${sol.solicitudId}`;
+                        document.getElementById('nombreBanda').value = sol.nombreBanda || sol.nombreCompleto || '';
+                        document.getElementById('generoMusical').value = sol.genero_musical || '';
+                        document.getElementById('descripcion').value = sol.mensaje || sol.descripcion || '';
+                        document.getElementById('urlImagen').value = '';
+
+                        if (sol.fechaEvento) calendario.setDate(sol.fechaEvento, false);
+                        if (sol.horaInicio) document.getElementById('horaInicio').value = sol.horaInicio.substring(0, 5);
+
+                        document.getElementById('aforoMaximo').value = sol.cantidadPersonas || sol.cantidad_bandas || 120;
+                        document.getElementById('esPublico').value = sol.es_publico ? '1' : '0';
+
+                        document.getElementById('precioBase').value = sol.precioBase || sol.precio_basico || 0;
+                        document.getElementById('precioAnticipada').value = sol.bandaPrecioAnticipada || sol.precio_anticipada_propuesto || '';
+                        document.getElementById('precioPuerta').value = sol.bandaPrecioPuerta || sol.precio_puerta_propuesto || '';
+
+                        document.getElementById('nombreContacto').value = sol.bandaContactoEmail || sol.contacto_nombre || '';
+                        document.getElementById('emailContacto').value = sol.bandaContactoEmail || sol.contacto_email || '';
+                        document.getElementById('telefonoContacto').value = sol.telefono || sol.contacto_telefono || '';
+
+                        document.getElementById('estadoSelect').value = sol.estado || 'Solicitado';
+
+                        // Ocultar el botón eliminar porque no existe un evento todavía
+                        document.getElementById('btnEliminar').style.display = 'none';
+
+                        showNotification('Cargando datos de la solicitud. Guardar creará el evento.', 'warning');
+                        return;
+                    } else {
+                        throw new Error('No se encontró evento ni solicitud asociada');
+                    }
+                }
+
                 if (!res.ok) throw new Error('No se pudo cargar el evento');
 
                 const evento = await res.json();
@@ -548,9 +652,12 @@
 
                 document.getElementById('estadoSelect').value = evento.estado || 'Solicitado';
 
+                // Asegurar que el botón eliminar esté visible para eventos existentes
+                document.getElementById('btnEliminar').style.display = '';
+
             } catch (err) {
                 console.error(err);
-                showNotification('Error al cargar el evento: ' + err.message, 'error');
+                showNotification('Error al cargar: ' + err.message, 'error');
             } finally {
                 showLoading(false);
             }
@@ -593,6 +700,38 @@
             };
 
             try {
+                // Si venimos de una solicitud sin evento confirmado, usar la ruta de aprobación
+                if (isSolicitudMode && solicitudFallbackId) {
+                    const url = `/api/bandas/solicitudes/${solicitudFallbackId}/aprobar`;
+                    const payload = {
+                        fecha_evento: datos.fecha,
+                        hora_inicio: datos.hora_inicio,
+                        hora_fin: datos.hora_fin,
+                        precio_anticipada: datos.precio_anticipada,
+                        precio_puerta: datos.precio_puerta,
+                        aforo_maximo: datos.aforo_maximo,
+                        descripcion: datos.descripcion
+                    };
+
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.message || err.error || 'Error al aprobar la solicitud');
+                    }
+
+                    showNotification('Evento creado a partir de la solicitud', 'success');
+                    setTimeout(() => window.location.href = 'config_bandas.html#eventos', 1500);
+                    return;
+                }
+
                 // Si eventoId es null, es un nuevo evento (POST), sino actualizar (PUT)
                 const url = eventoId ? `/api/admin/fechas_bandas_confirmadas/${eventoId}` : '/api/admin/fechas_bandas_confirmadas';
                 const method = eventoId ? 'PUT' : 'POST';

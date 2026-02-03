@@ -39,14 +39,15 @@ const getSolicitudes = async (req, res) => {
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo,
-                s.es_publico as es_publico
+                s.es_publico as es_publico,
+                NULL as idEventoGenerado
             FROM solicitudes_alquiler s
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             UNION ALL
             SELECT
                 CONCAT('bnd_', s.id_solicitud) as id,
-                s.fecha_hora as fechaSolicitud,
-                s.nombre_completo as nombreCliente,
+                COALESCE(s.fecha_hora, so.fecha_hora, s.creado_en) as fechaSolicitud,
+                COALESCE(s.nombre_completo, so.nombre_completo) as nombreCliente,
                 s.tipo_de_evento as tipoEventoId,
                 CASE
                     WHEN ot.categoria IS NOT NULL THEN ot.categoria
@@ -63,18 +64,42 @@ const getSolicitudes = async (req, res) => {
                     WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN NULL
                     ELSE s.tipo_de_evento
                 END as subtipo,
-                DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                DATE_FORMAT(COALESCE(s.fecha_evento, so.fecha_evento), '%Y-%m-%d') as fechaEvento,
                 s.estado,
                 s.tipo_servicio as tipoServicioId,
                 (SELECT COUNT(*) FROM solicitudes_personal sp WHERE sp.id_solicitud = s.id_solicitud) > 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
-                s.hora_evento as horaInicio,
-                NULL as nombreBanda,
-                s.cantidad_de_personas as cantidadAforo,
-                s.es_publico as es_publico
+                COALESCE(s.hora_evento, so.hora_evento) as horaInicio,
+                s.nombre_completo as nombreBanda,
+                COALESCE(s.cantidad_de_personas, so.cantidad_de_personas) as cantidadAforo,
+                COALESCE(s.es_publico, so.es_publico, 0) as es_publico,
+                sb.id_evento_generado as idEventoGenerado
             FROM solicitudes_bandas_legacy s
+            LEFT JOIN solicitudes so ON so.id_solicitud = s.id_solicitud
+            LEFT JOIN solicitudes_bandas sb ON sb.id_solicitud = s.id_solicitud
             LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             WHERE s.tipo_de_evento = 'FECHA_BANDAS'
+            UNION ALL
+            SELECT
+                CONCAT('bnd_', s.id_solicitud) as id,
+                COALESCE(so.fecha_hora, s.created_at) as fechaSolicitud,
+                COALESCE(s.contacto_nombre, so.nombre_completo) as nombreCliente,
+                'FECHA_BANDAS' as tipoEventoId,
+                'FECHA_BANDAS' as tipoEvento,
+                NULL as subtipo,
+                DATE_FORMAT(s.fecha_preferida, '%Y-%m-%d') as fechaEvento,
+                s.estado,
+                NULL as tipoServicioId,
+                (SELECT COUNT(*) FROM solicitudes_personal sp WHERE sp.id_solicitud = s.id_solicitud) > 0 AS tienePersonalAsignado,
+                'solicitud' as origen,
+                s.hora_preferida as horaInicio,
+                s.nombre_banda as nombreBanda,
+                s.cantidad_bandas as cantidadAforo,
+                COALESCE(so.es_publico, 1) as es_publico,
+                s.id_evento_generado as idEventoGenerado
+            FROM solicitudes_bandas s
+            LEFT JOIN solicitudes so ON so.id_solicitud = s.id_solicitud
+            WHERE 1=1
             UNION ALL
             SELECT
                 CONCAT('ev_', e.id) as id,
@@ -91,7 +116,8 @@ const getSolicitudes = async (req, res) => {
                 TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
                 e.nombre_banda as nombreBanda,
                 e.aforo_maximo as cantidadAforo,
-                e.es_publico as es_publico
+                e.es_publico as es_publico,
+                NULL as idEventoGenerado
             FROM fechas_bandas_confirmadas e
             ORDER BY fechaEvento DESC, fechaSolicitud DESC;
         `;

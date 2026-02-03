@@ -250,12 +250,27 @@ const getSolicitudPorId = async (req, res) => {
 
         const adicionales = await conn.query("SELECT nombre_adicional as nombre, precio_adicional as precio FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
 
-        // Si es una solicitud de banda, traemos metadata de solicitudes_bandas
+        // Intentar traer metadata de banda tanto de la tabla normalizada como del legacy
         let bandaData = null;
-        if (solicitud.tipoEvento && ['FECHA_BANDAS', 'BANDA', 'FECHA_EN_VIVO'].includes((solicitud.tipoEvento || '').toUpperCase())) {
-            const bandRows = await conn.query("SELECT nombre_banda as nombreBanda, contacto_email as bandaContactoEmail, link_musica as bandaLinkMusica, propuesta as bandaPropuesta, event_id as bandaEventId, invitadas_json as bandaInvitados, precio_anticipada as bandaPrecioAnticipada, precio_puerta as bandaPrecioPuerta FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
-            const b = (bandRows && bandRows.length > 0) ? bandRows[0] : null;
-            bandaData = b || null;
+
+        // 1) Intentamos desde la tabla normalizada de bandas (si existe)
+        try {
+            const bandRows = await conn.query(
+                "SELECT nombre_banda as nombreBanda, contacto_email as bandaContactoEmail, link_musica as bandaLinkMusica, propuesta as bandaPropuesta, event_id as bandaEventId, invitadas_json as bandaInvitados, precio_anticipada as bandaPrecioAnticipada, precio_puerta as bandaPrecioPuerta, fecha_preferida as fecha_preferida, hora_preferida as hora_preferida, cantidad_bandas as cantidad_bandas FROM solicitudes_bandas WHERE id_solicitud = ? LIMIT 1",
+                [id]
+            );
+            if (bandRows && bandRows.length > 0) bandaData = bandRows[0];
+        } catch (err) { /* ignore */ }
+
+        // 2) Si no hay metadata normalizada, intentar desde la tabla legacy
+        if (!bandaData) {
+            try {
+                const legacyBandRows = await conn.query(
+                    "SELECT nombre_completo as nombreBanda, contacto_rol as bandaContactoName, email as bandaContactEmail, youtube as bandaLinkMusica, descripcion as bandaPropuesta, fecha_evento as fecha_evento, fecha_alternativa as fecha_preferida, hora_evento as hora_preferida, cantidad_bandas as cantidad_bandas FROM solicitudes_bandas_legacy WHERE id_solicitud = ? LIMIT 1",
+                    [id]
+                );
+                if (legacyBandRows && legacyBandRows.length > 0) bandaData = legacyBandRows[0];
+            } catch (err) { /* ignore */ }
         }
 
         const respuesta = {
@@ -263,6 +278,33 @@ const getSolicitudPorId = async (req, res) => {
             adicionales: adicionales || [],
             ...(bandaData ? bandaData : {})
         };
+
+        // Si la metadata de banda tiene fecha_preferida / hora_preferida, usarlas como fallback
+        if (bandaData) {
+            try {
+                // Priorizar la fecha/hora especifica de la metadata de banda (fecha_evento, luego fecha_preferida)
+                const preferidaFecha = bandaData.fecha_evento || bandaData.fecha_preferida;
+                const preferidaHora = bandaData.hora_preferida || bandaData.hora_evento || bandaData.hora_preferida;
+
+                // Si la solicitud base no corresponde a FECHA_BANDAS (p.e. almacén como ALQUILER), sobrescribir
+                if ((!respuesta.tipoEvento || respuesta.tipoEvento !== 'FECHA_BANDAS') && preferidaFecha) {
+                    respuesta.fechaEvento = new Date(preferidaFecha).toISOString().slice(0, 10);
+                }
+
+                // Preferir la hora propuesta por la banda (sobrescribe si existe preferencia)
+                if (preferidaHora) {
+                    respuesta.horaInicio = preferidaHora;
+                }
+
+                // Si la metadata de banda trae propuesta (descripción), usarla en preferencia sobre la descripción base
+                if (bandaData.bandaPropuesta) {
+                    respuesta.descripcion = bandaData.bandaPropuesta;
+                }
+
+                // Asegurar que el tipo se marque como FECHA_BANDAS para la UI cuando venga metadata
+                if (!respuesta.tipoEvento || respuesta.tipoEvento !== 'FECHA_BANDAS') respuesta.tipoEvento = 'FECHA_BANDAS';
+            } catch (e) { /* ignore formatting errors */ }
+        }
 
         console.log(`[SOLICITUD][GET] Datos obtenidos exitosamente para ID: ${id}`);
         res.status(200).json(respuesta);
