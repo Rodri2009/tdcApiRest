@@ -59,17 +59,6 @@
 │   ├── 08_create_profesionales_servicios.sql
 │   ├── 09_fix_turnos_servicios.sql
 │   ├── README.md
-│   └── seeds
-│       ├── Configuracion.csv
-│       ├── Configuracion_Horarios.csv
-│       ├── Costos_Personal_Vigencia.csv
-│       ├── datos_sensibles_backup.sql
-│       ├── Opciones_Adicionales.csv
-│       ├── opciones_duracion.csv
-│       ├── Opciones_Tipos.csv
-│       ├── Personal_Disponible.csv
-│       ├── Precios_Vigencia.csv
-│       └── Roles_Por_Evento.csv
 ├── docker
 │   ├── docker-compose.yml
 │   ├── Dockerfile.backend
@@ -104,53 +93,6 @@
 │   ├── editar_turno_servicio.html
 │   ├── email_confirmacion_cliente.html
 │   ├── formLogic.js
-│   ├── img
-│   │   ├── Depilación definitiva 1.jpeg
-│   │   ├── foto_actividad_1.jpg
-│   │   ├── foto_cancha_2.jpg
-│   │   ├── foto_cancha_3.jpg
-│   │   ├── foto_cuidado_personal_1.jpg
-│   │   ├── foto_cuidado_personal_2.jpg
-│   │   ├── foto_cuidado_personal_3.jpg
-│   │   ├── foto_frente_1.jpg
-│   │   ├── foto_frente_2.jpg
-│   │   ├── foto_frente_3.jpg
-│   │   ├── foto_frente.jpg
-│   │   ├── foto_mural_cancha.jpg
-│   │   ├── foto_mural_patio_1.jpg
-│   │   ├── foto_salida_de_emergencia_.jpg
-│   │   ├── foto_salon_10.jpg
-│   │   ├── foto_salon_11.jpg
-│   │   ├── foto_salon_12.jpg
-│   │   ├── foto_salon_13.jpg
-│   │   ├── foto_salon_14.jpg
-│   │   ├── foto_salon_15.jpg
-│   │   ├── foto_salon_17.jpg
-│   │   ├── foto_salon_1.jpg
-│   │   ├── foto_salon_2.jpg
-│   │   ├── foto_salon_3.jpg
-│   │   ├── foto_salon_4.jpg
-│   │   ├── foto_salon_5.jpg
-│   │   ├── foto_salon_6.jpg
-│   │   ├── foto_salon_7.jpg
-│   │   ├── foto_salon_8.jpg
-│   │   ├── foto_salon_9.jpg
-│   │   ├── foto_salon_con_gente_10.jpg
-│   │   ├── foto_salon_con_gente_11.jpg
-│   │   ├── foto_salon_con_gente_13.jpg
-│   │   ├── foto_salon_con_gente_1.jpg
-│   │   ├── foto_salon_con_gente_4.jpg
-│   │   ├── foto_salon_infantil_1.jpg
-│   │   ├── foto_salon_infantil_2.jpg
-│   │   ├── foto_salon_infantil_3.jpg
-│   │   ├── foto_salon_infantil.jpg
-│   │   ├── foto_taller_1.jpg
-│   │   ├── foto_taller_2.jpg
-│   │   ├── foto_taller_3.jpg
-│   │   ├── foto_taller_5.jpg
-│   │   ├── hero1.jpg
-│   │   ├── hero.jpg
-│   │   └── logo_transparente.png
 │   ├── index.html
 │   ├── login.html
 │   ├── navbar.js
