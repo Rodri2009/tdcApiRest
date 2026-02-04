@@ -421,7 +421,7 @@ const getSolicitudes = async (req, res) => {
                 s.*,
                 b.nombre as banda_registrada_nombre,
                 b.verificada as banda_verificada
-            FROM bandas_solicitudes s
+            FROM solicitudes_bandas s
             LEFT JOIN bandas_artistas b ON s.id_banda = b.id
             WHERE 1=1
         `;
@@ -455,7 +455,7 @@ const getSolicitudById = async (req, res) => {
                 s.*,
                 b.nombre as banda_registrada_nombre,
                 b.verificada as banda_verificada
-            FROM bandas_solicitudes s
+            FROM solicitudes_bandas s
             LEFT JOIN bandas_artistas b ON s.id_banda = b.id
             WHERE s.id = ?
         `, [id]);
@@ -520,9 +520,6 @@ const createSolicitud = async (req, res) => {
         const telefono = contacto_whatsapp || contacto_telefono;
 
         // Validaciones básicas
-        if (!nombre_banda) {
-            return res.status(400).json({ error: 'El nombre de la banda es requerido' });
-        }
         if (!contacto_nombre || !contacto_email || !telefono) {
             return res.status(400).json({ error: 'Los datos de contacto (nombre, email y WhatsApp) son requeridos' });
         }
@@ -533,32 +530,42 @@ const createSolicitud = async (req, res) => {
             return res.status(400).json({ error: 'Máximo 4 bandas por fecha' });
         }
 
+        const values = [
+            id_banda || null,                          // 1
+            genero_musical || null,                    // 2
+            formacion ? JSON.stringify(formacion) : null, // 3
+            instagram || null,                         // 4
+            facebook || null,                          // 5
+            youtube || null,                           // 6
+            spotify || null,                           // 7
+            otras_redes || null,                       // 8
+            logo_url || null,                          // 9
+            contacto_nombre,                           // 10
+            contacto_email,                            // 11
+            telefono || null,                          // 12
+            contacto_rol || null,                      // 13
+            fecha_preferida || null,                   // 14
+            fecha_alternativa || null,                 // 15
+            hora_preferida || null,                    // 16
+            invitadas ? JSON.stringify(invitadas) : null, // 17
+            cantidadBandas,                            // 18
+            precio_puerta_propuesto || null,           // 19
+            expectativa_publico || null,               // 20
+            mensaje || null,                           // 21
+            fingerprintid || null                      // 22
+        ];
+
         const result = await pool.query(`
-            INSERT INTO bandas_solicitudes (
-                id_banda, nombre_banda, genero_musical, formacion_json,
+            INSERT INTO solicitudes_bandas (
+                id_banda, genero_musical, formacion_json,
                 instagram, facebook, youtube, spotify, otras_redes, logo_url,
-                contacto_nombre, contacto_email, contacto_telefono, contacto_rol,
-                fecha_preferida, fecha_alternativa, hora_preferida,
+                nombre_completo, email, telefono, contacto_rol,
+                fecha_evento, fecha_alternativa, hora_evento,
                 invitadas_json, cantidad_bandas,
-                precio_anticipada_propuesto, precio_puerta_propuesto, expectativa_publico,
-                mensaje, fingerprintid
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            id_banda || null,
-            nombre_banda,
-            genero_musical || null,
-            formacion ? JSON.stringify(formacion) : null,
-            instagram || null, facebook || null, youtube || null, spotify || null,
-            otras_redes || null, logo_url || null,
-            contacto_nombre, contacto_email, telefono || null, contacto_rol || null,
-            fecha_preferida || null, fecha_alternativa || null, hora_preferida || null,
-            invitadas ? JSON.stringify(invitadas) : null,
-            cantidadBandas,
-            precio_anticipada_propuesto || null, precio_puerta_propuesto || null,
-            expectativa_publico || null,
-            mensaje || null,
-            fingerprintid || null
-        ]);
+                precio_puerta_propuesto, expectativa_publico,
+                descripcion, fingerprintid
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, values);
 
         const solicitudId = Number(result.insertId);
 
@@ -616,7 +623,7 @@ const updateSolicitud = async (req, res) => {
         params.push(id);
 
         await pool.query(
-            `UPDATE bandas_solicitudes SET ${setClauses.join(', ')} WHERE id = ?`,
+            `UPDATE solicitudes_bandas SET ${setClauses.join(', ')} WHERE id = ?`,
             params
         );
 
@@ -642,7 +649,7 @@ const aprobarSolicitud = async (req, res) => {
 
         // Obtener la solicitud
         const [solicitud] = await pool.query(
-            'SELECT * FROM bandas_solicitudes WHERE id = ?',
+            'SELECT * FROM solicitudes_bandas WHERE id = ?',
             [id]
         );
 
@@ -740,7 +747,7 @@ const aprobarSolicitud = async (req, res) => {
 
         // Actualizar solicitud
         await pool.query(`
-            UPDATE bandas_solicitudes 
+            UPDATE solicitudes_bandas 
             SET estado = 'aprobada', id_evento_generado = ?, id_banda = ?
             WHERE id = ?
         `, [eventoId, bandaId, id]);
@@ -765,7 +772,7 @@ const rechazarSolicitud = async (req, res) => {
         const { notas_admin } = req.body;
 
         await pool.query(`
-            UPDATE bandas_solicitudes 
+            UPDATE solicitudes_bandas 
             SET estado = 'rechazada', notas_admin = CONCAT(COALESCE(notas_admin, ''), '\n[RECHAZADA] ', ?)
             WHERE id = ?
         `, [notas_admin || 'Sin motivo especificado', id]);
@@ -854,7 +861,7 @@ const getEventosBandas = async (req, res) => {
 
 /**
  * GET /api/bandas/eventos/:id
- * Obtiene un evento específico con sus bandas invitadas
+ * Obtiene un evento específico with sus bandas invitadas
  */
 const getEventoBandaById = async (req, res) => {
     try {

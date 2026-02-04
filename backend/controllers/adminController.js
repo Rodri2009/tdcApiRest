@@ -9,84 +9,63 @@ const getSolicitudes = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        // Unión de solicitudes de alquiler y fechas de bandas
+        // Unión de solicitudes de alquiler, solicitudes de bandas y fechas de bandas
         const sql = `
             SELECT
-                CONCAT('alq_', s.id_solicitud) as id,
-                s.fecha_hora as fechaSolicitud,
+                CONCAT('alq_', s.id) as id,
+                s.fecha_evento as fechaSolicitud,
                 s.nombre_completo as nombreCliente,
                 s.tipo_de_evento as tipoEventoId,
                 CASE
-                    WHEN ot.categoria IS NOT NULL THEN ot.categoria
-                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN
+                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'TALLERES', 'SERVICIO') THEN
                         CASE s.tipo_de_evento
-                            WHEN 'TALLERES' THEN 'TALLERES_ACTIVIDADES'
-                            WHEN 'SERVICIO' THEN 'SERVICIOS'
-                            ELSE s.tipo_de_evento
+                            WHEN 'TALLERES' THEN 'TALLER'
+                            WHEN 'SERVICIO' THEN 'SERVICIO'
+                            ELSE 'ALQUILER_SALON'
                         END
-                    ELSE 'OTRO'
-                END as tipoEvento,
-                CASE
-                    WHEN ot.nombre_para_mostrar IS NOT NULL THEN ot.nombre_para_mostrar
-                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN NULL
                     ELSE s.tipo_de_evento
-                END as subtipo,
+                END as tipoEvento,
+                NULL as subtipo,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 s.estado,
                 s.tipo_servicio as tipoServicioId,
-                (SELECT COUNT(*) FROM solicitudes_personal sp WHERE sp.id_solicitud = s.id_solicitud) > 0 AS tienePersonalAsignado,
+                0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo,
                 s.es_publico as es_publico
             FROM solicitudes_alquiler s
-            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
             UNION ALL
             SELECT
                 CONCAT('bnd_', s.id_solicitud) as id,
                 s.fecha_hora as fechaSolicitud,
                 s.nombre_completo as nombreCliente,
                 s.tipo_de_evento as tipoEventoId,
-                CASE
-                    WHEN ot.categoria IS NOT NULL THEN ot.categoria
-                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN
-                        CASE s.tipo_de_evento
-                            WHEN 'TALLERES' THEN 'TALLERES_ACTIVIDADES'
-                            WHEN 'SERVICIO' THEN 'SERVICIOS'
-                            ELSE s.tipo_de_evento
-                        END
-                    ELSE 'OTRO'
-                END as tipoEvento,
-                CASE
-                    WHEN ot.nombre_para_mostrar IS NOT NULL THEN ot.nombre_para_mostrar
-                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'FECHA_BANDAS', 'TALLERES_ACTIVIDADES', 'SERVICIOS', 'TALLERES', 'SERVICIO') THEN NULL
-                    ELSE s.tipo_de_evento
-                END as subtipo,
+                'BANDA' as tipoEvento,
+                NULL as subtipo,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 s.estado,
-                s.tipo_servicio as tipoServicioId,
-                (SELECT COUNT(*) FROM solicitudes_personal sp WHERE sp.id_solicitud = s.id_solicitud) > 0 AS tienePersonalAsignado,
+                NULL as tipoServicioId,
+                0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo,
                 s.es_publico as es_publico
             FROM solicitudes_bandas s
-            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento
-            WHERE s.tipo_de_evento = 'FECHA_BANDAS'
             UNION ALL
             SELECT
                 CONCAT('ev_', e.id) as id,
                 e.creado_en as fechaSolicitud,
                 e.nombre_contacto as nombreCliente,
                 e.tipo_evento as tipoEventoId,
-                'FECHA_BANDAS' as tipoEvento,
+                'BANDA' as tipoEvento,
                 e.genero_musical as subtipo,
                 DATE_FORMAT(e.fecha, '%Y-%m-%d') as fechaEvento,
                 e.estado,
                 NULL as tipoServicioId,
-                (SELECT COUNT(*) FROM eventos_personal ep WHERE ep.id_evento = e.id) > 0 AS tienePersonalAsignado,
+                0 AS tienePersonalAsignado,
                 'evento' as origen,
                 TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
                 e.nombre_banda as nombreBanda,

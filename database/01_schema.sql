@@ -152,66 +152,62 @@ CREATE TABLE IF NOT EXISTS costos_personal_vigencia (
 -- 4. TABLAS DE SOLICITUDES
 -- =============================================================================
 
--- Solicitudes de alquiler de salón (sin bandas)
-CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
-    id_solicitud INT AUTO_INCREMENT PRIMARY KEY,
-
-    -- Tipo de evento (CLAVE: debe ser el subtipo como INFANTILES, no la categoría)
-    tipo_de_evento VARCHAR(50) NOT NULL DEFAULT 'ALQUILER_SALON' COMMENT 'Categoría: ALQUILER_SALON, etc.',
-    tipo_servicio VARCHAR(255) DEFAULT NULL COMMENT 'Subtipo: INFANTILES, CON_SERVICIO_DE_MESA, etc.',
-
-    -- Visibilidad
-    es_publico TINYINT(1) DEFAULT 0 COMMENT '1=Visible en agenda pública',
-
-    -- Datos del evento
-    fecha_hora DATETIME DEFAULT NULL COMMENT 'Timestamp de creación',
-    fecha_evento DATE DEFAULT NULL,
-    hora_evento VARCHAR(20) DEFAULT NULL,
-    duracion VARCHAR(100) DEFAULT NULL,
-    cantidad_de_personas VARCHAR(100) DEFAULT NULL,
-
-    -- Precios
-    precio_basico DECIMAL(10,2) DEFAULT NULL,
-    precio_final DECIMAL(10,2) DEFAULT NULL,
-
-    -- Datos del cliente
-    nombre_completo VARCHAR(255) DEFAULT NULL,
-    telefono VARCHAR(50) DEFAULT NULL,
-    email VARCHAR(255) DEFAULT NULL,
-    descripcion TEXT COMMENT 'Notas o requerimientos especiales',
-
-    -- Estado
-    estado VARCHAR(50) DEFAULT 'Solicitado' COMMENT 'Solicitado, Contactado, Confirmado, Cancelado',
-
-    -- Control
-    fingerprintid VARCHAR(255) DEFAULT NULL,
-
-    INDEX idx_tipo (tipo_de_evento),
-    INDEX idx_tipo_servicio (tipo_servicio),
-    INDEX idx_fecha (fecha_evento),
-    INDEX idx_estado (estado),
-    INDEX idx_es_publico (es_publico)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Adicionales seleccionados en una solicitud
-CREATE TABLE IF NOT EXISTS solicitudes_adicionales (
+-- Tabla general para solicitudes
+CREATE TABLE IF NOT EXISTS solicitudes (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    id_solicitud INT NOT NULL,
-    nombre_adicional VARCHAR(255) NOT NULL,
-    precio_adicional DECIMAL(10,2) NOT NULL,
-    INDEX idx_solicitud (id_solicitud),
-    FOREIGN KEY (id_solicitud) REFERENCES solicitudes_alquiler(id_solicitud) ON DELETE CASCADE
+    categoria ENUM('ALQUILER', 'BANDA', 'BANDAS', 'SERVICIOS', 'TALLERES') NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estado VARCHAR(50) DEFAULT 'Solicitado',
+    descripcion TEXT,
+    nombre_solicitante VARCHAR(255),
+    telefono_solicitante VARCHAR(50),
+    email_solicitante VARCHAR(255),
+    INDEX idx_categoria (categoria),
+    INDEX idx_estado (estado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Personal asignado a una solicitud
-CREATE TABLE IF NOT EXISTS solicitudes_personal (
-    id VARCHAR(50) PRIMARY KEY,
-    id_solicitud INT NOT NULL,
-    id_personal VARCHAR(50) DEFAULT NULL COMMENT 'FK a personal_disponible',
-    rol_requerido VARCHAR(100) NOT NULL,
-    estado VARCHAR(50) DEFAULT 'pendiente' COMMENT 'pendiente, asignado, confirmado',
-    INDEX idx_solicitud (id_solicitud),
-    FOREIGN KEY (id_solicitud) REFERENCES solicitudes_alquiler(id_solicitud) ON DELETE CASCADE
+-- Tabla específica para solicitudes de alquiler
+CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
+    id INT PRIMARY KEY,
+    tipo_servicio VARCHAR(255),
+    fecha_evento DATE,
+    hora_evento VARCHAR(20),
+    duracion VARCHAR(100),
+    cantidad_de_personas VARCHAR(100),
+    precio_basico DECIMAL(10,2),
+    precio_final DECIMAL(10,2),
+    es_publico TINYINT(1) DEFAULT 0,
+    tipo_de_evento VARCHAR(50) NOT NULL,
+    nombre_completo VARCHAR(255),
+    telefono VARCHAR(50),
+    email VARCHAR(255),
+    descripcion TEXT,
+    estado VARCHAR(50) DEFAULT 'Solicitado',
+    FOREIGN KEY (id) REFERENCES solicitudes(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla específica para solicitudes de bandas
+
+-- Tabla específica para solicitudes de servicios
+CREATE TABLE IF NOT EXISTS solicitudes_servicios (
+    id INT PRIMARY KEY,
+    tipo_servicio VARCHAR(255),
+    fecha_evento DATE,
+    hora_evento VARCHAR(20),
+    duracion VARCHAR(100),
+    precio DECIMAL(10,2),
+    FOREIGN KEY (id) REFERENCES solicitudes(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla específica para solicitudes de talleres
+CREATE TABLE IF NOT EXISTS solicitudes_talleres (
+    id INT PRIMARY KEY,
+    nombre_taller VARCHAR(255),
+    fecha_evento DATE,
+    hora_evento VARCHAR(20),
+    duracion VARCHAR(100),
+    precio DECIMAL(10,2),
+    FOREIGN KEY (id) REFERENCES solicitudes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -328,7 +324,7 @@ CREATE TABLE IF NOT EXISTS eventos_lineup (
     nombre_banda VARCHAR(255) NOT NULL COMMENT 'Nombre (redundante si id_banda existe, necesario si no)',
     
     -- Orden y rol en el evento
-    orden_show INT NOT NULL DEFAULT 0 COMMENT '0=telonero, 1,2..., último=principal',
+    orden_show INT NOT NULL DEFAULT 0 COMMENT '0=telonero, 1, 2..., último=principal',
     es_principal TINYINT(1) DEFAULT 0 COMMENT '1=Banda principal (cierra)',
     es_solicitante TINYINT(1) DEFAULT 0 COMMENT '1=Es quien solicitó la fecha',
     
@@ -572,3 +568,80 @@ CREATE TABLE IF NOT EXISTS cupones (
 -- =============================================================================
 -- FIN DEL SCHEMA
 -- =============================================================================
+
+-- Bloque de migración antiguo comentado para evitar conflictos
+-- INSERT IGNORE INTO solicitudes (id, categoria, fecha_creacion, estado, descripcion, nombre_solicitante, telefono_solicitante, email_solicitante)
+-- SELECT id_solicitud, 'ALQUILER', fecha_hora, estado, descripcion, nombre_completo, telefono, email
+-- FROM solicitudes_alquiler;
+
+-- INSERT IGNORE INTO solicitudes_alquiler (id, tipo_servicio, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, precio_final, es_publico)
+-- SELECT id_solicitud, tipo_servicio, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, precio_final, es_publico
+-- FROM solicitudes_alquiler;
+
+-- NOTA: La tabla opciones_tipos y precios_vigencia están relacionadas con "alquileres" y no con servicios.
+-- Esto debe tenerse en cuenta al realizar consultas o modificaciones.
+
+-- Tabla para almacenar el catálogo de servicios
+CREATE TABLE IF NOT EXISTS servicios_catalogo (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_servicio_id VARCHAR(255) NOT NULL,
+    nombre VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    duracion_minutos INT,
+    activo TINYINT(1) DEFAULT 1,
+    orden INT DEFAULT 0,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla para almacenar los precios de los servicios
+CREATE TABLE IF NOT EXISTS precios_servicios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    servicio_id INT NOT NULL,
+    precio DECIMAL(10,2) NOT NULL,
+    vigente TINYINT(1) DEFAULT 1,
+    vigente_desde DATE NOT NULL,
+    vigente_hasta DATE,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (servicio_id) REFERENCES servicios_catalogo(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla para almacenar los profesionales de servicios
+CREATE TABLE IF NOT EXISTS profesionales_servicios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    especialidad VARCHAR(255),
+    telefono VARCHAR(20),
+    email VARCHAR(255),
+    dias_trabaja VARCHAR(255),
+    hora_inicio TIME,
+    hora_fin TIME,
+    activo TINYINT(1) DEFAULT 1,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla para almacenar los turnos de servicios
+CREATE TABLE IF NOT EXISTS turnos_servicios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    profesional_id INT NOT NULL,
+    servicio_id INT NOT NULL,
+    precio_id INT,
+    fecha DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    cliente_nombre VARCHAR(255),
+    cliente_telefono VARCHAR(20),
+    cliente_email VARCHAR(255),
+    monto DECIMAL(10,2),
+    pagado TINYINT(1) DEFAULT 0,
+    metodo_pago VARCHAR(50),
+    estado VARCHAR(50),
+    notas TEXT,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (profesional_id) REFERENCES profesionales_servicios(id),
+    FOREIGN KEY (servicio_id) REFERENCES servicios_catalogo(id),
+    FOREIGN KEY (precio_id) REFERENCES precios_servicios(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

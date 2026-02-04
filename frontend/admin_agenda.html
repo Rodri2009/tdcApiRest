@@ -582,108 +582,136 @@
         // ============================================================
         async function loadAllData() {
             try {
-                // Cargar solicitudes
-                const resSol = await fetch(`${API_BASE}/solicitudes`, { headers: authHeaders() });
+                console.log('🔍 DEBUG: Iniciando loadAllData()');
+                console.log('🔍 DEBUG: Token:', getToken() ? 'Existe' : 'NO EXISTE');
+                console.log('🔍 DEBUG: API_BASE:', API_BASE);
+                
+                // Cargar todos los datos (solicitudes + eventos) desde el endpoint unificado
+                const url = `${API_BASE}/solicitudes`;
+                console.log('🔍 DEBUG: URL de solicitud:', url);
+                
+                const resSol = await fetch(url, { headers: authHeaders() });
+                console.log('🔍 DEBUG: Status de respuesta:', resSol.status);
+                console.log('🔍 DEBUG: Headers de respuesta:', resSol.headers);
+                
                 if (resSol.ok) {
                     solicitudes = await resSol.json();
-                    if (debug) console.log('API /solicitudes -> raw:', solicitudes);
-                }
-
-                // Cargar eventos de bandas
-                // Intentamos endpoint admin primero (si existe). Si responde 404, caemos al endpoint público de bandas.
-                let resEv = await fetch(`${API_BASE}/fechas_bandas_confirmadas`, { headers: authHeaders() });
-                if (resEv.ok) {
-                    eventos = await resEv.json();
-                    if (debug) console.log('API /admin/fechas_bandas_confirmadas -> raw:', eventos);
-                } else if (resEv.status === 404) {
-                    if (debug) console.warn('/api/admin/fechas_bandas_confirmadas no existe (404). Probando /api/bandas/eventos?estado=Confirmado');
-                    const fallback = await fetch('/api/bandas/eventos?estado=Confirmado');
-                    if (fallback.ok) {
-                        eventos = await fallback.json();
-                        if (debug) console.log('Fallback /api/bandas/eventos -> raw:', eventos);
-                    } else {
-                        // Si ambos fallan, dejar eventos en []
-                        eventos = [];
-                        if (debug) console.error('Fallback /api/bandas/eventos también falló', fallback.status);
-                    }
+                    console.log('✅ DEBUG: Solicitudes cargadas correctamente:', solicitudes.length, 'registros');
+                    console.log('📋 DEBUG: Datos raw:', solicitudes);
+                    eventos = [];
                 } else {
-                    // Otro error (ej: 401/500)
-                    if (debug) console.error('Error al consultar /api/admin/fechas_bandas_confirmadas:', resEv.status);
+                    const errorText = await resSol.text();
+                    console.error('❌ DEBUG: Error en respuesta:', resSol.status, errorText);
+                    throw new Error(`Error al cargar solicitudes: ${resSol.status} - ${errorText}`);
                 }
 
                 // Combinar y normalizar
+                console.log('🔍 DEBUG: Llamando combineItems()');
                 combineItems();
+                console.log('🔍 DEBUG: allItems después de combineItems():', allItems.length, 'registros');
+                console.log('📋 DEBUG: allItems:', allItems);
+                
+                console.log('🔍 DEBUG: Llamando renderAll()');
                 renderAll();
+                console.log('✅ DEBUG: renderAll() completado');
             } catch (err) {
-                console.error('Error:', err);
-                showBanner('Error al cargar datos', 'error');
+                console.error('❌ ERROR CRÍTICO:', err);
+                console.error('Stack:', err.stack);
+                showBanner('Error al cargar datos: ' + err.message, 'error');
             }
         }
 
         function getCategoria(item) {
             // Si viene directamente como evento, es Banda
-            if (item.source === 'evento') return 'BANDA';
+            if (item.source === 'evento') {
+                console.log('🔍 DEBUG getCategoria: source=evento -> BANDA');
+                return 'BANDA';
+            }
 
-            const tipo = (item.tipoEvento || item.tipo_evento || item.tipo || '').toString().toUpperCase();
-            // Detectar explícitamente solicitudes de tipo FECHA_BANDAS o cualquier mención a 'BANDA'
-            if (tipo === 'FECHA_BANDAS' || tipo.includes('BANDA')) return 'BANDA';
-            if (tipo.includes('TALLER')) return 'TALLER';
-            if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) return 'SERVICIO';
+            const tipo = (item.tipo || '').toString().toUpperCase();
+            console.log('🔍 DEBUG getCategoria: tipo=', tipo);
+            
+            // Detectar explícitamente por tipo
+            if (tipo === 'BANDA') {
+                console.log('  -> BANDA (match exacto)');
+                return 'BANDA';
+            }
+            if (tipo === 'TALLER') {
+                console.log('  -> TALLER (match exacto)');
+                return 'TALLER';
+            }
+            if (tipo === 'SERVICIO') {
+                console.log('  -> SERVICIO (match exacto)');
+                return 'SERVICIO';
+            }
+            if (tipo === 'ALQUILER_SALON') {
+                console.log('  -> ALQUILER (ALQUILER_SALON)');
+                return 'ALQUILER';
+            }
+            
+            // Fallbacks para detección por palabras clave
+            if (tipo.includes('BANDA')) {
+                console.log('  -> BANDA (includes)');
+                return 'BANDA';
+            }
+            if (tipo.includes('TALLER')) {
+                console.log('  -> TALLER (includes)');
+                return 'TALLER';
+            }
+            if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) {
+                console.log('  -> SERVICIO (servicios personales)');
+                return 'SERVICIO';
+            }
+            
+            console.log('  -> ALQUILER (default)');
             return 'ALQUILER';
         }
 
         function combineItems() {
-            // Normalizar solicitudes
-            const normalizedSolicitudes = solicitudes.map(s => ({
-                id: s.id,
-                source: 'solicitud',
-                fecha: s.fechaEvento || s.fecha_evento,
-                hora: s.horaEvento || s.hora_evento,
-                tipo: s.tipoEvento || s.tipo_evento || s.tipo,
-                // Asegurarnos de tomar nombre de banda cuando exista (nombre_banda / nombreBanda / fallback)
-                nombre: s.nombreCompleto || s.nombre_completo || s.nombre_banda || s.nombreBanda,
-                telefono: s.telefono,
-                email: s.email,
-                descripcion: s.descripcion,
-                estado: s.estado,
-                precio: s.precio
-            }));
+            console.log('🔍 DEBUG combineItems: Iniciando');
+            console.log('🔍 DEBUG combineItems: solicitudes.length =', solicitudes.length);
+            console.log('🔍 DEBUG combineItems: primer registro =', solicitudes[0]);
+            
+            // Normalizar solicitudes (ahora incluye tanto solicitudes como eventos)
+            const normalizedSolicitudes = solicitudes.map((s, idx) => {
+                console.log(`🔍 DEBUG mapeo[${idx}]:`, { id: s.id, origen: s.origen, tipoEvento: s.tipoEvento });
+                
+                // Mapeo de campos para compatibilidad
+                const esBanda = s.origen === 'evento' || (s.tipoEvento && s.tipoEvento.toUpperCase() === 'BANDA');
+                const esServicio = s.tipoEvento && s.tipoEvento.toUpperCase() === 'SERVICIO';
+                const esTaller = s.tipoEvento && s.tipoEvento.toUpperCase() === 'TALLER';
+                
+                const normalized = {
+                    id: s.id,
+                    source: s.origen || 'solicitud',
+                    fecha: s.fechaEvento || s.fecha_evento,
+                    hora: s.horaInicio || s.hora_evento,
+                    tipo: s.tipoEvento || 'Otro',
+                    // Nombre: usar nombreBanda para bandas, nombreCliente para solicitudes
+                    nombre: (esBanda && s.nombreBanda) ? s.nombreBanda : (s.nombreCliente || s.nombre_completo || s.nombre_banda),
+                    telefono: s.telefono || '',
+                    email: s.email || '',
+                    descripcion: s.descripcion || '',
+                    estado: s.estado,
+                    precio: s.precio || s.precio_anticipada || null
+                };
+                console.log(`  -> normalized[${idx}]:`, normalized);
+                return normalized;
+            });
 
-            // Normalizar eventos de bandas
-            const normalizedEventos = eventos.map(e => ({
-                id: e.id,
-                source: 'evento',
-                fecha: e.fecha,
-                hora: e.hora_inicio || e.horaInicio,
-                tipo: e.genero_musical || e.generoMusical || 'Evento',
-                nombre: e.nombre_banda || e.nombreBanda,
-                telefono: e.contacto_telefono,
-                email: e.contacto_email,
-                descripcion: e.descripcion,
-                estado: e.estado,
-                precio: e.precio_anticipada
-            }));
-
-            allItems = [...normalizedSolicitudes, ...normalizedEventos];
+            allItems = normalizedSolicitudes;
+            console.log('🔍 DEBUG combineItems: allItems.length =', allItems.length);
 
             // Agregar categoría
-            allItems.forEach(item => {
-                const before = { source: item.source, tipo: item.tipo, nombre: item.nombre };
+            allItems.forEach((item, idx) => {
+                console.log(`🔍 DEBUG asignar categoría [${idx}]:`, item);
                 item.categoria = getCategoria(item);
-                if (debug) {
-                    console.log('Normalizado:', before, '-> categoría asignada:', item.categoria, ' (item):', item);
-                    // Warn si algo parece inconsistente (ej: source 'evento' pero categoría ALQUILER)
-                    if (item.categoria === 'ALQUILER' && (item.source === 'evento' || (item.tipo && item.tipo.toUpperCase().includes('BANDA')))) {
-                        console.warn('Inconsistencia detectada: evento mapeado como ALQUILER', { item });
-                    }
-                }
+                console.log(`  -> categoría asignada: ${item.categoria}`);
             });
 
             // Resumen por categoría para facilitar diagnóstico
-            if (debug) {
-                const summary = allItems.reduce((acc, it) => { acc[it.categoria] = (acc[it.categoria] || 0) + 1; return acc; }, {});
-                console.info('Resumen categorías (allItems):', summary);
-            }
+            const summary = allItems.reduce((acc, it) => { acc[it.categoria] = (acc[it.categoria] || 0) + 1; return acc; }, {});
+            console.log('📊 DEBUG: Resumen categorías (allItems):', summary);
         }
 
         // ============================================================
@@ -730,28 +758,63 @@
         }
 
         function renderProximos() {
+            console.log('🔍 DEBUG renderProximos: Iniciando');
+            
             const categoriaFiltro = document.getElementById('filtro-categoria')?.value || '';
             const desdeFiltro = document.getElementById('filtro-desde')?.value || '';
             const hastaFiltro = document.getElementById('filtro-hasta')?.value || '';
 
+            console.log('  Filtros:', { categoriaFiltro, desdeFiltro, hastaFiltro });
+
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
 
-            let filtered = allItems.filter(i => i.estado === 'Confirmado' && new Date(i.fecha) >= hoy);
+            console.log('  Hoy (fecha actual):', hoy.toLocaleDateString('es-AR'));
+            console.log('  allItems total:', allItems.length);
 
-            if (categoriaFiltro) filtered = filtered.filter(i => i.categoria === categoriaFiltro);
-            if (desdeFiltro) filtered = filtered.filter(i => new Date(i.fecha) >= new Date(desdeFiltro));
-            if (hastaFiltro) filtered = filtered.filter(i => new Date(i.fecha) <= new Date(hastaFiltro));
+            // Mostrar todos los items con sus estados
+            allItems.forEach(i => {
+                console.log(`    Item ${i.id}: estado="${i.estado}", fecha="${i.fecha}", nombre="${i.nombre}"`);
+            });
+
+            let filtered = allItems.filter(i => {
+                const esConfirmado = i.estado === 'Confirmado';
+                const fechaObj = new Date(i.fecha + 'T00:00:00');
+                const esFuturo = fechaObj >= hoy;
+                console.log(`    Filtrando ${i.id}: estado="${i.estado}" (esConfirmado=${esConfirmado}), fecha="${i.fecha}" (objeto=${fechaObj.toLocaleDateString('es-AR')}, esFuturo=${esFuturo})`);
+                return esConfirmado && esFuturo;
+            });
+
+            console.log('  ✅ Después de filtro Confirmado+futuro:', filtered.length, 'eventos');
+            console.log('  Eventos filtrados después del primer filtro:', filtered);
+
+            if (categoriaFiltro) {
+                filtered = filtered.filter(i => i.categoria === categoriaFiltro);
+                console.log('  Después de filtro categoría:', filtered.length);
+            }
+            if (desdeFiltro) {
+                filtered = filtered.filter(i => new Date(i.fecha) >= new Date(desdeFiltro));
+                console.log('  Después de filtro desde:', filtered.length);
+            }
+            if (hastaFiltro) {
+                filtered = filtered.filter(i => new Date(i.fecha) <= new Date(hastaFiltro));
+                console.log('  Después de filtro hasta:', filtered.length);
+            }
 
             // Ordenar por fecha
             filtered.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
+            console.log('  Total eventos a mostrar:', filtered.length);
+
             const tbody = document.getElementById('tbody-proximos');
+            
             if (filtered.length === 0) {
+                console.log('  ❌ Sin eventos próximos - insertando mensaje vacío');
                 tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay eventos próximos</td></tr>';
                 return;
             }
 
+            console.log('  ✅ Renderizando', filtered.length, 'eventos');
             tbody.innerHTML = filtered.map(item => renderRow(item, true)).join('');
         }
 

@@ -13,8 +13,22 @@ const crearSolicitud = async (req, res) => {
         fechaEvento,
         horaInicio,
         precioBase,
-        fingerprintId
+        fingerprintId,
+        nombreCompleto,
+        nombre_solicitante,
+        telefono,
+        telefono_solicitante,
+        email,
+        email_solicitante,
+        descripcion
     } = req.body;
+    
+    // Usar nombre_solicitante si nombreCompleto no existe
+    const nombreFinal = nombreCompleto || nombre_solicitante || '';
+    const telefonoFinal = telefono || telefono_solicitante || '';
+    const emailFinal = email || email_solicitante || '';
+    
+    console.log("[DEBUG] nombreFinal:", nombreFinal, "telefonoFinal:", telefonoFinal, "emailFinal:", emailFinal);
 
     if (!tipoEvento || !fechaEvento) {
         return res.status(400).json({ error: 'Faltan datos obligatorios (tipoEvento, fechaEvento).' });
@@ -57,58 +71,113 @@ const crearSolicitud = async (req, res) => {
         }
 
         conn = await pool.getConnection();
+        await conn.beginTransaction();
 
-        // --- ¡CORRECCIÓN FINAL! ---
-        // Ahora: tipo_de_evento es ENUM('ALQUILER_SALON') fijo
-        //        tipo_servicio es VARCHAR con el subtipo (CON_SERVICIO_DE_MESA, INFORMALES, etc.)
-        const sql = `
-            INSERT INTO solicitudes_alquiler (
-                fecha_hora, tipo_de_evento, tipo_servicio, cantidad_de_personas, duracion,
-                fecha_evento, hora_evento, precio_basico, estado, fingerprintid, es_publico
-            ) VALUES (NOW(), 'ALQUILER_SALON', ?, ?, ?, ?, ?, ?, 'Solicitado', ?, ?);
+
+    // 1. Insertar en la tabla general 'solicitudes'
+    // Detectar si es solicitud de banda (siempre en minúsculas)
+    const tipoEventoNorm = (tipoEvento || '').toString().trim().toLowerCase();
+    const esBanda = tipoEventoNorm.includes('banda');
+    const categoria = esBanda ? 'BANDA' : 'ALQUILER';
+        const sqlGeneral = `
+            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion, nombre_solicitante, telefono_solicitante, email_solicitante)
+            VALUES (?, NOW(), 'Solicitado', ?, ?, ?, ?)
         `;
-
-        const params = [
-            tipoEvento,  // Este va en tipo_servicio (ej: 'CON_SERVICIO_DE_MESA')
-            cantidadPersonas,
-            duracionEvento,
-            fechaEvento,
-            horaInicio,
-            parseFloat(precioBase) || 0,
-            fingerprintId,
-            tipoEvento === 'FECHA_BANDAS' ? 1 : 0  // Público por defecto para bandas
+        const paramsGeneral = [
+            categoria,
+            descripcion || '',
+            nombreFinal,
+            telefonoFinal,
+            emailFinal
         ];
+        const resultGeneral = await conn.query(sqlGeneral, paramsGeneral);
+        const newId = Number(resultGeneral.insertId);
 
-        const result = await conn.query(sql, params);
-
-        if (result.affectedRows > 0) {
-            const newId = Number(result.insertId);
-            // Si la request trae datos estructurados de banda, los persistimos en bandas_solicitudes
-            try {
-                const { nombre_banda, contacto_email, link_musica, propuesta, event_id, precio_anticipada, precio_puerta } = req.body;
-                if (nombre_banda || contacto_email || link_musica || propuesta || event_id || precio_anticipada || precio_puerta) {
-                    try {
-                        await conn.query("ALTER TABLE bandas_solicitudes ADD COLUMN IF NOT EXISTS precio_anticipada DECIMAL(10,2) NULL;");
-                        await conn.query("ALTER TABLE bandas_solicitudes ADD COLUMN IF NOT EXISTS precio_puerta DECIMAL(10,2) NULL;");
-                    } catch (alterErr) {
-                        console.warn('Advertencia: no se pudo asegurar columnas de precios en bandas_solicitudes al crear:', alterErr.message || alterErr);
-                    }
-                    const insertBandSql = `
-                            INSERT INTO bandas_solicitudes (id_solicitud, nombre_banda, contacto_email, link_musica, propuesta, event_id, precio_anticipada, precio_puerta, created_at, updated_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-                        `;
-                    await conn.query(insertBandSql, [newId, nombre_banda || null, contacto_email || null, link_musica || null, propuesta || null, event_id || null, precio_anticipada || null, precio_puerta || null]);
-                }
-            } catch (err) {
-                console.warn('No se pudo insertar en bandas_solicitudes al crear solicitud:', err.message);
-            }
-
-            const respuesta = { solicitudId: newId };
-            console.log(`Nueva solicitud creada con ID: ${newId}. Enviando respuesta:`, respuesta);
-            res.status(201).json(respuesta);
+        if (esBanda) {
+            // 2. Insertar en la tabla específica 'solicitudes_bandas' (todas las columnas y en el orden exacto del SQL)
+            const sqlBandas = `
+                INSERT INTO solicitudes_bandas (
+                    id_solicitud, tipo_de_evento, tipo_servicio, es_publico, fecha_hora, fecha_evento, hora_evento, duracion,
+                    cantidad_de_personas, precio_basico, precio_final, nombre_completo, telefono, email, descripcion, estado, fingerprintid,
+                    id_banda, genero_musical, formacion_json, instagram, facebook, youtube, spotify, otras_redes, logo_url, contacto_rol,
+                    fecha_alternativa, invitadas_json, cantidad_bandas, precio_puerta_propuesto, expectativa_publico, notas_admin, id_evento_generado
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            const now = new Date();
+            let paramsBandas = [
+                newId, // id_solicitud
+                tipoEvento || 'FECHA_BANDAS', // tipo_de_evento
+                null, // tipo_servicio
+                0, // es_publico
+                now, // fecha_hora
+                req.body.fechaEvento || null, // fecha_evento
+                req.body.horaInicio || null, // hora_evento
+                req.body.duracionEvento || null, // duracion
+                req.body.cantidadPersonas ? String(req.body.cantidadPersonas) : null, // cantidad_de_personas
+                req.body.precioBase ? parseFloat(req.body.precioBase) : null, // precio_basico
+                null, // precio_final
+                nombreFinal, // nombre_completo
+                telefonoFinal, // telefono
+                emailFinal, // email
+                req.body.descripcion || '', // descripcion
+                'Solicitado', // estado
+                req.body.fingerprintId || null, // fingerprintid
+                null, // id_banda
+                req.body.genero_musical || null, // genero_musical
+                req.body.formacion_json || null, // formacion_json
+                req.body.instagram || null, // instagram
+                req.body.facebook || null, // facebook
+                req.body.youtube || null, // youtube
+                req.body.spotify || null, // spotify
+                req.body.otras_redes || null, // otras_redes
+                req.body.logo_url || null, // logo_url
+                req.body.contacto_rol || null, // contacto_rol
+                req.body.fecha_alternativa || null, // fecha_alternativa
+                req.body.invitadas_json || null, // invitadas_json
+                req.body.cantidad_bandas ? parseInt(req.body.cantidad_bandas) : 1, // cantidad_bandas
+                req.body.precio_puerta_propuesto ? parseFloat(req.body.precio_puerta_propuesto) : null, // precio_puerta_propuesto
+                req.body.expectativa_publico || null, // expectativa_publico
+                req.body.notas_admin || null, // notas_admin
+                null // id_evento_generado
+            ];
+            // Forzar exactamente 34 valores (coincidiendo con el SQL INSERT que tiene 34 columnas)
+            paramsBandas = paramsBandas.slice(0, 34);
+            while (paramsBandas.length < 34) paramsBandas.push(null);
+            console.log('paramsBandas FINAL:', paramsBandas.length, 'valores:', paramsBandas);
+            await conn.query(sqlBandas, paramsBandas);
         } else {
-            throw new Error('La inserción en la base de datos no afectó ninguna fila.');
+            // 2. Insertar en la tabla específica 'solicitudes_alquiler'
+            const sqlAlquiler = `
+                INSERT INTO solicitudes_alquiler (
+                    id, tipo_servicio, fecha_evento, hora_evento, duracion,
+                    cantidad_de_personas, precio_basico, precio_final, es_publico, 
+                    tipo_de_evento, nombre_completo, telefono, email, descripcion, estado
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            const paramsAlquiler = [
+                newId,                                      // id
+                tipoEvento,                                 // tipo_servicio
+                fechaEvento,                                // fecha_evento
+                horaInicio,                                 // hora_evento
+                duracionEvento,                             // duracion
+                cantidadPersonas,                           // cantidad_de_personas
+                parseFloat(precioBase) || 0,               // precio_basico
+                null,                                       // precio_final
+                0,                                          // es_publico
+                tipoEvento,                                 // tipo_de_evento
+                nombreFinal,                                // nombre_completo
+                telefonoFinal,                              // telefono
+                emailFinal,                                 // email
+                descripcion || '',                          // descripcion
+                'Solicitado'                                // estado
+            ];
+            await conn.query(sqlAlquiler, paramsAlquiler);
         }
+
+        await conn.commit();
+        const respuesta = { solicitudId: newId };
+        console.log(`Nueva solicitud creada con ID: ${newId}. Enviando respuesta:`, respuesta);
+        res.status(201).json(respuesta);
 
     } catch (err) {
         console.error("Error al crear la solicitud:", err);
@@ -173,37 +242,77 @@ const getSolicitudPorId = async (req, res) => {
             return res.status(200).json(evento);
         }
 
-        // --- Consulta simplificada para solicitudes normales (no bandas) ---
-        const sql = `
-            SELECT
-                s.id_solicitud as solicitudId,
-                s.tipo_de_evento as tipoEvento,
-                s.tipo_servicio as tipoServicio,
-                s.cantidad_de_personas as cantidadPersonas,
-                s.duracion as duracionEvento,
-                DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
-                s.hora_evento as horaInicio,
-                s.precio_basico as precioBase,
-                s.nombre_completo as nombreCompleto,
-                s.telefono,
-                s.email,
-                s.descripcion,
-                s.estado,
-                COALESCE(ot.nombre_para_mostrar, s.tipo_de_evento) as nombreParaMostrar,
-                COALESCE(ot.categoria, 'ALQUILER_SALON') as categoria
-            FROM solicitudes_alquiler s
-            LEFT JOIN opciones_tipos ot ON s.tipo_de_evento = ot.id_evento OR s.tipo_servicio = ot.id_evento
-            WHERE s.id_solicitud = ?;
-        `;
 
-        const [solicitud] = await conn.query(sql, [id]);
+        // Primero, intentar obtener como solicitud de banda
+        let solicitud = null;
+        const sqlBanda = `
+            SELECT
+                sb.id_solicitud as solicitudId,
+                sb.tipo_de_evento as tipoEvento,
+                sb.fecha_evento as fechaEvento,
+                sb.hora_evento as horaInicio,
+                sb.duracion as duracionEvento,
+                sb.cantidad_de_personas as cantidadPersonas,
+                sb.precio_basico as precioBase,
+                sb.nombre_completo as nombreCompleto,
+                sb.telefono as telefono,
+                sb.email as email,
+                sb.descripcion,
+                sb.estado,
+                sb.genero_musical,
+                sb.instagram,
+                sb.facebook,
+                sb.youtube,
+                sb.spotify,
+                sb.otras_redes,
+                sb.logo_url,
+                sb.contacto_rol,
+                sb.fecha_alternativa,
+                sb.invitadas_json,
+                sb.cantidad_bandas,
+                sb.precio_puerta_propuesto,
+                sb.expectativa_publico,
+                sb.notas_admin,
+                sb.es_publico as esPublico
+            FROM solicitudes_bandas sb
+            WHERE sb.id_solicitud = ?
+        `;
+        [solicitud] = await conn.query(sqlBanda, [id]);
+
+        let adicionales = [];
+        if (!solicitud) {
+            // Si no existe en bandas, buscar en alquiler
+            const sqlAlquiler = `
+                SELECT
+                    sa.id as solicitudId,
+                    sa.tipo_servicio as tipoServicio,
+                    sa.fecha_evento as fechaEvento,
+                    sa.hora_evento as horaInicio,
+                    sa.duracion as duracionEvento,
+                    sa.cantidad_de_personas as cantidadPersonas,
+                    sa.precio_basico as precioBase,
+                    sa.descripcion,
+                    sa.estado,
+                    sa.nombre_completo as nombreCompleto,
+                    sa.telefono as telefono,
+                    sa.email as email,
+                    sa.tipo_de_evento as tipoEvento,
+                    sa.es_publico as esPublico
+                FROM solicitudes_alquiler sa
+                WHERE sa.id = ?
+            `;
+            [solicitud] = await conn.query(sqlAlquiler, [id]);
+            if (solicitud) {
+                // Tabla solicitudes_adicionales no existe, comentada por ahora
+                // adicionales = await conn.query("SELECT nombre_adicional as nombre, precio_adicional as precio FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
+                adicionales = [];
+            }
+        }
 
         if (!solicitud) {
             console.warn(`[SOLICITUD][GET] Solicitud no encontrada: ${id}`);
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
         }
-
-        const adicionales = await conn.query("SELECT nombre_adicional as nombre, precio_adicional as precio FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
 
         const respuesta = {
             ...solicitud,
@@ -239,40 +348,50 @@ const finalizarSolicitud = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
+        await conn.beginTransaction();
 
-        const sqlUpdate = `
-            UPDATE solicitudes_alquiler SET nombre_completo = ?, telefono = ?, email = ?, descripcion = ?, estado = 'Solicitado'
-            WHERE id_solicitud = ?;
+        // Actualizar datos en la tabla general 'solicitudes'
+        const sqlUpdateGeneral = `
+            UPDATE solicitudes SET 
+                nombre_solicitante = ?, 
+                telefono_solicitante = ?, 
+                email_solicitante = ?, 
+                descripcion = ?, 
+                estado = 'Solicitado'
+            WHERE id = ?
         `;
-        const paramsUpdate = [nombreCompleto, celular, email, detallesAdicionales, id];
-        const result = await conn.query(sqlUpdate, paramsUpdate);
+        const paramsUpdateGeneral = [nombreCompleto, celular, email, detallesAdicionales, id];
+        const resultGeneral = await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
 
-        if (result.affectedRows === 0) {
+        if (resultGeneral.affectedRows === 0) {
+            await conn.rollback();
             return res.status(404).json({ error: 'La solicitud a actualizar no fue encontrada.' });
         }
 
-        // --- LÓGICA DE EMAIL SEPARADA ---
-        // Obtenemos los datos completos para los emails
+        // Actualizar datos en la tabla 'solicitudes_alquiler'
+        const sqlUpdateAlquiler = `
+            UPDATE solicitudes_alquiler SET 
+                nombre_completo = ?, 
+                telefono = ?, 
+                email = ?, 
+                descripcion = ?
+            WHERE id = ?
+        `;
+        const paramsUpdateAlquiler = [nombreCompleto, celular, email, detallesAdicionales, id];
+        await conn.query(sqlUpdateAlquiler, paramsUpdateAlquiler);
+
+        // Obtener los datos completos para los emails
         const sqlSelect = `
-            SELECT s.*, ot.nombre_para_mostrar, ot.descripcion as descripcion_evento
-            FROM solicitudes_alquiler s
-            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
-            WHERE s.id_solicitud = ?;
+            SELECT s.*, sa.* FROM solicitudes s LEFT JOIN solicitudes_alquiler sa ON s.id = sa.id WHERE s.id = ?
         `;
         const [solicitudCompleta] = await conn.query(sqlSelect, [id]);
 
-
-        // Obtenemos los adicionales
-        const adicionales = await conn.query("SELECT * FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
-        solicitudCompleta.adicionales = adicionales;
-
-        // Enviamos respuesta al cliente INMEDIATAMENTE
+        await conn.commit();
         res.status(200).json({ message: 'Solicitud creada como solicitada.', solicitudId: parseInt(id) });
         console.log(`Solicitud ${id} creada como solicitada. Respuesta enviada al cliente.`);
 
-        // AHORA, enviamos los emails "en segundo plano"
+        // Emails (en segundo plano)
         if (solicitudCompleta) {
-            // Email para el Administrador
             sendComprobanteEmail(
                 process.env.EMAIL_ADMIN,
                 `Nueva Solicitud Confirmada - ID ${id} - ${nombreCompleto}`,
@@ -282,10 +401,8 @@ const finalizarSolicitud = async (req, res) => {
                     subtitulo: "Un cliente ha confirmado su solicitud de reserva."
                 }
             );
-
-            // Email para el Cliente
             sendComprobanteEmail(
-                email, // El email del cliente
+                email,
                 "Confirmación de tu Solicitud de Reserva - El Templo de Claypole",
                 solicitudCompleta,
                 {
@@ -294,32 +411,9 @@ const finalizarSolicitud = async (req, res) => {
                 }
             );
         }
-
-        // Persistir contactos de banda si vienen (main_contact_email + invitados_emails)
-        try {
-            if ((solicitudCompleta && solicitudCompleta.tipoEvento) && (solicitudCompleta.tipoEvento.toUpperCase() === 'FECHA_EN_VIVO' || solicitudCompleta.tipoEvento.toUpperCase() === 'FECHA_BANDAS' || solicitudCompleta.tipoEvento.toUpperCase() === 'BANDA')) {
-                const conn2 = await pool.getConnection();
-                try {
-                    // Upsert main contact and invited emails into bandas_solicitudes
-                    const upsertSql = `
-                        INSERT INTO bandas_solicitudes (id_solicitud, contacto_email, invitados, updated_at)
-                        VALUES (?, ?, ?, NOW())
-                        ON DUPLICATE KEY UPDATE contacto_email = VALUES(contacto_email), invitados = VALUES(invitados), updated_at = NOW();
-                    `;
-                    const invitadosJson = invitados_emails ? JSON.stringify(invitados_emails) : null;
-                    await conn2.query(upsertSql, [parseInt(id), main_contact_email || null, invitadosJson]);
-                } finally {
-                    conn2.release();
-                }
-            }
-        } catch (err) {
-            console.warn('No se pudieron persistir contactos de banda tras finalizar solicitud:', err.message);
-        }
-
     } catch (err) {
+        if (conn) await conn.rollback();
         console.error(`Error al finalizar la solicitud ${id}:`, err);
-        // Si ya se ha enviado una respuesta, Express no hará nada.
-        // Si el error ocurrió antes de res.json(), se enviará esta respuesta de error.
         if (!res.headersSent) {
             res.status(500).json({ error: 'Error interno del servidor.' });
         }
@@ -392,15 +486,48 @@ const actualizarSolicitud = async (req, res) => {
         fechaEvento,
         horaInicio,
         precioBase,
-        detallesAdicionales // <-- NUEVO
+        nombreCompleto,
+        nombre_solicitante,
+        telefono,
+        telefono_solicitante,
+        email,
+        email_solicitante,
+        descripcion,
+        detallesAdicionales
     } = req.body;
+    
+    // Usar el nombre correcto si viene en snake_case
+    const nombreFinal = nombreCompleto || nombre_solicitante || '';
+    const telefonoFinal = telefono || telefono_solicitante || '';
+    const emailFinal = email || email_solicitante || '';
 
     console.log(`[SOLICITUD][EDIT] Campos básicos: tipo=${tipoEvento}, cantidad=${cantidadPersonas}, duración=${duracionEvento}`);
 
     let conn;
     try {
         conn = await pool.getConnection();
-        const sql = `
+        await conn.beginTransaction();
+        
+        // Actualizar datos en la tabla general 'solicitudes'
+        const sqlUpdateGeneral = `
+            UPDATE solicitudes SET 
+                descripcion = ?,
+                nombre_solicitante = ?,
+                telefono_solicitante = ?,
+                email_solicitante = ?
+            WHERE id = ?
+        `;
+        const paramsUpdateGeneral = [
+            descripcion || detallesAdicionales || '',
+            nombreFinal,
+            telefonoFinal,
+            emailFinal,
+            id
+        ];
+        await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
+
+        // Actualizar datos en la tabla específica 'solicitudes_alquiler'
+        const sqlUpdateAlquiler = `
             UPDATE solicitudes_alquiler SET
                 tipo_servicio = ?,
                 cantidad_de_personas = ?,
@@ -408,68 +535,33 @@ const actualizarSolicitud = async (req, res) => {
                 fecha_evento = ?,
                 hora_evento = ?,
                 precio_basico = ?,
+                nombre_completo = ?,
+                telefono = ?,
+                email = ?,
                 descripcion = ?
-            WHERE id_solicitud = ?;
+            WHERE id = ?
         `;
-        const params = [tipoEvento, cantidadPersonas, duracionEvento, fechaEvento, horaInicio, parseFloat(precioBase) || 0, detallesAdicionales, id];
-        await conn.query(sql, params);
+        const paramsAlquiler = [
+            tipoEvento || '',
+            cantidadPersonas || '',
+            duracionEvento || '',
+            fechaEvento || null,
+            horaInicio || '',
+            parseFloat(precioBase) || 0,
+            nombreFinal,
+            telefonoFinal,
+            emailFinal,
+            descripcion || detallesAdicionales || '',
+            id
+        ];
+        await conn.query(sqlUpdateAlquiler, paramsAlquiler);
 
-        // Si es una solicitud de banda, persistimos los campos estructurados en bandas_solicitudes
-        try {
-            if (['FECHA_EN_VIVO', 'FECHA_BANDAS', 'BANDA'].includes((tipoEvento || '').toUpperCase())) {
-                const { nombre_banda, contacto_email, link_musica, propuesta, event_id, precio_anticipada, precio_puerta } = req.body;
-                console.log(`[SOLICITUD][BANDA] Guardando datos de banda para ID: ${id}`);
-
-                // Asegurarnos de que las columnas de precio existan (migración dinámica segura)
-                try {
-                    await conn.query("ALTER TABLE bandas_solicitudes ADD COLUMN IF NOT EXISTS precio_anticipada DECIMAL(10,2) NULL;");
-                    await conn.query("ALTER TABLE bandas_solicitudes ADD COLUMN IF NOT EXISTS precio_puerta DECIMAL(10,2) NULL;");
-                } catch (alterErr) {
-                    console.warn('[SOLICITUD][BANDA] Advertencia: no se pudo asegurar columnas de precios:', alterErr.message || alterErr);
-                }
-
-                // Validaciones del lado servidor (simples) antes del upsert
-                const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '');
-                const isValidUrl = (url) => {
-                    if (!url) return true; // campo opcional
-                    try { const u = new URL(url); return ['http:', 'https:'].includes(u.protocol); } catch (e) { return false; }
-                };
-
-                if (contacto_email && !isValidEmail(contacto_email)) {
-                    console.error('[SOLICITUD][BANDA] Email inválido:', contacto_email);
-                    return res.status(400).json({ error: 'contacto_email inválido.' });
-                }
-                if (link_musica && !isValidUrl(link_musica)) {
-                    console.error('[SOLICITUD][BANDA] URL inválida:', link_musica);
-                    return res.status(400).json({ error: 'link_musica inválido. Use http(s)://' });
-                }
-
-                // Usamos INSERT ... ON DUPLICATE KEY UPDATE para upsert
-                const upsertSql = `
-                    INSERT INTO bandas_solicitudes (id_solicitud, nombre_banda, contacto_email, link_musica, propuesta, event_id, precio_anticipada, precio_puerta, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-                    ON DUPLICATE KEY UPDATE
-                        nombre_banda = VALUES(nombre_banda),
-                        contacto_email = VALUES(contacto_email),
-                        link_musica = VALUES(link_musica),
-                        propuesta = VALUES(propuesta),
-                        event_id = VALUES(event_id),
-                        precio_anticipada = VALUES(precio_anticipada),
-                        precio_puerta = VALUES(precio_puerta),
-                        updated_at = NOW();
-                `;
-                await conn.query(upsertSql, [id, nombre_banda || null, contacto_email || null, link_musica || null, propuesta || null, event_id || null, precio_anticipada || null, precio_puerta || null]);
-                console.log(`[SOLICITUD][BANDA] Datos de banda guardados exitosamente`);
-            }
-        } catch (err) {
-            console.error('[SOLICITUD][BANDA] Error al persistir datos de banda:', err.message);
-        }
-
+        await conn.commit();
         const respuesta = { solicitudId: parseInt(id) };
         console.log(`[SOLICITUD][EDIT] Solicitud ID: ${id} actualizada exitosamente`);
         res.status(200).json(respuesta);
-
     } catch (err) {
+        if (conn) await conn.rollback();
         console.error(`[SOLICITUD][ERROR] Error al actualizar la solicitud ID: ${id}: ${err.message}`);
         res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
@@ -493,25 +585,26 @@ const getSesionExistente = async (req, res) => {
         conn = await pool.getConnection();
 
         // --- ¡CONSULTA SQL CORREGIDA! ---
-        // Usamos los nombres de columna snake_case y los alias correctos que el frontend espera.
+        // Buscar en solicitudes_alquiler y hacer JOIN con solicitudes para obtener la información completa
         const sql = `
             SELECT
-                id_solicitud as solicitudId,
-                tipo_de_evento as tipoEvento,
-                tipo_servicio as tipoServicio,
-                cantidad_de_personas as cantidadPersonas,
-                duracion as duracionEvento,
-                DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fechaEvento,
-                hora_evento as horaInicio
-            FROM solicitudes_alquiler
-            WHERE fingerprintid = ?
-              AND estado = 'Solicitado'
-              AND fecha_hora > (NOW() - INTERVAL 24 HOUR)
-            ORDER BY fecha_hora DESC
-            LIMIT 1;
+                sa.id as solicitudId,
+                sa.tipo_de_evento as tipoEvento,
+                sa.tipo_servicio as tipoServicio,
+                sa.cantidad_de_personas as cantidadPersonas,
+                sa.duracion as duracionEvento,
+                DATE_FORMAT(sa.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                sa.hora_evento as horaInicio
+            FROM solicitudes_alquiler sa
+            WHERE sa.id IN (
+                SELECT s.id FROM solicitudes s 
+                WHERE s.id = sa.id
+            )
+            ORDER BY sa.id DESC
+            LIMIT 1
         `;
 
-        const [sesion] = await conn.query(sql, [fingerprintId]);
+        const [sesion] = await conn.query(sql);
 
         if (sesion) {
             console.log(`Sesión encontrada:`, sesion);
@@ -565,20 +658,19 @@ const obtenerAdicionales = async (req, res) => {
 };
 
 /**
- * Obtiene solicitudes públicas y confirmadas para mostrar en la agenda pública.
- * Solo devuelve talleres, servicios y alquileres que sean públicos (es_publico = 1) y confirmados.
+ * Obtiene todas las fechas públicas confirmadas para la agenda cultural.
+ * Incluye fechas de bandas, talleres/actividades y servicios públicos.
  */
 const getSolicitudesPublicas = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
 
-        // Seleccionar solicitudes públicas y confirmadas, con fecha futura
-        const query = `
+        // Consultar fechas de bandas confirmadas
+        const bandasQuery = `
             SELECT
                 id_solicitud as id,
-                tipo_de_evento as tipoEvento,
-                tipo_servicio as tipoServicio,
+                'BANDA' as tipoEvento,
                 fecha_evento as fechaEvento,
                 hora_evento as horaEvento,
                 duracion,
@@ -587,17 +679,56 @@ const getSolicitudesPublicas = async (req, res) => {
                 nombre_completo as nombreCompleto,
                 descripcion,
                 es_publico as esPublico
-            FROM solicitudes_alquiler
+            FROM solicitudes_bandas
             WHERE es_publico = 1
               AND estado = 'Confirmado'
               AND fecha_evento >= CURDATE()
-            ORDER BY fecha_evento ASC
-            LIMIT 50
         `;
+        const bandas = await conn.query(bandasQuery);
 
-        const rows = await conn.query(query);
+        // Consultar fechas de talleres/actividades confirmadas
+        const talleresQuery = `
+            SELECT
+                id as id,
+                'TALLER' as tipoEvento,
+                fecha_evento as fechaEvento,
+                hora_evento as horaEvento,
+                duracion,
+                NULL as cantidad, -- La columna no existe en la tabla
+                precio as precio,
+                nombre_taller as nombreCompleto,
+                NULL as descripcion,
+                1 as esPublico
+            FROM solicitudes_talleres
+            WHERE fecha_evento >= CURDATE()
+        `;
+        const talleres = await conn.query(talleresQuery);
 
-        return res.status(200).json(rows || []);
+        // Consultar fechas de servicios públicos confirmados
+        const serviciosQuery = `
+            SELECT
+                id as id,
+                'SERVICIO' as tipoEvento,
+                fecha_evento as fechaEvento,
+                hora_evento as horaEvento,
+                duracion,
+                NULL as cantidad, -- La columna no existe en la tabla
+                precio as precio,
+                tipo_servicio as nombreCompleto,
+                NULL as descripcion,
+                1 as esPublico
+            FROM solicitudes_servicios
+            WHERE fecha_evento >= CURDATE()
+        `;
+        const servicios = await conn.query(serviciosQuery);
+
+        // Combinar resultados
+        const resultados = [...bandas, ...talleres, ...servicios];
+
+        // Ordenar por fecha
+        resultados.sort((a, b) => new Date(a.fechaEvento) - new Date(b.fechaEvento));
+
+        return res.status(200).json(resultados);
     } catch (error) {
         console.error('Error al obtener solicitudes públicas:', error);
         return res.status(500).json({
@@ -624,15 +755,26 @@ const updateVisibilidad = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // Determinar la tabla
-        let [solicitud] = await conn.query("SELECT 'alquiler' as tabla FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
+        // Verificar si existe en solicitudes_alquiler
+        let [solicitud] = await conn.query("SELECT id FROM solicitudes_alquiler WHERE id = ?", [id]);
+        let tabla = 'solicitudes_alquiler';
+        let idColumnName = 'id';
+        
         if (!solicitud) {
-            solicitud = { tabla: 'bandas' };
+            // Si no existe, verificar en solicitudes_bandas
+            [solicitud] = await conn.query("SELECT id_solicitud FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+            if (solicitud) {
+                tabla = 'solicitudes_bandas';
+                idColumnName = 'id_solicitud';
+            }
         }
-        const tabla = solicitud.tabla === 'alquiler' ? 'solicitudes_alquiler' : 'solicitudes_bandas';
+
+        if (!solicitud) {
+            return res.status(404).json({ message: 'Solicitud no encontrada' });
+        }
 
         const result = await conn.query(
-            `UPDATE ${tabla} SET es_publico = ? WHERE id_solicitud = ?`,
+            `UPDATE ${tabla} SET es_publico = ? WHERE ${idColumnName} = ?`,
             [es_publico ? 1 : 0, id]
         );
 

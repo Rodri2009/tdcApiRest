@@ -365,39 +365,56 @@
         async function loadEventos() {
             const container = document.getElementById('eventos-container');
             try {
-                const res = await fetch('/api/tickets/fechas_bandas_confirmadas?estado=Confirmado');
+                const res = await fetch('/api/solicitudes/publicas');
                 if (!res.ok) throw new Error('Error al cargar eventos, status:' + res.status);
-                const eventos = await res.json();
-                console.log('Eventos raw:', eventos);
+                
+                const todosLosEventos = await res.json();
+                const eventos = todosLosEventos.filter(e => e.tipoEvento === 'BANDA');
+
+                console.log('Eventos de bandas:', eventos);
 
                 if (!Array.isArray(eventos) || eventos.length === 0) {
-                    container.innerHTML = `<div class="text-center py-10"><i class="fas fa-calendar-times text-4xl text-stone-500 mb-4"></i><p class="text-stone-400">No hay eventos programados por el momento</p><p class="text-fuchsia-400 mt-2">¡Pero podés proponer tu fecha!</p></div>`;
+                    container.innerHTML = `<div class="text-center py-10"><i class="fas fa-calendar-times text-4xl text-stone-500 mb-4"></i><p class="text-stone-400">No hay shows de bandas programados por el momento</p><p class="text-fuchsia-400 mt-2">¡Pero podés proponer tu fecha!</p></div>`;
+                    document.getElementById('toggle-full-agenda').style.display = 'none';
                     return;
                 }
 
-                // Mapear y parsear fechas (compatibilidad con fecha_hora o fecha + hora_inicio)
+                // Mapear y parsear fechas
                 const mapped = eventos.map(e => {
-                    const fechaHoraRaw = e.fecha_hora || null;
-                    const fechaRaw = e.fecha || null;
-                    const horaRaw = e.hora_inicio || null;
-                    let _fechaObj = null;
-                    if (fechaHoraRaw) _fechaObj = parseFecha(fechaHoraRaw);
-                    if (!_fechaObj && fechaRaw) {
-                        _fechaObj = parseFecha(fechaRaw, horaRaw);
-                    }
-                    return { ...e, _fechaObj };
+                    const fechaHoraRaw = e.fechaEvento;
+                    const horaRaw = e.horaEvento;
+                    let _fechaObj = parseFecha(fechaHoraRaw, horaRaw);
+                    return { 
+                        ...e, 
+                        _fechaObj,
+                        // Compatibilidad con generateEventCard
+                        nombre_banda: e.nombreCompleto,
+                        precio_anticipada: e.precio,
+                        precio_puerta: null, // No disponible en la nueva API unificada
+                        fecha_hora: fechaHoraRaw
+                    };
                 }).filter(e => e._fechaObj); // quitar los inválidos
 
                 // próximos futuros (>= today)
-                const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-                const futuros = mapped.filter(e => e._fechaObj >= todayStart).sort((a, b) => a._fechaObj - b._fechaObj).slice(0, 4);
+                const todayStart = new Date();
+                todayStart.setHours(0, 0, 0, 0);
+                const futuros = mapped.filter(e => e._fechaObj >= todayStart).sort((a, b) => a._fechaObj - b._fechaObj);
 
                 // render
-                container.innerHTML = futuros.map(e => generateEventCard(e, { allowPurchase: true, compact: true })).join('');
+                container.innerHTML = futuros.slice(0, 4).map(e => generateEventCard(e, { allowPurchase: true, compact: true })).join('');
 
                 // preparar botón de mostrar agenda completa
-                document.getElementById('toggle-full-agenda').addEventListener('click', () => showFullAgenda(mapped));
-                document.getElementById('hide-full-agenda').addEventListener('click', () => hideFullAgenda());
+                if (mapped.length > 0) {
+                    document.getElementById('toggle-full-agenda').addEventListener('click', () => showFullAgenda(mapped));
+                    document.getElementById('hide-full-agenda').addEventListener('click', () => hideFullAgenda());
+                } else {
+                    document.getElementById('toggle-full-agenda').style.display = 'none';
+                }
+
+                if (futuros.length === 0) {
+                    container.innerHTML = `<div class="text-center py-10"><i class="fas fa-calendar-times text-4xl text-stone-500 mb-4"></i><p class="text-stone-400">No hay próximos shows de bandas programados.</p><p class="text-stone-300 mt-2">Revisa la agenda completa para ver eventos pasados.</p></div>`;
+                }
+
 
             } catch (err) {
                 console.error('Error cargando eventos:', err);

@@ -440,8 +440,14 @@
         }
 
         function getCategoria(item) {
-            if (item.source === 'evento') return 'BANDA';
+            // Mapear directamente desde tipoEvento si viene del endpoint /api/solicitudes/publicas
             const tipo = (item.tipo || '').toUpperCase();
+            if (tipo === 'BANDA') return 'BANDA';
+            if (tipo === 'TALLER') return 'TALLER';
+            if (tipo === 'SERVICIO') return 'SERVICIO';
+            
+            // Fallback para otros casos
+            if (item.source === 'evento') return 'BANDA';
             if (tipo.includes('TALLER')) return 'TALLER';
             if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) return 'SERVICIO';
             return 'ALQUILER';
@@ -489,61 +495,38 @@
 
         async function fetchAgenda() {
             try {
-                // Cargar eventos de bandas públicos
-                const resEventos = await fetch(`${API_BASE_URL}/api/tickets/fechas_bandas_confirmadas`);
-                let eventos = [];
-                if (resEventos.ok) {
-                    const data = await resEventos.json();
-                    eventos = data.filter(e => e.activo === 1 && e.es_publico === 1).map(e => {
-                        const fechaRaw = e.fecha || e.fecha_hora;
-                        const fechaObj = parseDateString(fechaRaw, e.hora_inicio);
-                        return {
-                            source: 'evento',
-                            id: e.id,
-                            fecha: fechaRaw,
-                            _fechaObj: fechaObj,
-                            hora: e.hora_inicio,
-                            nombre: e.nombre_banda,
-                            tipo: e.genero_musical || 'Banda',
-                            precio: e.precio_anticipada || e.precio_base,
-                            descripcion: e.descripcion
-                        };
-                    });
-                }
-
-                // Cargar solicitudes públicas confirmadas
-                const resSolicitudes = await fetch(`${API_BASE_URL}/api/solicitudes/publicas`);
-                let solicitudes = [];
-                if (resSolicitudes.ok) {
-                    const data = await resSolicitudes.json();
-                    solicitudes = data.map(s => {
-                        const fechaRaw = s.fecha_evento || s.fechaEvento;
-                        const horaRaw = s.hora_evento || s.horaEvento;
+                // Cargar todas las solicitudes públicas (bandas, talleres, servicios)
+                const resPublicas = await fetch(`${API_BASE_URL}/api/solicitudes/publicas`);
+                let items = [];
+                if (resPublicas.ok) {
+                    const data = await resPublicas.json();
+                    items = data.map(item => {
+                        const fechaRaw = item.fechaEvento;
+                        const horaRaw = item.horaEvento;
                         const fechaObj = parseDateString(fechaRaw, horaRaw);
                         return {
-                            source: 'solicitud',
-                            id: s.id,
+                            source: 'publica',
+                            id: item.id,
                             fecha: fechaRaw,
                             _fechaObj: fechaObj,
                             hora: horaRaw,
-                            nombre: s.nombre_completo || s.nombreCompleto || s.descripcion,
-                            tipo: s.tipo_de_evento || s.tipoEvento,
-                            precio: s.precio_basico || s.precio,
-                            descripcion: s.descripcion
+                            nombre: item.nombreCompleto,
+                            tipo: item.tipoEvento,
+                            precio: item.precio,
+                            descripcion: item.descripcion
                         };
                     });
                 }
 
-                // Combinar y ordenar por fecha (solo futuros con fecha estrictamente mayor a hoy)
-                const allItems = [...eventos, ...solicitudes];
+                // Filtrar solo eventos futuros
                 const hoy = new Date();
                 hoy.setHours(0, 0, 0, 0);
 
-                const proximosItems = allItems
+                const proximosItems = items
                     .filter(item => item._fechaObj && item._fechaObj > hoy)
-                    .sort((a, b) => a._fechaObj - b._fechaObj); // Mostrar todos los futuros
+                    .sort((a, b) => a._fechaObj - b._fechaObj);
 
-                renderAgenda(proximosItems, allItems.length);
+                renderAgenda(proximosItems, items.length);
 
             } catch (error) {
                 console.error('Error al cargar agenda:', error);

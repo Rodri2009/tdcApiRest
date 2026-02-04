@@ -63,7 +63,7 @@
         } else {
             API_BASE_URL = window.location.protocol + '//' + currentHost;
         }
-        const API_URL = API_BASE_URL + '/api/tickets/eventos';
+        const API_URL = API_BASE_URL + '/api/solicitudes/publicas';
 
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get('event_id');
@@ -86,8 +86,30 @@
                     elDesc.textContent = '';
                     return;
                 }
-                elName.textContent = currentEvent.nombre_banda;
+                elName.textContent = currentEvent.nombreCompleto;
                 elDesc.textContent = currentEvent.descripcion || '';
+
+                console.log('Datos del evento recibido:', currentEvent);
+                console.log('FechaEvento:', currentEvent.fechaEvento);
+                console.log('HoraEvento:', currentEvent.horaEvento);
+
+                // Validar y formatear fecha y hora del evento
+                if (currentEvent.fechaEvento) {
+                    const fechaEvento = new Date(currentEvent.fechaEvento);
+                    console.log('Fecha construida:', fechaEvento);
+                    if (!isNaN(fechaEvento.getTime())) {
+                        const fechaFormateada = fechaEvento.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                        const horaFormateada = fechaEvento.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                        elDesc.innerHTML += `<br><strong>Fecha:</strong> ${fechaFormateada} <br><strong>Hora:</strong> ${horaFormateada}`;
+                    } else {
+                        console.error('Fecha inválida:', fechaEvento);
+                        elDesc.innerHTML += `<br><strong>Fecha:</strong> No disponible <br><strong>Hora:</strong> No disponible`;
+                    }
+                } else {
+                    console.warn('Fecha no disponible en los datos del evento');
+                    elDesc.innerHTML += `<br><strong>Fecha:</strong> No disponible <br><strong>Hora:</strong> No disponible`;
+                }
+
                 renderPrices();
             } catch (err) {
                 elName.textContent = 'Error cargando evento';
@@ -96,15 +118,23 @@
         }
 
         function renderPrices() {
-            const a = currentEvent.precio_anticipada !== null && currentEvent.precio_anticipada !== undefined ? parseFloat(currentEvent.precio_anticipada) : null;
-            const p = currentEvent.precio_puerta !== null && currentEvent.precio_puerta !== undefined ? parseFloat(currentEvent.precio_puerta) : null;
-            if (a !== null) {
-                elPrices.textContent = `Anticipada: $ ${a.toLocaleString('es-AR')} ARS`;
+            const anticipada = currentEvent.precio_anticipada !== null && currentEvent.precio_anticipada !== undefined ? parseFloat(currentEvent.precio_anticipada) : null;
+            const puerta = currentEvent.precio_puerta !== null && currentEvent.precio_puerta !== undefined ? parseFloat(currentEvent.precio_puerta) : null;
+            const base = currentEvent.precio_base !== null && currentEvent.precio_base !== undefined ? parseFloat(currentEvent.precio_base) : null;
+            const general = currentEvent.precio !== null && currentEvent.precio !== undefined ? parseFloat(currentEvent.precio) : null;
+
+            if (anticipada !== null) {
+                elPrices.textContent = `Anticipada: $ ${anticipada.toLocaleString('es-AR')} ARS`;
+            } else if (base !== null) {
+                elPrices.textContent = `Precio: $ ${base.toLocaleString('es-AR')} ARS`;
+            } else if (general !== null) {
+                elPrices.textContent = `Precio: $ ${general.toLocaleString('es-AR')} ARS`;
             } else {
-                elPrices.textContent = `Precio: $ ${parseFloat(currentEvent.precio_base).toLocaleString('es-AR')} ARS`;
+                elPrices.textContent = 'Precio no disponible';
             }
-            if (p !== null) {
-                elPrices.textContent += ` • Puerta: $ ${p.toLocaleString('es-AR')} ARS`;
+
+            if (puerta !== null) {
+                elPrices.textContent += ` • Puerta: $ ${puerta.toLocaleString('es-AR')} ARS`;
             }
         }
 

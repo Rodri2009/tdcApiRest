@@ -182,8 +182,12 @@
         }
 
         function getCategoria(item) {
+            const tipo = (item.tipoEvento || item.tipo || '').toUpperCase();
+            if (tipo === 'BANDA') return 'BANDA';
+            if (tipo === 'TALLER') return 'TALLER';
+            if (tipo === 'SERVICIO') return 'SERVICIO';
+            // Fallback para datos antiguos o no estándar
             if (item.source === 'evento') return 'BANDA';
-            const tipo = (item.tipo || '').toUpperCase();
             if (tipo.includes('TALLER')) return 'TALLER';
             if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) return 'SERVICIO';
             return 'ALQUILER';

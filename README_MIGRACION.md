@@ -1,110 +1,96 @@
-# Plan de Migración y Nueva Lógica de Negocio
+# MIGRACIÓN A ESTRUCTURA NORMALIZADA DE SOLICITUDES
 
-## Objetivo
-
-Optimizar la estructura de datos y la lógica de negocio para que:
-- Toda solicitud comience en la tabla universal `solicitudes`.
-- Al ser confirmada, se copie a una tabla especializada según la categoría.
-- Las tablas especializadas sean fáciles de consultar y reportar.
+## Resumen
+Se realizó una migración de la base de datos y del backend para normalizar la gestión de solicitudes, separando los datos comunes y los específicos de cada tipo de solicitud. Esto mejora la integridad, escalabilidad y mantenibilidad del sistema.
 
 ---
 
-## Nuevo Modelo de Tablas
+## Cambios en la Base de Datos
 
-### 1. Tabla universal: `solicitudes`
-- id_solicitud (PK)
-- tipo (ENUM: 'ALQUILER', 'BANDA', 'TALLER', 'SERVICIO')
-- estado (Solicitado, Confirmado, Cancelado, etc.)
-- datos comunes: fecha, nombre_cliente, contacto, etc.
-- es_publico, fecha_creacion, etc.
+### 1. Nueva estructura de tablas
+- **Tabla general:** `solicitudes`
+  - Contiene los campos comunes a todas las solicitudes: id, categoria, estado, descripción, datos de contacto, etc.
+- **Tablas específicas:**
+  - `solicitudes_alquiler`: datos particulares de alquiler de salón.
+  - (Preparado para futuras: `solicitudes_bandas`, `solicitudes_servicios`, `solicitudes_talleres`)
 
-### 2. Tablas especializadas para confirmados
-
-- **alquileres_confirmados**
-  - id_alquiler (PK)
-  - id_solicitud (FK)
-  - tipo_salon, cantidad_personas, duracion, ...
-
-- **fecha_bandas_confirmadas**
-  - id_evento (PK)
-  - id_solicitud (FK)
-  - nombre_banda, genero, precio_anticipada, precio_puerta, aforo, ...
-
-- **talleres_confirmados**
-  - id_taller (PK)
-  - id_solicitud (FK)
-  - nombre_taller, cupo, docente, ...
-
-- **servicios_confirmados**
-  - id_servicio (PK)
-  - id_solicitud (FK)
-  - tipo_servicio, detalles, ...
+### 2. Migración de datos
+- Se renombró la tabla original `solicitudes_alquiler` a `solicitudes_alquiler_old`.
+- Se crearon las nuevas tablas normalizadas.
+- Se migraron los datos de la tabla antigua a la nueva estructura:
+  - Los datos comunes se insertaron en `solicitudes`.
+  - Los datos específicos se insertaron en `solicitudes_alquiler`.
+- Se actualizó el archivo `03_test_data.sql` con los nuevos inserts generados por `mysqldump`.
 
 ---
 
-## Lógica de Negocio
+## Cambios en el Backend
 
-1. **Alta:** Todo comienza en `solicitudes`.
-2. **Confirmación:**
-   - Al confirmar, se crea un registro en la tabla *_confirmados correspondiente, copiando los datos relevantes y guardando el `id_solicitud` como FK.
-   - El estado de la solicitud se actualiza a "Confirmado".
-3. **Cancelación:**
-   - Si se cancela, se puede eliminar o marcar como cancelado en la tabla *_confirmados.
+### 1. Controlador de Solicitudes (`backend/controllers/solicitudController.js`)
+- **Creación:**
+  - Ahora inserta primero en `solicitudes` y luego en la tabla específica (`solicitudes_alquiler`), usando el mismo `id`.
+- **Consulta:**
+  - Las consultas usan JOIN entre `solicitudes` y la tabla específica.
+  - El campo clave es `id` (ya no `id_solicitud`).
+- **Actualización y finalización:**
+  - Actualizan tanto la tabla general como la específica, usando transacciones para mantener la integridad.
+- **Todos los endpoints relevantes fueron adaptados para trabajar con la nueva estructura.**
 
----
-
-## Ejemplo de SQL para crear tablas
-
-```sql
-CREATE TABLE alquileres_confirmados (
-  id_alquiler INT AUTO_INCREMENT PRIMARY KEY,
-  id_solicitud INT NOT NULL,
-  tipo_salon VARCHAR(100),
-  cantidad_personas INT,
-  duracion VARCHAR(50),
-  -- otros campos específicos
-  FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud)
-);
-
-CREATE TABLE fecha_bandas_confirmadas (
-  id_evento INT AUTO_INCREMENT PRIMARY KEY,
-  id_solicitud INT NOT NULL,
-  nombre_banda VARCHAR(255),
-  genero_musical VARCHAR(100),
-  precio_anticipada DECIMAL(10,2),
-  precio_puerta DECIMAL(10,2),
-  aforo_maximo INT,
-  -- otros campos específicos
-  FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud)
-);
-
--- Repetir para talleres_confirmados y servicios_confirmados
-```
+### 2. Endpoints probados
+- Creación de solicitud (`POST /api/solicitudes`)
+- Consulta de solicitud (`GET /api/solicitudes/:id`)
+- Actualización de solicitud (`PUT /api/solicitudes/:id`)
 
 ---
 
-## Ejemplo de migración de datos (pseudo-código)
+## Refactorización de Bandas y Servicios
 
-```js
-// Para cada solicitud confirmada
-for (const solicitud of solicitudes) {
-  if (solicitud.tipo === 'ALQUILER') {
-    // Insertar en alquileres_confirmados usando datos de solicitud
-  }
-  if (solicitud.tipo === 'BANDA') {
-    // Insertar en fecha_bandas_confirmadas usando datos de solicitud
-  }
-  // etc.
-}
-```
+### Cambios en la lógica de Bandas
+1. **Normalización de Tablas**:
+   - Se ajustaron las tablas relacionadas con bandas para mejorar la consistencia de los datos.
+   - Se corrigieron errores en las consultas SQL y se alinearon con el esquema actualizado.
+
+2. **Endpoints**:
+   - Se verificaron y corrigieron los endpoints relacionados con solicitudes de bandas.
+   - Se resolvió el problema de "Banda no encontrada" en el endpoint `/api/bandas/solicitudes`.
+
+### Cambios en la lógica de Servicios
+1. **Nuevas Tablas**:
+   - Se crearon las tablas `servicios_catalogo`, `precios_servicios`, `profesionales_servicios` y `turnos_servicios`.
+   - Estas tablas manejan el catálogo de servicios, precios, profesionales y turnos respectivamente.
+
+2. **Datos de Prueba**:
+   - Se insertaron datos de prueba en las tablas mencionadas para validar la funcionalidad.
+
+3. **Endpoints**:
+   - Se probaron y corrigieron los endpoints públicos y protegidos relacionados con servicios.
+   - Se resolvieron errores internos en los endpoints `/api/servicios/catalogo` y `/api/servicios/turnos/disponibles`.
+
+### Notas Adicionales
+- Se añadieron comentarios en los archivos SQL para aclarar el propósito de las tablas y los datos de prueba.
+- Se verificó la consistencia de los datos y la funcionalidad de los endpoints después de los cambios.
 
 ---
 
 ## Consideraciones
-- El backend debe actualizarse para manejar la creación y consulta de las tablas *_confirmados.
-- Las vistas de administración y reportes deben consultar las tablas especializadas para mostrar los eventos confirmados.
-- El flujo de solicitudes pendientes sigue centralizado en la tabla `solicitudes`.
+- El backend ya no utiliza los campos ni la estructura antigua (`id_solicitud`, etc.).
+- Para nuevas categorías de solicitudes, basta con crear la tabla específica y adaptar el controlador.
+- El archivo `03_test_data.sql` debe mantenerse actualizado con los inserts de las tablas normalizadas.
 
 ---
 
-**Esta migración permitirá un sistema más escalable, ordenado y fácil de mantener.**
+## Archivos afectados
+- `database/01_schema.sql` (estructura y migración)
+- `database/03_test_data.sql` (datos de prueba actualizados)
+- `backend/controllers/solicitudController.js` (lógica de negocio adaptada)
+
+---
+
+## Próximos pasos sugeridos
+- Adaptar el resto de controladores y endpoints para otras categorías (`bandas`, `servicios`, `talleres`).
+- Eliminar definitivamente las tablas antiguas si ya no se requieren.
+- Mantener la documentación y los scripts de migración actualizados.
+
+---
+
+**Fecha de migración:** 4 de febrero de 2026
