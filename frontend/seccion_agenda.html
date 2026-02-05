@@ -204,7 +204,7 @@
             const { day, month, time } = formatDateTime(event.fecha_hora || event.fecha);
             const hora = event.hora_evento || event.hora || time;
             const precio = event.precio_base || event.precio_basico || event.precio_final || 0;
-            const nombre = event.nombre_banda || event.nombre_completo || event.descripcion || 'Evento';
+            const nombre = event.nombre_banda || event.nombreCliente || event.nombre_completo || event.nombreCompleto || event.descripcion || 'Evento';
 
             // Estilo y texto dinámico para precio y botón
             const esGratis = precio === 0 || precio === null;
@@ -309,7 +309,7 @@
                         source: 'solicitud',
                         fecha: s.fecha_evento || s.fechaEvento,
                         hora_evento: s.hora_evento || s.horaEvento,
-                        nombre_completo: s.nombre_completo || s.nombreCompleto,
+                        nombreCliente: s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda,
                         tipo_de_evento: s.tipo_de_evento || s.tipoEvento,
                         precio_basico: s.precio_basico || s.precio,
                         descripcion: s.descripcion

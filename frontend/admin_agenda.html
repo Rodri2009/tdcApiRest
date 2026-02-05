@@ -688,7 +688,7 @@
                     hora: s.horaInicio || s.hora_evento,
                     tipo: s.tipoEvento || 'Otro',
                     // Nombre: usar nombreBanda para bandas, nombreCliente para solicitudes
-                    nombre: (esBanda && s.nombreBanda) ? s.nombreBanda : (s.nombreCliente || s.nombre_completo || s.nombre_banda),
+                    nombre: (esBanda && s.nombreBanda) ? s.nombreBanda : (s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda),
                     telefono: s.telefono || '',
                     email: s.email || '',
                     descripcion: s.descripcion || '',

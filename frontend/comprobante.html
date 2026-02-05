@@ -162,7 +162,7 @@
             <div class="section">
                 <h2>Detalles del Solicitante</h2>
                 <div class="details-grid">
-                    <div class="detail-item"><strong>Nombre:</strong> <span id="nombre_completo"></span></div>
+                    <div class="detail-item"><strong>Nombre:</strong> <span id="nombre_cliente"></span></div>
                     <div class="detail-item"><strong>Email:</strong> <span id="email"></span></div>
                     <div class="detail-item"><strong>Teléfono:</strong> <span id="telefono"></span></div>
                 </div>
@@ -235,7 +235,7 @@
                         timeZone: 'UTC'
                     });
                     const formatCurrency = (number) => `$${parseFloat(number).toLocaleString('es-AR')}`;
-                    document.getElementById('nombre_completo').textContent = solicitudData.nombreCompleto;
+                    document.getElementById('nombre_cliente').textContent = solicitudData.nombreCliente || solicitudData.nombreCompleto || solicitudData.nombre_completo || '';
                     document.getElementById('email').textContent = solicitudData.email;
                     document.getElementById('telefono').textContent = solicitudData.telefono;
                     document.getElementById('nombre_para_mostrar').textContent = solicitudData
