@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(cookieParser()); // <-- USAR
 app.use(express.urlencoded({ extended: true }));
 
-// NOTE: Legacy endpoints like 'fechas_bandas_confirmadas' are intentionally blocked at the nginx layer.
+// NOTE: Legacy endpoints are intentionally blocked at the nginx layer.
 // No runtime catch-all handlers nor tracing should remain here. Remove temporary debugging middleware when confirmed.
 
 // Servir archivos estáticos del frontend
