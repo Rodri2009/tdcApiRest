@@ -5,6 +5,14 @@ Normalizar la estructura de datos para unificar el manejo de eventos confirmados
 
 ---
 
+## Plan de implementación (resumen)
+- Prioridad inmediata: Corregir validaciones y payloads en `config_alquiler` (precios/duraciones), y arreglar 404 en `config_bandas` e implementar CRUD de instrumentos. (0.5-1 día)
+- Media prioridad: Añadir validación estricta de `codigo` al crear tipos, y unificar vistas confirmadas por tipo (ALQUILERES, BANDAS, TALLERES, SERVICIOS) con campos estándar: `FECHA, HORA, TIPO, CLIENTE, DESCRIPCION_CORTA, ACCIONES`. (1 día)
+- Siguiente bloque: Implementar búsqueda/autocomplete de `clientes` para Talleristas/Profesionales; si no existe crear `cliente` al registrar tallerista/profesor/profesional. (1-2 días)
+- Opcional: Evaluar y migrar `personal` para usar `clientes` como entidad central (análisis y migración). (1-2 días)
+
+> Recomendación: trabajaremos por PRs pequeños y testeables; para la próxima sesión presencial propongo empezar por *config_alquiler* y *config_bandas*.
+
 ## 1. Cambios en la Base de Datos
 
 ### 1.1 Tablas de Solicitudes (Sin Cambios Estructurales)
