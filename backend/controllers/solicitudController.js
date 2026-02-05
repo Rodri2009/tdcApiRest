@@ -362,6 +362,7 @@ const getSolicitudPorId = async (req, res) => {
                 JOIN solicitudes sol ON ss.id_solicitud = sol.id
                 WHERE ss.id_solicitud = ?
             `;
+            console.log('[SOLICITUD][GET] SQL servicio:', sql);
 
             const [servicio] = await conn.query(sql, [servicioId]);
 
