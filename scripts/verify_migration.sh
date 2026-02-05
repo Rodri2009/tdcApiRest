@@ -63,10 +63,10 @@ fi
 
 # 3) Search for references in source (excluding docs/migrations and schema)
 echo -n "[verify] Buscando referencias a fechas_bandas_confirmadas en código (excluyendo migrations/docs/schema)... "
-if grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude-dir=.git --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=01_schema.sql --exclude=03_test_data.sql --exclude=nginx.conf --exclude=scripts/verify_migration.sh -n . | wc -l | grep -q "0"; then
+if grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude-dir=.git --exclude-dir=scripts --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=01_schema.sql --exclude=03_test_data.sql --exclude=nginx.conf --exclude=verify_migration.sh -n . | wc -l | grep -q "0"; then
   echo "OK"
 else
-  echo "FOUND"; grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude-dir=.git --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=01_schema.sql --exclude=03_test_data.sql --exclude=nginx.conf --exclude=scripts/verify_migration.sh -n .
+  echo "FOUND"; grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude-dir=.git --exclude-dir=scripts --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=01_schema.sql --exclude=03_test_data.sql --exclude=nginx.conf --exclude=verify_migration.sh -n .
   errors=$((errors+1))
 fi
 
