@@ -826,7 +826,7 @@ const crearEvento = async (req, res) => {
                 genero_musical, cantidad_personas
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-            NULL,
+            null,
             tipo_evento || 'BANDA',
             'manual_admin',
             nombre_banda,
@@ -1020,7 +1020,7 @@ const getEventosConfirmados = async (req, res) => {
 
         const lim = parseInt(limit, 10) || 200;
 
-        const sql = `SELECT id, id_solicitud, tipo_evento, tabla_origen, nombre_evento, fecha_evento, hora_inicio, es_publico, activo, nombre_cliente, precio_final FROM eventos_confirmados ${conditions} ORDER BY fecha_evento DESC, hora_inicio DESC LIMIT ?`;
+        const sql = `SELECT id, id_solicitud, tipo_evento, tabla_origen, nombre_evento, descripcion as descripcion_corta, fecha_evento, hora_inicio, es_publico, activo, nombre_cliente, precio_final, genero_musical FROM eventos_confirmados ${conditions} ORDER BY fecha_evento DESC, hora_inicio DESC LIMIT ?`;
         params.push(lim);
 
         const rows = await conn.query(sql, params);
