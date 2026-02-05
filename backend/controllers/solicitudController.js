@@ -850,6 +850,8 @@ const updateVisibilidad = async (req, res) => {
     const { id } = req.params;
     const { es_publico } = req.body;
 
+    console.log(`[VISIBILIDAD][REQ] id recibido: ${id}, es_publico: ${es_publico}`);
+
     if (typeof es_publico === 'undefined') {
         return res.status(400).json({ message: 'Falta el campo es_publico' });
     }
@@ -858,31 +860,72 @@ const updateVisibilidad = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // Verificar si existe en solicitudes_alquiler
-        let [solicitud] = await conn.query("SELECT id FROM solicitudes_alquiler WHERE id = ?", [id]);
-        let tabla = 'solicitudes_alquiler';
-        let idColumnName = 'id';
+        // Soportar IDs con prefijos: alq_, bnd_, srv_, tll_, ev_
+        let tabla = null;
+        let idColumnName = null;
+        let idValue = id; // por defecto puede ser numérico o con prefijo
 
-        if (!solicitud) {
-            // Si no existe, verificar en solicitudes_bandas
-            [solicitud] = await conn.query("SELECT id_solicitud FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
-            if (solicitud) {
-                tabla = 'solicitudes_bandas';
-                idColumnName = 'id_solicitud';
+        if (String(id).startsWith('alq_')) {
+            idValue = parseInt(String(id).substring(4), 10);
+            tabla = 'solicitudes_alquiler';
+            idColumnName = 'id';
+        } else if (String(id).startsWith('bnd_')) {
+            idValue = parseInt(String(id).substring(4), 10);
+            tabla = 'solicitudes_bandas';
+            idColumnName = 'id_solicitud';
+        } else if (String(id).startsWith('srv_')) {
+            idValue = parseInt(String(id).substring(4), 10);
+            tabla = 'solicitudes_servicios';
+            idColumnName = 'id';
+        } else if (String(id).startsWith('tll_')) {
+            idValue = parseInt(String(id).substring(4), 10);
+            tabla = 'solicitudes_talleres';
+            idColumnName = 'id';
+        } else if (String(id).startsWith('ev_')) {
+            // Evento confirmado (fechas_bandas_confirmadas)
+            idValue = parseInt(String(id).substring(3), 10);
+            tabla = 'fechas_bandas_confirmadas';
+            idColumnName = 'id';
+        } else {
+            // Intentar detectar en las tablas con ID numérico
+            // Primero alquiler
+            let [found] = await conn.query('SELECT id FROM solicitudes_alquiler WHERE id = ?', [id]);
+            if (found) {
+                tabla = 'solicitudes_alquiler';
+                idColumnName = 'id';
+                idValue = id;
+            } else {
+                [found] = await conn.query('SELECT id_solicitud FROM solicitudes_bandas WHERE id_solicitud = ?', [id]);
+                if (found) {
+                    tabla = 'solicitudes_bandas';
+                    idColumnName = 'id_solicitud';
+                    idValue = id;
+                }
             }
         }
 
-        if (!solicitud) {
+        if (!tabla) {
             return res.status(404).json({ message: 'Solicitud no encontrada' });
         }
 
         const result = await conn.query(
             `UPDATE ${tabla} SET es_publico = ? WHERE ${idColumnName} = ?`,
-            [es_publico ? 1 : 0, id]
+            [es_publico ? 1 : 0, idValue]
         );
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada' });
+        }
+
+        // Si la solicitud tiene un evento confirmado asociado, propagar la visibilidad
+        // Buscamos por id_solicitud y tabla_origen
+        if (tabla !== 'fechas_bandas_confirmadas') {
+            try {
+                await conn.query(`UPDATE eventos_confirmados SET es_publico = ? WHERE id_solicitud = ? AND tabla_origen = ?`, [es_publico ? 1 : 0, idValue, tabla]);
+            } catch (err) {
+                // No crítico, informar en logs pero no fallar la petición
+                console.warn('No se pudo propagar es_publico a eventos_confirmados:', err.message);
+            }
         }
 
         return res.status(200).json({

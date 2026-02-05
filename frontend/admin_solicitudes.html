@@ -539,7 +539,14 @@
 
                     // Filtro por tipo (categoría)
                     if (tipo) {
-                        const tipoNormalizado = tipo === 'TALLERES' ? 'TALLERES_ACTIVIDADES' : tipo;
+                        // Normalizar valores del filtro para que coincidan con los valores devueltos por el backend
+                        const mapTipo = {
+                            'TALLERES': 'TALLER',
+                            'TALLERES_ACTIVIDADES': 'TALLER',
+                            'SERVICIOS': 'SERVICIO',
+                            'FECHA_BANDAS': 'BANDA'
+                        };
+                        const tipoNormalizado = mapTipo[tipo] || tipo;
                         if (s.tipoEvento !== tipoNormalizado && s.tipoEvento !== tipo) return false;
                     }
 
