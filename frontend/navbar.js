@@ -228,6 +228,8 @@ class NavbarManager {
         // Solicitudes
         if (this.tienePermiso('solicitudes.ver')) {
             items.push(this.menuItem('/admin_solicitudes.html', '📝', 'Solicitudes'));
+            // Eventos confirmados (vista unificada)
+            items.push(this.menuItem('/admin_eventos_confirmados.html', '📆', 'Eventos Confirmados'));
         }
 
         // Personal

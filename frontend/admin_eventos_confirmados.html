@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin - Eventos Confirmados</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: Inter, sans-serif; background: #0c0a09; color: #d6d3d1; padding: calc(16px + 4rem) 16px 16px 16px; }
+    .table-container { max-width: 1400px; margin: 0 auto; background: #1a1a1a; padding: 20px; border-radius: 8px; border: 1px solid rgba(240,171,252,0.08); overflow-x:auto }
+    th, td { padding: 10px 12px; text-align: left; font-size: 14px; border-bottom: 1px solid #222 }
+    th { background: linear-gradient(135deg,#581c87,#764ba2); color: #f0abfc; text-transform: uppercase; font-weight:700 }
+    .filters { display:flex; gap:10px; margin-bottom: 12px; flex-wrap:wrap }
+    .description { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-width: 360px }
+    .btn { background:#764ba2; color:#fff; padding:8px 12px; border-radius:6px; cursor:pointer }
+    #loader { text-align:center; padding:24px; color:#9f7aea }
+  </style>
+</head>
+<body>
+  <header class="bg-rustic" style="position:fixed;top:0;left:0;right:0;z-index:999;padding:12px;background:#121212;border-bottom:1px solid rgba(255,255,255,0.03)">
+    <div style="max-width:1200px;margin:0 auto;color:#f0abfc;font-weight:700">Panel Admin — Eventos Confirmados</div>
+  </header>
+
+  <main style="max-width:1200px;margin:100px auto 40px auto">
+    <div class="table-container">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h2 style="color:#f0abfc;margin:0">Eventos Confirmados</h2>
+        <div>
+          <button id="refreshBtn" class="btn">Actualizar</button>
+        </div>
+      </div>
+
+      <div class="filters" aria-hidden="false">
+        <select id="tipoFilter">
+          <option value="">-- Tipo de evento (todos) --</option>
+          <option value="ALQUILER">ALQUILER</option>
+          <option value="BANDA">BANDA</option>
+          <option value="TALLER">TALLER</option>
+          <option value="SERVICIO">SERVICIO</option>
+        </select>
+        <input type="date" id="desde" />
+        <input type="date" id="hasta" />
+        <input type="number" id="limit" placeholder="Max (200)" style="width:110px" />
+        <button id="filtrarBtn" class="btn">Filtrar</button>
+      </div>
+
+      <div id="loader" style="display:none">Cargando...</div>
+
+      <div id="tabla" style="overflow-x:auto">
+        <table id="eventsTable">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Tipo</th>
+              <th>Cliente</th>
+              <th>Nombre</th>
+              <th>Descripción</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="empty" style="display:none;padding:20px;text-align:center;color:#9f7aea">No se encontraron eventos con esos filtros.</div>
+    </div>
+  </main>
+
+  <script src="/navbar.js"></script>
+  <script>
+    function getToken(){ return localStorage.getItem('authToken') }
+    function getHeaders(){ return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` } }
+
+    const $loader = document.getElementById('loader');
+    const $tbody = document.querySelector('#eventsTable tbody');
+    const $empty = document.getElementById('empty');
+
+    async function fetchEventos() {
+      $loader.style.display = 'block';
+      $tbody.innerHTML = '';
+      $empty.style.display = 'none';
+
+      const tipo = document.getElementById('tipoFilter').value;
+      const desde = document.getElementById('desde').value;
+      const hasta = document.getElementById('hasta').value;
+      const limit = document.getElementById('limit').value || 200;
+
+      const params = new URLSearchParams();
+      if (tipo) params.set('tipo_evento', tipo);
+      if (desde) params.set('fecha_desde', desde);
+      if (hasta) params.set('fecha_hasta', hasta);
+      params.set('limit', limit);
+
+      try {
+        const res = await fetch(`/api/admin/eventos_confirmados?${params.toString()}`, { headers: getHeaders() });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const rows = await res.json();
+        if (!rows || rows.length === 0) {
+          $empty.style.display = 'block';
+          return;
+        }
+        for (const r of rows) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${r.fecha_evento || ''}</td>
+            <td>${r.hora_inicio || ''}</td>
+            <td>${r.tipo_evento || ''}</td>
+            <td>${r.nombre_cliente || ''}</td>
+            <td>${r.nombre_evento || ''}</td>
+            <td class="description">${r.descripcion_corta || ''}</td>
+            <td class="actions-cell">
+              <a class="btn" href="/editar_solicitud?id=${r.id_solicitud}">Ver solicitud</a>
+            </td>
+          `;
+          $tbody.appendChild(tr);
+        }
+      } catch (err) {
+        console.error('Error fetching eventos confirmados', err);
+        alert('Error al obtener eventos confirmados. Revisa la consola.');
+      } finally {
+        $loader.style.display = 'none';
+      }
+    }
+
+    document.getElementById('filtrarBtn').addEventListener('click', fetchEventos);
+    document.getElementById('refreshBtn').addEventListener('click', fetchEventos);
+
+    // Auto load
+    fetchEventos();
+  </script>
+</body>
+</html>
