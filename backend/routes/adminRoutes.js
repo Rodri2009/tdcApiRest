@@ -43,11 +43,13 @@ router.get('/orden-trabajo/:id', getOrdenDeTrabajo);
 // =============================================================================
 // EVENTOS
 // =============================================================================
-router.get('/fechas_bandas_confirmadas/:id', getEventoById);
-router.post('/fechas_bandas_confirmadas', checkPermiso('solicitudes.crear'), crearEvento);
-router.put('/fechas_bandas_confirmadas/:id', checkPermiso('solicitudes.editar'), actualizarEvento);
-router.patch('/fechas_bandas_confirmadas/:id/cancel', checkPermiso('solicitudes.cambiar_estado'), cancelarEvento);
-router.delete('/fechas_bandas_confirmadas/:id', checkPermiso('solicitudes.eliminar'), eliminarEvento);
+// Rutas unificadas: /eventos_confirmados
+router.get('/eventos_confirmados/:id', getEventoById);
+router.post('/eventos_confirmados', checkPermiso('solicitudes.crear'), crearEvento);
+router.put('/eventos_confirmados/:id', checkPermiso('solicitudes.editar'), actualizarEvento);
+router.patch('/eventos_confirmados/:id/cancel', checkPermiso('solicitudes.cambiar_estado'), cancelarEvento);
+router.delete('/eventos_confirmados/:id', checkPermiso('solicitudes.eliminar'), eliminarEvento);
+
 router.get('/tipos-evento/all', getAllTiposDeEvento);
 
 // =============================================================================

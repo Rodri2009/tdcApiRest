@@ -284,7 +284,7 @@
         async function fetchEvents() {
             try {
                 // Cargar eventos de bandas públicos
-                const resEventos = await fetch(`${API_BASE_URL}/api/tickets/fechas_bandas_confirmadas`);
+                const resEventos = await fetch(`${API_BASE_URL}/api/tickets/eventos_confirmados`);
                 let eventos = [];
                 if (resEventos.ok) {
                     const data = await resEventos.json();

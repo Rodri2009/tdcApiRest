@@ -6,8 +6,8 @@ const bandasController = require('../controllers/bandasController');
 const { protect } = require('../middleware/authMiddleware');
 const requireAdmin = require('../middleware/requireAdmin');
 
-// GET /api/tickets/fechas_bandas_confirmadas - Lista todas las fechas de bandas disponibles.
-router.get('/fechas_bandas_confirmadas', ticketsController.getFechasBandasConfirmadas);
+// GET /api/tickets/eventos_confirmadas - Lista todas las fechas de bandas disponibles.
+router.get('/eventos_confirmados', ticketsController.getFechasBandasConfirmadas);
 
 // GET /api/tickets/eventos/:id/lineup - Lineup de un evento
 router.get('/eventos/:id/lineup', bandasController.getEventoLineup);

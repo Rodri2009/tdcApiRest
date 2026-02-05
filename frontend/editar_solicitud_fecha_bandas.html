@@ -512,7 +512,7 @@
         async function cargarEvento() {
             showLoading(true);
             try {
-                const res = await fetch(`/api/admin/fechas_bandas_confirmadas/${eventoId}`);
+                const res = await fetch(`/api/admin/eventos_confirmados/${eventoId}`);
                 console.log(res);
                 if (!res.ok) throw new Error('No se pudo cargar el evento');
 
@@ -594,7 +594,7 @@
 
             try {
                 // Si eventoId es null, es un nuevo evento (POST), sino actualizar (PUT)
-                const url = eventoId ? `/api/admin/fechas_bandas_confirmadas/${eventoId}` : '/api/admin/fechas_bandas_confirmadas';
+                const url = eventoId ? `/api/admin/eventos_confirmados/${eventoId}` : '/api/admin/eventos_confirmados';
                 const method = eventoId ? 'PUT' : 'POST';
 
                 const res = await fetch(url, {
@@ -630,7 +630,7 @@
             showLoading(true);
 
             try {
-                const res = await fetch(`/api/admin/fechas_bandas_confirmadas/${eventoId}`, {
+                const res = await fetch(`/api/admin/eventos_confirmados/${eventoId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });

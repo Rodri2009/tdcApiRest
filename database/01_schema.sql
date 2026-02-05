@@ -263,44 +263,16 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
     UNIQUE KEY uk_solicitud_tipo (id_solicitud, tipo_evento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Eventos confirmados unificados de todas las solicitudes';
 
--- Fechas de bandas confirmadas
-CREATE TABLE IF NOT EXISTS fechas_bandas_confirmadas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    tipo_evento ENUM('ALQUILER','BANDA','TALLER','SERVICIO','OTRO') NOT NULL DEFAULT 'BANDA',
-    
-    -- Información del show (visible para el público)
-    nombre_banda VARCHAR(255) NOT NULL COMMENT 'Nombre del artista/banda - título del evento',
-    genero_musical VARCHAR(100) DEFAULT NULL COMMENT 'Género: Rock, Jazz, Cumbia, Electrónica, etc.',
-    descripcion TEXT,
-    url_imagen VARCHAR(500) DEFAULT NULL COMMENT 'URL del flyer del evento',
-    
-    -- Datos del contacto/organizador (quien solicita la fecha)
-    nombre_contacto VARCHAR(255) DEFAULT NULL COMMENT 'Nombre del organizador/contacto',
-    email_contacto VARCHAR(255) DEFAULT NULL,
-    telefono_contacto VARCHAR(50) DEFAULT NULL,
-    
-    -- Fecha y horarios
-    fecha DATE NOT NULL,
-    hora_inicio TIME DEFAULT NULL,
-    hora_fin TIME DEFAULT NULL,
-    
-    -- Precios
-    precio_base DECIMAL(10,2) DEFAULT 0.00,
-    precio_anticipada DECIMAL(10,2) DEFAULT NULL,
-    precio_puerta DECIMAL(10,2) DEFAULT NULL,
-    aforo_maximo INT DEFAULT 120,
-    
-    -- Estado y control
-    estado VARCHAR(50) DEFAULT 'Solicitado' COMMENT 'Solicitado, Confirmado, Cancelado, Finalizado',
-    es_publico TINYINT(1) DEFAULT 1,
-    activo TINYINT(1) DEFAULT 1,
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    UNIQUE KEY uk_tipo_fecha (tipo_evento, fecha),
-    INDEX idx_fecha (fecha),
-    INDEX idx_activo (activo),
-    INDEX idx_es_publico (es_publico)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- Fechas de bandas confirmadas (DEPRECATED)
+-- La tabla original `fechas_bandas_confirmadas` fue migrada a `eventos_confirmados`.
+-- No crear la tabla legacy por defecto; si necesitas recuperar datos migrados,
+-- revisa `database/migrations/20260204_migrate_fechas_to_eventos.sql` y las tablas
+-- `backup_fechas_bandas_confirmadas` / `fechas_bandas_confirmadas_deprecated`.
+--
+-- Nota: Antes de volver a habilitar la creación de `fechas_bandas_confirmadas`,
+-- actualiza las FK y dependencias para que no colisionen con `eventos_confirmados`.
+-- (La presencia de la definición legacy puede causar inconsistencias en instalaciones nuevas.)
+
 
 -- =============================================================================
 -- 5.1 CATÁLOGO DE BANDAS/ARTISTAS
@@ -392,7 +364,7 @@ CREATE TABLE IF NOT EXISTS eventos_lineup (
     INDEX idx_evento (id_evento),
     INDEX idx_banda (id_banda),
     INDEX idx_orden (id_evento, orden_show),
-    FOREIGN KEY (id_evento) REFERENCES fechas_bandas_confirmadas(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE,
     FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -406,7 +378,7 @@ CREATE TABLE IF NOT EXISTS eventos_bandas_invitadas (
     
     INDEX idx_evento (id_evento),
     INDEX idx_banda (id_banda),
-    FOREIGN KEY (id_evento) REFERENCES fechas_bandas_confirmadas(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE,
     FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -491,7 +463,7 @@ CREATE TABLE IF NOT EXISTS eventos_personal (
     hora_inicio TIME DEFAULT NULL,
     hora_fin TIME DEFAULT NULL,
     INDEX idx_evento (id_evento),
-    FOREIGN KEY (id_evento) REFERENCES fechas_bandas_confirmadas(id) ON DELETE CASCADE
+    FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
@@ -601,7 +573,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     estado ENUM('pendiente', 'pagado', 'utilizado', 'cancelado') DEFAULT 'pendiente',
     comprado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_evento (id_evento),
-    FOREIGN KEY (id_evento) REFERENCES fechas_bandas_confirmadas(id) ON DELETE CASCADE
+    FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS cupones (

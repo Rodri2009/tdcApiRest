@@ -798,29 +798,29 @@ const getEventosBandas = async (req, res) => {
 
         let query = `
             SELECT 
-                fbc.id,
-                fbc.nombre_banda,
-                fbc.genero_musical,
-                fbc.descripcion,
-                fbc.url_imagen,
-                fbc.fecha,
-                fbc.hora_inicio,
-                fbc.hora_fin,
-                fbc.aforo_maximo,
-                fbc.es_publico,
-                fbc.precio_base,
-                fbc.precio_anticipada,
-                fbc.precio_puerta,
-                fbc.nombre_contacto,
-                fbc.email_contacto,
-                fbc.telefono_contacto,
-                fbc.tipo_evento,
-                fbc.activo,
-                fbc.estado,
-                fbc.creado_en,
-                (SELECT COUNT(*) FROM tickets WHERE id_evento = fbc.id) as entradas_vendidas
-            FROM fechas_bandas_confirmadas fbc
-            WHERE 1=1
+                e.id,
+                e.nombre_evento as nombre_banda,
+                e.genero_musical,
+                e.descripcion,
+                NULL as url_imagen,
+                DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fecha,
+                TIME_FORMAT(e.hora_inicio, '%H:%i') as hora_inicio,
+                NULL as hora_fin,
+                e.cantidad_personas as aforo_maximo,
+                e.es_publico,
+                e.precio_base,
+                NULL as precio_anticipada,
+                e.precio_final as precio_puerta,
+                e.nombre_cliente as nombre_contacto,
+                e.email_cliente as email_contacto,
+                e.telefono_cliente as telefono_contacto,
+                e.tipo_evento,
+                e.activo,
+                CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Cancelado' END as estado,
+                e.confirmado_en as creado_en,
+                (SELECT COUNT(*) FROM tickets WHERE id_evento = e.id) as entradas_vendidas
+            FROM eventos_confirmados e
+            WHERE e.tipo_evento = 'BANDA'
         `;
         const params = [];
 
@@ -871,7 +871,7 @@ const getEventoBandaById = async (req, res) => {
             SELECT 
                 e.*,
                 (SELECT COUNT(*) FROM tickets WHERE id_evento = e.id) as entradas_vendidas
-            FROM eventos e
+            FROM eventos_confirmados e
             WHERE e.id = ? AND e.tipo_evento = 'BANDA'
         `, [id]);
 

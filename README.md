@@ -75,8 +75,8 @@ docker exec -it tdc-backend node /app/scripts/crear-admin.js
 
 ## Cambios importantes (Migración Diciembre 2025)
 
-- Se migró la tabla principal `eventos` a `fechas_bandas_confirmadas`.
-- Todas las claves foráneas que referenciaban `eventos(id)` ahora apuntan a `fechas_bandas_confirmadas(id)`.
+- Se migró la tabla principal `eventos` a `eventos_confirmados`.
+- Todas las claves foráneas que referenciaban `eventos(id)` ahora apuntan a `eventos_confirmados(id)`.
 - Se actualizaron los scripts de datos de prueba y el schema para reflejar estos cambios.
 - El backend y frontend consumen los nuevos endpoints y estructura.
 - Si tienes scripts personalizados, revisa y actualiza cualquier referencia a la tabla `eventos`.

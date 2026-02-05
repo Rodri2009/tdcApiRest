@@ -137,7 +137,7 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 | `solicitudes_bandas` | Agregar `es_publico_cuando_confirmada` |
 | `solicitudes_servicios` | Agregar `es_publico_cuando_confirmada` |
 | `solicitudes_talleres` | Agregar `es_publico_cuando_confirmada` |
-| `fechas_bandas_confirmadas` | **Deprecar** (reemplazar con `eventos_confirmados`) |
+| `fechas_bandas_confirmadas` | **Eliminada / Migrada** (ya no se utiliza; datos migrados a `eventos_confirmados`) |
 | `eventos_confirmados` | **Nueva** |
 
 ---
@@ -168,7 +168,7 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
     - Marcar como inactivo en `eventos_confirmados` al cancelar
     - Lógica de prefijos (`alq_`, `bnd_`, `srv_`, `tll_`)
     - Transacciones ACID para integridad
-  - Mantiene compatibilidad con `fechas_bandas_confirmadas` para bandas
+  - Compatibilidad con `fechas_bandas_confirmadas` eliminada; usar `eventos_confirmados` para todos los tipos
 
 ### Fase 3: Testing ✅
 - [x] Pruebas curl exitosas:
@@ -256,6 +256,6 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 
 - **Campos `nombre_cliente`, `email_cliente`, `telefono_cliente`**: Se extraen de la solicitud al confirmar y se guardan en `eventos_confirmados` para independencia de datos
 - **Campo `tabla_origen`**: Permite saber de cuál tabla específica proviene cada evento (facilita auditoría y trazabilidad)
-- **Compatibilidad Backward**: El código mantiene lógica para `fechas_bandas_confirmadas` para bandas, permitiendo migración gradual
+- **Compatibilidad Backward**: Eliminada. El código utiliza `eventos_confirmados` y las rutas legacy `/fechas_bandas_confirmadas` han sido removidas.
 - **Transacciones**: Uso de `beginTransaction()` y `commit()` asegura atomicidad en operaciones complejas
 - **Error Handling**: Si falla la inserción en `eventos_confirmados`, se hace `rollback()` automático

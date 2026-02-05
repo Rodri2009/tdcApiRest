@@ -416,12 +416,29 @@
             animation: slideIn 0.3s ease;
             max-width: 400px;
         }
-        .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
-        .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+        .notification-banner.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification-banner.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification-banner.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
         @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -729,7 +746,7 @@
             <div class="modal-body">
                 <form id="form-evento">
                     <input type="hidden" id="evento-id">
-                    
+
                     <!-- Fecha y Hora -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
                         <div class="form-group">
@@ -758,7 +775,7 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <!-- Banda principal y Género -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                         <div class="form-group">
@@ -770,19 +787,21 @@
                             <input type="text" id="evento-genero" placeholder="Ej: Rock, Metal, Pop">
                         </div>
                     </div>
-                    
+
                     <!-- Bandas invitadas -->
                     <div class="form-group">
                         <label><i class="fas fa-user-friends"></i> Bandas Invitadas</label>
-                        <p class="hint" style="margin-top:0;margin-bottom:8px;color:#9ca3af;font-size:0.8rem;">Separar por coma. Ej: Banda1, Banda2, Banda3</p>
+                        <p class="hint" style="margin-top:0;margin-bottom:8px;color:#9ca3af;font-size:0.8rem;">Separar
+                            por coma. Ej: Banda1, Banda2, Banda3</p>
                         <input type="text" id="evento-invitadas" placeholder="Banda invitada 1, Banda invitada 2...">
                     </div>
-                    
+
                     <!-- Precios -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
                         <div class="form-group">
                             <label><i class="fas fa-ticket-alt"></i> Precio Anticipada ($)</label>
-                            <input type="number" id="evento-precio-anticipada" min="0" step="100" placeholder="Ej: 5000">
+                            <input type="number" id="evento-precio-anticipada" min="0" step="100"
+                                placeholder="Ej: 5000">
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-ticket-alt"></i> Precio Puerta ($)</label>
@@ -793,7 +812,7 @@
                             <input type="number" id="evento-aforo" min="0" placeholder="Ej: 150">
                         </div>
                     </div>
-                    
+
                     <!-- Estado y Visibilidad -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
                         <div class="form-group">
@@ -812,7 +831,7 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <!-- Contacto -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                         <div class="form-group">
@@ -828,11 +847,12 @@
                             <input type="email" id="evento-contacto-email" placeholder="email@ejemplo.com">
                         </div>
                     </div>
-                    
+
                     <!-- Descripción -->
                     <div class="form-group">
                         <label><i class="fas fa-comment"></i> Descripción / Notas</label>
-                        <textarea id="evento-descripcion" rows="3" placeholder="Notas adicionales, rider técnico, etc."></textarea>
+                        <textarea id="evento-descripcion" rows="3"
+                            placeholder="Notas adicionales, rider técnico, etc."></textarea>
                     </div>
                 </form>
             </div>
@@ -922,7 +942,7 @@
         async function loadEventos() {
             try {
                 const estado = document.getElementById('filter-estado-evento').value || 'Confirmado';
-                const url = `/api/bandas/fechas_bandas_confirmadas?estado=${estado}`;
+                const url = `/api/bandas/eventos_confirmados?estado=${estado}`;
                 const res = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });
@@ -1093,7 +1113,7 @@
                 showBanner('Evento no encontrado', 'error');
                 return;
             }
-            
+
             document.getElementById('modal-evento-title').textContent = 'Editar Evento';
             document.getElementById('evento-id').value = evento.id;
             document.getElementById('evento-fecha').value = evento.fecha || '';
@@ -1101,13 +1121,13 @@
             document.getElementById('evento-hora-fin').value = evento.hora_fin ? evento.hora_fin.substring(0, 5) : '';
             document.getElementById('evento-banda').value = evento.nombre_banda || '';
             document.getElementById('evento-genero').value = evento.genero_musical || '';
-            
+
             // Bandas invitadas (convertir array a string separado por comas)
-            const invitadasStr = evento.invitadas && evento.invitadas.length > 0 
-                ? evento.invitadas.map(b => b.nombre_banda).join(', ') 
+            const invitadasStr = evento.invitadas && evento.invitadas.length > 0
+                ? evento.invitadas.map(b => b.nombre_banda).join(', ')
                 : '';
             document.getElementById('evento-invitadas').value = invitadasStr;
-            
+
             document.getElementById('evento-precio-anticipada').value = evento.precio_anticipada || '';
             document.getElementById('evento-precio-puerta').value = evento.precio_puerta || '';
             document.getElementById('evento-aforo').value = evento.aforo_maximo || '';
@@ -1117,7 +1137,7 @@
             document.getElementById('evento-contacto-whatsapp').value = evento.whatsapp_contacto || '';
             document.getElementById('evento-contacto-email').value = evento.email_contacto || '';
             document.getElementById('evento-descripcion').value = evento.descripcion || '';
-            
+
             openModal('modal-evento');
         }
 
@@ -1135,12 +1155,12 @@
             const id = document.getElementById('evento-id').value;
             const fecha = document.getElementById('evento-fecha').value;
             const banda = document.getElementById('evento-banda').value;
-            
+
             if (!fecha || !banda) {
                 showBanner('Fecha y banda son obligatorios', 'error');
                 return;
             }
-            
+
             // Preparar datos
             const body = {
                 fecha: fecha,
@@ -1159,17 +1179,17 @@
                 email_contacto: document.getElementById('evento-contacto-email').value || null,
                 descripcion: document.getElementById('evento-descripcion').value || null
             };
-            
+
             // Bandas invitadas (convertir string a array)
             const invitadasStr = document.getElementById('evento-invitadas').value;
             if (invitadasStr) {
                 body.bandas_invitadas = invitadasStr.split(',').map(b => b.trim()).filter(b => b);
             }
-            
+
             try {
-                const url = id ? `/api/admin/fechas_bandas_confirmadas/${id}` : '/api/admin/fechas_bandas_confirmadas';
+                const url = id ? `/api/admin/eventos_confirmados/${id}` : '/api/admin/eventos_confirmados';
                 const method = id ? 'PUT' : 'POST';
-                
+
                 const res = await fetch(url, {
                     method: method,
                     headers: {
@@ -1178,9 +1198,9 @@
                     },
                     body: JSON.stringify(body)
                 });
-                
+
                 const data = await res.json();
-                
+
                 if (res.ok) {
                     showBanner(data.message || 'Evento guardado correctamente', 'success');
                     closeModal('modal-evento');
@@ -1196,7 +1216,7 @@
         async function deleteEvento(id) {
             if (!confirm('¿Estás seguro de eliminar este evento?')) return;
             try {
-                const res = await fetch(`/api/admin/fechas_bandas_confirmadas/${id}`, {
+                const res = await fetch(`/api/admin/eventos_confirmados/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });

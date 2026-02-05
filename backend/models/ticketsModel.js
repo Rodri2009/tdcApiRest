@@ -41,21 +41,21 @@ const getEventosActivos = async () => {
     const query = `
         SELECT 
             e.id, 
-            e.nombre_banda, 
-            CONCAT(e.fecha, ' ', COALESCE(e.hora_inicio, '00:00:00')) as fecha_hora,
+            e.nombre_evento AS nombre_banda, 
+            CONCAT(e.fecha_evento, ' ', COALESCE(e.hora_inicio, '00:00:00')) as fecha_hora,
             e.precio_base,
-            e.precio_anticipada,
-            e.precio_puerta,
-            e.aforo_maximo, 
+            NULL as precio_anticipada,
+            e.precio_final as precio_puerta,
+            e.cantidad_personas as aforo_maximo, 
             e.activo, 
             e.descripcion,
-            CAST((e.aforo_maximo - COUNT(t.id_evento)) AS SIGNED) as tickets_disponibles
-        FROM fechas_bandas_confirmadas e
+            CAST((e.cantidad_personas - COUNT(t.id_evento)) AS SIGNED) as tickets_disponibles
+        FROM eventos_confirmados e
         LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
-        WHERE e.activo = TRUE AND e.estado = 'Confirmado'
+        WHERE e.activo = TRUE
         GROUP BY e.id
-        HAVING tickets_disponibles > 0 OR e.precio_base = 0.00 OR e.precio_anticipada = 0.00 OR e.precio_puerta = 0.00
-        ORDER BY e.fecha ASC, e.hora_inicio ASC;
+        HAVING tickets_disponibles > 0 OR e.precio_base = 0.00 OR e.precio_final = 0.00
+        ORDER BY e.fecha_evento ASC, e.hora_inicio ASC;
     `;
     const rows = await pool.query(query);
     return rows;
@@ -68,17 +68,17 @@ const getEventoById = async (id) => {
     const query = `
         SELECT 
             e.id, 
-            e.nombre_banda, 
-            CONCAT(e.fecha, ' ', COALESCE(e.hora_inicio, '00:00:00')) as fecha_hora,
+            e.nombre_evento AS nombre_banda, 
+            CONCAT(e.fecha_evento, ' ', COALESCE(e.hora_inicio, '00:00:00')) as fecha_hora,
             e.precio_base,
-            e.precio_anticipada,
-            e.precio_puerta,
-            e.aforo_maximo, 
+            NULL as precio_anticipada,
+            e.precio_final as precio_puerta,
+            e.cantidad_personas as aforo_maximo, 
             e.descripcion,
-            (e.aforo_maximo - COUNT(t.id_evento)) as tickets_disponibles
-        FROM fechas_bandas_confirmadas e
+            (e.cantidad_personas - COUNT(t.id_evento)) as tickets_disponibles
+        FROM eventos_confirmados e
         LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
-        WHERE e.id = ? AND e.activo = TRUE AND e.estado = 'Confirmado'
+        WHERE e.id = ? AND e.activo = TRUE
         GROUP BY e.id
     `;
     const rows = await pool.query(query, [id]);

@@ -851,17 +851,17 @@
 
                         if (nuevoEstado === 'Confirmado') {
                             // marcar activo y estado
-                            res = await fetch(`/api/admin/fechas_bandas_confirmadas/${eventId}`, {
+                            res = await fetch(`/api/admin/eventos_confirmados/${eventId}`, {
                                 method: 'PUT',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ activo: 1, estado: 'Confirmado' })
                             });
                         } else if (nuevoEstado === 'Cancelado') {
                             // usar endpoint de cancel
-                            res = await fetch(`/api/admin/fechas_bandas_confirmadas/${eventId}/cancel`, { method: 'PATCH' });
+                            res = await fetch(`/api/admin/eventos_confirmados/${eventId}/cancel`, { method: 'PATCH' });
                         } else {
                             // Solicitud o Contactado -> actualizar solo estado
-                            res = await fetch(`/api/admin/fechas_bandas_confirmadas/${eventId}`, {
+                            res = await fetch(`/api/admin/eventos_confirmados/${eventId}`, {
                                 method: 'PUT',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ estado: nuevoEstado })
@@ -936,7 +936,7 @@
 
                 showNotification('Actualizando evento...', 'info');
                 try {
-                    const res = await fetch(`/api/admin/fechas_bandas_confirmadas/${id}`, {
+                    const res = await fetch(`/api/admin/eventos_confirmados/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(body)
@@ -958,7 +958,7 @@
 
                 showNotification('Cancelando evento...', 'info');
                 try {
-                    const res = await fetch(`/api/admin/fechas_bandas_confirmadas/${id}/cancel`, { method: 'PATCH' });
+                    const res = await fetch(`/api/admin/eventos_confirmados/${id}/cancel`, { method: 'PATCH' });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Error al cancelar evento');
                     showNotification(data.message || 'Evento cancelado', 'success');
@@ -976,7 +976,7 @@
 
                 showNotification('Eliminando evento...', 'info');
                 try {
-                    const res = await fetch(`/api/admin/fechas_bandas_confirmadas/${id}`, { method: 'DELETE' });
+                    const res = await fetch(`/api/admin/eventos_confirmados/${id}`, { method: 'DELETE' });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Error al eliminar evento');
                     showNotification(data.message || 'Evento eliminado', 'success');

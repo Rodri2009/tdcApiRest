@@ -57,21 +57,21 @@ const getSolicitudes = async (req, res) => {
             UNION ALL
             SELECT
                 CONCAT('ev_', e.id) as id,
-                e.creado_en as fechaSolicitud,
-                e.nombre_contacto as nombreCliente,
+                e.confirmado_en as fechaSolicitud,
+                e.nombre_cliente as nombreCliente,
                 e.tipo_evento as tipoEventoId,
-                'BANDA' as tipoEvento,
+                e.tipo_evento as tipoEvento,
                 e.genero_musical as subtipo,
-                DATE_FORMAT(e.fecha, '%Y-%m-%d') as fechaEvento,
-                e.estado,
+                DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Cancelado' END as estado,
                 NULL as tipoServicioId,
                 0 AS tienePersonalAsignado,
                 'evento' as origen,
                 TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
-                e.nombre_banda as nombreBanda,
-                e.aforo_maximo as cantidadAforo,
+                e.nombre_evento as nombreBanda,
+                e.cantidad_personas as cantidadAforo,
                 e.es_publico as es_publico
-            FROM fechas_bandas_confirmadas e
+            FROM eventos_confirmados e
             UNION ALL
             SELECT
                 CONCAT('srv_', ss.id) as id,
@@ -276,37 +276,9 @@ const actualizarEstadoSolicitud = async (req, res) => {
             );
         }
 
-        // Mantener compatibilidad con fechas_bandas_confirmadas para bandas
-        if (tipoEvento === 'BANDA' && solicitud.tipo_de_evento === 'FECHA_BANDAS') {
-            if (estado === 'Confirmado') {
-                const [existe] = await conn.query(
-                    "SELECT id FROM fechas_bandas_confirmadas WHERE nombre_banda = ? AND fecha = ?",
-                    [solicitud.nombre_completo, solicitud.fecha_evento]
-                );
-                if (!existe) {
-                    await conn.query(`
-                        INSERT INTO fechas_bandas_confirmadas (
-                            tipo_evento, nombre_banda, genero_musical, descripcion,
-                            fecha, hora_inicio, precio_base, aforo_maximo, estado, es_publico, activo
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Confirmado', 1, 1)
-                    `, [
-                        'BANDA',
-                        solicitud.nombre_completo,
-                        solicitud.genero_musical || null,
-                        solicitud.descripcion || null,
-                        solicitud.fecha_evento,
-                        solicitud.hora_evento || '21:00:00',
-                        solicitud.precio_basico || 0,
-                        solicitud.cantidad_de_personas || 120
-                    ]);
-                }
-            } else if (estado === 'Cancelado' || estado === 'Solicitado') {
-                await conn.query(
-                    "UPDATE fechas_bandas_confirmadas SET activo = 0 WHERE nombre_banda = ? AND fecha = ?",
-                    [solicitud.nombre_completo, solicitud.fecha_evento]
-                );
-            }
-        }
+        // La compatibilidad con la tabla antigua `fechas_bandas_confirmadas` queda desactivada.
+        // Los eventos ahora se manejan en `eventos_confirmados` para mantener un único origen de verdad.
+        // (La tabla antigua fue renombrada a `fechas_bandas_confirmadas_deprecated` durante la migración.)
 
         await conn.commit();
         res.status(200).json({
@@ -388,7 +360,7 @@ const eliminarEvento = async (req, res) => {
         // Borrar asignaciones relacionadas en eventos_personal si existen
         await conn.query("DELETE FROM eventos_personal WHERE id_evento = ?", [eventId]);
         // Borrar subtables que referencien a eventos (si existen) - ON DELETE CASCADE debería encargarse
-        const result = await conn.query("DELETE FROM fechas_bandas_confirmadas WHERE id = ?", [eventId]);
+        const result = await conn.query("DELETE FROM eventos_confirmados WHERE id = ?", [eventId]);
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado.' });
         res.status(200).json({ success: true, message: 'Evento eliminado correctamente.' });
     } catch (err) {
@@ -484,7 +456,7 @@ const guardarAsignaciones = async (req, res) => {
             }
 
             // Obtener la fecha del evento para guardarla junto con el personal
-            const [evento] = await conn.query("SELECT fecha FROM fechas_bandas_confirmadas WHERE id = ?", [eventId]);
+            const [evento] = await conn.query("SELECT fecha_evento as fecha FROM eventos_confirmados WHERE id = ?", [eventId]);
             if (!evento) {
                 return res.status(404).json({ message: 'Evento no encontrado.' });
             }
@@ -560,8 +532,8 @@ const getOrdenDeTrabajo = async (req, res) => {
 
             // Obtener detalles del evento
             const sqlEvento = `
-                SELECT e.id, e.nombre_banda as nombre_completo, e.fecha as fecha_evento, TIME_FORMAT(e.hora_inicio,'%H:%i') as hora_evento, '' as duracion, e.descripcion, e.tipo_evento
-                FROM fechas_bandas_confirmadas e
+                SELECT e.id, e.nombre_evento as nombre_completo, e.fecha_evento as fecha_evento, TIME_FORMAT(e.hora_inicio,'%H:%i') as hora_evento, '' as duracion, e.descripcion, e.tipo_evento
+                FROM eventos_confirmados e
                 WHERE e.id = ?
             `;
             const [evento] = await conn.query(sqlEvento, [eventId]);
@@ -773,32 +745,31 @@ const crearEvento = async (req, res) => {
         conn = await pool.getConnection();
 
         const result = await conn.query(`
-            INSERT INTO eventos (
-                nombre_banda, genero_musical, descripcion, url_imagen,
-                fecha, hora_inicio, hora_fin, aforo_maximo, es_publico,
-                precio_base, precio_anticipada, precio_puerta,
-                nombre_contacto, email_contacto, telefono_contacto,
-                tipo_evento, activo, estado
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO eventos_confirmados (
+                id_solicitud, tipo_evento, tabla_origen,
+                nombre_evento, descripcion, fecha_evento, hora_inicio, duracion_estimada,
+                nombre_cliente, email_cliente, telefono_cliente,
+                precio_base, precio_final, es_publico, activo,
+                genero_musical, cantidad_personas
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
+            NULL,
+            tipo_evento || 'BANDA',
+            'manual_admin',
             nombre_banda,
-            genero_musical || null,
             descripcion || null,
-            url_imagen || null,
             fecha,
             hora_inicio || '21:00',
-            hora_fin || '02:00',
-            aforo_maximo || 120,
-            es_publico !== undefined ? es_publico : 1,
-            precio_base || 0,
-            precio_anticipada || null,
-            precio_puerta || null,
+            null,
             nombre_contacto || null,
             email_contacto || null,
             telefono_contacto || null,
-            tipo_evento || 'BANDA',
+            precio_base || 0,
+            precio_puerta || null,
+            es_publico !== undefined ? es_publico : 1,
             activo !== undefined ? activo : 1,
-            estado || 'Confirmado'
+            genero_musical || null,
+            aforo_maximo || null
         ]);
 
         const nuevoId = Number(result.insertId);
@@ -858,7 +829,7 @@ const actualizarEvento = async (req, res) => {
 
         if (updates.length === 0) return res.status(400).json({ message: 'No hay campos para actualizar.' });
 
-        const sql = `UPDATE fechas_bandas_confirmadas SET ${updates.join(', ')} WHERE id = ?`;
+        const sql = `UPDATE eventos_confirmados SET ${updates.join(', ')} WHERE id = ?`;
         params.push(eventId);
         const result = await conn.query(sql, params);
 
@@ -885,9 +856,9 @@ const cancelarEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
         // Actualizar tanto el estado como el campo activo
-        // La tabla es fechas_bandas_confirmadas, no 'eventos'
+        // La tabla de eventos ahora es `eventos_confirmados` (reemplaza a `fechas_bandas_confirmadas`)
         const result = await conn.query(
-            "UPDATE fechas_bandas_confirmadas SET activo = 0, estado = 'Cancelado' WHERE id = ?",
+            "UPDATE eventos_confirmados SET activo = 0, cancelado_en = NOW() WHERE id = ?",
             [eventId]
         );
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado.' });
@@ -913,14 +884,27 @@ const getEventoById = async (req, res) => {
         conn = await pool.getConnection();
         const rows = await conn.query(`
             SELECT 
-                id, tipo_evento, nombre_banda, genero_musical, descripcion, url_imagen,
-                nombre_contacto, email_contacto, telefono_contacto,
-                DATE_FORMAT(fecha, '%Y-%m-%d') as fecha,
+                id,
+                tipo_evento,
+                nombre_evento as nombre_banda,
+                genero_musical,
+                descripcion,
+                NULL as url_imagen,
+                nombre_cliente as nombre_contacto,
+                email_cliente as email_contacto,
+                telefono_cliente as telefono_contacto,
+                DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fecha,
                 TIME_FORMAT(hora_inicio, '%H:%i:%s') as hora_inicio,
-                TIME_FORMAT(hora_fin, '%H:%i:%s') as hora_fin,
-                precio_base, precio_anticipada, precio_puerta, aforo_maximo,
-                estado, es_publico, activo, creado_en
-            FROM fechas_bandas_confirmadas WHERE id = ?
+                NULL as hora_fin,
+                precio_base,
+                NULL as precio_anticipada,
+                precio_final as precio_puerta,
+                cantidad_personas as aforo_maximo,
+                CASE WHEN activo = 1 THEN 'Confirmado' ELSE 'Cancelado' END as estado,
+                es_publico,
+                activo,
+                confirmado_en as creado_en
+            FROM eventos_confirmados WHERE id = ?
         `, [eventId]);
 
         if (rows.length === 0) {

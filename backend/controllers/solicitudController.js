@@ -210,24 +210,24 @@ const getSolicitudPorId = async (req, res) => {
                     e.tipo_evento as tipoEvento,
                     NULL as cantidadPersonas,
                     NULL as duracionEvento,
-                    DATE_FORMAT(e.fecha, '%Y-%m-%d') as fechaEvento,
+                    DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fechaEvento,
                     TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
                     e.precio_base as precioBase,
-                    e.nombre_banda as nombreCompleto,
+                    e.nombre_evento as nombreCompleto,
                     NULL as telefono,
                     NULL as email,
                     e.descripcion,
                     CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END as estado,
                     e.tipo_evento as nombreParaMostrar,
-                    e.nombre_banda as nombreBanda,
+                    e.nombre_evento as nombreBanda,
                     NULL as bandaContactoEmail,
                     NULL as bandaLinkMusica,
                     NULL as bandaPropuesta,
                     NULL as bandaEventId,
                     NULL as bandaInvitados,
-                    e.precio_anticipada as bandaPrecioAnticipada,
-                    e.precio_puerta as bandaPrecioPuerta
-                FROM fechas_bandas_confirmadas e
+                    NULL as bandaPrecioAnticipada,
+                    e.precio_final as bandaPrecioPuerta
+                FROM eventos_confirmados e
                 WHERE e.id = ?;
             `;
 
@@ -882,9 +882,9 @@ const updateVisibilidad = async (req, res) => {
             tabla = 'solicitudes_talleres';
             idColumnName = 'id';
         } else if (String(id).startsWith('ev_')) {
-            // Evento confirmado (fechas_bandas_confirmadas)
+            // Evento confirmado (eventos_confirmados)
             idValue = parseInt(String(id).substring(3), 10);
-            tabla = 'fechas_bandas_confirmadas';
+            tabla = 'eventos_confirmados';
             idColumnName = 'id';
         } else {
             // Intentar detectar en las tablas con ID numérico
@@ -919,7 +919,7 @@ const updateVisibilidad = async (req, res) => {
 
         // Si la solicitud tiene un evento confirmado asociado, propagar la visibilidad
         // Buscamos por id_solicitud y tabla_origen
-        if (tabla !== 'fechas_bandas_confirmadas') {
+        if (tabla !== 'eventos_confirmados') {
             try {
                 await conn.query(`UPDATE eventos_confirmados SET es_publico = ? WHERE id_solicitud = ? AND tabla_origen = ?`, [es_publico ? 1 : 0, idValue, tabla]);
             } catch (err) {

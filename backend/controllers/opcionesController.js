@@ -205,7 +205,7 @@ const getFechasOcupadas = async (req, res) => {
                     UNION
                     SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(hora_evento), 'hs', '') AS hora FROM solicitudes_bandas WHERE estado = 'Confirmado'
                     UNION
-                    SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha, TIME_FORMAT(hora_inicio, '%H:%i') AS hora FROM fechas_bandas_confirmadas WHERE activo = 1
+                    SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, TIME_FORMAT(hora_inicio, '%H:%i') AS hora FROM eventos_confirmados WHERE activo = 1
                 ) AS todas
                 WHERE fecha IS NOT NULL
                 ORDER BY fecha, hora;
@@ -232,15 +232,15 @@ const getFechasOcupadas = async (req, res) => {
             return res.status(200).json(mapped);
         }
 
-        // Unificamos fechas ocupadas desde solicitudes confirmadas y desde la tabla `fechas_bandas_confirmadas`.
-        // Esto evita discrepancias cuando hay entradas en `fechas_bandas_confirmadas` pero no en `solicitudes_alquiler` o `solicitudes_bandas`.
+        // Unificamos fechas ocupadas desde solicitudes confirmadas y desde la tabla `eventos_confirmados`.
+        // Esto evita discrepancias cuando hay entradas en `eventos_confirmados` pero no en `solicitudes_alquiler` o `solicitudes_bandas`.
         const sql = `
             SELECT DISTINCT fecha FROM(
                 SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_alquiler WHERE estado = 'Confirmado'
                 UNION
                 SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_bandas WHERE estado = 'Confirmado'
                 UNION
-                SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha FROM fechas_bandas_confirmadas WHERE activo = 1
+                SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM eventos_confirmados WHERE activo = 1
             ) AS todas
             WHERE fecha IS NOT NULL
             ORDER BY fecha;
