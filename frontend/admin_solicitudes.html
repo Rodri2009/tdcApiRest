@@ -535,7 +535,8 @@
                             s.id,
                             s.nombreCliente,
                             s.subtipo,
-                            s.nombreBanda,
+                            s.tipoNombre,
+                            s.descripcionCorta,
                             s.tipoEventoId
                         ].filter(Boolean).join(' ').toLowerCase();
                         if (!textoCompleto.includes(busqueda)) return false;
@@ -736,13 +737,14 @@
                         return `${weekday} ${date}`;
                     })() : 'N/A';
                     const horaInicio = solicitud.horaInicio ? String(solicitud.horaInicio).slice(0,5) : '-';
-                    const descripcionCorta = solicitud.descripcionCorta || solicitud.nombreBanda || '<em>Sin descripción</em>';
+                    const descripcionCorta = solicitud.descripcionCorta || '<em>Sin descripción</em>';
 
-                    let botones = '';
+                    let botones = ''; 
                     // Mostrar Modificar y Eliminar siempre. Si está confirmado, mostrar Asignar y Orden.
                     // Para eventos `id` viene como 'ev_<id>' y `solicitud.origen==='evento'`.
                     const isEvento = solicitud.origen === 'evento';
                     const isConfirmado = (String(solicitud.estado).toLowerCase() === 'confirmado');
+                    if (isConfirmado) tr.classList.add('estado-confirmado');
 
                     // Verificar permisos de edición
                     const puedeEditarSolicitudes = puedeEditar('solicitudes');

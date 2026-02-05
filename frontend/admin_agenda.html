@@ -687,8 +687,8 @@
                     fecha: s.fechaEvento || s.fecha_evento,
                     hora: s.horaInicio || s.hora_evento,
                     tipo: s.tipoEvento || 'Otro',
-                    // Nombre: usar nombreBanda para bandas, nombreCliente para solicitudes
-                    nombre: (esBanda && s.nombreBanda) ? s.nombreBanda : (s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda),
+                    // Nombre: para eventos/bandas usar tipoNombre o descripcionCorta, sino nombreCliente
+                    nombre: (esBanda) ? (s.tipoNombre || s.descripcionCorta || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda || 'Evento') : (s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda || s.tipoNombre || s.descripcionCorta || '-'),
                     telefono: s.telefono || '',
                     email: s.email || '',
                     descripcion: s.descripcion || '',
@@ -887,6 +887,17 @@
                 'Cancelado': 'badge-danger'
             }[item.estado] || 'badge-gray';
 
+            // URL de edición adecuada según tipo/origen
+            const editUrl = item.source === 'evento'
+                ? `editar_solicitud_fecha_bandas.html?id=${item.id}`
+                : (item.categoria === 'ALQUILER_SALON'
+                    ? `editar_solicitud_alquiler.html?solicitudId=${item.id}`
+                    : (item.categoria && item.categoria.startsWith('TALLER')
+                        ? `editar_solicitud_talleres.html?solicitudId=${item.id}`
+                        : (item.categoria === 'SERVICIO'
+                            ? `editar_solicitud_servicios.html?solicitudId=${item.id}`
+                            : `editar_solicitud_alquiler.html?solicitudId=${item.id}`)));
+
             return `
                 <tr>
                     <td><strong>${fecha}</strong></td>
@@ -897,7 +908,7 @@
                     <td>${showDetail ? (item.descripcion ? (item.descripcion.substring(0, 40) + (item.descripcion.length > 40 ? '...' : '')) : '-') : `<span class="badge ${estadoBadge}">${item.estado}</span>`}</td>
                     <td>
                         <div class="row-actions">
-                            <a href="${item.source === 'evento' ? 'editar_evento_banda.html' : 'editar_solicitud.html'}?id=${item.id}" class="btn-icon" title="Ver/Editar">
+                            <a href="${editUrl}" class="btn-icon" title="Ver/Editar">
                                 <i class="fas fa-eye"></i>
                             </a>
                         </div>
