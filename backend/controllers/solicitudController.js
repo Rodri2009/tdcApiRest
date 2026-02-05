@@ -863,29 +863,36 @@ const updateVisibilidad = async (req, res) => {
         // Soportar IDs con prefijos: alq_, bnd_, srv_, tll_, ev_
         let tabla = null;
         let idColumnName = null;
+        let publicColumn = 'es_publico';
         let idValue = id; // por defecto puede ser numérico o con prefijo
 
         if (String(id).startsWith('alq_')) {
             idValue = parseInt(String(id).substring(4), 10);
             tabla = 'solicitudes_alquiler';
             idColumnName = 'id';
+            publicColumn = 'es_publico';
         } else if (String(id).startsWith('bnd_')) {
             idValue = parseInt(String(id).substring(4), 10);
             tabla = 'solicitudes_bandas';
             idColumnName = 'id_solicitud';
+            publicColumn = 'es_publico';
         } else if (String(id).startsWith('srv_')) {
             idValue = parseInt(String(id).substring(4), 10);
             tabla = 'solicitudes_servicios';
             idColumnName = 'id';
+            // Servicios usan es_publico_cuando_confirmada en la tabla de solicitudes
+            publicColumn = 'es_publico_cuando_confirmada';
         } else if (String(id).startsWith('tll_')) {
             idValue = parseInt(String(id).substring(4), 10);
             tabla = 'solicitudes_talleres';
             idColumnName = 'id';
+            publicColumn = 'es_publico_cuando_confirmada';
         } else if (String(id).startsWith('ev_')) {
             // Evento confirmado (eventos_confirmados)
             idValue = parseInt(String(id).substring(3), 10);
             tabla = 'eventos_confirmados';
             idColumnName = 'id';
+            publicColumn = 'es_publico';
         } else {
             // Intentar detectar en las tablas con ID numérico
             // Primero alquiler
@@ -893,12 +900,14 @@ const updateVisibilidad = async (req, res) => {
             if (found) {
                 tabla = 'solicitudes_alquiler';
                 idColumnName = 'id';
+                publicColumn = 'es_publico';
                 idValue = id;
             } else {
                 [found] = await conn.query('SELECT id_solicitud FROM solicitudes_bandas WHERE id_solicitud = ?', [id]);
                 if (found) {
                     tabla = 'solicitudes_bandas';
                     idColumnName = 'id_solicitud';
+                    publicColumn = 'es_publico';
                     idValue = id;
                 }
             }
@@ -908,10 +917,30 @@ const updateVisibilidad = async (req, res) => {
             return res.status(404).json({ message: 'Solicitud no encontrada' });
         }
 
-        const result = await conn.query(
-            `UPDATE ${tabla} SET es_publico = ? WHERE ${idColumnName} = ?`,
-            [es_publico ? 1 : 0, idValue]
-        );
+        // Actualizar la columna correspondiente (es_publico o es_publico_cuando_confirmada)
+        let result;
+        try {
+            result = await conn.query(
+                `UPDATE ${tabla} SET ${publicColumn} = ? WHERE ${idColumnName} = ?`,
+                [es_publico ? 1 : 0, idValue]
+            );
+        } catch (err) {
+            // Si es por columna desconocida, intentar un fallback a 'es_publico' o 'es_publico_cuando_confirmada'
+            if (err && err.sqlState === '42S22') {
+                const altColumn = publicColumn === 'es_publico' ? 'es_publico_cuando_confirmada' : 'es_publico';
+                try {
+                    result = await conn.query(
+                        `UPDATE ${tabla} SET ${altColumn} = ? WHERE ${idColumnName} = ?`,
+                        [es_publico ? 1 : 0, idValue]
+                    );
+                } catch (err2) {
+                    console.warn('Fallback update column also failed:', err2.message);
+                    throw err; // dejar que el catch externo maneje el error
+                }
+            } else {
+                throw err;
+            }
+        }
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada' });
