@@ -11,12 +11,8 @@ app.use(express.json());
 app.use(cookieParser()); // <-- USAR
 app.use(express.urlencoded({ extended: true }));
 
-// --- TEMP (top): bloquear cualquier petición que contenga 'fechas_bandas_confirmadas' ---
-app.all('*fechas_bandas_confirmadas*', (req, res, next) => {
-    console.warn('[LEGACY ACCESS - TOP] Request contains fechas_bandas_confirmadas:', req.method, req.originalUrl);
-    console.warn(new Error('Trace origen legacy (top)').stack);
-    return res.status(410).json({ error: 'Endpoint retirado. Usa /api/eventos_confirmados' });
-});
+// NOTE: Legacy endpoints like 'fechas_bandas_confirmadas' are intentionally blocked at the nginx layer.
+// No runtime catch-all handlers nor tracing should remain here. Remove temporary debugging middleware when confirmed.
 
 // Servir archivos estáticos del frontend
 app.use(express.static('frontend'));
@@ -26,25 +22,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// --- TEMP: Bloquear rutas legacy y trazar su origen ---
-// Handler general (subcadena) para capturar cualquier intento de usar endpoints legacy
-app.all('*fechas_bandas_confirmadas*', (req, res, next) => {
-    console.warn('[LEGACY ACCESS - CATCHALL] Path contains fechas_bandas_confirmadas', req.method, req.originalUrl);
-    console.warn(new Error('Trace origen legacy (catchall)').stack);
-    return res.status(410).json({ error: 'Endpoint retirado. Usa /api/eventos_confirmados' });
-});
 
-// Rutas específicas (por compatibilidad en logs detallados)
-app.use('/api/admin/fechas_bandas_confirmadas', (req, res, next) => {
-    console.warn('[LEGACY ACCESS] /api/admin/fechas_bandas_confirmadas', req.method, req.originalUrl);
-    console.warn(new Error('Trace origen legacy admin').stack);
-    return res.status(410).json({ error: 'Endpoint retirado. Usa /api/admin/eventos_confirmados' });
-});
-app.use('/api/tickets/fechas_bandas_confirmadas', (req, res, next) => {
-    console.warn('[LEGACY ACCESS] /api/tickets/fechas_bandas_confirmadas', req.method, req.originalUrl);
-    console.warn(new Error('Trace origen legacy tickets').stack);
-    return res.status(410).json({ error: 'Endpoint retirado. Usa /api/tickets/eventos_confirmados' });
-});
 
 
 // --- Rutas de la API ---
@@ -75,47 +53,9 @@ try {
 
     console.log("Rutas configuradas correctamente.");
 
-    // DEBUG: exponer rutas registradas en JSON (para inspección remota; temporal)
-    app.get('/api/debug/routes', (req, res) => {
-        const routes = [];
-        app._router.stack.forEach(mw => {
-            if (mw.route && mw.route.path) {
-                const methods = Object.keys(mw.route.methods).join(',').toUpperCase();
-                routes.push({ path: mw.route.path, methods });
-            } else if (mw.name === 'router' && mw.handle && mw.handle.stack) {
-                mw.handle.stack.forEach(r => {
-                    if (r.route && r.route.path) {
-                        const methods = Object.keys(r.route.methods).join(',').toUpperCase();
-                        routes.push({ path: r.route.path, methods });
-                    }
-                });
-            }
-        });
-        res.json(routes.sort((a,b)=> a.path.localeCompare(b.path)));
-    });
 
-    // --- DEBUG: listar rutas en logs tambien (temporal) ---
-    try {
-        const routes = [];
-        app._router.stack.forEach(mw => {
-            if (mw.route && mw.route.path) {
-                const methods = Object.keys(mw.route.methods).join(',').toUpperCase();
-                routes.push(`${methods} ${mw.route.path}`);
-            } else if (mw.name === 'router' && mw.handle && mw.handle.stack) {
-                mw.handle.stack.forEach(r => {
-                    if (r.route && r.route.path) {
-                        const methods = Object.keys(r.route.methods).join(',').toUpperCase();
-                        routes.push(`${methods} ${r.route.path}`);
-                    }
-                });
-            }
-        });
-        console.log('--- Registered routes (debug) ---');
-        routes.sort().forEach(r => console.log(r));
-        console.log('--- End registered routes ---');
-    } catch (e) {
-        console.warn('No se pudo listar rutas:', e.message);
-    }
+
+
 } catch (error) {
     console.error("¡ERROR CRÍTICO AL CARGAR RUTAS!", error);
     // Aquí sí podríamos querer salir si el código está roto, 

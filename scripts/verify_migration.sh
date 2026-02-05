@@ -47,26 +47,26 @@ check GET /api/tickets/eventos_confirmados 200 || errors=$((errors+1))
 
 # 2) Legacy endpoints SHOULD NOT exist (expecting 404). If they still respond, report WARNING but continue.
 WARNINGS=0
-# Accept 404 or 410 as valid 'removed' responses for legacy endpoints
-if check GET /api/admin/fechas_bandas_confirmadas/1 404 || check GET /api/admin/fechas_bandas_confirmadas/1 410; then
+# Legacy endpoints MUST NOT exist (expecting 404)
+if check GET /api/admin/fechas_bandas_confirmadas/1 404; then
   :
 else
-  echo "[verify] WARNING: legacy admin endpoint still responds with unexpected status." >&2
-  WARNINGS=$((WARNINGS+1))
+  echo "[verify] FAILURE: legacy admin endpoint still responds (expected 404)." >&2
+  errors=$((errors+1))
 fi
-if check GET /api/tickets/fechas_bandas_confirmadas 404 || check GET /api/tickets/fechas_bandas_confirmadas 410; then
+if check GET /api/tickets/fechas_bandas_confirmadas 404; then
   :
 else
-  echo "[verify] WARNING: legacy tickets endpoint still responds with unexpected status." >&2
-  WARNINGS=$((WARNINGS+1))
+  echo "[verify] FAILURE: legacy tickets endpoint still responds (expected 404)." >&2
+  errors=$((errors+1))
 fi
 
 # 3) Search for references in source (excluding docs/migrations and schema)
 echo -n "[verify] Buscando referencias a fechas_bandas_confirmadas en código (excluyendo migrations/docs/schema)... "
-if grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=database/01_schema.sql --exclude=backend/server.js -n . | wc -l | grep -q "0"; then
+if grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=database/01_schema.sql -n . | wc -l | grep -q "0"; then
   echo "OK"
 else
-  echo "FOUND"; grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=database/01_schema.sql --exclude=backend/server.js -n .
+  echo "FOUND"; grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=database/01_schema.sql -n .
   errors=$((errors+1))
 fi
 
