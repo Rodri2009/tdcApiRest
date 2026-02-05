@@ -88,7 +88,7 @@ const getSolicitudes = async (req, res) => {
                 ss.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 NULL as cantidadAforo,
-                0 as es_publico
+                ss.es_publico_cuando_confirmada as es_publico
             FROM solicitudes_servicios ss
             JOIN solicitudes sol ON ss.id = sol.id
             UNION ALL
@@ -107,7 +107,7 @@ const getSolicitudes = async (req, res) => {
                 st.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 NULL as cantidadAforo,
-                0 as es_publico
+                st.es_publico_cuando_confirmada as es_publico
             FROM solicitudes_talleres st
             JOIN solicitudes sol ON st.id = sol.id
             ORDER BY fechaEvento DESC, fechaSolicitud DESC;
