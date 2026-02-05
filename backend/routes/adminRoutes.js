@@ -16,6 +16,7 @@ const {
 } = require('../controllers/adminController');
 
 const { updateVisibilidad } = require('../controllers/solicitudController');
+const eventosAuditController = require('../controllers/eventosAuditController');
 
 const alquilerAdmin = require('../controllers/alquilerAdminController');
 const personalTarifas = require('../controllers/personalTarifasController');
@@ -53,6 +54,10 @@ router.patch('/eventos_confirmados/:id/cancel', checkPermiso('solicitudes.cambia
 router.delete('/eventos_confirmados/:id', checkPermiso('solicitudes.eliminar'), eliminarEvento);
 
 router.get('/tipos-evento/all', getAllTiposDeEvento);
+
+// Auditoría de eventos confirmados
+router.get('/eventos_audit', checkPermiso('solicitudes.ver'), eventosAuditController.listAudits);
+router.get('/eventos_audit/:id', checkPermiso('solicitudes.ver'), eventosAuditController.getAuditById);
 
 // =============================================================================
 // CONFIGURACIÓN DE ALQUILER

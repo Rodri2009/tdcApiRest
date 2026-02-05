@@ -301,8 +301,26 @@ const actualizarEstadoSolicitud = async (req, res) => {
                 ]);
             }
         } else if (estado === 'Solicitado') {
-            // Si la solicitud es degradada a 'Solicitado', eliminar cualquier evento confirmado asociado
-            await conn.query(`DELETE FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = ?`, [realId, tipoEvento]);
+            // Si la solicitud es degradada a 'Solicitado', auditar y eliminar cualquier evento confirmado asociado
+            try {
+                const [evento] = await conn.query('SELECT * FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = ?', [realId, tipoEvento]);
+                if (evento) {
+                    const deletedBy = req.user ? req.user.id : null;
+                    const reason = 'Solicitud downgraded to Solicitado';
+                    await conn.query('INSERT INTO eventos_confirmados_audit (evento_id, id_solicitud, tipo_evento, tabla_origen, original_row, deleted_by, reason) VALUES (?, ?, ?, ?, ?, ?, ?)', [
+                        evento.id,
+                        evento.id_solicitud,
+                        evento.tipo_evento,
+                        evento.tabla_origen,
+                        JSON.stringify(evento),
+                        deletedBy,
+                        reason
+                    ]);
+                    await conn.query('DELETE FROM eventos_confirmados WHERE id = ?', [evento.id]);
+                }
+            } catch (err) {
+                console.warn('No se pudo auditar/eliminar eventos_confirmados:', err.message);
+            }
         } else if (estado === 'Cancelado') {
             // Marcar como inactivo en eventos_confirmados
             await conn.query(
