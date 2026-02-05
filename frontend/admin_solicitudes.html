@@ -576,7 +576,7 @@
                     modificarSolicitud(solicitudId, categoria, origen);
                 } else if (button.classList.contains('btn-edit-event')) {
                     // Eventos de bandas -> editor especializado
-                    window.location.href = `/editar_solicitud_fecha_bandas.html?id=${encodeURIComponent(solicitudId)}`;
+                    window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(solicitudId)}`;
                 } else if (button.classList.contains('btn-delete-event')) {
                     eliminarEventoClient(solicitudId);
                 } else if (button.dataset.action === 'assign') {
@@ -627,32 +627,29 @@
 
             function modificarSolicitud(id, categoria, origen) {
                 console.log('modificarSolicitud:', { id, categoria, origen });
-                // Limpiar prefijos para los editores que esperan IDs numéricos
-                const realId = String(id).replace(/^(alq_|bnd_)/, '');
-                console.log('realId:', realId);
-
                 // Redirigir al editor correcto según categoría/origen
                 // Si es origen 'solicitud', usar editor específico según tipo
                 // Los editores especializados son para datos ya convertidos (inscripciones, turnos, eventos)
                 if (origen === 'evento') {
                     console.log('Redirigiendo a editor de evento banda con id:', id);
-                    window.location.href = `/editar_solicitud_fecha_bandas.html?id=${encodeURIComponent(id)}`;
+                    window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
                 } else if (origen === 'inscripcion') {
                     window.location.href = `/editar_inscripcion_taller.html?id=${encodeURIComponent(id)}`;
                 } else if (origen === 'turno') {
                     window.location.href = `/editar_turno_servicio.html?id=${encodeURIComponent(id)}`;
-                } else if (categoria === 'FECHA_BANDAS') {
-                    console.log('Redirigiendo a editor de solicitud fecha bandas con realId:', realId);
-                    window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(realId)}`;
+                } else if (categoria === 'FECHA_BANDAS' || categoria === 'BANDA') {
+                    console.log('Redirigiendo a editor de solicitud fecha bandas con id:', id);
+                    window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
                 } else if (categoria === 'ALQUILER_SALON') {
-                    window.location.href = `/editar_solicitud_alquiler.html?solicitudId=${encodeURIComponent(realId)}`;
-                } else if (categoria === 'TALLERES_ACTIVIDADES') {
-                    window.location.href = `/editar_solicitud_talleres.html?solicitudId=${encodeURIComponent(realId)}`;
-                } else if (categoria === 'SERVICIOS') {
-                    window.location.href = `/editar_solicitud_servicios.html?solicitudId=${encodeURIComponent(realId)}`;
+                    window.location.href = `/editar_solicitud_alquiler.html?solicitudId=${encodeURIComponent(id)}`;
+                } else if (categoria === 'TALLERES' || categoria === 'TALLERES_ACTIVIDADES') {
+                    window.location.href = `/editar_solicitud_talleres.html?solicitudId=${encodeURIComponent(id)}`;
+                } else if (categoria === 'SERVICIOS' || categoria === 'SERVICIO') {
+                    window.location.href = `/editar_solicitud_servicios.html?solicitudId=${encodeURIComponent(id)}`;
                 } else {
-                    // solicitudes normales
-                    window.location.href = `/editar_solicitud.html?solicitudId=${encodeURIComponent(realId)}`;
+                    // Para casos no previstos, usar el editor genérico si existe, sino alertar
+                    console.warn('Categoría no reconocida:', categoria, 'para id:', id);
+                    alert('Editor no disponible para este tipo de solicitud.');
                 }
             }
 
@@ -679,6 +676,10 @@
                         return;
                     }
 
+                    // Log tipos de eventos
+                    const tipos = data.map(s => s.tipoEvento);
+                    console.log('Tipos de eventos encontrados:', [...new Set(tipos)]);
+
                     // Guardar datos para filtrado
                     todasLasSolicitudes = data;
 
@@ -694,6 +695,7 @@
             }
 
             function renderizarSolicitudes(solicitudes) {
+                console.log('Renderizando', solicitudes.length, 'solicitudes');
                 tbody.innerHTML = '';
 
                 if (solicitudes.length === 0) {

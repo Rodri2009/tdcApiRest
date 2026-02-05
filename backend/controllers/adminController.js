@@ -9,7 +9,7 @@ const getSolicitudes = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        // Unión de solicitudes de alquiler, solicitudes de bandas y fechas de bandas
+        // Unión de solicitudes de alquiler, solicitudes de bandas, fechas de bandas, servicios y talleres
         const sql = `
             SELECT
                 CONCAT('alq_', s.id) as id,
@@ -72,6 +72,44 @@ const getSolicitudes = async (req, res) => {
                 e.aforo_maximo as cantidadAforo,
                 e.es_publico as es_publico
             FROM fechas_bandas_confirmadas e
+            UNION ALL
+            SELECT
+                CONCAT('srv_', ss.id) as id,
+                sol.fecha_creacion as fechaSolicitud,
+                sol.nombre_solicitante as nombreCliente,
+                'SERVICIO' as tipoEventoId,
+                'SERVICIO' as tipoEvento,
+                NULL as subtipo,
+                DATE_FORMAT(ss.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                sol.estado,
+                ss.tipo_servicio as tipoServicioId,
+                0 AS tienePersonalAsignado,
+                'solicitud' as origen,
+                ss.hora_evento as horaInicio,
+                NULL as nombreBanda,
+                NULL as cantidadAforo,
+                0 as es_publico
+            FROM solicitudes_servicios ss
+            JOIN solicitudes sol ON ss.id = sol.id
+            UNION ALL
+            SELECT
+                CONCAT('tll_', st.id) as id,
+                sol.fecha_creacion as fechaSolicitud,
+                sol.nombre_solicitante as nombreCliente,
+                'TALLERES' as tipoEventoId,
+                'TALLERES' as tipoEvento,
+                NULL as subtipo,
+                DATE_FORMAT(st.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                sol.estado,
+                NULL as tipoServicioId,
+                0 AS tienePersonalAsignado,
+                'solicitud' as origen,
+                st.hora_evento as horaInicio,
+                NULL as nombreBanda,
+                NULL as cantidadAforo,
+                0 as es_publico
+            FROM solicitudes_talleres st
+            JOIN solicitudes sol ON st.id = sol.id
             ORDER BY fechaEvento DESC, fechaSolicitud DESC;
         `;
 

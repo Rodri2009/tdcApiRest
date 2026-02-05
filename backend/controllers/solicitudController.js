@@ -22,12 +22,12 @@ const crearSolicitud = async (req, res) => {
         email_solicitante,
         descripcion
     } = req.body;
-    
+
     // Usar nombre_solicitante si nombreCompleto no existe
     const nombreFinal = nombreCompleto || nombre_solicitante || '';
     const telefonoFinal = telefono || telefono_solicitante || '';
     const emailFinal = email || email_solicitante || '';
-    
+
     console.log("[DEBUG] nombreFinal:", nombreFinal, "telefonoFinal:", telefonoFinal, "emailFinal:", emailFinal);
 
     if (!tipoEvento || !fechaEvento) {
@@ -74,11 +74,11 @@ const crearSolicitud = async (req, res) => {
         await conn.beginTransaction();
 
 
-    // 1. Insertar en la tabla general 'solicitudes'
-    // Detectar si es solicitud de banda (siempre en minúsculas)
-    const tipoEventoNorm = (tipoEvento || '').toString().trim().toLowerCase();
-    const esBanda = tipoEventoNorm.includes('banda');
-    const categoria = esBanda ? 'BANDA' : 'ALQUILER';
+        // 1. Insertar en la tabla general 'solicitudes'
+        // Detectar si es solicitud de banda (siempre en minúsculas)
+        const tipoEventoNorm = (tipoEvento || '').toString().trim().toLowerCase();
+        const esBanda = tipoEventoNorm.includes('banda');
+        const categoria = esBanda ? 'BANDA' : 'ALQUILER';
         const sqlGeneral = `
             INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion, nombre_solicitante, telefono_solicitante, email_solicitante)
             VALUES (?, NOW(), 'Solicitado', ?, ?, ?, ?)
@@ -227,7 +227,7 @@ const getSolicitudPorId = async (req, res) => {
                     NULL as bandaInvitados,
                     e.precio_anticipada as bandaPrecioAnticipada,
                     e.precio_puerta as bandaPrecioPuerta
-                FROM eventos e
+                FROM fechas_bandas_confirmadas e
                 WHERE e.id = ?;
             `;
 
@@ -242,49 +242,14 @@ const getSolicitudPorId = async (req, res) => {
             return res.status(200).json(evento);
         }
 
+        // Verificar si es una solicitud de alquiler (prefijo alq_)
+        if (id && id.toString().startsWith('alq_')) {
+            const alquilerId = parseInt(id.substring(4)); // Remover 'alq_' y convertir a número
+            console.log(`[SOLICITUD][GET] Detectado alquiler con ID: ${alquilerId}`);
 
-        // Primero, intentar obtener como solicitud de banda
-        let solicitud = null;
-        const sqlBanda = `
-            SELECT
-                sb.id_solicitud as solicitudId,
-                sb.tipo_de_evento as tipoEvento,
-                sb.fecha_evento as fechaEvento,
-                sb.hora_evento as horaInicio,
-                sb.duracion as duracionEvento,
-                sb.cantidad_de_personas as cantidadPersonas,
-                sb.precio_basico as precioBase,
-                sb.nombre_completo as nombreCompleto,
-                sb.telefono as telefono,
-                sb.email as email,
-                sb.descripcion,
-                sb.estado,
-                sb.genero_musical,
-                sb.instagram,
-                sb.facebook,
-                sb.youtube,
-                sb.spotify,
-                sb.otras_redes,
-                sb.logo_url,
-                sb.contacto_rol,
-                sb.fecha_alternativa,
-                sb.invitadas_json,
-                sb.cantidad_bandas,
-                sb.precio_puerta_propuesto,
-                sb.expectativa_publico,
-                sb.notas_admin,
-                sb.es_publico as esPublico
-            FROM solicitudes_bandas sb
-            WHERE sb.id_solicitud = ?
-        `;
-        [solicitud] = await conn.query(sqlBanda, [id]);
-
-        let adicionales = [];
-        if (!solicitud) {
-            // Si no existe en bandas, buscar en alquiler
-            const sqlAlquiler = `
+            const sql = `
                 SELECT
-                    sa.id as solicitudId,
+                    CONCAT('alq_', sa.id) as solicitudId,
                     sa.tipo_servicio as tipoServicio,
                     sa.fecha_evento as fechaEvento,
                     sa.hora_evento as horaInicio,
@@ -301,26 +266,164 @@ const getSolicitudPorId = async (req, res) => {
                 FROM solicitudes_alquiler sa
                 WHERE sa.id = ?
             `;
-            [solicitud] = await conn.query(sqlAlquiler, [id]);
-            if (solicitud) {
-                // Tabla solicitudes_adicionales no existe, comentada por ahora
-                // adicionales = await conn.query("SELECT nombre_adicional as nombre, precio_adicional as precio FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
-                adicionales = [];
+
+            const [alquiler] = await conn.query(sql, [alquilerId]);
+
+            if (!alquiler) {
+                console.warn(`[SOLICITUD][GET] Alquiler no encontrado: ${alquilerId}`);
+                return res.status(404).json({ error: 'Solicitud no encontrada.' });
             }
+
+            const respuesta = {
+                ...alquiler,
+                adicionales: []
+            };
+
+            console.log(`[SOLICITUD][GET] Alquiler obtenido: ${alquiler.nombreCompleto}`);
+            return res.status(200).json(respuesta);
         }
 
-        if (!solicitud) {
-            console.warn(`[SOLICITUD][GET] Solicitud no encontrada: ${id}`);
-            return res.status(404).json({ error: 'Solicitud no encontrada.' });
+        // Verificar si es una solicitud de banda (prefijo bnd_)
+        if (id && id.toString().startsWith('bnd_')) {
+            const bandaId = parseInt(id.substring(4)); // Remover 'bnd_' y convertir a número
+            console.log(`[SOLICITUD][GET] Detectado banda con ID: ${bandaId}`);
+
+            const sql = `
+                SELECT
+                    CONCAT('bnd_', sb.id_solicitud) as solicitudId,
+                    sb.tipo_de_evento as tipoEvento,
+                    sb.fecha_evento as fechaEvento,
+                    sb.hora_evento as horaInicio,
+                    sb.duracion as duracionEvento,
+                    sb.cantidad_de_personas as cantidadPersonas,
+                    sb.precio_basico as precioBase,
+                    sb.nombre_completo as nombreCompleto,
+                    sb.telefono as telefono,
+                    sb.email as email,
+                    sb.descripcion,
+                    sb.estado,
+                    sb.genero_musical,
+                    sb.instagram,
+                    sb.facebook,
+                    sb.youtube,
+                    sb.spotify,
+                    sb.otras_redes,
+                    sb.logo_url,
+                    sb.contacto_rol,
+                    sb.fecha_alternativa,
+                    sb.invitadas_json,
+                    sb.cantidad_bandas,
+                    sb.precio_puerta_propuesto,
+                    sb.expectativa_publico,
+                    sb.notas_admin,
+                    sb.es_publico as esPublico
+                FROM solicitudes_bandas sb
+                WHERE sb.id_solicitud = ?
+            `;
+
+            const [banda] = await conn.query(sql, [bandaId]);
+
+            if (!banda) {
+                console.warn(`[SOLICITUD][GET] Banda no encontrada: ${bandaId}`);
+                return res.status(404).json({ error: 'Solicitud no encontrada.' });
+            }
+
+            const respuesta = {
+                ...banda,
+                adicionales: []
+            };
+
+            console.log(`[SOLICITUD][GET] Banda obtenida: ${banda.nombreCompleto}`);
+            return res.status(200).json(respuesta);
         }
 
-        const respuesta = {
-            ...solicitud,
-            adicionales: adicionales || []
-        };
+        // Verificar si es una solicitud de servicio (prefijo srv_)
+        if (id && id.toString().startsWith('srv_')) {
+            const servicioId = parseInt(id.substring(4)); // Remover 'srv_' y convertir a número
+            console.log(`[SOLICITUD][GET] Detectado servicio con ID: ${servicioId}`);
 
-        console.log(`[SOLICITUD][GET] Datos obtenidos exitosamente para ID: ${id}`);
-        res.status(200).json(respuesta);
+            const sql = `
+                SELECT
+                    CONCAT('srv_', ss.id) as solicitudId,
+                    'SERVICIO' as tipoEvento,
+                    ss.fecha_evento as fechaEvento,
+                    ss.hora_evento as horaInicio,
+                    ss.duracion as duracionEvento,
+                    NULL as cantidadPersonas,
+                    ss.precio as precioBase,
+                    sol.nombre_solicitante as nombreCompleto,
+                    sol.telefono_solicitante as telefono,
+                    sol.email_solicitante as email,
+                    sol.descripcion,
+                    sol.estado,
+                    ss.tipo_servicio as tipoServicio,
+                    0 as esPublico
+                FROM solicitudes_servicios ss
+                JOIN solicitudes sol ON ss.id = sol.id
+                WHERE ss.id = ?
+            `;
+
+            const [servicio] = await conn.query(sql, [servicioId]);
+
+            if (!servicio) {
+                console.warn(`[SOLICITUD][GET] Servicio no encontrado: ${servicioId}`);
+                return res.status(404).json({ error: 'Solicitud no encontrada.' });
+            }
+
+            const respuesta = {
+                ...servicio,
+                adicionales: []
+            };
+
+            console.log(`[SOLICITUD][GET] Servicio obtenido: ${servicio.nombreCompleto}`);
+            return res.status(200).json(respuesta);
+        }
+
+        // Verificar si es una solicitud de taller (prefijo tll_)
+        if (id && id.toString().startsWith('tll_')) {
+            const tallerId = parseInt(id.substring(4)); // Remover 'tll_' y convertir a número
+            console.log(`[SOLICITUD][GET] Detectado taller con ID: ${tallerId}`);
+
+            const sql = `
+                SELECT
+                    CONCAT('tll_', st.id) as solicitudId,
+                    'TALLERES' as tipoEvento,
+                    st.fecha_evento as fechaEvento,
+                    st.hora_evento as horaInicio,
+                    st.duracion as duracionEvento,
+                    NULL as cantidadPersonas,
+                    st.precio as precioBase,
+                    sol.nombre_solicitante as nombreCompleto,
+                    sol.telefono_solicitante as telefono,
+                    sol.email_solicitante as email,
+                    sol.descripcion,
+                    sol.estado,
+                    st.nombre_taller as nombreTaller,
+                    0 as esPublico
+                FROM solicitudes_talleres st
+                JOIN solicitudes sol ON st.id = sol.id
+                WHERE st.id = ?
+            `;
+
+            const [taller] = await conn.query(sql, [tallerId]);
+
+            if (!taller) {
+                console.warn(`[SOLICITUD][GET] Taller no encontrado: ${tallerId}`);
+                return res.status(404).json({ error: 'Solicitud no encontrada.' });
+            }
+
+            const respuesta = {
+                ...taller,
+                adicionales: []
+            };
+
+            console.log(`[SOLICITUD][GET] Taller obtenido: ${taller.nombreCompleto}`);
+            return res.status(200).json(respuesta);
+        }
+
+        // Si no tiene prefijo conocido, devolver error
+        console.warn(`[SOLICITUD][GET] ID no reconocido: ${id}`);
+        return res.status(404).json({ error: 'Solicitud no encontrada.' });
 
     } catch (err) {
         console.error(`Error al obtener la solicitud ${id}:`, err);
@@ -495,7 +598,7 @@ const actualizarSolicitud = async (req, res) => {
         descripcion,
         detallesAdicionales
     } = req.body;
-    
+
     // Usar el nombre correcto si viene en snake_case
     const nombreFinal = nombreCompleto || nombre_solicitante || '';
     const telefonoFinal = telefono || telefono_solicitante || '';
@@ -507,7 +610,7 @@ const actualizarSolicitud = async (req, res) => {
     try {
         conn = await pool.getConnection();
         await conn.beginTransaction();
-        
+
         // Actualizar datos en la tabla general 'solicitudes'
         const sqlUpdateGeneral = `
             UPDATE solicitudes SET 
@@ -759,7 +862,7 @@ const updateVisibilidad = async (req, res) => {
         let [solicitud] = await conn.query("SELECT id FROM solicitudes_alquiler WHERE id = ?", [id]);
         let tabla = 'solicitudes_alquiler';
         let idColumnName = 'id';
-        
+
         if (!solicitud) {
             // Si no existe, verificar en solicitudes_bandas
             [solicitud] = await conn.query("SELECT id_solicitud FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);

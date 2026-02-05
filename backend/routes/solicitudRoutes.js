@@ -11,6 +11,8 @@ const {
     getSolicitudesPublicas // <-- Para mostrar en agenda pública
 } = require('../controllers/solicitudController');
 
+const { protect } = require('../middleware/authMiddleware');
+
 // POST /api/solicitudes -> Crear una nueva solicitud
 router.post('/', crearSolicitud);
 
@@ -24,7 +26,7 @@ router.get('/publicas', getSolicitudesPublicas);
 // --- RUTAS QUE ACTÚAN SOBRE UN ID ESPECÍFICO ---
 
 // GET /api/solicitudes/:id -> Obtener detalles de una solicitud
-router.get('/:id', getSolicitudPorId);
+router.get('/:id', protect, getSolicitudPorId);
 
 // GET /api/solicitudes/:id/adicionales -> Obtener adicionales seleccionados previos
 router.get('/:id/adicionales', obtenerAdicionales);

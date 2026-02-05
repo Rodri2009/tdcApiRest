@@ -37,12 +37,29 @@
             animation: slideIn 0.3s ease;
             max-width: 400px;
         }
-        .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
-        .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+        .notification-banner.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification-banner.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification-banner.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
         @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -249,7 +266,8 @@
                 </div>
                 <div class="info-box">
                     <i class="fas fa-info-circle"></i>
-                    Listado de solicitudes de alquiler confirmadas. Estos eventos ya tienen fecha y hora reservada en el salón.
+                    Listado de solicitudes de alquiler confirmadas. Estos eventos ya tienen fecha y hora reservada en el
+                    salón.
                 </div>
                 <div class="table-container">
                     <table>
@@ -260,14 +278,12 @@
                                 <th>Tipo</th>
                                 <th>Cliente</th>
                                 <th>Personas</th>
-                                <th>Duración</th>
-                                <th>Precio</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-alquileres">
                             <tr>
-                                <td colspan="8" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                                <td colspan="6" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -416,15 +432,21 @@
 
         async function loadAlquileres() {
             try {
-                // Cargar solicitudes de alquiler confirmadas
-                const res = await fetch(`${API_BASE}/solicitudes?tipo=ALQUILER_SALON&estado=Confirmado`, { headers: authHeaders() });
+                // Cargar solicitudes de alquiler confirmadas (o solicitadas si no hay confirmadas)
+                const res = await fetch(`${API_BASE}/solicitudes?tipo=ALQUILER_SALON&estado=Solicitado`, { headers: authHeaders() });
                 if (res.ok) {
                     alquileres = await res.json();
+                    console.log('Datos cargados en alquileres:', alquileres);
                     renderAlquileres();
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    console.error('Error HTTP al cargar alquileres:', res.status, errData);
+                    showBanner(`Error al cargar alquileres: ${errData.error || res.statusText}`, 'error');
                 }
             } catch (err) {
-                console.error('Error:', err);
-                document.getElementById('tbody-alquileres').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#f87171;">Error al cargar alquileres</td></tr>';
+                console.error('Error de red al cargar alquileres:', err);
+                showBanner(`Error de conexión al cargar alquileres: ${err.message}`, 'error');
+                document.getElementById('tbody-alquileres').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error al cargar alquileres</td></tr>';
             }
         }
 
@@ -602,23 +624,37 @@
         }
 
         function renderAlquileres() {
+            console.log('Ejecutando renderAlquileres...');
+            console.log('Datos originales en alquileres:', alquileres);
+
             const tbody = document.getElementById('tbody-alquileres');
             if (alquileres.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#9ca3af;">No hay alquileres confirmados</td></tr>';
+                console.log('No hay datos en la variable alquileres.');
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay alquileres solicitados</td></tr>';
                 return;
             }
+
+            // Filtrar solo los eventos de tipo ALQUILER_SALON y estado Solicitado
+            const alquileresFiltrados = alquileres.filter(a => a.tipoEventoId === 'ALQUILER_SALON' && a.estado === 'Solicitado');
+            console.log('Datos filtrados en alquileres:', alquileresFiltrados);
+
+            if (alquileresFiltrados.length === 0) {
+                console.log('No hay alquileres que cumplan con los criterios de filtrado.');
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay alquileres solicitados para mostrar</td></tr>';
+                return;
+            }
+
             // Ordenar por fecha más cercana primero
-            const alquileresOrdenados = [...alquileres].sort((a, b) => new Date(a.fechaEvento) - new Date(b.fechaEvento));
-            
+            const alquileresOrdenados = [...alquileresFiltrados].sort((a, b) => new Date(a.fechaEvento) - new Date(b.fechaEvento));
+            console.log('Datos ordenados en alquileres:', alquileresOrdenados);
+
             tbody.innerHTML = alquileresOrdenados.map(a => {
-                const fecha = a.fechaEvento ? new Date(a.fechaEvento).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-';
-                const hora = a.horaEvento || '-';
-                const tipo = a.tipoEvento || '-';
-                const cliente = a.nombreCompleto || '-';
-                const personas = a.cantidad || '-';
-                const duracion = a.duracion || '-';
-                const precio = a.precio ? `$${Number(a.precio).toLocaleString('es-AR')}` : '-';
-                
+                const fecha = a.fechaEvento ? new Date(a.fechaEvento).toLocaleDateString('es-AR') : '-';
+                const hora = a.horaInicio || '-';
+                const tipo = a.tipoServicioId || '-';
+                const cliente = a.nombreCliente || '-';
+                const personas = a.cantidadAforo || '-';
+
                 return `
                     <tr>
                         <td><strong>${fecha}</strong></td>
@@ -626,12 +662,10 @@
                         <td><span class="badge badge-primary">${tipo}</span></td>
                         <td>${cliente}</td>
                         <td>${personas} personas</td>
-                        <td>${duracion}</td>
-                        <td>${precio}</td>
                         <td>
                             <div class="row-actions">
-                                <a href="editar_solicitud.html?id=${a.id}" class="btn btn-icon btn-sm" title="Ver detalles">
-                                    <i class="fas fa-eye"></i>
+                                <a href="editar_solicitud_alquiler.html?solicitudId=${a.id}" class="btn btn-icon btn-sm" title="Editar solicitud">
+                                    <i class="fas fa-edit"></i>
                                 </a>
                             </div>
                         </td>
