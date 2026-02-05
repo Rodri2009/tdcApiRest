@@ -115,6 +115,7 @@ const getSolicitudes = async (req, res) => {
             ORDER BY fechaEvento DESC, fechaSolicitud DESC;
         `;
 
+        console.log('DEBUG SQL getSolicitudes:', sql);
         const solicitudes = await conn.query(sql);
         res.status(200).json(solicitudes);
     } catch (err) {
