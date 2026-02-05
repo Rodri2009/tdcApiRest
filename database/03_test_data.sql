@@ -54,11 +54,11 @@ INSERT INTO solicitudes_bandas (tipo_de_evento, es_publico, fecha_hora, fecha_ev
 ('FECHA_BANDAS', 1, NOW(), '2026-03-15', '20:00', '4 horas', '120', 2800.00, 'Rock March', 'Noche de rock con bandas emergentes', 'Pendiente'),
 ('FECHA_BANDAS', 1, NOW(), '2026-04-10', '21:00', '3 horas', '200', 3500.00, 'Rock Legends', 'Tributo a las mejores bandas de rock', 'Confirmado');
 
--- FECHAS DE BANDAS DE EJEMPLO
-INSERT INTO fechas_bandas_confirmadas (tipo_evento, nombre_banda, genero_musical, descripcion, fecha, hora_inicio, hora_fin, precio_anticipada, precio_puerta, aforo_maximo, estado, es_publico, activo) VALUES
-('BANDA', 'Reite', 'Rock nacional', 'Gran noche de rock nacional con Tributo a La Renga', '2025-12-20', '21:00:00', '02:00:00', 3000.00, 4000.00, 150, 'Confirmado', 1, 1),
-('BANDA', 'Jazz en el Templo', 'Jazz', 'Noche de jazz con los mejores músicos de la zona sur', '2025-12-21', '20:00:00', '01:00:00', 2500.00, 3500.00, 100, 'Confirmado', 1, 1),
-('BANDA', 'Cumbia Power', 'Cumbia', 'La mejor cumbia para cerrar el año bailando!', '2025-12-28', '22:00:00', '04:00:00', 2000.00, 3000.00, 180, 'Confirmado', 1, 1);
+-- FECHAS DE BANDAS DE EJEMPLO (migradas a eventos_confirmados)
+INSERT INTO eventos_confirmados (tipo_evento, tabla_origen, nombre_evento, descripcion, fecha_evento, hora_inicio, duracion_estimada, genero_musical, precio_base, precio_final, cantidad_personas, es_publico, activo) VALUES
+('BANDA', 'fechas_bandas_confirmadas', 'Reite', 'Gran noche de rock nacional con Tributo a La Renga', '2025-12-20', '21:00:00', NULL, 'Rock nacional', 3000.00, 4000.00, 150, 1, 1),
+('BANDA', 'fechas_bandas_confirmadas', 'Jazz en el Templo', 'Noche de jazz con los mejores músicos de la zona sur', '2025-12-21', '20:00:00', NULL, 'Jazz', 2500.00, 3500.00, 100, 1, 1),
+('BANDA', 'fechas_bandas_confirmadas', 'Cumbia Power', 'La mejor cumbia para cerrar el año bailando!', '2025-12-28', '22:00:00', NULL, 'Cumbia', 2000.00, 3000.00, 180, 1, 1);
 
 -- Lineup de eventos
 INSERT INTO eventos_lineup (id_evento, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, hora_inicio, duracion_minutos, estado) VALUES
