@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
 ```
 
 ### 1.3 Cambios en Tablas de Solicitudes
+
+- Se agregaron los campos `descripcion_corta` y `descripcion_larga` a la tabla `solicitudes` para permitir una muestra resumida en listados y almacenar descripciones detalladas separadas.
 Eliminar las columnas de visibilidad en las tablas hijas y centralizar la visibilidad en la tabla `solicitudes` (campo `es_publico`).
 
 - `solicitudes_alquiler`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
