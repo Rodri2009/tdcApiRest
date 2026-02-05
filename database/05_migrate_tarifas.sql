@@ -1,8 +1,8 @@
 -- Migración: Cambiar personal_tarifas para usar nombre_rol en lugar de id_personal
 -- Fecha: 2025-12-23
 
--- Agregar la nueva columna
-ALTER TABLE personal_tarifas ADD COLUMN nombre_rol VARCHAR(100) NOT NULL AFTER id;
+-- Agregar la nueva columna (seguro si ya existe)
+ALTER TABLE personal_tarifas ADD COLUMN IF NOT EXISTS nombre_rol VARCHAR(100) NOT NULL AFTER id;
 
 -- Migrar datos: asignar nombre_rol basado en id_rol si existe
 UPDATE personal_tarifas t

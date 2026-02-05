@@ -55,10 +55,13 @@ INSERT INTO solicitudes_bandas (tipo_de_evento, es_publico, fecha_hora, fecha_ev
 ('FECHA_BANDAS', 1, NOW(), '2026-04-10', '21:00', '3 horas', '200', 3500.00, 'Rock Legends', 'Tributo a las mejores bandas de rock', 'Confirmado');
 
 -- FECHAS DE BANDAS DE EJEMPLO (migradas a eventos_confirmados)
-INSERT INTO eventos_confirmados (tipo_evento, tabla_origen, nombre_evento, descripcion, fecha_evento, hora_inicio, duracion_estimada, genero_musical, precio_base, precio_final, cantidad_personas, es_publico, activo) VALUES
-('BANDA', 'fechas_bandas_confirmadas', 'Reite', 'Gran noche de rock nacional con Tributo a La Renga', '2025-12-20', '21:00:00', NULL, 'Rock nacional', 3000.00, 4000.00, 150, 1, 1),
-('BANDA', 'fechas_bandas_confirmadas', 'Jazz en el Templo', 'Noche de jazz con los mejores músicos de la zona sur', '2025-12-21', '20:00:00', NULL, 'Jazz', 2500.00, 3500.00, 100, 1, 1),
-('BANDA', 'fechas_bandas_confirmadas', 'Cumbia Power', 'La mejor cumbia para cerrar el año bailando!', '2025-12-28', '22:00:00', NULL, 'Cumbia', 2000.00, 3000.00, 180, 1, 1);
+-- Notas: `id_solicitud` referencia a la fila correspondiente en `solicitudes_bandas`.
+-- En este script de datos de prueba asumimos que las primeras filas insertadas en `solicitudes_bandas`
+-- obtendrán id_solicitud = 1, 2 y 3 respectivamente.
+INSERT INTO eventos_confirmados (tipo_evento, id_solicitud, tabla_origen, nombre_evento, descripcion, fecha_evento, hora_inicio, duracion_estimada, genero_musical, precio_base, precio_final, cantidad_personas, es_publico, activo) VALUES
+('BANDA', 1, 'fechas_bandas_confirmadas', 'Reite', 'Gran noche de rock nacional con Tributo a La Renga', '2025-12-20', '21:00:00', NULL, 'Rock nacional', 3000.00, 4000.00, 150, 1, 1),
+('BANDA', 2, 'fechas_bandas_confirmadas', 'Jazz en el Templo', 'Noche de jazz con los mejores músicos de la zona sur', '2025-12-21', '20:00:00', NULL, 'Jazz', 2500.00, 3500.00, 100, 1, 1),
+('BANDA', 3, 'fechas_bandas_confirmadas', 'Cumbia Power', 'La mejor cumbia para cerrar el año bailando!', '2025-12-28', '22:00:00', NULL, 'Cumbia', 2000.00, 3000.00, 180, 1, 1);
 
 -- Lineup de eventos
 INSERT INTO eventos_lineup (id_evento, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, hora_inicio, duracion_minutos, estado) VALUES
