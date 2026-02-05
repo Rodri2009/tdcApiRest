@@ -295,3 +295,38 @@ Se aplicaron cambios adicionales para simplificar y normalizar las tablas de sol
 - **Compatibilidad Backward**: Eliminada. El código utiliza `eventos_confirmados` y las rutas legacy `/fechas_bandas_confirmadas` han sido removidas.
 - **Transacciones**: Uso de `beginTransaction()` y `commit()` asegura atomicidad en operaciones complejas
 - **Error Handling**: Si falla la inserción en `eventos_confirmados`, se hace `rollback()` automático
+
+---
+
+## Cambios aplicados el 2026-02-05 ✅
+Durante la sesión del 05/02/2026 se realizaron las siguientes modificaciones en el código y base de datos (resumen ejecutable):
+
+- Base de datos
+  - Añadido `descripcion_corta` (VARCHAR(255)) y `descripcion_larga` (TEXT) a la tabla `solicitudes`.
+  - Añadida migración idempotente: `database/migrations/20260205_add_descripciones_to_solicitudes.sql`.
+  - Seeds actualizados en `database/03_test_data.sql` para poblar `descripcion_corta`/`descripcion_larga` en registros de prueba.
+
+- Backend
+  - `backend/controllers/adminController.js`:
+    - Corregida la consulta `getSolicitudes()` (UNION ALL) asegurando que **todos los SELECTs devuelvan el mismo número y orden de columnas** para evitar ER_WRONG_NUMBER_OF_COLUMNS_IN_SELECT (500).
+    - Eliminadas las columnas `nombreBanda` y `cantidadAforo` de la salida administrativa al comprobar que no eran usadas en la UI admin; simplificado el SELECT para devolver `descripcionCorta`, `tipoNombre`, `categoria`, `horaInicio`, `es_publico`, etc.
+  - `backend/controllers/alquilerAdminController.js`:
+    - Corregidos `getDuraciones()` y `getPrecios()` para usar la columna real `id_tipo_evento` y exponerla como `id_evento` en la respuesta, además de ordenar por `id_tipo_evento`.
+    - Corrección en condiciones WHERE (`id_tipo_evento` en lugar de `id_evento`) y alias en selects.
+  - `backend/controllers/solicitudController.js` y `bandasController.js`:
+    - Aceptan ahora `descripcionCorta` / `descripcionLarga` en create/put y persisten en tabla `solicitudes`.
+
+- Frontend
+  - `frontend/admin_solicitudes.html`:
+    - Mapeo y render: ahora muestra `descripcion_corta` en la columna Descripción, y ya no depende de `nombreBanda`/`cantidadAforo`.
+    - Añadida clase visual de resaltado para filas **Confirmado** (fondo más visible + borde izquierdo verde y texto en negrita).
+    - Event delegation: corregidos handlers para botones (editar/eliminar, asignar personal, orden de trabajo) y corrección de URLs para redirecciones según categoría/origen.
+  - `frontend/admin_agenda.html`:
+    - Eliminado uso de `nombreBanda` para el nombre a mostrar; el fallback usa `tipoNombre` / `descripcionCorta` / `nombreCliente` según corresponda.
+    - Reparados enlaces de edición para apuntar a editores reales (`editar_solicitud_fecha_bandas.html`, `editar_solicitud_alquiler.html`, etc.) y limpiados logs de debug excesivos.
+  - `frontend/config_alquiler.html`:
+    - Lógica de carga y renderización de duraciones y precios verificada; corregida la petición y el manejo de errores para que muestre mensajes legibles.
+
+- Deploy y verificación
+  - Contenedor `backend` rebuild y restart; validado con llamadas `curl` autenticadas: `/api/admin/alquiler/duraciones`, `/api/admin/alquiler/precios` y `/api/admin/solicitudes` responden correctamente y con la forma esperada.
+  - Commits creados y pusheados a `origin/main` con mensajes descriptivos.
