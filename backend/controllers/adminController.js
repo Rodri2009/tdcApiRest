@@ -683,11 +683,11 @@ const getOrdenDeTrabajo = async (req, res) => {
             SELECT
                 s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
                 s.tipo_servicio,
-                ot.nombre_para_mostrar as tipo_evento, ot.id_evento as tipo_evento_id
+                ot.nombre_para_mostrar as tipo_evento, ot.id_tipo_evento as tipo_evento_id
             FROM solicitudes_alquiler s
             LEFT JOIN solicitudes sol ON s.id_solicitud = sol.id
             LEFT JOIN clientes c ON sol.cliente_id = c.id
-            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_tipo_evento
             WHERE s.id_solicitud = ?;
         `;
         let solicitudResult = await conn.query(sqlSolicitud, [solicitudId]);
@@ -697,11 +697,11 @@ const getOrdenDeTrabajo = async (req, res) => {
                 SELECT
                     s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
                     s.tipo_servicio,
-                    ot.nombre_para_mostrar as tipo_evento, ot.id_evento as tipo_evento_id
+                    ot.nombre_para_mostrar as tipo_evento, ot.id_tipo_evento as tipo_evento_id
                 FROM solicitudes_bandas s
                 LEFT JOIN solicitudes sol ON s.id_solicitud = sol.id
                 LEFT JOIN clientes c ON sol.cliente_id = c.id
-                LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
+                LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_tipo_evento
                 WHERE s.id_solicitud = ?;
             `;
             solicitudResult = await conn.query(sqlSolicitud, [solicitudId]);
@@ -788,7 +788,7 @@ const getAllTiposDeEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query(
-            "SELECT id_evento as id, nombre_para_mostrar as nombreParaMostrar, descripcion, monto_sena as montoSena, deposito as depositoGarantia, es_publico as esPublico, categoria FROM opciones_tipos ORDER BY categoria, nombre_para_mostrar;"
+            "SELECT id_tipo_evento as id, nombre_para_mostrar as nombreParaMostrar, descripcion, monto_sena as montoSena, deposito as depositoGarantia, es_publico as esPublico, categoria FROM opciones_tipos ORDER BY categoria, nombre_para_mostrar;"
         );
         res.status(200).json(rows);
     } catch (err) {

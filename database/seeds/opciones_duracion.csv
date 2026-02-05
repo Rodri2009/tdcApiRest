@@ -1,4 +1,4 @@
-id_evento,header,duracion
+id_tipo_evento,header,duracion
 INFANTILES,Opcion 1,3 horas
 INFORMALES,Opcion 1,4 horas
 CON_SERVICIO_DE_MESA,Opcion 1,4 horas

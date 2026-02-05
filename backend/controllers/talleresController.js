@@ -155,7 +155,7 @@ const getTalleres = async (req, res) => {
                 ot.nombre_para_mostrar as tipoNombre
             FROM talleres t
             LEFT JOIN talleristas tal ON t.tallerista_id = tal.id
-            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_tipo_evento
             WHERE 1=1
         `;
         const params = [];
@@ -195,7 +195,7 @@ const getTallerById = async (req, res) => {
                 ot.nombre_para_mostrar as tipo_nombre
             FROM talleres t
             LEFT JOIN talleristas tal ON t.tallerista_id = tal.id
-            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_tipo_evento
             WHERE t.id = ?
         `, [id]);
 
@@ -338,7 +338,7 @@ const getPreciosTalleres = async (req, res) => {
                 ot.nombre_para_mostrar as tipoNombre
             FROM precios_talleres pt
             LEFT JOIN talleres t ON pt.taller_id = t.id
-            LEFT JOIN opciones_tipos ot ON pt.tipo_taller_id = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON pt.tipo_taller_id = ot.id_tipo_evento
             WHERE 1=1
         `;
         const params = [];
@@ -470,7 +470,7 @@ const getTiposTaller = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query(`
-            SELECT id_evento as id, nombre_para_mostrar as nombre, descripcion, es_publico as esPublico
+            SELECT id_tipo_evento as id, nombre_para_mostrar as nombre, descripcion, es_publico as esPublico
             FROM opciones_tipos 
             WHERE categoria = 'TALLERES_ACTIVIDADES'
             ORDER BY nombre_para_mostrar
