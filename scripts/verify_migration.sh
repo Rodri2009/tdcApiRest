@@ -63,10 +63,10 @@ fi
 
 # 3) Search for references in source (excluding docs/migrations and schema)
 echo -n "[verify] Buscando referencias a fechas_bandas_confirmadas en código (excluyendo migrations/docs/schema)... "
-if grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=database/01_schema.sql --exclude=database/03_test_data.sql -n . | wc -l | grep -q "0"; then
+if grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude-dir=.git --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=database/01_schema.sql --exclude=database/03_test_data.sql -n . | wc -l | grep -q "0"; then
   echo "OK"
 else
-  echo "FOUND"; grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=database/01_schema.sql --exclude=database/03_test_data.sql -n .
+  echo "FOUND"; grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude-dir=.git --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=database/01_schema.sql --exclude=database/03_test_data.sql -n .
   errors=$((errors+1))
 fi
 
