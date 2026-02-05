@@ -2,6 +2,7 @@
 // API para gestión de bandas/artistas y solicitudes de fechas
 
 const pool = require('../db');
+const { getOrCreateClient, updateClient } = require('../lib/clients');
 
 // Helper para convertir BigInt a Number (MariaDB devuelve BigInt para COUNT, etc.)
 const serializeBigInt = (obj) => {
@@ -530,49 +531,61 @@ const createSolicitud = async (req, res) => {
             return res.status(400).json({ error: 'Máximo 4 bandas por fecha' });
         }
 
-        const values = [
-            id_banda || null,                          // 1
-            genero_musical || null,                    // 2
-            formacion ? JSON.stringify(formacion) : null, // 3
-            instagram || null,                         // 4
-            facebook || null,                          // 5
-            youtube || null,                           // 6
-            spotify || null,                           // 7
-            otras_redes || null,                       // 8
-            logo_url || null,                          // 9
-            contacto_nombre,                           // 10
-            contacto_email,                            // 11
-            telefono || null,                          // 12
-            contacto_rol || null,                      // 13
-            fecha_preferida || null,                   // 14
-            fecha_alternativa || null,                 // 15
-            hora_preferida || null,                    // 16
-            invitadas ? JSON.stringify(invitadas) : null, // 17
-            cantidadBandas,                            // 18
-            precio_puerta_propuesto || null,           // 19
-            expectativa_publico || null,               // 20
-            mensaje || null,                           // 21
-            fingerprintid || null                      // 22
-        ];
+        // Crear cliente y la fila padre en `solicitudes`, luego insertar el hijo sin campos de contacto
+        let conn;
+        try {
+            conn = await pool.getConnection();
+            await conn.beginTransaction();
 
-        const result = await pool.query(`
-            INSERT INTO solicitudes_bandas (
-                id_banda, genero_musical, formacion_json,
-                instagram, facebook, youtube, spotify, otras_redes, logo_url,
-                nombre_completo, email, telefono, contacto_rol,
-                fecha_evento, fecha_alternativa, hora_evento,
-                invitadas_json, cantidad_bandas,
-                precio_puerta_propuesto, expectativa_publico,
-                descripcion, fingerprintid
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, values);
+            const clienteId = await getOrCreateClient(conn, { nombre: contacto_nombre, telefono, email: contacto_email });
+            const sqlGeneral = `INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion, cliente_id) VALUES ('BANDA', NOW(), 'Solicitado', ?, ?)`;
+            const genRes = await conn.query(sqlGeneral, [mensaje || '', clienteId]);
+            const newId = Number(genRes.insertId);
 
-        const solicitudId = Number(result.insertId);
+            const sqlBandas = `
+                INSERT INTO solicitudes_bandas (
+                    id_solicitud, id_banda, genero_musical, formacion_json,
+                    instagram, facebook, youtube, spotify, otras_redes, logo_url,
+                    contacto_rol, fecha_evento, fecha_alternativa, hora_evento,
+                    invitadas_json, cantidad_bandas,
+                    precio_puerta_propuesto, expectativa_publico, descripcion, fingerprintid
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
 
-        res.status(201).json({
-            message: 'Solicitud enviada exitosamente',
-            id: solicitudId
-        });
+            const paramsBandas = [
+                newId,
+                id_banda || null,
+                genero_musical || null,
+                formacion ? JSON.stringify(formacion) : null,
+                instagram || null,
+                facebook || null,
+                youtube || null,
+                spotify || null,
+                otras_redes || null,
+                logo_url || null,
+                contacto_rol || null,
+                fecha_preferida || null,
+                fecha_alternativa || null,
+                hora_preferida || null,
+                invitadas ? JSON.stringify(invitadas) : null,
+                cantidadBandas,
+                precio_puerta_propuesto || null,
+                expectativa_publico || null,
+                mensaje || null,
+                fingerprintid || null
+            ];
+
+            await conn.query(sqlBandas, paramsBandas);
+            await conn.commit();
+
+            res.status(201).json({ message: 'Solicitud enviada exitosamente', id: newId });
+        } catch (err) {
+            if (conn) await conn.rollback();
+            console.error('Error al crear solicitud:', err);
+            return res.status(500).json({ error: 'Error al crear solicitud' });
+        } finally {
+            if (conn) conn.release();
+        }
     } catch (err) {
         console.error('Error al crear solicitud:', err);
         res.status(500).json({ error: 'Error al crear solicitud' });
@@ -616,18 +629,39 @@ const updateSolicitud = async (req, res) => {
             }
         }
 
-        if (setClauses.length === 0) {
-            return res.status(400).json({ error: 'No hay campos para actualizar' });
+        // Si recibimos campos de contacto, actualizamos la fila en `clientes` asociada (si existe)
+        const contactoUpdates = {};
+        if (typeof updates.contacto_nombre !== 'undefined') contactoUpdates.nombre = updates.contacto_nombre;
+        if (typeof updates.contacto_email !== 'undefined') contactoUpdates.email = updates.contacto_email;
+        if (typeof updates.contacto_telefono !== 'undefined') contactoUpdates.telefono = updates.contacto_telefono;
+
+        let conn;
+        try {
+            conn = await pool.getConnection();
+            await conn.beginTransaction();
+
+            if (Object.keys(contactoUpdates).length > 0) {
+                const [row] = await conn.query('SELECT sol.cliente_id FROM solicitudes_bandas sb JOIN solicitudes sol ON sb.id_solicitud = sol.id WHERE sb.id_solicitud = ?', [id]);
+                if (row && row.cliente_id) {
+                    await updateClient(conn, row.cliente_id, contactoUpdates);
+                }
+            }
+
+            // Actualizamos solo las columnas de la tabla hijos que quedaron en setClauses (sin campos de contacto)
+            if (setClauses.length > 0) {
+                params.push(id);
+                await conn.query(`UPDATE solicitudes_bandas SET ${setClauses.join(', ')} WHERE id = ?`, params);
+            }
+
+            await conn.commit();
+            res.json({ message: 'Solicitud actualizada exitosamente' });
+        } catch (err) {
+            if (conn) await conn.rollback();
+            console.error('Error al actualizar solicitud:', err);
+            res.status(500).json({ error: 'Error al actualizar solicitud' });
+        } finally {
+            if (conn) conn.release();
         }
-
-        params.push(id);
-
-        await pool.query(
-            `UPDATE solicitudes_bandas SET ${setClauses.join(', ')} WHERE id = ?`,
-            params
-        );
-
-        res.json({ message: 'Solicitud actualizada exitosamente' });
     } catch (err) {
         console.error('Error al actualizar solicitud:', err);
         res.status(500).json({ error: 'Error al actualizar solicitud' });
@@ -649,7 +683,7 @@ const aprobarSolicitud = async (req, res) => {
 
         // Obtener la solicitud
         const [solicitud] = await pool.query(
-            'SELECT * FROM solicitudes_bandas WHERE id = ?',
+            'SELECT sb.*, sol.cliente_id FROM solicitudes_bandas sb JOIN solicitudes sol ON sb.id_solicitud = sol.id WHERE sb.id = ?',
             [id]
         );
 
@@ -665,6 +699,13 @@ const aprobarSolicitud = async (req, res) => {
         const fechaFinal = fecha_evento || solicitud.fecha_preferida;
         if (!fechaFinal) {
             return res.status(400).json({ error: 'Se requiere una fecha para el evento' });
+        }
+
+        // Obtener contacto desde clientes si existe
+        let contacto = { nombre: null, email: null, telefono: null };
+        if (solicitud.cliente_id) {
+            const [cliente] = await pool.query('SELECT nombre, email, telefono FROM clientes WHERE id = ?', [solicitud.cliente_id]);
+            if (cliente) contacto = { nombre: cliente.nombre, email: cliente.email, telefono: cliente.telefono };
         }
 
         const eventoResult = await pool.query(`
@@ -686,7 +727,6 @@ const aprobarSolicitud = async (req, res) => {
             precio_puerta || solicitud.precio_puerta_propuesto || 0,
             aforo_maximo || 150
         ]);
-
         const eventoId = Number(eventoResult.insertId);
 
         // Crear/obtener la banda en el catálogo si no existe
@@ -704,8 +744,8 @@ const aprobarSolicitud = async (req, res) => {
                 solicitud.nombre_banda, solicitud.genero_musical,
                 solicitud.instagram, solicitud.facebook, solicitud.youtube, solicitud.spotify,
                 solicitud.otras_redes, solicitud.logo_url,
-                solicitud.contacto_nombre, solicitud.contacto_email,
-                solicitud.contacto_telefono, solicitud.contacto_rol
+                contacto.nombre || solicitud.contacto_nombre, contacto.email || solicitud.contacto_email,
+                contacto.telefono || solicitud.contacto_telefono, solicitud.contacto_rol
             ]);
             bandaId = Number(bandaResult.insertId);
 

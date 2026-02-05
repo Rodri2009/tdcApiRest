@@ -14,7 +14,7 @@ const getSolicitudes = async (req, res) => {
             SELECT
                 CONCAT('alq_', s.id_solicitud) as id,
                 s.fecha_evento as fechaSolicitud,
-                s.nombre_completo as nombreCliente,
+                COALESCE(c.nombre, '') as nombreCliente,
                 s.tipo_de_evento as tipoEventoId,
                 CASE
                     WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'TALLERES', 'SERVICIO') THEN
@@ -34,14 +34,15 @@ const getSolicitudes = async (req, res) => {
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo,
-                p.es_publico as es_publico
+                COALESCE(sol.es_publico, 0) as es_publico
             FROM solicitudes_alquiler s
-            LEFT JOIN solicitudes p ON p.id = s.id_solicitud
+            LEFT JOIN solicitudes sol ON sol.id = s.id_solicitud
+            LEFT JOIN clientes c ON sol.cliente_id = c.id
             UNION ALL
             SELECT
                 CONCAT('bnd_', s.id_solicitud) as id,
                 s.fecha_hora as fechaSolicitud,
-                s.nombre_completo as nombreCliente,
+                COALESCE(c2.nombre, '') as nombreCliente,
                 s.tipo_de_evento as tipoEventoId,
                 'BANDA' as tipoEvento,
                 NULL as subtipo,
@@ -53,9 +54,10 @@ const getSolicitudes = async (req, res) => {
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo,
-                p.es_publico as es_publico
+                COALESCE(sol2.es_publico, 0) as es_publico
             FROM solicitudes_bandas s
-            LEFT JOIN solicitudes p ON p.id = s.id_solicitud
+            LEFT JOIN solicitudes sol2 ON sol2.id = s.id_solicitud
+            LEFT JOIN clientes c2 ON sol2.cliente_id = c2.id
             UNION ALL
             SELECT
                 CONCAT('ev_', e.id) as id,
@@ -77,41 +79,43 @@ const getSolicitudes = async (req, res) => {
             UNION ALL
             SELECT
                 CONCAT('srv_', ss.id_solicitud) as id,
-                sol.fecha_creacion as fechaSolicitud,
-                sol.nombre_solicitante as nombreCliente,
+                sol3.fecha_creacion as fechaSolicitud,
+                COALESCE(c3.nombre, '') as nombreCliente,
                 'SERVICIO' as tipoEventoId,
                 'SERVICIO' as tipoEvento,
                 NULL as subtipo,
                 DATE_FORMAT(ss.fecha_evento, '%Y-%m-%d') as fechaEvento,
-                sol.estado,
+                sol3.estado,
                 ss.tipo_servicio as tipoServicioId,
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 ss.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 NULL as cantidadAforo,
-                COALESCE(sol.es_publico, 0) as es_publico
+                COALESCE(sol3.es_publico, 0) as es_publico
             FROM solicitudes_servicios ss
-            JOIN solicitudes sol ON ss.id_solicitud = sol.id
+            JOIN solicitudes sol3 ON ss.id_solicitud = sol3.id
+            LEFT JOIN clientes c3 ON sol3.cliente_id = c3.id
             UNION ALL
             SELECT
                 CONCAT('tll_', st.id_solicitud) as id,
-                sol.fecha_creacion as fechaSolicitud,
-                sol.nombre_solicitante as nombreCliente,
+                sol4.fecha_creacion as fechaSolicitud,
+                COALESCE(c4.nombre, '') as nombreCliente,
                 'TALLERES' as tipoEventoId,
                 'TALLERES' as tipoEvento,
                 NULL as subtipo,
                 DATE_FORMAT(st.fecha_evento, '%Y-%m-%d') as fechaEvento,
-                sol.estado,
+                sol4.estado,
                 NULL as tipoServicioId,
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 st.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 NULL as cantidadAforo,
-                COALESCE(sol.es_publico, 0) as es_publico
+                COALESCE(sol4.es_publico, 0) as es_publico
             FROM solicitudes_talleres st
-            JOIN solicitudes sol ON st.id_solicitud = sol.id
+            JOIN solicitudes sol4 ON st.id_solicitud = sol4.id
+            LEFT JOIN clientes c4 ON sol4.cliente_id = c4.id
             ORDER BY fechaEvento DESC, fechaSolicitud DESC;
         `;
 
@@ -154,7 +158,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
         if (String(id).startsWith('alq_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_alquiler';
-            [solicitud] = await conn.query("SELECT * FROM solicitudes_alquiler WHERE id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT sa.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_alquiler sa JOIN solicitudes sol ON sa.id_solicitud = sol.id LEFT JOIN clientes c ON sol.cliente_id = c.id WHERE sa.id_solicitud = ?", [realId]);
             tipoEvento = 'ALQUILER_SALON';
         } else if (String(id).startsWith('bnd_')) {
             realId = id.substring(4);
@@ -164,12 +168,12 @@ const actualizarEstadoSolicitud = async (req, res) => {
         } else if (String(id).startsWith('srv_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_servicios';
-            [solicitud] = await conn.query("SELECT ss.*, sol.nombre_solicitante, sol.email_solicitante, sol.telefono_solicitante FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id_solicitud = sol.id WHERE ss.id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT ss.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id_solicitud = sol.id LEFT JOIN clientes c ON sol.cliente_id = c.id WHERE ss.id_solicitud = ?", [realId]);
             tipoEvento = 'SERVICIO';
         } else if (String(id).startsWith('tll_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_talleres';
-            [solicitud] = await conn.query("SELECT st.*, sol.nombre_solicitante, sol.email_solicitante, sol.telefono_solicitante FROM solicitudes_talleres st JOIN solicitudes sol ON st.id_solicitud = sol.id WHERE st.id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT st.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_talleres st JOIN solicitudes sol ON st.id_solicitud = sol.id LEFT JOIN clientes c ON sol.cliente_id = c.id WHERE st.id_solicitud = ?", [realId]);
             tipoEvento = 'TALLER';
         } else {
             // Fallback para IDs antiguos sin prefijo
@@ -179,7 +183,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                 tablaOrigen = 'solicitudes_alquiler';
                 tipoEvento = 'ALQUILER_SALON';
             } else {
-                [solicitud] = await conn.query("SELECT * FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+                [solicitud] = await conn.query("SELECT sb.*, COALESCE(c.nombre,'') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_bandas sb JOIN solicitudes sol ON sb.id_solicitud = sol.id LEFT JOIN clientes c ON sol.cliente_id = c.id WHERE sb.id_solicitud = ?", [id]);
                 if (solicitud) {
                     tablaOrigen = 'solicitudes_bandas';
                     tipoEvento = 'BANDA';
@@ -368,11 +372,11 @@ const eliminarSolicitud = async (req, res) => {
         } else {
             realId = id;
             let [solicitud] = await conn.query("SELECT 'solicitudes_alquiler' as tabla_name FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
-            if (solicitud) {
+            if (solicitud && solicitud.length) {
                 tabla = 'solicitudes_alquiler';
             } else {
                 [solicitud] = await conn.query("SELECT 'solicitudes_bandas' as tabla_name FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
-                if (solicitud) tabla = 'solicitudes_bandas';
+                if (solicitud && solicitud.length) tabla = 'solicitudes_bandas';
             }
         }
 
@@ -380,10 +384,25 @@ const eliminarSolicitud = async (req, res) => {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
 
-        // Por seguridad, borramos en cascada (primero los hijos, luego el padre)
-        await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [realId]);
-        await conn.query("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [realId]);
-        await conn.query("DELETE FROM bandas_solicitudes WHERE id_solicitud = ?", [realId]);
+        // Por seguridad, intentamos borrar en cascada (primero los hijos, luego el padre)
+        // Ignorar errores específicos de tablas inexistentes (legacy) pero loguearlos.
+        const safeDelete = async (query, params) => {
+            try {
+                await conn.query(query, params);
+            } catch (e) {
+                // ER_NO_SUCH_TABLE = 1146
+                if (e && (e.errno === 1146 || e.code === 'ER_NO_SUCH_TABLE')) {
+                    console.warn('Tabla inexistente al intentar borrar (omitido):', query, params, e.message);
+                } else {
+                    throw e; // relanzar para que el catch externo lo maneje
+                }
+            }
+        };
+
+        await safeDelete("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [realId]);
+        await safeDelete("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [realId]);
+        await safeDelete("DELETE FROM bandas_solicitudes WHERE id_solicitud = ?", [realId]);
+
         const result = await conn.query(`DELETE FROM ${tabla} WHERE id_solicitud = ?`, [realId]);
 
         if (result.affectedRows === 0) {
@@ -392,6 +411,7 @@ const eliminarSolicitud = async (req, res) => {
 
         res.status(200).json({ success: true, message: `Solicitud ${id} eliminada permanentemente.` });
     } catch (err) {
+        console.error('Error al eliminar solicitud:', err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -661,10 +681,12 @@ const getOrdenDeTrabajo = async (req, res) => {
         // 1. Obtener los detalles de la solicitud y el tipo de evento, primero en alquiler, luego en bandas
         let sqlSolicitud = `
             SELECT
-                s.id_solicitud, s.nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
+                s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
                 s.tipo_servicio,
                 ot.nombre_para_mostrar as tipo_evento, ot.id_evento as tipo_evento_id
             FROM solicitudes_alquiler s
+            LEFT JOIN solicitudes sol ON s.id_solicitud = sol.id
+            LEFT JOIN clientes c ON sol.cliente_id = c.id
             LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
             WHERE s.id_solicitud = ?;
         `;
@@ -673,10 +695,12 @@ const getOrdenDeTrabajo = async (req, res) => {
         if (!solicitud) {
             sqlSolicitud = `
                 SELECT
-                    s.id_solicitud, s.nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
+                    s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
                     s.tipo_servicio,
                     ot.nombre_para_mostrar as tipo_evento, ot.id_evento as tipo_evento_id
                 FROM solicitudes_bandas s
+                LEFT JOIN solicitudes sol ON s.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
                 LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
                 WHERE s.id_solicitud = ?;
             `;

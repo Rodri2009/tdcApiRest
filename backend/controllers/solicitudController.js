@@ -2,6 +2,7 @@
 const pool = require('../db');
 const { sendAdminNotification } = require('../services/emailService');
 const { sendComprobanteEmail } = require('../services/emailService');
+const { getOrCreateClient, updateClient } = require('../lib/clients');
 
 const crearSolicitud = async (req, res) => {
     console.log("\n-> Controlador crearSolicitud. Body recibido:", req.body);
@@ -22,6 +23,8 @@ const crearSolicitud = async (req, res) => {
         email_solicitante,
         descripcion
     } = req.body;
+
+
 
     // Usar nombre_solicitante si nombreCompleto no existe
     const nombreFinal = nombreCompleto || nombre_solicitante || '';
@@ -79,29 +82,30 @@ const crearSolicitud = async (req, res) => {
         const tipoEventoNorm = (tipoEvento || '').toString().trim().toLowerCase();
         const esBanda = tipoEventoNorm.includes('banda');
         const categoria = esBanda ? 'BANDA' : 'ALQUILER';
+        // Before inserting the solicitud, create or reuse the cliente
+        const clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
+
         const sqlGeneral = `
-            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion, nombre_solicitante, telefono_solicitante, email_solicitante)
-            VALUES (?, NOW(), 'Solicitado', ?, ?, ?, ?)
+            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion, cliente_id)
+            VALUES (?, NOW(), 'Solicitado', ?, ?)
         `;
         const paramsGeneral = [
             categoria,
             descripcion || '',
-            nombreFinal,
-            telefonoFinal,
-            emailFinal
+            clienteId
         ];
         const resultGeneral = await conn.query(sqlGeneral, paramsGeneral);
         const newId = Number(resultGeneral.insertId);
 
         if (esBanda) {
-            // 2. Insertar en la tabla específica 'solicitudes_bandas' (todas las columnas y en el orden exacto del SQL)
+            // 2. Insertar en la tabla específica 'solicitudes_bandas'
             const sqlBandas = `
                 INSERT INTO solicitudes_bandas (
                     id_solicitud, tipo_de_evento, tipo_servicio, fecha_hora, fecha_evento, hora_evento, duracion,
-                    cantidad_de_personas, precio_basico, precio_final, nombre_completo, telefono, email, descripcion, estado, fingerprintid,
+                    cantidad_de_personas, precio_basico, precio_final, descripcion, estado, fingerprintid,
                     id_banda, genero_musical, formacion_json, instagram, facebook, youtube, spotify, otras_redes, logo_url, contacto_rol,
                     fecha_alternativa, invitadas_json, cantidad_bandas, precio_puerta_propuesto, expectativa_publico, notas_admin, id_evento_generado
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const now = new Date();
             let paramsBandas = [
@@ -115,9 +119,6 @@ const crearSolicitud = async (req, res) => {
                 req.body.cantidadPersonas ? String(req.body.cantidadPersonas) : null, // cantidad_de_personas
                 req.body.precioBase ? parseFloat(req.body.precioBase) : null, // precio_basico
                 null, // precio_final
-                nombreFinal, // nombre_completo
-                telefonoFinal, // telefono
-                emailFinal, // email
                 req.body.descripcion || '', // descripcion
                 'Solicitado', // estado
                 req.body.fingerprintId || null, // fingerprintid
@@ -139,19 +140,17 @@ const crearSolicitud = async (req, res) => {
                 req.body.notas_admin || null, // notas_admin
                 null // id_evento_generado
             ];
-            // Forzar exactamente 33 valores (coincidiendo con el SQL INSERT que tiene 33 columnas)
-            paramsBandas = paramsBandas.slice(0, 33);
-            while (paramsBandas.length < 33) paramsBandas.push(null);
-            console.log('paramsBandas FINAL:', paramsBandas.length, 'valores:', paramsBandas);
+            // Forzar exactamente 29 valores (coincidiendo con el SQL INSERT que tiene 29 columnas)
+            paramsBandas = paramsBandas.slice(0, 29);
+            while (paramsBandas.length < 29) paramsBandas.push(null);
             await conn.query(sqlBandas, paramsBandas);
         } else {
             // 2. Insertar en la tabla específica 'solicitudes_alquiler'
             const sqlAlquiler = `
                 INSERT INTO solicitudes_alquiler (
                     id_solicitud, tipo_servicio, fecha_evento, hora_evento, duracion,
-                    cantidad_de_personas, precio_basico, precio_final,
-                    tipo_de_evento, nombre_completo, telefono, email, descripcion, estado
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    cantidad_de_personas, precio_basico, precio_final, tipo_de_evento, descripcion, estado
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const paramsAlquiler = [
                 newId,                                      // id_solicitud
@@ -163,9 +162,6 @@ const crearSolicitud = async (req, res) => {
                 parseFloat(precioBase) || 0,               // precio_basico
                 null,                                       // precio_final
                 tipoEvento,                                 // tipo_de_evento
-                nombreFinal,                                // nombre_completo
-                telefonoFinal,                              // telefono
-                emailFinal,                                 // email
                 descripcion || '',                          // descripcion
                 'Solicitado'                                // estado
             ];
@@ -247,7 +243,7 @@ const getSolicitudPorId = async (req, res) => {
 
             const sql = `
                 SELECT
-                    CONCAT('alq_', sa.id) as solicitudId,
+                    CONCAT('alq_', sa.id_solicitud) as solicitudId,
                     sa.tipo_servicio as tipoServicio,
                     sa.fecha_evento as fechaEvento,
                     sa.hora_evento as horaInicio,
@@ -256,13 +252,14 @@ const getSolicitudPorId = async (req, res) => {
                     sa.precio_basico as precioBase,
                     sa.descripcion,
                     sa.estado,
-                    sa.nombre_completo as nombreCompleto,
-                    sa.telefono as telefono,
-                    sa.email as email,
+                    COALESCE(c.nombre, '') as nombreCompleto,
+                    c.telefono as telefono,
+                    c.email as email,
                     sa.tipo_de_evento as tipoEvento,
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_alquiler sa
                 JOIN solicitudes sol ON sa.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
                 WHERE sa.id_solicitud = ?
             `;
 
@@ -296,9 +293,9 @@ const getSolicitudPorId = async (req, res) => {
                     sb.duracion as duracionEvento,
                     sb.cantidad_de_personas as cantidadPersonas,
                     sb.precio_basico as precioBase,
-                    sb.nombre_completo as nombreCompleto,
-                    sb.telefono as telefono,
-                    sb.email as email,
+                    COALESCE(c.nombre, '') as nombreCompleto,
+                    c.telefono as telefono,
+                    c.email as email,
                     sb.descripcion,
                     sb.estado,
                     sb.genero_musical,
@@ -318,6 +315,7 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_bandas sb
                 JOIN solicitudes sol ON sb.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
                 WHERE sb.id_solicitud = ?
             `;
 
@@ -351,15 +349,16 @@ const getSolicitudPorId = async (req, res) => {
                     ss.duracion as duracionEvento,
                     NULL as cantidadPersonas,
                     ss.precio as precioBase,
-                    sol.nombre_solicitante as nombreCompleto,
-                    sol.telefono_solicitante as telefono,
-                    sol.email_solicitante as email,
+                    COALESCE(c.nombre, '') as nombreCompleto,
+                    c.telefono as telefono,
+                    c.email as email,
                     sol.descripcion,
                     sol.estado,
                     ss.tipo_servicio as tipoServicio,
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_servicios ss
                 JOIN solicitudes sol ON ss.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
                 WHERE ss.id_solicitud = ?
             `;
             console.log('[SOLICITUD][GET] SQL servicio:', sql);
@@ -394,15 +393,16 @@ const getSolicitudPorId = async (req, res) => {
                     st.duracion as duracionEvento,
                     NULL as cantidadPersonas,
                     st.precio as precioBase,
-                    sol.nombre_solicitante as nombreCompleto,
-                    sol.telefono_solicitante as telefono,
-                    sol.email_solicitante as email,
+                    COALESCE(c.nombre, '') as nombreCompleto,
+                    c.telefono as telefono,
+                    c.email as email,
                     sol.descripcion,
                     sol.estado,
                     st.nombre_taller as nombreTaller,
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_talleres st
                 JOIN solicitudes sol ON st.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
                 WHERE st.id_solicitud = ?
             `;
 
@@ -454,17 +454,18 @@ const finalizarSolicitud = async (req, res) => {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
+        // Crear o obtener cliente y guardar referencia en solicitudes
+        const clienteId = await getOrCreateClient(conn, { nombre: nombreCompleto, telefono: celular, email });
+
         // Actualizar datos en la tabla general 'solicitudes'
         const sqlUpdateGeneral = `
             UPDATE solicitudes SET 
-                nombre_solicitante = ?, 
-                telefono_solicitante = ?, 
-                email_solicitante = ?, 
+                cliente_id = ?,
                 descripcion = ?, 
                 estado = 'Solicitado'
             WHERE id = ?
         `;
-        const paramsUpdateGeneral = [nombreCompleto, celular, email, detallesAdicionales, id];
+        const paramsUpdateGeneral = [clienteId, detallesAdicionales, id];
         const resultGeneral = await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
 
         if (resultGeneral.affectedRows === 0) {
@@ -472,16 +473,13 @@ const finalizarSolicitud = async (req, res) => {
             return res.status(404).json({ error: 'La solicitud a actualizar no fue encontrada.' });
         }
 
-        // Actualizar datos en la tabla 'solicitudes_alquiler'
+        // Actualizar datos en la tabla 'solicitudes_alquiler' (no actualizamos campos de contacto aquí)
         const sqlUpdateAlquiler = `
             UPDATE solicitudes_alquiler SET 
-                nombre_completo = ?, 
-                telefono = ?, 
-                email = ?, 
                 descripcion = ?
             WHERE id = ?
         `;
-        const paramsUpdateAlquiler = [nombreCompleto, celular, email, detallesAdicionales, id];
+        const paramsUpdateAlquiler = [detallesAdicionales, id];
         await conn.query(sqlUpdateAlquiler, paramsUpdateAlquiler);
 
         // Obtener los datos completos para los emails
@@ -612,20 +610,19 @@ const actualizarSolicitud = async (req, res) => {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
+        // Crear o actualizar cliente y asociarlo a la solicitud
+        const clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
+
         // Actualizar datos en la tabla general 'solicitudes'
         const sqlUpdateGeneral = `
             UPDATE solicitudes SET 
                 descripcion = ?,
-                nombre_solicitante = ?,
-                telefono_solicitante = ?,
-                email_solicitante = ?
+                cliente_id = ?
             WHERE id = ?
         `;
         const paramsUpdateGeneral = [
             descripcion || detallesAdicionales || '',
-            nombreFinal,
-            telefonoFinal,
-            emailFinal,
+            clienteId,
             id
         ];
         await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
@@ -639,9 +636,6 @@ const actualizarSolicitud = async (req, res) => {
                 fecha_evento = ?,
                 hora_evento = ?,
                 precio_basico = ?,
-                nombre_completo = ?,
-                telefono = ?,
-                email = ?,
                 descripcion = ?
             WHERE id = ?
         `;
@@ -652,9 +646,6 @@ const actualizarSolicitud = async (req, res) => {
             fechaEvento || null,
             horaInicio || '',
             parseFloat(precioBase) || 0,
-            nombreFinal,
-            telefonoFinal,
-            emailFinal,
             descripcion || detallesAdicionales || '',
             id
         ];
@@ -780,11 +771,12 @@ const getSolicitudesPublicas = async (req, res) => {
                 sb.duracion,
                 sb.cantidad_de_personas as cantidad,
                 sb.precio_basico as precio,
-                sb.nombre_completo as nombreCompleto,
+                COALESCE(c.nombre, '') as nombreCompleto,
                 sb.descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico
             FROM solicitudes_bandas sb
             JOIN solicitudes sol ON sb.id_solicitud = sol.id
+            LEFT JOIN clientes c ON sol.cliente_id = c.id
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'
               AND sb.fecha_evento >= CURDATE()

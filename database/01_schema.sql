@@ -20,7 +20,7 @@ CREATE DATABASE IF NOT EXISTS tdc_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unico
 USE tdc_db;
 
 -- =============================================================================
--- 1. TABLAS DE CATÁLOGOS / CONFIGURACIÓN
+-- TABLAS DE CATÁLOGOS / CONFIGURACIÓN
 -- =============================================================================
 
 -- Tipos de eventos con su categoría padre
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS opciones_adicionales (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
--- 2. TABLAS DE USUARIOS Y AUTENTICACIÓN
+-- TABLAS DE USUARIOS Y AUTENTICACIÓN
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS usuarios (
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
--- 3. TABLAS DE PERSONAL
+-- TABLAS DE PERSONAL
 -- =============================================================================
 
 -- Personal disponible para eventos
@@ -149,10 +149,22 @@ CREATE TABLE IF NOT EXISTS costos_personal_vigencia (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
--- 4. TABLAS DE SOLICITUDES
+-- TABLAS DE SOLICITUDES
 -- =============================================================================
 
--- Tabla general para solicitudes
+-- Tabla de clientes centralizada
+CREATE TABLE IF NOT EXISTS clientes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) DEFAULT NULL,
+    telefono VARCHAR(50) DEFAULT NULL,
+    email VARCHAR(255) DEFAULT NULL,
+    notas TEXT DEFAULT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla general para solicitudes (ahora referencia a clientes por cliente_id)
 CREATE TABLE IF NOT EXISTS solicitudes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     categoria ENUM('ALQUILER', 'BANDA', 'BANDAS', 'SERVICIOS', 'TALLERES') NOT NULL,
@@ -160,15 +172,14 @@ CREATE TABLE IF NOT EXISTS solicitudes (
     estado VARCHAR(50) DEFAULT 'Solicitado',
     es_publico TINYINT(1) DEFAULT 0 COMMENT 'Visibilidad pública por defecto para la solicitud (padre)',
     descripcion TEXT,
-    nombre_solicitante VARCHAR(255),
-    telefono_solicitante VARCHAR(50),
-    email_solicitante VARCHAR(255),
+    cliente_id INT NULL,
     INDEX idx_categoria (categoria),
     INDEX idx_estado (estado),
-    INDEX idx_es_publico (es_publico)
+    INDEX idx_es_publico (es_publico),
+    INDEX idx_cliente_id (cliente_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Tabla específica para solicitudes de alquiler
+-- Tabla específica para solicitudes de alquiler (sin columnas de contacto redundantes)
 CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     id_solicitud INT PRIMARY KEY,
     tipo_servicio VARCHAR(255),
@@ -179,13 +190,14 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     precio_basico DECIMAL(10,2),
     precio_final DECIMAL(10,2),
     tipo_de_evento VARCHAR(50) NOT NULL,
-    nombre_completo VARCHAR(255),
-    telefono VARCHAR(50),
-    email VARCHAR(255),
     descripcion TEXT,
     estado VARCHAR(50) DEFAULT 'Solicitado',
     FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci; 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- FK para vincular solicitudes a clientes
+ALTER TABLE solicitudes DROP FOREIGN KEY IF EXISTS fk_solicitudes_cliente;
+ALTER TABLE solicitudes ADD CONSTRAINT fk_solicitudes_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL; 
 
 -- Tabla específica para solicitudes de bandas
 
@@ -273,7 +285,7 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
 
 
 -- =============================================================================
--- 5.1 CATÁLOGO DE BANDAS/ARTISTAS
+-- CATÁLOGO DE BANDAS/ARTISTAS
 -- =============================================================================
 
 -- Catálogo maestro de bandas/artistas (pueden registrarse solos o ser agregados por admin)
@@ -335,7 +347,7 @@ CREATE TABLE IF NOT EXISTS catalogo_instrumentos (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
--- 5.2 LINEUP DE EVENTOS (Relación entre eventos y bandas)
+-- LINEUP DE EVENTOS (Relación entre eventos y bandas)
 -- =============================================================================
 
 -- Lineup: qué bandas tocan en qué evento y en qué orden
@@ -384,7 +396,7 @@ CREATE TABLE IF NOT EXISTS eventos_bandas_invitadas (
 DROP TABLE IF EXISTS bandas_invitadas;
 
 -- =============================================================================
--- 5.3 SOLICITUDES DE FECHAS PARA BANDAS
+-- SOLICITUDES DE FECHAS PARA BANDAS
 -- =============================================================================
 
 -- Solicitudes de bandas (consolidado con campos comunes)
@@ -463,7 +475,7 @@ CREATE TABLE IF NOT EXISTS eventos_personal (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
--- 6. TABLAS DE TALLERES
+-- TABLAS DE TALLERES
 -- =============================================================================
 
 -- Talleristas (instructores)
@@ -552,7 +564,7 @@ CREATE TABLE IF NOT EXISTS asistencias_talleres (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
--- 7. TABLAS DE TICKETS Y CUPONES (Para eventos de bandas)
+-- TABLAS DE TICKETS Y CUPONES (Para eventos de bandas)
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS tickets (
