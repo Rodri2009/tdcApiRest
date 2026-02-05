@@ -107,7 +107,8 @@
         /* Colores suaves según estado */
         .estado-solicitado { background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); }
         .estado-contactado { background: linear-gradient(90deg, rgba(66,153,225,0.03), rgba(66,153,225,0.02)); }
-        .estado-confirmado { background: linear-gradient(90deg, rgba(72,187,120,0.03), rgba(72,187,120,0.02)); }
+        .estado-confirmado { background: linear-gradient(90deg, rgba(72,187,120,0.08), rgba(72,187,120,0.06)); border-left: 4px solid #10B981; }
+        .estado-confirmado td { font-weight: 600; }
         .estado-cancelado { background: linear-gradient(90deg, rgba(245,101,101,0.03), rgba(245,101,101,0.02)); }
 
         .actions-cell {
@@ -813,13 +814,8 @@
                     }
                     subtipoDisplay = subtipoDisplay || '<em>Sin especificar</em>';
 
-                    // Banda/Artista: solo para eventos de bandas
-                    const bandaDisplay = solicitud.nombreBanda || '-';
-
-                    // Cantidad/Aforo: cantidad de personas para alquileres, aforo para bandas
-                    const cantidadAforoDisplay = solicitud.cantidadAforo
-                        ? `${solicitud.cantidadAforo} personas`
-                        : '-';
+                    // Banda/Artista and Cantidad/Aforo removed from admin view (use descripcionCorta/tipoNombre)
+                    // (Field kept in other forms/controllers if needed)
 
                     tr.innerHTML = `
                             <td data-label="ID">${solicitud.id}</td>
