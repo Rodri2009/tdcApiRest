@@ -177,6 +177,7 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     precio_basico DECIMAL(10,2),
     precio_final DECIMAL(10,2),
     es_publico TINYINT(1) DEFAULT 0,
+    es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
     tipo_de_evento VARCHAR(50) NOT NULL,
     nombre_completo VARCHAR(255),
     telefono VARCHAR(50),
@@ -196,6 +197,7 @@ CREATE TABLE IF NOT EXISTS solicitudes_servicios (
     hora_evento VARCHAR(20),
     duracion VARCHAR(100),
     precio DECIMAL(10,2),
+    es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
     FOREIGN KEY (id) REFERENCES solicitudes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -207,9 +209,59 @@ CREATE TABLE IF NOT EXISTS solicitudes_talleres (
     hora_evento VARCHAR(20),
     duracion VARCHAR(100),
     precio DECIMAL(10,2),
+    es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
     FOREIGN KEY (id) REFERENCES solicitudes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- =============================================================================
+-- TABLA UNIFICADA DE EVENTOS CONFIRMADOS
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS eventos_confirmados (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT NOT NULL COMMENT 'ID de la solicitud original',
+    tipo_evento ENUM('ALQUILER_SALON', 'BANDA', 'SERVICIO', 'TALLER') NOT NULL,
+    tabla_origen VARCHAR(50) NOT NULL COMMENT 'solicitudes_alquiler, solicitudes_bandas, solicitudes_servicios, solicitudes_talleres',
+    
+    -- Información del evento
+    nombre_evento VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    fecha_evento DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    duracion_estimada VARCHAR(100),
+    
+    -- Información de contacto
+    nombre_cliente VARCHAR(255),
+    email_cliente VARCHAR(255),
+    telefono_cliente VARCHAR(50),
+    
+    -- Datos económicos
+    precio_base DECIMAL(10,2),
+    precio_final DECIMAL(10,2),
+    
+    -- Información pública
+    es_publico TINYINT(1) DEFAULT 0 COMMENT '1=Visible en agenda pública',
+    activo TINYINT(1) DEFAULT 1 COMMENT '1=Vigente, 0=Cancelado o archivado',
+    
+    -- Información específica por tipo
+    genero_musical VARCHAR(255) COMMENT 'Solo para BANDA',
+    cantidad_personas INT COMMENT 'Solo para ALQUILER_SALON/BANDA',
+    tipo_servicio VARCHAR(255) COMMENT 'Solo para SERVICIO',
+    nombre_taller VARCHAR(255) COMMENT 'Solo para TALLER',
+    
+    -- Auditoría
+    confirmado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    cancelado_en TIMESTAMP NULL,
+    
+    -- Índices
+    INDEX idx_tipo_evento (tipo_evento),
+    INDEX idx_fecha (fecha_evento),
+    INDEX idx_es_publico (es_publico),
+    INDEX idx_activo (activo),
+    INDEX idx_id_solicitud (id_solicitud),
+    UNIQUE KEY uk_solicitud_tipo (id_solicitud, tipo_evento)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Eventos confirmados unificados de todas las solicitudes';
 
 -- Fechas de bandas confirmadas
 CREATE TABLE IF NOT EXISTS fechas_bandas_confirmadas (
@@ -417,6 +469,7 @@ CREATE TABLE IF NOT EXISTS solicitudes_bandas (
     -- Estado y control
     notas_admin TEXT,
     id_evento_generado INT DEFAULT NULL,
+    es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
 
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

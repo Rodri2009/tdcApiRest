@@ -139,46 +139,150 @@ const actualizarEstadoSolicitud = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
+        await conn.beginTransaction();
 
         let solicitud;
         let tabla;
+        let tablaOrigen;
         let realId;
+        let tipoEvento;
 
+        // Determinar tabla y tipo según prefijo
         if (String(id).startsWith('alq_')) {
-            realId = id.replace('alq_', '');
-            [solicitud] = await conn.query("SELECT * FROM solicitudes_alquiler WHERE id_solicitud = ?", [realId]);
-            tabla = 'solicitudes_alquiler';
+            realId = id.substring(4);
+            tablaOrigen = 'solicitudes_alquiler';
+            [solicitud] = await conn.query("SELECT * FROM solicitudes_alquiler WHERE id = ?", [realId]);
+            tipoEvento = 'ALQUILER_SALON';
         } else if (String(id).startsWith('bnd_')) {
-            realId = id.replace('bnd_', '');
+            realId = id.substring(4);
+            tablaOrigen = 'solicitudes_bandas';
             [solicitud] = await conn.query("SELECT * FROM solicitudes_bandas WHERE id_solicitud = ?", [realId]);
-            tabla = 'solicitudes_bandas';
+            tipoEvento = 'BANDA';
+        } else if (String(id).startsWith('srv_')) {
+            realId = id.substring(4);
+            tablaOrigen = 'solicitudes_servicios';
+            [solicitud] = await conn.query("SELECT ss.*, sol.nombre_solicitante, sol.email_solicitante, sol.telefono_solicitante FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id = sol.id WHERE ss.id = ?", [realId]);
+            tipoEvento = 'SERVICIO';
+        } else if (String(id).startsWith('tll_')) {
+            realId = id.substring(4);
+            tablaOrigen = 'solicitudes_talleres';
+            [solicitud] = await conn.query("SELECT st.*, sol.nombre_solicitante, sol.email_solicitante, sol.telefono_solicitante FROM solicitudes_talleres st JOIN solicitudes sol ON st.id = sol.id WHERE st.id = ?", [realId]);
+            tipoEvento = 'TALLER';
         } else {
             // Fallback para IDs antiguos sin prefijo
             realId = id;
-            [solicitud] = await conn.query("SELECT *, 'solicitudes_alquiler' as tabla_name FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
+            [solicitud] = await conn.query("SELECT * FROM solicitudes_alquiler WHERE id = ?", [id]);
             if (solicitud) {
-                tabla = 'solicitudes_alquiler';
+                tablaOrigen = 'solicitudes_alquiler';
+                tipoEvento = 'ALQUILER_SALON';
             } else {
-                [solicitud] = await conn.query("SELECT *, 'solicitudes_bandas' as tabla_name FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
-                if (solicitud) tabla = 'solicitudes_bandas';
+                [solicitud] = await conn.query("SELECT * FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+                if (solicitud) {
+                    tablaOrigen = 'solicitudes_bandas';
+                    tipoEvento = 'BANDA';
+                }
             }
         }
 
         if (!solicitud) {
+            await conn.rollback();
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
 
-        // Actualizar estado de la solicitud
-        const result = await conn.query(`UPDATE ${tabla} SET estado = ? WHERE id_solicitud = ?`, [estado, realId]);
+        // Actualizar estado en la tabla de solicitudes específica
+        const fieldName = tablaOrigen === 'solicitudes_bandas' ? 'id_solicitud' : 'id';
+        const result = await conn.query(`UPDATE ${tablaOrigen} SET estado = ? WHERE ${fieldName} = ?`, [estado, realId]);
         if (result.affectedRows === 0) {
+            await conn.rollback();
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
 
-        // Si es FECHA_BANDAS, manejar fechas_bandas_confirmadas
-        if (solicitud.tipo_de_evento === 'FECHA_BANDAS') {
+        // Manejar eventos_confirmados para TODOS los tipos
+        if (estado === 'Confirmado') {
+            // Determinar si debe ser público (según es_publico_cuando_confirmada)
+            const esPublico = solicitud.es_publico_cuando_confirmada ? 1 : 0;
+
+            // Insertar en eventos_confirmados si no existe
+            const [eventoExistente] = await conn.query(
+                "SELECT id FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = ?",
+                [realId, tipoEvento]
+            );
+
+            if (!eventoExistente) {
+                // Preparar datos según tipo
+                let nombreEvento, nombreCliente, emailCliente, telefonoCliente, generoMusical, cantidadPersonas, tipoServicio, nombreTaller;
+
+                if (tablaOrigen === 'solicitudes_bandas') {
+                    nombreEvento = solicitud.nombre_completo || 'Banda';
+                    nombreCliente = solicitud.nombre_completo;
+                    emailCliente = solicitud.email;
+                    telefonoCliente = solicitud.telefono;
+                    generoMusical = solicitud.genero_musical;
+                    cantidadPersonas = solicitud.cantidad_de_personas;
+                } else if (tablaOrigen === 'solicitudes_alquiler') {
+                    nombreEvento = solicitud.tipo_de_evento || 'Alquiler';
+                    nombreCliente = solicitud.nombre_completo;
+                    emailCliente = solicitud.email;
+                    telefonoCliente = solicitud.telefono;
+                    cantidadPersonas = solicitud.cantidad_de_personas;
+                } else if (tablaOrigen === 'solicitudes_servicios') {
+                    nombreEvento = solicitud.tipo_servicio || 'Servicio';
+                    nombreCliente = solicitud.nombre_solicitante;
+                    emailCliente = solicitud.email_solicitante;
+                    telefonoCliente = solicitud.telefono_solicitante;
+                    tipoServicio = solicitud.tipo_servicio;
+                } else if (tablaOrigen === 'solicitudes_talleres') {
+                    nombreEvento = solicitud.nombre_taller || 'Taller';
+                    nombreCliente = solicitud.nombre_solicitante;
+                    emailCliente = solicitud.email_solicitante;
+                    telefonoCliente = solicitud.telefono_solicitante;
+                    nombreTaller = solicitud.nombre_taller;
+                }
+
+                await conn.query(`
+                    INSERT INTO eventos_confirmados (
+                        id_solicitud, tipo_evento, tabla_origen,
+                        nombre_evento, descripcion, fecha_evento, hora_inicio, duracion_estimada,
+                        nombre_cliente, email_cliente, telefono_cliente,
+                        precio_base, precio_final, es_publico, activo,
+                        genero_musical, cantidad_personas, tipo_servicio, nombre_taller
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+                `, [
+                    realId,
+                    tipoEvento,
+                    tablaOrigen,
+                    nombreEvento,
+                    solicitud.descripcion || null,
+                    solicitud.fecha_evento,
+                    solicitud.hora_evento || '21:00:00',
+                    solicitud.duracion || null,
+                    nombreCliente,
+                    emailCliente,
+                    telefonoCliente,
+                    solicitud.precio_basico || null,
+                    solicitud.precio_final || null,
+                    esPublico,
+                    generoMusical || null,
+                    cantidadPersonas || null,
+                    tipoServicio || null,
+                    nombreTaller || null
+                ]);
+            }
+        } else if (estado === 'Cancelado') {
+            // Marcar como inactivo en eventos_confirmados
+            await conn.query(
+                "UPDATE eventos_confirmados SET activo = 0, cancelado_en = NOW() WHERE id_solicitud = ? AND tipo_evento = ?",
+                [realId, tipoEvento]
+            );
+        }
+
+        // Mantener compatibilidad con fechas_bandas_confirmadas para bandas
+        if (tipoEvento === 'BANDA' && solicitud.tipo_de_evento === 'FECHA_BANDAS') {
             if (estado === 'Confirmado') {
-                // Insertar en fechas_bandas_confirmadas si no existe
-                const [existe] = await conn.query("SELECT id FROM fechas_bandas_confirmadas WHERE nombre_banda = ? AND fecha = ?", [solicitud.nombre_completo, solicitud.fecha_evento]);
+                const [existe] = await conn.query(
+                    "SELECT id FROM fechas_bandas_confirmadas WHERE nombre_banda = ? AND fecha = ?",
+                    [solicitud.nombre_completo, solicitud.fecha_evento]
+                );
                 if (!existe) {
                     await conn.query(`
                         INSERT INTO fechas_bandas_confirmadas (
@@ -188,7 +292,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     `, [
                         'BANDA',
                         solicitud.nombre_completo,
-                        solicitud.tipo_servicio || null,
+                        solicitud.genero_musical || null,
                         solicitud.descripcion || null,
                         solicitud.fecha_evento,
                         solicitud.hora_evento || '21:00:00',
@@ -197,13 +301,20 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     ]);
                 }
             } else if (estado === 'Cancelado' || estado === 'Solicitado') {
-                // Eliminar de fechas_bandas_confirmadas
-                await conn.query("DELETE FROM fechas_bandas_confirmadas WHERE nombre_banda = ? AND fecha = ?", [solicitud.nombre_completo, solicitud.fecha_evento]);
+                await conn.query(
+                    "UPDATE fechas_bandas_confirmadas SET activo = 0 WHERE nombre_banda = ? AND fecha = ?",
+                    [solicitud.nombre_completo, solicitud.fecha_evento]
+                );
             }
         }
 
-        res.status(200).json({ success: true, message: `Estado de la solicitud ${id} actualizado a ${estado}.` });
+        await conn.commit();
+        res.status(200).json({
+            success: true,
+            message: `Estado de la solicitud ${id} actualizado a ${estado}.`
+        });
     } catch (err) {
+        if (conn) await conn.rollback();
         console.error('Error al actualizar estado:', err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
