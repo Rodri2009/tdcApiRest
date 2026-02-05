@@ -523,6 +523,20 @@ textarea {
     color: var(--color-text-dim);
 }
 
+/* Ensure descriptions preserve line breaks and wrap nicely */
+.description {
+    white-space: pre-wrap;
+    /* preserve newlines */
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+td.description {
+    max-width: 1px;
+    /* allow word-wrap to respect width constraints in table cells */
+}
+
+
 .loading i {
     animation: spin 1s linear infinite;
 }

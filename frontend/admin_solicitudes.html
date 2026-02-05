@@ -105,11 +105,26 @@
         }
 
         /* Colores suaves según estado */
-        .estado-solicitado { background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); }
-        .estado-contactado { background: linear-gradient(90deg, rgba(66,153,225,0.03), rgba(66,153,225,0.02)); }
-        .estado-confirmado { background: linear-gradient(90deg, rgba(72,187,120,0.08), rgba(72,187,120,0.06)); border-left: 4px solid #10B981; }
-        .estado-confirmado td { font-weight: 600; }
-        .estado-cancelado { background: linear-gradient(90deg, rgba(245,101,101,0.03), rgba(245,101,101,0.02)); }
+        .estado-solicitado {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+        }
+
+        .estado-contactado {
+            background: linear-gradient(90deg, rgba(66, 153, 225, 0.03), rgba(66, 153, 225, 0.02));
+        }
+
+        .estado-confirmado {
+            background: linear-gradient(90deg, rgba(72, 187, 120, 0.08), rgba(72, 187, 120, 0.06));
+            border-left: 4px solid #10B981;
+        }
+
+        .estado-confirmado td {
+            font-weight: 600;
+        }
+
+        .estado-cancelado {
+            background: linear-gradient(90deg, rgba(245, 101, 101, 0.03), rgba(245, 101, 101, 0.02));
+        }
 
         .actions-cell {
             display: flex;
@@ -729,7 +744,7 @@
                     tr.dataset.categoria = solicitud.tipoEvento || '';
                     tr.dataset.origen = solicitud.origen || 'solicitud';
 
-                    const fechaSolicitud = solicitud.fechaSolicitud ? (new Date(solicitud.fechaSolicitud)).toLocaleString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit', second:'2-digit' }) : 'N/A';
+                    const fechaSolicitud = solicitud.fechaSolicitud ? (new Date(solicitud.fechaSolicitud)).toLocaleString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A';
                     // Formato Fecha Evento: Nombre corto del día, DD, MM, AAAA
                     const fechaEvento = solicitud.fechaEvento ? (() => {
                         const d = new Date(String(solicitud.fechaEvento) + 'T00:00:00');
@@ -737,10 +752,10 @@
                         const date = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
                         return `${weekday} ${date}`;
                     })() : 'N/A';
-                    const horaInicio = solicitud.horaInicio ? String(solicitud.horaInicio).slice(0,5) : '-';
+                    const horaInicio = solicitud.horaInicio ? String(solicitud.horaInicio).slice(0, 5) : '-';
                     const descripcionCorta = solicitud.descripcionCorta || '<em>Sin descripción</em>';
 
-                    let botones = ''; 
+                    let botones = '';
                     // Mostrar Modificar y Eliminar siempre. Si está confirmado, mostrar Asignar y Orden.
                     // Para eventos `id` viene como 'ev_<id>' y `solicitud.origen==='evento'`.
                     const isEvento = solicitud.origen === 'evento';
@@ -825,7 +840,7 @@
                             <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
                             <td data-label="Fecha Evento">${fechaEvento}</td>
                             <td data-label="Hora Inicio">${horaInicio}</td>
-                            <td data-label="Descripción">${descripcionCorta}</td>
+                            <td data-label="Descripción"><div class="description">${descripcionCorta}</div></td>
                             <td data-label="Estado">
                                 <select data-id="${solicitud.id}" class="estado-select" ${puedeCambiarEstado ? '' : 'disabled style="opacity:0.6;cursor:not-allowed;"'}>
                                         <option value="Solicitado" ${solicitud.estado === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
