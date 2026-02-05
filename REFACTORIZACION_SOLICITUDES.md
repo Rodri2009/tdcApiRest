@@ -200,6 +200,14 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 - [x] Transacciones sin errores en logs
 - [x] Integridad referencial mantenida
 
+### Fase 5: Archivado y limpieza final ✅
+- [x] Creada la migración `database/migrations/20260205_archive_and_drop_fechas_bandas.sql` para archivar y renombrar la tabla legacy `fechas_bandas_confirmadas_deprecated` a `fechas_bandas_confirmadas_backup_20260205` de forma atómica.
+- [x] Ejecutada la migración en la DB de prueba y verificado que la tabla fue renombrada correctamente y contenía los registros esperados antes del archivado.
+- [x] Eliminada la tabla backup `fechas_bandas_confirmadas_backup_20260205` (DROP) tras validar que los datos están a salvo en los backups de la migración y que no quedan referencias activas en el código ni en runtime.
+- [x] Eliminado código temporal de trazado y handlers de bloqueo en `backend/server.js` y actualizado `docker/nginx.conf` para devolver 404 en rutas legacy.
+- [x] Actualizado y endurecido `scripts/verify_migration.sh` para excluir migraciones, datos de prueba y archivos internos, añadir reportes robustos y evitar falsos positivos. La verificación final pasó con éxito.
+- [x] Todos los cambios fueron commitados en la rama principal y enviados al remoto (push).
+
 ---
 
 ## 6. Resultados y Validación
