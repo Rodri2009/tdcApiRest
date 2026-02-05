@@ -90,7 +90,7 @@ const getSolicitudes = async (req, res) => {
                 ss.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 NULL as cantidadAforo,
-                COALESCE(sol.es_publico, ss.es_publico_cuando_confirmada) as es_publico
+                COALESCE(sol.es_publico, 0) as es_publico
             FROM solicitudes_servicios ss
             JOIN solicitudes sol ON ss.id_solicitud = sol.id
             UNION ALL
@@ -109,7 +109,7 @@ const getSolicitudes = async (req, res) => {
                 st.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 NULL as cantidadAforo,
-                COALESCE(sol.es_publico, st.es_publico_cuando_confirmada) as es_publico
+                COALESCE(sol.es_publico, 0) as es_publico
             FROM solicitudes_talleres st
             JOIN solicitudes sol ON st.id_solicitud = sol.id
             ORDER BY fechaEvento DESC, fechaSolicitud DESC;
@@ -210,8 +210,9 @@ const actualizarEstadoSolicitud = async (req, res) => {
 
         // Manejar eventos_confirmados para TODOS los tipos
         if (estado === 'Confirmado') {
-            // Determinar si debe ser público (según es_publico_cuando_confirmada)
-            const esPublico = solicitud.es_publico_cuando_confirmada ? 1 : 0;
+            // Determinar si debe ser público (según la tabla padre `solicitudes`)
+            const [parent] = await conn.query('SELECT es_publico FROM solicitudes WHERE id = ?', [realId]);
+            const esPublico = parent && parent.es_publico ? 1 : 0;
 
             // Insertar en eventos_confirmados si no existe
             const [eventoExistente] = await conn.query(

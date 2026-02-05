@@ -41,11 +41,33 @@ ALTER TABLE solicitudes_talleres ADD PRIMARY KEY (id_solicitud);
 ALTER TABLE solicitudes_talleres DROP FOREIGN KEY IF EXISTS fk_solicitudes_talleres_padre;
 ALTER TABLE solicitudes_talleres ADD CONSTRAINT fk_solicitudes_talleres_padre FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE;
 
--- 3) Remove es_publico from child tables if exists
+-- 3) Migrate child visibility flags into parent and remove child-specific visibility columns
+-- Propagar cualquier bandera de visibilidad de las tablas hijas hacia la tabla padre
+UPDATE solicitudes s
+JOIN solicitudes_alquiler sa ON sa.id_solicitud = s.id
+SET s.es_publico = GREATEST(IFNULL(s.es_publico,0), IFNULL(sa.es_publico_cuando_confirmada,0), IFNULL(sa.es_publico,0));
+
+UPDATE solicitudes s
+JOIN solicitudes_servicios ss ON ss.id_solicitud = s.id
+SET s.es_publico = GREATEST(IFNULL(s.es_publico,0), IFNULL(ss.es_publico_cuando_confirmada,0), IFNULL(ss.es_publico,0));
+
+UPDATE solicitudes s
+JOIN solicitudes_talleres st ON st.id_solicitud = s.id
+SET s.es_publico = GREATEST(IFNULL(s.es_publico,0), IFNULL(st.es_publico_cuando_confirmada,0), IFNULL(st.es_publico,0));
+
+UPDATE solicitudes s
+JOIN solicitudes_bandas sb ON sb.id_solicitud = s.id
+SET s.es_publico = GREATEST(IFNULL(s.es_publico,0), IFNULL(sb.es_publico_cuando_confirmada,0), IFNULL(sb.es_publico,0));
+
+-- Ahora removemos las columnas de visibilidad de las tablas hijas
 ALTER TABLE solicitudes_alquiler DROP COLUMN IF EXISTS es_publico;
+ALTER TABLE solicitudes_alquiler DROP COLUMN IF EXISTS es_publico_cuando_confirmada;
 ALTER TABLE solicitudes_bandas DROP COLUMN IF EXISTS es_publico;
+ALTER TABLE solicitudes_bandas DROP COLUMN IF EXISTS es_publico_cuando_confirmada;
 ALTER TABLE solicitudes_servicios DROP COLUMN IF EXISTS es_publico;
+ALTER TABLE solicitudes_servicios DROP COLUMN IF EXISTS es_publico_cuando_confirmada;
 ALTER TABLE solicitudes_talleres DROP COLUMN IF EXISTS es_publico;
+ALTER TABLE solicitudes_talleres DROP COLUMN IF EXISTS es_publico_cuando_confirmada;
 
 -- 4) Ensure alquileres default not public at parent level
 UPDATE solicitudes s

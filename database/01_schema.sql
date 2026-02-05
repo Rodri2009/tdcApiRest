@@ -178,7 +178,6 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     cantidad_de_personas VARCHAR(100),
     precio_basico DECIMAL(10,2),
     precio_final DECIMAL(10,2),
-    es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
     tipo_de_evento VARCHAR(50) NOT NULL,
     nombre_completo VARCHAR(255),
     telefono VARCHAR(50),
@@ -186,7 +185,7 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     descripcion TEXT,
     estado VARCHAR(50) DEFAULT 'Solicitado',
     FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci; 
 
 -- Tabla específica para solicitudes de bandas
 
@@ -198,9 +197,8 @@ CREATE TABLE IF NOT EXISTS solicitudes_servicios (
     hora_evento VARCHAR(20),
     duracion VARCHAR(100),
     precio DECIMAL(10,2),
-    es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
     FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci; 
 
 -- Tabla específica para solicitudes de talleres
 CREATE TABLE IF NOT EXISTS solicitudes_talleres (
@@ -210,9 +208,8 @@ CREATE TABLE IF NOT EXISTS solicitudes_talleres (
     hora_evento VARCHAR(20),
     duracion VARCHAR(100),
     precio DECIMAL(10,2),
-    es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
     FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci; 
 
 -- =============================================================================
 -- TABLA UNIFICADA DE EVENTOS CONFIRMADOS
@@ -397,7 +394,6 @@ CREATE TABLE IF NOT EXISTS solicitudes_bandas (
     -- Campos comunes con solicitudes_alquiler
     tipo_de_evento VARCHAR(50) NOT NULL DEFAULT 'FECHA_BANDAS',
     tipo_servicio VARCHAR(255) DEFAULT NULL,
-    es_publico TINYINT(1) DEFAULT 0,
     fecha_hora DATETIME DEFAULT NULL,
     fecha_evento DATE DEFAULT NULL,
     hora_evento VARCHAR(20) DEFAULT NULL,
@@ -442,7 +438,6 @@ CREATE TABLE IF NOT EXISTS solicitudes_bandas (
     -- Estado y control
     notas_admin TEXT,
     id_evento_generado INT DEFAULT NULL,
-    es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
 
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -8,7 +8,7 @@ Normalizar la estructura de datos para unificar el manejo de eventos confirmados
 ## 1. Cambios en la Base de Datos
 
 ### 1.1 Tablas de Solicitudes (Sin Cambios Estructurales)
-Mantienen su estructura actual, con un campo adicional `es_publico_cuando_confirmada` para indicar si debe aparecer en la agenda pública:
+Mantienen su estructura actual; la visibilidad pública se centraliza en la tabla padre `solicitudes` mediante el campo `es_publico` (las columnas `es_publico` / `es_publico_cuando_confirmada` en tablas hijas han sido eliminadas).
 - `solicitudes_alquiler` (base + nuevo campo)
 - `solicitudes_bandas` (base + nuevo campo)
 - `solicitudes_servicios` (base + nuevo campo)
@@ -66,12 +66,12 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
 ```
 
 ### 1.3 Cambios en Tablas de Solicitudes
-Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas, se asegura consistencia):
+Eliminar las columnas de visibilidad en las tablas hijas y centralizar la visibilidad en la tabla `solicitudes` (campo `es_publico`).
 
-- `solicitudes_alquiler`: Agregado `es_publico_cuando_confirmada` (antes `es_publico`, se renombra para claridad)
-- `solicitudes_bandas`: Agregado `es_publico_cuando_confirmada`
-- `solicitudes_servicios`: Agregado `es_publico_cuando_confirmada`
-- `solicitudes_talleres`: Agregado `es_publico_cuando_confirmada`
+- `solicitudes_alquiler`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
+- `solicitudes_bandas`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
+- `solicitudes_servicios`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
+- `solicitudes_talleres`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
 
 ---
 
@@ -114,7 +114,7 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 3. **Automáticamente inserta en `eventos_confirmados`**:
    - Lee datos de la solicitud
    - Inserta fila en `eventos_confirmados` con `tipo_evento`, `tabla_origen`
-   - Si `es_publico_cuando_confirmada = 1` en solicitud, también `es_publico = 1` en evento
+   - Si `es_publico = 1` en la solicitud (tabla padre), también `es_publico = 1` en el evento confirmado (cuando aplica)
 
 ### Cancelar Solicitud
 1. Admin cambia estado a 'Cancelado'
@@ -133,10 +133,10 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 
 | Tabla | Cambio |
 |-------|--------|
-| `solicitudes_alquiler` | Agregar `es_publico_cuando_confirmada` |
-| `solicitudes_bandas` | Agregar `es_publico_cuando_confirmada` |
-| `solicitudes_servicios` | Agregar `es_publico_cuando_confirmada` |
-| `solicitudes_talleres` | Agregar `es_publico_cuando_confirmada` |
+| `solicitudes_alquiler` | Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
+| `solicitudes_bandas`   | Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
+| `solicitudes_servicios`| Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
+| `solicitudes_talleres` | Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
 | `fechas_bandas_confirmadas` | **Eliminada / Migrada** (ya no se utiliza; datos migrados a `eventos_confirmados`) |
 | `eventos_confirmados` | **Nueva** |
 
@@ -220,7 +220,7 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 - Timestamps para auditoría
 
 ✅ **Campos nuevos en tablas de solicitudes**
-- `es_publico_cuando_confirmada` agregado a todas (4 tablas)
+- Columnas de visibilidad eliminadas en las tablas hijas (se usa `solicitudes.es_publico`)
 - Permite control granular de qué se publica al confirmar
 
 ### Backend
@@ -263,7 +263,7 @@ Se aplicaron cambios adicionales para simplificar y normalizar las tablas de sol
 
 3) Se eliminó el campo `es_publico` de las tablas hijas (`solicitudes_bandas`, `solicitudes_servicios`, `solicitudes_talleres`, `solicitudes_alquiler`) ya que la visibilidad se centraliza en la tabla padre `solicitudes` y en `eventos_confirmados`.
 
-4) Se actualizaron los queries del backend para usar `id_solicitud` en todas las tablas hijas, y leer la visibilidad desde `solicitudes.es_publico` (o desde `es_publico_cuando_confirmada` cuando aplica la política de visible al confirmar).
+4) Se actualizaron los queries del backend para usar `id_solicitud` en todas las tablas hijas, y leer la visibilidad exclusivamente desde `solicitudes.es_publico`. (Las columnas de visibilidad en tablas hijas fueron removidas.)
 
 5) Se añadió la migración `database/migrations/20260206_normalize_solicitudes.sql` para aplicar los cambios en instalaciones existentes (añadir columna `es_publico`, renombrar PKs de hijos a `id_solicitud`, eliminar columnas obsoletas y mantener integridad referencial).
 
