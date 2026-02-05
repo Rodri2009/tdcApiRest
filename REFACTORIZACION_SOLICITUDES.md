@@ -265,6 +265,10 @@ Se aplicaron cambios adicionales para simplificar y normalizar las tablas de sol
 
 4) Se actualizaron los queries del backend para usar `id_solicitud` en todas las tablas hijas, y leer la visibilidad exclusivamente desde `solicitudes.es_publico`. (Las columnas de visibilidad en tablas hijas fueron removidas.)
 
+- Comportamiento adicional:
+  - Cuando una solicitud es cambiada a **Confirmado**, se inserta un registro en `eventos_confirmados` si no existe; si existe pero estaba inactivo se **reactiva y actualiza** sus datos.
+  - Cuando una solicitud es degradada a **Solicitado**, se **elimina** cualquier registro asociado en `eventos_confirmados` para evitar eventos huérfanos.
+
 5) Se añadió la migración `database/migrations/20260206_normalize_solicitudes.sql` para aplicar los cambios en instalaciones existentes (añadir columna `es_publico`, renombrar PKs de hijos a `id_solicitud`, eliminar columnas obsoletas y mantener integridad referencial).
 
 6) Se ejecutó un reset de la BD para verificar que los scripts de inicialización (`03_test_data.sql`) funcionen con las nuevas definiciones; se actualizaron los datos de prueba en `03_test_data.sql` para reflejar los nuevos nombres de columna y el uso de `es_publico` en la tabla padre.

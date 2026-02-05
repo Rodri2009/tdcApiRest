@@ -214,43 +214,43 @@ const actualizarEstadoSolicitud = async (req, res) => {
             const [parent] = await conn.query('SELECT es_publico FROM solicitudes WHERE id = ?', [realId]);
             const esPublico = parent && parent.es_publico ? 1 : 0;
 
-            // Insertar en eventos_confirmados si no existe
+            // Buscar evento existente (incluyendo su estado 'activo')
             const [eventoExistente] = await conn.query(
-                "SELECT id FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = ?",
+                "SELECT id, activo FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = ?",
                 [realId, tipoEvento]
             );
 
+            // Preparar datos según tipo
+            let nombreEvento, nombreCliente, emailCliente, telefonoCliente, generoMusical, cantidadPersonas, tipoServicio, nombreTaller;
+
+            if (tablaOrigen === 'solicitudes_bandas') {
+                nombreEvento = solicitud.nombre_completo || 'Banda';
+                nombreCliente = solicitud.nombre_completo;
+                emailCliente = solicitud.email;
+                telefonoCliente = solicitud.telefono;
+                generoMusical = solicitud.genero_musical;
+                cantidadPersonas = solicitud.cantidad_de_personas;
+            } else if (tablaOrigen === 'solicitudes_alquiler') {
+                nombreEvento = solicitud.tipo_de_evento || 'Alquiler';
+                nombreCliente = solicitud.nombre_completo;
+                emailCliente = solicitud.email;
+                telefonoCliente = solicitud.telefono;
+                cantidadPersonas = solicitud.cantidad_de_personas;
+            } else if (tablaOrigen === 'solicitudes_servicios') {
+                nombreEvento = solicitud.tipo_servicio || 'Servicio';
+                nombreCliente = solicitud.nombre_solicitante;
+                emailCliente = solicitud.email_solicitante;
+                telefonoCliente = solicitud.telefono_solicitante;
+                tipoServicio = solicitud.tipo_servicio;
+            } else if (tablaOrigen === 'solicitudes_talleres') {
+                nombreEvento = solicitud.nombre_taller || 'Taller';
+                nombreCliente = solicitud.nombre_solicitante;
+                emailCliente = solicitud.email_solicitante;
+                telefonoCliente = solicitud.telefono_solicitante;
+                nombreTaller = solicitud.nombre_taller;
+            }
+
             if (!eventoExistente) {
-                // Preparar datos según tipo
-                let nombreEvento, nombreCliente, emailCliente, telefonoCliente, generoMusical, cantidadPersonas, tipoServicio, nombreTaller;
-
-                if (tablaOrigen === 'solicitudes_bandas') {
-                    nombreEvento = solicitud.nombre_completo || 'Banda';
-                    nombreCliente = solicitud.nombre_completo;
-                    emailCliente = solicitud.email;
-                    telefonoCliente = solicitud.telefono;
-                    generoMusical = solicitud.genero_musical;
-                    cantidadPersonas = solicitud.cantidad_de_personas;
-                } else if (tablaOrigen === 'solicitudes_alquiler') {
-                    nombreEvento = solicitud.tipo_de_evento || 'Alquiler';
-                    nombreCliente = solicitud.nombre_completo;
-                    emailCliente = solicitud.email;
-                    telefonoCliente = solicitud.telefono;
-                    cantidadPersonas = solicitud.cantidad_de_personas;
-                } else if (tablaOrigen === 'solicitudes_servicios') {
-                    nombreEvento = solicitud.tipo_servicio || 'Servicio';
-                    nombreCliente = solicitud.nombre_solicitante;
-                    emailCliente = solicitud.email_solicitante;
-                    telefonoCliente = solicitud.telefono_solicitante;
-                    tipoServicio = solicitud.tipo_servicio;
-                } else if (tablaOrigen === 'solicitudes_talleres') {
-                    nombreEvento = solicitud.nombre_taller || 'Taller';
-                    nombreCliente = solicitud.nombre_solicitante;
-                    emailCliente = solicitud.email_solicitante;
-                    telefonoCliente = solicitud.telefono_solicitante;
-                    nombreTaller = solicitud.nombre_taller;
-                }
-
                 await conn.query(`
                     INSERT INTO eventos_confirmados (
                         id_solicitud, tipo_evento, tabla_origen,
@@ -279,7 +279,30 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     tipoServicio || null,
                     nombreTaller || null
                 ]);
+            } else if (eventoExistente.activo === 0) {
+                // Reactivar y actualizar campos del evento existente
+                await conn.query(`UPDATE eventos_confirmados SET activo = 1, cancelado_en = NULL, es_publico = ?, nombre_evento = ?, descripcion = ?, fecha_evento = ?, hora_inicio = ?, duracion_estimada = ?, nombre_cliente = ?, email_cliente = ?, telefono_cliente = ?, precio_base = ?, precio_final = ?, genero_musical = ?, cantidad_personas = ?, tipo_servicio = ?, nombre_taller = ? WHERE id = ?`, [
+                    esPublico,
+                    nombreEvento,
+                    solicitud.descripcion || null,
+                    solicitud.fecha_evento,
+                    solicitud.hora_evento || '21:00:00',
+                    solicitud.duracion || null,
+                    nombreCliente,
+                    emailCliente,
+                    telefonoCliente,
+                    solicitud.precio_basico || null,
+                    solicitud.precio_final || null,
+                    generoMusical || null,
+                    cantidadPersonas || null,
+                    tipoServicio || null,
+                    nombreTaller || null,
+                    eventoExistente.id
+                ]);
             }
+        } else if (estado === 'Solicitado') {
+            // Si la solicitud es degradada a 'Solicitado', eliminar cualquier evento confirmado asociado
+            await conn.query(`DELETE FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = ?`, [realId, tipoEvento]);
         } else if (estado === 'Cancelado') {
             // Marcar como inactivo en eventos_confirmados
             await conn.query(
