@@ -924,6 +924,12 @@ const updateVisibilidad = async (req, res) => {
                 `UPDATE ${tabla} SET ${publicColumn} = ? WHERE ${idColumnName} = ?`,
                 [es_publico ? 1 : 0, idValue]
             );
+
+            // También actualizar la visibilidad en la tabla padre `solicitudes` para que
+            // la vista administrativa y la agenda pública muestren el valor final.
+            if (tabla !== 'eventos_confirmados') {
+                await conn.query(`UPDATE solicitudes SET es_publico = ? WHERE id = ?`, [es_publico ? 1 : 0, idValue]);
+            }
         } catch (err) {
             // Si es por columna desconocida, intentar un fallback a 'es_publico' o 'es_publico_cuando_confirmada'
             if (err && err.sqlState === '42S22') {
@@ -933,6 +939,9 @@ const updateVisibilidad = async (req, res) => {
                         `UPDATE ${tabla} SET ${altColumn} = ? WHERE ${idColumnName} = ?`,
                         [es_publico ? 1 : 0, idValue]
                     );
+                    if (tabla !== 'eventos_confirmados') {
+                        await conn.query(`UPDATE solicitudes SET es_publico = ? WHERE id = ?`, [es_publico ? 1 : 0, idValue]);
+                    }
                 } catch (err2) {
                     console.warn('Fallback update column also failed:', err2.message);
                     throw err; // dejar que el catch externo maneje el error
