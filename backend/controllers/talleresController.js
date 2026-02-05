@@ -155,7 +155,7 @@ const getTalleres = async (req, res) => {
                 ot.nombre_para_mostrar as tipoNombre
             FROM talleres t
             LEFT JOIN talleristas tal ON t.tallerista_id = tal.id
-            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_tipo_evento
             WHERE 1=1
         `;
         const params = [];
@@ -195,7 +195,7 @@ const getTallerById = async (req, res) => {
                 ot.nombre_para_mostrar as tipo_nombre
             FROM talleres t
             LEFT JOIN talleristas tal ON t.tallerista_id = tal.id
-            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_tipo_evento
             WHERE t.id = ?
         `, [id]);
 
@@ -338,7 +338,7 @@ const getPreciosTalleres = async (req, res) => {
                 ot.nombre_para_mostrar as tipoNombre
             FROM precios_talleres pt
             LEFT JOIN talleres t ON pt.taller_id = t.id
-            LEFT JOIN opciones_tipos ot ON pt.tipo_taller_id = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON pt.tipo_taller_id = ot.id_tipo_evento
             WHERE 1=1
         `;
         const params = [];
@@ -470,7 +470,7 @@ const getTiposTaller = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query(`
-            SELECT id_evento as id, nombre_para_mostrar as nombre, descripcion, es_publico as esPublico
+            SELECT id_tipo_evento as id, nombre_para_mostrar as nombre, descripcion, es_publico as esPublico
             FROM opciones_tipos 
             WHERE categoria = 'TALLERES_ACTIVIDADES'
             ORDER BY nombre_para_mostrar
@@ -495,13 +495,13 @@ const createTipoTaller = async (req, res) => {
         }
 
         // Verificar que no exista
-        const exists = await conn.query(`SELECT 1 FROM opciones_tipos WHERE id_evento = ?`, [id]);
+        const exists = await conn.query(`SELECT 1 FROM opciones_tipos WHERE id_tipo_evento = ?`, [id]);
         if (exists.length > 0) {
             return res.status(400).json({ error: 'Ya existe un tipo con ese ID' });
         }
 
         await conn.query(
-            `INSERT INTO opciones_tipos (id_evento, nombre_para_mostrar, descripcion, categoria, es_publico) 
+            `INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico) 
              VALUES (?, ?, ?, 'TALLERES_ACTIVIDADES', ?)`,
             [id.toUpperCase(), nombre, descripcion || null, esPublico]
         );
@@ -527,7 +527,7 @@ const updateTipoTaller = async (req, res) => {
                 nombre_para_mostrar = COALESCE(?, nombre_para_mostrar),
                 descripcion = COALESCE(?, descripcion),
                 es_publico = COALESCE(?, es_publico)
-             WHERE id_evento = ? AND categoria = 'TALLERES_ACTIVIDADES'`,
+             WHERE id_tipo_evento = ? AND categoria = 'TALLERES_ACTIVIDADES'`,
             [nombre, descripcion, esPublico, id]
         );
 
@@ -560,7 +560,7 @@ const deleteTipoTaller = async (req, res) => {
         }
 
         const result = await conn.query(
-            `DELETE FROM opciones_tipos WHERE id_evento = ? AND categoria = 'TALLERES_ACTIVIDADES'`,
+            `DELETE FROM opciones_tipos WHERE id_tipo_evento = ? AND categoria = 'TALLERES_ACTIVIDADES'`,
             [id]
         );
 

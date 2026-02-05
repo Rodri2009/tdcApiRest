@@ -75,11 +75,11 @@ CREATE TABLE IF NOT EXISTS personal_pagos (
 
 -- ALTER TABLE personal_pagos 
 --     ADD CONSTRAINT fk_personal_pagos_solicitud FOREIGN KEY (id_solicitud) 
---     REFERENCES solicitudes(id_solicitud) ON DELETE SET NULL ON UPDATE CASCADE;
+--     REFERENCES solicitudes(id) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- ALTER TABLE personal_pagos 
 --     ADD CONSTRAINT fk_personal_pagos_usuario FOREIGN KEY (creado_por) 
---     REFERENCES usuarios(id_usuario) ON DELETE SET NULL ON UPDATE CASCADE;
+--     REFERENCES usuarios(id) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- =======================================
 -- DATOS DE EJEMPLO PARA TESTING

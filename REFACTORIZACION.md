@@ -5,10 +5,21 @@ Normalizar la estructura de datos para unificar el manejo de eventos confirmados
 
 ---
 
+## Plan de implementación (resumen)
+- Prioridad inmediata: Corregir validaciones y payloads en `config_alquiler` (precios/duraciones), y arreglar 404 en `config_bandas` e implementar CRUD de instrumentos. (0.5-1 día)
+- Media prioridad: Añadir validación estricta de `codigo` al crear tipos, y unificar vistas confirmadas por tipo (ALQUILERES, BANDAS, TALLERES, SERVICIOS) con campos estándar: `FECHA, HORA, TIPO, CLIENTE, DESCRIPCION_CORTA, ACCIONES`. (1 día)
+- Siguiente bloque: Implementar búsqueda/autocomplete de `clientes` para Talleristas/Profesionales; si no existe crear `cliente` al registrar tallerista/profesor/profesional. (1-2 días)
+- Opcional: Evaluar y migrar `personal` para usar `clientes` como entidad central (análisis y migración). (1-2 días)
+
+> Recomendación: trabajaremos por PRs pequeños y testeables; para la próxima sesión presencial propongo empezar por *config_alquiler* y *config_bandas*.
+
+
+
+
 ## 1. Cambios en la Base de Datos
 
 ### 1.1 Tablas de Solicitudes (Sin Cambios Estructurales)
-Mantienen su estructura actual, con un campo adicional `es_publico_cuando_confirmada` para indicar si debe aparecer en la agenda pública:
+Mantienen su estructura actual; la visibilidad pública se centraliza en la tabla padre `solicitudes` mediante el campo `es_publico` (las columnas `es_publico` / `es_publico_cuando_confirmada` en tablas hijas han sido eliminadas).
 - `solicitudes_alquiler` (base + nuevo campo)
 - `solicitudes_bandas` (base + nuevo campo)
 - `solicitudes_servicios` (base + nuevo campo)
@@ -66,12 +77,14 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
 ```
 
 ### 1.3 Cambios en Tablas de Solicitudes
-Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas, se asegura consistencia):
 
-- `solicitudes_alquiler`: Agregado `es_publico_cuando_confirmada` (antes `es_publico`, se renombra para claridad)
-- `solicitudes_bandas`: Agregado `es_publico_cuando_confirmada`
-- `solicitudes_servicios`: Agregado `es_publico_cuando_confirmada`
-- `solicitudes_talleres`: Agregado `es_publico_cuando_confirmada`
+- Se agregaron los campos `descripcion_corta` y `descripcion_larga` a la tabla `solicitudes` para permitir una muestra resumida en listados y almacenar descripciones detalladas separadas.
+Eliminar las columnas de visibilidad en las tablas hijas y centralizar la visibilidad en la tabla `solicitudes` (campo `es_publico`).
+
+- `solicitudes_alquiler`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
+- `solicitudes_bandas`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
+- `solicitudes_servicios`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
+- `solicitudes_talleres`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
 
 ---
 
@@ -114,7 +127,7 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 3. **Automáticamente inserta en `eventos_confirmados`**:
    - Lee datos de la solicitud
    - Inserta fila en `eventos_confirmados` con `tipo_evento`, `tabla_origen`
-   - Si `es_publico_cuando_confirmada = 1` en solicitud, también `es_publico = 1` en evento
+   - Si `es_publico = 1` en la solicitud (tabla padre), también `es_publico = 1` en el evento confirmado (cuando aplica)
 
 ### Cancelar Solicitud
 1. Admin cambia estado a 'Cancelado'
@@ -133,10 +146,10 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 
 | Tabla | Cambio |
 |-------|--------|
-| `solicitudes_alquiler` | Agregar `es_publico_cuando_confirmada` |
-| `solicitudes_bandas` | Agregar `es_publico_cuando_confirmada` |
-| `solicitudes_servicios` | Agregar `es_publico_cuando_confirmada` |
-| `solicitudes_talleres` | Agregar `es_publico_cuando_confirmada` |
+| `solicitudes_alquiler` | Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
+| `solicitudes_bandas`   | Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
+| `solicitudes_servicios`| Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
+| `solicitudes_talleres` | Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
 | `fechas_bandas_confirmadas` | **Eliminada / Migrada** (ya no se utiliza; datos migrados a `eventos_confirmados`) |
 | `eventos_confirmados` | **Nueva** |
 
@@ -220,7 +233,7 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 - Timestamps para auditoría
 
 ✅ **Campos nuevos en tablas de solicitudes**
-- `es_publico_cuando_confirmada` agregado a todas (4 tablas)
+- Columnas de visibilidad eliminadas en las tablas hijas (se usa `solicitudes.es_publico`)
 - Permite control granular de qué se publica al confirmar
 
 ### Backend
@@ -252,6 +265,32 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 
 ## 7. Próximos Pasos Opcionales
 
+---
+
+## 8. Normalización adicional (Feb 05 2026)
+Se aplicaron cambios adicionales para simplificar y normalizar las tablas de solicitudes y visibilidad pública:
+
+1) Se añadió el campo `es_publico` en la tabla `solicitudes` (tabla padre). Este campo representa la visibilidad pública por defecto de la solicitud confirmada. Para `ALQUILER_SALON` por política se mantiene `es_publico = 0` por defecto.
+
+2) Se homogenizó el nombre de PK en las tablas hijas: **todos los hijos usan ahora `id_solicitud`** como primary key (antes algunas usaban `id`).
+
+3) Se eliminó el campo `es_publico` de las tablas hijas (`solicitudes_bandas`, `solicitudes_servicios`, `solicitudes_talleres`, `solicitudes_alquiler`) ya que la visibilidad se centraliza en la tabla padre `solicitudes` y en `eventos_confirmados`.
+
+4) Se actualizaron los queries del backend para usar `id_solicitud` en todas las tablas hijas, y leer la visibilidad exclusivamente desde `solicitudes.es_publico`. (Las columnas de visibilidad en tablas hijas fueron removidas.)
+
+- Comportamiento adicional:
+  - Cuando una solicitud es cambiada a **Confirmado**, se inserta un registro en `eventos_confirmados` si no existe; si existe pero estaba inactivo se **reactiva y actualiza** sus datos.
+  - Cuando una solicitud es degradada a **Solicitado**, se **elimina** cualquier registro asociado en `eventos_confirmados` para evitar eventos huérfanos.
+
+5) Se añadió la migración `database/migrations/20260206_normalize_solicitudes.sql` para aplicar los cambios en instalaciones existentes (añadir columna `es_publico`, renombrar PKs de hijos a `id_solicitud`, eliminar columnas obsoletas y mantener integridad referencial).
+
+6) Se ejecutó un reset de la BD para verificar que los scripts de inicialización (`03_test_data.sql`) funcionen con las nuevas definiciones; se actualizaron los datos de prueba en `03_test_data.sql` para reflejar los nuevos nombres de columna y el uso de `es_publico` en la tabla padre.
+
+---
+
+> Nota: Estos cambios se aplicaron para facilitar consultas transversales y reducir duplicación. Se dejó una migración atómica y puntos de recuperación (push) en la rama `main` antes de aplicar cambios destructivos.
+
+
 1. **Endpoint para Eventos Públicos**: Crear `GET /api/eventos/publicos` que devuelva solo `es_publico=1 AND activo=1`
 2. **Deprecación de `fechas_bandas_confirmadas`**: Una vez validado, se puede eliminar o mantener como vista materializada
 3. **Notificaciones**: Agregar lógica para notificar clientes cuando su solicitud se confirma
@@ -267,3 +306,38 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 - **Compatibilidad Backward**: Eliminada. El código utiliza `eventos_confirmados` y las rutas legacy `/fechas_bandas_confirmadas` han sido removidas.
 - **Transacciones**: Uso de `beginTransaction()` y `commit()` asegura atomicidad en operaciones complejas
 - **Error Handling**: Si falla la inserción en `eventos_confirmados`, se hace `rollback()` automático
+
+---
+
+## Cambios aplicados el 2026-02-05 ✅
+Durante la sesión del 05/02/2026 se realizaron las siguientes modificaciones en el código y base de datos (resumen ejecutable):
+
+- Base de datos
+  - Añadido `descripcion_corta` (VARCHAR(255)) y `descripcion_larga` (TEXT) a la tabla `solicitudes`.
+  - Añadida migración idempotente: `database/migrations/20260205_add_descripciones_to_solicitudes.sql`.
+  - Seeds actualizados en `database/03_test_data.sql` para poblar `descripcion_corta`/`descripcion_larga` en registros de prueba.
+
+- Backend
+  - `backend/controllers/adminController.js`:
+    - Corregida la consulta `getSolicitudes()` (UNION ALL) asegurando que **todos los SELECTs devuelvan el mismo número y orden de columnas** para evitar ER_WRONG_NUMBER_OF_COLUMNS_IN_SELECT (500).
+    - Eliminadas las columnas `nombreBanda` y `cantidadAforo` de la salida administrativa al comprobar que no eran usadas en la UI admin; simplificado el SELECT para devolver `descripcionCorta`, `tipoNombre`, `categoria`, `horaInicio`, `es_publico`, etc.
+  - `backend/controllers/alquilerAdminController.js`:
+    - Corregidos `getDuraciones()` y `getPrecios()` para usar la columna real `id_tipo_evento` y exponerla como `id_evento` en la respuesta, además de ordenar por `id_tipo_evento`.
+    - Corrección en condiciones WHERE (`id_tipo_evento` en lugar de `id_evento`) y alias en selects.
+  - `backend/controllers/solicitudController.js` y `bandasController.js`:
+    - Aceptan ahora `descripcionCorta` / `descripcionLarga` en create/put y persisten en tabla `solicitudes`.
+
+- Frontend
+  - `frontend/admin_solicitudes.html`:
+    - Mapeo y render: ahora muestra `descripcion_corta` en la columna Descripción, y ya no depende de `nombreBanda`/`cantidadAforo`.
+    - Añadida clase visual de resaltado para filas **Confirmado** (fondo más visible + borde izquierdo verde y texto en negrita).
+    - Event delegation: corregidos handlers para botones (editar/eliminar, asignar personal, orden de trabajo) y corrección de URLs para redirecciones según categoría/origen.
+  - `frontend/admin_agenda.html`:
+    - Eliminado uso de `nombreBanda` para el nombre a mostrar; el fallback usa `tipoNombre` / `descripcionCorta` / `nombreCliente` según corresponda.
+    - Reparados enlaces de edición para apuntar a editores reales (`editar_solicitud_fecha_bandas.html`, `editar_solicitud_alquiler.html`, etc.) y limpiados logs de debug excesivos.
+  - `frontend/config_alquiler.html`:
+    - Lógica de carga y renderización de duraciones y precios verificada; corregida la petición y el manejo de errores para que muestre mensajes legibles.
+
+- Deploy y verificación
+  - Contenedor `backend` rebuild y restart; validado con llamadas `curl` autenticadas: `/api/admin/alquiler/duraciones`, `/api/admin/alquiler/precios` y `/api/admin/solicitudes` responden correctamente y con la forma esperada.
+  - Commits creados y pusheados a `origin/main` con mensajes descriptivos.

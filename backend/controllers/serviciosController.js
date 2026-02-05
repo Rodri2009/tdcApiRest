@@ -158,7 +158,7 @@ const getServiciosCatalogo = async (req, res) => {
                 ot.nombre_para_mostrar as tipoNombre,
                 (SELECT precio FROM precios_servicios ps WHERE ps.servicio_id = sc.id AND ps.vigente = 1 ORDER BY ps.vigente_desde DESC LIMIT 1) as precioVigente
             FROM servicios_catalogo sc
-            LEFT JOIN opciones_tipos ot ON sc.tipo_servicio_id = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON sc.tipo_servicio_id = ot.id_tipo_evento
             WHERE 1=1
         `;
         const params = [];
@@ -193,7 +193,7 @@ const getServicioById = async (req, res) => {
                 sc.*, ot.nombre_para_mostrar as tipo_nombre,
                 (SELECT precio FROM precios_servicios ps WHERE ps.servicio_id = sc.id AND ps.vigente = 1 ORDER BY ps.vigente_desde DESC LIMIT 1) as precio_vigente
             FROM servicios_catalogo sc
-            LEFT JOIN opciones_tipos ot ON sc.tipo_servicio_id = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON sc.tipo_servicio_id = ot.id_tipo_evento
             WHERE sc.id = ?
         `, [id]);
 
@@ -317,7 +317,7 @@ const getPreciosServicios = async (req, res) => {
                 ot.nombre_para_mostrar as tipoNombre
             FROM precios_servicios ps
             JOIN servicios_catalogo sc ON ps.servicio_id = sc.id
-            LEFT JOIN opciones_tipos ot ON sc.tipo_servicio_id = ot.id_evento
+            LEFT JOIN opciones_tipos ot ON sc.tipo_servicio_id = ot.id_tipo_evento
             WHERE 1=1
         `;
         const params = [];
@@ -646,7 +646,7 @@ const getTiposServicio = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query(`
-            SELECT id_evento as id, nombre_para_mostrar as nombre, descripcion, es_publico as esPublico
+            SELECT id_tipo_evento as id, nombre_para_mostrar as nombre, descripcion, es_publico as esPublico
             FROM opciones_tipos 
             WHERE categoria = 'SERVICIOS'
             ORDER BY nombre_para_mostrar
@@ -671,13 +671,13 @@ const createTipoServicio = async (req, res) => {
         }
 
         // Verificar que no exista
-        const exists = await conn.query(`SELECT 1 FROM opciones_tipos WHERE id_evento = ?`, [id]);
+        const exists = await conn.query(`SELECT 1 FROM opciones_tipos WHERE id_tipo_evento = ?`, [id]);
         if (exists.length > 0) {
             return res.status(400).json({ error: 'Ya existe un tipo con ese ID' });
         }
 
         await conn.query(
-            `INSERT INTO opciones_tipos (id_evento, nombre_para_mostrar, descripcion, categoria, es_publico) 
+            `INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico) 
              VALUES (?, ?, ?, 'SERVICIOS', ?)`,
             [id.toUpperCase(), nombre, descripcion || null, esPublico]
         );
@@ -703,7 +703,7 @@ const updateTipoServicio = async (req, res) => {
                 nombre_para_mostrar = COALESCE(?, nombre_para_mostrar),
                 descripcion = COALESCE(?, descripcion),
                 es_publico = COALESCE(?, es_publico)
-             WHERE id_evento = ? AND categoria = 'SERVICIOS'`,
+             WHERE id_tipo_evento = ? AND categoria = 'SERVICIOS'`,
             [nombre, descripcion, esPublico, id]
         );
 
@@ -736,7 +736,7 @@ const deleteTipoServicio = async (req, res) => {
         }
 
         const result = await conn.query(
-            `DELETE FROM opciones_tipos WHERE id_evento = ? AND categoria = 'SERVICIOS'`,
+            `DELETE FROM opciones_tipos WHERE id_tipo_evento = ? AND categoria = 'SERVICIOS'`,
             [id]
         );
 

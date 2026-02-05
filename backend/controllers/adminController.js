@@ -12,19 +12,12 @@ const getSolicitudes = async (req, res) => {
         // Unión de solicitudes de alquiler, solicitudes de bandas, fechas de bandas, servicios y talleres
         const sql = `
             SELECT
-                CONCAT('alq_', s.id) as id,
-                s.fecha_evento as fechaSolicitud,
-                s.nombre_completo as nombreCliente,
+                CONCAT('alq_', s.id_solicitud) as id,
+                COALESCE(sol.fecha_creacion, s.fecha_evento) as fechaSolicitud,
+                COALESCE(c.nombre, '') as nombreCliente,
+                COALESCE(ot.categoria, CASE WHEN s.tipo_de_evento IN ('TALLERES','SERVICIO') THEN s.tipo_de_evento ELSE 'ALQUILER' END) as categoria,
+                COALESCE(ot.nombre_para_mostrar, s.tipo_de_evento) as tipoNombre,
                 s.tipo_de_evento as tipoEventoId,
-                CASE
-                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'TALLERES', 'SERVICIO') THEN
-                        CASE s.tipo_de_evento
-                            WHEN 'TALLERES' THEN 'TALLER'
-                            WHEN 'SERVICIO' THEN 'SERVICIO'
-                            ELSE 'ALQUILER_SALON'
-                        END
-                    ELSE s.tipo_de_evento
-                END as tipoEvento,
                 NULL as subtipo,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 s.estado,
@@ -32,17 +25,20 @@ const getSolicitudes = async (req, res) => {
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
-                NULL as nombreBanda,
-                s.cantidad_de_personas as cantidadAforo,
-                s.es_publico as es_publico
+                COALESCE(sol.es_publico, 0) as es_publico,
+                COALESCE(sol.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_alquiler s
+            LEFT JOIN solicitudes sol ON sol.id = s.id_solicitud
+            LEFT JOIN clientes c ON sol.cliente_id = c.id
+            LEFT JOIN opciones_tipos ot ON (s.tipo_de_evento = ot.id_tipo_evento OR s.tipo_servicio = ot.id_tipo_evento)
             UNION ALL
             SELECT
                 CONCAT('bnd_', s.id_solicitud) as id,
-                s.fecha_hora as fechaSolicitud,
-                s.nombre_completo as nombreCliente,
+                COALESCE(sol2.fecha_creacion, s.fecha_hora) as fechaSolicitud,
+                COALESCE(c2.nombre, '') as nombreCliente,
+                COALESCE(ot2.categoria, 'BANDA') as categoria,
+                COALESCE(ot2.nombre_para_mostrar, s.tipo_de_evento) as tipoNombre,
                 s.tipo_de_evento as tipoEventoId,
-                'BANDA' as tipoEvento,
                 NULL as subtipo,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 s.estado,
@@ -50,17 +46,20 @@ const getSolicitudes = async (req, res) => {
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
-                NULL as nombreBanda,
-                s.cantidad_de_personas as cantidadAforo,
-                s.es_publico as es_publico
+                COALESCE(sol2.es_publico, 0) as es_publico,
+                COALESCE(sol2.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_bandas s
+            LEFT JOIN solicitudes sol2 ON sol2.id = s.id_solicitud
+            LEFT JOIN clientes c2 ON sol2.cliente_id = c2.id
+            LEFT JOIN opciones_tipos ot2 ON s.tipo_de_evento = ot2.id_tipo_evento
             UNION ALL
             SELECT
                 CONCAT('ev_', e.id) as id,
                 e.confirmado_en as fechaSolicitud,
                 e.nombre_cliente as nombreCliente,
+                COALESCE(ote.categoria, e.tipo_evento) as categoria,
+                COALESCE(ote.nombre_para_mostrar, e.tipo_evento) as tipoNombre,
                 e.tipo_evento as tipoEventoId,
-                e.tipo_evento as tipoEvento,
                 e.genero_musical as subtipo,
                 DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Cancelado' END as estado,
@@ -68,51 +67,56 @@ const getSolicitudes = async (req, res) => {
                 0 AS tienePersonalAsignado,
                 'evento' as origen,
                 TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
-                e.nombre_evento as nombreBanda,
-                e.cantidad_personas as cantidadAforo,
-                e.es_publico as es_publico
+                e.es_publico as es_publico,
+                SUBSTRING(e.descripcion,1,200) as descripcionCorta
             FROM eventos_confirmados e
+            LEFT JOIN opciones_tipos ote ON e.tipo_evento = ote.id_tipo_evento
             UNION ALL
             SELECT
-                CONCAT('srv_', ss.id) as id,
-                sol.fecha_creacion as fechaSolicitud,
-                sol.nombre_solicitante as nombreCliente,
+                CONCAT('srv_', ss.id_solicitud) as id,
+                COALESCE(sol3.fecha_creacion, ss.fecha_evento) as fechaSolicitud,
+                COALESCE(c3.nombre, '') as nombreCliente,
+                COALESCE(ot3.categoria, 'SERVICIO') as categoria,
+                COALESCE(ot3.nombre_para_mostrar, ss.tipo_servicio) as tipoNombre,
                 'SERVICIO' as tipoEventoId,
-                'SERVICIO' as tipoEvento,
                 NULL as subtipo,
                 DATE_FORMAT(ss.fecha_evento, '%Y-%m-%d') as fechaEvento,
-                sol.estado,
+                sol3.estado,
                 ss.tipo_servicio as tipoServicioId,
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 ss.hora_evento as horaInicio,
-                NULL as nombreBanda,
-                NULL as cantidadAforo,
-                0 as es_publico
+                COALESCE(sol3.es_publico, 0) as es_publico,
+                COALESCE(sol3.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_servicios ss
-            JOIN solicitudes sol ON ss.id = sol.id
+            JOIN solicitudes sol3 ON ss.id_solicitud = sol3.id
+            LEFT JOIN clientes c3 ON sol3.cliente_id = c3.id
+            LEFT JOIN opciones_tipos ot3 ON ss.tipo_servicio = ot3.id_tipo_evento
             UNION ALL
             SELECT
-                CONCAT('tll_', st.id) as id,
-                sol.fecha_creacion as fechaSolicitud,
-                sol.nombre_solicitante as nombreCliente,
+                CONCAT('tll_', st.id_solicitud) as id,
+                COALESCE(sol4.fecha_creacion, st.fecha_evento) as fechaSolicitud,
+                COALESCE(c4.nombre, '') as nombreCliente,
+                COALESCE(ot4.categoria, 'TALLER') as categoria,
+                COALESCE(ot4.nombre_para_mostrar, st.nombre_taller) as tipoNombre,
                 'TALLERES' as tipoEventoId,
-                'TALLERES' as tipoEvento,
                 NULL as subtipo,
                 DATE_FORMAT(st.fecha_evento, '%Y-%m-%d') as fechaEvento,
-                sol.estado,
+                sol4.estado,
                 NULL as tipoServicioId,
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 st.hora_evento as horaInicio,
-                NULL as nombreBanda,
-                NULL as cantidadAforo,
-                0 as es_publico
+                COALESCE(sol4.es_publico, 0) as es_publico,
+                COALESCE(sol4.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_talleres st
-            JOIN solicitudes sol ON st.id = sol.id
+            JOIN solicitudes sol4 ON st.id_solicitud = sol4.id
+            LEFT JOIN clientes c4 ON sol4.cliente_id = c4.id
+            LEFT JOIN opciones_tipos ot4 ON st.nombre_taller = ot4.nombre_para_mostrar
             ORDER BY fechaEvento DESC, fechaSolicitud DESC;
         `;
 
+        console.log('DEBUG SQL getSolicitudes:', sql);
         const solicitudes = await conn.query(sql);
         res.status(200).json(solicitudes);
     } catch (err) {
@@ -151,7 +155,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
         if (String(id).startsWith('alq_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_alquiler';
-            [solicitud] = await conn.query("SELECT * FROM solicitudes_alquiler WHERE id = ?", [realId]);
+            [solicitud] = await conn.query("SELECT sa.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_alquiler sa JOIN solicitudes sol ON sa.id_solicitud = sol.id LEFT JOIN clientes c ON sol.cliente_id = c.id WHERE sa.id_solicitud = ?", [realId]);
             tipoEvento = 'ALQUILER_SALON';
         } else if (String(id).startsWith('bnd_')) {
             realId = id.substring(4);
@@ -161,12 +165,12 @@ const actualizarEstadoSolicitud = async (req, res) => {
         } else if (String(id).startsWith('srv_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_servicios';
-            [solicitud] = await conn.query("SELECT ss.*, sol.nombre_solicitante, sol.email_solicitante, sol.telefono_solicitante FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id = sol.id WHERE ss.id = ?", [realId]);
+            [solicitud] = await conn.query("SELECT ss.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id_solicitud = sol.id LEFT JOIN clientes c ON sol.cliente_id = c.id WHERE ss.id_solicitud = ?", [realId]);
             tipoEvento = 'SERVICIO';
         } else if (String(id).startsWith('tll_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_talleres';
-            [solicitud] = await conn.query("SELECT st.*, sol.nombre_solicitante, sol.email_solicitante, sol.telefono_solicitante FROM solicitudes_talleres st JOIN solicitudes sol ON st.id = sol.id WHERE st.id = ?", [realId]);
+            [solicitud] = await conn.query("SELECT st.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_talleres st JOIN solicitudes sol ON st.id_solicitud = sol.id LEFT JOIN clientes c ON sol.cliente_id = c.id WHERE st.id_solicitud = ?", [realId]);
             tipoEvento = 'TALLER';
         } else {
             // Fallback para IDs antiguos sin prefijo
@@ -176,7 +180,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                 tablaOrigen = 'solicitudes_alquiler';
                 tipoEvento = 'ALQUILER_SALON';
             } else {
-                [solicitud] = await conn.query("SELECT * FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
+                [solicitud] = await conn.query("SELECT sb.*, COALESCE(c.nombre,'') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_bandas sb JOIN solicitudes sol ON sb.id_solicitud = sol.id LEFT JOIN clientes c ON sol.cliente_id = c.id WHERE sb.id_solicitud = ?", [id]);
                 if (solicitud) {
                     tablaOrigen = 'solicitudes_bandas';
                     tipoEvento = 'BANDA';
@@ -190,8 +194,16 @@ const actualizarEstadoSolicitud = async (req, res) => {
         }
 
         // Actualizar estado en la tabla de solicitudes específica
-        const fieldName = tablaOrigen === 'solicitudes_bandas' ? 'id_solicitud' : 'id';
-        const result = await conn.query(`UPDATE ${tablaOrigen} SET estado = ? WHERE ${fieldName} = ?`, [estado, realId]);
+        // Todas las tablas hijas usan ahora `id_solicitud` como PK
+        const fieldName = 'id_solicitud';
+        let result;
+        // En servicios y talleres el estado se guarda en la tabla padre `solicitudes`
+        if (tablaOrigen === 'solicitudes_servicios' || tablaOrigen === 'solicitudes_talleres') {
+            result = await conn.query(`UPDATE solicitudes SET estado = ? WHERE id = ?`, [estado, realId]);
+        } else {
+            result = await conn.query(`UPDATE ${tablaOrigen} SET estado = ? WHERE ${fieldName} = ?`, [estado, realId]);
+        }
+
         if (result.affectedRows === 0) {
             await conn.rollback();
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
@@ -199,46 +211,47 @@ const actualizarEstadoSolicitud = async (req, res) => {
 
         // Manejar eventos_confirmados para TODOS los tipos
         if (estado === 'Confirmado') {
-            // Determinar si debe ser público (según es_publico_cuando_confirmada)
-            const esPublico = solicitud.es_publico_cuando_confirmada ? 1 : 0;
+            // Determinar si debe ser público (según la tabla padre `solicitudes`)
+            const [parent] = await conn.query('SELECT es_publico FROM solicitudes WHERE id = ?', [realId]);
+            const esPublico = parent && parent.es_publico ? 1 : 0;
 
-            // Insertar en eventos_confirmados si no existe
+            // Buscar evento existente (incluyendo su estado 'activo')
             const [eventoExistente] = await conn.query(
-                "SELECT id FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = ?",
+                "SELECT id, activo FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = ?",
                 [realId, tipoEvento]
             );
 
+            // Preparar datos según tipo
+            let nombreEvento, nombreCliente, emailCliente, telefonoCliente, generoMusical, cantidadPersonas, tipoServicio, nombreTaller;
+
+            if (tablaOrigen === 'solicitudes_bandas') {
+                nombreEvento = solicitud.nombre_completo || 'Banda';
+                nombreCliente = solicitud.nombre_completo;
+                emailCliente = solicitud.email;
+                telefonoCliente = solicitud.telefono;
+                generoMusical = solicitud.genero_musical;
+                cantidadPersonas = solicitud.cantidad_de_personas;
+            } else if (tablaOrigen === 'solicitudes_alquiler') {
+                nombreEvento = solicitud.tipo_de_evento || 'Alquiler';
+                nombreCliente = solicitud.nombre_completo;
+                emailCliente = solicitud.email;
+                telefonoCliente = solicitud.telefono;
+                cantidadPersonas = solicitud.cantidad_de_personas;
+            } else if (tablaOrigen === 'solicitudes_servicios') {
+                nombreEvento = solicitud.tipo_servicio || 'Servicio';
+                nombreCliente = solicitud.nombre_solicitante;
+                emailCliente = solicitud.email_solicitante;
+                telefonoCliente = solicitud.telefono_solicitante;
+                tipoServicio = solicitud.tipo_servicio;
+            } else if (tablaOrigen === 'solicitudes_talleres') {
+                nombreEvento = solicitud.nombre_taller || 'Taller';
+                nombreCliente = solicitud.nombre_solicitante;
+                emailCliente = solicitud.email_solicitante;
+                telefonoCliente = solicitud.telefono_solicitante;
+                nombreTaller = solicitud.nombre_taller;
+            }
+
             if (!eventoExistente) {
-                // Preparar datos según tipo
-                let nombreEvento, nombreCliente, emailCliente, telefonoCliente, generoMusical, cantidadPersonas, tipoServicio, nombreTaller;
-
-                if (tablaOrigen === 'solicitudes_bandas') {
-                    nombreEvento = solicitud.nombre_completo || 'Banda';
-                    nombreCliente = solicitud.nombre_completo;
-                    emailCliente = solicitud.email;
-                    telefonoCliente = solicitud.telefono;
-                    generoMusical = solicitud.genero_musical;
-                    cantidadPersonas = solicitud.cantidad_de_personas;
-                } else if (tablaOrigen === 'solicitudes_alquiler') {
-                    nombreEvento = solicitud.tipo_de_evento || 'Alquiler';
-                    nombreCliente = solicitud.nombre_completo;
-                    emailCliente = solicitud.email;
-                    telefonoCliente = solicitud.telefono;
-                    cantidadPersonas = solicitud.cantidad_de_personas;
-                } else if (tablaOrigen === 'solicitudes_servicios') {
-                    nombreEvento = solicitud.tipo_servicio || 'Servicio';
-                    nombreCliente = solicitud.nombre_solicitante;
-                    emailCliente = solicitud.email_solicitante;
-                    telefonoCliente = solicitud.telefono_solicitante;
-                    tipoServicio = solicitud.tipo_servicio;
-                } else if (tablaOrigen === 'solicitudes_talleres') {
-                    nombreEvento = solicitud.nombre_taller || 'Taller';
-                    nombreCliente = solicitud.nombre_solicitante;
-                    emailCliente = solicitud.email_solicitante;
-                    telefonoCliente = solicitud.telefono_solicitante;
-                    nombreTaller = solicitud.nombre_taller;
-                }
-
                 await conn.query(`
                     INSERT INTO eventos_confirmados (
                         id_solicitud, tipo_evento, tabla_origen,
@@ -267,6 +280,47 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     tipoServicio || null,
                     nombreTaller || null
                 ]);
+            } else if (eventoExistente.activo === 0) {
+                // Reactivar y actualizar campos del evento existente
+                await conn.query(`UPDATE eventos_confirmados SET activo = 1, cancelado_en = NULL, es_publico = ?, nombre_evento = ?, descripcion = ?, fecha_evento = ?, hora_inicio = ?, duracion_estimada = ?, nombre_cliente = ?, email_cliente = ?, telefono_cliente = ?, precio_base = ?, precio_final = ?, genero_musical = ?, cantidad_personas = ?, tipo_servicio = ?, nombre_taller = ? WHERE id = ?`, [
+                    esPublico,
+                    nombreEvento,
+                    solicitud.descripcion || null,
+                    solicitud.fecha_evento,
+                    solicitud.hora_evento || '21:00:00',
+                    solicitud.duracion || null,
+                    nombreCliente,
+                    emailCliente,
+                    telefonoCliente,
+                    solicitud.precio_basico || null,
+                    solicitud.precio_final || null,
+                    generoMusical || null,
+                    cantidadPersonas || null,
+                    tipoServicio || null,
+                    nombreTaller || null,
+                    eventoExistente.id
+                ]);
+            }
+        } else if (estado === 'Solicitado') {
+            // Si la solicitud es degradada a 'Solicitado', auditar y eliminar cualquier evento confirmado asociado
+            try {
+                const [evento] = await conn.query('SELECT * FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = ?', [realId, tipoEvento]);
+                if (evento) {
+                    const deletedBy = req.user ? req.user.id : null;
+                    const reason = 'Solicitud downgraded to Solicitado';
+                    await conn.query('INSERT INTO eventos_confirmados_audit (evento_id, id_solicitud, tipo_evento, tabla_origen, original_row, deleted_by, reason) VALUES (?, ?, ?, ?, ?, ?, ?)', [
+                        evento.id,
+                        evento.id_solicitud,
+                        evento.tipo_evento,
+                        evento.tabla_origen,
+                        JSON.stringify(evento),
+                        deletedBy,
+                        reason
+                    ]);
+                    await conn.query('DELETE FROM eventos_confirmados WHERE id = ?', [evento.id]);
+                }
+            } catch (err) {
+                console.warn('No se pudo auditar/eliminar eventos_confirmados:', err.message);
             }
         } else if (estado === 'Cancelado') {
             // Marcar como inactivo en eventos_confirmados
@@ -315,11 +369,11 @@ const eliminarSolicitud = async (req, res) => {
         } else {
             realId = id;
             let [solicitud] = await conn.query("SELECT 'solicitudes_alquiler' as tabla_name FROM solicitudes_alquiler WHERE id_solicitud = ?", [id]);
-            if (solicitud) {
+            if (solicitud && solicitud.length) {
                 tabla = 'solicitudes_alquiler';
             } else {
                 [solicitud] = await conn.query("SELECT 'solicitudes_bandas' as tabla_name FROM solicitudes_bandas WHERE id_solicitud = ?", [id]);
-                if (solicitud) tabla = 'solicitudes_bandas';
+                if (solicitud && solicitud.length) tabla = 'solicitudes_bandas';
             }
         }
 
@@ -327,10 +381,25 @@ const eliminarSolicitud = async (req, res) => {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
 
-        // Por seguridad, borramos en cascada (primero los hijos, luego el padre)
-        await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [realId]);
-        await conn.query("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [realId]);
-        await conn.query("DELETE FROM bandas_solicitudes WHERE id_solicitud = ?", [realId]);
+        // Por seguridad, intentamos borrar en cascada (primero los hijos, luego el padre)
+        // Ignorar errores específicos de tablas inexistentes (legacy) pero loguearlos.
+        const safeDelete = async (query, params) => {
+            try {
+                await conn.query(query, params);
+            } catch (e) {
+                // ER_NO_SUCH_TABLE = 1146
+                if (e && (e.errno === 1146 || e.code === 'ER_NO_SUCH_TABLE')) {
+                    console.warn('Tabla inexistente al intentar borrar (omitido):', query, params, e.message);
+                } else {
+                    throw e; // relanzar para que el catch externo lo maneje
+                }
+            }
+        };
+
+        await safeDelete("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [realId]);
+        await safeDelete("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [realId]);
+        await safeDelete("DELETE FROM bandas_solicitudes WHERE id_solicitud = ?", [realId]);
+
         const result = await conn.query(`DELETE FROM ${tabla} WHERE id_solicitud = ?`, [realId]);
 
         if (result.affectedRows === 0) {
@@ -339,6 +408,7 @@ const eliminarSolicitud = async (req, res) => {
 
         res.status(200).json({ success: true, message: `Solicitud ${id} eliminada permanentemente.` });
     } catch (err) {
+        console.error('Error al eliminar solicitud:', err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -608,11 +678,13 @@ const getOrdenDeTrabajo = async (req, res) => {
         // 1. Obtener los detalles de la solicitud y el tipo de evento, primero en alquiler, luego en bandas
         let sqlSolicitud = `
             SELECT
-                s.id_solicitud, s.nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
+                s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
                 s.tipo_servicio,
-                ot.nombre_para_mostrar as tipo_evento, ot.id_evento as tipo_evento_id
+                ot.nombre_para_mostrar as tipo_evento, ot.id_tipo_evento as tipo_evento_id
             FROM solicitudes_alquiler s
-            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
+            LEFT JOIN solicitudes sol ON s.id_solicitud = sol.id
+            LEFT JOIN clientes c ON sol.cliente_id = c.id
+            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_tipo_evento
             WHERE s.id_solicitud = ?;
         `;
         let solicitudResult = await conn.query(sqlSolicitud, [solicitudId]);
@@ -620,11 +692,13 @@ const getOrdenDeTrabajo = async (req, res) => {
         if (!solicitud) {
             sqlSolicitud = `
                 SELECT
-                    s.id_solicitud, s.nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
+                    s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
                     s.tipo_servicio,
-                    ot.nombre_para_mostrar as tipo_evento, ot.id_evento as tipo_evento_id
+                    ot.nombre_para_mostrar as tipo_evento, ot.id_tipo_evento as tipo_evento_id
                 FROM solicitudes_bandas s
-                LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_evento
+                LEFT JOIN solicitudes sol ON s.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_tipo_evento
                 WHERE s.id_solicitud = ?;
             `;
             solicitudResult = await conn.query(sqlSolicitud, [solicitudId]);
@@ -711,7 +785,7 @@ const getAllTiposDeEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query(
-            "SELECT id_evento as id, nombre_para_mostrar as nombreParaMostrar, descripcion, monto_sena as montoSena, deposito as depositoGarantia, es_publico as esPublico, categoria FROM opciones_tipos ORDER BY categoria, nombre_para_mostrar;"
+            "SELECT id_tipo_evento as id, nombre_para_mostrar as nombreParaMostrar, descripcion, monto_sena as montoSena, deposito as depositoGarantia, es_publico as esPublico, categoria FROM opciones_tipos ORDER BY categoria, nombre_para_mostrar;"
         );
         res.status(200).json(rows);
     } catch (err) {

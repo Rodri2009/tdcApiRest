@@ -2,6 +2,7 @@
 const pool = require('../db');
 const { sendAdminNotification } = require('../services/emailService');
 const { sendComprobanteEmail } = require('../services/emailService');
+const { getOrCreateClient, updateClient } = require('../lib/clients');
 
 const crearSolicitud = async (req, res) => {
     console.log("\n-> Controlador crearSolicitud. Body recibido:", req.body);
@@ -20,8 +21,12 @@ const crearSolicitud = async (req, res) => {
         telefono_solicitante,
         email,
         email_solicitante,
-        descripcion
+        descripcion,
+        descripcionCorta,
+        descripcionLarga
     } = req.body;
+
+
 
     // Usar nombre_solicitante si nombreCompleto no existe
     const nombreFinal = nombreCompleto || nombre_solicitante || '';
@@ -79,36 +84,38 @@ const crearSolicitud = async (req, res) => {
         const tipoEventoNorm = (tipoEvento || '').toString().trim().toLowerCase();
         const esBanda = tipoEventoNorm.includes('banda');
         const categoria = esBanda ? 'BANDA' : 'ALQUILER';
+        // Before inserting the solicitud, create or reuse the cliente
+        const clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
+
         const sqlGeneral = `
-            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion, nombre_solicitante, telefono_solicitante, email_solicitante)
+            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion_corta, descripcion_larga, descripcion, cliente_id)
             VALUES (?, NOW(), 'Solicitado', ?, ?, ?, ?)
         `;
         const paramsGeneral = [
             categoria,
+            descripcionCorta || (descripcion ? descripcion.substring(0,200) : null),
+            descripcionLarga || null,
             descripcion || '',
-            nombreFinal,
-            telefonoFinal,
-            emailFinal
+            clienteId
         ];
         const resultGeneral = await conn.query(sqlGeneral, paramsGeneral);
         const newId = Number(resultGeneral.insertId);
 
         if (esBanda) {
-            // 2. Insertar en la tabla específica 'solicitudes_bandas' (todas las columnas y en el orden exacto del SQL)
+            // 2. Insertar en la tabla específica 'solicitudes_bandas'
             const sqlBandas = `
                 INSERT INTO solicitudes_bandas (
-                    id_solicitud, tipo_de_evento, tipo_servicio, es_publico, fecha_hora, fecha_evento, hora_evento, duracion,
-                    cantidad_de_personas, precio_basico, precio_final, nombre_completo, telefono, email, descripcion, estado, fingerprintid,
+                    id_solicitud, tipo_de_evento, tipo_servicio, fecha_hora, fecha_evento, hora_evento, duracion,
+                    cantidad_de_personas, precio_basico, precio_final, descripcion, estado, fingerprintid,
                     id_banda, genero_musical, formacion_json, instagram, facebook, youtube, spotify, otras_redes, logo_url, contacto_rol,
                     fecha_alternativa, invitadas_json, cantidad_bandas, precio_puerta_propuesto, expectativa_publico, notas_admin, id_evento_generado
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const now = new Date();
             let paramsBandas = [
                 newId, // id_solicitud
                 tipoEvento || 'FECHA_BANDAS', // tipo_de_evento
                 null, // tipo_servicio
-                0, // es_publico
                 now, // fecha_hora
                 req.body.fechaEvento || null, // fecha_evento
                 req.body.horaInicio || null, // hora_evento
@@ -116,9 +123,6 @@ const crearSolicitud = async (req, res) => {
                 req.body.cantidadPersonas ? String(req.body.cantidadPersonas) : null, // cantidad_de_personas
                 req.body.precioBase ? parseFloat(req.body.precioBase) : null, // precio_basico
                 null, // precio_final
-                nombreFinal, // nombre_completo
-                telefonoFinal, // telefono
-                emailFinal, // email
                 req.body.descripcion || '', // descripcion
                 'Solicitado', // estado
                 req.body.fingerprintId || null, // fingerprintid
@@ -140,22 +144,20 @@ const crearSolicitud = async (req, res) => {
                 req.body.notas_admin || null, // notas_admin
                 null // id_evento_generado
             ];
-            // Forzar exactamente 34 valores (coincidiendo con el SQL INSERT que tiene 34 columnas)
-            paramsBandas = paramsBandas.slice(0, 34);
-            while (paramsBandas.length < 34) paramsBandas.push(null);
-            console.log('paramsBandas FINAL:', paramsBandas.length, 'valores:', paramsBandas);
+            // Forzar exactamente 29 valores (coincidiendo con el SQL INSERT que tiene 29 columnas)
+            paramsBandas = paramsBandas.slice(0, 29);
+            while (paramsBandas.length < 29) paramsBandas.push(null);
             await conn.query(sqlBandas, paramsBandas);
         } else {
             // 2. Insertar en la tabla específica 'solicitudes_alquiler'
             const sqlAlquiler = `
                 INSERT INTO solicitudes_alquiler (
-                    id, tipo_servicio, fecha_evento, hora_evento, duracion,
-                    cantidad_de_personas, precio_basico, precio_final, es_publico, 
-                    tipo_de_evento, nombre_completo, telefono, email, descripcion, estado
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    id_solicitud, tipo_servicio, fecha_evento, hora_evento, duracion,
+                    cantidad_de_personas, precio_basico, precio_final, tipo_de_evento, descripcion, estado
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const paramsAlquiler = [
-                newId,                                      // id
+                newId,                                      // id_solicitud
                 tipoEvento,                                 // tipo_servicio
                 fechaEvento,                                // fecha_evento
                 horaInicio,                                 // hora_evento
@@ -163,11 +165,7 @@ const crearSolicitud = async (req, res) => {
                 cantidadPersonas,                           // cantidad_de_personas
                 parseFloat(precioBase) || 0,               // precio_basico
                 null,                                       // precio_final
-                0,                                          // es_publico
                 tipoEvento,                                 // tipo_de_evento
-                nombreFinal,                                // nombre_completo
-                telefonoFinal,                              // telefono
-                emailFinal,                                 // email
                 descripcion || '',                          // descripcion
                 'Solicitado'                                // estado
             ];
@@ -216,7 +214,8 @@ const getSolicitudPorId = async (req, res) => {
                     e.nombre_evento as nombreCompleto,
                     NULL as telefono,
                     NULL as email,
-                    e.descripcion,
+                    e.descripcion as descripcion_larga,
+                    SUBSTRING(e.descripcion,1,200) as descripcion_corta,
                     CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END as estado,
                     e.tipo_evento as nombreParaMostrar,
                     e.nombre_evento as nombreBanda,
@@ -249,22 +248,26 @@ const getSolicitudPorId = async (req, res) => {
 
             const sql = `
                 SELECT
-                    CONCAT('alq_', sa.id) as solicitudId,
+                    CONCAT('alq_', sa.id_solicitud) as solicitudId,
                     sa.tipo_servicio as tipoServicio,
                     sa.fecha_evento as fechaEvento,
                     sa.hora_evento as horaInicio,
                     sa.duracion as duracionEvento,
                     sa.cantidad_de_personas as cantidadPersonas,
                     sa.precio_basico as precioBase,
-                    sa.descripcion,
+                    sa.descripcion as descripcion_alquiler,
                     sa.estado,
-                    sa.nombre_completo as nombreCompleto,
-                    sa.telefono as telefono,
-                    sa.email as email,
+                    COALESCE(c.nombre, '') as nombreCompleto,
+                    c.telefono as telefono,
+                    c.email as email,
                     sa.tipo_de_evento as tipoEvento,
-                    sa.es_publico as esPublico
+                    COALESCE(sol.es_publico, 0) as esPublico,
+                    COALESCE(sol.descripcion_corta, '') as descripcion_corta,
+                    COALESCE(sol.descripcion_larga, '') as descripcion_larga
                 FROM solicitudes_alquiler sa
-                WHERE sa.id = ?
+                JOIN solicitudes sol ON sa.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                WHERE sa.id_solicitud = ?
             `;
 
             const [alquiler] = await conn.query(sql, [alquilerId]);
@@ -297,10 +300,10 @@ const getSolicitudPorId = async (req, res) => {
                     sb.duracion as duracionEvento,
                     sb.cantidad_de_personas as cantidadPersonas,
                     sb.precio_basico as precioBase,
-                    sb.nombre_completo as nombreCompleto,
-                    sb.telefono as telefono,
-                    sb.email as email,
-                    sb.descripcion,
+                    COALESCE(c.nombre, '') as nombreCompleto,
+                    c.telefono as telefono,
+                    c.email as email,
+                    sb.descripcion as descripcion_banda,
                     sb.estado,
                     sb.genero_musical,
                     sb.instagram,
@@ -316,8 +319,12 @@ const getSolicitudPorId = async (req, res) => {
                     sb.precio_puerta_propuesto,
                     sb.expectativa_publico,
                     sb.notas_admin,
-                    sb.es_publico as esPublico
+                    COALESCE(sol.es_publico, 0) as esPublico,
+                    COALESCE(sol.descripcion_corta, '') as descripcion_corta,
+                    COALESCE(sol.descripcion_larga, '') as descripcion_larga
                 FROM solicitudes_bandas sb
+                JOIN solicitudes sol ON sb.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
                 WHERE sb.id_solicitud = ?
             `;
 
@@ -344,24 +351,26 @@ const getSolicitudPorId = async (req, res) => {
 
             const sql = `
                 SELECT
-                    CONCAT('srv_', ss.id) as solicitudId,
+                    CONCAT('srv_', ss.id_solicitud) as solicitudId,
                     'SERVICIO' as tipoEvento,
                     ss.fecha_evento as fechaEvento,
                     ss.hora_evento as horaInicio,
                     ss.duracion as duracionEvento,
                     NULL as cantidadPersonas,
                     ss.precio as precioBase,
-                    sol.nombre_solicitante as nombreCompleto,
-                    sol.telefono_solicitante as telefono,
-                    sol.email_solicitante as email,
+                    COALESCE(c.nombre, '') as nombreCompleto,
+                    c.telefono as telefono,
+                    c.email as email,
                     sol.descripcion,
                     sol.estado,
                     ss.tipo_servicio as tipoServicio,
-                    0 as esPublico
+                    COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_servicios ss
-                JOIN solicitudes sol ON ss.id = sol.id
-                WHERE ss.id = ?
+                JOIN solicitudes sol ON ss.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                WHERE ss.id_solicitud = ?
             `;
+            console.log('[SOLICITUD][GET] SQL servicio:', sql);
 
             const [servicio] = await conn.query(sql, [servicioId]);
 
@@ -386,23 +395,24 @@ const getSolicitudPorId = async (req, res) => {
 
             const sql = `
                 SELECT
-                    CONCAT('tll_', st.id) as solicitudId,
+                    CONCAT('tll_', st.id_solicitud) as solicitudId,
                     'TALLERES' as tipoEvento,
                     st.fecha_evento as fechaEvento,
                     st.hora_evento as horaInicio,
                     st.duracion as duracionEvento,
                     NULL as cantidadPersonas,
                     st.precio as precioBase,
-                    sol.nombre_solicitante as nombreCompleto,
-                    sol.telefono_solicitante as telefono,
-                    sol.email_solicitante as email,
+                    COALESCE(c.nombre, '') as nombreCompleto,
+                    c.telefono as telefono,
+                    c.email as email,
                     sol.descripcion,
                     sol.estado,
                     st.nombre_taller as nombreTaller,
-                    0 as esPublico
+                    COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_talleres st
-                JOIN solicitudes sol ON st.id = sol.id
-                WHERE st.id = ?
+                JOIN solicitudes sol ON st.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                WHERE st.id_solicitud = ?
             `;
 
             const [taller] = await conn.query(sql, [tallerId]);
@@ -440,7 +450,7 @@ const getSolicitudPorId = async (req, res) => {
  */
 const finalizarSolicitud = async (req, res) => {
     const { id } = req.params;
-    const { nombreCompleto, celular, email, detallesAdicionales, main_contact_email, invitados_emails } = req.body;
+    const { nombreCompleto, celular, email, detallesAdicionales, main_contact_email, invitados_emails, descripcionCorta, descripcionLarga } = req.body;
 
     console.log(`-> Finalizando solicitud con ID: ${id}`);
 
@@ -453,17 +463,20 @@ const finalizarSolicitud = async (req, res) => {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
+        // Crear o obtener cliente y guardar referencia en solicitudes
+        const clienteId = await getOrCreateClient(conn, { nombre: nombreCompleto, telefono: celular, email });
+
         // Actualizar datos en la tabla general 'solicitudes'
         const sqlUpdateGeneral = `
             UPDATE solicitudes SET 
-                nombre_solicitante = ?, 
-                telefono_solicitante = ?, 
-                email_solicitante = ?, 
+                cliente_id = ?,
+                descripcion_corta = ?,
+                descripcion_larga = ?,
                 descripcion = ?, 
                 estado = 'Solicitado'
             WHERE id = ?
         `;
-        const paramsUpdateGeneral = [nombreCompleto, celular, email, detallesAdicionales, id];
+        const paramsUpdateGeneral = [clienteId, descripcionCorta || (detallesAdicionales ? String(detallesAdicionales).substring(0,200) : null), descripcionLarga || null, detallesAdicionales, id];
         const resultGeneral = await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
 
         if (resultGeneral.affectedRows === 0) {
@@ -471,21 +484,18 @@ const finalizarSolicitud = async (req, res) => {
             return res.status(404).json({ error: 'La solicitud a actualizar no fue encontrada.' });
         }
 
-        // Actualizar datos en la tabla 'solicitudes_alquiler'
+        // Actualizar datos en la tabla 'solicitudes_alquiler' (no actualizamos campos de contacto aquí)
         const sqlUpdateAlquiler = `
             UPDATE solicitudes_alquiler SET 
-                nombre_completo = ?, 
-                telefono = ?, 
-                email = ?, 
                 descripcion = ?
             WHERE id = ?
         `;
-        const paramsUpdateAlquiler = [nombreCompleto, celular, email, detallesAdicionales, id];
+        const paramsUpdateAlquiler = [detallesAdicionales, id];
         await conn.query(sqlUpdateAlquiler, paramsUpdateAlquiler);
 
         // Obtener los datos completos para los emails
         const sqlSelect = `
-            SELECT s.*, sa.* FROM solicitudes s LEFT JOIN solicitudes_alquiler sa ON s.id = sa.id WHERE s.id = ?
+            SELECT s.*, sa.* FROM solicitudes s LEFT JOIN solicitudes_alquiler sa ON s.id = sa.id_solicitud WHERE s.id = ?
         `;
         const [solicitudCompleta] = await conn.query(sqlSelect, [id]);
 
@@ -596,7 +606,9 @@ const actualizarSolicitud = async (req, res) => {
         email,
         email_solicitante,
         descripcion,
-        detallesAdicionales
+        detallesAdicionales,
+        descripcionCorta,
+        descripcionLarga
     } = req.body;
 
     // Usar el nombre correcto si viene en snake_case
@@ -611,20 +623,23 @@ const actualizarSolicitud = async (req, res) => {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
+        // Crear o actualizar cliente y asociarlo a la solicitud
+        const clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
+
         // Actualizar datos en la tabla general 'solicitudes'
         const sqlUpdateGeneral = `
             UPDATE solicitudes SET 
+                descripcion_corta = ?,
+                descripcion_larga = ?,
                 descripcion = ?,
-                nombre_solicitante = ?,
-                telefono_solicitante = ?,
-                email_solicitante = ?
+                cliente_id = ?
             WHERE id = ?
         `;
         const paramsUpdateGeneral = [
+            descripcionCorta || (descripcion || detallesAdicionales ? String((descripcion || detallesAdicionales)).substring(0,200) : null) ,
+            descripcionLarga || null,
             descripcion || detallesAdicionales || '',
-            nombreFinal,
-            telefonoFinal,
-            emailFinal,
+            clienteId,
             id
         ];
         await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
@@ -638,9 +653,6 @@ const actualizarSolicitud = async (req, res) => {
                 fecha_evento = ?,
                 hora_evento = ?,
                 precio_basico = ?,
-                nombre_completo = ?,
-                telefono = ?,
-                email = ?,
                 descripcion = ?
             WHERE id = ?
         `;
@@ -651,9 +663,6 @@ const actualizarSolicitud = async (req, res) => {
             fechaEvento || null,
             horaInicio || '',
             parseFloat(precioBase) || 0,
-            nombreFinal,
-            telefonoFinal,
-            emailFinal,
             descripcion || detallesAdicionales || '',
             id
         ];
@@ -769,59 +778,67 @@ const getSolicitudesPublicas = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // Consultar fechas de bandas confirmadas
+        // Consultar fechas de bandas confirmadas desde la tabla padre donde es_publico = 1
         const bandasQuery = `
             SELECT
-                id_solicitud as id,
+                sb.id_solicitud as id,
                 'BANDA' as tipoEvento,
-                fecha_evento as fechaEvento,
-                hora_evento as horaEvento,
-                duracion,
-                cantidad_de_personas as cantidad,
-                precio_basico as precio,
-                nombre_completo as nombreCompleto,
-                descripcion,
-                es_publico as esPublico
-            FROM solicitudes_bandas
-            WHERE es_publico = 1
-              AND estado = 'Confirmado'
-              AND fecha_evento >= CURDATE()
+                sb.fecha_evento as fechaEvento,
+                sb.hora_evento as horaEvento,
+                sb.duracion,
+                sb.cantidad_de_personas as cantidad,
+                sb.precio_basico as precio,
+                COALESCE(c.nombre, '') as nombreCompleto,
+                sb.descripcion,
+                COALESCE(sol.es_publico, 0) as esPublico
+            FROM solicitudes_bandas sb
+            JOIN solicitudes sol ON sb.id_solicitud = sol.id
+            LEFT JOIN clientes c ON sol.cliente_id = c.id
+            WHERE sol.es_publico = 1
+              AND sol.estado = 'Confirmado'
+              AND sb.fecha_evento >= CURDATE()
         `;
         const bandas = await conn.query(bandasQuery);
 
-        // Consultar fechas de talleres/actividades confirmadas
+        // Consultar fechas de talleres/actividades confirmadas desde la tabla padre
         const talleresQuery = `
             SELECT
-                id as id,
+                st.id_solicitud as id,
                 'TALLER' as tipoEvento,
-                fecha_evento as fechaEvento,
-                hora_evento as horaEvento,
-                duracion,
-                NULL as cantidad, -- La columna no existe en la tabla
-                precio as precio,
-                nombre_taller as nombreCompleto,
+                st.fecha_evento as fechaEvento,
+                st.hora_evento as horaEvento,
+                st.duracion,
+                NULL as cantidad,
+                st.precio as precio,
+                st.nombre_taller as nombreCompleto,
                 NULL as descripcion,
-                1 as esPublico
-            FROM solicitudes_talleres
-            WHERE fecha_evento >= CURDATE()
+                COALESCE(sol.es_publico, 0) as esPublico
+            FROM solicitudes_talleres st
+            JOIN solicitudes sol ON st.id_solicitud = sol.id
+            WHERE sol.es_publico = 1
+              AND sol.estado = 'Confirmado'
+              AND st.fecha_evento >= CURDATE()
         `;
         const talleres = await conn.query(talleresQuery);
 
-        // Consultar fechas de servicios públicos confirmados
+        // Consultar fechas de servicios públicos confirmados desde la tabla padre
         const serviciosQuery = `
             SELECT
-                id as id,
+                ss.id_solicitud as id,
                 'SERVICIO' as tipoEvento,
-                fecha_evento as fechaEvento,
-                hora_evento as horaEvento,
-                duracion,
-                NULL as cantidad, -- La columna no existe en la tabla
-                precio as precio,
-                tipo_servicio as nombreCompleto,
+                ss.fecha_evento as fechaEvento,
+                ss.hora_evento as horaEvento,
+                ss.duracion,
+                NULL as cantidad,
+                ss.precio as precio,
+                ss.tipo_servicio as nombreCompleto,
                 NULL as descripcion,
-                1 as esPublico
-            FROM solicitudes_servicios
-            WHERE fecha_evento >= CURDATE()
+                COALESCE(sol.es_publico, 0) as esPublico
+            FROM solicitudes_servicios ss
+            JOIN solicitudes sol ON ss.id_solicitud = sol.id
+            WHERE sol.es_publico = 1
+              AND sol.estado = 'Confirmado'
+              AND ss.fecha_evento >= CURDATE()
         `;
         const servicios = await conn.query(serviciosQuery);
 
@@ -860,78 +877,39 @@ const updateVisibilidad = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // Soportar IDs con prefijos: alq_, bnd_, srv_, tll_, ev_
-        let tabla = null;
-        let idColumnName = null;
-        let idValue = id; // por defecto puede ser numérico o con prefijo
+            // Soportar IDs con prefijos: alq_, bnd_, srv_, tll_, ev_
+        let idValue = id;
 
-        if (String(id).startsWith('alq_')) {
-            idValue = parseInt(String(id).substring(4), 10);
-            tabla = 'solicitudes_alquiler';
-            idColumnName = 'id';
-        } else if (String(id).startsWith('bnd_')) {
-            idValue = parseInt(String(id).substring(4), 10);
-            tabla = 'solicitudes_bandas';
-            idColumnName = 'id_solicitud';
-        } else if (String(id).startsWith('srv_')) {
-            idValue = parseInt(String(id).substring(4), 10);
-            tabla = 'solicitudes_servicios';
-            idColumnName = 'id';
-        } else if (String(id).startsWith('tll_')) {
-            idValue = parseInt(String(id).substring(4), 10);
-            tabla = 'solicitudes_talleres';
-            idColumnName = 'id';
-        } else if (String(id).startsWith('ev_')) {
-            // Evento confirmado (eventos_confirmados)
+        if (String(id).startsWith('ev_')) {
+            // Evento confirmado: actualizamos directamente en eventos_confirmados
             idValue = parseInt(String(id).substring(3), 10);
-            tabla = 'eventos_confirmados';
-            idColumnName = 'id';
+            const result = await conn.query(`UPDATE eventos_confirmados SET es_publico = ? WHERE id = ?`, [es_publico ? 1 : 0, idValue]);
+            if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado' });
+            return res.status(200).json({ message: es_publico ? 'Evento visible en agenda pública' : 'Evento oculto de agenda pública', es_publico: es_publico ? 1 : 0 });
+        }
+
+        // Para todos los demás tipos, la fuente de verdad es la tabla padre `solicitudes`
+        if (String(id).startsWith('alq_') || String(id).startsWith('bnd_') || String(id).startsWith('srv_') || String(id).startsWith('tll_')) {
+            idValue = parseInt(String(id).split('_')[1], 10);
+        } else if (!isNaN(parseInt(id, 10))) {
+            idValue = parseInt(id, 10);
         } else {
-            // Intentar detectar en las tablas con ID numérico
-            // Primero alquiler
-            let [found] = await conn.query('SELECT id FROM solicitudes_alquiler WHERE id = ?', [id]);
-            if (found) {
-                tabla = 'solicitudes_alquiler';
-                idColumnName = 'id';
-                idValue = id;
-            } else {
-                [found] = await conn.query('SELECT id_solicitud FROM solicitudes_bandas WHERE id_solicitud = ?', [id]);
-                if (found) {
-                    tabla = 'solicitudes_bandas';
-                    idColumnName = 'id_solicitud';
-                    idValue = id;
-                }
-            }
+            return res.status(400).json({ message: 'ID inválido' });
         }
 
-        if (!tabla) {
+        const resultParent = await conn.query(`UPDATE solicitudes SET es_publico = ? WHERE id = ?`, [es_publico ? 1 : 0, idValue]);
+        if (resultParent.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada' });
         }
 
-        const result = await conn.query(
-            `UPDATE ${tabla} SET es_publico = ? WHERE ${idColumnName} = ?`,
-            [es_publico ? 1 : 0, idValue]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Solicitud no encontrada' });
+        // Propagar a eventos_confirmados si existen
+        try {
+            await conn.query(`UPDATE eventos_confirmados SET es_publico = ? WHERE id_solicitud = ?`, [es_publico ? 1 : 0, idValue]);
+        } catch (err) {
+            console.warn('No se pudo propagar es_publico a eventos_confirmados:', err.message);
         }
 
-        // Si la solicitud tiene un evento confirmado asociado, propagar la visibilidad
-        // Buscamos por id_solicitud y tabla_origen
-        if (tabla !== 'eventos_confirmados') {
-            try {
-                await conn.query(`UPDATE eventos_confirmados SET es_publico = ? WHERE id_solicitud = ? AND tabla_origen = ?`, [es_publico ? 1 : 0, idValue, tabla]);
-            } catch (err) {
-                // No crítico, informar en logs pero no fallar la petición
-                console.warn('No se pudo propagar es_publico a eventos_confirmados:', err.message);
-            }
-        }
-
-        return res.status(200).json({
-            message: es_publico ? 'Solicitud visible en agenda pública' : 'Solicitud oculta de agenda pública',
-            es_publico: es_publico ? 1 : 0
-        });
+        return res.status(200).json({ message: es_publico ? 'Solicitud visible en agenda pública' : 'Solicitud oculta de agenda pública', es_publico: es_publico ? 1 : 0 });
     } catch (error) {
         console.error('Error al actualizar visibilidad:', error);
         return res.status(500).json({ message: 'Error interno al actualizar visibilidad' });

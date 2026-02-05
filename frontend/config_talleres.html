@@ -350,18 +350,18 @@
             <div style="width:150px;"></div>
         </div>
 
-        <div class="tabs">
+        <div class="tabs right">
             <button class="tab active" data-section="tipos">
                 <i class="fas fa-list"></i> Tipos de Taller
-            </button>
-            <button class="tab" data-section="talleres">
-                <i class="fas fa-book"></i> Talleres / Actividades
             </button>
             <button class="tab" data-section="talleristas">
                 <i class="fas fa-user-tie"></i> Talleristas / Profesores
             </button>
             <button class="tab" data-section="precios">
                 <i class="fas fa-dollar-sign"></i> Precios y Vigencia
+            </button>
+            <button class="tab" data-section="talleres">
+                <i class="fas fa-book"></i> Talleres / Actividades Confirmados
             </button>
         </div>
 
@@ -856,7 +856,7 @@
                 html = `
                     <div class="form-group">
                         <label>ID (código único)</label>
-                        <input type="text" id="modal-id" value="${item.id || ''}" ${id ? 'disabled' : ''} placeholder="Ej: YOGA, DANZA" style="text-transform:uppercase;">
+                        <input type="text" id="modal-id" value="${item.id || ''}" ${id ? 'disabled' : ''} placeholder="Ej: TALLER_CERAMICA" style="text-transform:uppercase;">
                     </div>
                     <div class="form-group">
                         <label>Nombre</label>

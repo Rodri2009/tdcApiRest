@@ -24,8 +24,8 @@ const getTipos = async (req, res) => {
 
         let query = `
             SELECT 
-                id_evento as id,
-                id_evento as codigo,
+                id_tipo_evento as id,
+                id_tipo_evento as codigo,
                 nombre_para_mostrar as nombre,
                 descripcion,
                 categoria,
@@ -63,7 +63,7 @@ const createTipo = async (req, res) => {
 
         // Verificar si ya existe
         const [existente] = await pool.query(
-            'SELECT id_evento FROM opciones_tipos WHERE id_evento = ?',
+            'SELECT id_tipo_evento FROM opciones_tipos WHERE id_tipo_evento = ?',
             [codigo]
         );
 
@@ -72,7 +72,7 @@ const createTipo = async (req, res) => {
         }
 
         await pool.query(`
-            INSERT INTO opciones_tipos (id_evento, nombre_para_mostrar, descripcion, categoria, es_publico)
+            INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico)
             VALUES (?, ?, ?, ?, ?)
         `, [codigo, nombre, descripcion || null, categoria, activo !== false ? 1 : 0]);
 
@@ -119,7 +119,7 @@ const updateTipo = async (req, res) => {
         params.push(id);
 
         const result = await pool.query(
-            `UPDATE opciones_tipos SET ${setClauses.join(', ')} WHERE id_evento = ?`,
+            `UPDATE opciones_tipos SET ${setClauses.join(', ')} WHERE id_tipo_evento = ?`,
             params
         );
 
@@ -143,7 +143,7 @@ const deleteTipo = async (req, res) => {
         const { id } = req.params;
 
         const result = await pool.query(
-            'DELETE FROM opciones_tipos WHERE id_evento = ?',
+            'DELETE FROM opciones_tipos WHERE id_tipo_evento = ?',
             [id]
         );
 
@@ -173,22 +173,22 @@ const getDuraciones = async (req, res) => {
         let query = `
             SELECT 
                 d.id,
-                d.id_evento,
+                d.id_tipo_evento as id_evento,
                 t.nombre_para_mostrar as tipo_evento,
                 d.duracion_horas as horas,
                 d.descripcion,
                 1 as activo
             FROM opciones_duracion d
-            LEFT JOIN opciones_tipos t ON d.id_evento = t.id_evento
+            LEFT JOIN opciones_tipos t ON d.id_tipo_evento = t.id_tipo_evento
         `;
         const params = [];
 
         if (id_evento) {
-            query += ' WHERE d.id_evento = ?';
+            query += ' WHERE d.id_tipo_evento = ?';
             params.push(id_evento);
         }
 
-        query += ' ORDER BY d.id_evento, d.duracion_horas';
+        query += ' ORDER BY d.id_tipo_evento, d.duracion_horas';
 
         const duraciones = await pool.query(query, params);
         res.json(serializeBigInt(duraciones));
@@ -211,7 +211,7 @@ const createDuracion = async (req, res) => {
         }
 
         const result = await pool.query(`
-            INSERT INTO opciones_duracion (id_evento, duracion_horas, descripcion)
+            INSERT INTO opciones_duracion (id_tipo_evento, duracion_horas, descripcion)
             VALUES (?, ?, ?)
         `, [id_evento, horas, descripcion || null]);
 
@@ -314,7 +314,7 @@ const getPrecios = async (req, res) => {
         let query = `
             SELECT 
                 p.id,
-                p.id_evento,
+                p.id_tipo_evento as id_evento,
                 t.nombre_para_mostrar as tipo_evento,
                 p.cantidad_min,
                 p.cantidad_max,
@@ -326,13 +326,13 @@ const getPrecios = async (req, res) => {
                     ELSE 0 
                 END as activo
             FROM precios_vigencia p
-            LEFT JOIN opciones_tipos t ON p.id_evento = t.id_evento
+            LEFT JOIN opciones_tipos t ON p.id_tipo_evento = t.id_tipo_evento
         `;
         const params = [];
         const conditions = [];
 
         if (id_evento) {
-            conditions.push('p.id_evento = ?');
+            conditions.push('p.id_tipo_evento = ?');
             params.push(id_evento);
         }
 
@@ -344,7 +344,7 @@ const getPrecios = async (req, res) => {
             query += ' WHERE ' + conditions.join(' AND ');
         }
 
-        query += ' ORDER BY p.id_evento, p.cantidad_min, p.vigente_desde DESC';
+        query += ' ORDER BY p.id_tipo_evento, p.cantidad_min, p.vigente_desde DESC';
 
         const precios = await pool.query(query, params);
         res.json(serializeBigInt(precios));
@@ -369,7 +369,7 @@ const createPrecio = async (req, res) => {
         }
 
         const result = await pool.query(`
-            INSERT INTO precios_vigencia (id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta)
+            INSERT INTO precios_vigencia (id_tipo_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta)
             VALUES (?, ?, ?, ?, ?, ?)
         `, [id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta || null]);
 
