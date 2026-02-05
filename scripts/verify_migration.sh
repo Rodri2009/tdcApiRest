@@ -64,11 +64,11 @@ fi
 # 3) Search for references in source (excluding docs/migrations and schema)
 echo -n "[verify] Buscando referencias a fechas_bandas_confirmadas en código (excluyendo migrations/docs/schema)... "
 # Use a robust count (suppress errors) and show matches with count if any
-count=$(grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude-dir=.git --exclude-dir=scripts --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=01_schema.sql --exclude=03_test_data.sql --exclude=nginx.conf --exclude=verify_migration.sh -n . 2>/dev/null | wc -l)
+count=$(grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude-dir=.git --exclude-dir=scripts --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=01_schema.sql --exclude=03_test_data.sql --exclude=nginx.conf --exclude=verify_migration.sh -n . 2>/dev/null | wc -l || true)
 if [ "${count:-0}" -eq 0 ]; then
   echo "OK"
 else
-  echo "FOUND (${count})"; grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude-dir=.git --exclude-dir=scripts --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=01_schema.sql --exclude=03_test_data.sql --exclude=nginx.conf --exclude=verify_migration.sh -n . 2>/dev/null
+  echo "FOUND (${count})"; grep -R "fechas_bandas_confirmadas" --exclude-dir=database/migrations --exclude-dir=migrations --exclude-dir=.git --exclude-dir=scripts --exclude=REFACTORIZACION_SOLICITUDES.md --exclude=README.md --exclude=01_schema.sql --exclude=03_test_data.sql --exclude=nginx.conf --exclude=verify_migration.sh -n . 2>/dev/null || true
   errors=$((errors+1))
 fi
 
