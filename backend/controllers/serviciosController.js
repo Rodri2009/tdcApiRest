@@ -671,13 +671,13 @@ const createTipoServicio = async (req, res) => {
         }
 
         // Verificar que no exista
-        const exists = await conn.query(`SELECT 1 FROM opciones_tipos WHERE id_evento = ?`, [id]);
+        const exists = await conn.query(`SELECT 1 FROM opciones_tipos WHERE id_tipo_evento = ?`, [id]);
         if (exists.length > 0) {
             return res.status(400).json({ error: 'Ya existe un tipo con ese ID' });
         }
 
         await conn.query(
-            `INSERT INTO opciones_tipos (id_evento, nombre_para_mostrar, descripcion, categoria, es_publico) 
+            `INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico) 
              VALUES (?, ?, ?, 'SERVICIOS', ?)`,
             [id.toUpperCase(), nombre, descripcion || null, esPublico]
         );
@@ -703,7 +703,7 @@ const updateTipoServicio = async (req, res) => {
                 nombre_para_mostrar = COALESCE(?, nombre_para_mostrar),
                 descripcion = COALESCE(?, descripcion),
                 es_publico = COALESCE(?, es_publico)
-             WHERE id_evento = ? AND categoria = 'SERVICIOS'`,
+             WHERE id_tipo_evento = ? AND categoria = 'SERVICIOS'`,
             [nombre, descripcion, esPublico, id]
         );
 
@@ -736,7 +736,7 @@ const deleteTipoServicio = async (req, res) => {
         }
 
         const result = await conn.query(
-            `DELETE FROM opciones_tipos WHERE id_evento = ? AND categoria = 'SERVICIOS'`,
+            `DELETE FROM opciones_tipos WHERE id_tipo_evento = ? AND categoria = 'SERVICIOS'`,
             [id]
         );
 
