@@ -6,6 +6,8 @@ const bandasController = require('../controllers/bandasController');
 const { protect } = require('../middleware/authMiddleware');
 const requireAdmin = require('../middleware/requireAdmin');
 
+
+
 // GET /api/tickets/eventos_confirmadas - Lista todas las fechas de bandas disponibles.
 router.get('/eventos_confirmados', ticketsController.getFechasBandasConfirmadas);
 

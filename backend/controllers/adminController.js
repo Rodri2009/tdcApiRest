@@ -276,9 +276,8 @@ const actualizarEstadoSolicitud = async (req, res) => {
             );
         }
 
-        // La compatibilidad con la tabla antigua `fechas_bandas_confirmadas` queda desactivada.
-        // Los eventos ahora se manejan en `eventos_confirmados` para mantener un único origen de verdad.
-        // (La tabla antigua fue renombrada a `fechas_bandas_confirmadas_deprecated` durante la migración.)
+        // Uso exclusivo de `eventos_confirmados`: la tabla legacy fue migrada y retirada.
+        // Todas las operaciones de confirmación/consulta escriben y leen desde `eventos_confirmados`.
 
         await conn.commit();
         res.status(200).json({
@@ -856,7 +855,7 @@ const cancelarEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
         // Actualizar tanto el estado como el campo activo
-        // La tabla de eventos ahora es `eventos_confirmados` (reemplaza a `fechas_bandas_confirmadas`)
+        // La tabla de eventos ahora es `eventos_confirmados` (reemplaza a la definición previa usada para bandas).
         const result = await conn.query(
             "UPDATE eventos_confirmados SET activo = 0, cancelado_en = NOW() WHERE id = ?",
             [eventId]

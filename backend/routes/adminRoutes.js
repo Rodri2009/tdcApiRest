@@ -29,6 +29,8 @@ router.use(protect);
 // Y además exigimos que el usuario tenga rol admin (o VIEWER para lectura)
 router.use(requireAdmin);
 
+
+
 // =============================================================================
 // SOLICITUDES GENERALES
 // =============================================================================
