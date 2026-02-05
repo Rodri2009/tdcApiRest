@@ -191,7 +191,14 @@ const actualizarEstadoSolicitud = async (req, res) => {
 
         // Actualizar estado en la tabla de solicitudes específica
         const fieldName = tablaOrigen === 'solicitudes_bandas' ? 'id_solicitud' : 'id';
-        const result = await conn.query(`UPDATE ${tablaOrigen} SET estado = ? WHERE ${fieldName} = ?`, [estado, realId]);
+        let result;
+        // En servicios y talleres el estado se guarda en la tabla padre `solicitudes`
+        if (tablaOrigen === 'solicitudes_servicios' || tablaOrigen === 'solicitudes_talleres') {
+            result = await conn.query(`UPDATE solicitudes SET estado = ? WHERE id = ?`, [estado, realId]);
+        } else {
+            result = await conn.query(`UPDATE ${tablaOrigen} SET estado = ? WHERE ${fieldName} = ?`, [estado, realId]);
+        }
+
         if (result.affectedRows === 0) {
             await conn.rollback();
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
