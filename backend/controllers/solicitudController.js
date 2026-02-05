@@ -357,7 +357,7 @@ const getSolicitudPorId = async (req, res) => {
                     sol.descripcion,
                     sol.estado,
                     ss.tipo_servicio as tipoServicio,
-                    0 as esPublico
+                    COALESCE(sol.es_publico, ss.es_publico_cuando_confirmada) as esPublico
                 FROM solicitudes_servicios ss
                 JOIN solicitudes sol ON ss.id_solicitud = sol.id
                 WHERE ss.id_solicitud = ?
@@ -386,7 +386,7 @@ const getSolicitudPorId = async (req, res) => {
 
             const sql = `
                 SELECT
-                    CONCAT('tll_', st.id) as solicitudId,
+                    CONCAT('tll_', st.id_solicitud) as solicitudId,
                     'TALLERES' as tipoEvento,
                     st.fecha_evento as fechaEvento,
                     st.hora_evento as horaInicio,
@@ -399,7 +399,7 @@ const getSolicitudPorId = async (req, res) => {
                     sol.descripcion,
                     sol.estado,
                     st.nombre_taller as nombreTaller,
-                    0 as esPublico
+                    COALESCE(sol.es_publico, st.es_publico_cuando_confirmada) as esPublico
                 FROM solicitudes_talleres st
                 JOIN solicitudes sol ON st.id_solicitud = sol.id
                 WHERE st.id_solicitud = ?
