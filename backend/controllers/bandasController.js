@@ -96,7 +96,7 @@ const getBandaById = async (req, res) => {
                 e.id, e.nombre_banda as titulo_evento, e.fecha, e.hora_inicio,
                 el.es_principal, el.orden_show, el.estado
             FROM eventos_lineup el
-            JOIN eventos e ON el.id_evento = e.id
+            JOIN eventos_confirmados e ON el.id_evento_confirmado = e.id
             WHERE el.id_banda = ? AND e.activo = 1
             ORDER BY e.fecha DESC
             LIMIT 10
@@ -610,7 +610,9 @@ const updateSolicitud = async (req, res) => {
             'fecha_preferida', 'fecha_alternativa', 'hora_preferida',
             'invitadas_json', 'cantidad_bandas',
             'precio_anticipada_propuesto', 'precio_puerta_propuesto', 'expectativa_publico',
-            'mensaje'
+            'mensaje',
+            // Nuevos campos de descripción en tabla padre
+            'descripcion_corta', 'descripcion_larga'
         ];
 
         const setClauses = [];
@@ -653,6 +655,13 @@ const updateSolicitud = async (req, res) => {
                 await conn.query(`UPDATE solicitudes_bandas SET ${setClauses.join(', ')} WHERE id = ?`, params);
             }
 
+            // Si recibimos descripcion_corta o descripcion_larga, actualizar la fila padre en `solicitudes`
+            if (typeof updates.descripcion_corta !== 'undefined' || typeof updates.descripcion_larga !== 'undefined') {
+                const descC = typeof updates.descripcion_corta !== 'undefined' ? updates.descripcion_corta : null;
+                const descL = typeof updates.descripcion_larga !== 'undefined' ? updates.descripcion_larga : null;
+                await conn.query(`UPDATE solicitudes SET descripcion_corta = ?, descripcion_larga = ? WHERE id = ?`, [descC, descL, id]);
+            }
+
             await conn.commit();
             res.json({ message: 'Solicitud actualizada exitosamente' });
         } catch (err) {
@@ -678,7 +687,7 @@ const aprobarSolicitud = async (req, res) => {
         const {
             fecha_evento, hora_inicio, hora_fin,
             precio_anticipada, precio_puerta,
-            aforo_maximo, descripcion
+            aforo_maximo, descripcion, descripcion_corta, descripcion_larga
         } = req.body;
 
         // Obtener la solicitud
@@ -699,6 +708,11 @@ const aprobarSolicitud = async (req, res) => {
         const fechaFinal = fecha_evento || solicitud.fecha_preferida;
         if (!fechaFinal) {
             return res.status(400).json({ error: 'Se requiere una fecha para el evento' });
+        }
+
+        // Si se reciben descripciones para el padre, actualizarlas
+        if (typeof descripcion_corta !== 'undefined' || typeof descripcion_larga !== 'undefined') {
+            await pool.query(`UPDATE solicitudes SET descripcion_corta = ?, descripcion_larga = ? WHERE id = ?`, [descripcion_corta || null, descripcion_larga || null, id]);
         }
 
         // Obtener contacto desde clientes si existe
@@ -809,13 +823,18 @@ const aprobarSolicitud = async (req, res) => {
 const rechazarSolicitud = async (req, res) => {
     try {
         const { id } = req.params;
-        const { notas_admin } = req.body;
+        const { notas_admin, descripcion_corta, descripcion_larga } = req.body;
 
         await pool.query(`
             UPDATE solicitudes_bandas 
             SET estado = 'rechazada', notas_admin = CONCAT(COALESCE(notas_admin, ''), '\n[RECHAZADA] ', ?)
             WHERE id = ?
         `, [notas_admin || 'Sin motivo especificado', id]);
+
+        // También actualizar descripción en la fila padre si se proporcionó
+        if (typeof descripcion_corta !== 'undefined' || typeof descripcion_larga !== 'undefined') {
+            await pool.query(`UPDATE solicitudes SET descripcion_corta = ?, descripcion_larga = ? WHERE id = ?`, [descripcion_corta || null, descripcion_larga || null, id]);
+        }
 
         res.json({ message: 'Solicitud rechazada' });
     } catch (err) {
@@ -955,7 +974,7 @@ const getEventoLineup = async (req, res) => {
                 b.verificada
             FROM eventos_lineup el
             LEFT JOIN bandas_artistas b ON el.id_banda = b.id
-            WHERE el.id_evento = ?
+            WHERE el.id_evento_confirmado = ?
             ORDER BY el.orden_show ASC
         `, [id]);
 
@@ -980,13 +999,13 @@ const updateEventoLineup = async (req, res) => {
         }
 
         // Eliminar lineup anterior
-        await pool.query('DELETE FROM eventos_lineup WHERE id_evento = ?', [id]);
+        await pool.query('DELETE FROM eventos_lineup WHERE id_evento_confirmado = ?', [id]);
 
         // Insertar nuevo lineup
         for (const banda of lineup) {
             await pool.query(`
                 INSERT INTO eventos_lineup (
-                    id_evento, id_banda, nombre_banda, orden_show, 
+                    id_evento_confirmado, id_banda, nombre_banda, orden_show, 
                     es_principal, es_solicitante, hora_inicio, duracion_minutos, estado, notas
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `, [

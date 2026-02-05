@@ -26,7 +26,7 @@ USE tdc_db;
 -- Tipos de eventos con su categoría padre
 -- Ejemplo: INFANTILES → ALQUILER_SALON, FECHA_BANDAS → FECHA_BANDAS
 CREATE TABLE IF NOT EXISTS opciones_tipos (
-    id_evento VARCHAR(255) PRIMARY KEY COMMENT 'ID del tipo/subtipo: INFANTILES, FECHA_BANDAS, etc.',
+    id_tipo_evento VARCHAR(255) PRIMARY KEY COMMENT 'ID del tipo/subtipo: INFANTILES, FECHA_BANDAS, etc.',
     nombre_para_mostrar VARCHAR(255) NOT NULL COMMENT 'Nombre amigable para UI',
     descripcion TEXT COMMENT 'Descripción detallada del tipo de evento',
     categoria VARCHAR(50) NOT NULL COMMENT 'ALQUILER_SALON, FECHA_BANDAS, TALLERES_ACTIVIDADES, SERVICIOS',
@@ -47,37 +47,37 @@ CREATE TABLE IF NOT EXISTS configuracion (
 -- El precio final se calcula: precio_por_hora × duracion_horas
 CREATE TABLE IF NOT EXISTS precios_vigencia (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    id_evento VARCHAR(255) NOT NULL COMMENT 'Referencia a opciones_tipos.id_evento',
+    id_tipo_evento VARCHAR(255) NOT NULL COMMENT 'Referencia a opciones_tipos.id_tipo_evento',
     cantidad_min INT NOT NULL DEFAULT 1 COMMENT 'Cantidad mínima de personas',
     cantidad_max INT NOT NULL COMMENT 'Cantidad máxima de personas',
     precio_por_hora DECIMAL(10,2) NOT NULL COMMENT 'Precio base por hora',
     vigente_desde DATE NOT NULL,
     vigente_hasta DATE DEFAULT NULL COMMENT 'NULL = vigente actualmente',
-    UNIQUE KEY uk_precio (id_evento, cantidad_min, cantidad_max, vigente_desde),
-    INDEX idx_evento (id_evento),
+    UNIQUE KEY uk_precio (id_tipo_evento, cantidad_min, cantidad_max, vigente_desde),
+    INDEX idx_tipo_evento (id_tipo_evento),
     INDEX idx_vigencia (vigente_desde, vigente_hasta)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Duraciones disponibles por tipo de evento
 CREATE TABLE IF NOT EXISTS opciones_duracion (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    id_evento VARCHAR(255) NOT NULL,
+    id_tipo_evento VARCHAR(255) NOT NULL,
     duracion_horas INT NOT NULL,
     descripcion VARCHAR(100) DEFAULT NULL,
-    UNIQUE KEY uk_evento_duracion (id_evento, duracion_horas),
-    INDEX idx_evento (id_evento)
+    UNIQUE KEY uk_evento_duracion (id_tipo_evento, duracion_horas),
+    INDEX idx_tipo_evento (id_tipo_evento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Horarios disponibles por tipo de evento y día
 -- dia_semana puede ser 'todos' (aplica a cualquier día) o día específico como 'sabado'
 CREATE TABLE IF NOT EXISTS configuracion_horarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    id_evento VARCHAR(255) NOT NULL,
+    id_tipo_evento VARCHAR(255) NOT NULL,
     dia_semana VARCHAR(20) NOT NULL COMMENT 'todos, lunes, martes, ..., sabado, domingo',
     hora_inicio TIME NOT NULL,
     hora_fin TIME NOT NULL,
-    UNIQUE KEY uk_evento_dia_hora (id_evento, dia_semana, hora_inicio),
-    INDEX idx_evento (id_evento)
+    UNIQUE KEY uk_evento_dia_hora (id_tipo_evento, dia_semana, hora_inicio),
+    INDEX idx_tipo_evento (id_tipo_evento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Servicios adicionales (inflables, manteles, etc.)
@@ -119,12 +119,12 @@ CREATE TABLE IF NOT EXISTS personal_disponible (
 -- Roles requeridos por tipo de evento (según cantidad de personas)
 CREATE TABLE IF NOT EXISTS roles_por_evento (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    id_evento VARCHAR(255) NOT NULL,
+    id_tipo_evento VARCHAR(255) NOT NULL,
     rol_requerido VARCHAR(100) NOT NULL,
     cantidad INT DEFAULT 1,
     min_personas INT NOT NULL DEFAULT 0,
     max_personas INT NOT NULL DEFAULT 120,
-    INDEX idx_evento (id_evento)
+    INDEX idx_tipo_evento (id_tipo_evento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Catálogo de roles de personal (para CRUD independiente)
@@ -171,6 +171,8 @@ CREATE TABLE IF NOT EXISTS solicitudes (
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado VARCHAR(50) DEFAULT 'Solicitado',
     es_publico TINYINT(1) DEFAULT 0 COMMENT 'Visibilidad pública por defecto para la solicitud (padre)',
+    descripcion_corta VARCHAR(255) DEFAULT NULL,
+    descripcion_larga TEXT DEFAULT NULL,
     descripcion TEXT,
     cliente_id INT NULL,
     INDEX idx_categoria (categoria),
@@ -353,7 +355,7 @@ CREATE TABLE IF NOT EXISTS catalogo_instrumentos (
 -- Lineup: qué bandas tocan en qué evento y en qué orden
 CREATE TABLE IF NOT EXISTS eventos_lineup (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    id_evento INT NOT NULL,
+    id_evento_confirmado INT NOT NULL,
     id_banda INT DEFAULT NULL COMMENT 'FK a bandas_artistas (NULL si es solo nombre)',
     nombre_banda VARCHAR(255) NOT NULL COMMENT 'Nombre (redundante si id_banda existe, necesario si no)',
     
@@ -371,10 +373,10 @@ CREATE TABLE IF NOT EXISTS eventos_lineup (
     estado ENUM('invitada','confirmada','cancelada') DEFAULT 'invitada',
     notas TEXT,
     
-    INDEX idx_evento (id_evento),
+    INDEX idx_evento_confirmado (id_evento_confirmado),
     INDEX idx_banda (id_banda),
-    INDEX idx_orden (id_evento, orden_show),
-    FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE,
+    INDEX idx_orden (id_evento_confirmado, orden_show),
+    FOREIGN KEY (id_evento_confirmado) REFERENCES eventos_confirmados(id) ON DELETE CASCADE,
     FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -496,7 +498,7 @@ CREATE TABLE IF NOT EXISTS talleristas (
 -- Talleres disponibles
 CREATE TABLE IF NOT EXISTS talleres (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    tipo_taller_id VARCHAR(255) NOT NULL COMMENT 'FK a opciones_tipos.id_evento',
+    tipo_taller_id VARCHAR(255) NOT NULL COMMENT 'FK a opciones_tipos.id_tipo_evento',
     tallerista_id INT COMMENT 'FK a talleristas.id',
     nombre VARCHAR(255) NOT NULL,
     descripcion TEXT,
@@ -518,7 +520,7 @@ CREATE TABLE IF NOT EXISTS talleres (
 -- Precios de talleres
 CREATE TABLE IF NOT EXISTS precios_talleres (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    tipo_taller_id VARCHAR(255) COMMENT 'FK a opciones_tipos.id_evento (opcional si es por taller específico)',
+    tipo_taller_id VARCHAR(255) COMMENT 'FK a opciones_tipos.id_tipo_evento (opcional si es por taller específico)',
     taller_id INT COMMENT 'FK a talleres.id (opcional si es por tipo)',
     modalidad ENUM('clase_suelta', 'paquete') DEFAULT 'clase_suelta',
     cantidad_clases INT COMMENT 'Para paquetes',

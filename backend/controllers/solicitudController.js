@@ -21,7 +21,9 @@ const crearSolicitud = async (req, res) => {
         telefono_solicitante,
         email,
         email_solicitante,
-        descripcion
+        descripcion,
+        descripcionCorta,
+        descripcionLarga
     } = req.body;
 
 
@@ -86,11 +88,13 @@ const crearSolicitud = async (req, res) => {
         const clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
 
         const sqlGeneral = `
-            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion, cliente_id)
-            VALUES (?, NOW(), 'Solicitado', ?, ?)
+            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion_corta, descripcion_larga, descripcion, cliente_id)
+            VALUES (?, NOW(), 'Solicitado', ?, ?, ?, ?)
         `;
         const paramsGeneral = [
             categoria,
+            descripcionCorta || (descripcion ? descripcion.substring(0,200) : null),
+            descripcionLarga || null,
             descripcion || '',
             clienteId
         ];
@@ -210,7 +214,8 @@ const getSolicitudPorId = async (req, res) => {
                     e.nombre_evento as nombreCompleto,
                     NULL as telefono,
                     NULL as email,
-                    e.descripcion,
+                    e.descripcion as descripcion_larga,
+                    SUBSTRING(e.descripcion,1,200) as descripcion_corta,
                     CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END as estado,
                     e.tipo_evento as nombreParaMostrar,
                     e.nombre_evento as nombreBanda,
@@ -250,13 +255,15 @@ const getSolicitudPorId = async (req, res) => {
                     sa.duracion as duracionEvento,
                     sa.cantidad_de_personas as cantidadPersonas,
                     sa.precio_basico as precioBase,
-                    sa.descripcion,
+                    sa.descripcion as descripcion_alquiler,
                     sa.estado,
                     COALESCE(c.nombre, '') as nombreCompleto,
                     c.telefono as telefono,
                     c.email as email,
                     sa.tipo_de_evento as tipoEvento,
-                    COALESCE(sol.es_publico, 0) as esPublico
+                    COALESCE(sol.es_publico, 0) as esPublico,
+                    COALESCE(sol.descripcion_corta, '') as descripcion_corta,
+                    COALESCE(sol.descripcion_larga, '') as descripcion_larga
                 FROM solicitudes_alquiler sa
                 JOIN solicitudes sol ON sa.id_solicitud = sol.id
                 LEFT JOIN clientes c ON sol.cliente_id = c.id
@@ -296,7 +303,7 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(c.nombre, '') as nombreCompleto,
                     c.telefono as telefono,
                     c.email as email,
-                    sb.descripcion,
+                    sb.descripcion as descripcion_banda,
                     sb.estado,
                     sb.genero_musical,
                     sb.instagram,
@@ -312,7 +319,9 @@ const getSolicitudPorId = async (req, res) => {
                     sb.precio_puerta_propuesto,
                     sb.expectativa_publico,
                     sb.notas_admin,
-                    COALESCE(sol.es_publico, 0) as esPublico
+                    COALESCE(sol.es_publico, 0) as esPublico,
+                    COALESCE(sol.descripcion_corta, '') as descripcion_corta,
+                    COALESCE(sol.descripcion_larga, '') as descripcion_larga
                 FROM solicitudes_bandas sb
                 JOIN solicitudes sol ON sb.id_solicitud = sol.id
                 LEFT JOIN clientes c ON sol.cliente_id = c.id
@@ -441,7 +450,7 @@ const getSolicitudPorId = async (req, res) => {
  */
 const finalizarSolicitud = async (req, res) => {
     const { id } = req.params;
-    const { nombreCompleto, celular, email, detallesAdicionales, main_contact_email, invitados_emails } = req.body;
+    const { nombreCompleto, celular, email, detallesAdicionales, main_contact_email, invitados_emails, descripcionCorta, descripcionLarga } = req.body;
 
     console.log(`-> Finalizando solicitud con ID: ${id}`);
 
@@ -461,11 +470,13 @@ const finalizarSolicitud = async (req, res) => {
         const sqlUpdateGeneral = `
             UPDATE solicitudes SET 
                 cliente_id = ?,
+                descripcion_corta = ?,
+                descripcion_larga = ?,
                 descripcion = ?, 
                 estado = 'Solicitado'
             WHERE id = ?
         `;
-        const paramsUpdateGeneral = [clienteId, detallesAdicionales, id];
+        const paramsUpdateGeneral = [clienteId, descripcionCorta || (detallesAdicionales ? String(detallesAdicionales).substring(0,200) : null), descripcionLarga || null, detallesAdicionales, id];
         const resultGeneral = await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
 
         if (resultGeneral.affectedRows === 0) {
@@ -595,7 +606,9 @@ const actualizarSolicitud = async (req, res) => {
         email,
         email_solicitante,
         descripcion,
-        detallesAdicionales
+        detallesAdicionales,
+        descripcionCorta,
+        descripcionLarga
     } = req.body;
 
     // Usar el nombre correcto si viene en snake_case
@@ -616,11 +629,15 @@ const actualizarSolicitud = async (req, res) => {
         // Actualizar datos en la tabla general 'solicitudes'
         const sqlUpdateGeneral = `
             UPDATE solicitudes SET 
+                descripcion_corta = ?,
+                descripcion_larga = ?,
                 descripcion = ?,
                 cliente_id = ?
             WHERE id = ?
         `;
         const paramsUpdateGeneral = [
+            descripcionCorta || (descripcion || detallesAdicionales ? String((descripcion || detallesAdicionales)).substring(0,200) : null) ,
+            descripcionLarga || null,
             descripcion || detallesAdicionales || '',
             clienteId,
             id

@@ -62,12 +62,12 @@ INSERT INTO clientes (id, nombre, telefono, email, creado_en) VALUES
 (11, 'Rock Legends', NULL, NULL, NOW());
 
 -- Primero insertar solicitudes padre para las bandas (id_solicitud)
-INSERT INTO solicitudes (id, categoria, fecha_creacion, estado, es_publico, descripcion, cliente_id) VALUES
-(7, 'BANDAS', NOW(), 'Confirmado', 1, 'Gran noche de rock nacional con Tributo a La Renga', 7),
-(8, 'BANDAS', NOW(), 'Confirmado', 1, 'Noche de jazz con los mejores músicos de la zona sur', 8),
-(9, 'BANDAS', NOW(), 'Confirmado', 1, 'La mejor cumbia para cerrar el año bailando!', 9),
-(10, 'BANDAS', NOW(), 'Pendiente', 1, 'Noche de rock con bandas emergentes', 10),
-(11, 'BANDAS', NOW(), 'Confirmado', 1, 'Tributo a las mejores bandas de rock', 11);
+INSERT INTO solicitudes (id, categoria, fecha_creacion, estado, es_publico, descripcion_corta, descripcion_larga, descripcion, cliente_id) VALUES
+(7, 'BANDAS', NOW(), 'Confirmado', 1, 'Gran noche de rock nacional con Tributo a La Renga', NULL, 'Gran noche de rock nacional con Tributo a La Renga', 7),
+(8, 'BANDAS', NOW(), 'Confirmado', 1, 'Noche de jazz con los mejores músicos de la zona sur', NULL, 'Noche de jazz con los mejores músicos de la zona sur', 8),
+(9, 'BANDAS', NOW(), 'Confirmado', 1, 'La mejor cumbia para cerrar el año bailando!', NULL, 'La mejor cumbia para cerrar el año bailando!', 9),
+(10, 'BANDAS', NOW(), 'Pendiente', 1, 'Noche de rock con bandas emergentes', NULL, 'Noche de rock con bandas emergentes', 10),
+(11, 'BANDAS', NOW(), 'Confirmado', 1, 'Tributo a las mejores bandas de rock', NULL, 'Tributo a las mejores bandas de rock', 11);
 
 INSERT INTO solicitudes_bandas (id_solicitud, tipo_de_evento, fecha_hora, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, descripcion, estado) VALUES
 (7, 'FECHA_BANDAS', NOW(), '2025-12-20', '21:00', '5 horas', '150', 3000.00, 'Gran noche de rock nacional con Tributo a La Renga', 'Confirmado'),
@@ -84,7 +84,7 @@ INSERT INTO eventos_confirmados (tipo_evento, id_solicitud, tabla_origen, nombre
 ('BANDA', 9, 'fechas_bandas_confirmadas', 'Cumbia Power', 'La mejor cumbia para cerrar el año bailando!', '2025-12-28', '22:00:00', NULL, 'Cumbia', 2000.00, 3000.00, 180, 1, 1);
 
 -- Lineup de eventos
-INSERT INTO eventos_lineup (id_evento, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, hora_inicio, duracion_minutos, estado) VALUES
+INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, hora_inicio, duracion_minutos, estado) VALUES
 (1, 2, 'Pateando Bares', 0, 0, 0, '21:30:00', 45, 'confirmada'),
 (1, 3, 'Las Mentas', 1, 0, 0, '22:30:00', 50, 'confirmada'),
 (1, 1, 'Reite', 2, 1, 1, '23:45:00', 90, 'confirmada'),
@@ -95,11 +95,11 @@ INSERT INTO eventos_lineup (id_evento, id_banda, nombre_banda, orden_show, es_pr
 -- Removida columna fecha_hora (no existe en solicitudes_alquiler) - usamos cliente_id en el padre
 -- ---------------------------------------------------------------------------
 -- Primero insertar en solicitudes padre (ya existen clientes en la sección anterior)
-INSERT INTO solicitudes (id, categoria, fecha_creacion, estado, es_publico, descripcion, cliente_id) VALUES
-(1, 'ALQUILER', NOW(), 'Solicitado', 0, 'Cumpleaños de 7 años temático de Minecraft', 1),
-(2, 'ALQUILER', NOW(), 'Solicitado', 0, 'Fiesta de 15 para mi hija Valentina', 2),
-(3, 'ALQUILER', NOW(), 'Solicitado', 0, 'Almuerzo familiar de fin de año', 3),
-(4, 'ALQUILER', NOW(), 'Solicitado', 0, 'Asado familiar de fin de año', 4);
+INSERT INTO solicitudes (id, categoria, fecha_creacion, estado, es_publico, descripcion_corta, descripcion_larga, descripcion, cliente_id) VALUES
+(1, 'ALQUILER', NOW(), 'Solicitado', 0, 'Cumpleaños de 7 años temático de Minecraft', NULL, 'Cumpleaños de 7 años temático de Minecraft', 1),
+(2, 'ALQUILER', NOW(), 'Solicitado', 0, 'Fiesta de 15 para mi hija Valentina', NULL, 'Fiesta de 15 para mi hija Valentina', 2),
+(3, 'ALQUILER', NOW(), 'Solicitado', 0, 'Almuerzo familiar de fin de año', NULL, 'Almuerzo familiar de fin de año', 3),
+(4, 'ALQUILER', NOW(), 'Solicitado', 0, 'Asado familiar de fin de año', NULL, 'Asado familiar de fin de año', 4);
 
 -- Luego insertar en solicitudes_alquiler (sin columnas de contacto)
 INSERT INTO solicitudes_alquiler (id_solicitud, tipo_de_evento, tipo_servicio, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, descripcion, estado) VALUES
@@ -118,15 +118,15 @@ INSERT INTO usuarios (email, password_hash, rol, activo) VALUES
 -- NUEVAS SOLICITUDES PÚBLICAS PARA PRUEBAS
 -- ---------------------------------------------------------------------------
 -- Nueva solicitud de taller público confirmada (cliente ya creado en bloque de clientes)
-INSERT INTO solicitudes (id, categoria, fecha_creacion, estado, es_publico, descripcion, cliente_id) VALUES
-(5, 'TALLERES', NOW(), 'Confirmado', 1, 'Taller de Fotografía', 5);
+INSERT INTO solicitudes (id, categoria, fecha_creacion, estado, es_publico, descripcion_corta, descripcion_larga, descripcion, cliente_id) VALUES
+(5, 'TALLERES', NOW(), 'Confirmado', 1, 'Taller de Fotografía', NULL, 'Taller de Fotografía', 5);
 
 INSERT INTO solicitudes_talleres (id_solicitud, nombre_taller, fecha_evento, hora_evento, duracion, precio) VALUES
 (5, 'Taller de Fotografía', '2026-04-15', '18:00', '2 horas', 1500.00);
 
 -- Nueva solicitud de servicio público confirmada (cliente ya creado en bloque de clientes)
-INSERT INTO solicitudes (id, categoria, fecha_creacion, estado, es_publico, descripcion, cliente_id) VALUES
-(6, 'SERVICIOS', NOW(), 'Confirmado', 1, 'Servicio de Catering', 6);
+INSERT INTO solicitudes (id, categoria, fecha_creacion, estado, es_publico, descripcion_corta, descripcion_larga, descripcion, cliente_id) VALUES
+(6, 'SERVICIOS', NOW(), 'Confirmado', 1, 'Servicio de Catering', NULL, 'Servicio de Catering', 6);
 
 INSERT INTO solicitudes_servicios (id_solicitud, tipo_servicio, fecha_evento, hora_evento, duracion, precio) VALUES
 (6, 'Servicio de Catering', '2026-04-20', '12:00', '5 horas', 5000.00);

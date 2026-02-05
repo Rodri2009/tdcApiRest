@@ -13,7 +13,7 @@ const getSolicitudes = async (req, res) => {
         const sql = `
             SELECT
                 CONCAT('alq_', s.id_solicitud) as id,
-                s.fecha_evento as fechaSolicitud,
+                COALESCE(sol.fecha_creacion, s.fecha_evento) as fechaSolicitud,
                 COALESCE(c.nombre, '') as nombreCliente,
                 s.tipo_de_evento as tipoEventoId,
                 CASE
@@ -34,14 +34,16 @@ const getSolicitudes = async (req, res) => {
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo,
-                COALESCE(sol.es_publico, 0) as es_publico
+                COALESCE(sol.es_publico, 0) as es_publico,
+                COALESCE(sol.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_alquiler s
             LEFT JOIN solicitudes sol ON sol.id = s.id_solicitud
             LEFT JOIN clientes c ON sol.cliente_id = c.id
+            LEFT JOIN opciones_tipos ot ON (s.tipo_de_evento = ot.id_tipo_evento OR s.tipo_servicio = ot.id_tipo_evento)
             UNION ALL
             SELECT
                 CONCAT('bnd_', s.id_solicitud) as id,
-                s.fecha_hora as fechaSolicitud,
+                COALESCE(sol2.fecha_creacion, s.fecha_hora) as fechaSolicitud,
                 COALESCE(c2.nombre, '') as nombreCliente,
                 s.tipo_de_evento as tipoEventoId,
                 'BANDA' as tipoEvento,
@@ -54,17 +56,20 @@ const getSolicitudes = async (req, res) => {
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo,
-                COALESCE(sol2.es_publico, 0) as es_publico
+                COALESCE(sol2.es_publico, 0) as es_publico,
+                COALESCE(sol2.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_bandas s
             LEFT JOIN solicitudes sol2 ON sol2.id = s.id_solicitud
             LEFT JOIN clientes c2 ON sol2.cliente_id = c2.id
+            LEFT JOIN opciones_tipos ot2 ON s.tipo_de_evento = ot2.id_tipo_evento
             UNION ALL
             SELECT
                 CONCAT('ev_', e.id) as id,
                 e.confirmado_en as fechaSolicitud,
                 e.nombre_cliente as nombreCliente,
+                COALESCE(ote.categoria, e.tipo_evento) as categoria,
+                COALESCE(ote.nombre_para_mostrar, e.tipo_evento) as tipoNombre,
                 e.tipo_evento as tipoEventoId,
-                e.tipo_evento as tipoEvento,
                 e.genero_musical as subtipo,
                 DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Cancelado' END as estado,
@@ -74,15 +79,18 @@ const getSolicitudes = async (req, res) => {
                 TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
                 e.nombre_evento as nombreBanda,
                 e.cantidad_personas as cantidadAforo,
-                e.es_publico as es_publico
+                e.es_publico as es_publico,
+                SUBSTRING(e.descripcion,1,200) as descripcionCorta
             FROM eventos_confirmados e
+            LEFT JOIN opciones_tipos ote ON e.tipo_evento = ote.id_tipo_evento
             UNION ALL
             SELECT
                 CONCAT('srv_', ss.id_solicitud) as id,
-                sol3.fecha_creacion as fechaSolicitud,
+                COALESCE(sol3.fecha_creacion, ss.fecha_evento) as fechaSolicitud,
                 COALESCE(c3.nombre, '') as nombreCliente,
+                COALESCE(ot3.categoria, 'SERVICIO') as categoria,
+                COALESCE(ot3.nombre_para_mostrar, ss.tipo_servicio) as tipoNombre,
                 'SERVICIO' as tipoEventoId,
-                'SERVICIO' as tipoEvento,
                 NULL as subtipo,
                 DATE_FORMAT(ss.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 sol3.estado,
@@ -92,17 +100,20 @@ const getSolicitudes = async (req, res) => {
                 ss.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 NULL as cantidadAforo,
-                COALESCE(sol3.es_publico, 0) as es_publico
+                COALESCE(sol3.es_publico, 0) as es_publico,
+                COALESCE(sol3.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_servicios ss
             JOIN solicitudes sol3 ON ss.id_solicitud = sol3.id
             LEFT JOIN clientes c3 ON sol3.cliente_id = c3.id
+            LEFT JOIN opciones_tipos ot3 ON ss.tipo_servicio = ot3.id_tipo_evento
             UNION ALL
             SELECT
                 CONCAT('tll_', st.id_solicitud) as id,
-                sol4.fecha_creacion as fechaSolicitud,
+                COALESCE(sol4.fecha_creacion, st.fecha_evento) as fechaSolicitud,
                 COALESCE(c4.nombre, '') as nombreCliente,
+                COALESCE(ot4.categoria, 'TALLER') as categoria,
+                COALESCE(ot4.nombre_para_mostrar, st.nombre_taller) as tipoNombre,
                 'TALLERES' as tipoEventoId,
-                'TALLERES' as tipoEvento,
                 NULL as subtipo,
                 DATE_FORMAT(st.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 sol4.estado,
@@ -112,10 +123,12 @@ const getSolicitudes = async (req, res) => {
                 st.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 NULL as cantidadAforo,
-                COALESCE(sol4.es_publico, 0) as es_publico
+                COALESCE(sol4.es_publico, 0) as es_publico,
+                COALESCE(sol4.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_talleres st
             JOIN solicitudes sol4 ON st.id_solicitud = sol4.id
             LEFT JOIN clientes c4 ON sol4.cliente_id = c4.id
+            LEFT JOIN opciones_tipos ot4 ON st.nombre_taller = ot4.nombre_para_mostrar
             ORDER BY fechaEvento DESC, fechaSolicitud DESC;
         `;
 
