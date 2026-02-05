@@ -46,8 +46,8 @@ JOIN eventos_confirmados e ON e.nombre_evento = f.nombre_banda AND e.fecha_event
 
 -- 4) Actualizar ids en tablas dependientes
 UPDATE eventos_lineup el
-JOIN mapping_fechas_eventos m ON el.id_evento = m.old_id
-SET el.id_evento = m.new_id;
+JOIN mapping_fechas_eventos m ON el.id_evento_confirmado = m.old_id
+SET el.id_evento_confirmado = m.new_id; 
 
 UPDATE eventos_personal ep
 JOIN mapping_fechas_eventos m ON ep.id_evento = m.old_id
@@ -75,7 +75,7 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- 6) Añadir nuevas FKs apuntando a eventos_confirmados
-ALTER TABLE eventos_lineup ADD CONSTRAINT fk_eventos_lineup_evento FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE;
+ALTER TABLE eventos_lineup ADD CONSTRAINT fk_eventos_lineup_evento FOREIGN KEY (id_evento_confirmado) REFERENCES eventos_confirmados(id) ON DELETE CASCADE;
 ALTER TABLE eventos_personal ADD CONSTRAINT fk_eventos_personal_evento FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE;
 ALTER TABLE eventos_bandas_invitadas ADD CONSTRAINT fk_eventos_bandas_invitadas_evento FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE;
 ALTER TABLE tickets ADD CONSTRAINT fk_tickets_evento FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE;

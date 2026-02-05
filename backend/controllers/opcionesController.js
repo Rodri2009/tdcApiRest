@@ -15,7 +15,7 @@ const getTiposDeEvento = async (req, res) => {
         // Permitimos filtrar por categoría: ?categoria=ALQUILER_SALON
         const categoria = req.query.categoria;
         let sql = `SELECT 
-            id_evento as id, 
+            id_tipo_evento as id, 
             nombre_para_mostrar as nombreParaMostrar, 
             descripcion, 
             es_publico as esPublico, 
@@ -83,7 +83,7 @@ const getTarifas = async (req, res) => {
         // El precio final = precio_por_hora × duracion_horas
         const rows = await conn.query(`
             SELECT 
-                pv.id_evento as tipo, 
+                pv.id_tipo_evento as tipo, 
                 pv.cantidad_min as cantidadMin,
                 pv.cantidad_max as cantidadMax,
                 pv.precio_por_hora as precioPorHora,
@@ -92,7 +92,7 @@ const getTarifas = async (req, res) => {
             FROM precios_vigencia pv
             WHERE (pv.vigente_hasta IS NULL OR pv.vigente_hasta >= CURDATE())
               AND pv.vigente_desde <= CURDATE()
-            ORDER BY pv.id_evento, pv.cantidad_min
+            ORDER BY pv.id_tipo_evento, pv.cantidad_min
         `);
         res.status(200).json(rows);
     } catch (err) {
@@ -110,20 +110,20 @@ const getOpcionesCantidad = async (req, res) => {
         conn = await pool.getConnection();
         const rows = await conn.query(`
             SELECT DISTINCT
-                id_evento,
+                id_tipo_evento as id_tipo_evento,
                 cantidad_min,
                 cantidad_max
             FROM precios_vigencia
             WHERE (vigente_hasta IS NULL OR vigente_hasta >= CURDATE())
               AND vigente_desde <= CURDATE()
-            ORDER BY id_evento, cantidad_min
+            ORDER BY id_tipo_evento, cantidad_min
         `);
         // Agrupar por tipo de evento
         const cantidadesObject = rows.reduce((acc, row) => {
-            if (!acc[row.id_evento]) {
-                acc[row.id_evento] = [];
+            if (!acc[row.id_tipo_evento]) {
+                acc[row.id_tipo_evento] = [];
             }
-            acc[row.id_evento].push({
+            acc[row.id_tipo_evento].push({
                 min: row.cantidad_min,
                 max: row.cantidad_max,
                 label: `${row.cantidad_min} a ${row.cantidad_max} personas`
@@ -147,10 +147,10 @@ const getOpcionesDuracion = async (req, res) => {
         const rows = await conn.query("SELECT * FROM `opciones_duracion`;");
         // El código original esperaba un objeto anidado, lo reconstruimos
         const duracionesObject = rows.reduce((acc, row) => {
-            if (!acc[row.id_evento]) {
-                acc[row.id_evento] = [];
+            if (!acc[row.id_tipo_evento]) {
+                acc[row.id_tipo_evento] = [];
             }
-            acc[row.id_evento].push(row.duracion_horas);
+            acc[row.id_tipo_evento].push(row.duracion_horas);
             return acc;
         }, {});
         res.status(200).json(duracionesObject);
@@ -167,7 +167,7 @@ const getOpcionesHorarios = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query(`
-            SELECT id_evento as tipo, dia_semana as tipoDia, hora_inicio as hora, hora_fin
+            SELECT id_tipo_evento as tipo, dia_semana as tipoDia, hora_inicio as hora, hora_fin
             FROM configuracion_horarios
                 `);
         // Reconstruimos el objeto anidado que esperaba el frontend

@@ -11,7 +11,7 @@ SET CHARACTER SET utf8mb4;
 -- TIPOS DE EVENTO (opciones_tipos)
 -- Categorías: ALQUILER_SALON, FECHA_BANDAS, TALLERES_ACTIVIDADES, SERVICIOS
 -- ---------------------------------------------------------------------------
-INSERT INTO opciones_tipos (id_evento, nombre_para_mostrar, descripcion, categoria, es_publico, monto_sena, deposito) VALUES
+INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico, monto_sena, deposito) VALUES
 -- === ALQUILER_SALON ===
 ('INFANTILES', 'INFANTILES: Cumpleaños hasta 12 años (SERVICIO COMPLETO)', '🎈 **CUMPLEAÑOS INFANTILES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina completa con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool y Jenga gigante\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Baño equipado\n• Música y juego de luces\n• Cancha de fútbol (niños hasta 12 años)\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Bebidas, alimentos, animación, vajilla de cristal', 'ALQUILER_SALON', 1, 50000, NULL),
 ('INFORMALES', 'INFORMALES: Juntadas, parrilladas (SERVICIO ECONÓMICO)', '🎉 **SERVICIO ECONÓMICO**\n\n✅ **INCLUYE:**\n• Encargada/o general y control de puerta\n• Mesas y sillas\n• Uso de parrilla\n• Uso de bachas, mesadas, barra\n• Heladera y freezer\n• Baño equipado\n• Equipo de música\n• Metegoles, Ping Pong, Pool\n\n❌ **NO INCLUYE:** Horno, hornallas, cocinera, mantelería, vajilla', 'ALQUILER_SALON', 1, 50000, 80000),
@@ -49,7 +49,7 @@ INSERT INTO configuracion (Clave, Valor) VALUES
 -- ---------------------------------------------------------------------------
 -- PRECIOS VIGENCIA (precio_por_hora × duración = precio total)
 -- ---------------------------------------------------------------------------
-INSERT INTO precios_vigencia (id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde) VALUES
+INSERT INTO precios_vigencia (id_tipo_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde) VALUES
 -- INFANTILES
 ('INFANTILES', 1, 40, 50000, '2025-08-01'),
 ('INFANTILES', 41, 50, 55000, '2025-08-01'),
@@ -87,7 +87,7 @@ INSERT INTO precios_vigencia (id_evento, cantidad_min, cantidad_max, precio_por_
 -- ---------------------------------------------------------------------------
 -- DURACIONES POR TIPO
 -- ---------------------------------------------------------------------------
-INSERT INTO opciones_duracion (id_evento, duracion_horas, descripcion) VALUES
+INSERT INTO opciones_duracion (id_tipo_evento, duracion_horas, descripcion) VALUES
 -- INFANTILES: 3, 4, 5 horas
 ('INFANTILES', 3, '3 horas'),
 ('INFANTILES', 4, '4 horas'),
@@ -120,7 +120,7 @@ INSERT INTO opciones_duracion (id_evento, duracion_horas, descripcion) VALUES
 -- ---------------------------------------------------------------------------
 -- HORARIOS POR TIPO (dia_semana = 'todos' aplica a cualquier día)
 -- ---------------------------------------------------------------------------
-INSERT INTO configuracion_horarios (id_evento, dia_semana, hora_inicio, hora_fin) VALUES
+INSERT INTO configuracion_horarios (id_tipo_evento, dia_semana, hora_inicio, hora_fin) VALUES
 -- INFANTILES (todos los días)
 ('INFANTILES', 'todos', '12:00:00', '23:00:00'),
 ('INFANTILES', 'todos', '13:00:00', '23:00:00'),
@@ -197,7 +197,7 @@ INSERT INTO personal_disponible (id_personal, nombre_completo, rol, celular, act
 -- ---------------------------------------------------------------------------
 -- ROLES REQUERIDOS POR EVENTO (según cantidad de personas)
 -- ---------------------------------------------------------------------------
-INSERT INTO roles_por_evento (id_evento, rol_requerido, cantidad, min_personas, max_personas) VALUES
+INSERT INTO roles_por_evento (id_tipo_evento, rol_requerido, cantidad, min_personas, max_personas) VALUES
 -- INFANTILES
 ('INFANTILES', 'Encargada', 1, 0, 120),
 ('INFANTILES', 'Cocinera', 1, 0, 120),

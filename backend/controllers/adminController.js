@@ -15,16 +15,9 @@ const getSolicitudes = async (req, res) => {
                 CONCAT('alq_', s.id_solicitud) as id,
                 COALESCE(sol.fecha_creacion, s.fecha_evento) as fechaSolicitud,
                 COALESCE(c.nombre, '') as nombreCliente,
+                COALESCE(ot.categoria, CASE WHEN s.tipo_de_evento IN ('TALLERES','SERVICIO') THEN s.tipo_de_evento ELSE 'ALQUILER' END) as categoria,
+                COALESCE(ot.nombre_para_mostrar, s.tipo_de_evento) as tipoNombre,
                 s.tipo_de_evento as tipoEventoId,
-                CASE
-                    WHEN s.tipo_de_evento IN ('ALQUILER_SALON', 'TALLERES', 'SERVICIO') THEN
-                        CASE s.tipo_de_evento
-                            WHEN 'TALLERES' THEN 'TALLER'
-                            WHEN 'SERVICIO' THEN 'SERVICIO'
-                            ELSE 'ALQUILER_SALON'
-                        END
-                    ELSE s.tipo_de_evento
-                END as tipoEvento,
                 NULL as subtipo,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 s.estado,
@@ -32,8 +25,6 @@ const getSolicitudes = async (req, res) => {
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
-                NULL as nombreBanda,
-                s.cantidad_de_personas as cantidadAforo,
                 COALESCE(sol.es_publico, 0) as es_publico,
                 COALESCE(sol.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_alquiler s
@@ -45,8 +36,9 @@ const getSolicitudes = async (req, res) => {
                 CONCAT('bnd_', s.id_solicitud) as id,
                 COALESCE(sol2.fecha_creacion, s.fecha_hora) as fechaSolicitud,
                 COALESCE(c2.nombre, '') as nombreCliente,
+                COALESCE(ot2.categoria, 'BANDA') as categoria,
+                COALESCE(ot2.nombre_para_mostrar, s.tipo_de_evento) as tipoNombre,
                 s.tipo_de_evento as tipoEventoId,
-                'BANDA' as tipoEvento,
                 NULL as subtipo,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 s.estado,
@@ -54,8 +46,6 @@ const getSolicitudes = async (req, res) => {
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
-                NULL as nombreBanda,
-                s.cantidad_de_personas as cantidadAforo,
                 COALESCE(sol2.es_publico, 0) as es_publico,
                 COALESCE(sol2.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_bandas s
@@ -77,8 +67,6 @@ const getSolicitudes = async (req, res) => {
                 0 AS tienePersonalAsignado,
                 'evento' as origen,
                 TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
-                e.nombre_evento as nombreBanda,
-                e.cantidad_personas as cantidadAforo,
                 e.es_publico as es_publico,
                 SUBSTRING(e.descripcion,1,200) as descripcionCorta
             FROM eventos_confirmados e
@@ -98,8 +86,6 @@ const getSolicitudes = async (req, res) => {
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 ss.hora_evento as horaInicio,
-                NULL as nombreBanda,
-                NULL as cantidadAforo,
                 COALESCE(sol3.es_publico, 0) as es_publico,
                 COALESCE(sol3.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_servicios ss
@@ -121,8 +107,6 @@ const getSolicitudes = async (req, res) => {
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 st.hora_evento as horaInicio,
-                NULL as nombreBanda,
-                NULL as cantidadAforo,
                 COALESCE(sol4.es_publico, 0) as es_publico,
                 COALESCE(sol4.descripcion_corta, '') as descripcionCorta
             FROM solicitudes_talleres st

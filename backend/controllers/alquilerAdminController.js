@@ -173,18 +173,18 @@ const getDuraciones = async (req, res) => {
         let query = `
             SELECT 
                 d.id,
-                d.id_evento,
+                d.id_tipo_evento as id_evento,
                 t.nombre_para_mostrar as tipo_evento,
                 d.duracion_horas as horas,
                 d.descripcion,
                 1 as activo
             FROM opciones_duracion d
-            LEFT JOIN opciones_tipos t ON d.id_evento = t.id_evento
+            LEFT JOIN opciones_tipos t ON d.id_tipo_evento = t.id_tipo_evento
         `;
         const params = [];
 
         if (id_evento) {
-            query += ' WHERE d.id_evento = ?';
+            query += ' WHERE d.id_tipo_evento = ?';
             params.push(id_evento);
         }
 
@@ -314,7 +314,7 @@ const getPrecios = async (req, res) => {
         let query = `
             SELECT 
                 p.id,
-                p.id_evento,
+                p.id_tipo_evento as id_evento,
                 t.nombre_para_mostrar as tipo_evento,
                 p.cantidad_min,
                 p.cantidad_max,
@@ -332,7 +332,7 @@ const getPrecios = async (req, res) => {
         const conditions = [];
 
         if (id_evento) {
-            conditions.push('p.id_evento = ?');
+            conditions.push('p.id_tipo_evento = ?');
             params.push(id_evento);
         }
 
@@ -344,7 +344,7 @@ const getPrecios = async (req, res) => {
             query += ' WHERE ' + conditions.join(' AND ');
         }
 
-        query += ' ORDER BY p.id_evento, p.cantidad_min, p.vigente_desde DESC';
+        query += ' ORDER BY p.id_tipo_evento, p.cantidad_min, p.vigente_desde DESC';
 
         const precios = await pool.query(query, params);
         res.json(serializeBigInt(precios));

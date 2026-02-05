@@ -13,6 +13,9 @@ Normalizar la estructura de datos para unificar el manejo de eventos confirmados
 
 > Recomendación: trabajaremos por PRs pequeños y testeables; para la próxima sesión presencial propongo empezar por *config_alquiler* y *config_bandas*.
 
+
+
+
 ## 1. Cambios en la Base de Datos
 
 ### 1.1 Tablas de Solicitudes (Sin Cambios Estructurales)
