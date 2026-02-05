@@ -78,6 +78,31 @@
             padding: 24px 16px;
         }
 
+        /* Sidebar with quick links to confirmed lists */
+        .admin-side-actions {
+            position: fixed;
+            right: 16px;
+            top: 160px;
+            width: 260px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 995;
+        }
+
+        .admin-side-actions .card.side {
+            padding: 12px 16px;
+            text-align: left;
+            border-radius: 10px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.25));
+            border: 1px solid rgba(240,171,252,0.06);
+        }
+
+        /* Make sure main content doesn't overlap the sidebar on narrow viewports */
+        @media (max-width: 1100px) {
+            .admin-side-actions { display: none; }
+        }
+
         /* Secciones del admin */
         .admin-section {
             margin-top: 40px;
@@ -145,6 +170,26 @@
             </div>
         </section>
 
+        <!-- Quick access sidebar for confirmed lists -->
+        <div class="admin-side-actions" aria-hidden="false">
+            <a class="card side" href="/config_alquiler.html#alquileres">
+                <h3>📅 Alquileres Confirmados</h3>
+                <p>Ir a lista de alquileres confirmados</p>
+            </a>
+            <a class="card side" href="/config_bandas.html#eventos">
+                <h3>🎫 Shows Confirmados</h3>
+                <p>Ir a shows confirmados</p>
+            </a>
+            <a class="card side" href="/config_talleres.html#talleres">
+                <h3>📚 Talleres / Actividades Confirmados</h3>
+                <p>Ir a talleres/actividades confirmados</p>
+            </a>
+            <a class="card side" href="/config_servicios.html#servicios">
+                <h3>🩺 Servicios Confirmados</h3>
+                <p>Ir a servicios confirmados</p>
+            </a>
+        </div>
+
         <!-- Sección Alquiler del Salón -->
         <section class="admin-section">
             <h2 class="section-title"><i class="fas fa-building"></i> Alquiler del Salón</h2>
@@ -152,10 +197,6 @@
                 <a class="card" href="/config_alquiler.html#tipos">
                     <h3>📋 Tipos de Alquiler</h3>
                     <p>Configurar tipos de eventos y duración</p>
-                </a>
-                <a class="card" href="/config_alquiler.html#alquileres">
-                    <h3>📅 Alquileres Confirmados</h3>
-                    <p>Eventos de alquiler confirmados</p>
                 </a>
                 <a class="card" href="/config_alquiler.html#precios">
                     <h3>💰 Precios y Vigencia</h3>
@@ -176,10 +217,6 @@
                     <h3>🎸 Bandas / Artistas</h3>
                     <p>Catálogo de bandas registradas</p>
                 </a>
-                <a class="card" href="/config_bandas.html#eventos">
-                    <h3>📝 Fechas / Eventos</h3>
-                    <p>Gestionar solicitudes de bandas</p>
-                </a>
                 <a class="card" href="/config_bandas.html#instrumentos">
                     <h3>🎹 Instrumentos</h3>
                     <p>Catálogo de instrumentos</p>
@@ -194,10 +231,6 @@
                 <a class="card" href="/config_talleres.html#tipos">
                     <h3>📋 Tipos de Taller</h3>
                     <p>Configurar tipos de talleres</p>
-                </a>
-                <a class="card" href="/config_talleres.html#talleres">
-                    <h3>📚 Talleres / Actividades</h3>
-                    <p>Gestionar cursos y actividades</p>
                 </a>
                 <a class="card" href="/config_talleres.html#talleristas">
                     <h3>👨‍🏫 Talleristas / Profesores</h3>
@@ -218,12 +251,8 @@
                     <h3>Tipos de Servicio</h3>
                     <p>Catálogo de servicios ofrecidos</p>
                 </a>
-                <a class="card" href="/config_servicios.html#servicios">
-                    <h3>� Servicios Confirmados</h3>
-                    <p>Turnos de servicios confirmados</p>
-                </a>
                 <a class="card" href="/config_servicios.html#profesionales">
-                    <h3>�‍⚕️ Profesionales</h3>
+                    <h3>🩺 Profesionales</h3>
                     <p>Gestionar profesionales</p>
                 </a>
                 <a class="card" href="/config_servicios.html#precios">

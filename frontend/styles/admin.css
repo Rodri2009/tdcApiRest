@@ -476,6 +476,11 @@ textarea {
     flex-wrap: wrap;
 }
 
+/* Variant to align tabs to the right for confirmed-lists pages */
+.tabs.right {
+    justify-content: flex-end;
+}
+
 .tab {
     padding: 12px 20px;
     background: transparent;
