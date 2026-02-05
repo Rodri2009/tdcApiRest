@@ -264,7 +264,7 @@ const getSolicitudPorId = async (req, res) => {
                     sa.tipo_de_evento as tipoEvento,
                     sa.es_publico as esPublico
                 FROM solicitudes_alquiler sa
-                WHERE sa.id = ?
+                WHERE sa.id_solicitud = ?
             `;
 
             const [alquiler] = await conn.query(sql, [alquilerId]);
@@ -360,7 +360,7 @@ const getSolicitudPorId = async (req, res) => {
                     0 as esPublico
                 FROM solicitudes_servicios ss
                 JOIN solicitudes sol ON ss.id = sol.id
-                WHERE ss.id = ?
+                WHERE ss.id_solicitud = ?
             `;
 
             const [servicio] = await conn.query(sql, [servicioId]);
@@ -402,7 +402,7 @@ const getSolicitudPorId = async (req, res) => {
                     0 as esPublico
                 FROM solicitudes_talleres st
                 JOIN solicitudes sol ON st.id = sol.id
-                WHERE st.id = ?
+                WHERE st.id_solicitud = ?
             `;
 
             const [taller] = await conn.query(sql, [tallerId]);
@@ -485,7 +485,7 @@ const finalizarSolicitud = async (req, res) => {
 
         // Obtener los datos completos para los emails
         const sqlSelect = `
-            SELECT s.*, sa.* FROM solicitudes s LEFT JOIN solicitudes_alquiler sa ON s.id = sa.id WHERE s.id = ?
+            SELECT s.*, sa.* FROM solicitudes s LEFT JOIN solicitudes_alquiler sa ON s.id = sa.id_solicitud WHERE s.id = ?
         `;
         const [solicitudCompleta] = await conn.query(sqlSelect, [id]);
 
@@ -869,7 +869,7 @@ const updateVisibilidad = async (req, res) => {
         if (String(id).startsWith('alq_')) {
             idValue = parseInt(String(id).substring(4), 10);
             tabla = 'solicitudes_alquiler';
-            idColumnName = 'id';
+            idColumnName = 'id_solicitud';
             publicColumn = 'es_publico';
         } else if (String(id).startsWith('bnd_')) {
             idValue = parseInt(String(id).substring(4), 10);
@@ -879,13 +879,13 @@ const updateVisibilidad = async (req, res) => {
         } else if (String(id).startsWith('srv_')) {
             idValue = parseInt(String(id).substring(4), 10);
             tabla = 'solicitudes_servicios';
-            idColumnName = 'id';
-            // Servicios usan es_publico_cuando_confirmada en la tabla de solicitudes
+            idColumnName = 'id_solicitud';
+            // Servicios usan es_publico_cuando_confirmada en la tabla padre `solicitudes`
             publicColumn = 'es_publico_cuando_confirmada';
         } else if (String(id).startsWith('tll_')) {
             idValue = parseInt(String(id).substring(4), 10);
             tabla = 'solicitudes_talleres';
-            idColumnName = 'id';
+            idColumnName = 'id_solicitud';
             publicColumn = 'es_publico_cuando_confirmada';
         } else if (String(id).startsWith('ev_')) {
             // Evento confirmado (eventos_confirmados)
@@ -896,10 +896,10 @@ const updateVisibilidad = async (req, res) => {
         } else {
             // Intentar detectar en las tablas con ID numérico
             // Primero alquiler
-            let [found] = await conn.query('SELECT id FROM solicitudes_alquiler WHERE id = ?', [id]);
+            let [found] = await conn.query('SELECT id_solicitud FROM solicitudes_alquiler WHERE id_solicitud = ?', [id]);
             if (found) {
                 tabla = 'solicitudes_alquiler';
-                idColumnName = 'id';
+                idColumnName = 'id_solicitud';
                 publicColumn = 'es_publico';
                 idValue = id;
             } else {

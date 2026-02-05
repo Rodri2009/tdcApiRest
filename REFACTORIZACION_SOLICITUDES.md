@@ -252,6 +252,28 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 
 ## 7. Próximos Pasos Opcionales
 
+---
+
+## 8. Normalización adicional (Feb 05 2026)
+Se aplicaron cambios adicionales para simplificar y normalizar las tablas de solicitudes y visibilidad pública:
+
+1) Se añadió el campo `es_publico` en la tabla `solicitudes` (tabla padre). Este campo representa la visibilidad pública por defecto de la solicitud confirmada. Para `ALQUILER_SALON` por política se mantiene `es_publico = 0` por defecto.
+
+2) Se homogenizó el nombre de PK en las tablas hijas: **todos los hijos usan ahora `id_solicitud`** como primary key (antes algunas usaban `id`).
+
+3) Se eliminó el campo `es_publico` de las tablas hijas (`solicitudes_bandas`, `solicitudes_servicios`, `solicitudes_talleres`, `solicitudes_alquiler`) ya que la visibilidad se centraliza en la tabla padre `solicitudes` y en `eventos_confirmados`.
+
+4) Se actualizaron los queries del backend para usar `id_solicitud` en todas las tablas hijas, y leer la visibilidad desde `solicitudes.es_publico` (o desde `es_publico_cuando_confirmada` cuando aplica la política de visible al confirmar).
+
+5) Se añadió la migración `database/migrations/20260206_normalize_solicitudes.sql` para aplicar los cambios en instalaciones existentes (añadir columna `es_publico`, renombrar PKs de hijos a `id_solicitud`, eliminar columnas obsoletas y mantener integridad referencial).
+
+6) Se ejecutó un reset de la BD para verificar que los scripts de inicialización (`03_test_data.sql`) funcionen con las nuevas definiciones; se actualizaron los datos de prueba en `03_test_data.sql` para reflejar los nuevos nombres de columna y el uso de `es_publico` en la tabla padre.
+
+---
+
+> Nota: Estos cambios se aplicaron para facilitar consultas transversales y reducir duplicación. Se dejó una migración atómica y puntos de recuperación (push) en la rama `main` antes de aplicar cambios destructivos.
+
+
 1. **Endpoint para Eventos Públicos**: Crear `GET /api/eventos/publicos` que devuelva solo `es_publico=1 AND activo=1`
 2. **Deprecación de `fechas_bandas_confirmadas`**: Una vez validado, se puede eliminar o mantener como vista materializada
 3. **Notificaciones**: Agregar lógica para notificar clientes cuando su solicitud se confirma

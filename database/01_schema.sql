@@ -158,17 +158,19 @@ CREATE TABLE IF NOT EXISTS solicitudes (
     categoria ENUM('ALQUILER', 'BANDA', 'BANDAS', 'SERVICIOS', 'TALLERES') NOT NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado VARCHAR(50) DEFAULT 'Solicitado',
+    es_publico TINYINT(1) DEFAULT 0 COMMENT 'Visibilidad pública por defecto para la solicitud (padre)',
     descripcion TEXT,
     nombre_solicitante VARCHAR(255),
     telefono_solicitante VARCHAR(50),
     email_solicitante VARCHAR(255),
     INDEX idx_categoria (categoria),
-    INDEX idx_estado (estado)
+    INDEX idx_estado (estado),
+    INDEX idx_es_publico (es_publico)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Tabla específica para solicitudes de alquiler
 CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
-    id INT PRIMARY KEY,
+    id_solicitud INT PRIMARY KEY,
     tipo_servicio VARCHAR(255),
     fecha_evento DATE,
     hora_evento VARCHAR(20),
@@ -176,7 +178,6 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     cantidad_de_personas VARCHAR(100),
     precio_basico DECIMAL(10,2),
     precio_final DECIMAL(10,2),
-    es_publico TINYINT(1) DEFAULT 0,
     es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
     tipo_de_evento VARCHAR(50) NOT NULL,
     nombre_completo VARCHAR(255),
@@ -184,33 +185,33 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     email VARCHAR(255),
     descripcion TEXT,
     estado VARCHAR(50) DEFAULT 'Solicitado',
-    FOREIGN KEY (id) REFERENCES solicitudes(id) ON DELETE CASCADE
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Tabla específica para solicitudes de bandas
 
 -- Tabla específica para solicitudes de servicios
 CREATE TABLE IF NOT EXISTS solicitudes_servicios (
-    id INT PRIMARY KEY,
+    id_solicitud INT PRIMARY KEY,
     tipo_servicio VARCHAR(255),
     fecha_evento DATE,
     hora_evento VARCHAR(20),
     duracion VARCHAR(100),
     precio DECIMAL(10,2),
     es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
-    FOREIGN KEY (id) REFERENCES solicitudes(id) ON DELETE CASCADE
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Tabla específica para solicitudes de talleres
 CREATE TABLE IF NOT EXISTS solicitudes_talleres (
-    id INT PRIMARY KEY,
+    id_solicitud INT PRIMARY KEY,
     nombre_taller VARCHAR(255),
     fecha_evento DATE,
     hora_evento VARCHAR(20),
     duracion VARCHAR(100),
     precio DECIMAL(10,2),
     es_publico_cuando_confirmada TINYINT(1) DEFAULT 0 COMMENT '1=Mostrar en agenda pública si se confirma',
-    FOREIGN KEY (id) REFERENCES solicitudes(id) ON DELETE CASCADE
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================

@@ -12,7 +12,7 @@ const getSolicitudes = async (req, res) => {
         // Unión de solicitudes de alquiler, solicitudes de bandas, fechas de bandas, servicios y talleres
         const sql = `
             SELECT
-                CONCAT('alq_', s.id) as id,
+                CONCAT('alq_', s.id_solicitud) as id,
                 s.fecha_evento as fechaSolicitud,
                 s.nombre_completo as nombreCliente,
                 s.tipo_de_evento as tipoEventoId,
@@ -34,8 +34,9 @@ const getSolicitudes = async (req, res) => {
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo,
-                s.es_publico as es_publico
+                p.es_publico as es_publico
             FROM solicitudes_alquiler s
+            LEFT JOIN solicitudes p ON p.id = s.id_solicitud
             UNION ALL
             SELECT
                 CONCAT('bnd_', s.id_solicitud) as id,
@@ -52,8 +53,9 @@ const getSolicitudes = async (req, res) => {
                 s.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 s.cantidad_de_personas as cantidadAforo,
-                s.es_publico as es_publico
+                p.es_publico as es_publico
             FROM solicitudes_bandas s
+            LEFT JOIN solicitudes p ON p.id = s.id_solicitud
             UNION ALL
             SELECT
                 CONCAT('ev_', e.id) as id,
@@ -74,7 +76,7 @@ const getSolicitudes = async (req, res) => {
             FROM eventos_confirmados e
             UNION ALL
             SELECT
-                CONCAT('srv_', ss.id) as id,
+                CONCAT('srv_', ss.id_solicitud) as id,
                 sol.fecha_creacion as fechaSolicitud,
                 sol.nombre_solicitante as nombreCliente,
                 'SERVICIO' as tipoEventoId,
@@ -88,12 +90,12 @@ const getSolicitudes = async (req, res) => {
                 ss.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 NULL as cantidadAforo,
-                ss.es_publico_cuando_confirmada as es_publico
+                COALESCE(sol.es_publico, ss.es_publico_cuando_confirmada) as es_publico
             FROM solicitudes_servicios ss
-            JOIN solicitudes sol ON ss.id = sol.id
+            JOIN solicitudes sol ON ss.id_solicitud = sol.id
             UNION ALL
             SELECT
-                CONCAT('tll_', st.id) as id,
+                CONCAT('tll_', st.id_solicitud) as id,
                 sol.fecha_creacion as fechaSolicitud,
                 sol.nombre_solicitante as nombreCliente,
                 'TALLERES' as tipoEventoId,
@@ -107,9 +109,9 @@ const getSolicitudes = async (req, res) => {
                 st.hora_evento as horaInicio,
                 NULL as nombreBanda,
                 NULL as cantidadAforo,
-                st.es_publico_cuando_confirmada as es_publico
+                COALESCE(sol.es_publico, st.es_publico_cuando_confirmada) as es_publico
             FROM solicitudes_talleres st
-            JOIN solicitudes sol ON st.id = sol.id
+            JOIN solicitudes sol ON st.id_solicitud = sol.id
             ORDER BY fechaEvento DESC, fechaSolicitud DESC;
         `;
 
@@ -151,7 +153,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
         if (String(id).startsWith('alq_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_alquiler';
-            [solicitud] = await conn.query("SELECT * FROM solicitudes_alquiler WHERE id = ?", [realId]);
+            [solicitud] = await conn.query("SELECT * FROM solicitudes_alquiler WHERE id_solicitud = ?", [realId]);
             tipoEvento = 'ALQUILER_SALON';
         } else if (String(id).startsWith('bnd_')) {
             realId = id.substring(4);
@@ -161,12 +163,12 @@ const actualizarEstadoSolicitud = async (req, res) => {
         } else if (String(id).startsWith('srv_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_servicios';
-            [solicitud] = await conn.query("SELECT ss.*, sol.nombre_solicitante, sol.email_solicitante, sol.telefono_solicitante FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id = sol.id WHERE ss.id = ?", [realId]);
+            [solicitud] = await conn.query("SELECT ss.*, sol.nombre_solicitante, sol.email_solicitante, sol.telefono_solicitante FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id_solicitud = sol.id WHERE ss.id_solicitud = ?", [realId]);
             tipoEvento = 'SERVICIO';
         } else if (String(id).startsWith('tll_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_talleres';
-            [solicitud] = await conn.query("SELECT st.*, sol.nombre_solicitante, sol.email_solicitante, sol.telefono_solicitante FROM solicitudes_talleres st JOIN solicitudes sol ON st.id = sol.id WHERE st.id = ?", [realId]);
+            [solicitud] = await conn.query("SELECT st.*, sol.nombre_solicitante, sol.email_solicitante, sol.telefono_solicitante FROM solicitudes_talleres st JOIN solicitudes sol ON st.id_solicitud = sol.id WHERE st.id_solicitud = ?", [realId]);
             tipoEvento = 'TALLER';
         } else {
             // Fallback para IDs antiguos sin prefijo
@@ -190,7 +192,8 @@ const actualizarEstadoSolicitud = async (req, res) => {
         }
 
         // Actualizar estado en la tabla de solicitudes específica
-        const fieldName = tablaOrigen === 'solicitudes_bandas' ? 'id_solicitud' : 'id';
+        // Todas las tablas hijas usan ahora `id_solicitud` como PK
+        const fieldName = 'id_solicitud';
         let result;
         // En servicios y talleres el estado se guarda en la tabla padre `solicitudes`
         if (tablaOrigen === 'solicitudes_servicios' || tablaOrigen === 'solicitudes_talleres') {
