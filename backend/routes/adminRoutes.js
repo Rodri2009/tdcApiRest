@@ -12,6 +12,7 @@ const {
     actualizarEvento,
     cancelarEvento,
     eliminarEvento,
+    getEventosConfirmados,
     getEventoById
 } = require('../controllers/adminController');
 
@@ -43,10 +44,15 @@ router.get('/asignacion-data', getDatosAsignacion);
 router.post('/solicitudes/:id/asignaciones', checkPermiso('personal.gestionar'), guardarAsignaciones);
 router.get('/orden-trabajo/:id', getOrdenDeTrabajo);
 
+// --- Instrumentos (admin) ---
+const bandasController = require('../controllers/bandasController');
+router.get('/bandas/instrumentos', protect, requireAdmin, checkPermiso('config.bandas'), bandasController.getInstrumentos);
+
 // =============================================================================
 // EVENTOS
 // =============================================================================
 // Rutas unificadas: /eventos_confirmados
+router.get('/eventos_confirmados', checkPermiso('solicitudes.ver'), getEventosConfirmados);
 router.get('/eventos_confirmados/:id', getEventoById);
 router.post('/eventos_confirmados', checkPermiso('solicitudes.crear'), crearEvento);
 router.put('/eventos_confirmados/:id', checkPermiso('solicitudes.editar'), actualizarEvento);

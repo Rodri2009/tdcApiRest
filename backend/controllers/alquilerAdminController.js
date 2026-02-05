@@ -168,7 +168,8 @@ const deleteTipo = async (req, res) => {
  */
 const getDuraciones = async (req, res) => {
     try {
-        const { id_evento } = req.query;
+        const { id_evento, id_tipo_evento } = req.query;
+        const idEvento = id_tipo_evento || id_evento;
 
         let query = `
             SELECT 
@@ -183,9 +184,9 @@ const getDuraciones = async (req, res) => {
         `;
         const params = [];
 
-        if (id_evento) {
+        if (idEvento) {
             query += ' WHERE d.id_tipo_evento = ?';
-            params.push(id_evento);
+            params.push(idEvento);
         }
 
         query += ' ORDER BY d.id_tipo_evento, d.duracion_horas';
@@ -204,16 +205,17 @@ const getDuraciones = async (req, res) => {
  */
 const createDuracion = async (req, res) => {
     try {
-        const { id_evento, horas, descripcion } = req.body;
+        const { id_tipo_evento, id_evento, horas, descripcion } = req.body;
+        const idTipo = id_tipo_evento || id_evento;
 
-        if (!id_evento || !horas) {
+        if (!idTipo || !horas) {
             return res.status(400).json({ error: 'Tipo de evento y horas son requeridos' });
         }
 
         const result = await pool.query(`
             INSERT INTO opciones_duracion (id_tipo_evento, duracion_horas, descripcion)
             VALUES (?, ?, ?)
-        `, [id_evento, horas, descripcion || null]);
+        `, [idTipo, horas, descripcion || null]);
 
         res.status(201).json({
             message: 'Duración creada exitosamente',
@@ -235,14 +237,15 @@ const createDuracion = async (req, res) => {
 const updateDuracion = async (req, res) => {
     try {
         const { id } = req.params;
-        const { id_evento, horas, descripcion } = req.body;
+        const { id_tipo_evento, id_evento, horas, descripcion } = req.body;
+        const idTipo = id_tipo_evento || id_evento;
 
         const setClauses = [];
         const params = [];
 
-        if (id_evento !== undefined) {
-            setClauses.push('id_evento = ?');
-            params.push(id_evento);
+        if (idTipo !== undefined) {
+            setClauses.push('id_tipo_evento = ?');
+            params.push(idTipo);
         }
         if (horas !== undefined) {
             setClauses.push('duracion_horas = ?');
@@ -309,7 +312,8 @@ const deleteDuracion = async (req, res) => {
  */
 const getPrecios = async (req, res) => {
     try {
-        const { id_evento, vigentes } = req.query;
+        const { id_evento, id_tipo_evento, vigentes } = req.query;
+        const idEvento = id_tipo_evento || id_evento;
 
         let query = `
             SELECT 
@@ -331,9 +335,9 @@ const getPrecios = async (req, res) => {
         const params = [];
         const conditions = [];
 
-        if (id_evento) {
+        if (idEvento) {
             conditions.push('p.id_tipo_evento = ?');
-            params.push(id_evento);
+            params.push(idEvento);
         }
 
         if (vigentes === 'true' || vigentes === '1') {
@@ -360,18 +364,26 @@ const getPrecios = async (req, res) => {
  */
 const createPrecio = async (req, res) => {
     try {
-        const { id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta } = req.body;
+        const { id_tipo_evento, id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta } = req.body;
+        // Preferir id_tipo_evento, mantener compatibilidad con id_evento
+        const idTipo = id_tipo_evento || id_evento;
 
-        if (!id_evento || cantidad_min === undefined || cantidad_max === undefined || precio_por_hora === undefined || !vigente_desde) {
+        if (!idTipo || cantidad_min === undefined || cantidad_max === undefined || precio_por_hora === undefined) {
             return res.status(400).json({
-                error: 'Se requieren: id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde'
+                error: 'Se requieren: id_tipo_evento, cantidad_min, cantidad_max, precio_por_hora'
             });
         }
 
+        // Validación básica
+        if (Number(cantidad_min) > Number(cantidad_max)) {
+            return res.status(400).json({ error: 'cantidad_min no puede ser mayor que cantidad_max' });
+        }
+
+        // Si no viene vigente_desde, usar CURDATE() en BD con COALESCE
         const result = await pool.query(`
             INSERT INTO precios_vigencia (id_tipo_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `, [id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta || null]);
+            VALUES (?, ?, ?, ?, COALESCE(?, CURDATE()), ?)
+        `, [idTipo, cantidad_min, cantidad_max, precio_por_hora, vigente_desde || null, vigente_hasta || null]);
 
         res.status(201).json({
             message: 'Precio creado exitosamente',
@@ -393,14 +405,15 @@ const createPrecio = async (req, res) => {
 const updatePrecio = async (req, res) => {
     try {
         const { id } = req.params;
-        const { id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta } = req.body;
+        const { id_tipo_evento, id_evento, cantidad_min, cantidad_max, precio_por_hora, vigente_desde, vigente_hasta } = req.body;
+        const idTipo = id_tipo_evento || id_evento;
 
         const setClauses = [];
         const params = [];
 
-        if (id_evento !== undefined) {
-            setClauses.push('id_evento = ?');
-            params.push(id_evento);
+        if (idTipo !== undefined) {
+            setClauses.push('id_tipo_evento = ?');
+            params.push(idTipo);
         }
         if (cantidad_min !== undefined) {
             setClauses.push('cantidad_min = ?');
@@ -421,6 +434,13 @@ const updatePrecio = async (req, res) => {
         if (vigente_hasta !== undefined) {
             setClauses.push('vigente_hasta = ?');
             params.push(vigente_hasta);
+        }
+
+        // Si se proveen ambos, validar
+        if (cantidad_min !== undefined && cantidad_max !== undefined) {
+            if (Number(cantidad_min) > Number(cantidad_max)) {
+                return res.status(400).json({ error: 'cantidad_min no puede ser mayor que cantidad_max' });
+            }
         }
 
         if (setClauses.length === 0) {

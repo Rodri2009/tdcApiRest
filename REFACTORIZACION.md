@@ -332,6 +332,4 @@ A continuación tienes una lista accionable, priorizada y con comandos útiles p
 - Documentar cada DROP/ARCHIVE con una entrada en `database/migrations` y en el changelog.
 - Tener una copia del `backup_pre_cleanup.sql` disponible antes de cualquier DROP.
 
----
 
-> Si quieres, preparo ahora una plantilla de PR y una issue con la checklist desglosada por tareas (assignable) para que puedas ir marcando items mañana. ¿Quieres que lo cree? (Responde "sí" o "no").
