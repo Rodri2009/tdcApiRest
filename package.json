@@ -6,12 +6,16 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "contexto": "node ./scripts/generar-contexto.js",
-    "crear-admin": "node ./scripts/crear-admin.js"
+    "crear-admin": "node ./scripts/crear-admin.js",
+    "test:e2e": "playwright test --reporter=list"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
     "mariadb": "^3.3.0",
     "iconv-lite": "^0.6.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.36.0"
   }
 }
