@@ -52,6 +52,11 @@ router.post('/bandas/instrumentos', checkPermiso('config.bandas'), bandasControl
 router.put('/bandas/instrumentos/:id', checkPermiso('config.bandas'), bandasController.updateInstrumento);
 router.delete('/bandas/instrumentos/:id', checkPermiso('config.bandas'), bandasController.deleteInstrumento);
 
+// --- Clientes (admin) ---
+const clientesController = require('../controllers/clientesController');
+router.get('/clientes/search', checkPermiso('config.talleres'), clientesController.searchClientes);
+router.post('/clientes', checkPermiso('config.talleres'), clientesController.createCliente);
+
 // =============================================================================
 // EVENTOS
 // =============================================================================

@@ -703,6 +703,31 @@
             } catch (err) { console.error('Error:', err); }
         }
 
+        // Buscar cliente por término (autocomplete admin)
+        async function searchClientes(term) {
+            if (!term || term.length < 2) return [];
+            try {
+                const token = localStorage.getItem('authToken');
+                const res = await fetch(`/api/admin/clientes/search?q=${encodeURIComponent(term)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) return await res.json();
+            } catch (err) { console.error('searchClientes error', err); }
+            return [];
+        }
+
+        // Interacción simple en el modal de tallerista: autocompletar desde clientes
+        async function buscarClienteDesdeModal() {
+            const name = document.getElementById('tallerista-nombre').value.trim();
+            if (!name) { showBanner('Ingrese nombre para buscar', 'info'); return; }
+            const matches = await searchClientes(name);
+            if (matches.length === 0) { showBanner('No se encontraron clientes con ese término', 'info'); return; }
+            // Prefill with first match
+            const c = matches[0];
+            document.getElementById('tallerista-telefono').value = c.telefono || '';
+            document.getElementById('tallerista-email').value = c.email || '';
+            document.getElementById('tallerista-cliente-id').value = c.id || '';
+            showBanner('Datos de cliente autocompletados', 'success');
+        }
+
         function renderTalleristas() {
             const nombreFiltro = document.getElementById('filtro-tallerista-nombre')?.value?.toLowerCase() || '';
             const estadoFiltro = document.getElementById('filtro-tallerista-estado')?.value || '';
@@ -877,6 +902,11 @@
                     <div class="form-group">
                         <label>Nombre</label>
                         <input type="text" id="modal-nombre" value="${item.nombre || ''}" required>
+                        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                          <button type="button" class="btn btn-secondary btn-sm" onclick="buscarClienteDesdeModal()">Autocompletar desde cliente</button>
+                          <small style="color:#9ca3af">Buscar por nombre/email/teléfono</small>
+                        </div>
+                        <input type="hidden" id="tallerista-cliente-id" value="${item.cliente_id || ''}" />
                     </div>
                     <div class="form-group">
                         <label>Especialidad</label>
