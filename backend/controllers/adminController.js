@@ -818,13 +818,24 @@ const crearEvento = async (req, res) => {
         conn = await pool.getConnection();
 
         const insertSql = `
-            INSERT INTO eventos_confirmados (
-                id_solicitud, tipo_evento, tabla_origen,
-                nombre_evento, descripcion, fecha_evento, hora_inicio, duracion_estimada,
-                nombre_cliente, email_cliente, telefono_cliente,
-                precio_base, precio_final, es_publico, activo,
-                genero_musical, cantidad_personas
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO eventos_confirmados SET
+              id_solicitud = ?,
+              tipo_evento = ?,
+              tabla_origen = ?,
+              nombre_evento = ?,
+              descripcion = ?,
+              fecha_evento = ?,
+              hora_inicio = ?,
+              duracion_estimada = ?,
+              nombre_cliente = ?,
+              email_cliente = ?,
+              telefono_cliente = ?,
+              precio_base = ?,
+              precio_final = ?,
+              es_publico = ?,
+              activo = ?,
+              genero_musical = ?,
+              cantidad_personas = ?
         `;
 
         const params = [
