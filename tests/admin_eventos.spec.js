@@ -40,14 +40,22 @@ test('crear evento por API y verificar en UI, luego eliminar', async ({ page, re
   const row = page.locator(`tr:has-text("${name}")`);
   await expect(row).toBeVisible();
 
-  // 5) Delete using UI button
+  // 5) Verify Assign link points to asignar_personal with ev_<id>
+  const assignLink = row.locator(`a[href*="asignar_personal.html?solicitudId=ev_${eventId}"]`);
+  await expect(assignLink).toBeVisible();
+
+  // 6) Click Cancel (and accept dialog), then verify CANCELADO badge appears
   page.on('dialog', async dialog => { await dialog.accept(); });
-  const deleteBtn = row.locator('button:has-text("Eliminar")');
-  await deleteBtn.click();
+  const cancelBtn = row.locator('button:has-text("Cancelar")');
+  await cancelBtn.click();
 
-  // 6) Verify row disappears
-  await expect(row).toHaveCount(0);
+  // Wait for the badge
+  await expect(row.locator('text=CANCELADO')).toBeVisible();
 
-  // Cleanup - ensure deleted by API
+  // 7) Cleanup - delete by API
   await request.delete(`/api/admin/eventos_confirmados/${eventId}`, { headers: { Authorization: `Bearer ${token}` } });
+
+  // 8) Verify row no longer visible
+  await page.reload();
+  await expect(page.locator(`tr:has-text("${name}")`)).toHaveCount(0);
 });
