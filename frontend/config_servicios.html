@@ -259,6 +259,46 @@
             padding: 20px;
         }
 
+        /* Spinner + client badge */
+        .search-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.12);
+            border-top-color: var(--color-secondary);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .client-badge {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(59,130,246,0.1);
+            color: var(--color-secondary);
+            padding: 6px 8px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+        .client-badge .clear-btn {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+        .client-suggestions .suggestion.active {
+            background: var(--color-secondary);
+            color: var(--color-dark);
+            font-weight: 600;
+            box-shadow: 0 6px 18px rgba(88,28,135,0.12);
+            border-left: 4px solid rgba(88,28,135,0.9);
+        }
+
         .modal-footer {
             padding: 16px 20px;
             border-top: 1px solid var(--color-rustic);
@@ -892,7 +932,14 @@
                 html = `
                     <div class="form-group">
                         <label>Nombre</label>
-                        <input type="text" id="modal-nombre" value="${item.nombre || ''}" required>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                          <input type="text" id="modal-nombre" value="${item.nombre || ''}" required style="flex:1">
+                          <span id="modal-search-spinner" class="search-spinner" style="display:none"></span>
+                        </div>
+                        <div style="margin-top:8px;color:#9ca3af;font-size:0.9rem">Se buscará automáticamente en clientes mientras escribe (sugerencias inmediatas)</div>
+                        <div id="modal-client-selected" style="margin-top:6px;"></div>
+                        <div id="modal-client-suggestions" class="client-suggestions" style="position:relative;margin-top:6px;"></div>
+                        <input type="hidden" id="profesional-cliente-id" value="${item.cliente_id || ''}" />
                     </div>
                     <div class="form-group">
                         <label>Especialidad</label>
@@ -1021,8 +1068,111 @@
             }
 
             body.innerHTML = html;
+            // Attach client search handlers for profesional modal
+            if (type === 'profesional') {
+                setTimeout(() => attachClientSearchHandlersForProfesional(), 20);
+            }
             modal.classList.add('show');
         }
+
+        // ============ CLIENT AUTOCOMPLETE FOR PROFESIONALES ============
+        async function searchClientes(term) {
+            if (!term || term.length < 2) return [];
+            try {
+                const token = localStorage.getItem('authToken');
+                const res = await fetch(`/api/admin/clientes/search?q=${encodeURIComponent(term)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) return await res.json();
+            } catch (err) { console.error('searchClientes error', err); }
+            return [];
+        }
+
+        let clientSearchTimer = null;
+        let selectedClientName = null;
+        let selectedClientId = null;
+
+        function attachClientSearchHandlersForProfesional() {
+            const input = document.getElementById('modal-nombre');
+            const container = document.getElementById('modal-client-suggestions');
+            if (!input || !container) return;
+
+            input.addEventListener('input', () => {
+                clearTimeout(clientSearchTimer);
+                const term = input.value.trim();
+
+                if (selectedClientName && term !== selectedClientName) {
+                    clearClientBadgeForProfesional();
+                }
+
+                clientSearchTimer = setTimeout(async () => {
+                    if (term.length < 2) {
+                        container.innerHTML = '';
+                        return;
+                    }
+                    const spinner = document.getElementById('modal-search-spinner'); if (spinner) spinner.style.display = 'inline-block';
+                    const matches = await searchClientes(term);
+                    if (spinner) spinner.style.display = 'none';
+                    renderClientSuggestionsForProfesional(matches, container);
+                }, 300);
+            });
+
+            input.addEventListener('keydown', (ev) => {
+                const active = container.querySelector('.suggestion.active');
+                if (ev.key === 'ArrowDown') {
+                    ev.preventDefault();
+                    if (!active) { const first = container.querySelector('.suggestion'); if (first) first.classList.add('active'); return; }
+                    const next = active.nextElementSibling; if (next) { active.classList.remove('active'); next.classList.add('active'); }
+                } else if (ev.key === 'ArrowUp') {
+                    ev.preventDefault();
+                    if (!active) { const last = container.querySelector('.suggestion:last-child'); if (last) last.classList.add('active'); return; }
+                    const prev = active.previousElementSibling; if (prev) { active.classList.remove('active'); prev.classList.add('active'); }
+                } else if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    const sel = container.querySelector('.suggestion.active') || container.querySelector('.suggestion');
+                    if (sel) selectClientFromSuggestionForProfesional(sel.dataset.id, sel.dataset.nombre, sel.dataset.telefono, sel.dataset.email);
+                }
+            });
+        }
+
+        function renderClientSuggestionsForProfesional(matches, container) {
+            if (!matches || matches.length === 0) { container.innerHTML = '' ; return; }
+            container.innerHTML = '<div class="suggestions-list">' + matches.map(m => `
+                <div class="suggestion" data-id="${m.id}" data-nombre="${m.nombre}" data-telefono="${m.telefono||''}" data-email="${m.email||''}">
+                    <strong>${m.nombre}</strong> <small style="color:#6b7280">${m.email||m.telefono||''}</small>
+                </div>`).join('') + '</div>';
+
+            const suggestions = Array.from(container.querySelectorAll('.suggestion'));
+            if (suggestions.length > 0) { suggestions[0].classList.add('active'); }
+            suggestions.forEach(el => {
+                el.addEventListener('click', () => selectClientFromSuggestionForProfesional(el.dataset.id, el.dataset.nombre, el.dataset.telefono, el.dataset.email));
+                el.addEventListener('mouseenter', () => { container.querySelectorAll('.suggestion').forEach(s => s.classList.remove('active')); el.classList.add('active'); });
+            });
+        }
+
+        function showClientBadgeForProfesional(id, nombre) {
+            const el = document.getElementById('modal-client-selected');
+            if (!el) return;
+            selectedClientName = nombre || null;
+            selectedClientId = id || null;
+            el.innerHTML = `<div class="client-badge" data-id="${id}"><span class="name">${nombre}</span><button class="clear-btn" title="Desvincular cliente" onclick="clearClientBadgeForProfesional()">✕</button></div>`;
+        }
+
+        function clearClientBadgeForProfesional() {
+            const el = document.getElementById('modal-client-selected'); if (el) el.innerHTML = '';
+            selectedClientName = null; selectedClientId = null; const hid = document.getElementById('profesional-cliente-id'); if (hid) hid.value = '';
+            showBanner('Cliente desvinculado', 'info');
+        }
+
+        function selectClientFromSuggestionForProfesional(id, nombre, telefono, email) {
+            document.getElementById('modal-nombre').value = nombre || document.getElementById('modal-nombre').value;
+            document.getElementById('modal-telefono').value = telefono || '';
+            document.getElementById('modal-email').value = email || '';
+            document.getElementById('profesional-cliente-id').value = id || '';
+            showClientBadgeForProfesional(id, nombre);
+            const container = document.getElementById('modal-client-suggestions'); if (container) container.innerHTML = '';
+            showBanner('Cliente seleccionado', 'success');
+        }
+
+        // end client autocomplete
 
         function closeModal() {
             document.getElementById('modal-generic').classList.remove('show');
@@ -1057,6 +1207,7 @@
                     diasTrabaja: document.getElementById('modal-dias').value || null,
                     horaInicio: document.getElementById('modal-hora-inicio').value || null,
                     horaFin: document.getElementById('modal-hora-fin').value || null,
+                    cliente_id: document.getElementById('profesional-cliente-id')?.value || null,
                     activo: document.getElementById('modal-activo').checked ? 1 : 0
                 };
                 url = editingId ? `${API_SERVICIOS}/profesionales/${editingId}` : `${API_SERVICIOS}/profesionales`;

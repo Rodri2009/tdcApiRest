@@ -93,9 +93,50 @@
             cursor: pointer;
             border-radius: 4px;
         }
-        .client-suggestions .suggestion:hover,
-        .client-suggestions .suggestion.active {
+        .client-suggestions .suggestion:hover {
             background: #0f172a;
+        }
+        .client-suggestions .suggestion.active {
+            background: var(--color-secondary);
+            color: var(--color-dark);
+            font-weight: 600;
+            box-shadow: 0 6px 18px rgba(88,28,135,0.12);
+            border-left: 4px solid rgba(88,28,135,0.9);
+        }
+
+        /* Spinner shown while searching */
+        .search-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.12);
+            border-top-color: var(--color-secondary);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Badge showing selected client with clear action */
+        .client-badge {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(59,130,246,0.1);
+            color: var(--color-secondary);
+            padding: 6px 8px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+        .client-badge .clear-btn {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-weight: 700;
+            margin-left: 6px;
         }
 
         .card {
@@ -734,28 +775,38 @@
             return [];
         }
 
-        // Manejo de búsqueda con debounce y renderizado de sugerencias en el modal
+        // Manejo de búsqueda con debounce y renderizado de sugerencias en el modal (usa el campo Nombre como input)
         let clientSearchTimer = null;
         function attachClientSearchHandlers() {
-            const input = document.getElementById('modal-client-search');
+            const input = document.getElementById('modal-nombre');
             const container = document.getElementById('modal-client-suggestions');
             if (!input || !container) return;
 
             input.addEventListener('input', () => {
                 clearTimeout(clientSearchTimer);
                 const term = input.value.trim();
+
+                // If user edits the name after selecting a client, clear the association
+                if (selectedClientName && term !== selectedClientName) {
+                    clearClientBadge();
+                }
+
                 clientSearchTimer = setTimeout(async () => {
                     if (term.length < 2) {
                         container.innerHTML = '';
                         return;
                     }
+                    // show spinner
+                    const spinner = document.getElementById('modal-search-spinner'); if (spinner) spinner.style.display = 'inline-block';
                     const matches = await searchClientes(term);
+                    // hide spinner
+                    if (spinner) spinner.style.display = 'none';
                     renderClientSuggestions(matches, container);
                 }, 300);
             });
 
             input.addEventListener('keydown', (ev) => {
-                // Basic keyboard navigation
+                // Basic keyboard navigation over the suggestions container
                 const active = container.querySelector('.suggestion.active');
                 if (ev.key === 'ArrowDown') {
                     ev.preventDefault();
@@ -780,12 +831,42 @@
                     <strong>${m.nombre}</strong> <small style="color:#6b7280">${m.email||m.telefono||''}</small>
                 </div>`).join('') + '</div>';
 
-            // Attach click handlers
-            container.querySelectorAll('.suggestion').forEach(el => {
+            const suggestions = Array.from(container.querySelectorAll('.suggestion'));
+            if (suggestions.length > 0) {
+                // mark first as active for quick keyboard selection
+                suggestions[0].classList.add('active');
+            }
+
+            // Attach handlers for click and hover (mouse)
+            suggestions.forEach(el => {
                 el.addEventListener('click', () => {
                     selectClientFromSuggestion(el.dataset.id, el.dataset.nombre, el.dataset.telefono, el.dataset.email);
                 });
+                el.addEventListener('mouseenter', () => {
+                    container.querySelectorAll('.suggestion').forEach(s => s.classList.remove('active'));
+                    el.classList.add('active');
+                });
             });
+        }
+
+        let selectedClientName = null;
+        let selectedClientId = null;
+
+        function showClientBadge(id, nombre) {
+            const el = document.getElementById('modal-client-selected');
+            if (!el) return;
+            selectedClientName = nombre || null;
+            selectedClientId = id || null;
+            el.innerHTML = `<div class="client-badge" data-id="${id}"><span class="name">${nombre}</span><button class="clear-btn" title="Desvincular cliente" onclick="clearClientBadge()">✕</button></div>`;
+        }
+
+        function clearClientBadge() {
+            const el = document.getElementById('modal-client-selected');
+            if (el) el.innerHTML = '';
+            selectedClientName = null;
+            selectedClientId = null;
+            const hid = document.getElementById('tallerista-cliente-id'); if (hid) hid.value = '';
+            showBanner('Cliente desvinculado', 'info');
         }
 
         function selectClientFromSuggestion(id, nombre, telefono, email) {
@@ -794,10 +875,12 @@
             document.getElementById('modal-email').value = email || '';
             document.getElementById('tallerista-cliente-id').value = id || '';
 
-            // Clear suggestions and search box
+            // Show selected badge
+            showClientBadge(id, nombre);
+
+            // Clear suggestions
             const container = document.getElementById('modal-client-suggestions');
             if (container) container.innerHTML = '';
-            const input = document.getElementById('modal-client-search'); if (input) input.value = '';
 
             showBanner('Cliente seleccionado', 'success');
         }
@@ -989,11 +1072,12 @@
                 html = `
                     <div class="form-group">
                         <label>Nombre</label>
-                        <input type="text" id="modal-nombre" value="${item.nombre || ''}" required>
-                        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-                          <input type="text" id="modal-client-search" placeholder="Buscar cliente por nombre/email/teléfono" style="flex:1; padding:6px; border:1px solid #d1d5db; border-radius:4px;" autocomplete="off" />
-                          <button type="button" class="btn btn-secondary btn-sm" onclick="buscarClienteDesdeModal()">Autocompletar (primera coincidencia)</button>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                          <input type="text" id="modal-nombre" value="${item.nombre || ''}" required style="flex:1">
+                          <span id="modal-search-spinner" class="search-spinner" style="display:none"></span>
                         </div>
+                        <div style="margin-top:8px;color:#9ca3af;font-size:0.9rem">Se buscará automáticamente en clientes mientras escribe (sugerencias inmediatas)</div>
+                        <div id="modal-client-selected" style="margin-top:6px;"></div>
                         <div id="modal-client-suggestions" class="client-suggestions" style="position:relative;margin-top:6px;"></div>
                         <input type="hidden" id="tallerista-cliente-id" value="${item.cliente_id || ''}" />
                     </div>

@@ -33,19 +33,32 @@ test('Tallerista: buscar cliente por autocompletar y asociar', async ({ page, re
   // 5) Open modal Nuevo Tallerista
   await page.click('text=Nuevo Tallerista');
 
-  // 6) Type a substring into client search input and wait for suggestion
+  // 6) Type a substring into the Nombre field (search happens automatically) and wait for suggestion
   const clientNamePart = cliPayload.nombre.slice(0, 6);
-  await page.fill('#modal-client-search', clientNamePart);
+  await page.fill('#modal-nombre', clientNamePart);
   await page.waitForSelector('#modal-client-suggestions .suggestion');
+
+  // Verify that a suggestion is active and contains the search term
+  await page.waitForSelector('#modal-client-suggestions .suggestion.active');
+  const activeText = await page.$eval('#modal-client-suggestions .suggestion.active strong', el => el.textContent.trim());
+  expect(activeText.toLowerCase()).toContain(clientNamePart.toLowerCase());
 
   // 7) Click the first suggestion
   await page.click('#modal-client-suggestions .suggestion');
 
-  // 8) Ensure the hidden cliente_id is set to the client id
+  // 8) Ensure the hidden cliente_id is set to the client id and badge is visible
   const clienteIdVal = await page.$eval('#tallerista-cliente-id', el => el.value);
   expect(String(clienteIdVal)).toBe(String(clientId));
+  const badgeText = await page.$eval('#modal-client-selected .client-badge .name', el => el.textContent.trim());
+  expect(badgeText).toBe(cliPayload.nombre);
 
-  // 9) Fill tallerista name and save
+  // 9) Click clear on badge and ensure association removed
+  await page.click('#modal-client-selected .client-badge .clear-btn');
+  await page.waitForTimeout(100);
+  const removedVal = await page.$eval('#tallerista-cliente-id', el => el.value);
+  expect(removedVal).toBe('');
+
+  // 10) Fill tallerista name and save (no linked client)
   const tallerName = `TallerE2E-${ts}`;
   await page.fill('#modal-nombre', tallerName);
   await page.click('#modal-save-btn');
