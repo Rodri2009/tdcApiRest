@@ -839,7 +839,7 @@ const crearEvento = async (req, res) => {
         `;
 
         const params = [
-            null,
+            0,
             tipo_evento || 'BANDA',
             'manual_admin',
             nombre_banda,
