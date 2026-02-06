@@ -17,7 +17,7 @@ fi
 
 # Crear cliente
 TS=$(date +%s)
-PAYLOAD_C=$(jq -nc --arg name "CliTaller-$TS" --arg tel "115000$TS" --arg email "cli$taller$TS@example.com" '{ nombre: $name, telefono: $tel, email: $email }')
+PAYLOAD_C=$(jq -nc --arg name "CliTaller-$TS" --arg tel "115000$TS" --arg email "cli$TS@example.com" '{ nombre: $name, telefono: $tel, email: $email }')
 HTTP=$(curl -sS -m "$TIMEOUT" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$PAYLOAD_C" -o /tmp/cli_create -w "%{http_code}" "$BASE_URL/api/admin/clientes") || HTTP=000
 if [[ ! "$HTTP" =~ ^2[0-9][0-9]$ ]]; then echo "FAIL: crear cliente -> HTTP $HTTP"; cat /tmp/cli_create; exit 2; fi
 CLIENTE_ID=$(jq -r .id /tmp/cli_create)

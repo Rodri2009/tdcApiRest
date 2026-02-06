@@ -78,6 +78,26 @@
             display: block;
         }
 
+        /* Client suggestions for modal */
+        .client-suggestions .suggestions-list {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow: auto;
+            padding: 4px;
+            box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+        }
+        .client-suggestions .suggestion {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .client-suggestions .suggestion:hover,
+        .client-suggestions .suggestion.active {
+            background: #0f172a;
+        }
+
         .card {
             background: var(--color-card);
             border-radius: 12px;
@@ -714,16 +734,84 @@
             return [];
         }
 
-        // Interacción simple en el modal de tallerista: autocompletar desde clientes
+        // Manejo de búsqueda con debounce y renderizado de sugerencias en el modal
+        let clientSearchTimer = null;
+        function attachClientSearchHandlers() {
+            const input = document.getElementById('modal-client-search');
+            const container = document.getElementById('modal-client-suggestions');
+            if (!input || !container) return;
+
+            input.addEventListener('input', () => {
+                clearTimeout(clientSearchTimer);
+                const term = input.value.trim();
+                clientSearchTimer = setTimeout(async () => {
+                    if (term.length < 2) {
+                        container.innerHTML = '';
+                        return;
+                    }
+                    const matches = await searchClientes(term);
+                    renderClientSuggestions(matches, container);
+                }, 300);
+            });
+
+            input.addEventListener('keydown', (ev) => {
+                // Basic keyboard navigation
+                const active = container.querySelector('.suggestion.active');
+                if (ev.key === 'ArrowDown') {
+                    ev.preventDefault();
+                    if (!active) { const first = container.querySelector('.suggestion'); if (first) first.classList.add('active'); return; }
+                    const next = active.nextElementSibling; if (next) { active.classList.remove('active'); next.classList.add('active'); }
+                } else if (ev.key === 'ArrowUp') {
+                    ev.preventDefault();
+                    if (!active) { const last = container.querySelector('.suggestion:last-child'); if (last) last.classList.add('active'); return; }
+                    const prev = active.previousElementSibling; if (prev) { active.classList.remove('active'); prev.classList.add('active'); }
+                } else if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    const sel = container.querySelector('.suggestion.active') || container.querySelector('.suggestion');
+                    if (sel) selectClientFromSuggestion(sel.dataset.id, sel.dataset.nombre, sel.dataset.telefono, sel.dataset.email);
+                }
+            });
+        }
+
+        function renderClientSuggestions(matches, container) {
+            if (!matches || matches.length === 0) { container.innerHTML = '' ; return; }
+            container.innerHTML = '<div class="suggestions-list">' + matches.map(m => `
+                <div class="suggestion" data-id="${m.id}" data-nombre="${m.nombre}" data-telefono="${m.telefono||''}" data-email="${m.email||''}">
+                    <strong>${m.nombre}</strong> <small style="color:#6b7280">${m.email||m.telefono||''}</small>
+                </div>`).join('') + '</div>';
+
+            // Attach click handlers
+            container.querySelectorAll('.suggestion').forEach(el => {
+                el.addEventListener('click', () => {
+                    selectClientFromSuggestion(el.dataset.id, el.dataset.nombre, el.dataset.telefono, el.dataset.email);
+                });
+            });
+        }
+
+        function selectClientFromSuggestion(id, nombre, telefono, email) {
+            document.getElementById('modal-nombre').value = nombre || document.getElementById('modal-nombre').value;
+            document.getElementById('modal-telefono').value = telefono || '';
+            document.getElementById('modal-email').value = email || '';
+            document.getElementById('tallerista-cliente-id').value = id || '';
+
+            // Clear suggestions and search box
+            const container = document.getElementById('modal-client-suggestions');
+            if (container) container.innerHTML = '';
+            const input = document.getElementById('modal-client-search'); if (input) input.value = '';
+
+            showBanner('Cliente seleccionado', 'success');
+        }
+
+        // Interacción simple en el modal de tallerista: autocompletar desde clientes (legacy fallback)
         async function buscarClienteDesdeModal() {
-            const name = document.getElementById('tallerista-nombre').value.trim();
+            const name = document.getElementById('modal-nombre').value.trim();
             if (!name) { showBanner('Ingrese nombre para buscar', 'info'); return; }
             const matches = await searchClientes(name);
             if (matches.length === 0) { showBanner('No se encontraron clientes con ese término', 'info'); return; }
             // Prefill with first match
             const c = matches[0];
-            document.getElementById('tallerista-telefono').value = c.telefono || '';
-            document.getElementById('tallerista-email').value = c.email || '';
+            document.getElementById('modal-telefono').value = c.telefono || '';
+            document.getElementById('modal-email').value = c.email || '';
             document.getElementById('tallerista-cliente-id').value = c.id || '';
             showBanner('Datos de cliente autocompletados', 'success');
         }
@@ -903,9 +991,10 @@
                         <label>Nombre</label>
                         <input type="text" id="modal-nombre" value="${item.nombre || ''}" required>
                         <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-                          <button type="button" class="btn btn-secondary btn-sm" onclick="buscarClienteDesdeModal()">Autocompletar desde cliente</button>
-                          <small style="color:#9ca3af">Buscar por nombre/email/teléfono</small>
+                          <input type="text" id="modal-client-search" placeholder="Buscar cliente por nombre/email/teléfono" style="flex:1; padding:6px; border:1px solid #d1d5db; border-radius:4px;" autocomplete="off" />
+                          <button type="button" class="btn btn-secondary btn-sm" onclick="buscarClienteDesdeModal()">Autocompletar (primera coincidencia)</button>
                         </div>
+                        <div id="modal-client-suggestions" class="client-suggestions" style="position:relative;margin-top:6px;"></div>
                         <input type="hidden" id="tallerista-cliente-id" value="${item.cliente_id || ''}" />
                     </div>
                     <div class="form-group">
@@ -1059,6 +1148,11 @@
             }
 
             body.innerHTML = html;
+            // Attach client search handlers for tallerista modal
+            if (type === 'tallerista') {
+                // Give DOM a tick to attach event listeners
+                setTimeout(() => attachClientSearchHandlers(), 20);
+            }
             modal.classList.add('show');
         }
 

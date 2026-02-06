@@ -25,6 +25,7 @@ Breve plan por fases para normalizar solicitudes y unificar eventos confirmados.
 
 ### Fase 0 — Preparación (rápido, ~1h) ⚙️
 - Añadir/ejecutar tests de humo para endpoints críticos (precios, duraciones, tipos, eventos_confirmados, instrumentos, talleres, servicios, personal).
+- Integrar smoke tests en GitHub Actions (`.github/workflows/smoke-tests.yml`) para ejecutar scripts de humo y pruebas E2E básicas. (Nota: configurar secretos necesarios en el repositorio: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `MARIADB_ROOT_PASSWORD`, `MARIADB_USER`, `MARIADB_PASSWORD`, `JWT_SECRET`).
 - Crear rama: `feat/admin-cleanups` y abrir PRs incrementales.
 
 ### Fase 1 — Corregir Config Alquiler (alta, 3–5h) 🔧

@@ -1,0 +1,102 @@
+name: Smoke & E2E Tests
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  smoke-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Create .env for docker-compose
+        env:
+          DB_HOST: 127.0.0.1
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MARIADB_ROOT_PASSWORD: ${{ secrets.MARIADB_ROOT_PASSWORD }}
+          MARIADB_USER: ${{ secrets.MARIADB_USER }}
+          MARIADB_PASSWORD: ${{ secrets.MARIADB_PASSWORD }}
+          MARIADB_DATABASE: ${{ secrets.MARIADB_DATABASE }}
+          PORT: '3000'
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          echo "DB_HOST=127.0.0.1" > .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "MARIADB_ROOT_PASSWORD=${{ secrets.MARIADB_ROOT_PASSWORD }}" >> .env
+          echo "MARIADB_USER=${{ secrets.MARIADB_USER }}" >> .env
+          echo "MARIADB_PASSWORD=${{ secrets.MARIADB_PASSWORD }}" >> .env
+          echo "MARIADB_DATABASE=${{ secrets.MARIADB_DATABASE }}" >> .env
+          echo "PORT=3000" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+
+      - name: Build and start services
+        run: docker compose -f docker/docker-compose.yml up -d --build
+
+      - name: Wait for backend to be ready
+        run: |
+          for i in {1..36}; do
+            if curl -sS -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "Backend is up"; exit 0;
+            fi
+            echo "Waiting for backend... ($i)"; sleep 5;
+          done
+          echo "Backend did not start in time"; exit 1
+
+      - name: Install Node deps
+        run: npm ci
+
+      - name: Create admin user for CI
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          DB_HOST: 127.0.0.1
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: node ./scripts/create-admin-ci.js
+
+      - name: Get admin token
+        id: get_token
+        run: |
+          TOKEN=$(curl -sS -X POST -H "Content-Type: application/json" -d '{"email":"'"${{ secrets.ADMIN_EMAIL }}"'", "password":"'"${{ secrets.ADMIN_PASSWORD }}"'"}' http://localhost:3000/api/auth/login | jq -r .token)
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Run smoke tests
+        env:
+          BASE_URL: http://localhost:3000
+          TOKEN: ${{ steps.get_token.outputs.token }}
+        run: |
+          BASE_URL=http://localhost:3000 TOKEN=$TOKEN ./scripts/smoke_tests.sh
+
+      - name: Run talleristas test (smoke)
+        env:
+          BASE_URL: http://localhost:3000
+          TOKEN: ${{ steps.get_token.outputs.token }}
+        run: |
+          BASE_URL=http://localhost:3000 TOKEN=$TOKEN ./scripts/test_talleristas.sh
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright E2E (talleristas autocomplete)
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          BASE_URL: http://localhost:3000
+        run: npx playwright test tests/talleristas-autocomplete.spec.js --reporter=list
+
+      - name: Tear down services
+        if: always()
+        run: docker compose -f docker/docker-compose.yml down --volumes
