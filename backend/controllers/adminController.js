@@ -848,7 +848,7 @@ const crearEvento = async (req, res) => {
         ];
 
         // Debug: asegurar que placeholders y params coinciden
-        console.debug('[ADMIN] crearEvento: placeholders=', (insertSql.match(/\?/g)||[]).length, 'params=', params.length);
+        console.log('[ADMIN] crearEvento: placeholders=', (insertSql.match(/\?/g)||[]).length, 'params=', params.length);
 
         const result = await conn.query(insertSql, params);
 
