@@ -47,6 +47,10 @@ router.get('/orden-trabajo/:id', getOrdenDeTrabajo);
 // --- Instrumentos (admin) ---
 const bandasController = require('../controllers/bandasController');
 router.get('/bandas/instrumentos', protect, requireAdmin, checkPermiso('config.bandas'), bandasController.getInstrumentos);
+// CRUD instrumentos (admin)
+router.post('/bandas/instrumentos', checkPermiso('config.bandas'), bandasController.createInstrumento);
+router.put('/bandas/instrumentos/:id', checkPermiso('config.bandas'), bandasController.updateInstrumento);
+router.delete('/bandas/instrumentos/:id', checkPermiso('config.bandas'), bandasController.deleteInstrumento);
 
 // =============================================================================
 // EVENTOS

@@ -1260,6 +1260,9 @@
                                     <button class="btn btn-icon btn-sm" onclick="editInstrumento(${i.id})" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </button>
+                                    <button class="btn btn-icon btn-sm" onclick="deleteInstrumento(${i.id})" title="Eliminar" style="margin-left:6px">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -1381,14 +1384,52 @@
         async function saveInstrumento() {
             const id = document.getElementById('instrumento-id').value;
             const payload = {
-                nombre: document.getElementById('instrumento-nombre').value,
+                nombre: document.getElementById('instrumento-nombre').value.trim(),
                 categoria: document.getElementById('instrumento-categoria').value,
                 icono: document.getElementById('instrumento-icono').value || null
             };
 
-            // Por ahora solo mostrar, falta endpoint
-            showBanner('Funcionalidad de guardado de instrumentos pendiente de implementar en el backend', 'info');
-            closeModal('modal-instrumento');
+            if (!payload.nombre) { showBanner('El nombre es requerido', 'error'); return; }
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+                let res;
+                if (id) {
+                    res = await fetch(`/api/admin/bandas/instrumentos/${id}`, { method: 'PUT', headers, body: JSON.stringify(payload) });
+                } else {
+                    res = await fetch('/api/admin/bandas/instrumentos', { method: 'POST', headers, body: JSON.stringify(payload) });
+                }
+                if (res.ok) {
+                    showBanner(id ? 'Instrumento actualizado' : 'Instrumento creado', 'success');
+                    closeModal('modal-instrumento');
+                    await loadInstrumentos();
+                } else {
+                    const data = await res.json().catch(()=>({}));
+                    throw new Error(data.error || 'Error guardando instrumento');
+                }
+            } catch (err) {
+                showBanner('Error: ' + err.message, 'error');
+                console.error('saveInstrumento error', err);
+            }
+        }
+
+        async function deleteInstrumento(id) {
+            if (!confirm('¿Eliminar este instrumento?')) return;
+            try {
+                const token = localStorage.getItem('authToken');
+                const res = await fetch(`/api/admin/bandas/instrumentos/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    showBanner('Instrumento eliminado', 'success');
+                    await loadInstrumentos();
+                } else {
+                    const data = await res.json().catch(()=>({}));
+                    throw new Error(data.error || 'Error al eliminar instrumento');
+                }
+            } catch (err) {
+                showBanner('Error: ' + err.message, 'error');
+                console.error('deleteInstrumento error', err);
+            }
         }
 
         // ============================================================
