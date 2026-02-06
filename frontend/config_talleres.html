@@ -1094,6 +1094,7 @@
                     telefono: document.getElementById('modal-telefono').value || null,
                     email: document.getElementById('modal-email').value || null,
                     instagram: document.getElementById('modal-instagram').value || null,
+                    cliente_id: document.getElementById('tallerista-cliente-id')?.value || null,
                     activo: document.getElementById('modal-activo').checked ? 1 : 0
                 };
                 url = editingId ? `${API_TALLERES}/talleristas/${editingId}` : `${API_TALLERES}/talleristas`;

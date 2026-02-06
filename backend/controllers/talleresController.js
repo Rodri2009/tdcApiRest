@@ -46,16 +46,16 @@ const createTallerista = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const { nombre, especialidad, bio, telefono, email, instagram, activo = 1 } = req.body;
+        const { nombre, especialidad, bio, telefono, email, instagram, cliente_id = null, activo = 1 } = req.body;
 
         if (!nombre) {
             return res.status(400).json({ error: 'El nombre es obligatorio' });
         }
 
         const result = await conn.query(
-            `INSERT INTO talleristas (nombre, especialidad, bio, telefono, email, instagram, activo) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [nombre, especialidad || null, bio || null, telefono || null, email || null, instagram || null, activo]
+            `INSERT INTO talleristas (nombre, especialidad, bio, telefono, email, instagram, cliente_id, activo) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [nombre, especialidad || null, bio || null, telefono || null, email || null, instagram || null, cliente_id || null, activo]
         );
 
         res.status(201).json({
@@ -75,7 +75,7 @@ const updateTallerista = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const { id } = req.params;
-        const { nombre, especialidad, bio, telefono, email, instagram, activo } = req.body;
+        const { nombre, especialidad, bio, telefono, email, instagram, cliente_id, activo } = req.body;
 
         const result = await conn.query(
             `UPDATE talleristas SET 
@@ -85,9 +85,10 @@ const updateTallerista = async (req, res) => {
                 telefono = COALESCE(?, telefono),
                 email = COALESCE(?, email),
                 instagram = COALESCE(?, instagram),
+                cliente_id = COALESCE(?, cliente_id),
                 activo = COALESCE(?, activo)
              WHERE id = ?`,
-            [nombre, especialidad, bio, telefono, email, instagram, activo, id]
+            [nombre, especialidad, bio, telefono, email, instagram, cliente_id || null, activo, id]
         );
 
         if (result.affectedRows === 0) {
@@ -152,9 +153,12 @@ const getTalleres = async (req, res) => {
                 t.duracion_minutos as duracionMinutos, t.cupo_maximo as cupoMaximo,
                 t.cupo_minimo as cupoMinimo, t.ubicacion, t.activo, t.creado_en as creadoEn,
                 tal.nombre as talleristaNombre,
+                tal.cliente_id as tallerista_cliente_id,
+                c.nombre as tallerista_cliente_nombre,
                 ot.nombre_para_mostrar as tipoNombre
             FROM talleres t
             LEFT JOIN talleristas tal ON t.tallerista_id = tal.id
+            LEFT JOIN clientes c ON tal.cliente_id = c.id
             LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_tipo_evento
             WHERE 1=1
         `;
