@@ -824,7 +824,7 @@ const crearEvento = async (req, res) => {
                 nombre_cliente, email_cliente, telefono_cliente,
                 precio_base, precio_final, es_publico, activo,
                 genero_musical, cantidad_personas
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             null,
             tipo_evento || 'BANDA',
