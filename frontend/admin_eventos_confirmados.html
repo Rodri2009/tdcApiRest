@@ -95,7 +95,20 @@
                 </select>
                 <input type="date" id="desde" />
                 <input type="date" id="hasta" />
-                <input type="number" id="limit" placeholder="Max (200)" style="width:110px" />
+                <label style="display:inline-flex;align-items:center;gap:6px">Hora desde <input type="time" id="hora_desde" /></label>
+                <label style="display:inline-flex;align-items:center;gap:6px">Hora hasta <input type="time" id="hora_hasta" /></label>
+                <label style="display:inline-flex;align-items:center;gap:6px">Ordenar
+                  <select id="order_by">
+                    <option value="fecha_evento">Fecha</option>
+                    <option value="hora_inicio">Hora</option>
+                    <option value="nombre_evento">Nombre</option>
+                  </select>
+                  <select id="order_dir">
+                    <option value="DESC">Desc</option>
+                    <option value="ASC">Asc</option>
+                  </select>
+                </label>
+                <input type="number" id="limit" placeholder="Por página" style="width:110px" value="20" />
                 <button id="filtrarBtn" class="btn">Filtrar</button>
             </div>
 
@@ -117,6 +130,12 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+                <button id="prevPage" class="btn">Anterior</button>
+                <span id="pageInfo">Página 1</span>
+                <button id="nextPage" class="btn">Siguiente</button>
             </div>
 
             <div id="empty" style="display:none;padding:20px;text-align:center;color:#9f7aea">No se encontraron eventos
@@ -147,9 +166,19 @@
             if (tipo) params.set('tipo_evento', tipo);
             if (desde) params.set('fecha_desde', desde);
             if (hasta) params.set('fecha_hasta', hasta);
+            const horaDesde = document.getElementById('hora_desde').value;
+            const horaHasta = document.getElementById('hora_hasta').value;
+            if (horaDesde) params.set('hora_desde', horaDesde);
+            if (horaHasta) params.set('hora_hasta', horaHasta);
+            const orderBy = document.getElementById('order_by').value;
+            const orderDir = document.getElementById('order_dir').value;
+            params.set('order_by', orderBy);
+            params.set('order_dir', orderDir);
             params.set('limit', limit);
+            params.set('offset', currentPage * (parseInt(limit, 10) || 20));
 
             try {
+                updatePageInfo();
                 const res = await fetch(`/api/admin/eventos_confirmados?${params.toString()}`, { headers: getHeaders() });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const rows = await res.json();
@@ -167,32 +196,35 @@
                     return '';
                 }
 
-                async function deleteEvento(id) {
-                    if (!confirm('¿Eliminar este evento?')) return;
+                async function cancelEventoClient(id) {
+                    if (!confirm('¿Cancelar este evento?')) return;
                     try {
-                        const res = await fetch(`/api/admin/eventos_confirmados/${id}`, { method: 'DELETE', headers: getHeaders() });
-                        if (!res.ok) throw new Error('Error al eliminar');
+                        const res = await fetch(`/api/admin/eventos_confirmados/${id}/cancel`, { method: 'PATCH', headers: getHeaders() });
+                        if (!res.ok) throw new Error('Error al cancelar');
                         fetchEventos();
                     } catch (err) {
-                        console.error('Error borrando evento', err);
-                        alert('No se pudo eliminar el evento. Revisa la consola.');
+                        console.error('Error cancelando evento', err);
+                        alert('No se pudo cancelar el evento. Revisa la consola.');
                     }
                 }
 
                 for (const r of rows) {
                     const tr = document.createElement('tr');
                     const detalles = renderDetails(r);
+                    const estadoBadge = r.activo === 0 ? `<span class="estado-cancelado" style="background:#f87171;color:#fff;padding:4px 6px;border-radius:6px;font-weight:700">CANCELADO</span>` : '';
                     tr.innerHTML = `
             <td>${r.fecha_evento || ''}</td>
             <td>${r.hora_inicio || ''}</td>
             <td>${r.tipo_evento || ''}</td>
             <td>${r.nombre_cliente || ''}</td>
-            <td>${r.nombre_evento || ''}</td>
+            <td>${r.nombre_evento || ''} ${estadoBadge}</td>
             <td>${detalles}</td>
             <td class="description">${r.descripcion_corta || ''}</td>
             <td class="actions-cell">
               <a class="btn" href="/editar_solicitud?id=${r.id_solicitud}">Ver solicitud</a>
               <a class="btn" href="/editar_evento?id=${r.id}" style="background:#4caf50; margin-left:6px">Editar</a>
+              <a class="btn" href="/asignar_personal.html?solicitudId=ev_${r.id}&tipoEventoId=${r.tipo_evento}" style="background:#4f46e5;margin-left:6px">Asignar Personal</a>
+              <button class="btn btn-cancel" style="background:#f97316;margin-left:6px" onclick="cancelEventoClient(${r.id})">Cancelar</button>
               <button class="btn btn-delete" style="background:#f43f5e;margin-left:6px" onclick="deleteEvento(${r.id})">Eliminar</button>
             </td>
           `;
@@ -206,7 +238,22 @@
             }
         }
 
-        document.getElementById('filtrarBtn').addEventListener('click', fetchEventos);
+        // Pagination and controls
+        let currentPage = 0;
+        const pageInfo = document.getElementById('pageInfo');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+
+        function updatePageInfo() {
+            pageInfo.textContent = `Página ${currentPage + 1}`;
+        }
+
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 0) { currentPage -= 1; fetchEventos(); }
+        });
+        nextPageBtn.addEventListener('click', () => { currentPage += 1; fetchEventos(); });
+
+        document.getElementById('filtrarBtn').addEventListener('click', () => { currentPage = 0; fetchEventos(); });
         document.getElementById('refreshBtn').addEventListener('click', fetchEventos);
 
         // Auto load
