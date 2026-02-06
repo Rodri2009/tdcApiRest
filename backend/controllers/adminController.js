@@ -1018,7 +1018,7 @@ const getEventoById = async (req, res) => {
  * Listado de eventos confirmados (admin)
  */
 const getEventosConfirmados = async (req, res) => {
-    const { tipo_evento, fecha_desde, fecha_hasta, limit } = req.query;
+    const { tipo_evento, fecha_desde, fecha_hasta, hora_desde, hora_hasta, limit, offset, order_by, order_dir } = req.query;
     let conn;
     try {
         conn = await pool.getConnection();
@@ -1037,11 +1037,25 @@ const getEventosConfirmados = async (req, res) => {
             conditions += ' AND fecha_evento <= ?';
             params.push(fecha_hasta);
         }
+        if (hora_desde) {
+            conditions += ' AND hora_inicio >= ?';
+            params.push(hora_desde);
+        }
+        if (hora_hasta) {
+            conditions += ' AND hora_inicio <= ?';
+            params.push(hora_hasta);
+        }
 
-        const lim = parseInt(limit, 10) || 200;
+        const lim = Math.min(parseInt(limit, 10) || 50, 1000);
+        const off = Math.max(parseInt(offset, 10) || 0, 0);
 
-        const sql = `SELECT id, id_solicitud, tipo_evento, tabla_origen, nombre_evento, descripcion as descripcion_corta, fecha_evento, hora_inicio, es_publico, activo, nombre_cliente, precio_final, genero_musical FROM eventos_confirmados ${conditions} ORDER BY fecha_evento DESC, hora_inicio DESC LIMIT ?`;
-        params.push(lim);
+        // Whitelist order_by and order_dir to avoid SQL injection
+        const allowedOrderBy = new Set(['fecha_evento', 'hora_inicio', 'nombre_evento']);
+        const orderBy = allowedOrderBy.has(order_by) ? order_by : 'fecha_evento';
+        const orderDir = (order_dir && order_dir.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
+
+        const sql = `SELECT id, id_solicitud, tipo_evento, tabla_origen, nombre_evento, descripcion as descripcion_corta, fecha_evento, hora_inicio, es_publico, activo, nombre_cliente, precio_final, genero_musical, cantidad_personas, tipo_servicio, nombre_taller FROM eventos_confirmados ${conditions} ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
+        params.push(lim, off);
 
         const rows = await conn.query(sql, params);
         res.status(200).json(rows);
