@@ -817,7 +817,7 @@ const crearEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        const result = await conn.query(`
+        const insertSql = `
             INSERT INTO eventos_confirmados (
                 id_solicitud, tipo_evento, tabla_origen,
                 nombre_evento, descripcion, fecha_evento, hora_inicio, duracion_estimada,
@@ -825,7 +825,9 @@ const crearEvento = async (req, res) => {
                 precio_base, precio_final, es_publico, activo,
                 genero_musical, cantidad_personas
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
+        `;
+
+        const params = [
             null,
             tipo_evento || 'BANDA',
             'manual_admin',
@@ -843,7 +845,12 @@ const crearEvento = async (req, res) => {
             activo !== undefined ? activo : 1,
             genero_musical || null,
             aforo_maximo || null
-        ]);
+        ];
+
+        // Debug: asegurar que placeholders y params coinciden
+        console.debug('[ADMIN] crearEvento: placeholders=', (insertSql.match(/\?/g)||[]).length, 'params=', params.length);
+
+        const result = await conn.query(insertSql, params);
 
         const nuevoId = Number(result.insertId);
         res.status(201).json({
