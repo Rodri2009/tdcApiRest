@@ -53,8 +53,8 @@ const createTallerista = async (req, res) => {
         }
 
         const params = [nombre, especialidad || null, bio || null, telefono || null, email || null, instagram || null, cliente_id || null, activo];
-        console.log('[TALLER] createTallerista payload:', { nombre, especialidad, telefono, email, cliente_id, activo });
-        console.log('[TALLER] createTallerista params:', params);
+        console.error('[TALLER] createTallerista payload:', { nombre, especialidad, telefono, email, cliente_id, activo });
+        console.error('[TALLER] createTallerista params:', params);
         const result = await conn.query(
             `INSERT INTO talleristas (nombre, especialidad, bio, telefono, email, instagram, cliente_id, activo) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
