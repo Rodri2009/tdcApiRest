@@ -22,6 +22,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// Health check
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
+
 
 
 
@@ -39,6 +44,7 @@ try {
     const talleresRoutes = require('./routes/talleresRoutes');
     const serviciosRoutes = require('./routes/serviciosRoutes');
     const usuariosRoutes = require('./routes/usuariosRoutes');
+    const eventosRoutes = require('./routes/eventosRoutes');
 
     app.use('/api/opciones', opcionesRoutes);
     app.use('/api/solicitudes', solicitudesRoutes);
@@ -50,6 +56,7 @@ try {
     app.use('/api/talleres', talleresRoutes);
     app.use('/api/servicios', serviciosRoutes);
     app.use('/api/usuarios', usuariosRoutes);
+    app.use('/api/eventos', eventosRoutes);
 
     console.log("Rutas configuradas correctamente.");
 

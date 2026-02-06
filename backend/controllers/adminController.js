@@ -817,16 +817,29 @@ const crearEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        const result = await conn.query(`
-            INSERT INTO eventos_confirmados (
-                id_solicitud, tipo_evento, tabla_origen,
-                nombre_evento, descripcion, fecha_evento, hora_inicio, duracion_estimada,
-                nombre_cliente, email_cliente, telefono_cliente,
-                precio_base, precio_final, es_publico, activo,
-                genero_musical, cantidad_personas
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            NULL,
+        const insertSql = `
+            INSERT INTO eventos_confirmados SET
+              id_solicitud = ?,
+              tipo_evento = ?,
+              tabla_origen = ?,
+              nombre_evento = ?,
+              descripcion = ?,
+              fecha_evento = ?,
+              hora_inicio = ?,
+              duracion_estimada = ?,
+              nombre_cliente = ?,
+              email_cliente = ?,
+              telefono_cliente = ?,
+              precio_base = ?,
+              precio_final = ?,
+              es_publico = ?,
+              activo = ?,
+              genero_musical = ?,
+              cantidad_personas = ?
+        `;
+
+        const params = [
+            0,
             tipo_evento || 'BANDA',
             'manual_admin',
             nombre_banda,
@@ -843,7 +856,14 @@ const crearEvento = async (req, res) => {
             activo !== undefined ? activo : 1,
             genero_musical || null,
             aforo_maximo || null
-        ]);
+        ];
+
+        // Debug: asegurar que placeholders y params coinciden
+        console.log('[ADMIN] crearEvento: placeholders=', (insertSql.match(/\?/g)||[]).length, 'params=', params.length);
+        console.log('[ADMIN] crearEvento SQL:', insertSql);
+        console.log('[ADMIN] crearEvento params sample:', params.slice(0,5));
+
+        const result = await conn.query(insertSql, params);
 
         const nuevoId = Number(result.insertId);
         res.status(201).json({
@@ -993,6 +1013,60 @@ const getEventoById = async (req, res) => {
     }
 };
 
+/**
+ * GET /api/admin/eventos_confirmados
+ * Listado de eventos confirmados (admin)
+ */
+const getEventosConfirmados = async (req, res) => {
+    const { tipo_evento, fecha_desde, fecha_hasta, hora_desde, hora_hasta, limit, offset, order_by, order_dir } = req.query;
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const params = [];
+        let conditions = 'WHERE 1=1';
+
+        if (tipo_evento) {
+            conditions += ' AND tipo_evento = ?';
+            params.push(tipo_evento);
+        }
+        if (fecha_desde) {
+            conditions += ' AND fecha_evento >= ?';
+            params.push(fecha_desde);
+        }
+        if (fecha_hasta) {
+            conditions += ' AND fecha_evento <= ?';
+            params.push(fecha_hasta);
+        }
+        if (hora_desde) {
+            conditions += ' AND hora_inicio >= ?';
+            params.push(hora_desde);
+        }
+        if (hora_hasta) {
+            conditions += ' AND hora_inicio <= ?';
+            params.push(hora_hasta);
+        }
+
+        const lim = Math.min(parseInt(limit, 10) || 50, 1000);
+        const off = Math.max(parseInt(offset, 10) || 0, 0);
+
+        // Whitelist order_by and order_dir to avoid SQL injection
+        const allowedOrderBy = new Set(['fecha_evento', 'hora_inicio', 'nombre_evento']);
+        const orderBy = allowedOrderBy.has(order_by) ? order_by : 'fecha_evento';
+        const orderDir = (order_dir && order_dir.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
+
+        const sql = `SELECT id, id_solicitud, tipo_evento, tabla_origen, nombre_evento, descripcion as descripcion_corta, fecha_evento, hora_inicio, es_publico, activo, nombre_cliente, precio_final, genero_musical, cantidad_personas, tipo_servicio, nombre_taller FROM eventos_confirmados ${conditions} ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
+        params.push(lim, off);
+
+        const rows = await conn.query(sql, params);
+        res.status(200).json(rows);
+    } catch (err) {
+        console.error('Error al obtener eventos confirmados:', err);
+        res.status(500).json({ message: 'Error del servidor.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 
 module.exports = {
     getSolicitudes,
@@ -1006,5 +1080,6 @@ module.exports = {
     actualizarEvento,
     cancelarEvento,
     eliminarEvento,
+    getEventosConfirmados,
     getEventoById,
 };

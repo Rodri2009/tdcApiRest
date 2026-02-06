@@ -9,6 +9,28 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/admin.css">
     <style>
+        /* Theme variables y ajustes para que esta página coincida con config_bandas */
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+            --color-dark: #0c0a09;
+            --color-card: #1c1917;
+        }
+
+        body {
+            background: var(--color-dark);
+            color: #d6d3d1;
+            padding-bottom: 80px;
+        }
+
+        h1 {
+            color: var(--color-secondary);
+            text-align: center;
+            font-size: 1.8rem;
+        }
+    </style>
+    <style>
         /* Estilos específicos de esta página */
         .modal-overlay.show {
             display: flex;
@@ -74,7 +96,7 @@
             <div style="width:150px;"></div>
         </div>
 
-        <div class="tabs right">
+        <div class="tabs">
             <button class="tab active" data-section="tipos">
                 <i class="fas fa-list"></i> Tipos de Alquiler
             </button>
@@ -463,7 +485,7 @@
                 <tr>
                     <td><code style="background:#292524;padding:2px 6px;border-radius:4px;">${t.codigo || t.id}</code></td>
                     <td><strong>${t.nombre}</strong></td>
-                    <td style="max-width:300px;">${t.descripcion || '-'}</td>
+                    <td class="description" style="max-width:300px;">${t.descripcion || '-'}</td>
                     <td>${t.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
                     <td>
                         ${puedeEditarAlquiler ? `
@@ -511,7 +533,7 @@
                 <tr>
                     <td>${d.tipo_evento || d.id_evento || '-'}</td>
                     <td><strong>${d.horas}hs</strong></td>
-                    <td>${d.descripcion || '-'}</td>
+                    <td class="description">${d.descripcion || '-'}</td>
                     <td>${d.activo !== 0 ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
                     <td>
                         ${puedeEditarAlquiler ? `
@@ -603,7 +625,7 @@
             tbody.innerHTML = adicionales.map(a => `
                 <tr>
                     <td><strong>${a.nombre}</strong></td>
-                    <td style="max-width:250px;">${a.descripcion || '-'}</td>
+                    <td class="description" style="max-width:250px;">${a.descripcion || '-'}</td>
                     <td>$${Number(a.precio || 0).toLocaleString('es-AR')}</td>
                     <td>Por evento</td>
                     <td><span class="badge badge-success">Activo</span></td>
@@ -774,7 +796,7 @@
         function openPrecioModal(id = null) {
             currentModalType = 'precio';
             currentEditId = id;
-            const tiposOptions = tipos.map(t => `<option value="${t.codigo || t.id}">${t.nombre}</option>`).join('');
+            const tiposOptions = tipos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
             document.getElementById('modal-title').textContent = id ? 'Editar Precio' : 'Nuevo Precio';
             document.getElementById('modal-body').innerHTML = `
                 <div class="form-row">
@@ -801,7 +823,7 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Vigente Desde *</label>
+                        <label>Vigente Desde (vacío = hoy)</label>
                         <input type="date" id="form-vigente_desde">
                     </div>
                     <div class="form-group">
@@ -818,7 +840,7 @@
             if (!precio) return;
             openPrecioModal(id);
             setTimeout(() => {
-                document.getElementById('form-id_evento').value = precio.id_evento || '';
+                document.getElementById('form-id_evento').value = precio.id_evento || precio.id_tipo_evento || '';
                 document.getElementById('form-cantidad_min').value = precio.cantidad_min || '';
                 document.getElementById('form-cantidad_max').value = precio.cantidad_max || '';
                 document.getElementById('form-precio_por_hora').value = precio.precio_por_hora || '';
@@ -927,14 +949,28 @@
                             ? `${API_BASE}/alquiler/precios/${currentEditId}`
                             : `${API_BASE}/alquiler/precios`;
                         method = currentEditId ? 'PUT' : 'POST';
+
+                        // Validaciones en cliente
+                        const idTipoVal = document.getElementById('form-id_evento').value;
+                        const minVal = parseInt(document.getElementById('form-cantidad_min').value);
+                        const maxVal = parseInt(document.getElementById('form-cantidad_max').value);
+                        const precioVal = parseFloat(document.getElementById('form-precio_por_hora').value);
+
+                        if (!idTipoVal) { showBanner('Seleccione un tipo de evento.', 'error'); return; }
+                        if (isNaN(minVal) || isNaN(maxVal) || isNaN(precioVal)) { showBanner('Complete todos los campos obligatorios.', 'error'); return; }
+                        if (minVal > maxVal) { showBanner('La cantidad mínima no puede ser mayor que la máxima.', 'error'); return; }
+
                         body = {
-                            id_evento: document.getElementById('form-id_evento').value,
-                            cantidad_min: parseInt(document.getElementById('form-cantidad_min').value),
-                            cantidad_max: parseInt(document.getElementById('form-cantidad_max').value),
-                            precio_por_hora: parseFloat(document.getElementById('form-precio_por_hora').value),
-                            vigente_desde: document.getElementById('form-vigente_desde').value,
-                            vigente_hasta: document.getElementById('form-vigente_hasta').value || null
+                            id_tipo_evento: idTipoVal,
+                            cantidad_min: minVal,
+                            cantidad_max: maxVal,
+                            precio_por_hora: precioVal
                         };
+
+                        const vDesde = document.getElementById('form-vigente_desde').value;
+                        const vHasta = document.getElementById('form-vigente_hasta').value || null;
+                        if (vDesde) body.vigente_desde = vDesde;
+                        if (vHasta) body.vigente_hasta = vHasta;
                         break;
 
                     case 'adicional':

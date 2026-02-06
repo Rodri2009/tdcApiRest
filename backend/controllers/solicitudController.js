@@ -93,7 +93,7 @@ const crearSolicitud = async (req, res) => {
         `;
         const paramsGeneral = [
             categoria,
-            descripcionCorta || (descripcion ? descripcion.substring(0,200) : null),
+            descripcionCorta || (descripcion ? descripcion.substring(0, 200) : null),
             descripcionLarga || null,
             descripcion || '',
             clienteId
@@ -476,7 +476,7 @@ const finalizarSolicitud = async (req, res) => {
                 estado = 'Solicitado'
             WHERE id = ?
         `;
-        const paramsUpdateGeneral = [clienteId, descripcionCorta || (detallesAdicionales ? String(detallesAdicionales).substring(0,200) : null), descripcionLarga || null, detallesAdicionales, id];
+        const paramsUpdateGeneral = [clienteId, descripcionCorta || (detallesAdicionales ? String(detallesAdicionales).substring(0, 200) : null), descripcionLarga || null, detallesAdicionales, id];
         const resultGeneral = await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
 
         if (resultGeneral.affectedRows === 0) {
@@ -636,7 +636,7 @@ const actualizarSolicitud = async (req, res) => {
             WHERE id = ?
         `;
         const paramsUpdateGeneral = [
-            descripcionCorta || (descripcion || detallesAdicionales ? String((descripcion || detallesAdicionales)).substring(0,200) : null) ,
+            descripcionCorta || (descripcion || detallesAdicionales ? String((descripcion || detallesAdicionales)).substring(0, 200) : null),
             descripcionLarga || null,
             descripcion || detallesAdicionales || '',
             clienteId,
@@ -696,27 +696,25 @@ const getSesionExistente = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // --- ¡CONSULTA SQL CORREGIDA! ---
-        // Buscar en solicitudes_alquiler y hacer JOIN con solicitudes para obtener la información completa
+        // Buscar sesión más reciente por fingerprint.
+        // Priorizar solicitudes de bandas (almacenan 'fingerprintid'), y devolver campos útiles para rellenar el formulario.
         const sql = `
             SELECT
-                sa.id as solicitudId,
-                sa.tipo_de_evento as tipoEvento,
-                sa.tipo_servicio as tipoServicio,
-                sa.cantidad_de_personas as cantidadPersonas,
-                sa.duracion as duracionEvento,
-                DATE_FORMAT(sa.fecha_evento, '%Y-%m-%d') as fechaEvento,
-                sa.hora_evento as horaInicio
-            FROM solicitudes_alquiler sa
-            WHERE sa.id IN (
-                SELECT s.id FROM solicitudes s 
-                WHERE s.id = sa.id
-            )
-            ORDER BY sa.id DESC
+                sb.id_solicitud as solicitudId,
+                sb.tipo_de_evento as tipoEvento,
+                NULL as tipoServicio,
+                sb.cantidad_de_personas as cantidadPersonas,
+                sb.duracion as duracionEvento,
+                DATE_FORMAT(sb.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                sb.hora_evento as horaInicio,
+                sb.descripcion as descripcion
+            FROM solicitudes_bandas sb
+            WHERE sb.fingerprintid = ?
+            ORDER BY sb.id_solicitud DESC
             LIMIT 1
         `;
 
-        const [sesion] = await conn.query(sql);
+        const [sesion] = await conn.query(sql, [fingerprintId]);
 
         if (sesion) {
             console.log(`Sesión encontrada:`, sesion);
@@ -877,7 +875,7 @@ const updateVisibilidad = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-            // Soportar IDs con prefijos: alq_, bnd_, srv_, tll_, ev_
+        // Soportar IDs con prefijos: alq_, bnd_, srv_, tll_, ev_
         let idValue = id;
 
         if (String(id).startsWith('ev_')) {

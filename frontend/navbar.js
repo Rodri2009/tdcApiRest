@@ -228,6 +228,8 @@ class NavbarManager {
         // Solicitudes
         if (this.tienePermiso('solicitudes.ver')) {
             items.push(this.menuItem('/admin_solicitudes.html', '📝', 'Solicitudes'));
+            // Eventos confirmados (vista unificada)
+            items.push(this.menuItem('/admin_eventos_confirmados.html', '📆', 'Eventos Confirmados'));
         }
 
         // Personal
@@ -326,7 +328,7 @@ class NavbarManager {
      */
     isTokenExpired() {
         if (!this.jwtToken) return true;
-        
+
         try {
             const base64Url = this.jwtToken.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -337,7 +339,7 @@ class NavbarManager {
                     .join('')
             );
             const payload = JSON.parse(jsonPayload);
-            
+
             // Verificar si tiene campo exp y si ha expirado
             if (payload.exp) {
                 const now = Math.floor(Date.now() / 1000);

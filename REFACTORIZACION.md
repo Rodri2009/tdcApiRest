@@ -5,21 +5,10 @@ Normalizar la estructura de datos para unificar el manejo de eventos confirmados
 
 ---
 
-## Plan de implementación (resumen)
-- Prioridad inmediata: Corregir validaciones y payloads en `config_alquiler` (precios/duraciones), y arreglar 404 en `config_bandas` e implementar CRUD de instrumentos. (0.5-1 día)
-- Media prioridad: Añadir validación estricta de `codigo` al crear tipos, y unificar vistas confirmadas por tipo (ALQUILERES, BANDAS, TALLERES, SERVICIOS) con campos estándar: `FECHA, HORA, TIPO, CLIENTE, DESCRIPCION_CORTA, ACCIONES`. (1 día)
-- Siguiente bloque: Implementar búsqueda/autocomplete de `clientes` para Talleristas/Profesionales; si no existe crear `cliente` al registrar tallerista/profesor/profesional. (1-2 días)
-- Opcional: Evaluar y migrar `personal` para usar `clientes` como entidad central (análisis y migración). (1-2 días)
-
-> Recomendación: trabajaremos por PRs pequeños y testeables; para la próxima sesión presencial propongo empezar por *config_alquiler* y *config_bandas*.
-
-
-
-
 ## 1. Cambios en la Base de Datos
 
 ### 1.1 Tablas de Solicitudes (Sin Cambios Estructurales)
-Mantienen su estructura actual; la visibilidad pública se centraliza en la tabla padre `solicitudes` mediante el campo `es_publico` (las columnas `es_publico` / `es_publico_cuando_confirmada` en tablas hijas han sido eliminadas).
+Mantienen su estructura actual, con un campo adicional `es_publico_cuando_confirmada` para indicar si debe aparecer en la agenda pública:
 - `solicitudes_alquiler` (base + nuevo campo)
 - `solicitudes_bandas` (base + nuevo campo)
 - `solicitudes_servicios` (base + nuevo campo)
@@ -77,14 +66,12 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
 ```
 
 ### 1.3 Cambios en Tablas de Solicitudes
+Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas, se asegura consistencia):
 
-- Se agregaron los campos `descripcion_corta` y `descripcion_larga` a la tabla `solicitudes` para permitir una muestra resumida en listados y almacenar descripciones detalladas separadas.
-Eliminar las columnas de visibilidad en las tablas hijas y centralizar la visibilidad en la tabla `solicitudes` (campo `es_publico`).
-
-- `solicitudes_alquiler`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
-- `solicitudes_bandas`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
-- `solicitudes_servicios`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
-- `solicitudes_talleres`: Eliminar columna de visibilidad en la tabla hija; usar `solicitudes.es_publico` como fuente de verdad
+- `solicitudes_alquiler`: Agregado `es_publico_cuando_confirmada` (antes `es_publico`, se renombra para claridad)
+- `solicitudes_bandas`: Agregado `es_publico_cuando_confirmada`
+- `solicitudes_servicios`: Agregado `es_publico_cuando_confirmada`
+- `solicitudes_talleres`: Agregado `es_publico_cuando_confirmada`
 
 ---
 
@@ -127,7 +114,7 @@ Eliminar las columnas de visibilidad en las tablas hijas y centralizar la visibi
 3. **Automáticamente inserta en `eventos_confirmados`**:
    - Lee datos de la solicitud
    - Inserta fila en `eventos_confirmados` con `tipo_evento`, `tabla_origen`
-   - Si `es_publico = 1` en la solicitud (tabla padre), también `es_publico = 1` en el evento confirmado (cuando aplica)
+   - Si `es_publico_cuando_confirmada = 1` en solicitud, también `es_publico = 1` en evento
 
 ### Cancelar Solicitud
 1. Admin cambia estado a 'Cancelado'
@@ -146,10 +133,10 @@ Eliminar las columnas de visibilidad en las tablas hijas y centralizar la visibi
 
 | Tabla | Cambio |
 |-------|--------|
-| `solicitudes_alquiler` | Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
-| `solicitudes_bandas`   | Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
-| `solicitudes_servicios`| Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
-| `solicitudes_talleres` | Eliminar columna de visibilidad y usar `solicitudes.es_publico` |
+| `solicitudes_alquiler` | Agregar `es_publico_cuando_confirmada` |
+| `solicitudes_bandas` | Agregar `es_publico_cuando_confirmada` |
+| `solicitudes_servicios` | Agregar `es_publico_cuando_confirmada` |
+| `solicitudes_talleres` | Agregar `es_publico_cuando_confirmada` |
 | `fechas_bandas_confirmadas` | **Eliminada / Migrada** (ya no se utiliza; datos migrados a `eventos_confirmados`) |
 | `eventos_confirmados` | **Nueva** |
 
@@ -233,7 +220,7 @@ Eliminar las columnas de visibilidad en las tablas hijas y centralizar la visibi
 - Timestamps para auditoría
 
 ✅ **Campos nuevos en tablas de solicitudes**
-- Columnas de visibilidad eliminadas en las tablas hijas (se usa `solicitudes.es_publico`)
+- `es_publico_cuando_confirmada` agregado a todas (4 tablas)
 - Permite control granular de qué se publica al confirmar
 
 ### Backend
@@ -265,32 +252,6 @@ Eliminar las columnas de visibilidad en las tablas hijas y centralizar la visibi
 
 ## 7. Próximos Pasos Opcionales
 
----
-
-## 8. Normalización adicional (Feb 05 2026)
-Se aplicaron cambios adicionales para simplificar y normalizar las tablas de solicitudes y visibilidad pública:
-
-1) Se añadió el campo `es_publico` en la tabla `solicitudes` (tabla padre). Este campo representa la visibilidad pública por defecto de la solicitud confirmada. Para `ALQUILER_SALON` por política se mantiene `es_publico = 0` por defecto.
-
-2) Se homogenizó el nombre de PK en las tablas hijas: **todos los hijos usan ahora `id_solicitud`** como primary key (antes algunas usaban `id`).
-
-3) Se eliminó el campo `es_publico` de las tablas hijas (`solicitudes_bandas`, `solicitudes_servicios`, `solicitudes_talleres`, `solicitudes_alquiler`) ya que la visibilidad se centraliza en la tabla padre `solicitudes` y en `eventos_confirmados`.
-
-4) Se actualizaron los queries del backend para usar `id_solicitud` en todas las tablas hijas, y leer la visibilidad exclusivamente desde `solicitudes.es_publico`. (Las columnas de visibilidad en tablas hijas fueron removidas.)
-
-- Comportamiento adicional:
-  - Cuando una solicitud es cambiada a **Confirmado**, se inserta un registro en `eventos_confirmados` si no existe; si existe pero estaba inactivo se **reactiva y actualiza** sus datos.
-  - Cuando una solicitud es degradada a **Solicitado**, se **elimina** cualquier registro asociado en `eventos_confirmados` para evitar eventos huérfanos.
-
-5) Se añadió la migración `database/migrations/20260206_normalize_solicitudes.sql` para aplicar los cambios en instalaciones existentes (añadir columna `es_publico`, renombrar PKs de hijos a `id_solicitud`, eliminar columnas obsoletas y mantener integridad referencial).
-
-6) Se ejecutó un reset de la BD para verificar que los scripts de inicialización (`03_test_data.sql`) funcionen con las nuevas definiciones; se actualizaron los datos de prueba en `03_test_data.sql` para reflejar los nuevos nombres de columna y el uso de `es_publico` en la tabla padre.
-
----
-
-> Nota: Estos cambios se aplicaron para facilitar consultas transversales y reducir duplicación. Se dejó una migración atómica y puntos de recuperación (push) en la rama `main` antes de aplicar cambios destructivos.
-
-
 1. **Endpoint para Eventos Públicos**: Crear `GET /api/eventos/publicos` que devuelva solo `es_publico=1 AND activo=1`
 2. **Deprecación de `fechas_bandas_confirmadas`**: Una vez validado, se puede eliminar o mantener como vista materializada
 3. **Notificaciones**: Agregar lógica para notificar clientes cuando su solicitud se confirma
@@ -309,35 +270,66 @@ Se aplicaron cambios adicionales para simplificar y normalizar las tablas de sol
 
 ---
 
-## Cambios aplicados el 2026-02-05 ✅
-Durante la sesión del 05/02/2026 se realizaron las siguientes modificaciones en el código y base de datos (resumen ejecutable):
+## 8. Checklist práctico para eliminar redundancias y verificar el sistema (para su seguimiento mañana) ✅
+A continuación tienes una lista accionable, priorizada y con comandos útiles para acelerar la limpieza, verificación y despliegue seguro.
 
-- Base de datos
-  - Añadido `descripcion_corta` (VARCHAR(255)) y `descripcion_larga` (TEXT) a la tabla `solicitudes`.
-  - Añadida migración idempotente: `database/migrations/20260205_add_descripciones_to_solicitudes.sql`.
-  - Seeds actualizados en `database/03_test_data.sql` para poblar `descripcion_corta`/`descripcion_larga` en registros de prueba.
+### Prioridad alta (hacer primero)
+- **Backup antes de cualquier cambio destructivo** 🛟
+  - Hacer copia de la BD: `docker exec -i docker-mariadb-1 mysqldump -u root -p$MARIADB_ROOT_PASSWORD tdc_db > /tmp/backup_pre_cleanup.sql`
+  - Crear branch y tag: `git checkout -b cleanup/fechas-bandas && git tag pre-cleanup-$(date +%Y%m%d)`
 
-- Backend
-  - `backend/controllers/adminController.js`:
-    - Corregida la consulta `getSolicitudes()` (UNION ALL) asegurando que **todos los SELECTs devuelvan el mismo número y orden de columnas** para evitar ER_WRONG_NUMBER_OF_COLUMNS_IN_SELECT (500).
-    - Eliminadas las columnas `nombreBanda` y `cantidadAforo` de la salida administrativa al comprobar que no eran usadas en la UI admin; simplificado el SELECT para devolver `descripcionCorta`, `tipoNombre`, `categoria`, `horaInicio`, `es_publico`, etc.
-  - `backend/controllers/alquilerAdminController.js`:
-    - Corregidos `getDuraciones()` y `getPrecios()` para usar la columna real `id_tipo_evento` y exponerla como `id_evento` en la respuesta, además de ordenar por `id_tipo_evento`.
-    - Corrección en condiciones WHERE (`id_tipo_evento` en lugar de `id_evento`) y alias en selects.
-  - `backend/controllers/solicitudController.js` y `bandasController.js`:
-    - Aceptan ahora `descripcionCorta` / `descripcionLarga` en create/put y persisten en tabla `solicitudes`.
+- **Verificaciones rápidas de endpoints y rutas** 🔎
+  - Ejecutar smoke tests existentes: `./scripts/verify_migration.sh`
+  - Listar rutas registradas (desde backend en ejecución): `curl -s -X GET http://localhost/api/debug/routes -H "Authorization: Bearer $TOKEN" | jq .`
+  - Añadir pruebas que verifiquen que los endpoints legacy devuelvan `404` y que los nuevos respondan `200`.
 
-- Frontend
-  - `frontend/admin_solicitudes.html`:
-    - Mapeo y render: ahora muestra `descripcion_corta` en la columna Descripción, y ya no depende de `nombreBanda`/`cantidadAforo`.
-    - Añadida clase visual de resaltado para filas **Confirmado** (fondo más visible + borde izquierdo verde y texto en negrita).
-    - Event delegation: corregidos handlers para botones (editar/eliminar, asignar personal, orden de trabajo) y corrección de URLs para redirecciones según categoría/origen.
-  - `frontend/admin_agenda.html`:
-    - Eliminado uso de `nombreBanda` para el nombre a mostrar; el fallback usa `tipoNombre` / `descripcionCorta` / `nombreCliente` según corresponda.
-    - Reparados enlaces de edición para apuntar a editores reales (`editar_solicitud_fecha_bandas.html`, `editar_solicitud_alquiler.html`, etc.) y limpiados logs de debug excesivos.
-  - `frontend/config_alquiler.html`:
-    - Lógica de carga y renderización de duraciones y precios verificada; corregida la petición y el manejo de errores para que muestre mensajes legibles.
+- **Eliminar handlers y trazas temporales** 🧹
+  - Revisar `backend/server.js` por middlewares de tracing, `console.warn` y handlers `*fechas_bandas_confirmadas*` y retirarlos (ya se eliminaron de forma principal, verificar no queden más copias).
+  - Ejecutar linter/tests: `cd backend && npm run lint && npm test`
 
-- Deploy y verificación
-  - Contenedor `backend` rebuild y restart; validado con llamadas `curl` autenticadas: `/api/admin/alquiler/duraciones`, `/api/admin/alquiler/precios` y `/api/admin/solicitudes` responden correctamente y con la forma esperada.
-  - Commits creados y pusheados a `origin/main` con mensajes descriptivos.
+### Prioridad media (limpieza de código y pruebas) ⚙️
+- **Buscar y eliminar referencias**
+  - Búsqueda general: `grep -R "fechas_bandas_confirmadas" -n . --exclude-dir=database/migrations --exclude-dir=.git || true`
+  - Buscar patterns relacionados: `grep -R "fechas_bandas|fechas_bandas_confirmadas|fechas-" -n . --exclude-dir=.git || true`
+
+- **Frontend: enlaces y archivos sin uso** 🧭
+  - Buscar referencias en frontend: `grep -R "fechas_bandas_confirmadas|eventos_confirmados" frontend -n || true`
+  - Detectar enlaces rotos en site local (instala `broken-link-checker` si falta): `npx blc http://localhost -ro`
+  - Lista de archivos no referenciados (manual/heurística): revisar `frontend/*.html` y usar `grep` para detectar archivos que nunca aparecen.
+  - Ejecutar checks de accesibilidad/HTML si están disponibles (`npx html-validator-cli` o similar).
+
+- **Dependencias no usadas**
+  - Ejecutar `npx depcheck` en `backend` y `frontend` para detectar paquetes sin uso.
+
+### Prioridad baja (optimización y documentación) 📝
+- **Actualizar documentación**
+  - Añadir notas de la limpieza en `REFACTORIZACION_SOLICITUDES.md` (esta sección) y en `CHANGELOG` o release notes.
+
+- **Pruebas de integración y CI**
+  - Añadir paso CI que ejecute `./scripts/verify_migration.sh` y el chequeo de enlaces del frontend en staging.
+
+- **DB: limpieza final**
+  - Verificar `information_schema.KEY_COLUMN_USAGE` para detectar FKs que referencien tablas legacy antes de borrar (si hay alguna):
+    ```sql
+    SELECT TABLE_NAME, CONSTRAINT_NAME
+      FROM information_schema.KEY_COLUMN_USAGE
+      WHERE REFERENCED_TABLE_NAME LIKE 'fechas_bandas%' AND CONSTRAINT_SCHEMA = DATABASE();
+    ```
+  - **Solo DROP** tablas legacy después de aprobación y backup; preferir renombrado/archivado antes de eliminar en producción.
+
+### Procedimiento sugerido (paso a paso para mañana)
+1. Crear branch `cleanup/fechas-bandas` y tag `pre-cleanup`.
+2. Ejecutar backup DB y guardar en almacenamiento seguro.
+3. Ejecutar `./scripts/verify_migration.sh` y `npm test` para certificar estado actual.
+4. Buscar y eliminar referencias de código (1 módulo/ruta por PR). Añadir tests que prueben comportamiento esperado (legacy 404, nuevos 200).
+5. Revisar frontend: ejecutar `npx blc` y corregir/retirar enlaces/HTML sin uso; abrir PRs separados.
+6. Merge a `main` tras revisión; desplegar a staging; ejecutar `verify_migration.sh` y link-checker en staging.
+7. Monitorear logs (nginx + backend) 24–48 horas; si todo ok, planear eliminación final en producción con ventana de mantenimiento.
+
+### Tips y recordatorios 🔔
+- Hacer cambios pequeños y reversibles (1 PR = 1 cambio de propósito).
+- Añadir pruebas automáticas que impidan que se vuelvan a introducir rutas legacy.
+- Documentar cada DROP/ARCHIVE con una entrada en `database/migrations` y en el changelog.
+- Tener una copia del `backup_pre_cleanup.sql` disponible antes de cualquier DROP.
+
+
