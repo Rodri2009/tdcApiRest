@@ -131,6 +131,32 @@ INSERT INTO solicitudes (id, categoria, fecha_creacion, estado, es_publico, desc
 INSERT INTO solicitudes_servicios (id_solicitud, tipo_servicio, fecha_evento, hora_evento, duracion, precio) VALUES
 (6, 'Servicio de Catering', '2026-04-20', '12:00', '5 horas', 5000.00);
 
+-- ---------------------------------------------------------------------------
+-- CATÁLOGO DE SERVICIOS (ejemplos de desarrollo)
+-- ---------------------------------------------------------------------------
+INSERT INTO servicios_catalogo (id, tipo_servicio_id, nombre, descripcion, duracion_minutos, activo, orden) VALUES
+(1, 'MASAJES', 'Masaje Descontracturante', 'Masaje descontracturante de 60 minutos', 60, 1, 1),
+(2, 'MASAJES', 'Masaje Relajante', 'Masaje relajante de 45 minutos', 45, 1, 2),
+(3, 'DEPILACION', 'Depilación Piernas', 'Depilación con cera - piernas completas', 30, 1, 1),
+(4, 'DEPILACION', 'Depilación Bozo', 'Depilación facial - bozo', 15, 1, 2),
+(5, 'ESTETICA', 'Limpieza Facial', 'Limpieza facial profunda de 60 minutos', 60, 1, 1),
+(6, 'ESTETICA', 'Hidratación Facial', 'Tratamiento hidratante de 45 minutos', 45, 1, 2);
+
+-- Precios vigentes para servicios de ejemplo
+INSERT INTO precios_servicios (servicio_id, precio, vigente, vigente_desde) VALUES
+(1, 4000.00, 1, '2025-08-01'),
+(2, 3500.00, 1, '2025-08-01'),
+(3, 2500.00, 1, '2025-08-01'),
+(4, 1200.00, 1, '2025-08-01'),
+(5, 3000.00, 1, '2025-08-01'),
+(6, 2800.00, 1, '2025-08-01');
+-- ---------------------------------------------------------------------------
+-- PROFESIONALES (ejemplos para desarrollo)
+-- ---------------------------------------------------------------------------
+INSERT INTO profesionales_servicios (id, nombre, especialidad, telefono, email, cliente_id, dias_trabaja, hora_inicio, hora_fin, activo, creado_en) VALUES
+(1, 'Lucía Martínez', 'Masajes', '1150012345', 'lucia.m@example.com', 6, 'Lunes,Miércoles,Viernes', '09:00:00', '17:00:00', 1, NOW()),
+(2, 'Mariana Gómez', 'Depilación', '1150023456', 'mariana.g@example.com', 5, 'Martes,Jueves', '10:00:00', '18:00:00', 1, NOW()),
+(3, 'Carolina Ruiz', 'Estética', '1150034567', 'carolina.r@example.com', 1, 'Lunes a Viernes', '09:00:00', '17:30:00', 1, NOW());
 -- ===========================================================================
 -- FIN DE LOS DATOS DE PRUEBA
 -- ===========================================================================
