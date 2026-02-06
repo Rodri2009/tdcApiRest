@@ -752,6 +752,8 @@
             if (nombreFiltro) filtered = filtered.filter(p => p.nombre.toLowerCase().includes(nombreFiltro));
             if (estadoFiltro !== '') filtered = filtered.filter(p => String(p.activo) === estadoFiltro);
 
+            console.log('[SERVICIOS] renderProfesionales: rendering', filtered.length, 'items (filters:', { nombreFiltro, estadoFiltro }, ')');
+
             const tbody = document.getElementById('tbody-profesionales');
             if (filtered.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay profesionales registrados</td></tr>';
@@ -780,27 +782,39 @@
 
         // ============ CATÁLOGO DE SERVICIOS ============
         async function loadServicios() {
+            console.log('[SERVICIOS] loadServicios: requesting catalogo from', `${API_SERVICIOS}/catalogo`);
             try {
                 const res = await fetch(`${API_SERVICIOS}/catalogo`);
+                console.log('[SERVICIOS] loadServicios: response status', res.status);
                 if (res.ok) {
                     servicios = await res.json();
+                    console.log('[SERVICIOS] loadServicios: received', Array.isArray(servicios) ? servicios.length : typeof servicios, 'items');
+                } else {
+                    const txt = await res.text();
+                    console.error('[SERVICIOS] loadServicios: non-ok response:', res.status, txt);
                 }
-            } catch (err) { console.error('Error:', err); }
+            } catch (err) { console.error('[SERVICIOS] loadServicios error:', err); }
         }
 
         // ============ SERVICIOS CONFIRMADOS ============
         let serviciosConfirmados = [];
 
         async function loadServiciosConfirmados() {
+            console.log('[SERVICIOS] loadServiciosConfirmados: requesting confirmed services');
             try {
                 // Cargar solicitudes de servicios confirmados (DEPILACION, MASAJES, ESTETICA, etc.)
                 const res = await fetch(`/api/admin/solicitudes?tipo=SERVICIOS&estado=Confirmado`, { headers: authHeaders() });
+                console.log('[SERVICIOS] loadServiciosConfirmados: response status', res.status);
                 if (res.ok) {
                     serviciosConfirmados = await res.json();
+                    console.log('[SERVICIOS] loadServiciosConfirmados: received', Array.isArray(serviciosConfirmados) ? serviciosConfirmados.length : typeof serviciosConfirmados, 'items');
                     renderServiciosConfirmados();
+                } else {
+                    const txt = await res.text();
+                    console.error('[SERVICIOS] loadServiciosConfirmados: non-ok response:', res.status, txt);
                 }
             } catch (err) {
-                console.error('Error:', err);
+                console.error('[SERVICIOS] loadServiciosConfirmados error:', err);
                 serviciosConfirmados = [];
                 renderServiciosConfirmados();
             }
