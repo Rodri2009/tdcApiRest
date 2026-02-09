@@ -418,25 +418,33 @@
             </div>
             <div class="column-layout">
                 <div class="form-group">
-                    <label for="fechaEvento">Fecha del Taller:</label>
+                    <label for="fechaEvento">Fecha del Taller (inicio):</label>
                     <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
                 </div>
                 <div class="form-group" id="horaInicioGroup">
-                    <label for="horaInicio">Hora de Inicio:</label>
+                    <label for="horaInicio">Hora de Inicio (si aplica):</label>
                     <select id="horaInicio">
                         <option value="">--</option>
                     </select>
                 </div>
             </div>
+
+            <!-- Nuevo: resumen del schedule (para talleres con repetición semanal) -->
+            <div class="form-group">
+                <label>Horario semanal (si aplica)</label>
+                <div id="tallerScheduleSummary" class="small muted">Si la solicitud incluye horarios recurrentes, se
+                    mostrarán aquí.</div>
+            </div>
+
             <div class="column-layout">
                 <div class="form-group" id="cantidadPersonasGroup">
-                    <label for="cantidadPersonas">Cantidad de Personas:</label>
+                    <label for="cantidadPersonas">Cupo máximo / Cantidad de Personas:</label>
                     <select id="cantidadPersonas">
                         <option value="">--</option>
                     </select>
                 </div>
                 <div class="form-group" id="duracionEventoGroup">
-                    <label for="duracionEvento">Duración del Taller:</label>
+                    <label for="duracionEvento">Duración por clase (horas):</label>
                     <select id="duracionEvento">
                         <option value="">--</option>
                     </select>

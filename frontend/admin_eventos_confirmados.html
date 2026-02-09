@@ -95,18 +95,20 @@
                 </select>
                 <input type="date" id="desde" />
                 <input type="date" id="hasta" />
-                <label style="display:inline-flex;align-items:center;gap:6px">Hora desde <input type="time" id="hora_desde" /></label>
-                <label style="display:inline-flex;align-items:center;gap:6px">Hora hasta <input type="time" id="hora_hasta" /></label>
+                <label style="display:inline-flex;align-items:center;gap:6px">Hora desde <input type="time"
+                        id="hora_desde" /></label>
+                <label style="display:inline-flex;align-items:center;gap:6px">Hora hasta <input type="time"
+                        id="hora_hasta" /></label>
                 <label style="display:inline-flex;align-items:center;gap:6px">Ordenar
-                  <select id="order_by">
-                    <option value="fecha_evento">Fecha</option>
-                    <option value="hora_inicio">Hora</option>
-                    <option value="nombre_evento">Nombre</option>
-                  </select>
-                  <select id="order_dir">
-                    <option value="DESC">Desc</option>
-                    <option value="ASC">Asc</option>
-                  </select>
+                    <select id="order_by">
+                        <option value="fecha_evento">Fecha</option>
+                        <option value="hora_inicio">Hora</option>
+                        <option value="nombre_evento">Nombre</option>
+                    </select>
+                    <select id="order_dir">
+                        <option value="DESC">Desc</option>
+                        <option value="ASC">Asc</option>
+                    </select>
                 </label>
                 <input type="number" id="limit" placeholder="Por página" style="width:110px" value="20" />
                 <button id="filtrarBtn" class="btn">Filtrar</button>

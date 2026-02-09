@@ -171,11 +171,11 @@
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Tocar en El templo
                     </a>
-                    <a href="solicitud_taller.html"
+                    <a href="solicitu_taller_actividad.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Dar un taller
                     </a>
-                    <a href="solicitud_taller.html"
+                    <a href="solicitu_taller_actividad.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Dar clases
                     </a>
@@ -337,7 +337,7 @@
                         class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
                         <i class="fas fa-glass-cheers mr-2"></i> Alquilar el Salón
                     </a>
-                    <a href="solicitud_taller.html"
+                    <a href="solicitu_taller_actividad.html"
                         class="inline-flex items-center justify-center bg-stone-800/60 border-2 border-neon text-neon font-bold py-4 px-8 rounded-xl text-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         <i class="fas fa-chalkboard-teacher mr-2"></i> Dar un Taller
                     </a>
@@ -347,7 +347,7 @@
                     </a>
                 </div>
                 <p class="mt-6 text-sm text-stone-500">
-                    Si buscas una fecha para tu banda, <a href="solicitud_banda.html"
+                    Si buscas una fecha para tu banda, <a href="solicitud_fecha_bandas.html"
                         class="text-fuchsia-400 underline hover:text-fuchsia-200">haz clic aquí</a>.
                 </p>
             </div>
@@ -448,7 +448,7 @@
             if (tipo === 'BANDA') return 'BANDA';
             if (tipo === 'TALLER') return 'TALLER';
             if (tipo === 'SERVICIO') return 'SERVICIO';
-            
+
             // Fallback para otros casos
             if (item.source === 'evento') return 'BANDA';
             if (tipo.includes('TALLER')) return 'TALLER';

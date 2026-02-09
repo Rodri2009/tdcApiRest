@@ -446,6 +446,7 @@
     <script>
         // Variables globales
         let eventoId = null;
+        let eventoPrefix = '';
         let calendario = null;
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -457,6 +458,8 @@
             // Obtener ID de la URL
             const params = new URLSearchParams(window.location.search);
             const idParam = params.get('id') || params.get('solicitudId');
+
+            console.debug('[BANDAS] editar - idParam:', idParam);
 
             if (!idParam) {
                 showNotification('ID no especificado', 'error');
@@ -476,17 +479,19 @@
                 return;
             }
 
-            // Extraer ID numérico (puede venir como 'ev_3' o '3')
-            eventoId = idParam.toString().startsWith('ev_')
-                ? parseInt(idParam.substring(3))
-                : parseInt(idParam);
-
-            if (isNaN(eventoId)) {
+            // Extraer ID numérico (acepta prefijos como 'ev_', 'bnd_' u otros con sufijo numérico)
+            const numericMatch = idParam.toString().match(/(\d+)$/);
+            if (numericMatch) {
+                eventoId = parseInt(numericMatch[1], 10);
+            } else {
                 showNotification('ID inválido', 'error');
+                console.error('[BANDAS] ID inválido recibido:', idParam);
                 return;
             }
 
-            document.getElementById('eventoId').textContent = `ev_${eventoId}`;
+            // Mantener prefijo original si aplica (ev_ o bnd_)
+            eventoPrefix = idParam.toString().startsWith('ev_') ? 'ev_' : idParam.toString().startsWith('bnd_') ? 'bnd_' : '';
+            document.getElementById('eventoId').textContent = `${eventoPrefix}${eventoId}`;
 
             // Inicializar calendario
             initCalendario();
@@ -512,20 +517,73 @@
         async function cargarEvento() {
             showLoading(true);
             try {
-                const res = await fetch(`/api/admin/eventos_confirmados/${eventoId}`);
-                console.log(res);
-                if (!res.ok) throw new Error('No se pudo cargar el evento');
+                // Intentar obtener primero desde eventos_confirmados (ID de evento)
+                let res = await fetch(`/api/admin/eventos_confirmados/${eventoId}`);
+                console.debug('[BANDAS] GET /api/admin/eventos_confirmados/', eventoId, 'status', res.status);
 
-                const evento = await res.json();
+                let evento = null;
 
-                // Llenar formulario
+                if (res.ok) {
+                    evento = await res.json();
+                } else if (res.status === 404) {
+                    // Fallback: si no existe evento confirmado, intentar recuperar la solicitud por su prefijo (p.ej. bnd_11)
+                    console.warn('[BANDAS] Evento no encontrado en eventos_confirmados, intentando cargar solicitud asociada...');
+                    const solicId = eventoPrefix ? `${eventoPrefix}${eventoId}` : `bnd_${eventoId}`;
+                    console.debug('[BANDAS] Intentando GET /api/solicitudes/', solicId);
+                    const res2 = await fetch(`/api/solicitudes/${solicId}`);
+                    if (!res2.ok) throw new Error('No se pudo cargar la solicitud asociada: ' + res2.status);
+                    const solicitud = await res2.json();
+                    // Mapear campos de solicitud al formato esperado por este formulario
+                    evento = {
+                        nombre_banda: solicitud.nombreBanda || solicitud.nombreParaMostrar || solicitud.nombreCompleto || '',
+                        genero_musical: solicitud.genero_musical || solicitud.genero || '',
+                        descripcion: solicitud.descripcion_banda || solicitud.descripcion || solicitud.descripcion_larga || '',
+                        url_imagen: solicitud.logo_url || '',
+                        fecha: solicitud.fechaEvento || solicitud.fecha_evento || solicitud.fecha || null,
+                        hora_inicio: solicitud.horaInicio || solicitud.hora_evento || null,
+                        hora_fin: null,
+                        aforo_maximo: solicitud.cantidadPersonas || solicitud.cantidad_de_personas || null,
+                        es_publico: solicitud.esPublico || 0,
+                        precio_base: solicitud.precioBase || solicitud.precio_basico || 0,
+                        precio_anticipada: null,
+                        precio_puerta: solicitud.precio_puerta_propuesto || null,
+                        nombre_contacto: solicitud.nombreCompleto || '',
+                        email_contacto: solicitud.email || '',
+                        telefono_contacto: solicitud.telefono || '',
+                        estado: solicitud.estado || 'Solicitado'
+                    };
+                } else {
+                    const txt = await res.text().catch(() => res.statusText);
+                    throw new Error('No se pudo cargar el evento: ' + res.status + ' ' + txt);
+                }
+
+                // Llenar formulario usando el objeto 'evento' normalizado
                 document.getElementById('nombreBanda').value = evento.nombre_banda || '';
                 document.getElementById('generoMusical').value = evento.genero_musical || '';
                 document.getElementById('descripcion').value = evento.descripcion || '';
                 document.getElementById('urlImagen').value = evento.url_imagen || '';
 
                 if (evento.fecha) {
-                    calendario.setDate(evento.fecha, false);
+                    try {
+                        console.debug('[BANDAS] cargarEvento - fecha raw (final):', evento.fecha);
+                        // Evitar pasar cadenas como 'Invalid Date' o null a flatpickr
+                        if (typeof evento.fecha === 'string' && evento.fecha.toLowerCase().includes('invalid')) {
+                            console.warn('[BANDAS] Fecha contenía "invalid", omitiendo setDate:', evento.fecha);
+                        } else {
+                            calendario.setDate(evento.fecha, false);
+                        }
+                    } catch (err) {
+                        console.error('[BANDAS] Error setDate fecha (final):', evento.fecha, err);
+                        // Intentar usar formato YYYY-MM-DD si la fecha trae tiempo u otros caracteres
+                        const ymd = (typeof evento.fecha === 'string') ? evento.fecha.substring(0, 10) : null;
+                        if (ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+                            try {
+                                calendario.setDate(ymd, false);
+                            } catch (err2) {
+                                console.error('[BANDAS] Error forzado setDate con YMD (final):', ymd, err2);
+                            }
+                        }
+                    }
                 }
 
                 if (evento.hora_inicio) {

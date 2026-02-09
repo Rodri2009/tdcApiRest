@@ -30,6 +30,19 @@ const App = {
         this.config = config;
         this.bindElements();
         this.bindEvents();
+
+        // Global error handler: intercept flatpickr Invalid Date errors to avoid noisy stacks
+        window.addEventListener('error', (ev) => {
+            try {
+                const msg = (ev && ev.message) ? ev.message.toString().toLowerCase() : '';
+                if (msg.includes('invalid date provided') || msg.includes('invalid date')) {
+                    console.warn('[GLOBAL] Capturado y suprimido Invalid Date error:', ev.message);
+                    ev.preventDefault && ev.preventDefault();
+                    return false;
+                }
+            } catch (err) { /* noop */ }
+        });
+
         this.cargarOpcionesIniciales();
     },
 
@@ -48,6 +61,11 @@ const App = {
             precioBaseInput: document.getElementById('precioBase'),
             notificationBanner: document.getElementById('notification-banner'),
             tipoEventoDescripcionDiv: document.getElementById('tipoEventoDescripcion'),
+            // Nuevo: datos del cliente y adicionales en editor de alquiler
+            clientNameSpan: document.getElementById('clientName'),
+            clientPhoneSpan: document.getElementById('clientPhone'),
+            clientEmailSpan: document.getElementById('clientEmail'),
+            adicionalesSeleccionadosDiv: document.getElementById('adicionalesSeleccionados')
         };
 
         // Campos específicos de banda (edición)
@@ -393,6 +411,7 @@ const App = {
             })
                 .then(res => res.json())
                 .then(solicitudData => {
+                    console.debug('[SOLICITUD][GET] respuesta:', solicitudData);
                     if (!solicitudData) throw new Error("Solicitud no encontrada");
                     // Construimos la UI CON la fecha de excepción
                     this.construirUI(solicitudData.fechaEvento || solicitudData.fecha_evento);
@@ -612,25 +631,114 @@ const App = {
         }
 
         // 2. Sincronizar el calendario (solo visual)
+        console.debug('[populate] fecha raw:', fecha, 'tipo:', typeof fecha);
         if (fecha && this.calendario) {
-            const fechaObj = new Date(fecha + 'T00:00:00');
-            this.calendario.setDate(fechaObj, false);
-            // Comprobamos si la fecha quedó seleccionada
-            if (this.calendario.selectedDates && this.calendario.selectedDates.length > 0) {
-            } else {
-                console.warn('populate: la fecha NO quedó seleccionada en el calendario. Intentando forzar...');
-                try {
-                    // Intento alternativo: usar setDate con string
-                    this.calendario.setDate(fecha, false);
-                    if (this.calendario.selectedDates && this.calendario.selectedDates.length > 0) {
+            try {
+                // Filtrar cadenas explícitas no válidas
+                if (typeof fecha === 'string' && fecha.trim().toLowerCase().includes('invalid')) {
+                    console.warn('[populate] fecha string detectada como inválida, omitiendo setDate:', fecha);
+                } else {
+                    // Intentos robustos para convertir 'fecha' a Date válido
+                    let fechaObj = null;
+
+                    if (fecha instanceof Date && !isNaN(fecha.getTime())) {
+                        fechaObj = fecha;
+                    } else if (typeof fecha === 'string') {
+                        const ymdOnly = /^\d{4}-\d{2}-\d{2}$/.test(fecha);
+                        const isoLike = /^\d{4}-\d{2}-\d{2}T/.test(fecha);
+
+                        if (ymdOnly) {
+                            fechaObj = new Date(fecha + 'T00:00:00');
+                        } else if (isoLike) {
+                            fechaObj = new Date(fecha);
+                        } else {
+                            // Intento de normalización: 'YYYY-MM-DD HH:MM:SS' -> 'YYYY-MM-DDTHH:MM:SS'
+                            const tryIso = fecha.replace(' ', 'T');
+                            const maybe = new Date(tryIso);
+                            if (!isNaN(maybe.getTime())) fechaObj = maybe;
+                        }
                     } else {
-                        console.warn('populate: forzado setDate tampoco funcionó. Fecha puede estar deshabilitada por reglas.');
+                        const maybe = new Date(fecha);
+                        if (!isNaN(maybe.getTime())) fechaObj = maybe;
                     }
-                } catch (err) {
-                    console.error('populate: error intentando forzar setDate:', err);
+
+                    // Aplicar setDate solo si tenemos Date válido o una cadena YYYY-MM-DD
+                    if (fechaObj && !isNaN(fechaObj.getTime())) {
+                        try {
+                            const isoFrag = fechaObj.toISOString().substring(0, 10);
+                            console.debug('[populate] fechaObj:', fechaObj, 'isoFrag:', isoFrag, 'tipo(fecha):', typeof fecha);
+                            console.debug('[populate] intentando setDate con ISO fragmento:', isoFrag);
+                            this.calendario.setDate(isoFrag, false);
+                        } catch (err) {
+                            console.error('[populate] calendario.setDate(isoFrag) fallo:', fechaObj, err);
+                            // Como último recurso, limpiar selección y no romper
+                            try { this.calendario.clear(); } catch (_) { }
+                        }
+                    } else if (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}/.test(fecha)) {
+                        // Pasar sólo el fragmento YYYY-MM-DD a flatpickr
+                        const ymd = fecha.substring(0, 10);
+                        try {
+                            console.debug('[populate] fecha string fragmento detectado:', fecha, '->', ymd);
+                            this.calendario.setDate(ymd, false);
+                        } catch (err) {
+                            console.error('[populate] calendario.setDate(string YYYY-MM-DD) fallo:', fecha, err);
+                            try { this.calendario.clear(); } catch (_) { }
+                        }
+                    } else {
+                        console.warn('[populate] fecha no válida para setDate, omitiendo:', fecha);
+                    }
+
+                    // Verificamos que la selección haya quedado aplicada
+                    if (!(this.calendario.selectedDates && this.calendario.selectedDates.length > 0)) {
+                        console.warn('populate: la fecha NO quedó seleccionada en el calendario. Intentando forzar con ISO/fragmento...');
+                        try {
+                            if (fechaObj && fechaObj.toISOString) {
+                                console.debug('[populate] forzando setDate con ISO fragmento:', fechaObj.toISOString().substring(0, 10));
+                                this.calendario.setDate(fechaObj.toISOString().substring(0, 10), false);
+                            } else if (typeof fecha === 'string') {
+                                const frag = String(fecha).substring(0, 10);
+                                console.debug('[populate] forzando setDate con fragmento string:', frag);
+                                this.calendario.setDate(frag, false);
+                            }
+                        } catch (err) {
+                            console.error('populate: forzado setDate falló:', fecha, err);
+                        }
+
+                        if (!(this.calendario.selectedDates && this.calendario.selectedDates.length > 0)) {
+                            console.warn('populate: forzado setDate tampoco funcionó. Fecha puede estar deshabilitada por reglas o fuera de rango.');
+
+                            // Analizar por qué la fecha fue rechazada y mostrar aviso al usuario
+                            try {
+                                const frag = fechaObj && fechaObj.toISOString ? fechaObj.toISOString().substring(0, 10) : (typeof fecha === 'string' ? String(fecha).substring(0, 10) : null);
+                                if (frag) {
+                                    const isFeriado = Array.isArray(this.feriadosGlobal) && this.feriadosGlobal.includes(frag);
+                                    const inOcupadas = Array.isArray(this.fechasOcupadasSeguro) && this.fechasOcupadasSeguro.includes(frag);
+                                    const day = new Date(frag + 'T00:00:00').getDay();
+                                    const isWeekend = day === 0 || day === 6;
+                                    console.debug('[populate] checkAfterFail ->', { frag, isWeekend, isFeriado, inOcupadas });
+
+                                    // Mostrar aviso inline para que el usuario vea la fecha solicitada
+                                    let avisoElem = document.getElementById('fecha-aviso');
+                                    if (!avisoElem) {
+                                        avisoElem = document.createElement('div');
+                                        avisoElem.id = 'fecha-aviso';
+                                        avisoElem.className = 'mt-2 text-sm text-yellow-800 bg-yellow-100 p-2 rounded';
+                                        this.elements.fechaEventoInput && this.elements.fechaEventoInput.parentNode && this.elements.fechaEventoInput.parentNode.appendChild(avisoElem);
+                                    }
+                                    avisoElem.textContent = `La fecha ${frag} no pudo seleccionarse en el calendario (puede estar deshabilitada: fin de semana/feriado/ocupada).`;
+
+                                    // Mostrar la fecha en el campo de texto para referencia
+                                    try { this.elements.fechaEventoInput.value = frag; } catch (err) { /* noop */ }
+                                }
+                            } catch (err) {
+                                console.warn('populate: fallo al analizar por qué no se seleccionó la fecha:', err);
+                            }
+                        }
+                    }
                 }
+            } catch (err) {
+                console.error('populate: error procesando fecha para el calendario:', err);
             }
-            //this.calendario.setDate(fecha, false);
         }
 
         // Convertir cantidad numérica al label del rango usando el tipo resuelto
@@ -654,6 +762,54 @@ const App = {
             this.elements.detallesAdicionalesTextarea.value = detalles;
         }
 
+        // 4b. Mostrar datos del cliente (si disponibles)
+        try {
+            if (this.elements.clientNameSpan) this.elements.clientNameSpan.textContent = solicitud.nombreCompleto || solicitud.nombre_completo || '';
+            if (this.elements.clientPhoneSpan) this.elements.clientPhoneSpan.textContent = solicitud.telefono || solicitud.telefonoContacto || '';
+            if (this.elements.clientEmailSpan) this.elements.clientEmailSpan.textContent = solicitud.email || solicitud.email_contacto || '';
+        } catch (err) { console.warn('populateForm: fallo al setear datos de cliente:', err); }
+
+        // 4d. Si la solicitud es un taller con schedule recurrente, mostrar un resumen
+        try {
+            const scheduleSummaryDiv = document.getElementById('tallerScheduleSummary');
+            const sched = solicitud.schedule || solicitud.tallerSchedule || null;
+            if (scheduleSummaryDiv && sched) {
+                try {
+                    const lines = (sched || []).map(s => `- ${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][parseInt(s.day)]} ${s.start} (${s.duration}h)`).join('<br>');
+                    const ex = (solicitud.exceptions || []).join(', ');
+                    scheduleSummaryDiv.innerHTML = `<div>Inicio: <strong>${solicitud.startDate || solicitud.fechaEvento || solicitud.fecha_evento}</strong></div><div>Horarios:</div><div style="margin-top:6px">${lines}</div><div style="margin-top:6px">Excepciones: ${ex || '—'}</div>`;
+                } catch (err) {
+                    scheduleSummaryDiv.textContent = 'No se pudo renderizar schedule.';
+                }
+            }
+        } catch (err) { console.warn('populateForm: fallo al renderizar schedule de taller:', err); }
+
+        // 4c. Mostrar adicionales seleccionados (si vienen en la respuesta)
+        try {
+            const renderAdicionales = (adList) => {
+                if (!this.elements.adicionalesSeleccionadosDiv) return;
+                if (!adList || adList.length === 0) {
+                    this.elements.adicionalesSeleccionadosDiv.textContent = 'No hay adicionales seleccionados.';
+                    return;
+                }
+                const html = '<ul style="list-style:none;padding:0;margin:0;">' + adList.map(a => `<li>${a.nombre} — $${parseFloat(a.precio).toFixed(2)}</li>`).join('') + '</ul>';
+                this.elements.adicionalesSeleccionadosDiv.innerHTML = html;
+            };
+
+            if (solicitud.adicionales && solicitud.adicionales.length > 0) {
+                renderAdicionales(solicitud.adicionales);
+            } else if (this.solicitudId && typeof this.solicitudId === 'string') {
+                // Intentar recuperar adicionales por separado (la ruta acepta prefijos alq_/bnd_)
+                const match = String(this.solicitudId).match(/(\d+)/);
+                const nid = match ? match[1] : null;
+                if (nid) {
+                    fetch(`/api/solicitudes/${nid}/adicionales`).then(r => r.json()).then(data => {
+                        if (data && data.seleccionados) renderAdicionales(data.seleccionados);
+                    }).catch(err => { console.warn('Error cargando adicionales separados:', err); });
+                }
+            }
+        } catch (err) { console.warn('populateForm: fallo al renderizar adicionales:', err); }
+
         // 5. Rellenar datos de banda si existen
         try {
             if (solicitud.nombreBanda || solicitud.nombre_banda || solicitud.nombreParaMostrar) {
@@ -665,7 +821,6 @@ const App = {
             if (this.elements.precioAnticipadaInput) this.elements.precioAnticipadaInput.value = solicitud.bandaPrecioAnticipada || solicitud.precio_anticipada || '';
             if (this.elements.precioPuertaInput) this.elements.precioPuertaInput.value = solicitud.bandaPrecioPuerta || solicitud.precio_puerta || '';
         } catch (err) { console.warn('populateForm: fallo al setear campos de banda:', err); }
-
         // 6. Actualizar visibilidad de campos según el tipo
         this.actualizarCamposCondicionales();
     },
@@ -736,15 +891,36 @@ const App = {
 
             const nextPage = (destino === 'adicionales') ? 'adicionales.html' : 'contacto.html';
             const fromParam = (destino === 'contacto') ? '&from=page' : '';
-            const urlFinal = `${nextPage}?solicitudId=${id}${fromParam}`;
 
+            // Guardar un borrador local para que la página de contacto pueda mostrar un resumen
+            try {
+                const draft = {
+                    tipoEvento: bodyData.tipoEvento || bodyData.tipoEvento,
+                    nombreParaMostrar: bodyData.tipoEvento || null,
+                    fechaEvento: bodyData.fechaEvento || null,
+                    horaInicio: bodyData.horaInicio || null,
+                    horaSalida: bodyData.horaSalida || null,
+                    precioBase: bodyData.precioBase || null,
+                    cantidadPersonas: bodyData.cantidadPersonas || null
+                };
+                const key = `solicitud_draft_${id}`;
+                localStorage.setItem(key, JSON.stringify(draft));
+                const draftParam = `&draftKey=${encodeURIComponent(key)}`;
 
+                const urlFinal = `${nextPage}?solicitudId=${id}${fromParam}${draftParam}`;
 
-            // --- ¡CAMBIO CLAVE! ---
-            // Forzamos la redirección en un nuevo ciclo de eventos para evitar bloqueos.
-            setTimeout(() => {
-                window.location.href = urlFinal;
-            }, 50); // Una pequeña demora de 50ms es suficiente
+                // Redirección ligera para evitar bloqueos.
+                setTimeout(() => {
+                    window.location.href = urlFinal;
+                }, 50);
+            } catch (e) {
+                // Si no se puede acceder a localStorage, redirigir igual pero sin draftKey
+                console.warn('No se pudo guardar borrador local:', e);
+                const urlFinal = `${nextPage}?solicitudId=${id}${fromParam}`;
+                setTimeout(() => {
+                    window.location.href = urlFinal;
+                }, 50);
+            }
 
 
         } catch (error) {
@@ -757,8 +933,34 @@ const App = {
     },
 
     inicializarCalendario: function (fechasOcupadas, feriados, fechaExcepcion = null) {
-        const fechasADeshabilitar = fechaExcepcion
-            ? fechasOcupadas.filter(fecha => fecha !== fechaExcepcion)
+        // Normalizar `fechaExcepcion` a formato 'YYYY-MM-DD' para comparaciones
+        let fechaExcepcionNorm = null;
+        try {
+            if (fechaExcepcion) {
+                if (typeof fechaExcepcion === 'string') {
+                    // Evitar corrimientos de zona horaria: si es cadena ISO con tiempo, extraer YYYY-MM-DD directamente
+                    const m = fechaExcepcion.match(/^(\d{4}-\d{2}-\d{2})/);
+                    if (m) {
+                        fechaExcepcionNorm = m[1];
+                    } else if (/^\d{4}-\d{2}-\d{2}$/.test(fechaExcepcion)) {
+                        fechaExcepcionNorm = fechaExcepcion;
+                    } else {
+                        const d = new Date(fechaExcepcion);
+                        if (!isNaN(d.getTime())) fechaExcepcionNorm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    }
+                } else if (fechaExcepcion instanceof Date && !isNaN(fechaExcepcion.getTime())) {
+                    fechaExcepcionNorm = `${fechaExcepcion.getFullYear()}-${String(fechaExcepcion.getMonth() + 1).padStart(2, '0')}-${String(fechaExcepcion.getDate()).padStart(2, '0')}`;
+                } else {
+                    const d = new Date(String(fechaExcepcion));
+                    if (!isNaN(d.getTime())) fechaExcepcionNorm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                }
+            }
+        } catch (err) {
+            console.warn('[calendario] no se pudo normalizar fechaExcepcion:', err);
+        }
+        console.debug('[calendario] fechaExcepcionNorm:', fechaExcepcionNorm);
+        const fechasADeshabilitar = fechaExcepcionNorm
+            ? fechasOcupadas.filter(fecha => fecha !== fechaExcepcionNorm)
             : fechasOcupadas;
         try {
             // Calcular minDate: por defecto 'today', pero si estamos en modo edición
@@ -766,13 +968,29 @@ const App = {
             let minDateVal = 'today';
             try {
                 if (fechaExcepcion) {
-                    const excDate = new Date(fechaExcepcion + 'T00:00:00');
-                    const today = new Date();
-                    // Normalizar ambos a medianoche para comparar solo la fecha
-                    const excNorm = new Date(Date.UTC(excDate.getFullYear(), excDate.getMonth(), excDate.getDate()));
-                    const todayNorm = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
-                    if (excNorm < todayNorm) {
-                        minDateVal = fechaExcepcion; // permitir la fecha de excepción pasada
+                    // Manejar formatos: YYYY-MM-DD o ISO (contiene 'T') o Date
+                    let excDate = null;
+                    if (typeof fechaExcepcion === 'string') {
+                        if (fechaExcepcion.includes('T')) {
+                            excDate = new Date(fechaExcepcion);
+                        } else {
+                            excDate = new Date(fechaExcepcion + 'T00:00:00');
+                        }
+                    } else if (fechaExcepcion instanceof Date) {
+                        excDate = fechaExcepcion;
+                    } else {
+                        excDate = new Date(String(fechaExcepcion));
+                    }
+
+                    if (!isNaN(excDate.getTime())) {
+                        const today = new Date();
+                        // Normalizar ambos a medianoche UTC para comparar solo la fecha
+                        const excNorm = new Date(Date.UTC(excDate.getFullYear(), excDate.getMonth(), excDate.getDate()));
+                        const todayNorm = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+                        if (excNorm < todayNorm) {
+                            // Usar 'YYYY-MM-DD' como minDate si la excepción es pasada
+                            minDateVal = `${excDate.getFullYear()}-${String(excDate.getMonth() + 1).padStart(2, '0')}-${String(excDate.getDate()).padStart(2, '0')}`;
+                        }
                     }
                 }
             } catch (err) {
@@ -787,7 +1005,7 @@ const App = {
                 disable: [
                     (date) => {
                         const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                        const isException = fechaExcepcion && fechaStr === fechaExcepcion;
+                        const isException = fechaExcepcionNorm && fechaStr === fechaExcepcionNorm;
                         const esFinDeSemana = date.getDay() === 0 || date.getDay() === 6;
                         const esFeriado = feriados.includes(fechaStr);
                         const inFechasADeshabilitar = Array.isArray(fechasADeshabilitar) && fechasADeshabilitar.includes(fechaStr);
@@ -822,6 +1040,26 @@ const App = {
             };
 
             this.calendario = flatpickr(this.elements.fechaEventoInput, config);
+
+            // Wrap flatpickr.setDate to prevent uncaught "Invalid date" exceptions from breaking the page
+            try {
+                const fp = this.calendario;
+                if (fp && typeof fp.setDate === 'function') {
+                    const origSetDate = fp.setDate.bind(fp);
+                    fp.setDate = (val, triggerChange, format) => {
+                        try {
+                            return origSetDate(val, triggerChange, format);
+                        } catch (err) {
+                            console.error('[flatpickr-wrapper] setDate error, value:', val, err);
+                            // Guardar info en console y no propagar la excepción
+                            return;
+                        }
+                    };
+                }
+            } catch (err) {
+                console.warn('[calendario] no se pudo envolver setDate:', err);
+            }
+
         } catch (e) {
             console.error("¡¡¡ERROR CRÍTICO DENTRO DE inicializarCalendario!!!", e);
         }
@@ -853,7 +1091,16 @@ const App = {
         let hora = overrides.overrideHora || this.elements.horaInicioSelect.value;
 
 
-        const fechaSeleccionada = fechaStr ? new Date(fechaStr + 'T00:00:00') : null;
+        // Parsear fecha de forma segura: soportar 'YYYY-MM-DD' y ISO con 'T'
+        let fechaSeleccionada = null;
+        if (fechaStr) {
+            if (typeof fechaStr === 'string' && fechaStr.includes('T')) {
+                fechaSeleccionada = new Date(fechaStr);
+            } else {
+                fechaSeleccionada = new Date(String(fechaStr).trim() + 'T00:00:00');
+            }
+            if (fechaSeleccionada && isNaN(fechaSeleccionada.getTime())) fechaSeleccionada = null;
+        }
 
         // Resolver la clave usable para opciones (duraciones/horas/cantidades)
         const resolvedTipoKey = this.resolveTipoKey(tipoId) || tipoId;

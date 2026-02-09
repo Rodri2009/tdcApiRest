@@ -86,22 +86,25 @@
             max-height: 200px;
             overflow: auto;
             padding: 4px;
-            box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
         }
+
         .client-suggestions .suggestion {
             padding: 8px 10px;
             cursor: pointer;
             border-radius: 4px;
         }
+
         .client-suggestions .suggestion:hover {
             background: #0f172a;
         }
+
         .client-suggestions .suggestion.active {
             background: var(--color-secondary);
             color: var(--color-dark);
             font-weight: 600;
-            box-shadow: 0 6px 18px rgba(88,28,135,0.12);
-            border-left: 4px solid rgba(88,28,135,0.9);
+            box-shadow: 0 6px 18px rgba(88, 28, 135, 0.12);
+            border-left: 4px solid rgba(88, 28, 135, 0.9);
         }
 
         /* Spinner shown while searching */
@@ -109,27 +112,33 @@
             display: inline-block;
             width: 16px;
             height: 16px;
-            border: 2px solid rgba(255,255,255,0.12);
+            border: 2px solid rgba(255, 255, 255, 0.12);
             border-top-color: var(--color-secondary);
             border-radius: 50%;
             animation: spin 0.9s linear infinite;
             margin-left: 8px;
             vertical-align: middle;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         /* Badge showing selected client with clear action */
         .client-badge {
             display: inline-flex;
             gap: 8px;
             align-items: center;
-            background: rgba(59,130,246,0.1);
+            background: rgba(59, 130, 246, 0.1);
             color: var(--color-secondary);
             padding: 6px 8px;
             border-radius: 999px;
             font-size: 0.9rem;
             margin-top: 8px;
         }
+
         .client-badge .clear-btn {
             background: transparent;
             border: none;
@@ -391,12 +400,29 @@
             animation: slideIn 0.3s ease;
             max-width: 400px;
         }
-        .notification-banner.success { background: linear-gradient(135deg, #10b981, #059669); }
-        .notification-banner.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .notification-banner.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+        .notification-banner.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification-banner.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification-banner.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
         @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -825,10 +851,10 @@
         }
 
         function renderClientSuggestions(matches, container) {
-            if (!matches || matches.length === 0) { container.innerHTML = '' ; return; }
+            if (!matches || matches.length === 0) { container.innerHTML = ''; return; }
             container.innerHTML = '<div class="suggestions-list">' + matches.map(m => `
-                <div class="suggestion" data-id="${m.id}" data-nombre="${m.nombre}" data-telefono="${m.telefono||''}" data-email="${m.email||''}">
-                    <strong>${m.nombre}</strong> <small style="color:#6b7280">${m.email||m.telefono||''}</small>
+                <div class="suggestion" data-id="${m.id}" data-nombre="${m.nombre}" data-telefono="${m.telefono || ''}" data-email="${m.email || ''}">
+                    <strong>${m.nombre}</strong> <small style="color:#6b7280">${m.email || m.telefono || ''}</small>
                 </div>`).join('') + '</div>';
 
             const suggestions = Array.from(container.querySelectorAll('.suggestion'));

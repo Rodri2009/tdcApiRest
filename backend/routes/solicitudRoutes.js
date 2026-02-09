@@ -3,6 +3,7 @@ const router = express.Router();
 const {
     crearSolicitud,
     getSolicitudPorId,
+    getSolicitudPublicById,
     actualizarSolicitud, // <-- La que usa Page.html
     finalizarSolicitud,   // <-- La que usa Contacto.html
     guardarAdicionales,
@@ -11,7 +12,11 @@ const {
     getSolicitudesPublicas // <-- Para mostrar en agenda pública
 } = require('../controllers/solicitudController');
 
+// Ruta pública para obtener solicitud de solo lectura (resumen)
+router.get('/public/:id', getSolicitudPublicById);
+
 const { protect } = require('../middleware/authMiddleware');
+const clientesController = require('../controllers/clientesController');
 
 // POST /api/solicitudes -> Crear una nueva solicitud
 router.post('/', crearSolicitud);
@@ -22,6 +27,9 @@ router.get('/sesion', getSesionExistente);
 
 // GET /api/solicitudes/publicas -> Obtener solicitudes públicas confirmadas para la agenda
 router.get('/publicas', getSolicitudesPublicas);
+
+// GET /api/solicitudes/clientes/search -> Búsqueda pública de clientes (para formularios públicos)
+router.get('/clientes/search', clientesController.searchClientes);
 
 // --- RUTAS QUE ACTÚAN SOBRE UN ID ESPECÍFICO ---
 

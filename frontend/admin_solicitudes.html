@@ -571,8 +571,12 @@
                             'FECHA_BANDAS': 'BANDA'
                         };
                         const tipoNormalizado = mapTipo[tipo] || tipo;
-                        // Soportar filtrado por categoría o por tipoName
-                        if (s.tipoEvento !== tipoNormalizado && s.tipoEvento !== tipo && s.categoria !== tipo && s.tipoNombre !== tipo) return false;
+                        // Soportar filtrado por categoría o por tipoName (comparar tanto con el valor original como con la versión normalizada)
+                        if (
+                            s.tipoEvento !== tipoNormalizado && s.tipoEvento !== tipo &&
+                            s.categoria !== tipoNormalizado && s.categoria !== tipo &&
+                            s.tipoNombre !== tipoNormalizado && s.tipoNombre !== tipo
+                        ) return false;
                     }
 
                     // Filtro por fecha desde
@@ -674,14 +678,35 @@
                     window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
                 } else if (categoria === 'ALQUILER_SALON') {
                     window.location.href = `/editar_solicitud_alquiler.html?solicitudId=${encodeURIComponent(id)}`;
-                } else if (categoria === 'TALLERES' || categoria === 'TALLERES_ACTIVIDADES') {
-                    window.location.href = `/editar_solicitud_talleres.html?solicitudId=${encodeURIComponent(id)}`;
-                } else if (categoria === 'SERVICIOS' || categoria === 'SERVICIO') {
-                    window.location.href = `/editar_solicitud_servicios.html?solicitudId=${encodeURIComponent(id)}`;
                 } else {
-                    // Para casos no previstos, usar el editor genérico si existe, sino alertar
-                    console.warn('Categoría no reconocida:', categoria, 'para id:', id);
-                    alert('Editor no disponible para este tipo de solicitud.');
+                    // Si el id contiene un prefijo conocido, usarlo para decidir el editor (prioritario)
+                    const idStr = String(id || '');
+                    if (idStr.startsWith('tll_')) {
+                        window.location.href = `/editar_solicitud_talleres.html?solicitudId=${encodeURIComponent(id)}`;
+                        return;
+                    }
+                    if (idStr.startsWith('bnd_')) {
+                        window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
+                        return;
+                    }
+                    if (idStr.startsWith('srv_')) {
+                        window.location.href = `/editar_solicitud_servicios.html?solicitudId=${encodeURIComponent(id)}`;
+                        return;
+                    }
+
+                    // Normalizar categoría amplia (incluye 'TALLER', 'TALLERES', 'TALLERES_ACTIVIDADES', etc.)
+                    const norm = String(categoria || origen || '').toUpperCase();
+
+                    if (norm.includes('TALLER')) {
+                        window.location.href = `/editar_solicitud_talleres.html?solicitudId=${encodeURIComponent(id)}`;
+                    } else if (norm.includes('BAND')) {
+                        window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
+                    } else if (norm.includes('SERVIC')) {
+                        window.location.href = `/editar_solicitud_servicios.html?solicitudId=${encodeURIComponent(id)}`;
+                    } else {
+                        console.warn('Categoría no reconocida:', categoria, 'para id:', id);
+                        alert('Editor no disponible para este tipo de solicitud.');
+                    }
                 }
             }
 
@@ -708,8 +733,8 @@
                         return;
                     }
 
-                    // Log tipos de eventos
-                    const tipos = data.map(s => s.tipoEvento);
+                    // Log tipos de eventos (normalizamos varios campos posibles para evitar undefined)
+                    const tipos = data.map(s => s.tipoEvento || s.tipoEventoId || s.categoria || s.tipoNombre || s.tipoServicioId).filter(Boolean);
                     console.log('Tipos de eventos encontrados:', [...new Set(tipos)]);
 
                     // Guardar datos para filtrado
@@ -740,10 +765,10 @@
                 solicitudes.forEach((solicitud) => {
                     const tr = document.createElement('tr');
                     tr.dataset.solicitudId = solicitud.id;
-                    tr.dataset.tipoEventoId = solicitud.tipoEventoId;
-                    tr.dataset.categoria = solicitud.tipoEvento || '';
-                    tr.dataset.origen = solicitud.origen || 'solicitud';
-
+                    tr.dataset.tipoEventoId = solicitud.tipoEventoId || solicitud.tipoEvento || '';
+                    // Preferimos 'categoria' devuelto por el backend; si no existe, usamos 'tipoEvento'
+                    tr.dataset.categoria = solicitud.categoria || solicitud.tipoEvento || '';
+                    // Fecha de solicitud (timestamp) - mostrar fecha+hora local
                     const fechaSolicitud = solicitud.fechaSolicitud ? (new Date(solicitud.fechaSolicitud)).toLocaleString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A';
                     // Formato Fecha Evento: Nombre corto del día, DD, MM, AAAA
                     const fechaEvento = solicitud.fechaEvento ? (() => {

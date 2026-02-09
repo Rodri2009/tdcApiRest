@@ -1405,7 +1405,7 @@
                     closeModal('modal-instrumento');
                     await loadInstrumentos();
                 } else {
-                    const data = await res.json().catch(()=>({}));
+                    const data = await res.json().catch(() => ({}));
                     throw new Error(data.error || 'Error guardando instrumento');
                 }
             } catch (err) {
@@ -1423,7 +1423,7 @@
                     showBanner('Instrumento eliminado', 'success');
                     await loadInstrumentos();
                 } else {
-                    const data = await res.json().catch(()=>({}));
+                    const data = await res.json().catch(() => ({}));
                     throw new Error(data.error || 'Error al eliminar instrumento');
                 }
             } catch (err) {

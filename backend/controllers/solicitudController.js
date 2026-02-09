@@ -126,7 +126,7 @@ const crearSolicitud = async (req, res) => {
                 req.body.descripcion || '', // descripcion
                 'Solicitado', // estado
                 req.body.fingerprintId || null, // fingerprintid
-                null, // id_banda
+                req.body.id_banda || null, // id_banda (permitir referenciar banda existente cuando venga)
                 req.body.genero_musical || null, // genero_musical
                 req.body.formacion_json || null, // formacion_json
                 req.body.instagram || null, // instagram
@@ -277,9 +277,22 @@ const getSolicitudPorId = async (req, res) => {
                 return res.status(404).json({ error: 'Solicitud no encontrada.' });
             }
 
+            console.debug('[SOLICITUD][GET] alquiler row:', alquiler);
+
+            // Obtener adicionales seleccionados para este alquiler
+            let adicionalesRows = [];
+            try {
+                adicionalesRows = await conn.query(
+                    "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?",
+                    [alquilerId]
+                );
+            } catch (e) {
+                console.warn('No se pudieron obtener adicionales para la solicitud', alquilerId, e);
+            }
+
             const respuesta = {
                 ...alquiler,
-                adicionales: []
+                adicionales: adicionalesRows || []
             };
 
             console.log(`[SOLICITUD][GET] Alquiler obtenido: ${alquiler.nombreCompleto}`);
@@ -737,31 +750,32 @@ const getSesionExistente = async (req, res) => {
 // Obtener adicionales seleccionados para una solicitud
 // ============================================
 const obtenerAdicionales = async (req, res) => {
-    const { id } = req.params;
+    let { id } = req.params;
 
-    if (!id || isNaN(parseInt(id, 10))) {
-        return res.status(400).json({ error: 'ID de solicitud inválido.' });
-    }
+    // Permitir id con prefijos tipo 'alq_4' o 'bnd_11' o solo '4'
+    if (!id) return res.status(400).json({ error: 'ID de solicitud inválido.' });
+    const match = String(id).match(/(\d+)/);
+    const numericId = match ? parseInt(match[1], 10) : NaN;
+    if (isNaN(numericId)) return res.status(400).json({ error: 'ID de solicitud inválido.' });
 
     let conn;
     try {
         conn = await pool.getConnection();
 
-        // Obtener los adicionales guardados para esta solicitud
+        // Obtener los adicionales guardados para esta solicitud (por id numérico)
         const adicionales = await conn.query(
             "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?",
-            [id]
+            [numericId]
         );
 
         return res.status(200).json({
             seleccionados: adicionales || []
         });
     } catch (error) {
+        // Registrar y devolver lista vacía en caso de cualquier error para no bloquear la UI
         console.error(`Error al obtener adicionales para solicitud ${id}:`, error);
-        return res.status(500).json({
-            error: 'Error interno al obtener adicionales.',
-            details: error.message
-        });
+        console.warn('Devolviendo lista vacía de adicionales debido a un error.');
+        return res.status(200).json({ seleccionados: [] });
     } finally {
         if (conn) conn.release();
     }
@@ -916,10 +930,259 @@ const updateVisibilidad = async (req, res) => {
     }
 };
 
+/**
+ * GET público: Obtiene una versión limitada de la solicitud por ID (no requiere autenticación)
+ * Devuelve los campos necesarios para mostrar el resumen en el formulario público sin exponer datos sensibles.
+ */
+const getSolicitudPublicById = async (req, res) => {
+    const { id } = req.params;
+    console.log(`[SOLICITUD][PUBLIC GET] Obteniendo (público) solicitud/evento ID: ${id}`);
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        console.log('[PUBLIC GET] conexión obtenida para id:', id);
+
+        // Si es un ID con prefijo (ev_, alq_, bnd_, srv_, tll_) lo manejamos como antes
+        const hasPrefix = !!(id && (id.toString().startsWith('ev_') || id.toString().startsWith('alq_') || id.toString().startsWith('bnd_') || id.toString().startsWith('srv_') || id.toString().startsWith('tll_')));
+        console.log('[PUBLIC GET] hasPrefix=', hasPrefix, ' idString=', String(id));
+        if (hasPrefix) {
+            // Aprovechamos la lógica previa: delegar al mismo flujo
+            // Evento confirmado (ev_)
+            if (id.toString().startsWith('ev_')) {
+                const eventoId = parseInt(id.substring(3));
+                const sql = `
+                    SELECT 
+                        CONCAT('ev_', e.id) as solicitudId,
+                        e.tipo_evento as tipoEvento,
+                        DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                        TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
+                        e.precio_base as precioBase,
+                        e.nombre_evento as nombreParaMostrar,
+                        CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END as estado
+                    FROM eventos_confirmados e
+                    WHERE e.id = ?;
+                `;
+                const [evento] = await conn.query(sql, [eventoId]);
+                if (!evento) return res.status(404).json({ error: 'Evento no encontrado.' });
+                return res.status(200).json(evento);
+            }
+
+            // Alquiler (alq_)
+            if (id.toString().startsWith('alq_')) {
+                const alquilerId = parseInt(id.substring(4));
+                const sql = `
+                    SELECT
+                        CONCAT('alq_', sa.id_solicitud) as solicitudId,
+                        sa.tipo_servicio as tipoServicio,
+                        sa.fecha_evento as fechaEvento,
+                        sa.hora_evento as horaInicio,
+                        sa.duracion as duracionEvento,
+                        sa.cantidad_de_personas as cantidadPersonas,
+                        sa.precio_basico as precioBase,
+                        COALESCE(c.nombre, '') as nombreParaMostrar,
+                        sa.tipo_de_evento as tipoEvento,
+                        COALESCE(sol.es_publico, 0) as esPublico
+                    FROM solicitudes_alquiler sa
+                    JOIN solicitudes sol ON sa.id_solicitud = sol.id
+                    LEFT JOIN clientes c ON sol.cliente_id = c.id
+                    WHERE sa.id_solicitud = ?
+                `;
+
+                const [alquiler] = await conn.query(sql, [alquilerId]);
+                if (!alquiler) return res.status(404).json({ error: 'Solicitud no encontrada.' });
+
+                let adicionalesRows = [];
+                try {
+                    adicionalesRows = await conn.query(
+                        "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?",
+                        [alquilerId]
+                    );
+                } catch (e) { /* ignore adicionales */ }
+
+                const respuesta = { ...alquiler, adicionales: adicionalesRows || [] };
+                return res.status(200).json(respuesta);
+            }
+
+            // Banda (bnd_)
+            if (id.toString().startsWith('bnd_')) {
+                const bandaId = parseInt(id.substring(4));
+                const sql = `
+                    SELECT
+                        CONCAT('bnd_', sb.id_solicitud) as solicitudId,
+                        sb.tipo_de_evento as tipoEvento,
+                        sb.fecha_evento as fechaEvento,
+                        sb.hora_evento as horaInicio,
+                        sb.duracion as duracionEvento,
+                        sb.cantidad_de_personas as cantidadPersonas,
+                        sb.precio_basico as precioBase,
+                        COALESCE(c.nombre, '') as nombreParaMostrar,
+                        sb.estado
+                    FROM solicitudes_bandas sb
+                    JOIN solicitudes sol ON sb.id_solicitud = sol.id
+                    LEFT JOIN clientes c ON sol.cliente_id = c.id
+                    WHERE sb.id_solicitud = ?
+                `;
+
+                const [banda] = await conn.query(sql, [bandaId]);
+                if (!banda) return res.status(404).json({ error: 'Solicitud no encontrada.' });
+                return res.status(200).json({ ...banda, adicionales: [] });
+            }
+
+            // Servicio (srv_)
+            if (id.toString().startsWith('srv_')) {
+                const servicioId = parseInt(id.substring(4));
+                const sql = `
+                    SELECT
+                        CONCAT('srv_', ss.id_solicitud) as solicitudId,
+                        'SERVICIO' as tipoEvento,
+                        ss.fecha_evento as fechaEvento,
+                        ss.hora_evento as horaInicio,
+                        ss.duracion as duracionEvento,
+                        ss.precio as precioBase,
+                        COALESCE(c.nombre, '') as nombreParaMostrar,
+                        sol.estado
+                    FROM solicitudes_servicios ss
+                    JOIN solicitudes sol ON ss.id_solicitud = sol.id
+                    LEFT JOIN clientes c ON sol.cliente_id = c.id
+                    WHERE ss.id_solicitud = ?
+                `;
+
+                const [servicio] = await conn.query(sql, [servicioId]);
+                if (!servicio) return res.status(404).json({ error: 'Solicitud no encontrada.' });
+                return res.status(200).json({ ...servicio, adicionales: [] });
+            }
+
+            // Taller (tll_)
+            if (id.toString().startsWith('tll_')) {
+                const tallerId = parseInt(id.substring(4));
+                const sql = `
+                    SELECT
+                        CONCAT('tll_', st.id_solicitud) as solicitudId,
+                        'TALLERES' as tipoEvento,
+                        st.fecha_evento as fechaEvento,
+                        st.hora_evento as horaInicio,
+                        st.duracion as duracionEvento,
+                        st.precio as precioBase,
+                        COALESCE(c.nombre, '') as nombreParaMostrar,
+                        sol.estado
+                    FROM solicitudes_talleres st
+                    JOIN solicitudes sol ON st.id_solicitud = sol.id
+                    LEFT JOIN clientes c ON sol.cliente_id = c.id
+                    WHERE st.id_solicitud = ?
+                `;
+
+                const [taller] = await conn.query(sql, [tallerId]);
+                if (!taller) return res.status(404).json({ error: 'Solicitud no encontrada.' });
+                return res.status(200).json({ ...taller, adicionales: [] });
+            }
+        }
+
+        // Si es un ID numérico simple, intentamos consultar directamente cada tabla específica
+        const idNum = parseInt(id, 10);
+        if (!isNaN(idNum)) {
+            console.log('[PUBLIC GET] entrando en rama numérica con idNum =', idNum);
+            // 1) intentar alquiler
+            const sqlAlq = `
+                SELECT
+                    CONCAT('alq_', sa.id_solicitud) as solicitudId,
+                    sa.tipo_servicio as tipoServicio,
+                    sa.fecha_evento as fechaEvento,
+                    sa.hora_evento as horaInicio,
+                    sa.duracion as duracionEvento,
+                    sa.cantidad_de_personas as cantidadPersonas,
+                    sa.precio_basico as precioBase,
+                    COALESCE(c.nombre, '') as nombreParaMostrar,
+                    sa.tipo_de_evento as tipoEvento,
+                    COALESCE(sol.es_publico, 0) as esPublico
+                FROM solicitudes_alquiler sa
+                JOIN solicitudes sol ON sa.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                WHERE sa.id_solicitud = ?
+            `;
+            const resAlq = await conn.query(sqlAlq, [idNum]);
+            console.log('[PUBLIC GET] sqlAlq result sample:', Array.isArray(resAlq) ? (resAlq.length > 0 ? resAlq[0] : '[]') : typeof resAlq);
+            const alquiler = Array.isArray(resAlq) ? resAlq[0] : resAlq;
+            if (alquiler) {
+                let adicionalesRows = [];
+                try { adicionalesRows = await conn.query("SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?", [idNum]); } catch (e) { }
+                return res.status(200).json({ ...alquiler, adicionales: adicionalesRows || [] });
+            }
+
+            // 2) intentar bandas
+            const sqlBnd = `
+                SELECT
+                    CONCAT('bnd_', sb.id_solicitud) as solicitudId,
+                    sb.tipo_de_evento as tipoEvento,
+                    sb.fecha_evento as fechaEvento,
+                    sb.hora_evento as horaInicio,
+                    sb.duracion as duracionEvento,
+                    sb.cantidad_de_personas as cantidadPersonas,
+                    sb.precio_basico as precioBase,
+                    COALESCE(c.nombre, '') as nombreParaMostrar,
+                    sb.estado
+                FROM solicitudes_bandas sb
+                JOIN solicitudes sol ON sb.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                WHERE sb.id_solicitud = ?
+            `;
+            const [banda] = await conn.query(sqlBnd, [idNum]);
+            if (banda) return res.status(200).json({ ...banda, adicionales: [] });
+
+            // 3) intentar servicios
+            const sqlSrv = `
+                SELECT
+                    CONCAT('srv_', ss.id_solicitud) as solicitudId,
+                    'SERVICIO' as tipoEvento,
+                    ss.fecha_evento as fechaEvento,
+                    ss.hora_evento as horaInicio,
+                    ss.duracion as duracionEvento,
+                    ss.precio as precioBase,
+                    COALESCE(c.nombre, '') as nombreParaMostrar,
+                    sol.estado
+                FROM solicitudes_servicios ss
+                JOIN solicitudes sol ON ss.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                WHERE ss.id_solicitud = ?
+            `;
+            const [servicio] = await conn.query(sqlSrv, [idNum]);
+            if (servicio) return res.status(200).json({ ...servicio, adicionales: [] });
+
+            // 4) intentar talleres
+            const sqlTll = `
+                SELECT
+                    CONCAT('tll_', st.id_solicitud) as solicitudId,
+                    'TALLERES' as tipoEvento,
+                    st.fecha_evento as fechaEvento,
+                    st.hora_evento as horaInicio,
+                    st.duracion as duracionEvento,
+                    st.precio as precioBase,
+                    COALESCE(c.nombre, '') as nombreParaMostrar,
+                    sol.estado
+                FROM solicitudes_talleres st
+                JOIN solicitudes sol ON st.id_solicitud = sol.id
+                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                WHERE st.id_solicitud = ?
+            `;
+            const [taller] = await conn.query(sqlTll, [idNum]);
+            if (taller) return res.status(200).json({ ...taller, adicionales: [] });
+        }
+
+        return res.status(404).json({ error: 'Solicitud no encontrada.' });
+
+    } catch (err) {
+        console.error(`Error al obtener la solicitud (público) ${id}:`, err);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 // Y no olvides exportarla:
 module.exports = {
     crearSolicitud,
     getSolicitudPorId,
+    getSolicitudPublicById,
     actualizarSolicitud,
     finalizarSolicitud,
     guardarAdicionales,

@@ -10,7 +10,7 @@ const getSolicitudes = async (req, res) => {
     try {
         conn = await pool.getConnection();
         // Unión de solicitudes de alquiler, solicitudes de bandas, fechas de bandas, servicios y talleres
-        const sql = `
+        const baseSql = `
             SELECT
                 CONCAT('alq_', s.id_solicitud) as id,
                 COALESCE(sol.fecha_creacion, s.fecha_evento) as fechaSolicitud,
@@ -113,11 +113,34 @@ const getSolicitudes = async (req, res) => {
             JOIN solicitudes sol4 ON st.id_solicitud = sol4.id
             LEFT JOIN clientes c4 ON sol4.cliente_id = c4.id
             LEFT JOIN opciones_tipos ot4 ON st.nombre_taller = ot4.nombre_para_mostrar
-            ORDER BY fechaEvento DESC, fechaSolicitud DESC;
         `;
 
-        console.log('DEBUG SQL getSolicitudes:', sql);
-        const solicitudes = await conn.query(sql);
+        // Aplicar filtros por query params (tipo, estado) en el resultado final
+        const { tipo, estado } = req.query;
+        let sql = baseSql;
+        const params = [];
+        if (tipo || estado) {
+            sql = `SELECT * FROM ( ${baseSql} ) AS allsol WHERE 1=1`;
+            if (tipo) {
+                // Normalizamos 'SERVICIOS' -> 'SERVICIO' para comparar con la categoría en los resultados
+                if (String(tipo).toUpperCase() === 'SERVICIOS' || String(tipo).toUpperCase() === 'SERVICIO') {
+                    sql += ` AND (allsol.categoria = 'SERVICIO' OR allsol.tipoEventoId = 'SERVICIO' OR allsol.tipoServicioId IS NOT NULL)`;
+                } else {
+                    sql += ` AND allsol.categoria = ?`;
+                    params.push(tipo);
+                }
+            }
+            if (estado) {
+                sql += ` AND allsol.estado = ?`;
+                params.push(estado);
+            }
+            sql += ` ORDER BY fechaEvento DESC, fechaSolicitud DESC`;
+        } else {
+            sql += ` ORDER BY fechaEvento DESC, fechaSolicitud DESC`;
+        }
+
+        console.log('DEBUG SQL getSolicitudes:', sql, params);
+        const solicitudes = await conn.query(sql, params);
         res.status(200).json(solicitudes);
     } catch (err) {
         console.error("Error al obtener solicitudes de admin:", err);
@@ -859,9 +882,9 @@ const crearEvento = async (req, res) => {
         ];
 
         // Debug: asegurar que placeholders y params coinciden
-        console.log('[ADMIN] crearEvento: placeholders=', (insertSql.match(/\?/g)||[]).length, 'params=', params.length);
+        console.log('[ADMIN] crearEvento: placeholders=', (insertSql.match(/\?/g) || []).length, 'params=', params.length);
         console.log('[ADMIN] crearEvento SQL:', insertSql);
-        console.log('[ADMIN] crearEvento params sample:', params.slice(0,5));
+        console.log('[ADMIN] crearEvento params sample:', params.slice(0, 5));
 
         const result = await conn.query(insertSql, params);
 

@@ -13,15 +13,17 @@ test('crear evento por API y verificar en UI, luego eliminar', async ({ page, re
   // 2) Crear evento por API
   const ts = Date.now();
   const name = `E2E-Event-${ts}`;
-  const fecha = new Date(Date.now() + 24*3600*1000).toISOString().slice(0,10);
-  const createRes = await request.post('/api/admin/eventos_confirmados', { data: {
-    nombre_banda: name,
-    fecha,
-    hora_inicio: '21:00',
-    descripcion: 'E2E test',
-    genero_musical: 'E2E-Genre',
-    nombre_contacto: 'E2E',
-  }, headers: { Authorization: `Bearer ${token}` } });
+  const fecha = new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10);
+  const createRes = await request.post('/api/admin/eventos_confirmados', {
+    data: {
+      nombre_banda: name,
+      fecha,
+      hora_inicio: '21:00',
+      descripcion: 'E2E test',
+      genero_musical: 'E2E-Genre',
+      nombre_contacto: 'E2E',
+    }, headers: { Authorization: `Bearer ${token}` }
+  });
   expect(createRes.ok()).toBeTruthy();
   const createJson = await createRes.json();
   const eventId = createJson.id;

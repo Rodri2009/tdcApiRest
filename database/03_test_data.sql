@@ -157,6 +157,20 @@ INSERT INTO profesionales_servicios (id, nombre, especialidad, telefono, email, 
 (1, 'Lucía Martínez', 'Masajes', '1150012345', 'lucia.m@example.com', 6, 'Lunes,Miércoles,Viernes', '09:00:00', '17:00:00', 1, NOW()),
 (2, 'Mariana Gómez', 'Depilación', '1150023456', 'mariana.g@example.com', 5, 'Martes,Jueves', '10:00:00', '18:00:00', 1, NOW()),
 (3, 'Carolina Ruiz', 'Estética', '1150034567', 'carolina.r@example.com', 1, 'Lunes a Viernes', '09:00:00', '17:30:00', 1, NOW());
+
+-- ---------------------------------------------------------------------------
+-- ADICIONALES DE EJEMPLO
+-- ---------------------------------------------------------------------------
+INSERT INTO opciones_adicionales (nombre, precio, descripcion, url_imagen) VALUES
+('Mesa extra', 5000.00, 'Mesa extra para buffet', NULL),
+('Silla extra', 300.00, 'Silla plegable extra', NULL);
+
+-- SELECCIONES DE ADICIONALES PARA PRUEBAS
+-- Insertamos algunos adicionales seleccionados para la solicitud 4 (Asado familiar)
+INSERT INTO solicitudes_adicionales (id_solicitud, adicional_nombre, adicional_precio, creado_en) VALUES
+(4, 'Mesa extra', 5000.00, NOW()),
+(4, 'Silla extra', 300.00, NOW());
+
 -- ===========================================================================
 -- FIN DE LOS DATOS DE PRUEBA
 -- ===========================================================================

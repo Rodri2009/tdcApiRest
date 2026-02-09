@@ -683,3 +683,14 @@ CREATE TABLE IF NOT EXISTS turnos_servicios (
     FOREIGN KEY (servicio_id) REFERENCES servicios_catalogo(id),
     FOREIGN KEY (precio_id) REFERENCES precios_servicios(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla para almacenar los adicionales seleccionados por una solicitud (opcional)
+CREATE TABLE IF NOT EXISTS solicitudes_adicionales (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT NOT NULL,
+    adicional_nombre VARCHAR(255) NOT NULL,
+    adicional_precio DECIMAL(10,2) NOT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_solicitudes_adicionales_solicitud_id (id_solicitud),
+    CONSTRAINT fk_solicitudes_adicionales_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

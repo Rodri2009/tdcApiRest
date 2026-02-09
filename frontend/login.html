@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -93,7 +94,9 @@
         }
 
         input::placeholder {
-            color: #6b7280;
+            color: #9ca3af !important;
+            opacity: 1 !important;
+            font-style: italic;
         }
 
         .form-actions {
@@ -187,6 +190,7 @@
                 opacity: 0;
                 transform: translateX(-50%) translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(-50%) translateY(0);
@@ -204,15 +208,19 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
-        
+
         ::placeholder {
-            color: #b0b0b0 !important;
-            opacity: 0.4 !important;
+            color: #9ca3af !important;
+            opacity: 1 !important;
+            font-style: italic;
         }
     </style>
 </head>
+
 <body>
     <div class="login-container">
         <div class="card">
@@ -225,23 +233,13 @@
             <form id="loginForm">
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input 
-                        id="email" 
-                        name="email" 
-                        type="email" 
-                        placeholder="tu@email.com"
-                        required 
+                    <input id="email" name="email" type="email" placeholder="tu@email.com" required
                         autocomplete="email">
                 </div>
 
                 <div class="form-group">
                     <label for="password">Contraseña</label>
-                    <input 
-                        id="password" 
-                        name="password" 
-                        type="password" 
-                        placeholder="••••••••"
-                        required 
+                    <input id="password" name="password" type="password" placeholder="••••••••" required
                         autocomplete="current-password">
                 </div>
 
@@ -249,7 +247,8 @@
                     <button type="submit" id="submitBtn">
                         <span id="buttonText">Ingresar</span>
                     </button>
-                    <button type="button" id="cancelBtn" class="btn-secondary" onclick="window.location.href='/index.html'">
+                    <button type="button" id="cancelBtn" class="btn-secondary"
+                        onclick="window.location.href='/index.html'">
                         Volver
                     </button>
                 </div>
@@ -294,7 +293,7 @@
              */
             showNotification(message, type = 'info', duration = 5000) {
                 clearTimeout(this.notificationTimer);
-                
+
                 this.banner.textContent = message;
                 this.banner.className = `show ${type}`;
 
@@ -322,7 +321,7 @@
              */
             validate() {
                 let isValid = true;
-                
+
                 if (!this.emailInput.value.trim()) {
                     this.showNotification('Por favor ingresa tu email', 'error');
                     this.emailInput.style.borderColor = '#ef4444';
@@ -420,4 +419,5 @@
         });
     </script>
 </body>
+
 </html>

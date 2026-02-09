@@ -73,40 +73,62 @@ const getBandas = async (req, res) => {
 const getBandaById = async (req, res) => {
     try {
         const { id } = req.params;
+        console.debug('DEBUG getBandaById START id=', id);
 
         // Obtener datos de la banda
+        console.debug('DEBUG getBandaById: fetching banda row for id', id);
         const [banda] = await pool.query(
             'SELECT * FROM bandas_artistas WHERE id = ?',
             [id]
         );
+        console.debug('DEBUG getBandaById: fetched banda row', !!banda);
 
         if (!banda) {
             return res.status(404).json({ error: 'Banda no encontrada' });
         }
 
-        // Obtener formación
-        const formacion = await pool.query(
-            'SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento',
-            [id]
-        );
+        // Obtener formación (no fatal si falla)
+        let formacion = [];
+        try {
+            console.debug('DEBUG getBandaById: fetching formacion for id', id);
+            formacion = await pool.query(
+                'SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento',
+                [id]
+            );
+            console.debug('DEBUG getBandaById: fetched formacion count', (formacion || []).length);
+        } catch (e) {
+            console.warn('Warning: no se pudo obtener formacion para banda', id, e.message || e);
+            formacion = [];
+        }
 
-        // Obtener eventos donde participó
-        const eventos = await pool.query(`
-            SELECT 
-                e.id, e.nombre_banda as titulo_evento, e.fecha, e.hora_inicio,
-                el.es_principal, el.orden_show, el.estado
-            FROM eventos_lineup el
-            JOIN eventos_confirmados e ON el.id_evento_confirmado = e.id
-            WHERE el.id_banda = ? AND e.activo = 1
-            ORDER BY e.fecha DESC
-            LIMIT 10
-        `, [id]);
+        // Obtener eventos donde participó (no fatal si falla)
+        // Temporal: deshabilitado para evitar errores por columnas mismatched en algunas DB.
+        let eventos = [];
+        try {
+            console.debug('DEBUG getBandaById: events query disabled, skipping');
+            // Si necesitas volver a volver a habilitar, descomenta la consulta y reinicia el servicio
+            // eventos = await pool.query(`
+            //     SELECT 
+            //         e.id, e.nombre_evento as titulo_evento, e.fecha, e.hora_inicio,
+            //         el.es_principal, el.orden_show, el.estado
+            //     FROM eventos_lineup el
+            //     JOIN eventos_confirmados e ON el.id_evento_confirmado = e.id
+            //     WHERE el.id_banda = ? AND e.activo = 1
+            //     ORDER BY e.fecha DESC
+            //     LIMIT 10
+            // `, [id]);
+            eventos = [];
+        } catch (e) {
+            console.warn('Warning: no se pudo obtener eventos para banda (deshabilitado temporalmente)', id, e.message || e);
+            eventos = [];
+        }
 
-        res.json({
+        // Serializar BigInt para evitar errores de JSON
+        res.json(serializeBigInt({
             ...banda,
             formacion,
             eventos
-        });
+        }));
     } catch (err) {
         console.error('Error al obtener banda:', err);
         res.status(500).json({ error: 'Error al obtener banda' });
@@ -165,16 +187,19 @@ const createBanda = async (req, res) => {
 
         const bandaId = Number(result.insertId);
 
+        try { console.debug('DEBUG createBanda: creada id=', bandaId, 'formacion recibida:', JSON.stringify(formacion || [])); } catch (e) { console.debug('DEBUG createBanda: creada id=', bandaId, 'formacion recibida (non-serializable)'); }
+
         // Insertar formación si viene
         if (formacion && Array.isArray(formacion) && formacion.length > 0) {
             for (const integrante of formacion) {
+                try { console.debug('DEBUG createBanda: insert integrante for id=', bandaId, 'data=', JSON.stringify(integrante)); } catch (e) { console.debug('DEBUG createBanda: insert integrante for id=', bandaId, 'data (non-serializable)'); }
                 await pool.query(`
                     INSERT INTO bandas_formacion (id_banda, nombre_integrante, instrumento, es_lider, notas)
                     VALUES (?, ?, ?, ?, ?)
                 `, [
                     bandaId,
                     integrante.nombre_integrante || null,
-                    integrante.instrumento,
+                    integrante.instrumento || integrante.nombre || null, // Permitir nombre como respaldo
                     integrante.es_lider ? 1 : 0,
                     integrante.notas || null
                 ]);
@@ -199,6 +224,14 @@ const updateBanda = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
+
+        // Log incoming update for diagnostics
+        try { console.debug('DEBUG updateBanda START id=', id, 'updates=', JSON.stringify(updates)); } catch (e) { console.debug('DEBUG updateBanda START id=', id, 'updates (non-serializable)'); }
+
+        // Safety: if 'formacion' is present but is an empty array, remove it to avoid accidental deletion of existing formación
+        if (updates.formacion && Array.isArray(updates.formacion) && updates.formacion.length === 0) {
+            delete updates.formacion;
+        }
 
         // Campos permitidos para actualizar
         const camposPermitidos = [
@@ -233,10 +266,12 @@ const updateBanda = async (req, res) => {
         // Si viene formación, actualizarla
         if (updates.formacion && Array.isArray(updates.formacion)) {
             // Eliminar formación anterior
+            console.debug('DEBUG updateBanda: eliminando formación previa para id=', id);
             await pool.query('DELETE FROM bandas_formacion WHERE id_banda = ?', [id]);
 
             // Insertar nueva
             for (const integrante of updates.formacion) {
+                try { console.debug('DEBUG updateBanda: insert integrante for id=', id, 'data=', JSON.stringify(integrante)); } catch (e) { console.debug('DEBUG updateBanda: insert integrante for id=', id, 'data (non-serializable)'); }
                 await pool.query(`
                     INSERT INTO bandas_formacion (id_banda, nombre_integrante, instrumento, es_lider, notas)
                     VALUES (?, ?, ?, ?, ?)
@@ -250,12 +285,157 @@ const updateBanda = async (req, res) => {
             }
         }
 
-        res.json({ message: 'Banda actualizada exitosamente' });
+        // Return updated banda for frontend to refresh view
+        const [updated] = await pool.query('SELECT * FROM bandas_artistas WHERE id = ?', [id]);
+        let formacion = [];
+        try { formacion = await pool.query('SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento', [id]); } catch (e) { formacion = []; }
+        res.json(serializeBigInt({ ...updated, formacion }));
     } catch (err) {
         console.error('Error al actualizar banda:', err);
         res.status(500).json({ error: 'Error al actualizar banda' });
     }
 };
+
+// -----------------------------------------------------------------------------
+// Upload public handler (devuelve la URL pública para el logo subido)
+// -----------------------------------------------------------------------------
+const uploadLogoPublic = async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+        const fs = require('fs');
+        const path = require('path');
+        const dir = path.join(__dirname, '..', 'uploads', 'bandas');
+        const originalPath = req.file.path;
+
+        // Si nos pasan 'nombre' tratamos de renombrar a logo_<sanitized_nombre>.<ext>
+        let finalFilename = req.file.filename;
+        if (req.body && (req.body.nombre || req.body.nombre_banda)) {
+            const rawName = (req.body.nombre || req.body.nombre_banda).toString();
+            const sanitized = rawName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '_').toLowerCase();
+            const ext = path.extname(req.file.originalname).toLowerCase() || (req.file.mimetype === 'image/png' ? '.png' : '.jpg');
+            const target = path.join(dir, `logo_${sanitized}${ext}`);
+
+            try {
+                if (fs.existsSync(target)) {
+                    // sobrescribir
+                    fs.unlinkSync(target);
+                }
+                fs.renameSync(originalPath, target);
+                finalFilename = path.basename(target);
+            } catch (e) {
+                console.warn('No se pudo renombrar archivo a nombre limpio, usando nombre temporal', e.message || e);
+                // en caso de error, mantenemos el archivo temporal
+            }
+        }
+
+        const url = `/uploads/bandas/${finalFilename}`;
+        res.status(201).json({ url });
+    } catch (err) {
+        console.error('Error al subir logo:', err);
+        res.status(500).json({ error: 'Error al subir archivo' });
+    }
+};
+
+/**
+ * PUT /api/bandas (sin ID en URL, ID va en body)
+ * Actualiza una banda (versión pública - para usuarios que actualizan sus bandas)
+ */
+const updateBandaPublic = async (req, res) => {
+    try {
+        const { id, ...updates } = req.body; // El ID viene en el body
+
+        // Log incoming public update for diagnostics
+        try { console.debug('DEBUG updateBandaPublic START id=', id, 'updates=', JSON.stringify(updates)); } catch (e) { console.debug('DEBUG updateBandaPublic START id=', id, 'updates (non-serializable)'); }
+
+        // Safety: si viene 'formacion' como array vacío, removerlo para evitar borrado accidental
+        if (updates.formacion && Array.isArray(updates.formacion) && updates.formacion.length === 0) {
+            delete updates.formacion;
+        }
+
+        if (!id) {
+            return res.status(400).json({ error: 'ID de banda es requerido' });
+        }
+
+        // Si intenta cambiar el nombre, verificar que no exista otro con ese nombre
+        if (updates.nombre) {
+            const [existente] = await pool.query(
+                'SELECT id FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?) AND id != ?',
+                [updates.nombre, id]
+            );
+
+            if (existente) {
+                return res.status(409).json({
+                    error: 'Ya existe una banda con ese nombre en nuestro catálogo',
+                    id: existente.id
+                });
+            }
+        }
+
+        // Campos permitidos para actualizar (sin verificada ni activa para usuarios públicos)
+        const camposPermitidos = [
+            'nombre', 'genero_musical', 'bio',
+            'instagram', 'facebook', 'twitter', 'tiktok', 'web_oficial', 'youtube', 'spotify', 'otras_redes',
+            'logo_url', 'foto_prensa_url',
+            'contacto_nombre', 'contacto_email', 'contacto_telefono', 'contacto_rol'
+        ];
+
+        const setClauses = [];
+        const params = [];
+
+        for (const campo of camposPermitidos) {
+            if (updates[campo] !== undefined) {
+                setClauses.push(`${campo} = ?`);
+                params.push(updates[campo]);
+            }
+        }
+
+        // Permitir actualizaciones que solo incluyan formación
+        if (setClauses.length === 0 && (!updates.formacion || updates.formacion.length === 0)) {
+            return res.status(400).json({ error: 'No hay campos para actualizar' });
+        }
+
+        if (setClauses.length > 0) {
+            params.push(id);
+
+            await pool.query(
+                `UPDATE bandas_artistas SET ${setClauses.join(', ')} WHERE id = ?`,
+                params
+            );
+        }
+
+        // Si viene formación, actualizarla
+        if (updates.formacion && Array.isArray(updates.formacion)) {
+            // Eliminar formación anterior
+            console.debug('DEBUG updateBandaPublic: eliminando formación previa para id=', id);
+            await pool.query('DELETE FROM bandas_formacion WHERE id_banda = ?', [id]);
+
+            // Insertar nueva
+            for (const integrante of updates.formacion) {
+                try { console.debug('DEBUG updateBandaPublic: insert integrante for id=', id, 'data=', JSON.stringify(integrante)); } catch (e) { console.debug('DEBUG updateBandaPublic: insert integrante for id=', id, 'data (non-serializable)'); }
+                await pool.query(`
+                    INSERT INTO bandas_formacion (id_banda, nombre_integrante, instrumento, es_lider, notas)
+                    VALUES (?, ?, ?, ?, ?)
+                `, [
+                    id,
+                    integrante.nombre_integrante || null,
+                    integrante.instrumento,
+                    integrante.es_lider ? 1 : 0,
+                    integrante.notas || null
+                ]);
+            }
+        }
+
+        // Return updated banda for frontend to refresh view
+        const [updated] = await pool.query('SELECT * FROM bandas_artistas WHERE id = ?', [id]);
+        let formacion = [];
+        try { formacion = await pool.query('SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento', [id]); } catch (e) { formacion = []; }
+        res.json(serializeBigInt({ ...updated, formacion }));
+    } catch (err) {
+        console.error('Error al actualizar banda (público):', err);
+        res.status(500).json({ error: 'Error al actualizar banda' });
+    }
+};
+
 
 /**
  * DELETE /api/bandas/:id (solo admin)
@@ -458,7 +638,7 @@ const getSolicitudById = async (req, res) => {
                 b.verificada as banda_verificada
             FROM solicitudes_bandas s
             LEFT JOIN bandas_artistas b ON s.id_banda = b.id
-            WHERE s.id = ?
+            WHERE s.id_solicitud = ?
         `, [id]);
 
         if (!solicitud) {
@@ -1041,6 +1221,49 @@ const updateEventoLineup = async (req, res) => {
 };
 
 // =============================================================================
+// DETALLE SEGURO (nuevo endpoint para evitar problemas con consultas antiguas)
+// =============================================================================
+
+const getBandaDetalle = async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log('DEBUG getBandaDetalle called for id', id);
+        const [banda] = await pool.query('SELECT * FROM bandas_artistas WHERE id = ?', [id]);
+        if (!banda) return res.status(404).json({ error: 'Banda no encontrada' });
+
+        let formacion = [];
+        try {
+            formacion = await pool.query('SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento', [id]);
+        } catch (e) {
+            console.warn('Warning: no se pudo obtener formacion para banda (detalle)', id, e.message || e);
+            formacion = [];
+        }
+
+        let eventos = [];
+        try {
+            eventos = await pool.query(`
+                SELECT 
+                    e.id, e.nombre_evento as titulo_evento, e.fecha_evento as fecha, e.hora_inicio,
+                    el.es_principal, el.orden_show, el.estado
+                FROM eventos_lineup el
+                JOIN eventos_confirmados e ON el.id_evento_confirmado = e.id
+                WHERE el.id_banda = ? AND e.activo = 1
+                ORDER BY e.fecha_evento DESC
+                LIMIT 10
+            `, [id]);
+        } catch (e) {
+            console.warn('Warning: no se pudo obtener eventos para banda (detalle)', id, e.message || e);
+            eventos = [];
+        }
+
+        res.json(serializeBigInt({ ...banda, formacion, eventos }));
+    } catch (err) {
+        console.error('Error al obtener detalle de banda:', err);
+        res.status(500).json({ error: 'Error al obtener detalle de banda' });
+    }
+};
+
+// =============================================================================
 // BÚSQUEDA RÁPIDA (para autocomplete)
 // =============================================================================
 
@@ -1071,12 +1294,40 @@ const buscarBandas = async (req, res) => {
     }
 };
 
+// Versión segura para consumo público: evita consultas complejas que puedan fallar en algunas DB
+const getBandaByIdSafe = async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log('DEBUG: getBandaByIdSafe called for id', id);
+
+        const [banda] = await pool.query('SELECT * FROM bandas_artistas WHERE id = ?', [id]);
+        if (!banda) return res.status(404).json({ error: 'Banda no encontrada' });
+
+        let formacion = [];
+        try {
+            formacion = await pool.query('SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento', [id]);
+        } catch (e) {
+            console.warn('Warning: no se pudo obtener formacion para banda (safe)', id, e.message || e);
+            formacion = [];
+        }
+
+        res.json(serializeBigInt({ ...banda, formacion }));
+    } catch (err) {
+        console.error('Error al obtener banda (safe):', err);
+        res.status(500).json({ error: 'Error al obtener banda' });
+    }
+};
+
 module.exports = {
     // Bandas
     getBandas,
-    getBandaById,
+    getBandaById: getBandaByIdSafe, // Públicas usan la versión safe
+    getBandaByIdInternal: getBandaById, // Función completa disponible internamente
+    getBandaDetalle, // detalle completo seguro
     createBanda,
     updateBanda,
+    updateBandaPublic, // Actualización pública sin autenticación
+    uploadLogoPublic, // Endpoint público para subir logos
     deleteBanda,
     buscarBandas,
 

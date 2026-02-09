@@ -1,5 +1,6 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 // NOTA: Asegúrate de haber eliminado la línea: require('dotenv').config();
 // como hablamos antes, para evitar conflictos con las variables de Docker.
 const pool = require('./db');
@@ -16,6 +17,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Servir archivos estáticos del frontend
 app.use(express.static('frontend'));
+// Servir uploads (logos, fotos) desde /uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] Petición recibida: ${req.method} ${req.originalUrl}`);
@@ -26,9 +29,6 @@ app.use((req, res, next) => {
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
-
-
-
 
 // --- Rutas de la API ---
 console.log("\n------------INICIANDO BACKEND------------.");
