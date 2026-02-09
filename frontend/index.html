@@ -7,6 +7,7 @@
     <title>El Templo de Claypole - Espacio Cultural y Salón de Eventos Únicos</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles/request-forms.css">
     <style>
         /* Configuración de fuentes y colores personalizados para el tema */
         :root {
@@ -54,8 +55,8 @@
 
         /* Estilo para el fondo de la sección Hero con la imagen del frente */
         .hero-background {
-            /* RUTA ACTUALIZADA según tu confirmación */
-            background-image: url('./img/hero.jpg');
+            /* Use absolute path to avoid relative resolution issues when served from subpaths */
+            background-image: url('/img/hero.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
