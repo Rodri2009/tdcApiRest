@@ -522,7 +522,9 @@
                             nombre: item.nombreCompleto,
                             tipo: item.tipoEvento,
                             precio: item.precio,
-                            descripcion: item.descripcion
+                            descripcion: item.descripcion,
+                            // Mapeo tolerante para posible campo de flyer/imagen en la API
+                            flyer_url: item.flyer_url || item.flyerUrl || item.flyer || item.imagen || item.adjunto_url || null
                         };
                     });
                 }
