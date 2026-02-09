@@ -172,11 +172,11 @@
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Tocar en El templo
                     </a>
-                    <a href="solicitu_taller_actividad.html"
+                    <a href="solicitud_taller_actividad.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Dar un taller
                     </a>
-                    <a href="solicitu_taller_actividad.html"
+                    <a href="solicitud_taller.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Dar clases
                     </a>
@@ -479,17 +479,22 @@
 
             return `
             <div class="p-4 bg-stone-800 rounded-xl flex items-center justify-between border-l-4 ${cat.color} hover:bg-stone-700/50 transition">
-                <div class="flex items-center space-x-4">
-                    <div class="text-center p-2 rounded-lg ${cat.bgDate} text-white flex-shrink-0 min-w-[50px]">
-                        <p class="text-xl font-bold">${day}</p>
-                        <p class="text-xs">${month}</p>
+                <div class="flex items-center space-x-4 agenda-card">
+                    <div class="agenda-flyer">
+                        ${item.flyer_url ? `<img src="${item.flyer_url}" alt="${item.nombre || item.tipo}">` : `<div class="helper-text">No Flyer</div>`}
                     </div>
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-sm ${cat.textColor}">${cat.icon} ${cat.label}</span>
+                    <div class="agenda-meta">
+                        <div class="text-center p-2 rounded-lg ${cat.bgDate} text-white flex-shrink-0 min-w-[50px]">
+                            <p class="text-xl font-bold">${day}</p>
+                            <p class="text-xs">${month}</p>
                         </div>
-                        <h4 class="text-lg font-semibold text-white">${item.nombre || item.tipo}</h4>
-                        <p class="text-sm text-stone-400">${hora ? hora + ' hs' : ''} ${precio ? '• ' + precio : ''}</p>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm ${cat.textColor}">${cat.icon} ${cat.label}</span>
+                            </div>
+                            <h4 class="text-lg font-semibold text-white">${item.nombre || item.tipo}</h4>
+                            <p class="text-sm text-stone-400">${hora ? hora + ' hs' : ''} ${precio ? '• ' + precio : ''}</p>
+                        </div>
                     </div>
                 </div>
                 <div class="flex-shrink-0 ml-4">${actionHtml}</div>
