@@ -398,24 +398,24 @@
         <div class="column-layout">
             <div class="form-group" id="tipoTallerGroup">
                 <label for="tipoTaller">Tipo de taller / actividad:</label>
-                <div style="display:flex;gap:8px;align-items:center">
+                <div class="flex-row">
                     <select id="tipoTaller"></select>
-                    <button id="btnNuevoTipo" class="btn-small" title="Crear nuevo tipo de taller o actividad">
+                    <button id="btnNuevoTipo" class="btn btn-outline" title="Crear nuevo tipo de taller o actividad">
                         <i class="fas fa-plus"></i> Nuevo
                     </button>
                 </div>
             </div>
             <div class="form-group" id="descripcionGroup">
                 <label>Descripción:</label>
-                <div id="tipoDescripcion"
-                    style="padding:10px;border:1px solid #581c87;border-radius:4px;background:#0f172a;color:#f8fafc;min-height:80px;font-size:16px;">
-                    Selecciona un tipo para ver detalles.</div>
+                <div id="tipoDescripcion" class="form-section min-h-80">
+                    Selecciona un tipo para ver detalles.
+                </div>
             </div>
         </div>
 
         <div class="form-group">
             <label>Horarios por semana (agrega una o varias entradas)</label>
-            <div id="horarioForm" style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <div id="horarioForm" class="flex-row flex-wrap" style="margin-bottom:8px">
                 <select id="diaSemana">
                     <option value="1">Lunes</option>
                     <option value="2">Martes</option>
@@ -488,7 +488,7 @@
     <!-- Modal para crear nuevo tipo -->
     <div id="modal-crear-tipo" class="modal-overlay">
         <div class="modal">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div class="flex-row" style="justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <h3 class="section-title">Nuevo Tipo de Taller</h3>
                 <button onclick="document.getElementById('modal-crear-tipo').style.display='none'" class="modal-close">×</button>
             </div>
@@ -500,9 +500,9 @@
                 <label style="display:block;color:#f0abfc;font-weight:bold;margin-bottom:5px;">Descripción:</label>
                 <textarea id="modal-tipo-descripcion" placeholder="Descripción del tipo de taller" rows="3" class="form-input"></textarea>
             </div>
-            <div style="display:flex;gap:10px;margin-top:20px;">
-                <button onclick="document.getElementById('modal-crear-tipo').style.display='none'" class="btn btn-outline" style="flex:1">Cancelar</button>
-                <button onclick="guardarNuevoTipo()" class="btn btn-primary" style="flex:1">Crear</button>
+            <div class="modal-actions">
+                <button onclick="document.getElementById('modal-crear-tipo').style.display='none'" class="btn btn-outline flex-1">Cancelar</button>
+                <button onclick="guardarNuevoTipo()" class="btn btn-primary flex-1">Crear</button>
             </div>
         </div>
     </div>

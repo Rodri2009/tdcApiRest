@@ -381,7 +381,7 @@
             <div id="bandasList" class="band-list"></div>
         </div>
 
-        <div id="bandasSeleccionadas" style="margin-top: 20px;">
+        <div id="bandasSeleccionadas" class="mt-20">
             <h4 class="section-title">Bandas Seleccionadas (<span id="countBandas">0</span>/5)</h4>
             <div id="listaBandasSeleccionadas"></div>
         </div>
@@ -395,15 +395,15 @@
         <div class="form-group">
             <div id="fechasContainer">
                 <div class="date-slot">
-                    <label style="min-width: 100px; margin: 0;">Fecha 1 (Obligatoria):</label>
+                    <label class="label-inline">Fecha 1 (Obligatoria):</label>
                     <input type="text" class="fechaEvento" data-fecha-index="0" placeholder="Selecciona fecha" required>
                 </div>
                 <div class="date-slot">
-                    <label style="min-width: 100px; margin: 0;">Fecha 2 (Opcional):</label>
+                    <label class="label-inline">Fecha 2 (Opcional):</label>
                     <input type="text" class="fechaEvento" data-fecha-index="1" placeholder="Selecciona fecha">
                 </div>
                 <div class="date-slot">
-                    <label style="min-width: 100px; margin: 0;">Fecha 3 (Opcional):</label>
+                    <label class="label-inline">Fecha 3 (Opcional):</label>
                     <input type="text" class="fechaEvento" data-fecha-index="2" placeholder="Selecciona fecha">
                 </div>
             </div>
@@ -544,7 +544,7 @@
             }).join('');
 
             if (filtered.length === 0) {
-                container.innerHTML = '<div class="helper-text" style="text-align:center;padding:20px;">No hay bandas disponibles</div>';
+                container.innerHTML = '<div class="helper-text text-center p-20">No hay bandas disponibles</div>';
             }
         }
 
@@ -572,12 +572,12 @@
             count.textContent = bandasSeleccionadas.length;
 
             container.innerHTML = bandasSeleccionadas.map((banda, idx) => `
-                <div style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <div class="card card-row">
+                    <div style="display:flex;align-items:center;gap:10px;flex:1;">
                         ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${banda.nombre}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
                         <div>
-                            <div style="color: var(--color-secondary); font-weight: bold;">${banda.nombre}</div>
-                            ${banda.genero ? `<div style="color: #9ca3af; font-size: 0.9rem;">${banda.genero}</div>` : ''}
+                            <div class="text-neon" style="font-weight:bold">${banda.nombre}</div>
+                            ${banda.genero ? `<div class="helper-text">${banda.genero}</div>` : ''}
                         </div>
                     </div>
                     <button type="button" onclick="toggleBanda(${banda.id}, '${banda.nombre}', '${banda.genero}', '${banda.logoUrl || ''}')" class="btn btn-ghost text-danger" style="font-size:1.2rem">
@@ -588,17 +588,15 @@
 
             // Actualizar orden de bandas con drag-and-drop
             if (bandasSeleccionadas.length === 0) {
-                ordenContainer.innerHTML = '<p style="color: #9ca3af; text-align: center;">Las bandas aparecerán aquí en el orden de selección</p>';
+                ordenContainer.innerHTML = '<p class="helper-text text-center">Las bandas aparecerán aquí en el orden de selección</p>';
             } else {
                 ordenContainer.innerHTML = bandasSeleccionadas.map((banda, idx) => `
-                    <div class="banda-item-orden" draggable="true" data-idx="${idx}" style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 12px; margin: 8px 0; display: flex; align-items: center; gap: 12px; cursor: move; user-select: none;">
-                        <div style="background-color: var(--color-primary); color: var(--color-secondary); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; flex-shrink: 0;">
-                            ${idx + 1}
-                        </div>
+                    <div class="banda-item-orden" draggable="true" data-idx="${idx}">
+                        <div class="order-number">${idx + 1}</div>
                         ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${banda.nombre}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
                         <div style="flex: 1;">
-                            <div style="color: var(--color-secondary); font-weight: bold;">${banda.nombre}</div>
-                            ${banda.genero ? `<div style="color: #9ca3af; font-size: 0.9rem;">${banda.genero}</div>` : ''}
+                            <div class="text-neon" style="font-weight: bold">${banda.nombre}</div>
+                            ${banda.genero ? `<div class="helper-text">${banda.genero}</div>` : ''}
                         </div>
                         <div style="color: #9ca3af; font-size: 0.85rem;">
                             <i class="fas fa-arrows-alt"></i>

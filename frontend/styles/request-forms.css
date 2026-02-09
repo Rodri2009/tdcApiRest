@@ -56,6 +56,11 @@
 .banda-thumb{width:40px;height:40px;border-radius:4px;object-fit:cover;margin-right:10px;flex-shrink:0}
 .banda-placeholder{width:40px;height:40px;border-radius:4px;background-color:#1a1f3a;display:flex;align-items:center;justify-content:center;margin-right:10px;flex-shrink:0}
 .order-number{background-color:var(--color-primary);color:var(--color-secondary);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px}
+
+/* Card row and spacing utilities */
+.card-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.p-20{padding:20px}
+.banda-item-orden{background-color:#0f172a;border:1px solid #581c87;border-radius:6px;padding:12px;margin:8px 0;display:flex;align-items:center;gap:12px;cursor:move;user-select:none}
 .banda-placeholder i{color:var(--color-secondary)}
 
 /* Modal */
@@ -79,4 +84,14 @@
 /* Utilities */
 .ml-8{margin-left:8px}
 .hidden{display:none}
-.btn-danger{background:#ef4444;color:#fff;border:0;padding:8px 10px;border-radius:6px}.text-danger{color:#ef4444}
+.btn-danger{background:#ef4444;color:#fff;border:0;padding:8px 10px;border-radius:6px}
+.text-danger{color:#ef4444}
+
+/* Small utilities */
+.flex-1{flex:1}
+.flex-wrap{flex-wrap:wrap}
+.min-h-80{min-height:80px}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.mt-20{margin-top:20px}
+.text-center{ text-align:center }
+.muted{ color:var(--muted) }
