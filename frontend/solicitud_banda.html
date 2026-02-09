@@ -19,6 +19,7 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/request-forms.css">
     <style>
         :root {
             --color-primary: #581c87;
@@ -702,7 +703,7 @@
                 <button type="submit" id="submitBtn">
                     <i class="fas fa-check"></i> Guardar Datos de Banda
                 </button>
-                <button type="button" id="clearBtn" class="secondary" style="margin-left:8px; display:none;">
+                <button type="button" id="clearBtn" class="btn btn-secondary ml-8 hidden">
                     <i class="fas fa-plus-circle"></i> Nueva Banda
                 </button>
             </div>
@@ -753,8 +754,8 @@
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                     <div style="flex:1;min-width:200px">${message}</div>
                     <div style="display:flex;gap:8px">
-                        <button id="action-banner-btn" style="background:none;border:2px solid var(--color-secondary);color:var(--color-secondary);padding:8px 12px;border-radius:6px;font-weight:bold;cursor:pointer">${actionText}</button>
-                        <button id="action-banner-cancel" style="background:none;border:2px solid #6b7280;color:#d1d5db;padding:8px 12px;border-radius:6px;cursor:pointer">${cancelText}</button>
+                        <button id="action-banner-btn" class="btn btn-outline">${actionText}</button>
+                        <button id="action-banner-cancel" class="btn btn-secondary">${cancelText}</button>
                     </div>
                 </div>
             `;
