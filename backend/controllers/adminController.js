@@ -304,7 +304,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     cantidadPersonas || null,
                     tipoServicio || null,
                     nombreTaller || null
-                ];
+                ]);
             } else if (eventoExistente.activo === 0) {
                 // Reactivar y actualizar campos del evento existente
                 await conn.query(`UPDATE eventos_confirmados SET activo = 1, cancelado_en = NULL, es_publico = ?, nombre_evento = ?, descripcion = ?, url_flyer = ?, fecha_evento = ?, hora_inicio = ?, duracion_estimada = ?, nombre_cliente = ?, email_cliente = ?, telefono_cliente = ?, precio_base = ?, precio_final = ?, genero_musical = ?, cantidad_personas = ?, tipo_servicio = ?, nombre_taller = ? WHERE id = ?`, [
