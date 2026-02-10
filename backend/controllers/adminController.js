@@ -68,7 +68,8 @@ const getSolicitudes = async (req, res) => {
                 'evento' as origen,
                 TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
                 e.es_publico as es_publico,
-                SUBSTRING(e.descripcion,1,200) as descripcionCorta
+                SUBSTRING(e.descripcion,1,200) as descripcionCorta,
+                e.url_flyer as url_flyer
             FROM eventos_confirmados e
             LEFT JOIN opciones_tipos ote ON e.tipo_evento = ote.id_tipo_evento
             UNION ALL
@@ -278,7 +279,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                 await conn.query(`
                     INSERT INTO eventos_confirmados (
                         id_solicitud, tipo_evento, tabla_origen,
-                        nombre_evento, descripcion, fecha_evento, hora_inicio, duracion_estimada,
+                        nombre_evento, descripcion, url_flyer, fecha_evento, hora_inicio, duracion_estimada,
                         nombre_cliente, email_cliente, telefono_cliente,
                         precio_base, precio_final, es_publico, activo,
                         genero_musical, cantidad_personas, tipo_servicio, nombre_taller
@@ -289,6 +290,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     tablaOrigen,
                     nombreEvento,
                     solicitud.descripcion || null,
+                    solicitud.logo_url || null,
                     solicitud.fecha_evento,
                     solicitud.hora_evento || '21:00:00',
                     solicitud.duracion || null,
@@ -302,13 +304,14 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     cantidadPersonas || null,
                     tipoServicio || null,
                     nombreTaller || null
-                ]);
+                ];
             } else if (eventoExistente.activo === 0) {
                 // Reactivar y actualizar campos del evento existente
-                await conn.query(`UPDATE eventos_confirmados SET activo = 1, cancelado_en = NULL, es_publico = ?, nombre_evento = ?, descripcion = ?, fecha_evento = ?, hora_inicio = ?, duracion_estimada = ?, nombre_cliente = ?, email_cliente = ?, telefono_cliente = ?, precio_base = ?, precio_final = ?, genero_musical = ?, cantidad_personas = ?, tipo_servicio = ?, nombre_taller = ? WHERE id = ?`, [
+                await conn.query(`UPDATE eventos_confirmados SET activo = 1, cancelado_en = NULL, es_publico = ?, nombre_evento = ?, descripcion = ?, url_flyer = ?, fecha_evento = ?, hora_inicio = ?, duracion_estimada = ?, nombre_cliente = ?, email_cliente = ?, telefono_cliente = ?, precio_base = ?, precio_final = ?, genero_musical = ?, cantidad_personas = ?, tipo_servicio = ?, nombre_taller = ? WHERE id = ?`, [
                     esPublico,
                     nombreEvento,
                     solicitud.descripcion || null,
+                    solicitud.logo_url || null,
                     solicitud.fecha_evento,
                     solicitud.hora_evento || '21:00:00',
                     solicitud.duracion || null,
@@ -824,7 +827,7 @@ const getAllTiposDeEvento = async (req, res) => {
  */
 const crearEvento = async (req, res) => {
     const {
-        nombre_banda, genero_musical, descripcion, url_imagen,
+        nombre_banda, genero_musical, descripcion, url_flyer, url_imagen,
         fecha, hora_inicio, hora_fin, aforo_maximo, es_publico,
         precio_base, precio_anticipada, precio_puerta,
         nombre_contacto, email_contacto, telefono_contacto,
@@ -840,6 +843,8 @@ const crearEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
+        const flyerUrl = url_flyer || url_imagen || null;
+
         const insertSql = `
             INSERT INTO eventos_confirmados SET
               id_solicitud = ?,
@@ -847,6 +852,7 @@ const crearEvento = async (req, res) => {
               tabla_origen = ?,
               nombre_evento = ?,
               descripcion = ?,
+              url_flyer = ?,
               fecha_evento = ?,
               hora_inicio = ?,
               duracion_estimada = ?,
@@ -867,6 +873,7 @@ const crearEvento = async (req, res) => {
             'manual_admin',
             nombre_banda,
             descripcion || null,
+            flyerUrl,
             fecha,
             hora_inicio || '21:00',
             null,
@@ -908,7 +915,7 @@ const crearEvento = async (req, res) => {
 const actualizarEvento = async (req, res) => {
     const { id } = req.params;
     const {
-        nombre_banda, genero_musical, descripcion, url_imagen,
+        nombre_banda, genero_musical, descripcion, url_flyer, url_imagen,
         fecha, hora_inicio, hora_fin, aforo_maximo, es_publico,
         precio_base, precio_anticipada, precio_puerta,
         nombre_contacto, email_contacto, telefono_contacto,
@@ -927,7 +934,7 @@ const actualizarEvento = async (req, res) => {
         if (typeof nombre_banda !== 'undefined') { updates.push('nombre_banda = ?'); params.push(nombre_banda); }
         if (typeof genero_musical !== 'undefined') { updates.push('genero_musical = ?'); params.push(genero_musical); }
         if (typeof descripcion !== 'undefined') { updates.push('descripcion = ?'); params.push(descripcion); }
-        if (typeof url_imagen !== 'undefined') { updates.push('url_imagen = ?'); params.push(url_imagen); }
+        if (typeof url_flyer !== 'undefined') { updates.push('url_flyer = ?'); params.push(url_flyer); } else if (typeof url_imagen !== 'undefined') { updates.push('url_flyer = ?'); params.push(url_imagen); }
         if (typeof fecha !== 'undefined') { updates.push('fecha = ?'); params.push(fecha); }
         if (typeof hora_inicio !== 'undefined') { updates.push('hora_inicio = ?'); params.push(hora_inicio); }
         if (typeof hora_fin !== 'undefined') { updates.push('hora_fin = ?'); params.push(hora_fin); }
@@ -1005,6 +1012,7 @@ const getEventoById = async (req, res) => {
                 nombre_evento as nombre_banda,
                 genero_musical,
                 descripcion,
+                e.url_flyer as url_flyer,
                 NULL as url_imagen,
                 nombre_cliente as nombre_contacto,
                 email_cliente as email_contacto,
@@ -1077,7 +1085,7 @@ const getEventosConfirmados = async (req, res) => {
         const orderBy = allowedOrderBy.has(order_by) ? order_by : 'fecha_evento';
         const orderDir = (order_dir && order_dir.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
 
-        const sql = `SELECT id, id_solicitud, tipo_evento, tabla_origen, nombre_evento, descripcion as descripcion_corta, fecha_evento, hora_inicio, es_publico, activo, nombre_cliente, precio_final, genero_musical, cantidad_personas, tipo_servicio, nombre_taller FROM eventos_confirmados ${conditions} ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
+        const sql = `SELECT id, id_solicitud, tipo_evento, tabla_origen, nombre_evento, descripcion as descripcion_corta, url_flyer, fecha_evento, hora_inicio, es_publico, activo, nombre_cliente, precio_final, genero_musical, cantidad_personas, tipo_servicio, nombre_taller FROM eventos_confirmados ${conditions} ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
         params.push(lim, off);
 
         const rows = await conn.query(sql, params);

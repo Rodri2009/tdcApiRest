@@ -238,6 +238,7 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
     -- Información del evento
     nombre_evento VARCHAR(255) NOT NULL,
     descripcion TEXT,
+    url_flyer VARCHAR(500) DEFAULT NULL COMMENT 'URL del flyer/promocional',
     fecha_evento DATE NOT NULL,
     hora_inicio TIME NOT NULL,
     duracion_estimada VARCHAR(100),

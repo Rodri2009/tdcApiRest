@@ -8,7 +8,7 @@ const serializeBigInt = (obj) => JSON.parse(JSON.stringify(obj, (key, value) => 
 const getPublicEvents = async (req, res) => {
     try {
         const query = `
-            SELECT id, id_solicitud, tipo_evento, tabla_origen, nombre_evento, descripcion, fecha_evento, hora_inicio, duracion_estimada, nombre_cliente, email_cliente, telefono_cliente, precio_base, precio_final
+            SELECT id, id_solicitud, tipo_evento, tabla_origen, nombre_evento, descripcion, url_flyer as flyer_url, fecha_evento, hora_inicio, duracion_estimada, nombre_cliente, email_cliente, telefono_cliente, precio_base, precio_final
             FROM eventos_confirmados
             WHERE es_publico = 1 AND activo = 1
             ORDER BY fecha_evento, hora_inicio

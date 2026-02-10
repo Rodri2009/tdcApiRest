@@ -50,6 +50,7 @@ Tests
 ### Fase 3 — Vistas Confirmadas (alta, 4–6h) 📋
 Objetivo: uniformizar columnas y shape de datos para confirmados.
 Backend
+- Añadir campo `url_flyer` a `eventos_confirmados` (migración y script), exponer en endpoints públicos y admin, y permitir setear/preview desde la UI de administración.
 - Verificar/ajustar endpoints que alimentan vistas: `/api/admin/solicitudes`, y crear endpoints específicos si conviene (`/api/admin/*/confirmados`).
 - Responder con objetos: `fecha, hora, tipo, clienteNombre, descripcionCorta, id`.
 Frontend

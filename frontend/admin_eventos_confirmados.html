@@ -53,6 +53,15 @@
             max-width: 360px
         }
 
+        /* Flyer thumbnail */
+        .flyer-thumb {
+            width: 90px;
+            height: 56px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+
         .btn {
             background: #764ba2;
             color: #fff;
@@ -125,6 +134,7 @@
                             <th>Tipo</th>
                             <th>Cliente</th>
                             <th>Nombre</th>
+                            <th>Flyer</th>
                             <th>Detalles</th>
                             <th>Descripción</th>
                             <th>Acciones</th>
@@ -220,6 +230,7 @@
             <td>${r.tipo_evento || ''}</td>
             <td>${r.nombre_cliente || ''}</td>
             <td>${r.nombre_evento || ''} ${estadoBadge}</td>
+            <td>${r.url_flyer ? '<img src="'+r.url_flyer+'" class="flyer-thumb" alt="flyer">' : ''}</td>
             <td>${detalles}</td>
             <td class="description">${r.descripcion_corta || ''}</td>
             <td class="actions-cell">

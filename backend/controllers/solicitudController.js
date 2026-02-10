@@ -802,10 +802,12 @@ const getSolicitudesPublicas = async (req, res) => {
                 sb.precio_basico as precio,
                 COALESCE(c.nombre, '') as nombreCompleto,
                 sb.descripcion,
-                COALESCE(sol.es_publico, 0) as esPublico
+                COALESCE(sol.es_publico, 0) as esPublico,
+                e.url_flyer as flyer_url
             FROM solicitudes_bandas sb
             JOIN solicitudes sol ON sb.id_solicitud = sol.id
             LEFT JOIN clientes c ON sol.cliente_id = c.id
+            LEFT JOIN eventos_confirmados e ON e.id_solicitud = sb.id_solicitud AND e.tipo_evento = 'BANDA' AND e.activo = 1
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'
               AND sb.fecha_evento >= CURDATE()
@@ -824,9 +826,11 @@ const getSolicitudesPublicas = async (req, res) => {
                 st.precio as precio,
                 st.nombre_taller as nombreCompleto,
                 NULL as descripcion,
-                COALESCE(sol.es_publico, 0) as esPublico
+                COALESCE(sol.es_publico, 0) as esPublico,
+                e.url_flyer as flyer_url
             FROM solicitudes_talleres st
             JOIN solicitudes sol ON st.id_solicitud = sol.id
+            LEFT JOIN eventos_confirmados e ON e.id_solicitud = st.id_solicitud AND e.tipo_evento = 'TALLER' AND e.activo = 1
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'
               AND st.fecha_evento >= CURDATE()
@@ -845,9 +849,11 @@ const getSolicitudesPublicas = async (req, res) => {
                 ss.precio as precio,
                 ss.tipo_servicio as nombreCompleto,
                 NULL as descripcion,
-                COALESCE(sol.es_publico, 0) as esPublico
+                COALESCE(sol.es_publico, 0) as esPublico,
+                e.url_flyer as flyer_url
             FROM solicitudes_servicios ss
             JOIN solicitudes sol ON ss.id_solicitud = sol.id
+            LEFT JOIN eventos_confirmados e ON e.id_solicitud = ss.id_solicitud AND e.tipo_evento = 'SERVICIO' AND e.activo = 1
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'
               AND ss.fecha_evento >= CURDATE()
@@ -959,6 +965,7 @@ const getSolicitudPublicById = async (req, res) => {
                         TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
                         e.precio_base as precioBase,
                         e.nombre_evento as nombreParaMostrar,
+                        e.url_flyer as flyer_url,
                         CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END as estado
                     FROM eventos_confirmados e
                     WHERE e.id = ?;

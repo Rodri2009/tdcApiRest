@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/request-forms.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <style>
@@ -346,8 +347,13 @@
                 <textarea id="descripcion" placeholder="Descripción del show, propuesta artística..."></textarea>
             </div>
             <div class="form-group" style="margin-top: 15px;">
-                <label for="urlImagen">URL de Imagen/Flyer</label>
+                <label for="urlImagen">URL de Imagen (logo)</label>
                 <input type="text" id="urlImagen" placeholder="https://...">
+            </div>
+            <div class="form-group" style="margin-top: 8px;">
+                <label for="urlFlyer">URL del Flyer (promocional)</label>
+                <input type="text" id="urlFlyer" placeholder="https://..." />
+                <div id="flyerPreview" style="margin-top:8px;"></div>
             </div>
         </div>
 
@@ -539,6 +545,7 @@
                         genero_musical: solicitud.genero_musical || solicitud.genero || '',
                         descripcion: solicitud.descripcion_banda || solicitud.descripcion || solicitud.descripcion_larga || '',
                         url_imagen: solicitud.logo_url || '',
+                        url_flyer: solicitud.flyer_url || '' ,
                         fecha: solicitud.fechaEvento || solicitud.fecha_evento || solicitud.fecha || null,
                         hora_inicio: solicitud.horaInicio || solicitud.hora_evento || null,
                         hora_fin: null,
@@ -562,6 +569,8 @@
                 document.getElementById('generoMusical').value = evento.genero_musical || '';
                 document.getElementById('descripcion').value = evento.descripcion || '';
                 document.getElementById('urlImagen').value = evento.url_imagen || '';
+                document.getElementById('urlFlyer').value = evento.url_flyer || '';
+                updateFlyerPreview();
 
                 if (evento.fecha) {
                     try {
@@ -645,6 +654,7 @@
                 nombre_contacto: document.getElementById('nombreContacto').value.trim(),
                 email_contacto: document.getElementById('emailContacto').value.trim(),
                 telefono_contacto: document.getElementById('telefonoContacto').value.trim(),
+                url_flyer: document.getElementById('urlFlyer').value.trim(),
                 estado: document.getElementById('estadoSelect').value,
                 activo: document.getElementById('estadoSelect').value !== 'Cancelado' ? 1 : 0,
                 tipo_evento: 'BANDA'
@@ -719,6 +729,25 @@
             banner.className = `${type} show`;
             setTimeout(() => banner.classList.remove('show'), 3000);
         }
+
+        // Flyer preview helpers
+        function updateFlyerPreview() {
+            const fld = document.getElementById('urlFlyer');
+            const el = document.getElementById('flyerPreview');
+            if (!el) return;
+            const url = fld ? fld.value.trim() : '';
+            if (url) {
+                el.innerHTML = `<img src="${url}" alt="Flyer" style="max-width:200px;max-height:150px;border-radius:6px;object-fit:cover;border:1px solid rgba(0,0,0,0.08);">`;
+            } else {
+                el.innerHTML = '';
+            }
+        }
+
+        // Wire preview update
+        document.addEventListener('DOMContentLoaded', () => {
+            const fld = document.getElementById('urlFlyer');
+            if (fld) fld.addEventListener('input', updateFlyerPreview);
+        });
     </script>
 </body>
 
