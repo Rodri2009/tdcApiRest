@@ -51,6 +51,40 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Esperar que la DB esté lista
+echo "--- 🔎 Esperando que MariaDB esté lista para aceptar conexiones... ---"
+TRIES=0
+MAX_TRIES=30
+until $COMPOSE_CMD exec -T mariadb mysql -u root -p"$MARIADB_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; do
+    TRIES=$((TRIES+1))
+    if [ $TRIES -ge $MAX_TRIES ]; then
+        echo "❌ ERROR: MariaDB no respondió después de $MAX_TRIES intentos. Abortando."
+        exit 1
+    fi
+    sleep 2
+done
+
+# --- Aplicar migraciones (si existen) ---
+# Nota: las migraciones en database/migrations se aplican **solo** cuando ejecutás ./reset.sh
+MIG_DIR="database/migrations"
+if [ -d "$MIG_DIR" ] && ls $MIG_DIR/*.sql >/dev/null 2>&1; then
+    echo "--- ⤴️  Aplicando migraciones SQL desde $MIG_DIR ---"
+    for sqlfile in $(ls $MIG_DIR/*.sql | sort); do
+        echo "Aplicando: $sqlfile"
+        if ! cat "$sqlfile" | $COMPOSE_CMD exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""; then
+            echo "❌ ERROR: Falló la migración $sqlfile. Revirtiendo al estado base..."
+            echo "--- 🔁 Revirtiendo: deteniendo y recreando el entorno base (volverá a cargar schema+seed) ---"
+            $COMPOSE_CMD down --volumes
+            $COMPOSE_CMD up --build -d
+            echo "❌ RESET ABORTADO: las migraciones no se aplicaron correctamente. El entorno fue restaurado al estado base."
+            exit 1
+        fi
+    done
+    echo "--- ✅ Migraciones aplicadas correctamente ---"
+else
+    echo "--- ℹ️ No se encontraron migraciones en $MIG_DIR (o no hay archivos .sql) ---"
+fi
+
 # --- Fase 4: Información Final ---
 echo ""
 echo "--- ✅ ¡Reseteo completado! ---"
