@@ -570,7 +570,7 @@
                 document.getElementById('descripcion').value = evento.descripcion || '';
                 document.getElementById('urlImagen').value = evento.url_imagen || '';
                 document.getElementById('urlFlyer').value = evento.url_flyer || '';
-                updateFlyerPreview();
+                if (window.App && App.updateFlyerPreview) App.updateFlyerPreview();
 
                 if (evento.fecha) {
                     try {
@@ -730,24 +730,7 @@
             setTimeout(() => banner.classList.remove('show'), 3000);
         }
 
-        // Flyer preview helpers
-        function updateFlyerPreview() {
-            const fld = document.getElementById('urlFlyer');
-            const el = document.getElementById('flyerPreview');
-            if (!el) return;
-            const url = fld ? fld.value.trim() : '';
-            if (url) {
-                el.innerHTML = `<img src="${url}" alt="Flyer" style="max-width:200px;max-height:150px;border-radius:6px;object-fit:cover;border:1px solid rgba(0,0,0,0.08);">`;
-            } else {
-                el.innerHTML = '';
-            }
-        }
 
-        // Wire preview update
-        document.addEventListener('DOMContentLoaded', () => {
-            const fld = document.getElementById('urlFlyer');
-            if (fld) fld.addEventListener('input', updateFlyerPreview);
-        });
     </script>
 </body>
 

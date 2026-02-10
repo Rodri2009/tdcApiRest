@@ -336,6 +336,15 @@ select {
     object-fit: cover
 }
 
+/* Flyer thumbnail used across admin and edit forms */
+.flyer-thumb {
+    width: 90px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
+
 /* Utilities */
 .ml-8 {
     margin-left: 8px

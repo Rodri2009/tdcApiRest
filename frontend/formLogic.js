@@ -65,7 +65,9 @@ const App = {
             clientNameSpan: document.getElementById('clientName'),
             clientPhoneSpan: document.getElementById('clientPhone'),
             clientEmailSpan: document.getElementById('clientEmail'),
-            adicionalesSeleccionadosDiv: document.getElementById('adicionalesSeleccionados')
+            adicionalesSeleccionadosDiv: document.getElementById('adicionalesSeleccionados'),
+            urlFlyerInput: document.getElementById('urlFlyer'),
+            flyerPreviewDiv: document.getElementById('flyerPreview')
         };
 
         // Campos específicos de banda (edición)
@@ -133,6 +135,11 @@ const App = {
                 this.actualizarTodo();
             });
         });
+
+        // Flyer preview input (si existe en la página)
+        if (this.elements.urlFlyerInput) {
+            this.elements.urlFlyerInput.addEventListener('input', () => { this.updateFlyerPreview(); });
+        }
     },
 
     resetearCamposInvalidos: function () {
@@ -820,9 +827,31 @@ const App = {
             if (this.elements.propuestaInput) this.elements.propuestaInput.value = solicitud.bandaPropuesta || solicitud.propuesta || '';
             if (this.elements.precioAnticipadaInput) this.elements.precioAnticipadaInput.value = solicitud.bandaPrecioAnticipada || solicitud.precio_anticipada || '';
             if (this.elements.precioPuertaInput) this.elements.precioPuertaInput.value = solicitud.bandaPrecioPuerta || solicitud.precio_puerta || '';
+
+            // Setear campo de flyer (si viene en la respuesta con distintos nombres)
+            const flyerVal = solicitud.url_flyer || solicitud.flyer_url || solicitud.adjunto_url || '';
+            if (this.elements.urlFlyerInput) this.elements.urlFlyerInput.value = flyerVal;
+            if (this.elements.flyerPreviewDiv) this.updateFlyerPreview();
         } catch (err) { console.warn('populateForm: fallo al setear campos de banda:', err); }
         // 6. Actualizar visibilidad de campos según el tipo
         this.actualizarCamposCondicionales();
+    },
+
+    // Mostrar preview del flyer si existe un campo urlFlyer
+    updateFlyerPreview: function () {
+        try {
+            const fld = this.elements.urlFlyerInput;
+            const el = this.elements.flyerPreviewDiv;
+            if (!el) return;
+            const url = fld ? (fld.value || '').trim() : '';
+            if (url) {
+                el.innerHTML = `<img src="${url}" alt="Flyer" class="flyer-thumb" style="max-width:200px;max-height:150px;">`;
+            } else {
+                el.innerHTML = '';
+            }
+        } catch (err) {
+            console.warn('updateFlyerPreview error:', err);
+        }
     },
 
 
@@ -858,6 +887,7 @@ const App = {
             fechaEvento: this.elements.fechaEventoInput.value,
             horaInicio: this.elements.horaInicioSelect.value,
             precioBase: this.elements.precioBaseInput.value,
+            url_flyer: this.elements.urlFlyerInput ? this.elements.urlFlyerInput.value.trim() : null,
             fingerprintId: this.visitorId
         };
 
@@ -1430,9 +1460,9 @@ const App = {
         if (this.elements.propuestaInput) bodyData.propuesta = this.elements.propuestaInput.value;
         if (this.elements.precioAnticipadaInput) bodyData.precio_anticipada = this.elements.precioAnticipadaInput.value;
         if (this.elements.precioPuertaInput) bodyData.precio_puerta = this.elements.precioPuertaInput.value;
+        if (this.elements.urlFlyerInput) bodyData.url_flyer = this.elements.urlFlyerInput.value.trim();
 
-
-        try {
+        try:
             // Usamos el endpoint PUT /api/solicitudes/:id, que llama a 'actualizarSolicitud'
             const response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
                 method: 'PUT',

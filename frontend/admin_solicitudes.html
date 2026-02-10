@@ -491,6 +491,7 @@
                     <th>Cliente</th>
                     <th>Fecha Evento</th>
                     <th>Hora Inicio</th>
+                    <th>Flyer</th>
                     <th>Descripción</th>
                     <th>Estado</th>
                     <th>Público</th>
@@ -865,6 +866,7 @@
                             <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
                             <td data-label="Fecha Evento">${fechaEvento}</td>
                             <td data-label="Hora Inicio">${horaInicio}</td>
+                            <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td>
                             <td data-label="Descripción"><div class="description">${descripcionCorta}</div></td>
                             <td data-label="Estado">
                                 <select data-id="${solicitud.id}" class="estado-select" ${puedeCambiarEstado ? '' : 'disabled style="opacity:0.6;cursor:not-allowed;"'}>
