@@ -1351,6 +1351,18 @@
                         console.warn('Error recargando banda actualizada', e);
                     }
 
+                    // REFRESH UI: navegar a la misma página con ?id=<banda> para forzar refresco completo
+                    try {
+                        const redirectId = (data && data.id) ? data.id : existingId;
+                        if (redirectId) {
+                            const targetUrl = `/solicitud_banda.html?id=${encodeURIComponent(redirectId)}`;
+                            if (!window.location.href.includes(`id=${encodeURIComponent(redirectId)}`)) {
+                                window.location.replace(targetUrl);
+                                return; // la página se recargará
+                            }
+                        }
+                    } catch (e) { /* noop */ }
+
                     // Asegurar que el botón vuelva a estar habilitado y texto correcto
                     document.getElementById('submitBtn').disabled = false;
                     document.getElementById('submitBtn').textContent = 'Actualizar Datos de Banda';

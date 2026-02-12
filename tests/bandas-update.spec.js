@@ -49,9 +49,11 @@ test('editar banda (UI) — agregar instrumento y verificar refresco inmediato',
 
   // 8) Click en actualizar (submitBtn) y esperar notificación de éxito
   await page.click('#submitBtn');
-  // Esperar que el botón muestre texto de actualización y luego la notificación
-  await page.waitForTimeout(500); // pequeño delay para que el request se dispare
-  await expect(page.locator('#notification-banner')).toHaveText(/Banda actualizada exitosamente|Banda registrada exitosamente/i, { timeout: 5000 });
+  // Esperar que el request se complete y la página se recargue con ?id=<bandaId>
+  await page.waitForURL(new RegExp(`/solicitud_banda\.html\?id=${bandaId}`), { timeout: 5000 });
+
+  // Confirmar que la UI muestra la formación actualizada después del reload
+  await expect(page.locator('#formacion-list')).toContainText(instrumentoNombre);
 
   // 9) Verificar via API que la banda tiene la formación nueva
   const getRes = await request.get(`/api/bandas/${bandaId}`);
