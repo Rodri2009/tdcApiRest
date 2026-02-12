@@ -64,7 +64,6 @@ try {
     const adminRoutes = require('./routes/adminRoutes');
     const bandaRoutes = require('./routes/bandaRoutes'); // NUEVO: Bandas refactorizado (3NF)
     const solicitudFechaBandaRoutes = require('./routes/solicitudFechaBandaRoutes'); // NUEVO: Solicitudes de fechas/shows
-    const bandasRoutes = require('./routes/bandasRoutes'); // Legacy
     const ticketsRoutes = require('./routes/ticketsRoutes');
     const talleresRoutes = require('./routes/talleresRoutes');
     const serviciosRoutes = require('./routes/serviciosRoutes');
@@ -82,8 +81,7 @@ try {
     app.use('/api/bandas', bandaRoutes); // GET, POST, PUT, DELETE para bandas_artistas
     app.use('/api/solicitudes-fechas-bandas', solicitudFechaBandaRoutes); // GET, POST, PUT, DELETE para solicitudes_fechas_bandas
     
-    // Legacy (mantener por compatibilidad)
-    // app.use('/api/bandas', bandasRoutes); // COMENTADO: usar nueva estructura
+    // Legacy routes removed — functionality consolidated into /api/bandas (bandaRoutes.js)
     
     app.use('/api/tickets', ticketsRoutes);
     app.use('/api/talleres', talleresRoutes);

@@ -43,6 +43,9 @@ router.get('/buscar', bandaController.buscarBandas);
 // POST /api/bandas/upload - Subir logo (público, sin autenticación)
 router.post('/upload', upload.single('logo'), bandaController.uploadLogo);
 
+// Legacy compatibility: aceptar /detalle/:id y redirigir al endpoint actual
+router.get('/detalle/:id', bandaController.obtenerBandaPorId);
+
 // GET /api/bandas/:id - Obtener banda específica
 router.get('/:id', bandaController.obtenerBandaPorId);
 

@@ -143,6 +143,8 @@ const obtenerBandaPorId = async (req, res) => {
         const integrantes = await conn.query(sqlFormacion, [idNum]);
         
         banda.integrantes = integrantes || [];
+        // Mantener compatibilidad con frontend: exponer también `formacion` (mismo formato que el controlador legacy)
+        banda.formacion = Array.isArray(integrantes) ? integrantes : [];
         
         console.log(`[BANDA] ✓ Banda obtenida: ${banda.nombre}`);
         
@@ -492,10 +494,16 @@ const actualizarBanda = async (req, res) => {
         
         console.log(`[BANDA] ✓ Banda ID ${idNum} actualizada exitosamente`);
         
-        return res.status(200).json({
-            bandaId: idNum,
-            message: 'Banda actualizada exitosamente.'
-        });
+        // Devolver la banda actualizada completa para que el frontend pueda refrescar sin llamadas adicionales
+        const [updated] = await conn.query(`SELECT id, nombre, genero_musical, bio, instagram, facebook, twitter, tiktok, web_oficial, youtube, spotify, otras_redes, logo_url, foto_prensa_url, contacto_nombre, contacto_email, contacto_telefono, contacto_rol, verificada, activa, creado_en, actualizado_en FROM bandas_artistas WHERE id = ?`, [idNum]);
+        if (updated) {
+            const integrantes = await conn.query(`SELECT id, nombre_integrante, instrumento, es_lider, notas FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, id ASC`, [idNum]);
+            updated.integrantes = integrantes || [];
+            updated.formacion = Array.isArray(integrantes) ? integrantes : [];
+            return res.status(200).json(updated);
+        }
+
+        return res.status(200).json({ bandaId: idNum, message: 'Banda actualizada exitosamente.' });
         
     } catch (err) {
         if (conn) await conn.rollback();
