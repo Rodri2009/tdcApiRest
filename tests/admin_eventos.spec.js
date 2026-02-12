@@ -61,3 +61,32 @@ test('crear evento por API y verificar en UI, luego eliminar', async ({ page, re
   await page.reload();
   await expect(page.locator(`tr:has-text("${name}")`)).toHaveCount(0);
 });
+
+test('acepta claves legacy (fecha, nombre_banda) en PUT y persiste correctamente', async ({ request }) => {
+  const loginRes = await request.post('/api/auth/login', { data: { email: 'rodrigo@rodrigo', password: 'rodrigo' } });
+  const token = (await loginRes.json()).token;
+
+  const fecha = new Date(Date.now() + 48 * 3600 * 1000).toISOString().slice(0, 10);
+  const createRes = await request.post('/api/admin/eventos_confirmados', {
+    data: { nombre_banda: 'LEGACY-TEST', fecha, hora_inicio: '21:00', nombre_contacto: 'L1' },
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const { id: evId } = await createRes.json();
+
+  // Actualizar usando claves legacy
+  const newFecha = new Date(Date.now() + 72 * 3600 * 1000).toISOString().slice(0, 10);
+  const updateRes = await request.put(`/api/admin/eventos_confirmados/${evId}`, {
+    data: { nombre_banda: 'LEGACY-UPDATED', fecha: newFecha, nombre_contacto: 'L2' },
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  expect(updateRes.ok()).toBeTruthy();
+
+  const getRes = await request.get(`/api/admin/eventos_confirmados/${evId}`, { headers: { Authorization: `Bearer ${token}` } });
+  const body = await getRes.json();
+  expect(body.nombre_banda).toBe('LEGACY-UPDATED');
+  expect(body.fecha).toBe(newFecha);
+  expect(body.nombre_contacto).toBe('L2');
+
+  // Cleanup
+  await request.delete(`/api/admin/eventos_confirmados/${evId}`, { headers: { Authorization: `Bearer ${token}` } });
+});

@@ -67,6 +67,7 @@ const App = {
             clientEmailSpan: document.getElementById('clientEmail'),
             adicionalesSeleccionadosDiv: document.getElementById('adicionalesSeleccionados'),
             urlFlyerInput: document.getElementById('urlFlyer'),
+            flyerFileInput: document.getElementById('flyerFile'),
             flyerPreviewDiv: document.getElementById('flyerPreview')
         };
 
@@ -139,6 +140,43 @@ const App = {
         // Flyer preview input (si existe en la página)
         if (this.elements.urlFlyerInput) {
             this.elements.urlFlyerInput.addEventListener('input', () => { this.updateFlyerPreview(); });
+        }
+
+        // Upload de flyer (si el input file existe en la página)
+        if (this.elements.flyerFileInput) {
+            this.elements.flyerFileInput.addEventListener('change', async (ev) => {
+                const file = ev.target.files && ev.target.files[0];
+                if (!file) return;
+                // Validación cliente (tipo y tamaño)
+                if (!['image/png','image/jpeg'].includes(file.type)) {
+                    alert('Formato no permitido. Solo PNG/JPEG.');
+                    ev.target.value = '';
+                    return;
+                }
+                if (file.size > 3 * 1024 * 1024) {
+                    alert('El archivo supera 3 MB.');
+                    ev.target.value = '';
+                    return;
+                }
+
+                try {
+                    ev.target.disabled = true;
+                    const fd = new FormData();
+                    fd.append('flyer', file);
+                    const resp = await fetch('/api/uploads/flyers', { method: 'POST', body: fd });
+                    if (!resp.ok) throw new Error('Error en la subida: ' + resp.statusText);
+                    const body = await resp.json();
+                    if (body && body.url) {
+                        if (this.elements.urlFlyerInput) this.elements.urlFlyerInput.value = body.url;
+                        this.updateFlyerPreview();
+                    }
+                } catch (err) {
+                    console.error('Upload flyer failed:', err);
+                    alert('Error al subir el flyer. Reintentar.');
+                } finally {
+                    ev.target.disabled = false;
+                }
+            });
         }
     },
 

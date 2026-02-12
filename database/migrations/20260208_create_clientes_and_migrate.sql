@@ -1,3 +1,4 @@
+-- ARCHIVED: consolidated into database/01_schema.sql on 2026-02-12
 -- Migration: Create `clientes` table, migrate client data from solicitudes and child tables,
 -- add `cliente_id` FK to solicitudes and drop redundant contact columns.
 

@@ -1,3 +1,4 @@
+-- ARCHIVED: retained for historical reference (consolidated) on 2026-02-12
 -- Migration: Archive and drop `fechas_bandas_confirmadas_deprecated`
 -- Fecha: 2026-02-05
 -- Objetivo: Si existe `fechas_bandas_confirmadas_deprecated`, quitar FKs que la referencian

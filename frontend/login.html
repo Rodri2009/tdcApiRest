@@ -383,8 +383,18 @@
 
                     // Redirigir después de 2 segundos
                     setTimeout(() => {
-                        const redirect = new URLSearchParams(window.location.search).get('redirect');
-                        const targetUrl = redirect || '/admin.html';
+                        // Primero intenta leer sessionStorage (usado por páginas como editor que redirigieron aquí)
+                        const redirectFromSession = sessionStorage.getItem('redirectAfterLogin');
+                        // Si no, intenta el parámetro URL
+                        const redirectFromUrl = new URLSearchParams(window.location.search).get('redirect');
+                        // Usar uno u otro, o por defecto admin.html
+                        const targetUrl = redirectFromSession || redirectFromUrl || '/admin.html';
+                        
+                        // Limpiar sessionStorage después de usar
+                        if (redirectFromSession) {
+                            sessionStorage.removeItem('redirectAfterLogin');
+                        }
+                        
                         window.location.href = targetUrl;
                     }, 2000);
 

@@ -1,3 +1,4 @@
+-- ARCHIVED: consolidated into database/01_schema.sql on 2026-02-12
 -- Migration: add cliente_id to talleristas
 ALTER TABLE talleristas
   ADD COLUMN cliente_id INT NULL AFTER email,

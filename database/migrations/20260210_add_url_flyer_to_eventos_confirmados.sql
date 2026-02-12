@@ -1,3 +1,4 @@
+-- ARCHIVED: consolidated into database/01_schema.sql on 2026-02-12
 -- Migration: add url_flyer column to eventos_confirmados
 -- Date: 2026-02-10
 

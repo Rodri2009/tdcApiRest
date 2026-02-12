@@ -1,3 +1,4 @@
+-- ARCHIVED: consolidated into database/01_schema.sql on 2026-02-12
 -- Migration: Normalize solicitues structure
 -- 1) add es_publico to solicitudes (parent)
 -- 2) rename child PKs to id_solicitud, preserve values and FKs

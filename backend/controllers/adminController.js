@@ -26,7 +26,8 @@ const getSolicitudes = async (req, res) => {
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
                 COALESCE(sol.es_publico, 0) as es_publico,
-                COALESCE(sol.descripcion_corta, '') as descripcionCorta
+                COALESCE(sol.descripcion_corta, '') as descripcionCorta,
+                NULL as url_flyer
             FROM solicitudes_alquiler s
             LEFT JOIN solicitudes sol ON sol.id = s.id_solicitud
             LEFT JOIN clientes c ON sol.cliente_id = c.id
@@ -47,7 +48,8 @@ const getSolicitudes = async (req, res) => {
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
                 COALESCE(sol2.es_publico, 0) as es_publico,
-                COALESCE(sol2.descripcion_corta, '') as descripcionCorta
+                COALESCE(sol2.descripcion_corta, '') as descripcionCorta,
+                NULL as url_flyer
             FROM solicitudes_bandas s
             LEFT JOIN solicitudes sol2 ON sol2.id = s.id_solicitud
             LEFT JOIN clientes c2 ON sol2.cliente_id = c2.id
@@ -88,7 +90,8 @@ const getSolicitudes = async (req, res) => {
                 'solicitud' as origen,
                 ss.hora_evento as horaInicio,
                 COALESCE(sol3.es_publico, 0) as es_publico,
-                COALESCE(sol3.descripcion_corta, '') as descripcionCorta
+                COALESCE(sol3.descripcion_corta, '') as descripcionCorta,
+                NULL as url_flyer
             FROM solicitudes_servicios ss
             JOIN solicitudes sol3 ON ss.id_solicitud = sol3.id
             LEFT JOIN clientes c3 ON sol3.cliente_id = c3.id
@@ -109,7 +112,8 @@ const getSolicitudes = async (req, res) => {
                 'solicitud' as origen,
                 st.hora_evento as horaInicio,
                 COALESCE(sol4.es_publico, 0) as es_publico,
-                COALESCE(sol4.descripcion_corta, '') as descripcionCorta
+                COALESCE(sol4.descripcion_corta, '') as descripcionCorta,
+                NULL as url_flyer
             FROM solicitudes_talleres st
             JOIN solicitudes sol4 ON st.id_solicitud = sol4.id
             LEFT JOIN clientes c4 ON sol4.cliente_id = c4.id
@@ -914,13 +918,30 @@ const crearEvento = async (req, res) => {
 
 const actualizarEvento = async (req, res) => {
     const { id } = req.params;
+
+    // Defensive sanitation: prefer normalized keys and strip legacy ones if present
+    const body = req.body || {};
+    if (typeof body.fecha !== 'undefined' && typeof body.fecha_evento === 'undefined') { body.fecha_evento = body.fecha; delete body.fecha; }
+    if (typeof body.nombre_banda !== 'undefined' && typeof body.nombre_evento === 'undefined') { body.nombre_evento = body.nombre_banda; delete body.nombre_banda; }
+    if (typeof body.aforo_maximo !== 'undefined' && typeof body.cantidad_personas === 'undefined') { body.cantidad_personas = body.aforo_maximo; delete body.aforo_maximo; }
+    if (typeof body.nombre_contacto !== 'undefined' && typeof body.nombre_cliente === 'undefined') { body.nombre_cliente = body.nombre_contacto; delete body.nombre_contacto; }
+    if (typeof body.precio_puerta !== 'undefined' && typeof body.precio_final === 'undefined') { body.precio_final = body.precio_puerta; delete body.precio_puerta; }
+    // Replace req.body with sanitized copy for downstream safety
+    req.body = body;
+
     const {
-        nombre_banda, genero_musical, descripcion, url_flyer, url_imagen,
-        fecha, hora_inicio, hora_fin, aforo_maximo, es_publico,
-        precio_base, precio_anticipada, precio_puerta,
-        nombre_contacto, email_contacto, telefono_contacto,
+        nombre_evento, nombre_banda, genero_musical, descripcion, url_flyer, url_imagen,
+        fecha, fecha_evento, hora_inicio, hora_fin, aforo_maximo, cantidad_personas, es_publico,
+        precio_base, precio_anticipada, precio_puerta, precio_final,
+        nombre_contacto, nombre_cliente, email_contacto, telefono_contacto,
         tipo_evento, activo, estado
     } = req.body;
+
+    // Accept either legacy keys or normalized keys; prefer normalized when present
+    const fechaVal = (typeof fecha_evento !== 'undefined') ? fecha_evento : fecha;
+    const nombreContactoVal = (typeof nombre_cliente !== 'undefined') ? nombre_cliente : nombre_contacto;
+    const precioFinalVal = (typeof precio_final !== 'undefined') ? precio_final : precio_puerta;
+    const cantidadPersonasVal = (typeof cantidad_personas !== 'undefined') ? cantidad_personas : aforo_maximo;
 
     const eventId = parseInt(id, 10);
     if (isNaN(eventId)) return res.status(400).json({ message: 'ID de evento inválido.' });
@@ -931,29 +952,41 @@ const actualizarEvento = async (req, res) => {
         // Construir actualización dinámica para evitar sobreescribir con nulls
         const updates = [];
         const params = [];
-        if (typeof nombre_banda !== 'undefined') { updates.push('nombre_banda = ?'); params.push(nombre_banda); }
+        // nombre_evento: preferir campo explícito, sino aceptar nombre_banda para compatibilidad
+        if (typeof nombre_evento !== 'undefined') { updates.push('nombre_evento = ?'); params.push(nombre_evento); }
+        else if (typeof nombre_banda !== 'undefined') { updates.push('nombre_evento = ?'); params.push(nombre_banda); }
+
         if (typeof genero_musical !== 'undefined') { updates.push('genero_musical = ?'); params.push(genero_musical); }
         if (typeof descripcion !== 'undefined') { updates.push('descripcion = ?'); params.push(descripcion); }
         if (typeof url_flyer !== 'undefined') { updates.push('url_flyer = ?'); params.push(url_flyer); } else if (typeof url_imagen !== 'undefined') { updates.push('url_flyer = ?'); params.push(url_imagen); }
-        if (typeof fecha !== 'undefined') { updates.push('fecha = ?'); params.push(fecha); }
+
+        if (typeof fechaVal !== 'undefined') { updates.push('fecha_evento = ?'); params.push(fechaVal); }
         if (typeof hora_inicio !== 'undefined') { updates.push('hora_inicio = ?'); params.push(hora_inicio); }
         if (typeof hora_fin !== 'undefined') { updates.push('hora_fin = ?'); params.push(hora_fin); }
-        if (typeof aforo_maximo !== 'undefined') { updates.push('aforo_maximo = ?'); params.push(aforo_maximo); }
-        if (typeof es_publico !== 'undefined') { updates.push('es_publico = ?'); params.push(es_publico); }
+
+        // cantidad_personas en DB (antiguo aforo_maximo)
+        if (typeof cantidadPersonasVal !== 'undefined') { updates.push('cantidad_personas = ?'); params.push(cantidadPersonasVal); }
+
+        if (typeof es_publico !== 'undefined') { updates.push('es_publico = ?'); params.push(es_publico ? 1 : 0); }
         if (typeof precio_base !== 'undefined') { updates.push('precio_base = ?'); params.push(precio_base); }
-        if (typeof precio_anticipada !== 'undefined') { updates.push('precio_anticipada = ?'); params.push(precio_anticipada); }
-        if (typeof precio_puerta !== 'undefined') { updates.push('precio_puerta = ?'); params.push(precio_puerta); }
-        if (typeof nombre_contacto !== 'undefined') { updates.push('nombre_contacto = ?'); params.push(nombre_contacto); }
-        if (typeof email_contacto !== 'undefined') { updates.push('email_contacto = ?'); params.push(email_contacto); }
-        if (typeof telefono_contacto !== 'undefined') { updates.push('telefono_contacto = ?'); params.push(telefono_contacto); }
+        // precio_anticipada no existe en eventos_confirmados — ignorar si viene
+        if (typeof precioFinalVal !== 'undefined') { updates.push('precio_final = ?'); params.push(precioFinalVal); }
+
+        // Mapear contacto a columnas de eventos_confirmados
+        if (typeof nombreContactoVal !== 'undefined') { updates.push('nombre_cliente = ?'); params.push(nombreContactoVal); }
+        if (typeof email_contacto !== 'undefined') { updates.push('email_cliente = ?'); params.push(email_contacto); }
+        if (typeof telefono_contacto !== 'undefined') { updates.push('telefono_cliente = ?'); params.push(telefono_contacto); }
+
         if (typeof tipo_evento !== 'undefined') { updates.push('tipo_evento = ?'); params.push(tipo_evento); }
         if (typeof activo !== 'undefined') { updates.push('activo = ?'); params.push(activo ? 1 : 0); }
-        if (typeof estado !== 'undefined') { updates.push('estado = ?'); params.push(estado); }
 
         if (updates.length === 0) return res.status(400).json({ message: 'No hay campos para actualizar.' });
 
         const sql = `UPDATE eventos_confirmados SET ${updates.join(', ')} WHERE id = ?`;
         params.push(eventId);
+        console.log('[ADMIN] ejecutar SQL:', sql);
+        console.log('[ADMIN] updates:', updates.join(', '));
+        console.log('[ADMIN] params:', params);
         const result = await conn.query(sql, params);
 
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado.' });
@@ -1012,7 +1045,7 @@ const getEventoById = async (req, res) => {
                 nombre_evento as nombre_banda,
                 genero_musical,
                 descripcion,
-                e.url_flyer as url_flyer,
+                url_flyer as url_flyer,
                 NULL as url_imagen,
                 nombre_cliente as nombre_contacto,
                 email_cliente as email_contacto,

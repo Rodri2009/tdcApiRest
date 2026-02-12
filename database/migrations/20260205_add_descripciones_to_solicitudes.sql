@@ -1,3 +1,4 @@
+-- ARCHIVED: consolidated into database/01_schema.sql on 2026-02-12
 -- Migration: add descripcion_corta and descripcion_larga to solicitudes (idempotent)
 -- Fecha: 2026-02-05
 

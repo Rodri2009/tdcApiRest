@@ -14,6 +14,8 @@ database/
 ## Archivos SQL
 
 ### 01_schema.sql
+
+> Nota: las migraciones históricas que ya fueron consolidadas en `01_schema.sql`/`02_seed.sql` permanecen en `database/migrations/` marcadas como `-- ARCHIVED:`. Durante `./reset.sh` esos archivos archivados se omiten automáticamente.
 - **Propósito**: Creación de todas las tablas (solo DDL)
 - **Contenido**: CREATE TABLE, índices, foreign keys
 - **NUNCA incluye**: INSERT, UPDATE o datos

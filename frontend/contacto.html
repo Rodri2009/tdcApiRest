@@ -739,17 +739,48 @@
                 try { localStorage.removeItem(draftKey); } catch (_) { }
                 window.location.href = `/comprobante.html?solicitudId=${encodeURIComponent(solicitudId)}`;
               } else {
-                const res = await fetch('/api/solicitudes', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(payload)
-                });
-                if (!res.ok) {
-                  const e = await res.json(); throw new Error(e.error || 'Error creando la solicitud.');
+                // Detectar si es solicitud de bandas y usar endpoint específico
+                const esBanda = (payload.tipoEvento === 'FECHA_BANDAS' || fromPage === 'banda');
+                const endpoint = esBanda ? '/api/solicitudes-fechas-bandas' : '/api/solicitudes';
+                
+                // Para bandas, mapear campos correctos
+                if (esBanda) {
+                  // Mapear campos del borrador de solicitud_fecha_bandas al formato de la API
+                  const bandaPayload = {
+                    id_banda: payload.id_banda || payload.bandasSeleccionadas?.[0]?.id,
+                    fecha_evento: payload.fechasSeleccionadas?.[0],
+                    contacto_nombre: payload.nombreCompleto,
+                    contacto_email: payload.email,
+                    contacto_telefono: payload.celular,
+                    descripcion: payload.comentariosEspeciales || payload.detallesAdicionales,
+                    es_publico: 1,
+                    fingerprintId: payload.fingerprintId
+                  };
+                  
+                  const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bandaPayload)
+                  });
+                  if (!res.ok) {
+                    const e = await res.json(); throw new Error(e.error || 'Error creando la solicitud.');
+                  }
+                  const created = await res.json();
+                  try { localStorage.removeItem(draftKey); } catch (_) { }
+                  window.location.href = `/comprobante.html?solicitudId=${encodeURIComponent(created.id || created.solicitudId)}`;
+                } else {
+                  const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                  });
+                  if (!res.ok) {
+                    const e = await res.json(); throw new Error(e.error || 'Error creando la solicitud.');
+                  }
+                  const created = await res.json();
+                  try { localStorage.removeItem(draftKey); } catch (_) { }
+                  window.location.href = `/comprobante.html?solicitudId=${encodeURIComponent(created.solicitudId)}`;
                 }
-                const created = await res.json();
-                try { localStorage.removeItem(draftKey); } catch (_) { }
-                window.location.href = `/comprobante.html?solicitudId=${encodeURIComponent(created.solicitudId)}`;
               }
             } catch (err) {
               showNotification('Error: ' + err.message, 'error');

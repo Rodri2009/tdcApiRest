@@ -604,7 +604,24 @@ const guardarAdicionales = async (req, res) => {
  */
 const actualizarSolicitud = async (req, res) => {
     const { id } = req.params;
-    console.log(`[SOLICITUD][EDIT] Actualizando solicitud ID: ${id}`);
+    console.log(`[SOLICITUD][EDIT] ========== ACTUALIZAR SOLICITUD ==========`);
+    console.log(`[SOLICITUD][EDIT] ID recibido (raw): ${id}`);
+    console.log(`[SOLICITUD][EDIT] Body recibido:`, JSON.stringify(req.body, null, 2));
+
+    // Parsear ID con prefijo (bnd_11, alq_5, etc.)
+    const match = String(id).match(/^([a-z]*_)?(\d+)$/);
+    let prefijo = '';
+    let idNumerico = null;
+    
+    if (match) {
+        prefijo = match[1] || '';
+        idNumerico = parseInt(match[2], 10);
+        console.log(`[SOLICITUD][EDIT] ID parseado: prefijo="${prefijo}" idNumerico=${idNumerico}`);
+    } else {
+        console.error(`[SOLICITUD][EDIT] ID inválido: ${id}`);
+        return res.status(400).json({ error: 'ID de solicitud inválido.' });
+    }
+
     const {
         tipoEvento,
         cantidadPersonas,
@@ -621,15 +638,25 @@ const actualizarSolicitud = async (req, res) => {
         descripcion,
         detallesAdicionales,
         descripcionCorta,
-        descripcionLarga
+        descripcionLarga,
+        // Campos específicos para bandas
+        nombre_evento,
+        genero_musical,
+        url_flyer,
+        cantidad_personas,
+        precio_final,
+        nombre_cliente,
+        email_cliente,
+        telefono_cliente,
+        es_publico
     } = req.body;
 
     // Usar el nombre correcto si viene en snake_case
-    const nombreFinal = nombreCompleto || nombre_solicitante || '';
-    const telefonoFinal = telefono || telefono_solicitante || '';
-    const emailFinal = email || email_solicitante || '';
+    const nombreFinal = nombreCompleto || nombre_solicitante || nombre_cliente || nombre_evento || '';
+    const telefonoFinal = telefono || telefono_solicitante || telefono_cliente || '';
+    const emailFinal = email || email_solicitante || email_cliente || '';
 
-    console.log(`[SOLICITUD][EDIT] Campos básicos: tipo=${tipoEvento}, cantidad=${cantidadPersonas}, duración=${duracionEvento}`);
+    console.log(`[SOLICITUD][EDIT] Determinando tabla según prefijo: "${prefijo}"`);
 
     let conn;
     try {
@@ -653,41 +680,232 @@ const actualizarSolicitud = async (req, res) => {
             descripcionLarga || null,
             descripcion || detallesAdicionales || '',
             clienteId,
-            id
+            idNumerico
         ];
+        console.log(`[SOLICITUD][EDIT] Ejecutando UPDATE en solicitudes (id=${idNumerico})`);
         await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
 
-        // Actualizar datos en la tabla específica 'solicitudes_alquiler'
-        const sqlUpdateAlquiler = `
-            UPDATE solicitudes_alquiler SET
-                tipo_servicio = ?,
-                cantidad_de_personas = ?,
-                duracion = ?,
-                fecha_evento = ?,
-                hora_evento = ?,
-                precio_basico = ?,
-                descripcion = ?
-            WHERE id = ?
-        `;
-        const paramsAlquiler = [
-            tipoEvento || '',
-            cantidadPersonas || '',
-            duracionEvento || '',
-            fechaEvento || null,
-            horaInicio || '',
-            parseFloat(precioBase) || 0,
-            descripcion || detallesAdicionales || '',
-            id
-        ];
-        await conn.query(sqlUpdateAlquiler, paramsAlquiler);
+        // NUEVA LÓGICA: Determinar tabla según tipo de evento
+        let affectedRowsEspecifico = 0;
+        let tablaActualizada = '';
+        let tipoEventoReal = null;
+        
+        // PASO 0: Consultar el tipo real según prefijo
+        console.log(`[SOLICITUD][EDIT] PASO 0: Consultando tipo de evento (prefijo="${prefijo}") para id=${idNumerico}`);
+        
+        // Si es evento confirmado (ev_*), consultar eventos_confirmados.tipo_evento
+        if (prefijo === 'ev_') {
+            const sqlSelectEvento = `SELECT tipo_evento FROM eventos_confirmados WHERE id = ? LIMIT 1`;
+            const rowsEvento = await conn.query(sqlSelectEvento, [idNumerico]);
+            if (rowsEvento.length > 0) {
+                tipoEventoReal = rowsEvento[0].tipo_evento;
+                console.log(`[SOLICITUD][EDIT] ✓ Evento confirmado encontrado: tipo_evento=${tipoEventoReal}`);
+            } else {
+                console.warn(`[SOLICITUD][EDIT] ⚠️ Evento confirmado no encontrado en eventos_confirmados (id=${idNumerico})`);
+            }
+        } else {
+            // Para solicitudes normales (bnd_, alq_, etc.), consultar solicitudes.categoria
+            const sqlSelectSolicitud = `SELECT categoria FROM solicitudes WHERE id = ? LIMIT 1`;
+            const rowsSolicitud = await conn.query(sqlSelectSolicitud, [idNumerico]);
+            if (rowsSolicitud.length > 0) {
+                tipoEventoReal = rowsSolicitud[0].categoria;
+                console.log(`[SOLICITUD][EDIT] ✓ Solicitud encontrada: categoria=${tipoEventoReal}`);
+            } else {
+                console.warn(`[SOLICITUD][EDIT] ⚠️ Solicitud no encontrada en tabla solicitudes (id=${idNumerico})`);
+            }
+        }
+        
+        // Determinar tabla según tipo real encontrado O prefijo de fallback
+        let tableTarget = null;
+        
+        if (tipoEventoReal === 'BANDA' || tipoEventoReal === 'BANDAS') {
+            tableTarget = 'solicitudes_bandas';
+            console.log(`[SOLICITUD][EDIT] PASO 1: Tipo BANDA → usando solicitudes_bandas`);
+        } else if (tipoEventoReal === 'ALQUILER') {
+            tableTarget = 'solicitudes_alquiler';
+            console.log(`[SOLICITUD][EDIT] PASO 1: Tipo ALQUILER → usando solicitudes_alquiler`);
+        } else if (tipoEventoReal) {
+            // Otros tipos: determinar por prefijo
+            console.log(`[SOLICITUD][EDIT] PASO 1: Tipo desconocido (${tipoEventoReal}). Usando fallback por prefijo`);
+            if (prefijo === 'bnd_') tableTarget = 'solicitudes_bandas';
+            else if (prefijo === 'alq_') tableTarget = 'solicitudes_alquiler';
+            else if (prefijo === 'ev_') tableTarget = 'solicitudes_bandas'; // Eventos confirmados suelen ser bandas
+            else tableTarget = 'solicitudes_alquiler'; // Por defecto
+        } else {
+            // Sin tipo encontrado: usar prefijo
+            console.log(`[SOLICITUD][EDIT] PASO 1: Tipo no determinado. Usando fallback por prefijo (${prefijo})`);
+            if (prefijo === 'bnd_') tableTarget = 'solicitudes_bandas';
+            else if (prefijo === 'alq_') tableTarget = 'solicitudes_alquiler';
+            else if (prefijo === 'ev_') tableTarget = 'solicitudes_bandas'; // Eventos confirmados suelen ser bandas
+            else tableTarget = 'solicitudes_alquiler'; // Por defecto
+        }
+        
+        console.log(`[SOLICITUD][EDIT] PASO 2: Tabla destino = ${tableTarget}`);
+        
+        // Para eventos confirmados (ev_*), actualizar eventos_confirmados directamente
+        if (prefijo === 'ev_') {
+            console.log(`[SOLICITUD][EDIT] PASO 3: Actualizando eventos_confirmados (id=${idNumerico}) - EVENTO CONFIRMADO`);
+            
+            // Construir SQL dinámico que solo actualice campos proporcionados
+            let setClauses = [];
+            let params = [];
+            
+            if (nombreFinal || nombre_evento) {
+                setClauses.push('nombre_evento = ?');
+                params.push(nombreFinal || nombre_evento || '');
+            }
+            if (genero_musical || tipoEvento) {
+                setClauses.push('genero_musical = ?');
+                params.push(genero_musical || tipoEvento || '');
+            }
+            if (descripcion || detallesAdicionales) {
+                setClauses.push('descripcion = ?');
+                params.push(descripcion || detallesAdicionales || '');
+            }
+            if (fechaEvento) {
+                setClauses.push('fecha_evento = ?');
+                params.push(fechaEvento);
+            }
+            if (horaInicio) {
+                setClauses.push('hora_inicio = ?');
+                params.push(horaInicio);
+            }
+            if (precioBase || precioBase === 0) {
+                setClauses.push('precio_base = ?');
+                params.push(parseFloat(precioBase) || 0);
+            }
+            if (precio_final) {
+                setClauses.push('precio_final = ?');
+                params.push(precio_final);
+            }
+            if (cantidad_personas || cantidadPersonas) {
+                setClauses.push('cantidad_personas = ?');
+                params.push(cantidad_personas || cantidadPersonas || 0);
+            }
+            
+            if (setClauses.length === 0) {
+                console.log(`[SOLICITUD][EDIT] ⚠️ No hay campos para actualizar`);
+                await conn.commit();
+                return res.status(400).json({ error: 'No hay campos para actualizar.' });
+            }
+            
+            params.push(idNumerico); // Agregar WHERE id
+            
+            const sqlUpdateEvento = `UPDATE eventos_confirmados SET ${setClauses.join(', ')} WHERE id = ?`;
+            
+            try {
+                console.log(`[SOLICITUD][EDIT] SQL dinámico:`, sqlUpdateEvento);
+                const result = await conn.query(sqlUpdateEvento, params);
+                affectedRowsEspecifico = result.affectedRows || 0;
+                tablaActualizada = 'eventos_confirmados';
+                console.log(`[SOLICITUD][EDIT] ✓ UPDATE eventos_confirmados: affectedRows=${affectedRowsEspecifico}`);
+            } catch (eventoErr) {
+                console.error(`[SOLICITUD][EDIT] ✗ Error en eventos_confirmados:`, eventoErr.message);
+                throw eventoErr;
+            }
+        }
+        // ACTUALIZAR EN LA TABLA DE SOLICITUDES ESPECÍFICA
+        else if (tableTarget === 'solicitudes_bandas') {
+            console.log(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_bandas (id=${idNumerico})`);
+            
+            const sqlUpdateBandas = `
+                UPDATE solicitudes_bandas SET
+                    nombre_completo = ?,
+                    email = ?,
+                    telefono = ?,
+                    genero_musical = ?,
+                    descripcion = ?,
+                    fecha_evento = ?,
+                    hora_evento = ?,
+                    cantidad_de_personas = ?,
+                    precio_basico = ?,
+                    precio_final = ?
+                WHERE id_solicitud = ?
+            `;
+            const paramsBandas = [
+                nombreFinal || '',
+                emailFinal || '',
+                telefonoFinal || '',
+                genero_musical || tipoEvento || '',
+                descripcion || detallesAdicionales || '',
+                fechaEvento || null,
+                horaInicio || '21:00',
+                cantidad_personas || cantidadPersonas || 0,
+                precioBase || 0,
+                precio_final || null,
+                idNumerico
+            ];
+            try {
+                const result = await conn.query(sqlUpdateBandas, paramsBandas);
+                affectedRowsEspecifico = result.affectedRows || 0;
+                tablaActualizada = 'solicitudes_bandas';
+                console.log(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_bandas: affectedRows=${affectedRowsEspecifico}`);
+            } catch (bandaErr) {
+                console.error(`[SOLICITUD][EDIT] ✗ Error en solicitudes_bandas:`, bandaErr.message);
+                throw bandaErr;
+            }
+        } else if (tableTarget === 'solicitudes_alquiler') {
+            console.log(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_alquiler (id=${idNumerico})`);
+            
+            const sqlUpdateAlquiler = `
+                UPDATE solicitudes_alquiler SET
+                    tipo_servicio = ?,
+                    cantidad_de_personas = ?,
+                    duracion = ?,
+                    fecha_evento = ?,
+                    hora_evento = ?,
+                    precio_basico = ?,
+                    descripcion = ?
+                WHERE id_solicitud = ?
+            `;
+            const paramsAlquiler = [
+                tipoEvento || '',
+                cantidadPersonas || '',
+                duracionEvento || '',
+                fechaEvento || null,
+                horaInicio || '',
+                parseFloat(precioBase) || 0,
+                descripcion || detallesAdicionales || '',
+                idNumerico
+            ];
+            try {
+                const result = await conn.query(sqlUpdateAlquiler, paramsAlquiler);
+                affectedRowsEspecifico = result.affectedRows || 0;
+                tablaActualizada = 'solicitudes_alquiler';
+                console.log(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_alquiler: affectedRows=${affectedRowsEspecifico}`);
+            } catch (alqErr) {
+                console.error(`[SOLICITUD][EDIT] ✗ Error en solicitudes_alquiler:`, alqErr.message);
+                throw alqErr;
+            }
+        }
+
+        // VERIFICAR que realmente se actualizó algo
+        if (affectedRowsEspecifico === 0) {
+            console.warn(`[SOLICITUD][EDIT] ⚠️ ADVERTENCIA: UPDATE en ${tablaActualizada} no afectó ninguna fila. ID=${id}`);
+            await conn.commit();
+            return res.status(404).json({ 
+                error: 'Solicitud no encontrada en la tabla esperada.',
+                debug: { 
+                    prefijo, 
+                    idNumerico, 
+                    tablaIntentada: tablaActualizada,
+                    affectedRows: affectedRowsEspecifico
+                }
+            });
+        }
 
         await conn.commit();
-        const respuesta = { solicitudId: parseInt(id) };
-        console.log(`[SOLICITUD][EDIT] Solicitud ID: ${id} actualizada exitosamente`);
+        const respuesta = { 
+            solicitudId: id,
+            affectedRows: affectedRowsEspecifico,
+            tablaActualizada: tablaActualizada
+        };
+        console.log(`[SOLICITUD][EDIT] ✓ Solicitud ID: ${id} actualizada exitosamente en ${tablaActualizada} (affectedRows=${affectedRowsEspecifico})`);
         res.status(200).json(respuesta);
     } catch (err) {
         if (conn) await conn.rollback();
         console.error(`[SOLICITUD][ERROR] Error al actualizar la solicitud ID: ${id}: ${err.message}`);
+        console.error(`[SOLICITUD][ERROR] Stack:`, err.stack);
         res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -1023,8 +1241,31 @@ const getSolicitudPublicById = async (req, res) => {
                         sb.duracion as duracionEvento,
                         sb.cantidad_de_personas as cantidadPersonas,
                         sb.precio_basico as precioBase,
+                        sb.precio_final as precio_final,
                         COALESCE(c.nombre, '') as nombreParaMostrar,
-                        sb.estado
+                        sb.nombre_completo,
+                        sb.email,
+                        sb.telefono,
+                        sb.descripcion,
+                        sb.genero_musical,
+                        sb.estado,
+                        sb.fingerprintid,
+                        sb.id_banda,
+                        sb.formacion_json,
+                        sb.instagram,
+                        sb.facebook,
+                        sb.youtube,
+                        sb.spotify,
+                        sb.otras_redes,
+                        sb.logo_url,
+                        sb.contacto_rol,
+                        sb.fecha_alternativa,
+                        sb.invitadas_json,
+                        sb.cantidad_bandas,
+                        sb.precio_puerta_propuesto,
+                        sb.expectativa_publico,
+                        sb.notas_admin,
+                        sol.es_publico as esPublico
                     FROM solicitudes_bandas sb
                     JOIN solicitudes sol ON sb.id_solicitud = sol.id
                     LEFT JOIN clientes c ON sol.cliente_id = c.id

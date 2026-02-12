@@ -81,6 +81,41 @@
             border-bottom: 1px solid #374151;
         }
 
+        /* Copiado de solicitud_fecha_bandas.html: estilos para bandas, info-banner y date-slot */
+        .info-banner {
+            background-color: rgba(88, 28, 135, 0.12);
+            border: 1px solid var(--color-secondary);
+            border-radius: 6px;
+            padding: 12px;
+            margin: 15px 0;
+            color: #d6d3d1;
+            font-size: 0.95rem;
+        }
+
+        .banda-item {
+            background-color: #0f172a;
+            border: 1px solid #581c87;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .banda-item:hover { border-color: var(--color-secondary); }
+
+        .banda-item.selected { background-color: rgba(88, 28, 135, 0.25); border-color: var(--color-secondary); }
+
+        .banda-item-text { flex: 1; }
+        .banda-item-name { color: var(--color-secondary); font-weight: bold; }
+        .banda-item-genre { color: #9ca3af; font-size: 0.9rem; }
+
+        .date-slot { background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 12px; margin: 8px 0; display:flex; gap:10px; align-items:center; }
+
+
         .form-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -206,6 +241,12 @@
             background: #b91c1c;
         }
 
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -329,37 +370,56 @@
             </div>
         </div>
 
-        <!-- Datos de la Banda -->
+        <!-- SECCIÓN BANDAS (modo admin) -->
+        <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:6px;">
+            <h3 style="color:var(--color-secondary);"><i class="fas fa-music"></i> Bandas</h3>
+            <button type="button" id="btnCrearBanda" class="btn btn-primary" style="height:36px;padding:6px 10px;font-size:0.9rem;">
+                <i class="fas fa-plus"></i> Crear banda
+            </button>
+        </div>
+
+        <div class="form-group" style="margin-top:8px;">
+            <label for="bandaSearch">Buscar banda:</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" id="bandaSearch" placeholder="Buscar por nombre..." style="flex:1;">
+                <button type="button" id="btnLimpiarBusqueda" class="btn btn-secondary" style="height:36px;padding:6px 10px;">Limpiar</button>
+            </div>
+            <div id="bandasList" class="band-list" style="margin-top:8px;"></div>
+        </div>
+
+        <div id="bandasSeleccionadas" class="mt-20" style="margin-bottom:12px;">
+            <h4 class="section-title">Bandas Seleccionadas</h4>
+            <div id="listaBandasSeleccionadas"></div>
+        </div>
+
+        <!-- NUEVA SECCIÓN: Nombre de la fecha / show + Flyer -->
         <div class="form-section">
-            <h3><i class="fas fa-users"></i> Datos de la Banda</h3>
-            <div class="form-grid form-grid-2">
+            <h3><i class="fas fa-tag"></i> Nombre de la fecha / show & Flyer</h3>
+            <div class="form-grid form-grid-1">
                 <div class="form-group">
-                    <label for="nombreBanda">Nombre de la Banda *</label>
-                    <input type="text" id="nombreBanda" placeholder="Ej: Los Redonditos">
+                    <label for="nombreEvento">Nombre de la fecha / show</label>
+                    <input type="text" id="nombreEvento" placeholder="Ej: Rock Legends — Presentación Oficial">
                 </div>
                 <div class="form-group">
-                    <label for="generoMusical">Género Musical</label>
-                    <input type="text" id="generoMusical" placeholder="Ej: Rock Nacional">
+                    <label for="descripcion">Descripción (opcional)</label>
+                    <textarea id="descripcion" placeholder="Descripción corta del show (se mostrará en la agenda)"></textarea>
                 </div>
-            </div>
-            <div class="form-group" style="margin-top: 15px;">
-                <label for="descripcion">Descripción del Evento</label>
-                <textarea id="descripcion" placeholder="Descripción del show, propuesta artística..."></textarea>
-            </div>
-            <div class="form-group" style="margin-top: 15px;">
-                <label for="urlImagen">URL de Imagen (logo)</label>
-                <input type="text" id="urlImagen" placeholder="https://...">
-            </div>
-            <div class="form-group" style="margin-top: 8px;">
-                <label for="urlFlyer">URL del Flyer (promocional)</label>
-                <input type="text" id="urlFlyer" placeholder="https://..." />
-                <div id="flyerPreview" style="margin-top:8px;"></div>
+                <div class="form-group">
+                    <label for="urlFlyer">Flyer (URL editable o subir)</label>
+                    <input type="text" id="urlFlyer" placeholder="https://...">
+                    <div style="margin-top:6px;">
+                        <input type="file" id="flyerFile" accept="image/png,image/jpeg" />
+                        <small style="color:#999;margin-left:6px;">Subir imagen (JPEG/PNG, ≤ 3 MB)</small>
+                    </div>
+                    <div id="flyerPreview" style="margin-top:8px;"></div>
+                </div>
             </div>
         </div>
 
         <!-- Fecha y Horarios -->
         <div class="form-section">
             <h3><i class="fas fa-calendar-alt"></i> Fecha y Horarios</h3>
+            <div class="info-banner">Este formulario usa una única fecha de evento (no múltiple). Selecciona la fecha definitiva abajo.</div>
             <div class="form-grid form-grid-3">
                 <div class="form-group">
                     <label for="fechaEvento">Fecha del Evento *</label>
@@ -455,6 +515,17 @@
         let eventoPrefix = '';
         let calendario = null;
 
+        // Bandas (lista disponible + seleccionadas)
+        let bandasDisponibles = [];
+        let bandasSeleccionadas = [];
+
+        // Helper: escapar texto para insertar en HTML (previene XSS en nombres/geo)
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"'`]/g, function (s) {
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;', '`':'&#96;'})[s];
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             // Proteger página admin
             navbarManager = new NavbarManager();
@@ -465,13 +536,17 @@
             const params = new URLSearchParams(window.location.search);
             const idParam = params.get('id') || params.get('solicitudId');
 
-            console.debug('[BANDAS] editar - idParam:', idParam);
+            console.log('[BANDAS] ===== INICIALIZACIÓN =====');
+            console.log('[BANDAS] Parámetro solicitudId recibido:', idParam);
 
             if (!idParam) {
                 showNotification('ID no especificado', 'error');
                 setTimeout(() => window.location.href = 'config_bandas.html#eventos', 2000);
                 return;
             }
+
+            // Cargar lista de bandas disponibles (para selección)
+            loadBandas();
 
             // Modo nuevo evento
             if (idParam === 'new') {
@@ -496,8 +571,31 @@
             }
 
             // Mantener prefijo original si aplica (ev_ o bnd_)
-            eventoPrefix = idParam.toString().startsWith('ev_') ? 'ev_' : idParam.toString().startsWith('bnd_') ? 'bnd_' : '';
+            const rawPrefix = idParam.toString().replace(/\d+$/, '');
+            eventoPrefix = (rawPrefix === 'ev_' || rawPrefix === 'bnd_' || rawPrefix === '') ? rawPrefix : '';
+            
+            console.log('[BANDAS] Después del parsing:');
+            console.log('[BANDAS]   idParam:', idParam);
+            console.log('[BANDAS]   rawPrefix:', rawPrefix);
+            console.log('[BANDAS]   eventoId:', eventoId);
+            console.log('[BANDAS]   eventoPrefix:', eventoPrefix);
+            
             document.getElementById('eventoId').textContent = `${eventoPrefix}${eventoId}`;
+
+            // REDIRECCIÓN A LOGIN: Si es una solicitud pública (prefijo bnd_) sin autenticación
+            const isPublicRequest = eventoPrefix && eventoPrefix.length > 0;
+            const authToken = localStorage.getItem('authToken');
+            const hasAuth = authToken && typeof authToken === 'string' && authToken.trim().length > 0;
+            
+            console.log('[BANDAS] isPublicRequest:', isPublicRequest);
+            console.log('[BANDAS] hasAuth:', hasAuth);
+            if (isPublicRequest && !hasAuth) {
+                console.log('[BANDAS] Solicitud pública detectada sin autenticación. Redirigiendo a login...');
+                // Guardar la URL a la que el usuario intentaba acceder para regresar después del login
+                sessionStorage.setItem('redirectAfterLogin', window.location.href);
+                window.location.href = 'login.html?mensaje=Debe%20iniciar%20sesión%20como%20administrador%20para%20editar%20eventos';
+                return;
+            }
 
             // Inicializar calendario
             initCalendario();
@@ -523,75 +621,59 @@
         async function cargarEvento() {
             showLoading(true);
             try {
-                // Intentar obtener primero desde eventos_confirmados (ID de evento)
-                let res = await fetch(`/api/admin/eventos_confirmados/${eventoId}`);
-                console.debug('[BANDAS] GET /api/admin/eventos_confirmados/', eventoId, 'status', res.status);
-
-                let evento = null;
-
-                if (res.ok) {
-                    evento = await res.json();
-                } else if (res.status === 404) {
-                    // Fallback: si no existe evento confirmado, intentar recuperar la solicitud por su prefijo (p.ej. bnd_11)
-                    console.warn('[BANDAS] Evento no encontrado en eventos_confirmados, intentando cargar solicitud asociada...');
-                    const solicId = eventoPrefix ? `${eventoPrefix}${eventoId}` : `bnd_${eventoId}`;
-                    console.debug('[BANDAS] Intentando GET /api/solicitudes/', solicId);
-                    const res2 = await fetch(`/api/solicitudes/${solicId}`);
-                    if (!res2.ok) throw new Error('No se pudo cargar la solicitud asociada: ' + res2.status);
-                    const solicitud = await res2.json();
-                    // Mapear campos de solicitud al formato esperado por este formulario
-                    evento = {
-                        nombre_banda: solicitud.nombreBanda || solicitud.nombreParaMostrar || solicitud.nombreCompleto || '',
-                        genero_musical: solicitud.genero_musical || solicitud.genero || '',
-                        descripcion: solicitud.descripcion_banda || solicitud.descripcion || solicitud.descripcion_larga || '',
-                        url_imagen: solicitud.logo_url || '',
-                        url_flyer: solicitud.flyer_url || '' ,
-                        fecha: solicitud.fechaEvento || solicitud.fecha_evento || solicitud.fecha || null,
-                        hora_inicio: solicitud.horaInicio || solicitud.hora_evento || null,
-                        hora_fin: null,
-                        aforo_maximo: solicitud.cantidadPersonas || solicitud.cantidad_de_personas || null,
-                        es_publico: solicitud.esPublico || 0,
-                        precio_base: solicitud.precioBase || solicitud.precio_basico || 0,
-                        precio_anticipada: null,
-                        precio_puerta: solicitud.precio_puerta_propuesto || null,
-                        nombre_contacto: solicitud.nombreCompleto || '',
-                        email_contacto: solicitud.email || '',
-                        telefono_contacto: solicitud.telefono || '',
-                        estado: solicitud.estado || 'Solicitado'
-                    };
-                } else {
-                    const txt = await res.text().catch(() => res.statusText);
-                    throw new Error('No se pudo cargar el evento: ' + res.status + ' ' + txt);
+                console.log('[BANDAS] ========== CARGAR EVENTO ==========');
+                console.log('[BANDAS] eventoId:', eventoId);
+                console.log('[BANDAS] Usando nuevo endpoint: /api/solicitudes-fechas-bandas/:id');
+                
+                if (!eventoId) {
+                    throw new Error('ID de evento no válido');
                 }
 
-                // Llenar formulario usando el objeto 'evento' normalizado
-                document.getElementById('nombreBanda').value = evento.nombre_banda || '';
-                document.getElementById('generoMusical').value = evento.genero_musical || '';
+                const res = await fetch(`/api/solicitudes-fechas-bandas/${eventoId}`);
+                console.log('[BANDAS] GET /api/solicitudes-fechas-bandas/' + eventoId + ' status: ' + res.status);
+                
+                if (!res.ok) {
+                    throw new Error('No se pudo cargar la solicitud: ' + res.status);
+                }
+                
+                const evento = await res.json();
+                console.log('[BANDAS] ✓ Evento cargado desde nuevo endpoint:', evento);
+
+                // Llenar formulario usando el objeto 'evento' retornado por la API
+                document.getElementById('nombreEvento').value = evento.nombre_evento || evento.nombre_banda || '';
                 document.getElementById('descripcion').value = evento.descripcion || '';
-                document.getElementById('urlImagen').value = evento.url_imagen || '';
                 document.getElementById('urlFlyer').value = evento.url_flyer || '';
                 if (window.App && App.updateFlyerPreview) App.updateFlyerPreview();
 
-                if (evento.fecha) {
+                // Inicializar selección de bandas con la banda del evento
+                bandasSeleccionadas = [];
+                if (evento.nombre_banda) {
+                    const match = bandasDisponibles.find(b => (b.nombre || '').toLowerCase() === (evento.nombre_banda || '').toLowerCase());
+                    if (match) {
+                        bandasSeleccionadas.push({ id: match.id, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' });
+                    } else {
+                        bandasSeleccionadas.push({ id: evento.id_banda || null, nombre: evento.nombre_banda, genero: evento.genero_musical || '', logoUrl: evento.logo_url || '' });
+                    }
+                }
+                renderBandasLista();
+                renderBandasSeleccionadas();
+
+                // Marcar fecha como readonly si es evento existente (no editable)
+                const fechaInput = document.getElementById('fechaEvento');
+                if (eventoId && fechaInput) {
+                    fechaInput.readOnly = true;
+                    fechaInput.title = 'La fecha no puede ser editada para eventos confirmados';
+                    console.log('[BANDAS] Fecha marcada como readonly (evento existente)');
+                }
+
+                if (evento.fecha_evento) {
                     try {
-                        console.debug('[BANDAS] cargarEvento - fecha raw (final):', evento.fecha);
-                        // Evitar pasar cadenas como 'Invalid Date' o null a flatpickr
-                        if (typeof evento.fecha === 'string' && evento.fecha.toLowerCase().includes('invalid')) {
-                            console.warn('[BANDAS] Fecha contenía "invalid", omitiendo setDate:', evento.fecha);
-                        } else {
-                            calendario.setDate(evento.fecha, false);
+                        const ymd = typeof evento.fecha_evento === 'string' ? evento.fecha_evento.substring(0, 10) : evento.fecha_evento;
+                        if (ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+                            calendario.setDate(ymd, false);
                         }
                     } catch (err) {
-                        console.error('[BANDAS] Error setDate fecha (final):', evento.fecha, err);
-                        // Intentar usar formato YYYY-MM-DD si la fecha trae tiempo u otros caracteres
-                        const ymd = (typeof evento.fecha === 'string') ? evento.fecha.substring(0, 10) : null;
-                        if (ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
-                            try {
-                                calendario.setDate(ymd, false);
-                            } catch (err2) {
-                                console.error('[BANDAS] Error forzado setDate con YMD (final):', ymd, err2);
-                            }
-                        }
+                        console.error('[BANDAS] Error setDate fecha:', evento.fecha_evento, err);
                     }
                 }
 
@@ -599,7 +681,7 @@
                     document.getElementById('horaInicio').value = evento.hora_inicio.substring(0, 5);
                 }
                 if (evento.hora_fin) {
-                    document.getElementById('horaFin').value = evento.hora_fin.substring(0, 5);
+                    document.getElementById('horaFin').value = evento.hora_fin ? evento.hora_fin.substring(0, 5) : '';
                 }
 
                 document.getElementById('aforoMaximo').value = evento.aforo_maximo || 120;
@@ -609,11 +691,26 @@
                 document.getElementById('precioAnticipada').value = evento.precio_anticipada || '';
                 document.getElementById('precioPuerta').value = evento.precio_puerta || '';
 
-                document.getElementById('nombreContacto').value = evento.nombre_contacto || '';
-                document.getElementById('emailContacto').value = evento.email_contacto || '';
-                document.getElementById('telefonoContacto').value = evento.telefono_contacto || '';
+                document.getElementById('nombreContacto').value = evento.contacto_nombre || '';
+                document.getElementById('emailContacto').value = evento.contacto_email || '';
+                document.getElementById('telefonoContacto').value = evento.contacto_telefono || '';
 
                 document.getElementById('estadoSelect').value = evento.estado || 'Solicitado';
+
+                // Actualizar estado de botones según autenticación
+                const authToken = localStorage.getItem('authToken');
+                const hasAuth = authToken && typeof authToken === 'string' && authToken.trim().length > 0;
+                const btnGuardar = document.getElementById('btnGuardar');
+                const btnEliminar = document.getElementById('btnEliminar');
+                
+                if (!hasAuth) {
+                    if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.title = 'Requiere autenticación de administrador'; }
+                    if (btnEliminar) { btnEliminar.disabled = true; btnEliminar.title = 'Requiere autenticación de administrador'; }
+                    showNotification('Vista de solo lectura: no tiene autorización para editar. Inicie sesión como administrador.', 'warning');
+                } else {
+                    if (btnGuardar) { btnGuardar.disabled = false; }
+                    if (btnEliminar) { btnEliminar.disabled = false; }
+                }
 
             } catch (err) {
                 console.error(err);
@@ -624,66 +721,107 @@
         }
 
         async function guardarEvento() {
-            const nombreBanda = document.getElementById('nombreBanda').value.trim();
+            console.log('[BANDAS] ========== GUARDAR EVENTO ==========');
             const fecha = document.getElementById('fechaEvento').value;
+            const nombreEventoVal = document.getElementById('nombreEvento').value.trim();
 
-            if (!nombreBanda) {
-                showNotification('El nombre de la banda es obligatorio', 'warning');
+            console.log('[BANDAS] eventoId:', eventoId);
+            console.log('[BANDAS] fecha:', fecha);
+            console.log('[BANDAS] nombreEventoVal:', nombreEventoVal);
+
+            // Validar autenticación PRIMERO
+            const authToken = localStorage.getItem('authToken');
+            const hasAuth = authToken && typeof authToken === 'string' && authToken.trim().length > 0;
+
+            console.log('[BANDAS] hasAuth:', hasAuth);
+
+            if (!hasAuth) {
+                showNotification('No tiene autorización para guardar. Por favor, inicie sesión como administrador.', 'error');
                 return;
             }
-            if (!fecha) {
-                showNotification('La fecha es obligatoria', 'warning');
+
+            // Obtener datos de la banda a partir de la selección (si existe)
+            const bandaSel = (bandasSeleccionadas && bandasSeleccionadas.length) ? bandasSeleccionadas[0] : null;
+            const nombreBanda = bandaSel ? (bandaSel.nombre || '') : '';
+            const idBanda = bandaSel ? bandaSel.id : null;
+
+            console.log('[BANDAS] bandaSel:', bandaSel);
+            console.log('[BANDAS] nombreBanda:', nombreBanda);
+            console.log('[BANDAS] idBanda:', idBanda);
+
+            if (!nombreBanda || !idBanda) {
+                showNotification('Debe haber una banda válida seleccionada', 'warning');
+                return;
+            }
+
+            // Para eventos existentes, la fecha NO es requerida (no se debe editar)
+            // Para nuevos eventos, la fecha SÍ es requerida
+            if (!eventoId && !fecha) {
+                showNotification('La fecha es obligatoria para nuevos eventos', 'warning');
                 return;
             }
 
             showLoading(true);
 
+            // Preparar datos para la nueva API de solicitudes-fechas-bandas
             const datos = {
-                nombre_banda: nombreBanda,
-                genero_musical: document.getElementById('generoMusical').value.trim(),
+                id_banda: idBanda,
+                fecha_evento: fecha || undefined,
                 descripcion: document.getElementById('descripcion').value.trim(),
-                url_imagen: document.getElementById('urlImagen').value.trim(),
-                fecha: fecha,
+                contacto_nombre: document.getElementById('nombreContacto').value.trim(),
+                contacto_email: document.getElementById('emailContacto').value.trim(),
+                contacto_telefono: document.getElementById('telefonoContacto').value.trim(),
                 hora_inicio: document.getElementById('horaInicio').value || '21:00',
-                hora_fin: document.getElementById('horaFin').value || '02:00',
                 aforo_maximo: parseInt(document.getElementById('aforoMaximo').value) || 120,
                 es_publico: document.getElementById('esPublico').value === '1' ? 1 : 0,
                 precio_base: parseFloat(document.getElementById('precioBase').value) || 0,
-                precio_anticipada: parseFloat(document.getElementById('precioAnticipada').value) || null,
                 precio_puerta: parseFloat(document.getElementById('precioPuerta').value) || null,
-                nombre_contacto: document.getElementById('nombreContacto').value.trim(),
-                email_contacto: document.getElementById('emailContacto').value.trim(),
-                telefono_contacto: document.getElementById('telefonoContacto').value.trim(),
-                url_flyer: document.getElementById('urlFlyer').value.trim(),
-                estado: document.getElementById('estadoSelect').value,
-                activo: document.getElementById('estadoSelect').value !== 'Cancelado' ? 1 : 0,
-                tipo_evento: 'BANDA'
+                url_flyer: document.getElementById('urlFlyer').value.trim()
             };
 
+            // Remover campos undefined
+            Object.keys(datos).forEach(key => datos[key] === undefined && delete datos[key]);
+
+            console.log('[BANDAS] Datos a enviar:', datos);
+
             try {
-                // Si eventoId es null, es un nuevo evento (POST), sino actualizar (PUT)
-                const url = eventoId ? `/api/admin/eventos_confirmados/${eventoId}` : '/api/admin/eventos_confirmados';
+                // Usar nuevo endpoint /api/solicitudes-fechas-bandas/:id
+                const url = eventoId ? `/api/solicitudes-fechas-bandas/${eventoId}` : '/api/solicitudes-fechas-bandas';
                 const method = eventoId ? 'PUT' : 'POST';
+                
+                console.log('[BANDAS] Envío - method:', method, 'url:', url);
 
                 const res = await fetch(url, {
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify(datos)
                 });
 
+                console.log('[BANDAS] Response status:', res.status);
+                const resData = await res.json();
+                console.log('[BANDAS] Response body:', resData);
+
                 if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.message || err.error || 'Error al guardar');
+                    console.error('[BANDAS] ✗ Error HTTP:', res.status);
+                    const debugInfo = resData.debug ? `\nDebug: ${JSON.stringify(resData.debug)}` : '';
+                    throw new Error((resData.message || resData.error || 'Error al guardar') + debugInfo);
                 }
 
-                showNotification(eventoId ? 'Evento actualizado correctamente' : 'Evento creado correctamente', 'success');
-                setTimeout(() => window.location.href = 'config_bandas.html#eventos', 1500);
+                console.log('[BANDAS] ✓ Evento ' + (eventoId ? 'actualizado' : 'creado') + ' correctamente');
+                showNotification(eventoId ? 'Los cambios se realizaron correctamente' : 'Evento creado correctamente', 'success');
+                
+                // Redirigir después de guardar
+                if (eventoId) {
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    setTimeout(() => window.location.href = 'config_bandas.html#eventos', 1500);
+                }
 
             } catch (err) {
-                console.error(err);
+                console.error('[BANDAS] ✗ Error:', err);
                 showNotification('Error: ' + err.message, 'error');
             } finally {
                 showLoading(false);
@@ -691,6 +829,20 @@
         }
 
         async function eliminarEvento() {
+            console.log('[BANDAS] ========== ELIMINAR EVENTO ==========');
+            console.log('[BANDAS] eventoId:', eventoId);
+
+            // Validar autenticación PRIMERO
+            const authToken = localStorage.getItem('authToken');
+            const hasAuth = authToken && typeof authToken === 'string' && authToken.trim().length > 0;
+
+            console.log('[BANDAS] hasAuth:', hasAuth);
+
+            if (!hasAuth) {
+                showNotification('No tiene autorización para eliminar. Por favor, inicie sesión como administrador.', 'error');
+                return;
+            }
+
             if (!confirm('¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.')) {
                 return;
             }
@@ -698,21 +850,29 @@
             showLoading(true);
 
             try {
-                const res = await fetch(`/api/admin/eventos_confirmados/${eventoId}`, {
+                const url = `/api/solicitudes-fechas-bandas/${eventoId}`;
+                console.log('[BANDAS] Eliminando desde:', url);
+
+                const res = await fetch(url, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
+                console.log('[BANDAS] Response status:', res.status);
+                const resData = await res.json();
+                console.log('[BANDAS] Response body:', resData);
+
                 if (!res.ok) {
-                    const err = await res.json();
+                    const err = resData;
                     throw new Error(err.message || err.error || 'Error al eliminar');
                 }
 
+                console.log('[BANDAS] ✓ Evento eliminado correctamente');
                 showNotification('Evento eliminado', 'success');
                 setTimeout(() => window.location.href = 'config_bandas.html#eventos', 1500);
 
             } catch (err) {
-                console.error(err);
+                console.error('[BANDAS] ✗ Error:', err);
                 showNotification('Error: ' + err.message, 'error');
             } finally {
                 showLoading(false);
@@ -730,6 +890,112 @@
             setTimeout(() => banner.classList.remove('show'), 3000);
         }
 
+        /* ------------------- Bandas: carga y UI (copiado/adaptado de solicitud_fecha_bandas.html) ------------------- */
+        async function loadBandas() {
+            try {
+                const res = await fetch('/api/bandas');
+                if (!res.ok) throw new Error('Error cargando bandas');
+                bandasDisponibles = await res.json();
+
+                // Reconciliar selecciones placeholder (si existen) con bandas cargadas por nombre
+                if (bandasSeleccionadas && bandasSeleccionadas.length) {
+                    bandasSeleccionadas = bandasSeleccionadas.map(sel => {
+                        if (sel.id) return sel;
+                        const match = bandasDisponibles.find(b => (b.nombre || '').toLowerCase() === (sel.nombre || '').toLowerCase());
+                        return match ? { id: match.id, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' } : sel;
+                    });
+                }
+
+                renderBandasLista();
+                renderBandasSeleccionadas();
+            } catch (err) {
+                console.error('Error cargando bandas:', err);
+            }
+        }
+
+        function renderBandasLista() {
+            const container = document.getElementById('bandasList');
+            if (!container) return;
+            const searchTerm = (document.getElementById('bandaSearch')?.value || '').toLowerCase();
+
+            const filtered = bandasDisponibles.filter(b =>
+                (b.nombre || '').toLowerCase().includes(searchTerm) ||
+                ((b.genero_musical || '').toLowerCase().includes(searchTerm))
+            );
+
+            container.innerHTML = filtered.map(banda => {
+                const isSelected = bandasSeleccionadas.some(b => b.id === banda.id);
+                return `
+                    <div class="banda-item ${isSelected ? 'selected' : ''}" onclick="toggleBanda(${banda.id}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero_musical || '')}', '${escapeHtml(banda.logo_url || '')}')">
+                        ${banda.logo_url ? `<img src="${banda.logo_url}" alt="${escapeHtml(banda.nombre)}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
+                        <div class="banda-item-text">
+                            <div class="banda-item-name">${escapeHtml(banda.nombre)}</div>
+                            ${banda.genero_musical ? `<div class="banda-item-genre">${escapeHtml(banda.genero_musical)}</div>` : ''}
+                        </div>
+                        <div class="checkbox-custom ${isSelected ? 'checked' : ''}">
+                            ${isSelected ? '<i class="fas fa-check"></i>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (filtered.length === 0) container.innerHTML = '<div class="helper-text text-center p-20">No hay bandas disponibles</div>';
+        }
+
+        function toggleBanda(id, nombre, genero, logoUrl) {
+            const idx = bandasSeleccionadas.findIndex(b => b.id === id);
+            if (idx >= 0) {
+                bandasSeleccionadas.splice(idx, 1);
+            } else {
+                // En edición permitimos hasta 5 (como en el formulario público)
+                if (bandasSeleccionadas.length >= 5) {
+                    showNotification('Máximo 5 bandas seleccionadas', 'warning');
+                    return;
+                }
+                bandasSeleccionadas.push({ id, nombre, genero, logoUrl });
+            }
+            renderBandasLista();
+            renderBandasSeleccionadas();
+        }
+
+        function renderBandasSeleccionadas() {
+            const container = document.getElementById('listaBandasSeleccionadas');
+            const count = document.getElementById('countBandas');
+            if (count) count.textContent = bandasSeleccionadas.length;
+            if (!container) return;
+
+            container.innerHTML = bandasSeleccionadas.map((banda, idx) => `
+                <div class="card card-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:10px;flex:1;">
+                        ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${escapeHtml(banda.nombre)}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
+                        <div>
+                            <div class="text-neon" style="font-weight:bold">${escapeHtml(banda.nombre)}</div>
+                            ${banda.genero ? `<div class="helper-text">${escapeHtml(banda.genero)}</div>` : ''}
+                        </div>
+                    </div>
+                    <button type="button" onclick="toggleBanda(${banda.id || 'null'}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero || '')}', '${escapeHtml(banda.logoUrl || '')}')" class="btn btn-ghost text-danger" style="font-size:1.2rem">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function setupDragAndDrop() {
+            // (opcional) reordenado — no implementado aquí, placeholder para futura mejora
+        }
+
+        // Listeners para búsqueda/crear
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'btnCrearBanda') {
+                window.location.href = '/solicitud_banda.html?returnTo=editar_solicitud_fecha_bandas.html';
+            }
+        });
+        const bandaSearchEl = document.getElementById('bandaSearch');
+        if (bandaSearchEl) bandaSearchEl.addEventListener('input', () => renderBandasLista());
+        const btnLimpiarBusqueda = document.getElementById('btnLimpiarBusqueda');
+        if (btnLimpiarBusqueda) btnLimpiarBusqueda.addEventListener('click', () => { if (bandaSearchEl) bandaSearchEl.value = ''; renderBandasLista(); });
+
+        /* -------------------------------------------------------------------------------- */
 
     </script>
 </body>

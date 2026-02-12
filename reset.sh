@@ -70,6 +70,11 @@ MIG_DIR="database/migrations"
 if [ -d "$MIG_DIR" ] && ls $MIG_DIR/*.sql >/dev/null 2>&1; then
     echo "--- ⤴️  Aplicando migraciones SQL desde $MIG_DIR ---"
     for sqlfile in $(ls $MIG_DIR/*.sql | sort); do
+        # Saltar migraciones archivadas (consolidadas en `01_schema.sql` / `02_seed.sql`)
+        if grep -q '^-- ARCHIVED:' "$sqlfile" 2>/dev/null; then
+            echo "Saltando migración archivada: $sqlfile"
+            continue
+        fi
         echo "Aplicando: $sqlfile"
         if ! cat "$sqlfile" | $COMPOSE_CMD exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""; then
             echo "❌ ERROR: Falló la migración $sqlfile. Revirtiendo al estado base..."

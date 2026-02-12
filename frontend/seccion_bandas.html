@@ -365,12 +365,10 @@
         async function loadEventos() {
             const container = document.getElementById('eventos-container');
             try {
-                const res = await fetch('/api/solicitudes/publicas');
+                const res = await fetch('/api/solicitudes-fechas-bandas');
                 if (!res.ok) throw new Error('Error al cargar eventos, status:' + res.status);
                 
-                const todosLosEventos = await res.json();
-                const eventos = todosLosEventos.filter(e => e.tipoEvento === 'BANDA');
-
+                const eventos = await res.json();
                 console.log('Eventos de bandas:', eventos);
 
                 if (!Array.isArray(eventos) || eventos.length === 0) {
@@ -379,21 +377,20 @@
                     return;
                 }
 
-                // Mapear y parsear fechas
+                // Mapear al formato esperado por generateEventCard
                 const mapped = eventos.map(e => {
-                    const fechaHoraRaw = e.fechaEvento;
-                    const horaRaw = e.horaEvento;
+                    const fechaHoraRaw = e.fecha_evento;
+                    const horaRaw = e.hora_inicio;
                     let _fechaObj = parseFecha(fechaHoraRaw, horaRaw);
                     return { 
                         ...e, 
                         _fechaObj,
-                        // Compatibilidad con generateEventCard
-                        nombre_banda: e.nombreCompleto,
-                        precio_anticipada: e.precio,
-                        precio_puerta: null, // No disponible en la nueva API unificada
+                        nombre_banda: e.nombre_banda,
+                        precio_anticipada: e.precio_base,
+                        precio_puerta: e.precio_puerta,
                         fecha_hora: fechaHoraRaw
                     };
-                }).filter(e => e._fechaObj); // quitar los inválidos
+                }).filter(e => e._fechaObj && e.es_publico === 1); // quitar los inválidos y privados
 
                 // próximos futuros (>= today)
                 const todayStart = new Date();

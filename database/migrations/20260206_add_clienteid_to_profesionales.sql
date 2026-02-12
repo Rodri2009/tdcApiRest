@@ -1,3 +1,4 @@
+-- ARCHIVED: consolidated into database/01_schema.sql on 2026-02-12
 -- Añadir cliente_id a profesionales_servicios
 ALTER TABLE profesionales_servicios
   ADD COLUMN cliente_id INT NULL DEFAULT NULL,

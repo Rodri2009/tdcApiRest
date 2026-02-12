@@ -64,6 +64,30 @@ router.post('/clientes', checkPermiso('config.talleres'), clientesController.cre
 router.get('/eventos_confirmados', checkPermiso('solicitudes.ver'), getEventosConfirmados);
 router.get('/eventos_confirmados/:id', getEventoById);
 router.post('/eventos_confirmados', checkPermiso('solicitudes.crear'), crearEvento);
+
+// Normalizar payloads legacy -> actual para evitar errores por claves antiguas (fecha, nombre_banda, aforo_maximo...)
+router.use('/eventos_confirmados/:id', (req, res, next) => {
+    const body = req.body || {};
+    if (typeof body.fecha !== 'undefined' && typeof body.fecha_evento === 'undefined') {
+        body.fecha_evento = body.fecha;
+    }
+    if (typeof body.nombre_banda !== 'undefined' && typeof body.nombre_evento === 'undefined') {
+        body.nombre_evento = body.nombre_banda;
+    }
+    if (typeof body.aforo_maximo !== 'undefined' && typeof body.cantidad_personas === 'undefined') {
+        body.cantidad_personas = body.aforo_maximo;
+    }
+    if (typeof body.nombre_contacto !== 'undefined' && typeof body.nombre_cliente === 'undefined') {
+        body.nombre_cliente = body.nombre_contacto;
+    }
+    if (typeof body.precio_puerta !== 'undefined' && typeof body.precio_final === 'undefined') {
+        body.precio_final = body.precio_puerta;
+    }
+    // also accept frontend 'fecha' key as 'fecha' (backend handles both) — keep compatibility
+    req.body = body;
+    next();
+});
+
 router.put('/eventos_confirmados/:id', checkPermiso('solicitudes.editar'), actualizarEvento);
 router.patch('/eventos_confirmados/:id/cancel', checkPermiso('solicitudes.cambiar_estado'), cancelarEvento);
 router.delete('/eventos_confirmados/:id', checkPermiso('solicitudes.eliminar'), eliminarEvento);

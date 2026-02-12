@@ -1,3 +1,4 @@
+-- ARCHIVED: consolidated into database/01_schema.sql/database/02_seed.sql on 2026-02-12
 -- Migration: Migrar datos de fechas_bandas_confirmadas -> eventos_confirmados
 -- Fecha: 2026-02-04
 -- 1) Backup de la tabla original

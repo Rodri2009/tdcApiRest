@@ -1,3 +1,4 @@
+-- ARCHIVED: consolidated into database/01_schema.sql on 2026-02-12
 -- Migration: 2026-02-06 - Crear tabla solicitudes_adicionales
 -- Crea la tabla que guarda los adicionales seleccionados por cada solicitud.
 

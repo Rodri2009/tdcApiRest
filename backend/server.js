@@ -12,6 +12,29 @@ app.use(express.json());
 app.use(cookieParser()); // <-- USAR
 app.use(express.urlencoded({ extended: true }));
 
+// App-level normalization for legacy payload keys targeting admin eventos_confirmados
+// This guarantees legacy keys (fecha, nombre_banda, aforo_maximo, nombre_contacto, precio_puerta)
+// are normalized BEFORE any route handler can read req.body (defensive fix for intermittent legacy paths).
+app.use((req, res, next) => {
+    try {
+        // Only apply to admin eventos_confirmados endpoints (any method)
+        if (req.path && req.path.match(/^\/api\/admin\/eventos_confirmados\/\d+/)) {
+            const b = req.body || {};
+            let changed = false;
+            if (typeof b.fecha !== 'undefined' && typeof b.fecha_evento === 'undefined') { b.fecha_evento = b.fecha; changed = true; delete b.fecha; }
+            if (typeof b.nombre_banda !== 'undefined' && typeof b.nombre_evento === 'undefined') { b.nombre_evento = b.nombre_banda; changed = true; delete b.nombre_banda; }
+            if (typeof b.aforo_maximo !== 'undefined' && typeof b.cantidad_personas === 'undefined') { b.cantidad_personas = b.aforo_maximo; changed = true; delete b.aforo_maximo; }
+            if (typeof b.nombre_contacto !== 'undefined' && typeof b.nombre_cliente === 'undefined') { b.nombre_cliente = b.nombre_contacto; changed = true; delete b.nombre_contacto; }
+            if (typeof b.precio_puerta !== 'undefined' && typeof b.precio_final === 'undefined') { b.precio_final = b.precio_puerta; changed = true; delete b.precio_puerta; }
+            if (changed) console.log('[MIDDLEWARE] Normalized legacy payload keys for', req.method, req.path, '->', Object.keys(b));
+            req.body = b;
+        }
+    } catch (err) {
+        console.warn('[MIDDLEWARE] Failed to normalize legacy payload keys:', err.message);
+    }
+    next();
+});
+
 // NOTE: Legacy endpoints are intentionally blocked at the nginx layer.
 // No runtime catch-all handlers nor tracing should remain here. Remove temporary debugging middleware when confirmed.
 
@@ -39,26 +62,37 @@ try {
     const testRoutes = require('./routes/testRoutes');
     const authRoutes = require('./routes/authRoutes');
     const adminRoutes = require('./routes/adminRoutes');
-    const bandasRoutes = require('./routes/bandasRoutes'); // Bandas antes de tickets
+    const bandaRoutes = require('./routes/bandaRoutes'); // NUEVO: Bandas refactorizado (3NF)
+    const solicitudFechaBandaRoutes = require('./routes/solicitudFechaBandaRoutes'); // NUEVO: Solicitudes de fechas/shows
+    const bandasRoutes = require('./routes/bandasRoutes'); // Legacy
     const ticketsRoutes = require('./routes/ticketsRoutes');
     const talleresRoutes = require('./routes/talleresRoutes');
     const serviciosRoutes = require('./routes/serviciosRoutes');
     const usuariosRoutes = require('./routes/usuariosRoutes');
     const eventosRoutes = require('./routes/eventosRoutes');
+    const uploadsRoutes = require('./routes/uploadsRoutes');
 
     app.use('/api/opciones', opcionesRoutes);
     app.use('/api/solicitudes', solicitudesRoutes);
     app.use('/api/test', testRoutes);
     app.use('/api/auth', authRoutes);
     app.use('/api/admin', adminRoutes);
-    app.use('/api/bandas', bandasRoutes);
+    
+    // NUEVAS RUTAS (refactored 3NF)
+    app.use('/api/bandas', bandaRoutes); // GET, POST, PUT, DELETE para bandas_artistas
+    app.use('/api/solicitudes-fechas-bandas', solicitudFechaBandaRoutes); // GET, POST, PUT, DELETE para solicitudes_fechas_bandas
+    
+    // Legacy (mantener por compatibilidad)
+    // app.use('/api/bandas', bandasRoutes); // COMENTADO: usar nueva estructura
+    
     app.use('/api/tickets', ticketsRoutes);
     app.use('/api/talleres', talleresRoutes);
     app.use('/api/servicios', serviciosRoutes);
     app.use('/api/usuarios', usuariosRoutes);
     app.use('/api/eventos', eventosRoutes);
+    app.use('/api/uploads', uploadsRoutes);
 
-    console.log("Rutas configuradas correctamente.");
+    console.log("Rutas configuradas correctamente (incluidas nuevas rutas de bandas y solicitudes de fechas).");
 
 
 

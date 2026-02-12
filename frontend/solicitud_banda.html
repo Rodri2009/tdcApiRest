@@ -966,18 +966,11 @@
                 // Always attempt to fetch full details from the safe endpoint when a banda is selected
                 let full = banda;
                 try {
-                    // Try the safer detailed endpoint first, then fallback to the legacy
-                    let resp = await fetch(`/api/bandas/detalle/${encodeURIComponent(banda.id)}`);
-                    let usedEndpoint = `/api/bandas/detalle/${encodeURIComponent(banda.id)}`;
-                    if (!resp.ok) {
-                        console.debug('[selectBanda] detalle endpoint failed, falling back to legacy endpoint', resp.status, resp.statusText);
-                        resp = await fetch(`/api/bandas/${encodeURIComponent(banda.id)}`);
-                        usedEndpoint = `/api/bandas/${encodeURIComponent(banda.id)}`;
-                    }
-
+                    // Fetch full details from the main endpoint
+                    const resp = await fetch(`/api/bandas/${encodeURIComponent(banda.id)}`);
                     if (resp.ok) {
                         full = await resp.json();
-                        console.debug(`[selectBanda] fetched full id:${banda.id} endpoint:${usedEndpoint} logo:${full.logo_url || 'none'} formacion:${(full.formacion && full.formacion.length) || 0}`);
+                        console.debug(`[selectBanda] fetched full id:${banda.id} logo:${full.logo_url || 'none'} formacion:${(full.formacion && full.formacion.length) || 0}`);
                     } else {
                         console.warn('[selectBanda] could not fetch full banda, status:', resp.status, 'endpoint:', usedEndpoint);
                     }
@@ -1275,59 +1268,50 @@
             // Añadir formación solo si corresponde (evitar enviar array vacío que borre datos)
             // Si el usuario editó la formacion en la UI (formacion - simplificada), la usamos para construir
             // la estructura completa que el backend espera, preservando nombre/notas si coinciden por instrumento.
-            if (existingId) {
-                if (formacion && formacion.length > 0) {
-                    // Merge UI formacion with formacionCompleta (preservar propiedades si encontramos coincidencias)
-                    const merged = formacion.map(f => {
-                        const found = (formacionCompleta || []).find(x => (x.instrumento || '').toLowerCase() === (f.instrumento || '').toLowerCase());
-                        return {
-                            nombre_integrante: found ? found.nombre_integrante : null,
-                            instrumento: f.instrumento || (found ? found.instrumento : null),
-                            es_lider: found ? found.es_lider : 0,
-                            notas: found ? found.notas : null
-                        };
-                    });
-                    payload.formacion = merged;
-                } else if (formacionCompleta && formacionCompleta.length > 0) {
-                    payload.formacion = formacionCompleta;
-                }
-            } else {
-                // Crear nueva banda: mandar la versión simplificada convertida a estructura completa
-                if (formacion && formacion.length > 0) {
-                    payload.formacion = formacion.map(f => ({ nombre_integrante: null, instrumento: f.instrumento, es_lider: 0, notas: null }));
-                }
-            }
-
-            try {
-                // Detectar si es crear (POST) o actualizar (PUT)
-                let res;
-
                 if (existingId) {
                     // Actualizar banda existente (PUT) - ID va en el body
-                    // Preservar payload.formacion si ya fue construida (merge desde UI). Solo usar formacionCompleta si no existe payload.formacion
-                    payload.id = existingId;
-                    if (!payload.formacion && formacionCompleta && formacionCompleta.length > 0) {
-                        payload.formacion = formacionCompleta;
-                        console.debug('[handleSubmit] No hubo cambios detectados en UI, usando formacionCompleta fallback, longitud:', payload.formacion.length);
+                    // Usar la formación actual de la UI (formacion), que representa el estado deseado
+                    if (formacion && formacion.length > 0) {
+                        // Convertir la formación simplificada de UI a estructura completa para el backend
+                        payload.formacion = formacion.map(f => ({ 
+                            nombre_integrante: null, 
+                            instrumento: f.instrumento, 
+                            es_lider: 0, 
+                            notas: null 
+                        }));
+                        console.debug('[handleSubmit] Usando formación de UI, longitud:', payload.formacion.length);
+                    } else {
+                        // Si no hay formación en UI, mantener la formación existente (no enviar cambios)
+                        payload.formacion = [];
+                        console.debug('[handleSubmit] No hay formación en UI, enviando array vacío para mantener estado actual');
                     }
                     console.debug('[handleSubmit] Sending PUT id:' + existingId + ' logo:' + (payload.logo_url ? 'yes' : 'no') + ' formacion:' + (payload.formacion ? payload.formacion.length : 0));
                     try { console.debug('[handleSubmit] payload.formacion details:', JSON.stringify(payload.formacion || [])); } catch (e) { console.debug('[handleSubmit] payload.formacion details (non-serializable)'); }
-                    res = await fetch('/api/bandas', {
+                    const token = localStorage.getItem('authToken');
+                    res = await fetch(`/api/bandas/${encodeURIComponent(existingId)}`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
                         body: JSON.stringify(payload)
                     });
                 } else {
                     // Crear nueva banda (POST)
                     console.debug('[handleSubmit] Sending POST logo:' + (payload.logo_url ? 'yes' : 'no') + ' formacion:' + (payload.formacion ? payload.formacion.length : 0));
+                    const token = localStorage.getItem('authToken');
                     res = await fetch('/api/bandas', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
                         body: JSON.stringify(payload)
                     });
                 }
 
-                const data = await res.json();
+                try {
+                    const data = await res.json();
 
                 if (!res.ok) {
                     // Manejo especial para conflicto por banda existente (solo en POST)
@@ -1354,8 +1338,8 @@
                             // El endpoint devuelve la banda actualizada
                             selectBanda(data);
                         } else {
-                            // Fallback: intentar recargar desde detalle
-                            const resp = await fetch(`/api/bandas/detalle/${encodeURIComponent(existingId)}`);
+                            // Fallback: intentar recargar desde endpoint principal
+                            const resp = await fetch(`/api/bandas/${encodeURIComponent(existingId)}`);
                             if (resp.ok) {
                                 const updated = await resp.json();
                                 selectBanda(updated);
@@ -1473,7 +1457,7 @@
                 const qid = params.get('id');
                 if (qid) {
                     try {
-                        const resp = await fetch(`/api/bandas/detalle/${encodeURIComponent(qid)}`);
+                        const resp = await fetch(`/api/bandas/${encodeURIComponent(qid)}`);
                         if (resp.ok) {
                             const b = await resp.json();
                             selectBanda(b);

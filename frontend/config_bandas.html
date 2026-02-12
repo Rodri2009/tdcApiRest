@@ -942,7 +942,7 @@
         async function loadEventos() {
             try {
                 const estado = document.getElementById('filter-estado-evento').value || 'Confirmado';
-                const url = `/api/bandas/eventos_confirmados?estado=${estado}`;
+                const url = `/api/solicitudes-fechas-bandas?estado=${estado}`;
                 const res = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });
@@ -1161,33 +1161,24 @@
                 return;
             }
 
-            // Preparar datos
+            // Preparar datos para nuevo endpoint
             const body = {
-                fecha: fecha,
-                hora_inicio: document.getElementById('evento-hora').value || null,
-                hora_fin: document.getElementById('evento-hora-fin').value || null,
-                nombre_banda: banda,
+                fecha_evento: fecha,
+                nombre_evento: banda,
                 genero_musical: document.getElementById('evento-genero').value || null,
-                precio_anticipada: parseFloat(document.getElementById('evento-precio-anticipada').value) || null,
-                precio_puerta: parseFloat(document.getElementById('evento-precio-puerta').value) || null,
+                descripcion: document.getElementById('evento-descripcion').value || null,
+                hora_inicio: document.getElementById('evento-hora').value || null,
                 aforo_maximo: parseInt(document.getElementById('evento-aforo').value) || null,
-                estado: document.getElementById('evento-estado').value,
                 es_publico: document.getElementById('evento-publico').value === '1' ? 1 : 0,
-                activo: document.getElementById('evento-estado').value === 'Confirmado' ? 1 : 0,
-                nombre_contacto: document.getElementById('evento-contacto-nombre').value || null,
-                whatsapp_contacto: document.getElementById('evento-contacto-whatsapp').value || null,
-                email_contacto: document.getElementById('evento-contacto-email').value || null,
-                descripcion: document.getElementById('evento-descripcion').value || null
+                precio_base: parseFloat(document.getElementById('evento-precio-anticipada').value) || null,
+                precio_puerta: parseFloat(document.getElementById('evento-precio-puerta').value) || null,
+                contacto_nombre: document.getElementById('evento-contacto-nombre').value || null,
+                contacto_email: document.getElementById('evento-contacto-email').value || null,
+                contacto_telefono: document.getElementById('evento-contacto-whatsapp').value || null
             };
 
-            // Bandas invitadas (convertir string a array)
-            const invitadasStr = document.getElementById('evento-invitadas').value;
-            if (invitadasStr) {
-                body.bandas_invitadas = invitadasStr.split(',').map(b => b.trim()).filter(b => b);
-            }
-
             try {
-                const url = id ? `/api/admin/eventos_confirmados/${id}` : '/api/admin/eventos_confirmados';
+                const url = id ? `/api/solicitudes-fechas-bandas/${id}` : '/api/solicitudes-fechas-bandas';
                 const method = id ? 'PUT' : 'POST';
 
                 const res = await fetch(url, {
@@ -1216,7 +1207,7 @@
         async function deleteEvento(id) {
             if (!confirm('¿Estás seguro de eliminar este evento?')) return;
             try {
-                const res = await fetch(`/api/admin/eventos_confirmados/${id}`, {
+                const res = await fetch(`/api/solicitudes-fechas-bandas/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });

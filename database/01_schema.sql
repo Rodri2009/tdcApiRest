@@ -404,7 +404,7 @@ DROP TABLE IF EXISTS bandas_invitadas;
 
 -- Solicitudes de bandas (consolidado con campos comunes)
 CREATE TABLE IF NOT EXISTS solicitudes_bandas (
-    id_solicitud INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT PRIMARY KEY COMMENT 'FK a solicitudes.id - NO es AUTO_INCREMENT',
 
     -- Campos comunes con solicitudes_alquiler
     tipo_de_evento VARCHAR(50) NOT NULL DEFAULT 'FECHA_BANDAS',
@@ -461,6 +461,7 @@ CREATE TABLE IF NOT EXISTS solicitudes_bandas (
     INDEX idx_fecha (fecha_evento),
     INDEX idx_estado (estado),
     INDEX idx_banda (id_banda),
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE,
     FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
