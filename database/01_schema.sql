@@ -402,68 +402,13 @@ DROP TABLE IF EXISTS bandas_invitadas;
 -- SOLICITUDES DE FECHAS PARA BANDAS
 -- =============================================================================
 
--- Solicitudes de bandas (consolidado con campos comunes)
-CREATE TABLE IF NOT EXISTS solicitudes_bandas (
-    id_solicitud INT PRIMARY KEY COMMENT 'FK a solicitudes.id - NO es AUTO_INCREMENT',
+-- LEGACY: `solicitudes_bandas` removed (refactored to 3NF).
+-- Use `solicitudes_fechas_bandas` and `solicitudes_bandas_view` for compatibility.
+-- Backup of legacy data: `database/backups/solicitudes_bandas_backup_20260214.sql` and
+-- database table `solicitudes_bandas_backup_20260212`.
+-- NOTE: The migration that implements the refactor is `20260212_refactor_bandas_3nf.sql`.
 
-    -- Campos comunes con solicitudes_alquiler
-    tipo_de_evento VARCHAR(50) NOT NULL DEFAULT 'FECHA_BANDAS',
-    tipo_servicio VARCHAR(255) DEFAULT NULL,
-    fecha_hora DATETIME DEFAULT NULL,
-    fecha_evento DATE DEFAULT NULL,
-    hora_evento VARCHAR(20) DEFAULT NULL,
-    duracion VARCHAR(100) DEFAULT NULL,
-    cantidad_de_personas VARCHAR(100) DEFAULT NULL,
-    precio_basico DECIMAL(10,2) DEFAULT NULL,
-    precio_final DECIMAL(10,2) DEFAULT NULL,
-    nombre_completo VARCHAR(255) DEFAULT NULL,
-    telefono VARCHAR(50) DEFAULT NULL,
-    email VARCHAR(255) DEFAULT NULL,
-    descripcion TEXT,
-    estado VARCHAR(50) DEFAULT 'Solicitado',
-    fingerprintid VARCHAR(255) DEFAULT NULL,
-
-    -- Campos específicos de bandas
-    id_banda INT DEFAULT NULL COMMENT 'FK si la banda ya existe en catálogo',
-    genero_musical VARCHAR(100) DEFAULT NULL,
-    formacion_json TEXT COMMENT 'JSON con instrumentos: [{instrumento, cantidad, notas}]',
-
-    -- Links y redes
-    instagram VARCHAR(255) DEFAULT NULL,
-    facebook VARCHAR(255) DEFAULT NULL,
-    youtube VARCHAR(500) DEFAULT NULL,
-    spotify VARCHAR(500) DEFAULT NULL,
-    otras_redes TEXT,
-    logo_url VARCHAR(500) DEFAULT NULL,
-
-    -- Contacto adicional
-    contacto_rol VARCHAR(100) DEFAULT NULL,
-
-    -- Propuesta de fecha (alternativas)
-    fecha_alternativa DATE DEFAULT NULL,
-
-    -- Bandas invitadas
-    invitadas_json TEXT COMMENT 'JSON: [{nombre, id_banda?, confirmada}]',
-    cantidad_bandas INT DEFAULT 1,
-
-    -- Propuesta económica adicional
-    precio_puerta_propuesto DECIMAL(10,2) DEFAULT NULL,
-    expectativa_publico VARCHAR(100) DEFAULT NULL,
-
-    -- Estado y control
-    notas_admin TEXT,
-    id_evento_generado INT DEFAULT NULL,
-
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    INDEX idx_tipo (tipo_de_evento),
-    INDEX idx_fecha (fecha_evento),
-    INDEX idx_estado (estado),
-    INDEX idx_banda (id_banda),
-    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE,
-    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- (Legacy table definition intentionally removed to avoid confusion with `bandas_artistas`)
 
 -- Personal asignado a eventos de bandas
 CREATE TABLE IF NOT EXISTS eventos_personal (
