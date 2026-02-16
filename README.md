@@ -48,7 +48,7 @@ cd tdcApiRest
 cp .env.example .env   # Editar con tus variables
 
 # 2. Levantar servicios
-./up.sh
+./scripts/up.sh
 ```
 
 **URLs:**
@@ -59,9 +59,16 @@ cp .env.example .env   # Editar con tus variables
 
 | Script | Descripción |
 |--------|-------------|
-| `./up.sh` | Levanta todos los servicios |
-| `./down-and-backup.sh` | Detiene servicios y crea backup de la BD |
-| `./reset.sh` | Reinicia completamente (elimina datos y reconstruye) |
+| `./scripts/up.sh` | Levanta todos los servicios (NO aplica migraciones en `database/migrations`) |
+| `./scripts/down-and-backup.sh` | Detiene servicios y crea backup de la BD |
+| `./scripts/reset.sh` | Reinicia completamente (elimina datos y reconstruye) — **aplica** las migraciones SQL que estén en `database/migrations` después de recrear la BD |
+
+*Nota:* Para aplicar migraciones sin hacer un `reset` completo puedes:
+- ejecutar manualmente las SQL en `database/migrations` contra el contenedor MariaDB, por ejemplo:
+
+  `cat database/migrations/20260210_add_url_flyer_to_eventos_confirmados.sql | docker compose -f docker/docker-compose.yml exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""`
+
+- o usar scripts específicos en `scripts/` cuando estén disponibles (ej.: `node ./scripts/apply_migration_profesionales.js` para migraciones puntuales).
 
 ### Crear usuario administrador
 
@@ -222,6 +229,10 @@ SMTP_PASS=tu_app_password
 ```
 
 ## Desarrollo
+
+### Dev helpers (uso para desarrollo)
+
+- `?demo_flyer=1` — inyecta un `flyer` de demostración en el primer ítem visible de la agenda cuando no existe ninguno. **Restricción:** solo funciona en hosts locales (`localhost`, `127.0.0.1`, `::1`, `0.0.0.0`) y se ignora en entornos remotos/producción.
 
 ### Ver Logs
 
