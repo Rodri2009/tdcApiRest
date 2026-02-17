@@ -11,7 +11,7 @@ const { getOrCreateClient } = require('../lib/clients');
 const crearSolicitudFechaBanda = async (req, res) => {
     console.log('[FECHA_BANDA] POST - Crear solicitud de fecha');
     console.log('[FECHA_BANDA] Body:', JSON.stringify(req.body, null, 2));
-    
+
     const {
         id_banda,
         nombre_banda, // Alternativa si la banda no existe en catálogo
@@ -29,30 +29,30 @@ const crearSolicitudFechaBanda = async (req, res) => {
         cantidad_bandas,
         invitadas_json
     } = req.body;
-    
+
     // Validar campos obligatorios
     if (!fecha_evento) {
         return res.status(400).json({ error: 'La fecha del evento es obligatoria.' });
     }
-    
+
     if (!id_banda && !nombre_banda) {
         return res.status(400).json({ error: 'Debe proporcionar id_banda o nombre_banda.' });
     }
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
         await conn.beginTransaction();
-        
+
         // 1. Crear o vincular cliente
         const clienteId = await getOrCreateClient(conn, {
             nombre: contacto_nombre,
             telefono: contacto_telefono,
             email: contacto_email
         });
-        
+
         console.log(`[FECHA_BANDA] Cliente creado/vinculado: ${clienteId}`);
-        
+
         // 2. Crear solicitud padre (tabla solicitudes)
         const sqlSolicitud = `
             INSERT INTO solicitudes (
@@ -63,26 +63,26 @@ const crearSolicitudFechaBanda = async (req, res) => {
                 fecha_creacion
             ) VALUES ('BANDA', ?, 'Solicitado', ?, NOW())
         `;
-        
+
         const resultSolicitud = await conn.query(sqlSolicitud, [
             clienteId,
             descripcion || ''
         ]);
-        
-        const solicitudId = resultSolicitud.insertId;
-        
+
+        const solicitudId = Number(resultSolicitud.insertId);
+
         console.log(`[FECHA_BANDA] Solicitud creada: ${solicitudId}`);
-        
+
         // 3. Obtener o crear banda en bandas_artistas
         let bandaId = id_banda ? parseInt(id_banda, 10) : null;
-        
+
         if (!bandaId && nombre_banda) {
             // Verificar si ya existe una banda con ese nombre
             const [bandaExistente] = await conn.query(
                 'SELECT id FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?)',
                 [nombre_banda.trim()]
             );
-            
+
             if (bandaExistente) {
                 bandaId = bandaExistente.id;
                 console.log(`[FECHA_BANDA] Banda encontrada en catálogo: ${bandaId}`);
@@ -100,7 +100,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
                         creado_en
                     ) VALUES (?, ?, ?, ?, ?, 0, 1, NOW())
                 `;
-                
+
                 const resultBandaNueva = await conn.query(sqlBandaNueva, [
                     nombre_banda.trim(),
                     genero_musical || null,
@@ -108,12 +108,12 @@ const crearSolicitudFechaBanda = async (req, res) => {
                     contacto_email || null,
                     contacto_telefono || null
                 ]);
-                
-                bandaId = resultBandaNueva.insertId;
+
+                bandaId = Number(resultBandaNueva.insertId);
                 console.log(`[FECHA_BANDA] Banda nueva creada: ${bandaId}`);
             }
         }
-        
+
         // 4. Crear registro en solicitudes_fechas_bandas
         const sqlFechaBanda = `
             INSERT INTO solicitudes_fechas_bandas (
@@ -133,7 +133,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
                 actualizado_en
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Solicitado', NOW(), NOW())
         `;
-        
+
         const paramsFechaBanda = [
             solicitudId,
             bandaId || null,
@@ -147,21 +147,21 @@ const crearSolicitudFechaBanda = async (req, res) => {
             cantidad_bandas || 1,
             invitadas_json ? JSON.stringify(invitadas_json) : null
         ];
-        
+
         await conn.query(sqlFechaBanda, paramsFechaBanda);
-        
+
         console.log(`[FECHA_BANDA] Fecha/show creada para solicitud: ${solicitudId}`);
-        
+
         await conn.commit();
-        
+
         console.log(`[FECHA_BANDA] ✓ Solicitud de fecha creada exitosamente`);
-        
+
         return res.status(201).json({
             solicitudId,
             bandaId,
             message: 'Solicitud de fecha creada exitosamente.'
         });
-        
+
     } catch (err) {
         if (conn) await conn.rollback();
         console.error('[FECHA_BANDA] Error al crear solicitud:', err.message);
@@ -178,16 +178,16 @@ const crearSolicitudFechaBanda = async (req, res) => {
 const obtenerSolicitudFechaBanda = async (req, res) => {
     const { id } = req.params;
     console.log(`[FECHA_BANDA] GET - Obtener solicitud ID: ${id}`);
-    
+
     const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
         return res.status(400).json({ error: 'ID inválido.' });
     }
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
         const sql = `
             SELECT
                 sfb.id_solicitud,
@@ -198,6 +198,7 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
                 sfb.descripcion,
                 sfb.precio_basico,
                 sfb.precio_final,
+                sfb.id_evento_generado,
                 sfb.precio_puerta_propuesto,
                 sfb.cantidad_bandas,
                 sfb.invitadas_json,
@@ -206,6 +207,12 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
                 sfb.notas_admin,
                 sfb.creado_en,
                 sfb.actualizado_en,
+                -- Exponer expectativa_publico para que el frontend muestre/edite aforo
+                sfb.expectativa_publico,
+                -- Representar precio anticipada (frontend usa 'precio_anticipada') a partir de precio_basico
+                sfb.precio_basico AS precio_anticipada,
+                -- Devolver nombre corto desde la fila padre 'solicitudes' como 'nombre_evento' para la UI
+                s.descripcion_corta AS nombre_evento,
                 s.categoria,
                 s.es_publico,
                 c.nombre as cliente_nombre,
@@ -225,14 +232,14 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
             LEFT JOIN clientes c ON s.cliente_id = c.id
             WHERE sfb.id_solicitud = ?
         `;
-        
+
         const [solicitud] = await conn.query(sql, [idNum]);
-        
+
         if (!solicitud) {
             console.warn(`[FECHA_BANDA] Solicitud no encontrada: ${idNum}`);
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
         }
-        
+
         // Parsear invitadas_json si existe
         if (solicitud.invitadas_json) {
             try {
@@ -243,11 +250,11 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
         } else {
             solicitud.invitadas = [];
         }
-        
+
         console.log(`[FECHA_BANDA] ✓ Solicitud obtenida`);
-        
+
         return res.status(200).json(solicitud);
-        
+
     } catch (err) {
         console.error('[FECHA_BANDA] Error al obtener solicitud:', err.message);
         return res.status(500).json({ error: 'Error al obtener solicitud.' });
@@ -262,13 +269,13 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
  */
 const listarSolicitudesFechasBandas = async (req, res) => {
     console.log('[FECHA_BANDA] GET - Listar solicitudes de fechas');
-    
+
     const { estado, fecha_desde, fecha_hasta, ordenar_por, limit } = req.query;
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
         let sql = `
             SELECT
                 sfb.id_solicitud,
@@ -290,15 +297,15 @@ const listarSolicitudesFechasBandas = async (req, res) => {
             LEFT JOIN clientes c ON s.cliente_id = c.id
             WHERE 1=1
         `;
-        
+
         const params = [];
-        
+
         // Filtro por estado
         if (estado) {
             sql += ' AND sfb.estado = ?';
             params.push(estado);
         }
-        
+
         // Filtro por rango de fechas
         if (fecha_desde) {
             sql += ' AND sfb.fecha_evento >= ?';
@@ -308,27 +315,27 @@ const listarSolicitudesFechasBandas = async (req, res) => {
             sql += ' AND sfb.fecha_evento <= ?';
             params.push(fecha_hasta);
         }
-        
+
         // Ordenamiento
         const ordenValido = ['fecha_evento', 'creado_en', '-fecha_evento', '-creado_en'];
         const ordenFinal = ordenValido.includes(ordenar_por) ? ordenar_por : 'fecha_evento';
-        
+
         if (ordenFinal.startsWith('-')) {
             sql += ` ORDER BY ${ordenFinal.substring(1)} DESC`;
         } else {
             sql += ` ORDER BY ${ordenFinal} ASC`;
         }
-        
+
         // Límite
         const limitNum = Math.min(parseInt(limit) || 50, 500);
         sql += ` LIMIT ${limitNum}`;
-        
+
         const solicitudes = await conn.query(sql, params);
-        
+
         console.log(`[FECHA_BANDA] ✓ ${solicitudes.length} solicitudes encontradas`);
-        
+
         return res.status(200).json(solicitudes);
-        
+
     } catch (err) {
         console.error('[FECHA_BANDA] Error al listar solicitudes:', err.message);
         return res.status(500).json({ error: 'Error al listar solicitudes.' });
@@ -345,12 +352,12 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
     const { id } = req.params;
     console.log(`[FECHA_BANDA] PUT - Actualizar solicitud ID: ${id}`);
     console.log('[FECHA_BANDA] Body:', JSON.stringify(req.body, null, 2));
-    
+
     const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
         return res.status(400).json({ error: 'ID inválido.' });
     }
-    
+
     const {
         id_banda,
         fecha_evento,
@@ -365,28 +372,98 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
         invitadas_json,
         estado,
         fecha_alternativa,
-        notas_admin
+        notas_admin,
+        // contacto_*: permitir actualizar datos de cliente desde el formulario
+        contacto_nombre,
+        contacto_email,
+        contacto_telefono
     } = req.body;
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
         await conn.beginTransaction();
-        
+
         // Verificar que la solicitud existe
         const [solicitudExistente] = await conn.query(
             'SELECT id_solicitud FROM solicitudes_fechas_bandas WHERE id_solicitud = ?',
             [idNum]
         );
-        
+
         if (!solicitudExistente) {
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
         }
-        
+
+        // Si viene nombre/descripcion corta del evento, guardarla en la fila padre `solicitudes` (titulo visible)
+        if (typeof req.body.descripcion_corta !== 'undefined' || typeof req.body.nombre_evento !== 'undefined') {
+            const nuevoNombre = req.body.descripcion_corta || req.body.nombre_evento || null;
+            await conn.query('UPDATE solicitudes SET descripcion_corta = ? WHERE id = ?', [nuevoNombre, idNum]);
+            console.log(`[FECHA_BANDA] solicitudes.descripcion_corta actualizado para id=${idNum} -> "${nuevoNombre}"`);
+        }
+
+        // Si vienen campos de contacto, actualizarlos en `clientes` (o crearlos) y propagar a eventos_confirmados
+        if (typeof contacto_nombre !== 'undefined' || typeof contacto_email !== 'undefined' || typeof contacto_telefono !== 'undefined') {
+            // Obtener cliente_id desde la tabla padre `solicitudes`
+            const [parentRow] = await conn.query('SELECT cliente_id FROM solicitudes WHERE id = ?', [idNum]);
+            const clienteId = parentRow && parentRow.cliente_id ? parentRow.cliente_id : null;
+
+            if (clienteId) {
+                const clientUpdates = [];
+                const clientParams = [];
+                if (typeof contacto_nombre !== 'undefined') { clientUpdates.push('nombre = ?'); clientParams.push(contacto_nombre); }
+                if (typeof contacto_email !== 'undefined') { clientUpdates.push('email = ?'); clientParams.push(contacto_email); }
+                if (typeof contacto_telefono !== 'undefined') { clientUpdates.push('telefono = ?'); clientParams.push(contacto_telefono); }
+
+                if (clientUpdates.length) {
+                    clientParams.push(clienteId);
+                    try {
+                        await conn.query(`UPDATE clientes SET ${clientUpdates.join(', ')} WHERE id = ?`, clientParams);
+                        console.log(`[FECHA_BANDA] Cliente id=${clienteId} actualizado desde PUT solicitud ${idNum}`);
+                    } catch (err) {
+                        // Si el UPDATE falla por email duplicado, intentar ligar la solicitud al cliente existente con ese email
+                        if (err && err.errno === 1062 && contacto_email) {
+                            const [existing] = await conn.query('SELECT id FROM clientes WHERE email = ?', [contacto_email]);
+                            if (existing && existing.id && existing.id !== clienteId) {
+                                await conn.query('UPDATE solicitudes SET cliente_id = ? WHERE id = ?', [existing.id, idNum]);
+                                console.log(`[FECHA_BANDA] Cliente conflict (email existente). Solicitud ${idNum} ligada a cliente id=${existing.id}`);
+                            } else {
+                                // No podemos resolver el conflicto automáticamente
+                                throw err;
+                            }
+                        } else {
+                            throw err;
+                        }
+                    }
+                }
+            } else {
+                // No hay cliente asociado: crear uno y ligar a la solicitud padre
+                const newClienteId = await getOrCreateClient(conn, {
+                    nombre: contacto_nombre || null,
+                    telefono: contacto_telefono || null,
+                    email: contacto_email || null
+                });
+                await conn.query('UPDATE solicitudes SET cliente_id = ? WHERE id = ?', [newClienteId, idNum]);
+                console.log(`[FECHA_BANDA] Nuevo cliente id=${newClienteId} ligado a solicitud ${idNum}`);
+            }
+
+            // Propagar cambios al evento confirmado (si existe)
+            const evUpdates = [];
+            const evParams = [];
+            if (typeof contacto_nombre !== 'undefined') { evUpdates.push('nombre_cliente = ?'); evParams.push(contacto_nombre); }
+            if (typeof contacto_email !== 'undefined') { evUpdates.push('email_cliente = ?'); evParams.push(contacto_email); }
+            if (typeof contacto_telefono !== 'undefined') { evUpdates.push('telefono_cliente = ?'); evParams.push(contacto_telefono); }
+
+            if (evUpdates.length) {
+                evParams.push(idNum);
+                await conn.query(`UPDATE eventos_confirmados SET ${evUpdates.join(', ')} WHERE id_solicitud = ?`, evParams);
+                console.log(`[FECHA_BANDA] eventos_confirmados sincronizado con contacto para solicitud ${idNum}`);
+            }
+        }
+
         // Construir UPDATE dinámico
         const actualizaciones = [];
         const params = [];
-        
+
         if (id_banda !== undefined) {
             actualizaciones.push('id_banda = ?');
             params.push(id_banda ? parseInt(id_banda, 10) : null);
@@ -443,32 +520,32 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             actualizaciones.push('notas_admin = ?');
             params.push(notas_admin);
         }
-        
+
         // Siempre actualizar timestamp
         actualizaciones.push('actualizado_en = NOW()');
-        
+
         if (actualizaciones.length > 0) {
             params.push(idNum);
-            
+
             const sqlUpdate = `
                 UPDATE solicitudes_fechas_bandas 
                 SET ${actualizaciones.join(', ')} 
                 WHERE id_solicitud = ?
             `;
-            
+
             const result = await conn.query(sqlUpdate, params);
             console.log(`[FECHA_BANDA] ✓ Solicitud actualizada: ${result.affectedRows} fila(s)`);
         }
-        
+
         await conn.commit();
-        
+
         console.log(`[FECHA_BANDA] ✓ Solicitud ID ${idNum} actualizada exitosamente`);
-        
+
         return res.status(200).json({
             solicitudId: idNum,
             message: 'Solicitud actualizada exitosamente.'
         });
-        
+
     } catch (err) {
         if (conn) await conn.rollback();
         console.error('[FECHA_BANDA] Error al actualizar solicitud:', err.message);
@@ -485,19 +562,19 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
 const confirmarSolicitudFechaBanda = async (req, res) => {
     const { id } = req.params;
     console.log(`[FECHA_BANDA] PUT /confirmar - Confirmar solicitud ID: ${id}`);
-    
+
     const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
         return res.status(400).json({ error: 'ID inválido.' });
     }
-    
+
     const { precio_final, es_publico } = req.body;
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
         await conn.beginTransaction();
-        
+
         // 1. Obtener datos de la solicitud
         const sqlSelect = `
             SELECT
@@ -519,37 +596,37 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
             LEFT JOIN clientes c ON s.cliente_id = c.id
             WHERE sfb.id_solicitud = ?
         `;
-        
+
         const [solicitudFecha] = await conn.query(sqlSelect, [idNum]);
-        
+
         if (!solicitudFecha) {
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
         }
-        
+
         // 2. Actualizar estado en solicitudes_fechas_bandas
         const sqlUpdateFecha = `
             UPDATE solicitudes_fechas_bandas 
             SET estado = 'Confirmado', precio_final = ?, actualizado_en = NOW()
             WHERE id_solicitud = ?
         `;
-        
+
         await conn.query(sqlUpdateFecha, [
             precio_final ? parseFloat(precio_final) : solicitudFecha.precio_basico,
             idNum
         ]);
-        
+
         // 3. Actualizar tabla solicitudes
         const sqlUpdateSolicitud = `
             UPDATE solicitudes 
             SET estado = 'Confirmado', es_publico = ?
             WHERE id = ?
         `;
-        
+
         await conn.query(sqlUpdateSolicitud, [
             es_publico ? 1 : 0,
             idNum
         ]);
-        
+
         // 4. Crear evento_confirmado
         const sqlEventoConfirmado = `
             INSERT INTO eventos_confirmados (
@@ -573,7 +650,7 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
                 confirmado_en
             ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
         `;
-        
+
         const resultEvento = await conn.query(sqlEventoConfirmado, [
             idNum,
             solicitudFecha.banda_nombre || 'Sin nombre',
@@ -590,25 +667,25 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
             solicitudFecha.cantidad_personas || 120,
             es_publico ? 1 : 0
         ]);
-        
-        const eventoId = resultEvento.insertId;
-        
+
+        const eventoId = Number(resultEvento.insertId);
+
         // 5. Actualizar id_evento_generado en solicitudes_fechas_bandas
         await conn.query(
             'UPDATE solicitudes_fechas_bandas SET id_evento_generado = ? WHERE id_solicitud = ?',
             [eventoId, idNum]
         );
-        
+
         await conn.commit();
-        
+
         console.log(`[FECHA_BANDA] ✓ Solicitud confirmada. Evento creado: ${eventoId}`);
-        
+
         return res.status(200).json({
             solicitudId: idNum,
             eventoId,
             message: 'Solicitud confirmada y evento creado exitosamente.'
         });
-        
+
     } catch (err) {
         if (conn) await conn.rollback();
         console.error('[FECHA_BANDA] Error al confirmar solicitud:', err.message);
@@ -625,49 +702,49 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
 const eliminarSolicitudFechaBanda = async (req, res) => {
     const { id } = req.params;
     console.log(`[FECHA_BANDA] DELETE - Eliminar solicitud ID: ${id}`);
-    
+
     const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
         return res.status(400).json({ error: 'ID inválido.' });
     }
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
         await conn.beginTransaction();
-        
+
         // Verificar si ya fue confirmada (tiene evento)
         const [solicitud] = await conn.query(
             'SELECT id_evento_generado FROM solicitudes_fechas_bandas WHERE id_solicitud = ?',
             [idNum]
         );
-        
+
         if (!solicitud) {
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
         }
-        
+
         if (solicitud.id_evento_generado) {
             console.warn(`[FECHA_BANDA] Solicitud ${idNum} tiene evento confirmado. Se eliminará tanto solicitud como evento.`);
-            
+
             // Eliminar evento confirmado
             await conn.query('DELETE FROM eventos_confirmados WHERE id = ?', [solicitud.id_evento_generado]);
         }
-        
+
         // Eliminar solicitud de fecha
         await conn.query('DELETE FROM solicitudes_fechas_bandas WHERE id_solicitud = ?', [idNum]);
-        
+
         // Eliminar solicitud padre (esto elimina en cascada)
         await conn.query('DELETE FROM solicitudes WHERE id = ?', [idNum]);
-        
+
         await conn.commit();
-        
+
         console.log(`[FECHA_BANDA] ✓ Solicitud ID ${idNum} eliminada`);
-        
+
         return res.status(200).json({
             solicitudId: idNum,
             message: 'Solicitud eliminada exitosamente.'
         });
-        
+
     } catch (err) {
         if (conn) await conn.rollback();
         console.error('[FECHA_BANDA] Error al eliminar solicitud:', err.message);

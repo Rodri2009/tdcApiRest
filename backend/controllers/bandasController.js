@@ -598,12 +598,19 @@ const getSolicitudes = async (req, res) => {
         const { estado } = req.query;
 
         let query = `
-            SELECT 
-                s.*,
-                b.nombre as banda_registrada_nombre,
-                b.verificada as banda_verificada
-            FROM solicitudes_bandas s
-            LEFT JOIN bandas_artistas b ON s.id_banda = b.id
+            SELECT
+                sfb.*,
+                s.categoria,
+                s.es_publico,
+                b.nombre AS banda_registrada_nombre,
+                b.verificada AS banda_verificada,
+                c.nombre AS cliente_nombre,
+                c.email AS cliente_email,
+                c.telefono AS cliente_telefono
+            FROM solicitudes_fechas_bandas sfb
+            JOIN solicitudes s ON sfb.id_solicitud = s.id
+            LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id
+            LEFT JOIN clientes c ON s.cliente_id = c.id
             WHERE 1=1
         `;
         const params = [];
@@ -632,13 +639,20 @@ const getSolicitudById = async (req, res) => {
         const { id } = req.params;
 
         const [solicitud] = await pool.query(`
-            SELECT 
-                s.*,
-                b.nombre as banda_registrada_nombre,
-                b.verificada as banda_verificada
-            FROM solicitudes_bandas s
-            LEFT JOIN bandas_artistas b ON s.id_banda = b.id
-            WHERE s.id_solicitud = ?
+            SELECT
+                sfb.*,
+                s.categoria,
+                s.es_publico,
+                b.nombre AS banda_registrada_nombre,
+                b.verificada AS banda_verificada,
+                c.nombre AS cliente_nombre,
+                c.email AS cliente_email,
+                c.telefono AS cliente_telefono
+            FROM solicitudes_fechas_bandas sfb
+            JOIN solicitudes s ON sfb.id_solicitud = s.id
+            LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id
+            LEFT JOIN clientes c ON s.cliente_id = c.id
+            WHERE sfb.id_solicitud = ?
         `, [id]);
 
         if (!solicitud) {
@@ -665,111 +679,11 @@ const getSolicitudById = async (req, res) => {
  * POST /api/bandas/solicitudes
  * Crea una nueva solicitud de fecha (público)
  */
+const solicitudFechaBandaController = require('./solicitudFechaBandaController');
+
 const createSolicitud = async (req, res) => {
-    try {
-        const {
-            // Datos de la banda
-            id_banda, // Si ya existe en catálogo
-            nombre_banda,
-            genero_musical,
-            formacion, // Array de {instrumento, cantidad?, notas?}
-
-            // Redes
-            instagram, facebook, youtube, spotify, otras_redes,
-            logo_url,
-
-            // Contacto (acepta tanto telefono como whatsapp)
-            contacto_nombre, contacto_email, contacto_telefono, contacto_whatsapp, contacto_rol,
-
-            // Fecha propuesta
-            fecha_preferida, fecha_alternativa, hora_preferida,
-
-            // Bandas invitadas
-            invitadas, // Array de {nombre, id_banda?}
-
-            // Propuesta económica
-            precio_anticipada_propuesto, precio_puerta_propuesto, expectativa_publico,
-
-            // Mensaje
-            mensaje,
-
-            // Fingerprint
-            fingerprintid
-        } = req.body;
-
-        // Usar whatsapp si viene, sino telefono (compatibilidad)
-        const telefono = contacto_whatsapp || contacto_telefono;
-
-        // Validaciones básicas
-        if (!contacto_nombre || !contacto_email || !telefono) {
-            return res.status(400).json({ error: 'Los datos de contacto (nombre, email y WhatsApp) son requeridos' });
-        }
-
-        // Calcular cantidad de bandas
-        const cantidadBandas = 1 + (invitadas ? invitadas.length : 0);
-        if (cantidadBandas > 4) {
-            return res.status(400).json({ error: 'Máximo 4 bandas por fecha' });
-        }
-
-        // Crear cliente y la fila padre en `solicitudes`, luego insertar el hijo sin campos de contacto
-        let conn;
-        try {
-            conn = await pool.getConnection();
-            await conn.beginTransaction();
-
-            const clienteId = await getOrCreateClient(conn, { nombre: contacto_nombre, telefono, email: contacto_email });
-            const sqlGeneral = `INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion, cliente_id) VALUES ('BANDA', NOW(), 'Solicitado', ?, ?)`;
-            const genRes = await conn.query(sqlGeneral, [mensaje || '', clienteId]);
-            const newId = Number(genRes.insertId);
-
-            const sqlBandas = `
-                INSERT INTO solicitudes_bandas (
-                    id_solicitud, id_banda, genero_musical, formacion_json,
-                    instagram, facebook, youtube, spotify, otras_redes, logo_url,
-                    contacto_rol, fecha_evento, fecha_alternativa, hora_evento,
-                    invitadas_json, cantidad_bandas,
-                    precio_puerta_propuesto, expectativa_publico, descripcion, fingerprintid
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `;
-
-            const paramsBandas = [
-                newId,
-                id_banda || null,
-                genero_musical || null,
-                formacion ? JSON.stringify(formacion) : null,
-                instagram || null,
-                facebook || null,
-                youtube || null,
-                spotify || null,
-                otras_redes || null,
-                logo_url || null,
-                contacto_rol || null,
-                fecha_preferida || null,
-                fecha_alternativa || null,
-                hora_preferida || null,
-                invitadas ? JSON.stringify(invitadas) : null,
-                cantidadBandas,
-                precio_puerta_propuesto || null,
-                expectativa_publico || null,
-                mensaje || null,
-                fingerprintid || null
-            ];
-
-            await conn.query(sqlBandas, paramsBandas);
-            await conn.commit();
-
-            res.status(201).json({ message: 'Solicitud enviada exitosamente', id: newId });
-        } catch (err) {
-            if (conn) await conn.rollback();
-            console.error('Error al crear solicitud:', err);
-            return res.status(500).json({ error: 'Error al crear solicitud' });
-        } finally {
-            if (conn) conn.release();
-        }
-    } catch (err) {
-        console.error('Error al crear solicitud:', err);
-        res.status(500).json({ error: 'Error al crear solicitud' });
-    }
+    // Delegamos la creación al controlador especializado `solicitudFechaBandaController`
+    return solicitudFechaBandaController.crearSolicitudFechaBanda(req, res);
 };
 
 /**
@@ -823,16 +737,69 @@ const updateSolicitud = async (req, res) => {
             await conn.beginTransaction();
 
             if (Object.keys(contactoUpdates).length > 0) {
-                const [row] = await conn.query('SELECT sol.cliente_id FROM solicitudes_bandas sb JOIN solicitudes sol ON sb.id_solicitud = sol.id WHERE sb.id_solicitud = ?', [id]);
+                const [row] = await conn.query('SELECT sol.cliente_id FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id WHERE sfb.id_solicitud = ?', [id]);
                 if (row && row.cliente_id) {
                     await updateClient(conn, row.cliente_id, contactoUpdates);
                 }
             }
 
-            // Actualizamos solo las columnas de la tabla hijos que quedaron en setClauses (sin campos de contacto)
-            if (setClauses.length > 0) {
-                params.push(id);
-                await conn.query(`UPDATE solicitudes_bandas SET ${setClauses.join(', ')} WHERE id = ?`, params);
+            // Mapear campos legacy -> columnas de `solicitudes_fechas_bandas`
+            const columnMap = {
+                'fecha_preferida': 'fecha_evento',
+                'hora_preferida': 'hora_evento',
+                'mensaje': 'descripcion',
+                'precio_anticipada_propuesto': 'precio_basico',
+                // campos que ya coinciden: fecha_alternativa, invitadas_json, cantidad_bandas, precio_puerta_propuesto, expectativa_publico
+            };
+
+            // Filtrar setClauses para actualizar solo columnas válidas en solicitudes_fechas_bandas
+            const validChildCols = new Set([
+                'id_banda', 'fecha_evento', 'hora_evento', 'duracion', 'descripcion', 'precio_basico', 'precio_final', 'precio_puerta_propuesto', 'cantidad_bandas', 'expectativa_publico', 'invitadas_json', 'estado', 'fecha_alternativa', 'notas_admin', 'id_evento_generado'
+            ]);
+
+            const childSet = [];
+            const childParams = [];
+
+            for (let i = 0; i < setClauses.length; i++) {
+                // setClauses entries are like "campo = ?"; params are in same order
+                const raw = setClauses[i];
+                const campo = raw.split('=')[0].trim();
+                const mapped = columnMap[campo] || campo;
+                if (validChildCols.has(mapped)) {
+                    childSet.push(`${mapped} = ?`);
+                    childParams.push(params[i]);
+                }
+            }
+
+            if (childSet.length > 0) {
+                childParams.push(id);
+                await conn.query(`UPDATE solicitudes_fechas_bandas SET ${childSet.join(', ')} WHERE id_solicitud = ?`, childParams);
+            }
+
+            // Si vienen campos relacionados con la banda y la solicitud tiene id_banda, actualizar bandas_artistas
+            const bandFields = ['nombre_banda', 'genero_musical', 'formacion_json', 'instagram', 'facebook', 'youtube', 'spotify', 'otras_redes', 'logo_url', 'contacto_rol'];
+            const bandUpdates = {};
+            for (const f of bandFields) if (updates[f] !== undefined) bandUpdates[f] = updates[f];
+
+            if (Object.keys(bandUpdates).length > 0) {
+                const [sbRow] = await conn.query('SELECT id_banda FROM solicitudes_fechas_bandas WHERE id_solicitud = ?', [id]);
+                const idBanda = sbRow ? sbRow.id_banda : null;
+                if (idBanda) {
+                    const setB = [];
+                    const paramsB = [];
+                    if (bandUpdates.nombre_banda) { setB.push('nombre = ?'); paramsB.push(bandUpdates.nombre_banda); }
+                    if (bandUpdates.genero_musical) { setB.push('genero_musical = ?'); paramsB.push(bandUpdates.genero_musical); }
+                    if (bandUpdates.instagram) { setB.push('instagram = ?'); paramsB.push(bandUpdates.instagram); }
+                    if (bandUpdates.facebook) { setB.push('facebook = ?'); paramsB.push(bandUpdates.facebook); }
+                    if (bandUpdates.youtube) { setB.push('youtube = ?'); paramsB.push(bandUpdates.youtube); }
+                    if (bandUpdates.spotify) { setB.push('spotify = ?'); paramsB.push(bandUpdates.spotify); }
+                    if (bandUpdates.otras_redes) { setB.push('otras_redes = ?'); paramsB.push(bandUpdates.otras_redes); }
+                    if (bandUpdates.logo_url) { setB.push('logo_url = ?'); paramsB.push(bandUpdates.logo_url); }
+                    if (setB.length > 0) {
+                        paramsB.push(idBanda);
+                        await conn.query(`UPDATE bandas_artistas SET ${setB.join(', ')} WHERE id = ?`, paramsB);
+                    }
+                }
             }
 
             // Si recibimos descripcion_corta o descripcion_larga, actualizar la fila padre en `solicitudes`
@@ -870,9 +837,13 @@ const aprobarSolicitud = async (req, res) => {
             aforo_maximo, descripcion, descripcion_corta, descripcion_larga
         } = req.body;
 
-        // Obtener la solicitud
+        // Obtener la solicitud (normalizada)
         const [solicitud] = await pool.query(
-            'SELECT sb.*, sol.cliente_id FROM solicitudes_bandas sb JOIN solicitudes sol ON sb.id_solicitud = sol.id WHERE sb.id = ?',
+            `SELECT sfb.*, s.cliente_id, b.nombre AS banda_nombre, b.id AS banda_id, b.genero_musical AS banda_genero
+             FROM solicitudes_fechas_bandas sfb
+             JOIN solicitudes s ON sfb.id_solicitud = s.id
+             LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id
+             WHERE sfb.id_solicitud = ?`,
             [id]
         );
 
@@ -880,12 +851,12 @@ const aprobarSolicitud = async (req, res) => {
             return res.status(404).json({ error: 'Solicitud no encontrada' });
         }
 
-        if (solicitud.estado === 'aprobada') {
+        if (solicitud.estado === 'Confirmado' || solicitud.estado === 'aprobada') {
             return res.status(400).json({ error: 'La solicitud ya fue aprobada' });
         }
 
-        // Crear el evento
-        const fechaFinal = fecha_evento || solicitud.fecha_preferida;
+        // Determinar fecha final
+        const fechaFinal = fecha_evento || solicitud.fecha_evento || solicitud.fecha_alternativa;
         if (!fechaFinal) {
             return res.status(400).json({ error: 'Se requiere una fecha para el evento' });
         }
@@ -902,90 +873,76 @@ const aprobarSolicitud = async (req, res) => {
             if (cliente) contacto = { nombre: cliente.nombre, email: cliente.email, telefono: cliente.telefono };
         }
 
-        const eventoResult = await pool.query(`
-            INSERT INTO eventos (
-                tipo_evento, nombre_banda, genero_musical, descripcion,
-                fecha, hora_inicio, hora_fin,
-                precio_anticipada, precio_puerta, aforo_maximo,
-                estado, es_publico, activo
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Confirmado', 1, 1)
-        `, [
-            'BANDA',
-            solicitud.nombre_banda,
-            solicitud.genero_musical,
-            descripcion || solicitud.mensaje,
+        // Crear evento_confirmado (estructura unificada)
+        const sqlEvento = `
+            INSERT INTO eventos_confirmados (
+                id_solicitud,
+                tipo_evento,
+                tabla_origen,
+                nombre_evento,
+                descripcion,
+                fecha_evento,
+                hora_inicio,
+                duracion_estimada,
+                nombre_cliente,
+                email_cliente,
+                telefono_cliente,
+                precio_base,
+                precio_final,
+                genero_musical,
+                cantidad_personas,
+                es_publico,
+                activo,
+                confirmado_en
+            ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+        `;
+
+        const [resultEvento] = await pool.query(sqlEvento, [
+            id,
+            solicitud.banda_nombre || solicitud.descripcion || 'Sin nombre',
+            descripcion || solicitud.descripcion || '',
             fechaFinal,
-            hora_inicio || solicitud.hora_preferida || '21:00:00',
-            hora_fin || '02:00:00',
-            precio_anticipada || solicitud.precio_anticipada_propuesto || 0,
+            hora_inicio || solicitud.hora_evento || '21:00:00',
+            hora_fin || null,
+            precio_anticipada || solicitud.precio_basico || 0,
             precio_puerta || solicitud.precio_puerta_propuesto || 0,
-            aforo_maximo || 150
+            solicitud.banda_genero || solicitud.genero_musical || null,
+            solicitud.cantidad_bandas || 1,
+            1 // es_publico
         ]);
-        const eventoId = Number(eventoResult.insertId);
 
-        // Crear/obtener la banda en el catálogo si no existe
-        let bandaId = solicitud.id_banda;
-        if (!bandaId) {
-            // Crear la banda
-            const bandaResult = await pool.query(`
-                INSERT INTO bandas_artistas (
-                    nombre, genero_musical,
-                    instagram, facebook, youtube, spotify, otras_redes, logo_url,
-                    contacto_nombre, contacto_email, contacto_telefono, contacto_rol,
-                    verificada
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-            `, [
-                solicitud.nombre_banda, solicitud.genero_musical,
-                solicitud.instagram, solicitud.facebook, solicitud.youtube, solicitud.spotify,
-                solicitud.otras_redes, solicitud.logo_url,
-                contacto.nombre || solicitud.contacto_nombre, contacto.email || solicitud.contacto_email,
-                contacto.telefono || solicitud.contacto_telefono, solicitud.contacto_rol
-            ]);
-            bandaId = Number(bandaResult.insertId);
+        const eventoId = Number(resultEvento.insertId);
 
-            // Agregar formación si existe
-            if (solicitud.formacion_json) {
-                try {
-                    const formacion = JSON.parse(solicitud.formacion_json);
-                    for (const f of formacion) {
-                        await pool.query(`
-                            INSERT INTO bandas_formacion (id_banda, instrumento, notas)
-                            VALUES (?, ?, ?)
-                        `, [bandaId, f.instrumento, f.notas || null]);
-                    }
-                } catch (e) { /* ignore */ }
+        // Crear/obtener banda en catálogo si no existe
+        let bandaId = solicitud.banda_id || null;
+        if (!bandaId && solicitud.banda_nombre) {
+            const [bExist] = await pool.query('SELECT id FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?)', [solicitud.banda_nombre]);
+            if (bExist) bandaId = bExist.id;
+            else {
+                const [bRes] = await pool.query(`INSERT INTO bandas_artistas (nombre, genero_musical, verificada, activa, creado_en) VALUES (?, ?, 0, 1, NOW())`, [solicitud.banda_nombre, solicitud.banda_genero || null]);
+                bandaId = Number(bRes.insertId);
             }
         }
 
-        // Crear lineup - banda principal
-        await pool.query(`
-            INSERT INTO eventos_lineup (
-                id_evento, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado
-            ) VALUES (?, ?, ?, 99, 1, 1, 'confirmada')
-        `, [eventoId, bandaId, solicitud.nombre_banda]);
+        // Insertar lineup (principal)
+        await pool.query(`INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, 99, 1, 1, 'confirmada')`, [eventoId, bandaId, solicitud.banda_nombre || 'Sin nombre']);
 
-        // Agregar bandas invitadas al lineup
+        // Agregar bandas invitadas
         if (solicitud.invitadas_json) {
             try {
                 const invitadas = JSON.parse(solicitud.invitadas_json);
                 let orden = 0;
                 for (const inv of invitadas) {
-                    await pool.query(`
-                        INSERT INTO eventos_lineup (
-                            id_evento, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado
-                        ) VALUES (?, ?, ?, ?, 0, 0, 'invitada')
-                    `, [eventoId, inv.id_banda || null, inv.nombre, orden++]);
+                    await pool.query(`INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, ?, 0, 0, 'invitada')`, [eventoId, inv.id_banda || null, inv.nombre, orden++]);
                 }
             } catch (e) { /* ignore */ }
         }
 
-        // Actualizar solicitud
-        await pool.query(`
-            UPDATE solicitudes_bandas 
-            SET estado = 'aprobada', id_evento_generado = ?, id_banda = ?
-            WHERE id = ?
-        `, [eventoId, bandaId, id]);
+        // Actualizar solicitud hijo y padre
+        await pool.query(`UPDATE solicitudes_fechas_bandas SET estado = 'Confirmado', id_evento_generado = ? WHERE id_solicitud = ?`, [eventoId, id]);
+        await pool.query(`UPDATE solicitudes SET estado = 'Confirmado', es_publico = ? WHERE id = ?`, [1, id]);
 
+        res.json({ message: 'Solicitud aprobada y evento creado', evento_id: eventoId, banda_id: bandaId });
         res.json({
             message: 'Solicitud aprobada y evento creado',
             evento_id: eventoId,
@@ -1006,9 +963,9 @@ const rechazarSolicitud = async (req, res) => {
         const { notas_admin, descripcion_corta, descripcion_larga } = req.body;
 
         await pool.query(`
-            UPDATE solicitudes_bandas 
+            UPDATE solicitudes_fechas_bandas 
             SET estado = 'rechazada', notas_admin = CONCAT(COALESCE(notas_admin, ''), '\n[RECHAZADA] ', ?)
-            WHERE id = ?
+            WHERE id_solicitud = ?
         `, [notas_admin || 'Sin motivo especificado', id]);
 
         // También actualizar descripción en la fila padre si se proporcionó

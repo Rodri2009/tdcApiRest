@@ -90,6 +90,33 @@ else
     echo "--- ℹ️ No se encontraron migraciones en $MIG_DIR (o no hay archivos .sql) ---"
 fi
 
+# --- Opcional: ejecutar verificación y/o fixes de inconsistencias ---
+# Control via .env or env vars:
+#  - RUN_DB_VERIFICATION=true  => ejecuta 'verify_and_fix_inconsistencies.sql' (no destructivo)
+#  - APPLY_FIXES=true          => ejecuta 'fix_inconsistencies.sql' (DESTRUCTIVO) **REQUIERE** FORCE_APPLY_FIXES=true
+if [ "${RUN_DB_VERIFICATION,,}" = "true" ]; then
+    echo "--- 🔎 Ejecutando verify_and_fix_inconsistencies.sql (verificación no destructiva) ---"
+    if ! cat verify_and_fix_inconsistencies.sql | $COMPOSE_CMD exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""; then
+        echo "⚠️ La verificación devolvió errores o falló. Revisa la salida arriba."
+    else
+        echo "✅ Verificación completada."
+    fi
+fi
+
+if [ "${APPLY_FIXES,,}" = "true" ]; then
+    if [ "${FORCE_APPLY_FIXES,,}" != "true" ]; then
+        echo "⚠️ APPLY_FIXES=true pero FORCE_APPLY_FIXES!=true — para evitar ejecuciones no intencionales debes exportar FORCE_APPLY_FIXES=true."
+        echo "   Saltando la aplicación de fixes por seguridad."
+    else
+        echo "⚠️ Ejecutando fix_inconsistencies.sql (DESTRUCTIVE) porque APPLY_FIXES=true y FORCE_APPLY_FIXES=true"
+        if ! cat fix_inconsistencies.sql | $COMPOSE_CMD exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""; then
+            echo "❌ Falló la aplicación de fixes. Abortando."
+            exit 1
+        fi
+        echo "✅ Fixes aplicados correctamente."
+    fi
+fi
+
 # --- Fase 4: Información Final ---
 echo ""
 echo "--- ✅ ¡Reseteo completado! ---"

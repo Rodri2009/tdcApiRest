@@ -69,12 +69,17 @@ INSERT INTO solicitudes (id, categoria, fecha_creacion, estado, es_publico, desc
 (10, 'BANDAS', NOW(), 'Pendiente', 1, 'Noche de rock con bandas emergentes', NULL, 'Noche de rock con bandas emergentes', 10),
 (11, 'BANDAS', NOW(), 'Confirmado', 1, 'Tributo a las mejores bandas de rock', NULL, 'Tributo a las mejores bandas de rock', 11);
 
-INSERT INTO solicitudes_bandas (id_solicitud, tipo_de_evento, fecha_hora, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, descripcion, estado) VALUES
-(7, 'FECHA_BANDAS', NOW(), '2025-12-20', '21:00', '5 horas', '150', 3000.00, 'Gran noche de rock nacional con Tributo a La Renga', 'Confirmado'),
-(8, 'FECHA_BANDAS', NOW(), '2025-12-21', '20:00', '5 horas', '100', 2500.00, 'Noche de jazz con los mejores músicos de la zona sur', 'Confirmado'),
-(9, 'FECHA_BANDAS', NOW(), '2025-12-28', '22:00', '6 horas', '180', 2000.00, 'La mejor cumbia para cerrar el año bailando!', 'Confirmado'),
-(10, 'FECHA_BANDAS', NOW(), '2026-03-15', '20:00', '4 horas', '120', 2800.00, 'Noche de rock con bandas emergentes', 'Pendiente'),
-(11, 'FECHA_BANDAS', NOW(), '2026-04-10', '21:00', '3 horas', '200', 3500.00, 'Tributo a las mejores bandas de rock', 'Confirmado');
+-- Migrated: insert into normalized child table `solicitudes_fechas_bandas` (replaces legacy `solicitudes_bandas`)
+INSERT INTO solicitudes_fechas_bandas (
+    id_solicitud, id_banda, fecha_evento, hora_evento, duracion, descripcion,
+    precio_basico, precio_final, precio_puerta_propuesto, cantidad_bandas, expectativa_publico,
+    invitadas_json, estado, fecha_alternativa, notas_admin, id_evento_generado, creado_en, actualizado_en
+) VALUES
+(7, NULL, '2025-12-20', '21:00', '5 horas', 'Gran noche de rock nacional con Tributo a La Renga', 3000.00, NULL, NULL, 1, '150', NULL, 'Confirmado', NULL, NULL, NULL, NOW(), NOW()),
+(8, NULL, '2025-12-21', '20:00', '5 horas', 'Noche de jazz con los mejores músicos de la zona sur', 2500.00, NULL, NULL, 1, '100', NULL, 'Confirmado', NULL, NULL, NULL, NOW(), NOW()),
+(9, NULL, '2025-12-28', '22:00', '6 horas', 'La mejor cumbia para cerrar el año bailando!', 2000.00, NULL, NULL, 1, '180', NULL, 'Confirmado', NULL, NULL, NULL, NOW(), NOW()),
+(10, NULL, '2026-03-15', '20:00', '4 horas', 'Noche de rock con bandas emergentes', 2800.00, NULL, NULL, 1, '120', NULL, 'Pendiente', NULL, NULL, NULL, NOW(), NOW()),
+(11, NULL, '2026-04-10', '21:00', '3 horas', 'Tributo a las mejores bandas de rock', 3500.00, NULL, NULL, 1, '200', NULL, 'Confirmado', NULL, NULL, NULL, NOW(), NOW());
 
 -- FECHAS DE BANDAS DE EJEMPLO (migradas a eventos_confirmados)
 -- Notas: `id_solicitud` referencia a la fila correspondiente en `solicitudes_bandas`.

@@ -105,15 +105,39 @@
             transition: all 0.2s ease;
         }
 
-        .banda-item:hover { border-color: var(--color-secondary); }
+        .banda-item:hover {
+            border-color: var(--color-secondary);
+        }
 
-        .banda-item.selected { background-color: rgba(88, 28, 135, 0.25); border-color: var(--color-secondary); }
+        .banda-item.selected {
+            background-color: rgba(88, 28, 135, 0.25);
+            border-color: var(--color-secondary);
+        }
 
-        .banda-item-text { flex: 1; }
-        .banda-item-name { color: var(--color-secondary); font-weight: bold; }
-        .banda-item-genre { color: #9ca3af; font-size: 0.9rem; }
+        .banda-item-text {
+            flex: 1;
+        }
 
-        .date-slot { background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 12px; margin: 8px 0; display:flex; gap:10px; align-items:center; }
+        .banda-item-name {
+            color: var(--color-secondary);
+            font-weight: bold;
+        }
+
+        .banda-item-genre {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .date-slot {
+            background-color: #0f172a;
+            border: 1px solid #581c87;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
 
 
         .form-grid {
@@ -373,7 +397,8 @@
         <!-- SECCIÓN BANDAS (modo admin) -->
         <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:6px;">
             <h3 style="color:var(--color-secondary);"><i class="fas fa-music"></i> Bandas</h3>
-            <button type="button" id="btnCrearBanda" class="btn btn-primary" style="height:36px;padding:6px 10px;font-size:0.9rem;">
+            <button type="button" id="btnCrearBanda" class="btn btn-primary"
+                style="height:36px;padding:6px 10px;font-size:0.9rem;">
                 <i class="fas fa-plus"></i> Crear banda
             </button>
         </div>
@@ -382,7 +407,8 @@
             <label for="bandaSearch">Buscar banda:</label>
             <div style="display:flex;gap:8px;align-items:center;">
                 <input type="text" id="bandaSearch" placeholder="Buscar por nombre..." style="flex:1;">
-                <button type="button" id="btnLimpiarBusqueda" class="btn btn-secondary" style="height:36px;padding:6px 10px;">Limpiar</button>
+                <button type="button" id="btnLimpiarBusqueda" class="btn btn-secondary"
+                    style="height:36px;padding:6px 10px;">Limpiar</button>
             </div>
             <div id="bandasList" class="band-list" style="margin-top:8px;"></div>
         </div>
@@ -402,7 +428,8 @@
                 </div>
                 <div class="form-group">
                     <label for="descripcion">Descripción (opcional)</label>
-                    <textarea id="descripcion" placeholder="Descripción corta del show (se mostrará en la agenda)"></textarea>
+                    <textarea id="descripcion"
+                        placeholder="Descripción corta del show (se mostrará en la agenda)"></textarea>
                 </div>
                 <div class="form-group">
                     <label for="urlFlyer">Flyer (URL editable o subir)</label>
@@ -419,7 +446,8 @@
         <!-- Fecha y Horarios -->
         <div class="form-section">
             <h3><i class="fas fa-calendar-alt"></i> Fecha y Horarios</h3>
-            <div class="info-banner">Este formulario usa una única fecha de evento (no múltiple). Selecciona la fecha definitiva abajo.</div>
+            <div class="info-banner">Este formulario usa una única fecha de evento (no múltiple). Selecciona la fecha
+                definitiva abajo.</div>
             <div class="form-grid form-grid-3">
                 <div class="form-group">
                     <label for="fechaEvento">Fecha del Evento *</label>
@@ -522,7 +550,7 @@
         // Helper: escapar texto para insertar en HTML (previene XSS en nombres/geo)
         function escapeHtml(str) {
             return String(str || '').replace(/[&<>"'`]/g, function (s) {
-                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;', '`':'&#96;'})[s];
+                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' })[s];
             });
         }
 
@@ -573,20 +601,20 @@
             // Mantener prefijo original si aplica (ev_ o bnd_)
             const rawPrefix = idParam.toString().replace(/\d+$/, '');
             eventoPrefix = (rawPrefix === 'ev_' || rawPrefix === 'bnd_' || rawPrefix === '') ? rawPrefix : '';
-            
+
             console.log('[BANDAS] Después del parsing:');
             console.log('[BANDAS]   idParam:', idParam);
             console.log('[BANDAS]   rawPrefix:', rawPrefix);
             console.log('[BANDAS]   eventoId:', eventoId);
             console.log('[BANDAS]   eventoPrefix:', eventoPrefix);
-            
+
             document.getElementById('eventoId').textContent = `${eventoPrefix}${eventoId}`;
 
             // REDIRECCIÓN A LOGIN: Si es una solicitud pública (prefijo bnd_) sin autenticación
             const isPublicRequest = eventoPrefix && eventoPrefix.length > 0;
             const authToken = localStorage.getItem('authToken');
             const hasAuth = authToken && typeof authToken === 'string' && authToken.trim().length > 0;
-            
+
             console.log('[BANDAS] isPublicRequest:', isPublicRequest);
             console.log('[BANDAS] hasAuth:', hasAuth);
             if (isPublicRequest && !hasAuth) {
@@ -624,20 +652,36 @@
                 console.log('[BANDAS] ========== CARGAR EVENTO ==========');
                 console.log('[BANDAS] eventoId:', eventoId);
                 console.log('[BANDAS] Usando nuevo endpoint: /api/solicitudes-fechas-bandas/:id');
-                
+
                 if (!eventoId) {
                     throw new Error('ID de evento no válido');
                 }
 
                 const res = await fetch(`/api/solicitudes-fechas-bandas/${eventoId}`);
                 console.log('[BANDAS] GET /api/solicitudes-fechas-bandas/' + eventoId + ' status: ' + res.status);
-                
+
                 if (!res.ok) {
                     throw new Error('No se pudo cargar la solicitud: ' + res.status);
                 }
-                
+
                 const evento = await res.json();
                 console.log('[BANDAS] ✓ Evento cargado desde nuevo endpoint:', evento);
+
+                // Normalizar campos recibidos (compatibilidad con nombres SQL/DB)
+                if (evento.hora_evento && !evento.hora_inicio) evento.hora_inicio = evento.hora_evento;
+                if (evento.precio_basico && typeof evento.precio_base === 'undefined') evento.precio_base = evento.precio_basico;
+                if (evento.banda_nombre && !evento.nombre_banda) evento.nombre_banda = evento.banda_nombre;
+
+                // Mapear nombres de columna/refactor a keys que usa el formulario
+                if (typeof evento.expectativa_publico !== 'undefined' && typeof evento.aforo_maximo === 'undefined') evento.aforo_maximo = evento.expectativa_publico;
+                if (typeof evento.precio_puerta_propuesto !== 'undefined' && typeof evento.precio_puerta === 'undefined') evento.precio_puerta = evento.precio_puerta_propuesto;
+                if (typeof evento.cliente_nombre !== 'undefined' && typeof evento.contacto_nombre === 'undefined') evento.contacto_nombre = evento.cliente_nombre;
+                if (typeof evento.cliente_email !== 'undefined' && typeof evento.contacto_email === 'undefined') evento.contacto_email = evento.cliente_email;
+                if (typeof evento.cliente_telefono !== 'undefined' && typeof evento.contacto_telefono === 'undefined') evento.contacto_telefono = evento.cliente_telefono;
+
+                if (evento.invitadas_json && !evento.invitadas) {
+                    try { evento.invitadas = JSON.parse(evento.invitadas_json || '[]'); } catch (e) { evento.invitadas = []; }
+                }
 
                 // Llenar formulario usando el objeto 'evento' retornado por la API
                 document.getElementById('nombreEvento').value = evento.nombre_evento || evento.nombre_banda || '';
@@ -702,7 +746,7 @@
                 const hasAuth = authToken && typeof authToken === 'string' && authToken.trim().length > 0;
                 const btnGuardar = document.getElementById('btnGuardar');
                 const btnEliminar = document.getElementById('btnEliminar');
-                
+
                 if (!hasAuth) {
                     if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.title = 'Requiere autenticación de administrador'; }
                     if (btnEliminar) { btnEliminar.disabled = true; btnEliminar.title = 'Requiere autenticación de administrador'; }
@@ -763,32 +807,53 @@
 
             showLoading(true);
 
-            // Preparar datos para la nueva API de solicitudes-fechas-bandas
+            // Preparar datos para la API (mapear claves a lo que el backend espera)
             const datos = {
                 id_banda: idBanda,
                 fecha_evento: fecha || undefined,
                 descripcion: document.getElementById('descripcion').value.trim(),
-                contacto_nombre: document.getElementById('nombreContacto').value.trim(),
-                contacto_email: document.getElementById('emailContacto').value.trim(),
-                contacto_telefono: document.getElementById('telefonoContacto').value.trim(),
-                hora_inicio: document.getElementById('horaInicio').value || '21:00',
-                aforo_maximo: parseInt(document.getElementById('aforoMaximo').value) || 120,
+                hora_evento: document.getElementById('horaInicio').value || '21:00',                    // backend espera `hora_evento`
+                expectativa_publico: parseInt(document.getElementById('aforoMaximo').value, 10) || 120, // backend espera `expectativa_publico`
                 es_publico: document.getElementById('esPublico').value === '1' ? 1 : 0,
-                precio_base: parseFloat(document.getElementById('precioBase').value) || 0,
-                precio_puerta: parseFloat(document.getElementById('precioPuerta').value) || null,
+                precio_basico: parseFloat(document.getElementById('precioBase').value) || 0,            // backend espera `precio_basico`
+                precio_puerta_propuesto: document.getElementById('precioPuerta').value ? parseFloat(document.getElementById('precioPuerta').value) : null,
                 url_flyer: document.getElementById('urlFlyer').value.trim()
             };
+
+            // Incluir datos de contacto: enviar tanto en POST como en PUT (backend soporta persistir contacto_* en PUT)
+            datos.contacto_nombre = document.getElementById('nombreContacto').value.trim();
+            datos.contacto_email = document.getElementById('emailContacto').value.trim();
+            datos.contacto_telefono = document.getElementById('telefonoContacto').value.trim();
+
+            // Nombre de la fecha / show -> persistir en la fila padre (solicitudes.descripcion_corta)
+            if (nombreEventoVal) datos.descripcion_corta = nombreEventoVal;
+
+            // Precio Anticipada -> mapear a precio_basico (DB usa precio_basico para la anticipada en solicitudes)
+            const precioAnt = parseFloat(document.getElementById('precioAnticipada').value) || null;
+            if (precioAnt && precioAnt > 0) {
+                datos.precio_basico = precioAnt;
+            } else {
+                // fallback al campo precioBase si anticipada no fue completada
+                datos.precio_basico = parseFloat(document.getElementById('precioBase').value) || 0;
+            }
+
+            // Bandas invitadas (si hay más de una seleccionada) -> enviar como invitadas_json
+            if (bandasSeleccionadas && bandasSeleccionadas.length > 1) {
+                // omitimos la primera (principal) y enviamos el resto como invitadas
+                const invitadas = bandasSeleccionadas.slice(1).map(b => ({ id_banda: b.id || null, nombre: b.nombre || '' }));
+                datos.invitadas_json = invitadas;
+            }
 
             // Remover campos undefined
             Object.keys(datos).forEach(key => datos[key] === undefined && delete datos[key]);
 
-            console.log('[BANDAS] Datos a enviar:', datos);
+            console.log('[BANDAS] Datos a enviar (final):', datos);
 
             try {
                 // Usar nuevo endpoint /api/solicitudes-fechas-bandas/:id
                 const url = eventoId ? `/api/solicitudes-fechas-bandas/${eventoId}` : '/api/solicitudes-fechas-bandas';
                 const method = eventoId ? 'PUT' : 'POST';
-                
+
                 console.log('[BANDAS] Envío - method:', method, 'url:', url);
 
                 const res = await fetch(url, {
@@ -812,7 +877,7 @@
 
                 console.log('[BANDAS] ✓ Evento ' + (eventoId ? 'actualizado' : 'creado') + ' correctamente');
                 showNotification(eventoId ? 'Los cambios se realizaron correctamente' : 'Evento creado correctamente', 'success');
-                
+
                 // Redirigir después de guardar
                 if (eventoId) {
                     setTimeout(() => location.reload(), 1500);

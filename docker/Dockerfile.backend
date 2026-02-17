@@ -16,7 +16,7 @@ RUN npm install
 COPY ../backend /app
 
 # Copiamos el entrypoint que instalará dependencias si faltan en el contenedor en runtime
-COPY ../backend/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY ../scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Expone el puerto

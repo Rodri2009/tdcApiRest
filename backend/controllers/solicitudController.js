@@ -1,5 +1,6 @@
 // backend/controllers/solicitudController.js
 const pool = require('../db');
+console.log('[SOLICITUDCONTROLLER FILE LOADED] (workspace)');
 const { sendAdminNotification } = require('../services/emailService');
 const { sendComprobanteEmail } = require('../services/emailService');
 const { getOrCreateClient, updateClient } = require('../lib/clients');
@@ -102,52 +103,12 @@ const crearSolicitud = async (req, res) => {
         const newId = Number(resultGeneral.insertId);
 
         if (esBanda) {
-            // 2. Insertar en la tabla específica 'solicitudes_bandas'
-            const sqlBandas = `
-                INSERT INTO solicitudes_bandas (
-                    id_solicitud, tipo_de_evento, tipo_servicio, fecha_hora, fecha_evento, hora_evento, duracion,
-                    cantidad_de_personas, precio_basico, precio_final, descripcion, estado, fingerprintid,
-                    id_banda, genero_musical, formacion_json, instagram, facebook, youtube, spotify, otras_redes, logo_url, contacto_rol,
-                    fecha_alternativa, invitadas_json, cantidad_bandas, precio_puerta_propuesto, expectativa_publico, notas_admin, id_evento_generado
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `;
-            const now = new Date();
-            let paramsBandas = [
-                newId, // id_solicitud
-                tipoEvento || 'FECHA_BANDAS', // tipo_de_evento
-                null, // tipo_servicio
-                now, // fecha_hora
-                req.body.fechaEvento || null, // fecha_evento
-                req.body.horaInicio || null, // hora_evento
-                req.body.duracionEvento || null, // duracion
-                req.body.cantidadPersonas ? String(req.body.cantidadPersonas) : null, // cantidad_de_personas
-                req.body.precioBase ? parseFloat(req.body.precioBase) : null, // precio_basico
-                null, // precio_final
-                req.body.descripcion || '', // descripcion
-                'Solicitado', // estado
-                req.body.fingerprintId || null, // fingerprintid
-                req.body.id_banda || null, // id_banda (permitir referenciar banda existente cuando venga)
-                req.body.genero_musical || null, // genero_musical
-                req.body.formacion_json || null, // formacion_json
-                req.body.instagram || null, // instagram
-                req.body.facebook || null, // facebook
-                req.body.youtube || null, // youtube
-                req.body.spotify || null, // spotify
-                req.body.otras_redes || null, // otras_redes
-                req.body.logo_url || null, // logo_url
-                req.body.contacto_rol || null, // contacto_rol
-                req.body.fecha_alternativa || null, // fecha_alternativa
-                req.body.invitadas_json || null, // invitadas_json
-                req.body.cantidad_bandas ? parseInt(req.body.cantidad_bandas) : 1, // cantidad_bandas
-                req.body.precio_puerta_propuesto ? parseFloat(req.body.precio_puerta_propuesto) : null, // precio_puerta_propuesto
-                req.body.expectativa_publico || null, // expectativa_publico
-                req.body.notas_admin || null, // notas_admin
-                null // id_evento_generado
-            ];
-            // Forzar exactamente 29 valores (coincidiendo con el SQL INSERT que tiene 29 columnas)
-            paramsBandas = paramsBandas.slice(0, 29);
-            while (paramsBandas.length < 29) paramsBandas.push(null);
-            await conn.query(sqlBandas, paramsBandas);
+            // Delegar a controlador especializado para solicitudes de fecha de banda (normalizado)
+            // Reutilizamos la ruta/logic existente para mantener consistencia.
+            const solicitudFechaBandaController = require('./solicitudFechaBandaController');
+            // Liberar la conexión actual (será gestionada por el controlador delegado)
+            if (conn) { conn.release(); conn = null; }
+            return solicitudFechaBandaController.crearSolicitudFechaBanda(req, res);
         } else {
             // 2. Insertar en la tabla específica 'solicitudes_alquiler'
             const sqlAlquiler = `
@@ -306,39 +267,40 @@ const getSolicitudPorId = async (req, res) => {
 
             const sql = `
                 SELECT
-                    CONCAT('bnd_', sb.id_solicitud) as solicitudId,
-                    sb.tipo_de_evento as tipoEvento,
-                    sb.fecha_evento as fechaEvento,
-                    sb.hora_evento as horaInicio,
-                    sb.duracion as duracionEvento,
-                    sb.cantidad_de_personas as cantidadPersonas,
-                    sb.precio_basico as precioBase,
+                    CONCAT('bnd_', sfb.id_solicitud) as solicitudId,
+                    'BANDA' as tipoEvento,
+                    sfb.fecha_evento as fechaEvento,
+                    sfb.hora_evento as horaInicio,
+                    sfb.duracion as duracionEvento,
+                    sfb.cantidad_bandas as cantidadPersonas,
+                    sfb.precio_basico as precioBase,
                     COALESCE(c.nombre, '') as nombreCompleto,
                     c.telefono as telefono,
                     c.email as email,
-                    sb.descripcion as descripcion_banda,
-                    sb.estado,
-                    sb.genero_musical,
-                    sb.instagram,
-                    sb.facebook,
-                    sb.youtube,
-                    sb.spotify,
-                    sb.otras_redes,
-                    sb.logo_url,
-                    sb.contacto_rol,
-                    sb.fecha_alternativa,
-                    sb.invitadas_json,
-                    sb.cantidad_bandas,
-                    sb.precio_puerta_propuesto,
-                    sb.expectativa_publico,
-                    sb.notas_admin,
+                    COALESCE(sfb.descripcion, b.bio) as descripcion_banda,
+                    sfb.estado,
+                    COALESCE(b.genero_musical, sfb.genero_musical) as genero_musical,
+                    COALESCE(b.instagram, NULL) as instagram,
+                    COALESCE(b.facebook, NULL) as facebook,
+                    COALESCE(b.youtube, NULL) as youtube,
+                    COALESCE(b.spotify, NULL) as spotify,
+                    COALESCE(b.otras_redes, NULL) as otras_redes,
+                    COALESCE(b.logo_url, sfb.logo_url) as logo_url,
+                    COALESCE(b.contacto_rol, sfb.contacto_rol) as contacto_rol,
+                    sfb.fecha_alternativa,
+                    sfb.invitadas_json,
+                    sfb.cantidad_bandas,
+                    sfb.precio_puerta_propuesto,
+                    sfb.expectativa_publico,
+                    sfb.notas_admin,
                     COALESCE(sol.es_publico, 0) as esPublico,
                     COALESCE(sol.descripcion_corta, '') as descripcion_corta,
                     COALESCE(sol.descripcion_larga, '') as descripcion_larga
-                FROM solicitudes_bandas sb
-                JOIN solicitudes sol ON sb.id_solicitud = sol.id
+                FROM solicitudes_fechas_bandas sfb
+                JOIN solicitudes sol ON sfb.id_solicitud = sol.id
                 LEFT JOIN clientes c ON sol.cliente_id = c.id
-                WHERE sb.id_solicitud = ?
+                LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id
+                WHERE sfb.id_solicitud = ?
             `;
 
             const [banda] = await conn.query(sql, [bandaId]);
@@ -612,7 +574,7 @@ const actualizarSolicitud = async (req, res) => {
     const match = String(id).match(/^([a-z]*_)?(\d+)$/);
     let prefijo = '';
     let idNumerico = null;
-    
+
     if (match) {
         prefijo = match[1] || '';
         idNumerico = parseInt(match[2], 10);
@@ -689,10 +651,10 @@ const actualizarSolicitud = async (req, res) => {
         let affectedRowsEspecifico = 0;
         let tablaActualizada = '';
         let tipoEventoReal = null;
-        
+
         // PASO 0: Consultar el tipo real según prefijo
         console.log(`[SOLICITUD][EDIT] PASO 0: Consultando tipo de evento (prefijo="${prefijo}") para id=${idNumerico}`);
-        
+
         // Si es evento confirmado (ev_*), consultar eventos_confirmados.tipo_evento
         if (prefijo === 'ev_') {
             const sqlSelectEvento = `SELECT tipo_evento FROM eventos_confirmados WHERE id = ? LIMIT 1`;
@@ -714,42 +676,42 @@ const actualizarSolicitud = async (req, res) => {
                 console.warn(`[SOLICITUD][EDIT] ⚠️ Solicitud no encontrada en tabla solicitudes (id=${idNumerico})`);
             }
         }
-        
+
         // Determinar tabla según tipo real encontrado O prefijo de fallback
         let tableTarget = null;
-        
+
         if (tipoEventoReal === 'BANDA' || tipoEventoReal === 'BANDAS') {
-            tableTarget = 'solicitudes_bandas';
-            console.log(`[SOLICITUD][EDIT] PASO 1: Tipo BANDA → usando solicitudes_bandas`);
+            tableTarget = 'solicitudes_fechas_bandas';
+            console.log(`[SOLICITUD][EDIT] PASO 1: Tipo BANDA → usando solicitudes_fechas_bandas`);
         } else if (tipoEventoReal === 'ALQUILER') {
             tableTarget = 'solicitudes_alquiler';
             console.log(`[SOLICITUD][EDIT] PASO 1: Tipo ALQUILER → usando solicitudes_alquiler`);
         } else if (tipoEventoReal) {
             // Otros tipos: determinar por prefijo
             console.log(`[SOLICITUD][EDIT] PASO 1: Tipo desconocido (${tipoEventoReal}). Usando fallback por prefijo`);
-            if (prefijo === 'bnd_') tableTarget = 'solicitudes_bandas';
+            if (prefijo === 'bnd_') tableTarget = 'solicitudes_fechas_bandas';
             else if (prefijo === 'alq_') tableTarget = 'solicitudes_alquiler';
-            else if (prefijo === 'ev_') tableTarget = 'solicitudes_bandas'; // Eventos confirmados suelen ser bandas
+            else if (prefijo === 'ev_') tableTarget = 'solicitudes_fechas_bandas'; // Eventos confirmados suelen ser bandas
             else tableTarget = 'solicitudes_alquiler'; // Por defecto
         } else {
             // Sin tipo encontrado: usar prefijo
             console.log(`[SOLICITUD][EDIT] PASO 1: Tipo no determinado. Usando fallback por prefijo (${prefijo})`);
-            if (prefijo === 'bnd_') tableTarget = 'solicitudes_bandas';
+            if (prefijo === 'bnd_') tableTarget = 'solicitudes_fechas_bandas';
             else if (prefijo === 'alq_') tableTarget = 'solicitudes_alquiler';
-            else if (prefijo === 'ev_') tableTarget = 'solicitudes_bandas'; // Eventos confirmados suelen ser bandas
+            else if (prefijo === 'ev_') tableTarget = 'solicitudes_fechas_bandas'; // Eventos confirmados suelen ser bandas
             else tableTarget = 'solicitudes_alquiler'; // Por defecto
         }
-        
+
         console.log(`[SOLICITUD][EDIT] PASO 2: Tabla destino = ${tableTarget}`);
-        
+
         // Para eventos confirmados (ev_*), actualizar eventos_confirmados directamente
         if (prefijo === 'ev_') {
             console.log(`[SOLICITUD][EDIT] PASO 3: Actualizando eventos_confirmados (id=${idNumerico}) - EVENTO CONFIRMADO`);
-            
+
             // Construir SQL dinámico que solo actualice campos proporcionados
             let setClauses = [];
             let params = [];
-            
+
             if (nombreFinal || nombre_evento) {
                 setClauses.push('nombre_evento = ?');
                 params.push(nombreFinal || nombre_evento || '');
@@ -782,17 +744,17 @@ const actualizarSolicitud = async (req, res) => {
                 setClauses.push('cantidad_personas = ?');
                 params.push(cantidad_personas || cantidadPersonas || 0);
             }
-            
+
             if (setClauses.length === 0) {
                 console.log(`[SOLICITUD][EDIT] ⚠️ No hay campos para actualizar`);
                 await conn.commit();
                 return res.status(400).json({ error: 'No hay campos para actualizar.' });
             }
-            
+
             params.push(idNumerico); // Agregar WHERE id
-            
+
             const sqlUpdateEvento = `UPDATE eventos_confirmados SET ${setClauses.join(', ')} WHERE id = ?`;
-            
+
             try {
                 console.log(`[SOLICITUD][EDIT] SQL dinámico:`, sqlUpdateEvento);
                 const result = await conn.query(sqlUpdateEvento, params);
@@ -805,48 +767,51 @@ const actualizarSolicitud = async (req, res) => {
             }
         }
         // ACTUALIZAR EN LA TABLA DE SOLICITUDES ESPECÍFICA
-        else if (tableTarget === 'solicitudes_bandas') {
-            console.log(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_bandas (id=${idNumerico})`);
-            
+        else if (tableTarget === 'solicitudes_fechas_bandas' || tableTarget === 'solicitudes_bandas') {
+            // Soportar tanto la nueva tabla normalizada como el nombre legacy (compatibilidad)
+            console.log(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_fechas_bandas (id=${idNumerico})`);
+
             const sqlUpdateBandas = `
-                UPDATE solicitudes_bandas SET
-                    nombre_completo = ?,
-                    email = ?,
-                    telefono = ?,
+                UPDATE solicitudes_fechas_bandas SET
+                    id_banda = ?,
                     genero_musical = ?,
                     descripcion = ?,
                     fecha_evento = ?,
                     hora_evento = ?,
-                    cantidad_de_personas = ?,
+                    duracion = ?,
+                    cantidad_bandas = ?,
                     precio_basico = ?,
-                    precio_final = ?
+                    precio_final = ?,
+                    precio_puerta_propuesto = ?,
+                    expectativa_publico = ?
                 WHERE id_solicitud = ?
             `;
             const paramsBandas = [
-                nombreFinal || '',
-                emailFinal || '',
-                telefonoFinal || '',
-                genero_musical || tipoEvento || '',
-                descripcion || detallesAdicionales || '',
+                req.body.id_banda || null,
+                genero_musical || tipoEvento || null,
+                descripcion || detallesAdicionales || null,
                 fechaEvento || null,
-                horaInicio || '21:00',
-                cantidad_personas || cantidadPersonas || 0,
-                precioBase || 0,
+                horaInicio || null,
+                duracionEvento || null,
+                cantidad_personas || cantidadPersonas || null,
+                precioBase || null,
                 precio_final || null,
+                req.body.precio_puerta_propuesto || null,
+                req.body.expectativa_publico || null,
                 idNumerico
             ];
             try {
                 const result = await conn.query(sqlUpdateBandas, paramsBandas);
                 affectedRowsEspecifico = result.affectedRows || 0;
-                tablaActualizada = 'solicitudes_bandas';
-                console.log(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_bandas: affectedRows=${affectedRowsEspecifico}`);
+                tablaActualizada = 'solicitudes_fechas_bandas';
+                console.log(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_fechas_bandas: affectedRows=${affectedRowsEspecifico}`);
             } catch (bandaErr) {
-                console.error(`[SOLICITUD][EDIT] ✗ Error en solicitudes_bandas:`, bandaErr.message);
+                console.error(`[SOLICITUD][EDIT] ✗ Error en solicitudes_fechas_bandas:`, bandaErr.message);
                 throw bandaErr;
             }
         } else if (tableTarget === 'solicitudes_alquiler') {
             console.log(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_alquiler (id=${idNumerico})`);
-            
+
             const sqlUpdateAlquiler = `
                 UPDATE solicitudes_alquiler SET
                     tipo_servicio = ?,
@@ -883,11 +848,11 @@ const actualizarSolicitud = async (req, res) => {
         if (affectedRowsEspecifico === 0) {
             console.warn(`[SOLICITUD][EDIT] ⚠️ ADVERTENCIA: UPDATE en ${tablaActualizada} no afectó ninguna fila. ID=${id}`);
             await conn.commit();
-            return res.status(404).json({ 
+            return res.status(404).json({
                 error: 'Solicitud no encontrada en la tabla esperada.',
-                debug: { 
-                    prefijo, 
-                    idNumerico, 
+                debug: {
+                    prefijo,
+                    idNumerico,
                     tablaIntentada: tablaActualizada,
                     affectedRows: affectedRowsEspecifico
                 }
@@ -895,7 +860,7 @@ const actualizarSolicitud = async (req, res) => {
         }
 
         await conn.commit();
-        const respuesta = { 
+        const respuesta = {
             solicitudId: id,
             affectedRows: affectedRowsEspecifico,
             tablaActualizada: tablaActualizada
@@ -932,14 +897,14 @@ const getSesionExistente = async (req, res) => {
         const sql = `
             SELECT
                 sb.id_solicitud as solicitudId,
-                sb.tipo_de_evento as tipoEvento,
+                'BANDA' as tipoEvento,
                 NULL as tipoServicio,
-                sb.cantidad_de_personas as cantidadPersonas,
+                sb.cantidad_bandas as cantidadPersonas,
                 sb.duracion as duracionEvento,
                 DATE_FORMAT(sb.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 sb.hora_evento as horaInicio,
                 sb.descripcion as descripcion
-            FROM solicitudes_bandas sb
+            FROM solicitudes_fechas_bandas sb
             WHERE sb.fingerprintid = ?
             ORDER BY sb.id_solicitud DESC
             LIMIT 1
@@ -1016,13 +981,13 @@ const getSolicitudesPublicas = async (req, res) => {
                 sb.fecha_evento as fechaEvento,
                 sb.hora_evento as horaEvento,
                 sb.duracion,
-                sb.cantidad_de_personas as cantidad,
+                sb.cantidad_bandas as cantidad,
                 sb.precio_basico as precio,
                 COALESCE(c.nombre, '') as nombreCompleto,
                 sb.descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
                 e.url_flyer as flyer_url
-            FROM solicitudes_bandas sb
+            FROM solicitudes_fechas_bandas sb
             JOIN solicitudes sol ON sb.id_solicitud = sol.id
             LEFT JOIN clientes c ON sol.cliente_id = c.id
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = sb.id_solicitud AND e.tipo_evento = 'BANDA' AND e.activo = 1
@@ -1234,47 +1199,45 @@ const getSolicitudPublicById = async (req, res) => {
                 const bandaId = parseInt(id.substring(4));
                 const sql = `
                     SELECT
-                        CONCAT('bnd_', sb.id_solicitud) as solicitudId,
-                        sb.tipo_de_evento as tipoEvento,
-                        sb.fecha_evento as fechaEvento,
-                        sb.hora_evento as horaInicio,
-                        sb.duracion as duracionEvento,
-                        sb.cantidad_de_personas as cantidadPersonas,
-                        sb.precio_basico as precioBase,
-                        sb.precio_final as precio_final,
-                        COALESCE(c.nombre, '') as nombreParaMostrar,
-                        sb.nombre_completo,
-                        sb.email,
-                        sb.telefono,
-                        sb.descripcion,
-                        sb.genero_musical,
-                        sb.estado,
-                        sb.fingerprintid,
-                        sb.id_banda,
-                        sb.formacion_json,
-                        sb.instagram,
-                        sb.facebook,
-                        sb.youtube,
-                        sb.spotify,
-                        sb.otras_redes,
-                        sb.logo_url,
-                        sb.contacto_rol,
-                        sb.fecha_alternativa,
-                        sb.invitadas_json,
-                        sb.cantidad_bandas,
-                        sb.precio_puerta_propuesto,
-                        sb.expectativa_publico,
-                        sb.notas_admin,
-                        sol.es_publico as esPublico
-                    FROM solicitudes_bandas sb
-                    JOIN solicitudes sol ON sb.id_solicitud = sol.id
+                        CONCAT('bnd_', sfb.id_solicitud) as solicitudId,
+                        'BANDA' as tipoEvento,
+                        sfb.fecha_evento as fechaEvento,
+                        sfb.hora_evento as horaInicio,
+                        sfb.duracion as duracionEvento,
+                        sfb.cantidad_bandas as cantidadPersonas,
+                        sfb.precio_basico as precioBase,
+                        COALESCE(c.nombre, '') as nombreCompleto,
+                        c.telefono as telefono,
+                        c.email as email,
+                        COALESCE(sfb.descripcion, b.bio) as descripcion_banda,
+                        sfb.estado,
+                        COALESCE(b.genero_musical, sfb.genero_musical) as genero_musical,
+                        COALESCE(b.instagram, NULL) as instagram,
+                        COALESCE(b.facebook, NULL) as facebook,
+                        COALESCE(b.youtube, NULL) as youtube,
+                        COALESCE(b.spotify, NULL) as spotify,
+                        COALESCE(b.otras_redes, NULL) as otras_redes,
+                        COALESCE(b.logo_url, sfb.logo_url) as logo_url,
+                        COALESCE(b.contacto_rol, sfb.contacto_rol) as contacto_rol,
+                        sfb.fecha_alternativa,
+                        sfb.invitadas_json,
+                        sfb.cantidad_bandas,
+                        sfb.precio_puerta_propuesto,
+                        sfb.expectativa_publico,
+                        sfb.notas_admin,
+                        COALESCE(sol.es_publico, 0) as esPublico,
+                        COALESCE(sol.descripcion_corta, '') as descripcion_corta,
+                        COALESCE(sol.descripcion_larga, '') as descripcion_larga
+                    FROM solicitudes_fechas_bandas sfb
+                    JOIN solicitudes sol ON sfb.id_solicitud = sol.id
                     LEFT JOIN clientes c ON sol.cliente_id = c.id
-                    WHERE sb.id_solicitud = ?
+                    LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id
+                    WHERE sfb.id_solicitud = ?
                 `;
 
                 const [banda] = await conn.query(sql, [bandaId]);
                 if (!banda) return res.status(404).json({ error: 'Solicitud no encontrada.' });
-                return res.status(200).json({ ...banda, adicionales: [] });
+                return res.status(200).json(respuesta = { ...banda, adicionales: [] });
             }
 
             // Servicio (srv_)
@@ -1360,19 +1323,19 @@ const getSolicitudPublicById = async (req, res) => {
             // 2) intentar bandas
             const sqlBnd = `
                 SELECT
-                    CONCAT('bnd_', sb.id_solicitud) as solicitudId,
-                    sb.tipo_de_evento as tipoEvento,
-                    sb.fecha_evento as fechaEvento,
-                    sb.hora_evento as horaInicio,
-                    sb.duracion as duracionEvento,
-                    sb.cantidad_de_personas as cantidadPersonas,
-                    sb.precio_basico as precioBase,
+                    CONCAT('bnd_', sfb.id_solicitud) as solicitudId,
+                    'BANDA' as tipoEvento,
+                    sfb.fecha_evento as fechaEvento,
+                    sfb.hora_evento as horaInicio,
+                    sfb.duracion as duracionEvento,
+                    sfb.cantidad_bandas as cantidadPersonas,
+                    sfb.precio_basico as precioBase,
                     COALESCE(c.nombre, '') as nombreParaMostrar,
-                    sb.estado
-                FROM solicitudes_bandas sb
-                JOIN solicitudes sol ON sb.id_solicitud = sol.id
+                    sfb.estado
+                FROM solicitudes_fechas_bandas sfb
+                JOIN solicitudes sol ON sfb.id_solicitud = sol.id
                 LEFT JOIN clientes c ON sol.cliente_id = c.id
-                WHERE sb.id_solicitud = ?
+                WHERE sfb.id_solicitud = ?
             `;
             const [banda] = await conn.query(sqlBnd, [idNum]);
             if (banda) return res.status(200).json({ ...banda, adicionales: [] });

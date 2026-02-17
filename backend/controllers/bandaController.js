@@ -9,13 +9,13 @@ const pool = require('../db');
  */
 const obtenerBandas = async (req, res) => {
     console.log('[BANDA] GET - Obtener todas las bandas');
-    
+
     const { activas, ordenar_por } = req.query;
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
         let sql = `
             SELECT
                 id,
@@ -43,30 +43,30 @@ const obtenerBandas = async (req, res) => {
             FROM bandas_artistas
             WHERE 1=1
         `;
-        
+
         const params = [];
-        
+
         // Filtro: solo bandas activas
         if (activas === 'true' || activas === '1') {
             sql += ' AND activa = 1';
         }
-        
+
         // Ordenamiento
         const ordenValido = ['nombre', 'genero_musical', 'creado_en', '-creado_en'];
         const ordenFinal = ordenValido.includes(ordenar_por) ? ordenar_por : 'nombre';
-        
+
         if (ordenFinal.startsWith('-')) {
             sql += ` ORDER BY ${ordenFinal.substring(1)} DESC`;
         } else {
             sql += ` ORDER BY ${ordenFinal} ASC`;
         }
-        
+
         const bandas = await conn.query(sql, params);
-        
+
         console.log(`[BANDA] ✓ Se encontraron ${bandas.length} bandas`);
-        
+
         return res.status(200).json(bandas);
-        
+
     } catch (err) {
         console.error('[BANDA] Error al obtener bandas:', err.message);
         return res.status(500).json({ error: 'Error al obtener bandas.' });
@@ -82,16 +82,16 @@ const obtenerBandas = async (req, res) => {
 const obtenerBandaPorId = async (req, res) => {
     const { id } = req.params;
     console.log(`[BANDA] GET - Obtener banda ID: ${id}`);
-    
+
     const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
         return res.status(400).json({ error: 'ID de banda inválido.' });
     }
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
         const sql = `
             SELECT
                 id,
@@ -119,14 +119,14 @@ const obtenerBandaPorId = async (req, res) => {
             FROM bandas_artistas
             WHERE id = ?
         `;
-        
+
         const [banda] = await conn.query(sql, [idNum]);
-        
+
         if (!banda) {
             console.warn(`[BANDA] Banda no encontrada: ${idNum}`);
             return res.status(404).json({ error: 'Banda no encontrada.' });
         }
-        
+
         // Obtener formación (integrantes)
         const sqlFormacion = `
             SELECT
@@ -139,15 +139,15 @@ const obtenerBandaPorId = async (req, res) => {
             WHERE id_banda = ?
             ORDER BY es_lider DESC, id ASC
         `;
-        
+
         const integrantes = await conn.query(sqlFormacion, [idNum]);
-        
+
         banda.integrantes = integrantes || [];
-        
+
         console.log(`[BANDA] ✓ Banda obtenida: ${banda.nombre}`);
-        
+
         return res.status(200).json(banda);
-        
+
     } catch (err) {
         console.error('[BANDA] Error al obtener banda:', err.message);
         return res.status(500).json({ error: 'Error al obtener banda.' });
@@ -163,7 +163,7 @@ const obtenerBandaPorId = async (req, res) => {
 const crearBanda = async (req, res) => {
     console.log('[BANDA] POST - Crear banda');
     console.log('[BANDA] Body:', JSON.stringify(req.body, null, 2));
-    
+
     const {
         nombre,
         genero_musical,
@@ -184,17 +184,17 @@ const crearBanda = async (req, res) => {
         contacto_rol,
         integrantes // Array de {nombre_integrante, instrumento, es_lider, notas}
     } = req.body;
-    
+
     // Validar campos obligatorios
     if (!nombre || nombre.trim().length === 0) {
         return res.status(400).json({ error: 'El nombre de la banda es obligatorio.' });
     }
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
         await conn.beginTransaction();
-        
+
         // 1. Insertar banda
         const sqlBanda = `
             INSERT INTO bandas_artistas (
@@ -220,7 +220,7 @@ const crearBanda = async (req, res) => {
                 creado_en
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())
         `;
-        
+
         const paramsBanda = [
             nombre.trim(),
             genero_musical || null,
@@ -240,12 +240,12 @@ const crearBanda = async (req, res) => {
             contacto_telefono || null,
             contacto_rol || null
         ];
-        
+
         const resultBanda = await conn.query(sqlBanda, paramsBanda);
-        const bandaId = resultBanda.insertId;
-        
+        const bandaId = Number(resultBanda.insertId);
+
         console.log(`[BANDA] ✓ Banda creada con ID: ${bandaId}`);
-        
+
         // 2. Insertar integrantes (si vienen)
         if (integrantes && Array.isArray(integrantes) && integrantes.length > 0) {
             const sqlIntegrante = `
@@ -257,7 +257,7 @@ const crearBanda = async (req, res) => {
                     notas
                 ) VALUES (?, ?, ?, ?, ?)
             `;
-            
+
             for (const integrante of integrantes) {
                 const paramsIntegrante = [
                     bandaId,
@@ -266,24 +266,25 @@ const crearBanda = async (req, res) => {
                     integrante.es_lider ? 1 : 0,
                     integrante.notas || null
                 ];
-                
+
                 await conn.query(sqlIntegrante, paramsIntegrante);
             }
-            
+
             console.log(`[BANDA] ✓ ${integrantes.length} integrantes agregados`);
         }
-        
+
         await conn.commit();
-        
+
         console.log(`[BANDA] ✓ Banda creada exitosamente`);
-        
+
         return res.status(201).json({
             bandaId,
+            id: bandaId, // backward-compatible alias
             nombre,
             genero_musical,
             message: 'Banda creada exitosamente.'
         });
-        
+
     } catch (err) {
         if (conn) await conn.rollback();
         console.error('[BANDA] Error al crear banda:', err.message);
@@ -301,12 +302,12 @@ const actualizarBanda = async (req, res) => {
     const { id } = req.params;
     console.log(`[BANDA] PUT - Actualizar banda ID: ${id}`);
     console.log('[BANDA] Body:', JSON.stringify(req.body, null, 2));
-    
+
     const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
         return res.status(400).json({ error: 'ID de banda inválido.' });
     }
-    
+
     const {
         nombre,
         genero_musical,
@@ -329,26 +330,26 @@ const actualizarBanda = async (req, res) => {
         activa,
         integrantes_operacion // {action: 'add'|'update'|'delete', data: {...}}
     } = req.body;
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
         await conn.beginTransaction();
-        
+
         // 1. Verificar que la banda existe
         const [bandaExistente] = await conn.query(
             'SELECT id FROM bandas_artistas WHERE id = ?',
             [idNum]
         );
-        
+
         if (!bandaExistente) {
             return res.status(404).json({ error: 'Banda no encontrada.' });
         }
-        
+
         // 2. Actualizar banda
         const actualizaciones = [];
         const params = [];
-        
+
         if (nombre !== undefined) {
             actualizaciones.push('nombre = ?');
             params.push(nombre.trim());
@@ -425,21 +426,21 @@ const actualizarBanda = async (req, res) => {
             actualizaciones.push('activa = ?');
             params.push(activa ? 1 : 0);
         }
-        
+
         if (actualizaciones.length > 0) {
             actualizaciones.push('actualizado_en = NOW()');
             params.push(idNum);
-            
+
             const sqlUpdate = `UPDATE bandas_artistas SET ${actualizaciones.join(', ')} WHERE id = ?`;
-            
+
             const result = await conn.query(sqlUpdate, params);
             console.log(`[BANDA] ✓ Banda actualizada: ${result.affectedRows} fila(s)`);
         }
-        
+
         // 3. Manejar integrantes si viene la operación
         if (integrantes_operacion) {
             const { action, data } = integrantes_operacion;
-            
+
             if (action === 'add' && data.instrumento) {
                 const sqlAdd = `
                     INSERT INTO bandas_formacion (id_banda, nombre_integrante, instrumento, es_lider, notas)
@@ -459,19 +460,19 @@ const actualizarBanda = async (req, res) => {
                 console.log(`[BANDA] ✓ Integrante eliminado`);
             }
         }
-        
+
         // 4. Manejar formación completa si viene (reemplaza toda la formación)
         if (req.body.formacion !== undefined) {
             // Primero eliminar toda la formación existente
             await conn.query('DELETE FROM bandas_formacion WHERE id_banda = ?', [idNum]);
-            
+
             // Insertar la nueva formación si hay datos
             if (Array.isArray(req.body.formacion) && req.body.formacion.length > 0) {
                 const sqlInsertFormacion = `
                     INSERT INTO bandas_formacion (id_banda, nombre_integrante, instrumento, es_lider, notas)
                     VALUES (?, ?, ?, ?, ?)
                 `;
-                
+
                 for (const integrante of req.body.formacion) {
                     await conn.query(sqlInsertFormacion, [
                         idNum,
@@ -481,22 +482,22 @@ const actualizarBanda = async (req, res) => {
                         integrante.notas || null
                     ]);
                 }
-                
+
                 console.log(`[BANDA] ✓ Formación actualizada: ${req.body.formacion.length} integrante(s)`);
             } else {
                 console.log(`[BANDA] ✓ Formación eliminada (array vacío)`);
             }
         }
-        
+
         await conn.commit();
-        
+
         console.log(`[BANDA] ✓ Banda ID ${idNum} actualizada exitosamente`);
-        
+
         return res.status(200).json({
             bandaId: idNum,
             message: 'Banda actualizada exitosamente.'
         });
-        
+
     } catch (err) {
         if (conn) await conn.rollback();
         console.error('[BANDA] Error al actualizar banda:', err.message);
@@ -513,39 +514,39 @@ const actualizarBanda = async (req, res) => {
 const eliminarBanda = async (req, res) => {
     const { id } = req.params;
     const { soft_delete } = req.query; // soft_delete=true (por defecto) o soft_delete=false (hard delete)
-    
+
     console.log(`[BANDA] DELETE - Eliminar banda ID: ${id}, soft_delete=${soft_delete !== 'false'}`);
-    
+
     const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
         return res.status(400).json({ error: 'ID de banda inválido.' });
     }
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
         await conn.beginTransaction();
-        
+
         // Verificar que la banda existe
         const [bandaExistente] = await conn.query(
             'SELECT id, nombre FROM bandas_artistas WHERE id = ?',
             [idNum]
         );
-        
+
         if (!bandaExistente) {
             return res.status(404).json({ error: 'Banda no encontrada.' });
         }
-        
+
         // Verificar si hay solicitudes vinculadas
         const [solicitudesVinculadas] = await conn.query(
             'SELECT COUNT(*) as total FROM solicitudes_fechas_bandas WHERE id_banda = ?',
             [idNum]
         );
-        
+
         if (solicitudesVinculadas.total > 0) {
             console.warn(`[BANDA] Banda ${idNum} tiene ${solicitudesVinculadas.total} solicitudes vinculadas. Solo se permitirá soft delete.`);
         }
-        
+
         if (soft_delete !== 'false') {
             // Soft delete: marcar como inactiva
             const sqlSoftDel = 'UPDATE bandas_artistas SET activa = 0, actualizado_en = NOW() WHERE id = ?';
@@ -556,7 +557,7 @@ const eliminarBanda = async (req, res) => {
             if (solicitudesVinculadas.total > 0) {
                 throw new Error(`No se puede eliminar: la banda tiene ${solicitudesVinculadas.total} solicitudes vinculadas.`);
             }
-            
+
             // Eliminar formación
             await conn.query('DELETE FROM bandas_formacion WHERE id_banda = ?', [idNum]);
             // Eliminar banda
@@ -564,17 +565,17 @@ const eliminarBanda = async (req, res) => {
             await conn.query(sqlHardDel, [idNum]);
             console.log(`[BANDA] ✓ Banda eliminada permanentemente`);
         }
-        
+
         await conn.commit();
-        
+
         console.log(`[BANDA] ✓ Banda ID ${idNum} eliminada exitosamente`);
-        
+
         return res.status(200).json({
             bandaId: idNum,
             method: soft_delete !== 'false' ? 'soft_delete' : 'hard_delete',
             message: 'Banda eliminada exitosamente.'
         });
-        
+
     } catch (err) {
         if (conn) await conn.rollback();
         console.error('[BANDA] Error al eliminar banda:', err.message);
@@ -590,11 +591,11 @@ const eliminarBanda = async (req, res) => {
  */
 const obtenerInstrumentos = async (req, res) => {
     console.log('[BANDA] GET - Obtener instrumentos');
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
         const instrumentos = await conn.query(
             `SELECT 
                 id,
@@ -604,7 +605,7 @@ const obtenerInstrumentos = async (req, res) => {
             FROM catalogo_instrumentos
             ORDER BY categoria ASC, nombre ASC`
         );
-        
+
         res.json(instrumentos);
     } catch (err) {
         console.error('[BANDA] Error al obtener instrumentos:', err.message);
@@ -621,15 +622,15 @@ const obtenerInstrumentos = async (req, res) => {
 const buscarBandas = async (req, res) => {
     const { q } = req.query;
     console.log('[BANDA] GET - Buscar bandas:', q);
-    
+
     if (!q || q.trim().length < 2) {
         return res.status(400).json({ error: 'Query debe tener al menos 2 caracteres' });
     }
-    
+
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
         const bandas = await conn.query(
             `SELECT 
                 id,
@@ -647,7 +648,7 @@ const buscarBandas = async (req, res) => {
             LIMIT 10`,
             [`%${q}%`, `%${q}%`]
         );
-        
+
         res.json(bandas);
     } catch (err) {
         console.error('[BANDA] Error al buscar bandas:', err.message);

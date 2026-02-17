@@ -410,6 +410,33 @@ DROP TABLE IF EXISTS bandas_invitadas;
 
 -- (Legacy table definition intentionally removed to avoid confusion with `bandas_artistas`)
 
+-- Nueva tabla normalizada para fechas/shows de bandas (reemplaza la legacy `solicitudes_bandas`)
+CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
+    id_solicitud INT PRIMARY KEY COMMENT 'FK a solicitudes.id',
+    id_banda INT DEFAULT NULL COMMENT 'FK a bandas_artistas.id (la banda solicitante)',
+    fecha_evento DATE DEFAULT NULL,
+    hora_evento VARCHAR(20) DEFAULT NULL,
+    duracion VARCHAR(100) DEFAULT NULL,
+    descripcion TEXT COMMENT 'Descripción del show/evento',
+    precio_basico DECIMAL(10,2) DEFAULT NULL,
+    precio_final DECIMAL(10,2) DEFAULT NULL,
+    precio_puerta_propuesto DECIMAL(10,2) DEFAULT NULL,
+    cantidad_bandas INT DEFAULT 1,
+    expectativa_publico VARCHAR(100) DEFAULT NULL,
+    invitadas_json TEXT COMMENT 'JSON: [{nombre, id_banda?, confirmada}]',
+    estado VARCHAR(50) DEFAULT 'Solicitado',
+    fecha_alternativa DATE DEFAULT NULL,
+    notas_admin TEXT,
+    id_evento_generado INT DEFAULT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_fecha (fecha_evento),
+    INDEX idx_estado (estado),
+    INDEX idx_banda (id_banda),
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Solicitudes de fechas/shows para bandas (3NF)';
+
 -- Personal asignado a eventos de bandas
 CREATE TABLE IF NOT EXISTS eventos_personal (
     id INT AUTO_INCREMENT PRIMARY KEY,

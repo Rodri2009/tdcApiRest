@@ -538,13 +538,22 @@
                     .sort((a, b) => a._fechaObj - b._fechaObj);
 
                 // DEV helper: inyectar un flyer de demo si se quiere forzar la vista.
-                // Usa ?demo_flyer=1 en la URL para activar. No afecta los datos reales del servidor.
+                // Usa ?demo_flyer=1 en la URL para activar. Solo funciona en entornos locales (localhost).
                 try {
                     const params = new URLSearchParams(window.location.search);
-                    if (params.get('demo_flyer') === '1' && proximosItems.length > 0) {
-                        if (!proximosItems.some(it => it.flyer_url)) {
+
+                    // Limitar el helper **solo** a hosts locales para evitar exposición en prod.
+                    const isLocalDevHost = () => {
+                        const h = window.location.hostname;
+                        return h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '0.0.0.0';
+                    };
+
+                    if (params.get('demo_flyer') === '1') {
+                        if (!isLocalDevHost()) {
+                            console.warn('demo_flyer ignorado — solo permitido en localhost');
+                        } else if (proximosItems.length > 0 && !proximosItems.some(it => it.flyer_url)) {
                             proximosItems[0].flyer_url = '/img/hero1.jpg';
-                            console.debug('DEV: injected demo flyer into first agenda item');
+                            console.debug('DEV: injected demo flyer into first agenda item (localhost only)');
                         }
                     }
                 } catch (e) { /* noop */ }

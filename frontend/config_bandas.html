@@ -947,7 +947,25 @@
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });
                 if (res.ok) {
-                    eventos = await res.json();
+                    // Normalizar la respuesta para que la UI use campos consistentes (id, nombre_banda, hora_inicio, precio_anticipada...)
+                    const raw = await res.json();
+                    eventos = (raw || []).map(it => ({
+                        // backend lista devuelve `id_solicitud`, `id_banda`, `fecha_evento`, `hora_evento`, `precio_basico`, `banda_nombre`, ...
+                        id: it.id_solicitud || it.id || null,
+                        id_banda: it.id_banda || null,
+                        fecha: it.fecha_evento || it.fecha || null,
+                        hora_inicio: it.hora_evento || it.hora_inicio || null,
+                        nombre_banda: it.banda_nombre || it.nombre_banda || it.nombre_evento || '',
+                        genero_musical: it.genero_musical || null,
+                        invitadas: it.invitadas || (it.invitadas_json ? (typeof it.invitadas_json === 'string' ? JSON.parse(it.invitadas_json || '[]') : it.invitadas_json) : []),
+                        estado: it.estado || 'Solicitado',
+                        es_publico: typeof it.es_publico !== 'undefined' ? it.es_publico : 1,
+                        precio_anticipada: it.precio_basico || it.precio_base || null,
+                        precio_puerta: it.precio_puerta_propuesto || it.precio_puerta || null,
+                        aforo_maximo: it.expectativa_publico || null,
+                        descripcion: it.descripcion || null
+                    }));
+
                     renderEventos();
                     updateEventosCount();
                 } else {
@@ -1161,20 +1179,24 @@
                 return;
             }
 
-            // Preparar datos para nuevo endpoint
-            const body = {
-                fecha_evento: fecha,
-                nombre_evento: banda,
+            // Preparar datos y mapear a la API de `solicitudes_fechas_bandas` (backend espera claves como fecha_evento, hora_evento, precio_basico, etc.)
+            const invitadasRaw = (document.getElementById('evento-invitadas').value || '').split(',').map(s => s.trim()).filter(Boolean);
+            const payload = {
+                // Si el administrador no selecciona un id_banda, enviamos nombre_banda para que el backend cree/la vincule
+                nombre_banda: banda,
                 genero_musical: document.getElementById('evento-genero').value || null,
                 descripcion: document.getElementById('evento-descripcion').value || null,
-                hora_inicio: document.getElementById('evento-hora').value || null,
-                aforo_maximo: parseInt(document.getElementById('evento-aforo').value) || null,
+                fecha_evento: fecha,
+                hora_evento: document.getElementById('evento-hora').value || null,
+                duracion: null,
+                precio_basico: parseFloat(document.getElementById('evento-precio-anticipada').value) || null,
+                precio_puerta_propuesto: parseFloat(document.getElementById('evento-precio-puerta').value) || null,
+                expectativa_publico: document.getElementById('evento-aforo').value ? String(document.getElementById('evento-aforo').value) : null,
                 es_publico: document.getElementById('evento-publico').value === '1' ? 1 : 0,
-                precio_base: parseFloat(document.getElementById('evento-precio-anticipada').value) || null,
-                precio_puerta: parseFloat(document.getElementById('evento-precio-puerta').value) || null,
                 contacto_nombre: document.getElementById('evento-contacto-nombre').value || null,
                 contacto_email: document.getElementById('evento-contacto-email').value || null,
-                contacto_telefono: document.getElementById('evento-contacto-whatsapp').value || null
+                contacto_telefono: document.getElementById('evento-contacto-whatsapp').value || null,
+                invitadas_json: invitadasRaw.length ? invitadasRaw.map(n => ({ nombre: n })) : null
             };
 
             try {
@@ -1187,13 +1209,13 @@
                         'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(body)
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
 
                 if (res.ok) {
-                    showBanner(data.message || 'Evento guardado correctamente', 'success');
+                    showBanner(data.message || 'Solicitud/evento guardado correctamente', 'success');
                     closeModal('modal-evento');
                     loadEventos();
                 } else {

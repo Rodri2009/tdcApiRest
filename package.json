@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "contexto": "node ./scripts/generar-contexto.js",
     "crear-admin": "node ./scripts/crear-admin.js",
-    "test:e2e": "playwright test --reporter=list"
+    "test:e2e": "playwright test --reporter=list",
+    "test:integration-bandas": "node ./scripts/integration_test_bandas.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

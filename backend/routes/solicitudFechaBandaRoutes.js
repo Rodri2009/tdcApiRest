@@ -15,7 +15,8 @@ router.post('/', solicitudFechaBandaController.crearSolicitudFechaBanda);
 // GET /api/solicitudes-fechas-bandas/:id - Obtener solicitud específica
 router.get('/:id', solicitudFechaBandaController.obtenerSolicitudFechaBanda);
 
-// PUT /api/solicitudes-fechas-bandas/:id - Actualizar solicitud
+// PUT /api/solicitudes-fechas-bandas/:id - Actualizar solicitud (protegido)
+// Restaurada protección: requiere token (middleware `protect`).
 router.put('/:id', protect, solicitudFechaBandaController.actualizarSolicitudFechaBanda);
 
 // PUT /api/solicitudes-fechas-bandas/:id/confirmar - Confirmar solicitud y crear evento
