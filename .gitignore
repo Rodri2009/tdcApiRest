@@ -20,3 +20,5 @@ Thumbs.db
 
 contexto_negocio.mduploads/
 backend/uploads/
+uploads/
+gemini-env/
