@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Comprar Entrada - Checkout</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-stone-900 text-stone-100">
+    <main class="max-w-3xl mx-auto p-6">
+        <a href="index.html" class="inline-block mb-4 text-sm text-fuchsia-400">← Volver</a>
+        <div id="content" class="p-6 bg-stone-800 rounded-xl shadow-lg">
+            <h1 id="event-name" class="text-2xl font-bold text-white mb-2">Cargando evento...</h1>
+            <p id="event-desc" class="text-sm text-stone-300 mb-4"></p>
+
+            <div class="mb-4">
+                <p class="text-sm text-stone-400">Precios disponibles:</p>
+                <p id="prices" class="text-lg font-bold text-neon"></p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm text-stone-300 mb-1">Tipo de venta</label>
+                <div class="space-x-3">
+                    <label><input type="radio" name="tipoVenta" value="ANTICIPADA" checked> Anticipada</label>
+                    <label><input type="radio" name="tipoVenta" value="PUERTA"> En puerta</label>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm text-stone-300 mb-1">Tu nombre</label>
+                <input id="nombre" class="w-full px-3 py-2 rounded bg-stone-700 text-white" />
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm text-stone-300 mb-1">Tu email</label>
+                <input id="email" type="email" class="w-full px-3 py-2 rounded bg-stone-700 text-white" />
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm text-stone-300 mb-1">Cupón (opcional)</label>
+                <input id="coupon" class="w-full px-3 py-2 rounded bg-stone-700 text-white"
+                    placeholder="Código de cupón" />
+            </div>
+
+            <div class="flex items-center space-x-3 mb-4">
+                <button id="btn-simulate" class="px-4 py-2 bg-fuchsia-500 text-gray-900 rounded">Simular precio</button>
+                <button id="btn-buy" class="px-4 py-2 bg-emerald-500 text-gray-900 rounded">Comprar / Reservar</button>
+            </div>
+
+            <div id="result" class="mt-4 p-3 bg-stone-700 rounded text-sm hidden"></div>
+        </div>
+    </main>
+
+    <script>
+        // Determina API_BASE_URL (misma lógica que el resto del frontend)
+        const currentHost = window.location.host;
+        let API_BASE_URL = '';
+        if (currentHost.includes('localhost')) {
+            API_BASE_URL = 'http://localhost';
+        } else if (currentHost.includes('192.168.1.10')) {
+            API_BASE_URL = 'http://192.168.1.10';
+        } else {
+            API_BASE_URL = window.location.protocol + '//' + currentHost;
+        }
+        const API_URL = API_BASE_URL + '/api/solicitudes/publicas';
+
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get('event_id');
+
+        const elName = document.getElementById('event-name');
+        const elDesc = document.getElementById('event-desc');
+        const elPrices = document.getElementById('prices');
+        const elResult = document.getElementById('result');
+
+        let currentEvent = null;
+
+        async function loadEvent() {
+            try {
+                const res = await fetch(API_URL);
+                if (!res.ok) throw new Error('No se pudo cargar la API');
+                const data = await res.json();
+                currentEvent = data.find(e => String(e.id) === String(eventId));
+                if (!currentEvent) {
+                    elName.textContent = 'Evento no encontrado';
+                    elDesc.textContent = '';
+                    return;
+                }
+                elName.textContent = currentEvent.nombreCompleto;
+                elDesc.textContent = currentEvent.descripcion || '';
+
+                console.log('Datos del evento recibido:', currentEvent);
+                console.log('FechaEvento:', currentEvent.fechaEvento);
+                console.log('HoraEvento:', currentEvent.horaEvento);
+
+                // Validar y formatear fecha y hora del evento
+                if (currentEvent.fechaEvento) {
+                    const fechaEvento = new Date(currentEvent.fechaEvento);
+                    console.log('Fecha construida:', fechaEvento);
+                    if (!isNaN(fechaEvento.getTime())) {
+                        const fechaFormateada = fechaEvento.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                        const horaFormateada = fechaEvento.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                        elDesc.innerHTML += `<br><strong>Fecha:</strong> ${fechaFormateada} <br><strong>Hora:</strong> ${horaFormateada}`;
+                    } else {
+                        console.error('Fecha inválida:', fechaEvento);
+                        elDesc.innerHTML += `<br><strong>Fecha:</strong> No disponible <br><strong>Hora:</strong> No disponible`;
+                    }
+                } else {
+                    console.warn('Fecha no disponible en los datos del evento');
+                    elDesc.innerHTML += `<br><strong>Fecha:</strong> No disponible <br><strong>Hora:</strong> No disponible`;
+                }
+
+                renderPrices();
+            } catch (err) {
+                elName.textContent = 'Error cargando evento';
+                elDesc.textContent = err.message;
+            }
+        }
+
+        function renderPrices() {
+            const anticipada = currentEvent.precio_anticipada !== null && currentEvent.precio_anticipada !== undefined ? parseFloat(currentEvent.precio_anticipada) : null;
+            const puerta = currentEvent.precio_puerta !== null && currentEvent.precio_puerta !== undefined ? parseFloat(currentEvent.precio_puerta) : null;
+            const base = currentEvent.precio_base !== null && currentEvent.precio_base !== undefined ? parseFloat(currentEvent.precio_base) : null;
+            const general = currentEvent.precio !== null && currentEvent.precio !== undefined ? parseFloat(currentEvent.precio) : null;
+
+            if (anticipada !== null) {
+                elPrices.textContent = `Anticipada: $ ${anticipada.toLocaleString('es-AR')} ARS`;
+            } else if (base !== null) {
+                elPrices.textContent = `Precio: $ ${base.toLocaleString('es-AR')} ARS`;
+            } else if (general !== null) {
+                elPrices.textContent = `Precio: $ ${general.toLocaleString('es-AR')} ARS`;
+            } else {
+                elPrices.textContent = 'Precio no disponible';
+            }
+
+            if (puerta !== null) {
+                elPrices.textContent += ` • Puerta: $ ${puerta.toLocaleString('es-AR')} ARS`;
+            }
+        }
+
+        function getTipoVenta() {
+            const r = document.querySelector('input[name="tipoVenta"]:checked');
+            return r ? r.value : 'ANTICIPADA';
+        }
+
+        async function simulate() {
+            if (!currentEvent) return;
+            const tipo_venta = getTipoVenta();
+            const codigo_cupon = document.getElementById('coupon').value.trim() || null;
+
+            elResult.classList.add('hidden');
+            elResult.innerHTML = '';
+
+            try {
+                const res = await fetch(API_BASE_URL + '/api/tickets/checkout/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ evento_id: currentEvent.id, codigo_cupon, tipo_venta })
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || json.message || 'Error en simulación');
+
+                elResult.classList.remove('hidden');
+                elResult.innerHTML = `
+            <strong>Precio base:</strong> $ ${parseFloat(json.precio_base).toLocaleString('es-AR')}<br>
+            <strong>Descuento aplicado:</strong> $ ${parseFloat(json.descuento).toLocaleString('es-AR')}<br>
+            <strong>Precio final:</strong> $ ${parseFloat(json.precio_final).toLocaleString('es-AR')} ${json.es_gratis ? '(GRATIS)' : ''}
+        `;
+                return json;
+            } catch (err) {
+                elResult.classList.remove('hidden');
+                elResult.innerHTML = `<span class="text-red-300">${err.message}</span>`;
+                throw err;
+            }
+        }
+
+        async function initCheckout() {
+            try {
+                const sim = await simulate(); // aseguramos precio
+                const nombre = document.getElementById('nombre').value.trim();
+                const email = document.getElementById('email').value.trim();
+                if (!nombre || !email) {
+                    elResult.classList.remove('hidden');
+                    elResult.innerHTML = '<span class="text-yellow-300">Completa nombre y email.</span>';
+                    return;
+                }
+
+                const tipo_venta = getTipoVenta();
+                const codigo_cupon = document.getElementById('coupon').value.trim() || null;
+
+                const res = await fetch(API_BASE_URL + '/api/tickets/checkout/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ evento_id: currentEvent.id, email, nombre_comprador: nombre, codigo_cupon, precio_final: sim.precio_final, tipo_venta })
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || json.message || 'Error en init');
+
+                // Mostrar feedback simple
+                elResult.classList.remove('hidden');
+                elResult.innerHTML = `<span class="text-green-300">Operación exitosa: ${json.message || json.status}. Ticket ID: ${json.ticket_id || json.ticketId || ''}</span>`;
+
+                // Si hay preferencia de pago, redirigir al proceso de pago (simulado)
+                if (json.preference_id) {
+                    // Simulación: en producción redirigir a MercadoPago
+                }
+
+            } catch (err) {
+            }
+        }
+
+        document.getElementById('btn-simulate').addEventListener('click', (e) => { e.preventDefault(); simulate(); });
+        document.getElementById('btn-buy').addEventListener('click', (e) => { e.preventDefault(); initCheckout(); });
+
+        loadEvent();
+    </script>
+</body>
+
+</html>

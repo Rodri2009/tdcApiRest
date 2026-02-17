@@ -1,0 +1,398 @@
+/* Shared styles for all request forms (solicitud_*) */
+:root {
+    --color-primary: #581c87;
+    --color-secondary: #f0abfc;
+    --color-card: #1e293b;
+    --color-dark: #0c0a09;
+    --color-text: #d6d3d1;
+    --muted: #9ca3af;
+}
+
+/* Top navigation common */
+#top-nav {
+    background-color: var(--color-card);
+    border-bottom: 2px solid var(--color-primary);
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+#top-nav .logo {
+    font-size: 1.5rem;
+    font-weight: bold
+}
+
+#top-nav .nav-links {
+    display: flex;
+    gap: 20px
+}
+
+#top-nav .nav-item {
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 5px 10px
+}
+
+#top-nav .nav-item:hover {
+    color: var(--color-secondary)
+}
+
+#top-nav .active-nav {
+    color: var(--color-secondary);
+    border-bottom: 2px solid var(--color-secondary)
+}
+
+/* Containers and sections */
+.container {
+    max-width: 98%;
+    margin: 20px auto;
+    background-color: var(--color-card);
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    border: 1px solid #44403c
+}
+
+.form-section {
+    background-color: var(--color-card);
+    border: 1px solid #581c87;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 0;
+    color: var(--color-text);
+    font-size: 0.95rem
+}
+
+.section-title {
+    color: var(--color-secondary);
+    margin-bottom: 10px;
+    font-weight: 700
+}
+
+.card {
+    background-color: var(--color-card);
+    border: 1px solid #581c87;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 0;
+    color: var(--color-text)
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 0;
+    font-weight: 600
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: var(--color-secondary);
+    border: 2px solid var(--color-secondary)
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: #fff;
+    border-radius: 8px
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--color-secondary);
+    color: var(--color-secondary)
+}
+
+.btn-ghost {
+    background: none;
+    border: none;
+    color: var(--color-secondary)
+}
+
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 30px
+}
+
+@media(min-width:768px) {
+    .button-group {
+        flex-direction: row;
+        justify-content: space-between
+    }
+}
+
+/* Form helpers */
+.label-inline {
+    min-width: 100px;
+    margin: 0;
+    display: inline-block
+}
+
+.search-input {
+    flex: 1;
+    padding: 12px 8px;
+    border: 1.5px solid var(--color-primary);
+    border-radius: 4px;
+    background: #0f172a;
+    color: var(--color-text)
+}
+
+.form-input,
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #581c87;
+    background: #0f172a;
+    color: var(--color-text);
+    border-radius: 4px;
+    box-sizing: border-box
+}
+
+.flex-row {
+    display: flex;
+    gap: 8px;
+    align-items: center
+}
+
+.helper-text {
+    color: var(--muted)
+}
+
+/* Band list */
+.band-list {
+    max-height: 300px;
+    overflow-y: auto
+}
+
+.banda-item {
+    background-color: #0f172a;
+    border: 1px solid #581c87;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all .2s
+}
+
+.banda-item:hover {
+    background-color: #1a1f3a;
+    border-color: var(--color-secondary)
+}
+
+.banda-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+    margin-right: 10px;
+    flex-shrink: 0
+}
+
+.banda-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    background-color: #1a1f3a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    flex-shrink: 0
+}
+
+.order-number {
+    background-color: var(--color-primary);
+    color: var(--color-secondary);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px
+}
+
+/* Card row and spacing utilities */
+.card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px
+}
+
+.p-20 {
+    padding: 20px
+}
+
+.banda-item-orden {
+    background-color: #0f172a;
+    border: 1px solid #581c87;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: move;
+    user-select: none
+}
+
+.banda-placeholder i {
+    color: var(--color-secondary)
+}
+
+/* Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center
+}
+
+.modal {
+    background: var(--color-card);
+    border: 1px solid #581c87;
+    border-radius: 8px;
+    padding: 25px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5)
+}
+
+.modal .modal-close {
+    background: none;
+    border: none;
+    color: var(--color-secondary);
+    font-size: 1.5rem;
+    cursor: pointer
+}
+
+/* Responsive tweaks */
+@media(max-width:767px) {
+    .container {
+        padding: 15px
+    }
+
+    .banda-item .banda-item-text {
+        font-size: 0.95rem
+    }
+
+    .btn {
+        padding: 10px
+    }
+}
+
+/* Agenda card & flyer placeholder */
+.agenda-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px
+}
+
+.agenda-card .agenda-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px
+}
+
+.agenda-flyer {
+    width: 120px;
+    height: 80px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center
+}
+
+.agenda-flyer img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover
+}
+
+/* Flyer thumbnail used across admin and edit forms */
+.flyer-thumb {
+    width: 90px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Utilities */
+.ml-8 {
+    margin-left: 8px
+}
+
+.hidden {
+    display: none
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: #fff;
+    border: 0;
+    padding: 8px 10px;
+    border-radius: 6px
+}
+
+.text-danger {
+    color: #ef4444
+}
+
+/* Small utilities */
+.flex-1 {
+    flex: 1
+}
+
+.flex-wrap {
+    flex-wrap: wrap
+}
+
+.min-h-80 {
+    min-height: 80px
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px
+}
+
+.mt-20 {
+    margin-top: 20px
+}
+
+.text-center {
+    text-align: center
+}
+
+.muted {
+    color: var(--muted)
+}

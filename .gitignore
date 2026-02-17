@@ -1,0 +1,24 @@
+# Dependencias de Node.js
+node_modules/
+backend/node_modules/
+
+# Archivos de entorno (¡MUY IMPORTANTE!)
+.env
+backend/.env
+SENSIBLE.md
+
+# Backups y archivos de migración (no subirlos al repositorio)
+_backups/
+
+# Logs y archivos temporales
+*.log
+npm-debug.log*
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+contexto_negocio.mduploads/
+backend/uploads/
+uploads/
+gemini-env/

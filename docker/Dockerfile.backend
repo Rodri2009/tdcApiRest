@@ -1,0 +1,26 @@
+# Versión final para desarrollo
+
+FROM node:18-alpine
+
+# Establece el directorio de trabajo
+WORKDIR /app
+
+# Copia solo los archivos de dependencias para poder ejecutar npm install
+# Estos archivos serán montados desde el host, pero los copiamos para construir la imagen.
+COPY ../backend/package*.json ./
+
+# Instala las dependencias. Esto creará /app/node_modules dentro de la imagen.
+RUN npm install
+
+# Copiamos el resto de la aplicación (para que la imagen tenga un snapshot mínimo de la app)
+COPY ../backend /app
+
+# Copiamos el entrypoint que instalará dependencias si faltan en el contenedor en runtime
+COPY ../scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Expone el puerto
+EXPOSE 3000
+
+# Usamos el entrypoint para garantizar que las dependencias estén instaladas dentro del contenedor
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

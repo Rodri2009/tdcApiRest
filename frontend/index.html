@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Templo de Claypole - Espacio Cultural y Salón de Eventos Únicos</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles/request-forms.css">
+    <style>
+        /* Configuración de fuentes y colores personalizados para el tema */
+        :root {
+            --color-primary: #581c87;
+            /* Morado Oscuro/Templo */
+            --color-secondary: #f0abfc;
+            /* Rosa Fluorescente/Neón */
+            --color-rustic: #44403c;
+            /* Gris Piedra/Madera */
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        .border-neon {
+            border-color: var(--color-secondary);
+        }
+
+        /* Estilo para simular el brillo de los murales */
+        .neon-glow-card {
+            box-shadow: 0 0 15px rgba(240, 171, 252, 0.5);
+            /* Sombra suave neón */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .neon-glow-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 25px rgba(240, 171, 252, 0.8);
+        }
+
+        /* Fondo con textura sutil de madera/rustico */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09;
+            /* Negro muy oscuro */
+            color: #d6d3d1;
+            /* Gris claro */
+        }
+
+        /* Estilo para el fondo de la sección Hero con la imagen del frente */
+        .hero-background {
+            /* Use absolute path to avoid relative resolution issues when served from subpaths */
+            background-image: url('/img/hero.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* Asegurar que los botones en el Hero estén centrados vertical y horizontalmente en escritorio */
+        @media (min-width: 768px) {
+            #inicio .mt-10 a {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 64px;
+                padding: 0 1.5rem;
+                white-space: normal;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Título --><a href="#inicio" class="flex items-center space-x-3">
+                    <!-- RUTA ACTUALIZADA según tu confirmación -->
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">El Templo de
+                        Claypole</span>
+                </a>
+
+                <!-- Menú Desktop -->
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <a href="seccion_bandas.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
+                        Vivo</a>
+                    <a href="seccion_servicios.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
+                    <a href="seccion_alquiler.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
+                        Salón</a>
+                    <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+
+                <!-- Botón de Menú Móvil --><button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <!-- Menú Móvil Desplegable -->
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <a href="seccion_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
+                    en Vivo</a>
+                <a href="seccion_servicios.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
+                <a href="seccion_alquiler.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
+                    del Salón</a>
+                <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Sección 1: Hero / Introducción con imagen de fondo -->
+        <section id="inicio"
+            class="relative overflow-hidden min-h-screen pt-16 pb-24 md:pt-32 md:pb-40 text-center hero-background">
+            <!-- Capa de superposición para mejorar la legibilidad del texto -->
+            <div class="absolute inset-0 bg-black opacity-60"></div>
+            <!-- Elemento visual para representar la fluorescencia (mantenido) -->
+            <div class="absolute inset-0 flex justify-center items-center">
+                <div
+                    class="w-96 h-96 bg-fuchsia-900 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse">
+                </div>
+            </div>
+            <div class="relative z-10 max-w-4xl mx-auto px-4">
+                <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white mb-4">
+                    <span class="block text-neon">El Templo de Claypole</span>
+                </h1>
+                <div
+                    class="max-w-4xl mx-auto mt-20 mb-20 text-center text-xl sm:text-2xl md:text-3xl font-light text-purple-300">
+                    Descubre este nuevo punto de encuentro.<br><br>
+
+                    Un espacio único donde la música, el movimiento y la buena onda se juntan. En nuestro salón suenan
+                    bandas en vivo y en el patio, la juntada sigue entre sillones y parrilla.<br><br>
+
+                    Tu lugar para tocar, bailar, celebrar y conectar.
+                </div>
+                <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                    <a href="solicitud_alquiler.html"
+                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        Alquilar el Salón
+                    </a>
+                    <a href="seccion_bandas.html"
+                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        Ver Bandas en Vivo
+                    </a>
+                    <a href="solicitud_banda.html"
+                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        Tocar en El templo
+                    </a>
+                    <a href="solicitud_taller_actividad.html"
+                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        Dar un taller
+                    </a>
+                    <a href="solicitud_taller.html"
+                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        Dar clases
+                    </a>
+                    <a href="seccion_servicios.html"
+                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        Depilación Definitiva
+                    </a>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Sección 3: Agenda - Próximos eventos públicos -->
+        <section id="agenda" class="py-20 bg-stone-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
+                        Agenda Cultural
+                    </h2>
+                    <p class="mt-4 text-lg text-stone-400">Próximos eventos, talleres, bandas y servicios</p>
+                </div>
+
+                <!-- Lista de Eventos -->
+                <div id="agenda-list" class="space-y-4 max-w-3xl mx-auto">
+                    <p class="text-center text-lg text-stone-500">Cargando agenda...</p>
+                </div>
+                <div class="text-center mt-8">
+                    <a href="seccion_agenda.html"
+                        class="bg-fuchsia-500 text-gray-900 font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                        Ver Agenda Completa
+                    </a>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- Sección 2: Fotos -->
+        <!-- Se añade un enlace a Talleres en esta sección de características -->
+        <section id="fotos" class="py-20 bg-stone-950">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
+                        Galería de fotos
+                    </h2>
+                    <p class="mt-4 text-xl text-stone-400">
+                        Navega y descubre los detalles que hacen de El Templo el lugar ideal para tu próxima fecha o
+                        evento.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+                    <!-- Nueva Tarjeta: Talleres y Actividades -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card col-span-1">
+                        <a href="seccion_talleres.html">
+                            <span class="text-4xl block mb-4 text-center cursor-pointer">🎨</span>
+                            <h3 class="text-xl font-bold text-white mb-2 text-center">Talleres y Actividades</h3>
+                            <p class="text-stone-300 text-sm text-center">
+                                Consulta nuestro espacio cultural y las actividades que volverán en 2026.
+                            </p>
+                        </a>
+                    </div>
+
+                    <!-- Característica 1: Exterior Rústico y Deck -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                        <a href="seccion_salon.html">
+                            <span class="text-4xl block mb-4 text-center">🏛</span>
+                            <h3 class="text-xl font-bold text-white mb-2 text-center">El Salón</h3>
+                            <p class="text-stone-300 text-sm text-center">
+                                Salón de 8 por 15 con escenario, cocina y cabina de sonido, aire acondicionado,
+                                ventiladores y luces de colores.
+                            </p>
+                        </a>
+                    </div>
+
+                    <!-- Característica 2: Escenario y PA Profesional -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                        <span class="text-4xl block mb-4 text-center">🎤</span>
+                        <h3 class="text-xl font-bold text-white mb-2 text-center">Sonido e Iluminación Pro</h3>
+                        <p class="text-stone-300 text-sm text-center">
+                            PA profesional para música en vivo, escenario principal y cabina de sonido dedicada. ¡Listo
+                            para bandas!
+                        </p>
+                    </div>
+
+                    <!-- Característica 3: Murales Flúor y Decoración -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                        <span class="text-4xl block mb-4 text-center">👽</span>
+                        <h3 class="text-xl font-bold text-white mb-2 text-center">El Efecto Flúor</h3>
+                        <p class="text-stone-300 text-sm text-center">
+                            Murales psicodélicos de hongos, acuáticos y extraterrestres que cobran vida bajo las luces
+                            UV.
+                        </p>
+                    </div>
+
+                    <!-- Característica 4: Comodidades y Versatilidad -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                        <span class="text-4xl block mb-4 text-center">🚻</span>
+                        <h3 class="text-xl font-bold text-white mb-2 text-center">Equipamiento</h3>
+                        <p class="text-stone-300 text-sm text-center">
+                            Barra, cocina/buffet, amplio salón, enredaderas internas y baños sin género.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- Sección 4: Alquiler de Salón -->
+        <section id="alquiler" class="py-20 bg-rustic">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
+                        Tu Evento en un Lugar Inolvidable
+                    </h2>
+                    <p class="mt-4 text-xl text-stone-200">
+                        Alquilá El Templo para lo que necesites: ¡somos el espacio más versátil de Claypole!
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div
+                        class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
+                        <span class="text-5xl block mb-4">🥳</span>
+                        <h3 class="text-2xl font-bold text-white mb-2">Eventos Infantiles</h3>
+                        <p class="text-stone-300">La cancha de fútbol, la parrilla y el salón amplio lo hacen la opción
+                            más fácil y divertida.</p>
+                    </div>
+                    <div
+                        class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
+                        <span class="text-5xl block mb-4">🥂</span>
+                        <h3 class="text-2xl font-bold text-white mb-2">Celebraciones Adultas</h3>
+                        <p class="text-stone-300">La estética, el PA y la barra atraen a quienes buscan un ambiente
+                            original y vibrante.</p>
+                    </div>
+                    <div
+                        class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
+                        <span class="text-5xl block mb-4">💼</span>
+                        <h3 class="text-2xl font-bold text-white mb-2">Todo Tipo de Eventos</h3>
+                        <p class="text-stone-300">Reuniones, talleres, ferias, rodajes... el límite lo ponés vos con la
+                            versatilidad de nuestro salón.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección 5: Reserva (Call to Action) -->
+        <section id="reservas" class="py-20 bg-stone-950">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-4xl font-extrabold text-white">
+                    <span class="text-neon block">¿Listo para Celebrar o Tocar?</span>
+                </h2>
+                <p class="mt-4 text-xl text-stone-400">
+                    Reserva tu fecha para eventos privados o consulta la agenda cultural.
+                </p>
+                <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="solicitud_alquiler.html"
+                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-glass-cheers mr-2"></i> Alquilar el Salón
+                    </a>
+                    <a href="solicitu_taller_actividad.html"
+                        class="inline-flex items-center justify-center bg-stone-800/60 border-2 border-neon text-neon font-bold py-4 px-8 rounded-xl text-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-chalkboard-teacher mr-2"></i> Dar un Taller
+                    </a>
+                    <a href="solicitud_servicio.html"
+                        class="inline-flex items-center justify-center bg-stone-800/60 border-2 border-neon text-neon font-bold py-4 px-8 rounded-xl text-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-spa mr-2"></i> Reservar Servicio
+                    </a>
+                </div>
+                <p class="mt-6 text-sm text-stone-500">
+                    Si buscas una fecha para tu banda, <a href="solicitud_fecha_bandas.html"
+                        class="text-fuchsia-400 underline hover:text-fuchsia-200">haz clic aquí</a>.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-rustic border-t border-stone-700 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos
+                reservados.</p>
+            <p class="mt-2 text-xs text-stone-500">Seguinos en redes | Claypole, Buenos Aires.</p>
+        </div>
+    </footer>
+    <footer>
+        <p>Versión 0.1</p>
+    </footer>
+
+    <script>
+        // Lógica de JavaScript para el menú móvil y el año del footer
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        const menuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const navLinks = mobileMenu.querySelectorAll('a');
+
+        // Función para alternar la visibilidad del menú
+        function toggleMenu() {
+            mobileMenu.classList.toggle('hidden');
+        }
+
+        menuButton.addEventListener('click', toggleMenu);
+
+        // Ocultar el menú móvil al hacer clic en un enlace
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                }
+            });
+        });
+
+        // ----------------------------------------------------
+        // LÓGICA DE CARGA DE AGENDA PÚBLICA
+        // ----------------------------------------------------
+
+        // URL Dinámica
+        const currentHost = window.location.host;
+        let API_BASE_URL = '';
+
+        if (currentHost.includes('localhost')) {
+            API_BASE_URL = 'http://localhost';
+        } else if (currentHost.includes('192.168.1.10')) {
+            API_BASE_URL = 'http://192.168.1.10';
+        } else {
+            API_BASE_URL = window.location.protocol + '//' + currentHost;
+        }
+
+        const agendaListContainer = document.getElementById('agenda-list');
+
+        // Categorías y sus estilos
+        const CATEGORIAS = {
+            'BANDA': { icon: '🎸', label: 'Banda en Vivo', color: 'border-orange-500', bgDate: 'bg-orange-900', textColor: 'text-orange-400' },
+            'TALLER': { icon: '🎨', label: 'Taller', color: 'border-cyan-500', bgDate: 'bg-cyan-900', textColor: 'text-cyan-400' },
+            'SERVICIO': { icon: '💆', label: 'Servicio', color: 'border-pink-500', bgDate: 'bg-pink-900', textColor: 'text-pink-400' },
+            'ALQUILER': { icon: '🏛️', label: 'Evento', color: 'border-purple-500', bgDate: 'bg-purple-900', textColor: 'text-purple-400' }
+        };
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return {
+                day: date.toLocaleDateString('es-AR', { day: '2-digit' }),
+                month: date.toLocaleDateString('es-AR', { month: 'short' }).toUpperCase().replace('.', ''),
+                weekday: date.toLocaleDateString('es-AR', { weekday: 'short' })
+            };
+        }
+
+        // Parseo robusto de fechas: admite "YYYY-MM-DD", "YYYY-MM-DD HH:mm", "YYYY-MM-DDTHH:mm" y combina hora por separado
+        function parseDateString(s, hora) {
+            if (!s) return null;
+            let str = String(s).trim();
+            if (hora && !str.includes('T')) {
+                const horaPart = String(hora).trim().split(':').slice(0, 2).join(':');
+                str = `${str}T${horaPart}`;
+            } else if (str.includes(' ') && !str.includes('T')) {
+                str = str.replace(' ', 'T');
+            } else if (!str.includes('T') && /^\d{4}-\d{2}-\d{2}$/.test(str)) {
+                str = str + 'T00:00:00';
+            }
+            const d = new Date(str);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        function getCategoria(item) {
+            // Mapear directamente desde tipoEvento si viene del endpoint /api/solicitudes/publicas
+            const tipo = (item.tipo || '').toUpperCase();
+            if (tipo === 'BANDA') return 'BANDA';
+            if (tipo === 'TALLER') return 'TALLER';
+            if (tipo === 'SERVICIO') return 'SERVICIO';
+
+            // Fallback para otros casos
+            if (item.source === 'evento') return 'BANDA';
+            if (tipo.includes('TALLER')) return 'TALLER';
+            if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) return 'SERVICIO';
+            return 'ALQUILER';
+        }
+
+        function generateAgendaCard(item) {
+            const categoria = getCategoria(item);
+            const cat = CATEGORIAS[categoria];
+            const fechaObj = item._fechaObj ? item._fechaObj : (item.fecha ? new Date(item.fecha) : null);
+            const { day, month } = fechaObj ? formatDate(fechaObj) : { day: '--', month: '--' };
+            const hora = item.hora || '';
+            const precio = item.precio ? `$${Number(item.precio).toLocaleString('es-AR')}` : '';
+
+            // Acción según categoría
+            let actionHtml = '';
+            if (categoria === 'BANDA') {
+                const link = item.id ? `checkout_form.html?event_id=${item.id}` : 'seccion_bandas.html';
+                actionHtml = `<a href="${link}" class="w-full sm:w-auto bg-fuchsia-500 hover:bg-fuchsia-400 text-gray-900 font-bold py-3 px-6 rounded-full transition shadow-lg text-center whitespace-normal flex items-center justify-center h-16">Sacar entrada</a>`;
+            } else if (categoria === 'TALLER' || categoria === 'SERVICIO') {
+                const link = categoria === 'TALLER' ? 'seccion_talleres.html' : 'seccion_servicios.html';
+                actionHtml = `<a href="${link}" class="w-full sm:w-auto bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-6 rounded-full transition shadow-lg text-center whitespace-normal flex items-center justify-center h-16">Más información</a>`;
+            } else {
+                actionHtml = `<a href="solicitud_alquiler.html" class="w-full sm:w-auto bg-stone-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg flex items-center justify-center h-16">Ver detalles</a>`;
+            }
+
+            return `
+            <div class="p-4 bg-stone-800 rounded-xl flex items-center justify-between border-l-4 ${cat.color} hover:bg-stone-700/50 transition">
+                <div class="flex items-center space-x-4 agenda-card">
+                    <div class="agenda-flyer">
+                        ${item.flyer_url ? `<img src="${item.flyer_url}" alt="${item.nombre || item.tipo}">` : `<div class="helper-text">No Flyer</div>`}
+                    </div>
+                    <div class="agenda-meta">
+                        <div class="text-center p-2 rounded-lg ${cat.bgDate} text-white flex-shrink-0 min-w-[50px]">
+                            <p class="text-xl font-bold">${day}</p>
+                            <p class="text-xs">${month}</p>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm ${cat.textColor}">${cat.icon} ${cat.label}</span>
+                            </div>
+                            <h4 class="text-lg font-semibold text-white">${item.nombre || item.tipo}</h4>
+                            <p class="text-sm text-stone-400">${hora ? hora + ' hs' : ''} ${precio ? '• ' + precio : ''}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-shrink-0 ml-4">${actionHtml}</div>
+            </div>
+            `;
+        }
+
+        async function fetchAgenda() {
+            try {
+                // Cargar todas las solicitudes públicas (bandas, talleres, servicios)
+                const resPublicas = await fetch(`${API_BASE_URL}/api/solicitudes/publicas`);
+                let items = [];
+                if (resPublicas.ok) {
+                    const data = await resPublicas.json();
+                    items = data.map(item => {
+                        const fechaRaw = item.fechaEvento;
+                        const horaRaw = item.horaEvento;
+                        const fechaObj = parseDateString(fechaRaw, horaRaw);
+                        return {
+                            source: 'publica',
+                            id: item.id,
+                            fecha: fechaRaw,
+                            _fechaObj: fechaObj,
+                            hora: horaRaw,
+                            nombre: item.nombreCompleto,
+                            tipo: item.tipoEvento,
+                            precio: item.precio,
+                            descripcion: item.descripcion,
+                            // Mapeo tolerante para posible campo de flyer/imagen en la API
+                            flyer_url: item.flyer_url || item.flyerUrl || item.flyer || item.imagen || item.adjunto_url || null
+                        };
+                    });
+                }
+
+                // Filtrar solo eventos futuros
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+
+                const proximosItems = items
+                    .filter(item => item._fechaObj && item._fechaObj > hoy)
+                    .sort((a, b) => a._fechaObj - b._fechaObj);
+
+                // DEV helper: inyectar un flyer de demo si se quiere forzar la vista.
+                // Usa ?demo_flyer=1 en la URL para activar. Solo funciona en entornos locales (localhost).
+                try {
+                    const params = new URLSearchParams(window.location.search);
+
+                    // Limitar el helper **solo** a hosts locales para evitar exposición en prod.
+                    const isLocalDevHost = () => {
+                        const h = window.location.hostname;
+                        return h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '0.0.0.0';
+                    };
+
+                    if (params.get('demo_flyer') === '1') {
+                        if (!isLocalDevHost()) {
+                            console.warn('demo_flyer ignorado — solo permitido en localhost');
+                        } else if (proximosItems.length > 0 && !proximosItems.some(it => it.flyer_url)) {
+                            proximosItems[0].flyer_url = '/img/hero1.jpg';
+                            console.debug('DEV: injected demo flyer into first agenda item (localhost only)');
+                        }
+                    }
+                } catch (e) { /* noop */ }
+
+                renderAgenda(proximosItems, items.length);
+
+            } catch (error) {
+                console.error('Error al cargar agenda:', error);
+                agendaListContainer.innerHTML = `
+                <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
+                    <p class="text-xl text-stone-400">No se pudo cargar la agenda</p>
+                    <p class="text-sm text-stone-500 mt-2">${error.message}</p>
+                </div>
+                `;
+            }
+        }
+
+        function renderAgenda(items, totalCount) {
+            agendaListContainer.innerHTML = '';
+
+            if (!items || items.length === 0) {
+                agendaListContainer.innerHTML = `
+                <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
+                    <p class="text-xl text-stone-400">¡Próximamente más eventos!</p>
+                    <p class="text-sm text-stone-500 mt-2">Estamos preparando la agenda cultural.</p>
+                </div>
+                `;
+                return;
+            }
+
+            items.forEach(item => {
+                agendaListContainer.insertAdjacentHTML('beforeend', generateAgendaCard(item));
+            });
+
+            /*if (totalCount > items.length) {
+                agendaListContainer.insertAdjacentHTML('beforeend', `
+                <p class="text-center text-sm text-stone-500 mt-4">
+                    Y ${totalCount - items.length} eventos más. 
+                    <a href="seccion_agenda.html" class="text-fuchsia-400 underline hover:text-fuchsia-200">Ver agenda completa</a>.
+                </p>
+                `);
+            }*/
+        }
+
+        // Manejo de autenticación en el navbar
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                // Usuario autenticado
+                const desktopHTML = `
+                    <a href="/admin.html" 
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">
+                        🔐 Admin
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="/admin.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
+                        🔐 Admin Panel
+                    </a>
+                    <button onclick="logout()" 
+                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
+                        🚪 Cerrar Sesión
+                    </button>
+                `;
+                desktopMenu.innerHTML = desktopHTML;
+                mobileMenu.innerHTML = mobileHTML;
+            } else {
+                // Usuario no autenticado
+                const desktopHTML = `
+                    <a href="login.html"
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">
+                        Login
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="login.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
+                        Login
+                    </a>
+                `;
+                desktopMenu.innerHTML = desktopHTML;
+                mobileMenu.innerHTML = mobileHTML;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/index.html';
+        }
+
+        // Escuchar cambios en localStorage (sesión iniciada en otra pestaña)
+        window.addEventListener('storage', updateAuthMenu);
+
+        // ----------------------------------------------------
+        // INICIALIZACIÓN
+        // ----------------------------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Actualizar menú de autenticación
+            updateAuthMenu();
+            // 2. Inicia la carga de la agenda pública
+            fetchAgenda();
+            // El resto de la lógica de desplazamiento y menú móvil ya está integrada.
+        });
+
+    </script>
+</body>
+
+</html>

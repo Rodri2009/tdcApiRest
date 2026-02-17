@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f7f6; margin: 0; padding: 0; }
+        .email-wrapper { width: 100%; background-color: #f4f7f6; padding: 20px 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+        .header { background-color: #007bff; color: white; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; color: #ffffff; }
+        .header p { margin: 5px 0 0; color: #ffffff; }
+        .content { padding: 30px; }
+        .section h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; color: #007bff; font-size: 20px; }
+        .details-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .details-table td { padding: 8px 0; vertical-align: top; }
+        .details-table td.label { width: 150px; font-weight: bold; color: #555; }
+        .description-box { background-color: #f9f9f9; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff; white-space: pre-wrap; margin-top: 15px; }
+        .pricing-table { width: 100%; }
+        .pricing-table li { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; list-style: none;}
+        #total-final { text-align: right; font-size: 22px; font-weight: bold; color: #28a745; margin-top: 20px; padding-top: 20px; border-top: 2px solid #007bff; }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="container">
+            <div class="header">
+                <h1>{{header_titulo}}</h1>
+                <p>{{header_subtitulo}}</p>
+            </div>
+            <div class="content">
+                <div class="section">
+                    <h2>Detalles del Solicitante</h2>
+                    <table class="details-table">
+                        <tr><td class="label">Nombre:</td><td>{{nombre_completo}}</td></tr>
+                        <tr><td class="label">Email:</td><td>{{email}}</td></tr>
+                        <tr><td class="label">Teléfono:</td><td>{{telefono}}</td></tr>
+                    </table>
+                </div>
+                <div class="section">
+                    <h2>Detalles del Evento</h2>
+                    <table class="details-table">
+                        <tr><td class="label">Tipo de Evento:</td><td>{{nombre_para_mostrar}}</td></tr>
+                        <tr><td class="label">Fecha:</td><td>{{fecha_evento}}</td></tr>
+                        <tr><td class="label">Hora:</td><td>{{hora_evento}}</td></tr>
+                        <tr><td class="label">Duración:</td><td>{{duracion}}</td></tr>
+                        <tr><td class="label">Personas:</td><td>{{cantidad_de_personas}}</td></tr>
+                    </table>
+                    <div class="description-box">
+                        <strong>Detalles del Tipo de Evento:</strong><br>
+                        <span>{{descripcion_evento}}</span>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2>Resumen de Precios</h2>
+                    <ul class="pricing-table">
+                        <li><span>Precio Base del Evento</span><strong>{{precio_basico}}</strong></li>
+                        {{adicionales_html}}
+                    </ul>
+                    <div id="total-final">Total: <span>{{precio_final}}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+    "roo-cline.interactionMode": "chat",
+    "roo-cline.toolUseMode": "manual",
+    "roo-cline.autoRunTools": false,
+    "roo-cline.preferReadOnly": true,
+    "roo-cline.allowFileWrite": false,
+    "roo-cline.allowTerminal": false,
+    "roo-cline.contextStrategy": "codebase",
+    "roo-cline.systemPrompt": "You are a codebase analysis assistant. You must NEVER create files, run commands, or take actions. Only read the project and answer questions about it.",
+    "roo-cline.openAiCustomModelInfo": {
+        "maxTokens": 6500,
+        "contextWindow": 7168
+    },
+    "roo-cline.useTools": false,
+    "roo-cline.debug": true
+}

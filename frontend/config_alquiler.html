@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuración - Alquiler del Salón</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <style>
+        /* Theme variables y ajustes para que esta página coincida con config_bandas */
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+            --color-dark: #0c0a09;
+            --color-card: #1c1917;
+        }
+
+        body {
+            background: var(--color-dark);
+            color: #d6d3d1;
+            padding-bottom: 80px;
+        }
+
+        h1 {
+            color: var(--color-secondary);
+            text-align: center;
+            font-size: 1.8rem;
+        }
+    </style>
+    <style>
+        /* Estilos específicos de esta página */
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        textarea {
+            min-height: 150px;
+            line-height: 1.5;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+        }
+
+        /* Banner de notificación */
+        .notification-banner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+
+        .notification-banner.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification-banner.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification-banner.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <a href="/admin.html" class="btn btn-secondary" style="text-decoration:none;">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <h1 style="margin:0;flex:1;"><i class="fas fa-building"></i> Configuración de Alquiler</h1>
+            <div style="width:150px;"></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-section="tipos">
+                <i class="fas fa-list"></i> Tipos de Alquiler
+            </button>
+            <button class="tab" data-section="precios">
+                <i class="fas fa-dollar-sign"></i> Precios y Vigencia
+            </button>
+            <button class="tab" data-section="adicionales">
+                <i class="fas fa-plus-circle"></i> Adicionales
+            </button>
+            <button class="tab" data-section="alquileres">
+                <i class="fas fa-calendar-check"></i> Alquileres Confirmados
+            </button>
+        </div>
+
+        <!-- SECCIÓN: Tipos de Alquiler -->
+        <div id="section-tipos" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-list"></i> Tipos de Evento / Alquiler</h3>
+                    <button class="btn btn-primary btn-crear" data-requiere-edicion="alquiler"
+                        onclick="openTipoModal()">
+                        <i class="fas fa-plus"></i> Nuevo Tipo
+                    </button>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    Estos son los tipos de eventos que pueden reservar el salón. Cada tipo tiene duraciones y precios
+                    asociados.
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-tipos">
+                            <tr>
+                                <td colspan="5" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Duraciones -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-clock"></i> Duraciones Disponibles</h3>
+                    <button class="btn btn-primary btn-crear" data-requiere-edicion="alquiler"
+                        onclick="openDuracionModal()">
+                        <i class="fas fa-plus"></i> Nueva Duración
+                    </button>
+                </div>
+                <!-- Filtros de Duraciones -->
+                <div class="filters" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:150px;">
+                        <label style="font-size:0.85rem;color:#9ca3af;">Filtrar por Tipo:</label>
+                        <select id="filtro-duracion-tipo" onchange="filterDuraciones()" style="width:100%;">
+                            <option value="">Todos los tipos</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;min-width:100px;">
+                        <label style="font-size:0.85rem;color:#9ca3af;">Estado:</label>
+                        <select id="filtro-duracion-estado" onchange="filterDuraciones()" style="width:100%;">
+                            <option value="">Todos</option>
+                            <option value="activo">Solo activos</option>
+                            <option value="inactivo">Solo inactivos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Horas</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-duraciones">
+                            <tr>
+                                <td colspan="5" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Precios -->
+        <div id="section-precios" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-dollar-sign"></i> Precios por Vigencia</h3>
+                    <button class="btn btn-primary btn-crear" data-requiere-edicion="alquiler"
+                        onclick="openPrecioModal()">
+                        <i class="fas fa-plus"></i> Nuevo Precio
+                    </button>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    Los precios se aplican según el rango de fechas de vigencia. El sistema usa automáticamente el
+                    precio vigente.
+                </div>
+                <!-- Filtros -->
+                <div class="filters" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:150px;">
+                        <label style="font-size:0.85rem;color:#9ca3af;">Filtrar por Tipo:</label>
+                        <select id="filtro-precio-tipo" onchange="filterPrecios()" style="width:100%;">
+                            <option value="">Todos los tipos</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;min-width:100px;">
+                        <label style="font-size:0.85rem;color:#9ca3af;">Estado:</label>
+                        <select id="filtro-precio-estado" onchange="filterPrecios()" style="width:100%;">
+                            <option value="">Todos</option>
+                            <option value="vigente">Solo vigentes</option>
+                            <option value="vencido">Solo vencidos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Rango Personas</th>
+                                <th>Precio/Hora</th>
+                                <th>Vigencia Desde</th>
+                                <th>Vigencia Hasta</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-precios">
+                            <tr>
+                                <td colspan="7" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Adicionales -->
+        <div id="section-adicionales" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-plus-circle"></i> Servicios Adicionales</h3>
+                    <button class="btn btn-primary btn-crear" data-requiere-edicion="alquiler"
+                        onclick="openAdicionalModal()">
+                        <i class="fas fa-plus"></i> Nuevo Adicional
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Precio</th>
+                                <th>Tipo Cobro</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-adicionales">
+                            <tr>
+                                <td colspan="6" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Alquileres Confirmados -->
+        <div id="section-alquileres" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-calendar-check"></i> Alquileres Confirmados</h3>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    Listado de solicitudes de alquiler confirmadas. Estos eventos ya tienen fecha y hora reservada en el
+                    salón.
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Tipo</th>
+                                <th>Cliente</th>
+                                <th>Personas</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-alquileres">
+                            <tr>
+                                <td colspan="6" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal genérico -->
+    <div id="modal-generic" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Título</h3>
+                <button class="btn btn-icon" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Se llena dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" id="modal-save-btn" onclick="saveModal()">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/navbar.js"></script>
+    <script>
+        // ============================================================
+        // ESTADO
+        // ============================================================
+        let tipos = [];
+        let duraciones = [];
+        let precios = [];
+        let adicionales = [];
+        let alquileres = [];
+        let currentModalType = null;
+        let currentEditId = null;
+
+        // Permisos de edición (se inicializan después de navbarManager)
+        let puedeEditarAlquiler = false;
+
+        const API_BASE = '/api/admin';
+        const getToken = () => localStorage.getItem('authToken');
+        const authHeaders = () => ({
+            'Authorization': `Bearer ${getToken()}`,
+            'Content-Type': 'application/json'
+        });
+
+        // ============================================================
+        // BANNERS DE NOTIFICACIÓN
+        // ============================================================
+        function showBanner(message, type = 'info', duration = 4000) {
+            document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+            const banner = document.createElement('div');
+            banner.className = `notification-banner ${type}`;
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+            document.body.appendChild(banner);
+            setTimeout(() => {
+                banner.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => banner.remove(), 300);
+            }, duration);
+        }
+
+        // ============================================================
+        // NAVEGACIÓN
+        // ============================================================
+        function initTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const section = tab.dataset.section;
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                    document.getElementById(`section-${section}`).classList.add('active');
+                    history.replaceState(null, '', `#${section}`);
+                });
+            });
+
+            const hash = window.location.hash.replace('#', '');
+            if (hash && ['tipos', 'precios', 'adicionales', 'alquileres'].includes(hash)) {
+                document.querySelector(`.tab[data-section="${hash}"]`).click();
+            }
+        }
+
+        // ============================================================
+        // CARGA DE DATOS (usando nuevos endpoints admin)
+        // ============================================================
+        async function loadTipos() {
+            try {
+                // Solo cargar tipos de categoría ALQUILER_SALON
+                const res = await fetch(`${API_BASE}/alquiler/tipos?categoria=ALQUILER_SALON`, { headers: authHeaders() });
+                if (res.ok) {
+                    tipos = await res.json();
+                    renderTipos();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        async function loadDuraciones() {
+            try {
+                const res = await fetch(`${API_BASE}/alquiler/duraciones`, { headers: authHeaders() });
+                if (res.ok) {
+                    duraciones = await res.json();
+                    renderDuraciones();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        async function loadPrecios() {
+            try {
+                const res = await fetch(`${API_BASE}/alquiler/precios`, { headers: authHeaders() });
+                if (res.ok) {
+                    precios = await res.json();
+                    renderPrecios();
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    console.error('Error HTTP al cargar precios:', res.status, errData);
+                    showBanner(`Error al cargar precios: ${errData.error || res.statusText}`, 'error');
+                }
+            } catch (err) {
+                console.error('Error de red al cargar precios:', err);
+                showBanner(`Error de conexión al cargar precios: ${err.message}`, 'error');
+            }
+        }
+
+        async function loadAdicionales() {
+            try {
+                const res = await fetch(`${API_BASE}/alquiler/adicionales`, { headers: authHeaders() });
+                if (res.ok) {
+                    adicionales = await res.json();
+                    renderAdicionales();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        async function loadAlquileres() {
+            try {
+                // Cargar solicitudes de alquiler confirmadas (o solicitadas si no hay confirmadas)
+                const res = await fetch(`${API_BASE}/solicitudes?tipo=ALQUILER_SALON&estado=Solicitado`, { headers: authHeaders() });
+                if (res.ok) {
+                    alquileres = await res.json();
+                    console.log('Datos cargados en alquileres:', alquileres);
+                    renderAlquileres();
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    console.error('Error HTTP al cargar alquileres:', res.status, errData);
+                    showBanner(`Error al cargar alquileres: ${errData.error || res.statusText}`, 'error');
+                }
+            } catch (err) {
+                console.error('Error de red al cargar alquileres:', err);
+                showBanner(`Error de conexión al cargar alquileres: ${err.message}`, 'error');
+                document.getElementById('tbody-alquileres').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error al cargar alquileres</td></tr>';
+            }
+        }
+
+        // ============================================================
+        // RENDERIZADO
+        // ============================================================
+        function renderTipos() {
+            const tbody = document.getElementById('tbody-tipos');
+            if (tipos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay tipos configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = tipos.map(t => `
+                <tr>
+                    <td><code style="background:#292524;padding:2px 6px;border-radius:4px;">${t.codigo || t.id}</code></td>
+                    <td><strong>${t.nombre}</strong></td>
+                    <td class="description" style="max-width:300px;">${t.descripcion || '-'}</td>
+                    <td>${t.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
+                    <td>
+                        ${puedeEditarAlquiler ? `
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editTipo('${t.id}')" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                        ` : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderDuraciones() {
+            // Populear filtro de tipos
+            const filtroTipo = document.getElementById('filtro-duracion-tipo');
+            if (filtroTipo && tipos.length > 0) {
+                const currentVal = filtroTipo.value;
+                filtroTipo.innerHTML = '<option value="">Todos los tipos</option>' +
+                    tipos.map(t => `<option value="${t.codigo || t.id}">${t.nombre}</option>`).join('');
+                filtroTipo.value = currentVal;
+            }
+
+            // Aplicar filtros
+            const tipoFiltro = document.getElementById('filtro-duracion-tipo')?.value || '';
+            const estadoFiltro = document.getElementById('filtro-duracion-estado')?.value || '';
+
+            let duracionesFiltradas = duraciones;
+            if (tipoFiltro) {
+                duracionesFiltradas = duracionesFiltradas.filter(d => (d.id_evento || d.tipo_evento || '') === tipoFiltro);
+            }
+            if (estadoFiltro === 'activo') {
+                duracionesFiltradas = duracionesFiltradas.filter(d => d.activo !== 0);
+            } else if (estadoFiltro === 'inactivo') {
+                duracionesFiltradas = duracionesFiltradas.filter(d => d.activo === 0);
+            }
+
+            const tbody = document.getElementById('tbody-duraciones');
+            if (duracionesFiltradas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay duraciones para mostrar</td></tr>';
+                return;
+            }
+            tbody.innerHTML = duracionesFiltradas.map(d => `
+                <tr>
+                    <td>${d.tipo_evento || d.id_evento || '-'}</td>
+                    <td><strong>${d.horas}hs</strong></td>
+                    <td class="description">${d.descripcion || '-'}</td>
+                    <td>${d.activo !== 0 ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
+                    <td>
+                        ${puedeEditarAlquiler ? `
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editDuracion(${d.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteDuracion(${d.id})" title="Eliminar" style="color:#f87171;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        ` : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterDuraciones() {
+            renderDuraciones();
+        }
+
+        function renderPrecios() {
+            // Populear filtro de tipos
+            const filtroTipo = document.getElementById('filtro-precio-tipo');
+            if (filtroTipo && tipos.length > 0) {
+                const currentVal = filtroTipo.value;
+                filtroTipo.innerHTML = '<option value="">Todos los tipos</option>' +
+                    tipos.map(t => `<option value="${t.codigo || t.id}">${t.nombre}</option>`).join('');
+                filtroTipo.value = currentVal;
+            }
+
+            // Aplicar filtros
+            const tipoFiltro = document.getElementById('filtro-precio-tipo')?.value || '';
+            const estadoFiltro = document.getElementById('filtro-precio-estado')?.value || '';
+
+            let preciosFiltrados = precios;
+            if (tipoFiltro) {
+                preciosFiltrados = preciosFiltrados.filter(p => (p.id_evento || '') === tipoFiltro);
+            }
+            if (estadoFiltro === 'vigente') {
+                preciosFiltrados = preciosFiltrados.filter(p => p.activo);
+            } else if (estadoFiltro === 'vencido') {
+                preciosFiltrados = preciosFiltrados.filter(p => !p.activo);
+            }
+
+            const tbody = document.getElementById('tbody-precios');
+            if (preciosFiltrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;">No hay precios configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = preciosFiltrados.map(p => {
+                const desde = p.vigente_desde ? new Date(p.vigente_desde).toLocaleDateString('es-AR') : '-';
+                const hasta = p.vigente_hasta ? new Date(p.vigente_hasta).toLocaleDateString('es-AR') : 'Indefinido';
+                return `
+                    <tr>
+                        <td>${p.tipo_evento || p.id_evento || '-'}</td>
+                        <td>${p.cantidad_min} - ${p.cantidad_max} personas</td>
+                        <td>$${Number(p.precio_por_hora || 0).toLocaleString('es-AR')}/hora</td>
+                        <td>${desde}</td>
+                        <td>${hasta}</td>
+                        <td>${p.activo ? '<span class="badge badge-success">Vigente</span>' : '<span class="badge badge-gray">Vencido</span>'}</td>
+                        <td>
+                            ${puedeEditarAlquiler ? `
+                            <div class="row-actions">
+                                <button class="btn btn-icon btn-sm" onclick="editPrecio(${p.id})" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-icon btn-sm" onclick="deletePrecio(${p.id})" title="Eliminar" style="color:#f87171;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            ` : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterPrecios() {
+            renderPrecios();
+        }
+
+        function renderAdicionales() {
+            const tbody = document.getElementById('tbody-adicionales');
+            if (adicionales.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay adicionales configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = adicionales.map(a => `
+                <tr>
+                    <td><strong>${a.nombre}</strong></td>
+                    <td class="description" style="max-width:250px;">${a.descripcion || '-'}</td>
+                    <td>$${Number(a.precio || 0).toLocaleString('es-AR')}</td>
+                    <td>Por evento</td>
+                    <td><span class="badge badge-success">Activo</span></td>
+                    <td>
+                        ${puedeEditarAlquiler ? `
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editAdicional('${encodeURIComponent(a.nombre)}')" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteAdicional('${encodeURIComponent(a.nombre)}')" title="Eliminar" style="color:#f87171;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        ` : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderAlquileres() {
+            console.log('Ejecutando renderAlquileres...');
+            console.log('Datos originales en alquileres:', alquileres);
+
+            const tbody = document.getElementById('tbody-alquileres');
+            if (alquileres.length === 0) {
+                console.log('No hay datos en la variable alquileres.');
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay alquileres solicitados</td></tr>';
+                return;
+            }
+
+            // Filtrar solo los eventos de tipo ALQUILER_SALON y estado Solicitado
+            const alquileresFiltrados = alquileres.filter(a => a.tipoEventoId === 'ALQUILER_SALON' && a.estado === 'Solicitado');
+            console.log('Datos filtrados en alquileres:', alquileresFiltrados);
+
+            if (alquileresFiltrados.length === 0) {
+                console.log('No hay alquileres que cumplan con los criterios de filtrado.');
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay alquileres solicitados para mostrar</td></tr>';
+                return;
+            }
+
+            // Ordenar por fecha más cercana primero
+            const alquileresOrdenados = [...alquileresFiltrados].sort((a, b) => new Date(a.fechaEvento) - new Date(b.fechaEvento));
+            console.log('Datos ordenados en alquileres:', alquileresOrdenados);
+
+            tbody.innerHTML = alquileresOrdenados.map(a => {
+                const fecha = a.fechaEvento ? new Date(a.fechaEvento).toLocaleDateString('es-AR') : '-';
+                const hora = a.horaInicio || '-';
+                const tipo = a.tipoServicioId || '-';
+                const cliente = a.nombreCliente || '-';
+                const personas = a.cantidadAforo || '-';
+
+                return `
+                    <tr>
+                        <td><strong>${fecha}</strong></td>
+                        <td>${hora}</td>
+                        <td><span class="badge badge-primary">${tipo}</span></td>
+                        <td>${cliente}</td>
+                        <td>${personas} personas</td>
+                        <td>
+                            <div class="row-actions">
+                                <a href="editar_solicitud_alquiler.html?solicitudId=${a.id}" class="btn btn-icon btn-sm" title="Editar solicitud">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ============================================================
+        // MODALES
+        // ============================================================
+        function openModal() {
+            document.getElementById('modal-generic').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-generic').classList.remove('show');
+            currentModalType = null;
+            currentEditId = null;
+        }
+
+        // --- TIPOS ---
+        function openTipoModal(id = null) {
+            currentModalType = 'tipo';
+            currentEditId = id;
+            const isEdit = !!id;
+            document.getElementById('modal-title').textContent = isEdit ? 'Editar Tipo de Alquiler' : 'Nuevo Tipo de Alquiler';
+            document.getElementById('modal-body').innerHTML = `
+                <div class="form-group">
+                    <label>Código * ${isEdit ? '(no editable)' : ''}</label>
+                    <input type="text" id="form-codigo" placeholder="Escriba un código único..." ${isEdit ? 'disabled style="opacity:0.6"' : ''}>
+                </div>
+                <div class="form-group">
+                    <label>Nombre *</label>
+                    <input type="text" id="form-nombre" placeholder="Escriba el nombre del tipo...">
+                </div>
+                <input type="hidden" id="form-categoria" value="ALQUILER_SALON">
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="form-descripcion" rows="8" placeholder="Escriba una descripción (opcional)..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="form-activo" checked> Activo (visible para clientes)</label>
+                </div>
+            `;
+            openModal();
+        }
+
+        function editTipo(id) {
+            const tipo = tipos.find(t => t.id === id || t.codigo === id);
+            if (!tipo) return;
+            openTipoModal(id);
+            document.getElementById('form-codigo').value = tipo.codigo || tipo.id || '';
+            document.getElementById('form-nombre').value = tipo.nombre || '';
+            document.getElementById('form-categoria').value = tipo.categoria || 'ALQUILER_SALON';
+            document.getElementById('form-descripcion').value = tipo.descripcion || '';
+            document.getElementById('form-activo').checked = tipo.activo !== 0;
+        }
+
+        // --- DURACIONES ---
+        function openDuracionModal(id = null) {
+            currentModalType = 'duracion';
+            currentEditId = id;
+            const tiposOptions = tipos.map(t => `<option value="${t.codigo || t.id}">${t.nombre}</option>`).join('');
+            document.getElementById('modal-title').textContent = id ? 'Editar Duración' : 'Nueva Duración';
+            document.getElementById('modal-body').innerHTML = `
+                <div class="form-group">
+                    <label>Tipo de Evento *</label>
+                    <select id="form-id_evento">${tiposOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label>Horas *</label>
+                    <input type="number" id="form-horas" min="1" max="24" placeholder="Número de horas...">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <input type="text" id="form-descripcion" placeholder="Descripción corta (opcional)...">
+                </div>
+            `;
+            openModal();
+        }
+
+        function editDuracion(id) {
+            const dur = duraciones.find(d => d.id === id);
+            if (!dur) return;
+            openDuracionModal(id);
+            setTimeout(() => {
+                document.getElementById('form-id_evento').value = dur.id_evento || '';
+                document.getElementById('form-horas').value = dur.horas || '';
+                document.getElementById('form-descripcion').value = dur.descripcion || '';
+            }, 50);
+        }
+
+        async function deleteDuracion(id) {
+            if (!confirm('¿Eliminar esta duración?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/alquiler/duraciones/${id}`, {
+                    method: 'DELETE', headers: authHeaders()
+                });
+                if (res.ok) { loadDuraciones(); showBanner('Duración eliminada', 'success'); }
+                else showBanner('Error al eliminar', 'error');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        // --- PRECIOS ---
+        function openPrecioModal(id = null) {
+            currentModalType = 'precio';
+            currentEditId = id;
+            const tiposOptions = tipos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+            document.getElementById('modal-title').textContent = id ? 'Editar Precio' : 'Nuevo Precio';
+            document.getElementById('modal-body').innerHTML = `
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Evento *</label>
+                        <select id="form-id_evento">${tiposOptions}</select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cantidad Mínima *</label>
+                        <input type="number" id="form-cantidad_min" min="1" placeholder="Mínimo personas...">
+                    </div>
+                    <div class="form-group">
+                        <label>Cantidad Máxima *</label>
+                        <input type="number" id="form-cantidad_max" min="1" placeholder="Máximo personas...">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Precio por Hora *</label>
+                        <input type="number" id="form-precio_por_hora" min="0" placeholder="Precio en pesos...">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Vigente Desde (vacío = hoy)</label>
+                        <input type="date" id="form-vigente_desde">
+                    </div>
+                    <div class="form-group">
+                        <label>Vigente Hasta (vacío = indefinido)</label>
+                        <input type="date" id="form-vigente_hasta">
+                    </div>
+                </div>
+            `;
+            openModal();
+        }
+
+        function editPrecio(id) {
+            const precio = precios.find(p => p.id === id);
+            if (!precio) return;
+            openPrecioModal(id);
+            setTimeout(() => {
+                document.getElementById('form-id_evento').value = precio.id_evento || precio.id_tipo_evento || '';
+                document.getElementById('form-cantidad_min').value = precio.cantidad_min || '';
+                document.getElementById('form-cantidad_max').value = precio.cantidad_max || '';
+                document.getElementById('form-precio_por_hora').value = precio.precio_por_hora || '';
+                document.getElementById('form-vigente_desde').value = precio.vigente_desde ? precio.vigente_desde.split('T')[0] : '';
+                document.getElementById('form-vigente_hasta').value = precio.vigente_hasta ? precio.vigente_hasta.split('T')[0] : '';
+            }, 50);
+        }
+
+        async function deletePrecio(id) {
+            if (!confirm('¿Eliminar este precio?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/alquiler/precios/${id}`, {
+                    method: 'DELETE', headers: authHeaders()
+                });
+                if (res.ok) { loadPrecios(); showBanner('Precio eliminado', 'success'); }
+                else showBanner('Error al eliminar', 'error');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        // --- ADICIONALES ---
+        function openAdicionalModal(nombre = null) {
+            currentModalType = 'adicional';
+            currentEditId = nombre ? decodeURIComponent(nombre) : null;
+            document.getElementById('modal-title').textContent = nombre ? 'Editar Adicional' : 'Nuevo Adicional';
+            document.getElementById('modal-body').innerHTML = `
+                <div class="form-group">
+                    <label>Nombre *</label>
+                    <input type="text" id="form-nombre" placeholder="Nombre del adicional...">
+                </div>
+                <div class="form-group">
+                    <label>Precio *</label>
+                    <input type="number" id="form-precio" min="0" placeholder="Precio en pesos...">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="form-descripcion" rows="8" placeholder="Descripción del adicional (opcional)..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>URL de Imagen</label>
+                    <input type="text" id="form-url_imagen" placeholder="URL de la imagen (opcional)...">
+                </div>
+            `;
+            openModal();
+        }
+
+        function editAdicional(nombre) {
+            const nombreDec = decodeURIComponent(nombre);
+            const adic = adicionales.find(a => a.nombre === nombreDec);
+            if (!adic) return;
+            openAdicionalModal(nombre);
+            setTimeout(() => {
+                document.getElementById('form-nombre').value = adic.nombre || '';
+                document.getElementById('form-precio').value = adic.precio || '';
+                document.getElementById('form-descripcion').value = adic.descripcion || '';
+                document.getElementById('form-url_imagen').value = adic.url_imagen || '';
+            }, 50);
+        }
+
+        async function deleteAdicional(nombre) {
+            if (!confirm('¿Eliminar este adicional?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/alquiler/adicionales/${nombre}`, {
+                    method: 'DELETE', headers: authHeaders()
+                });
+                if (res.ok) { loadAdicionales(); showBanner('Adicional eliminado', 'success'); }
+                else showBanner('Error al eliminar', 'error');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        // ============================================================
+        // GUARDAR MODAL
+        // ============================================================
+        async function saveModal() {
+            try {
+                let endpoint, method, body;
+
+                switch (currentModalType) {
+                    case 'tipo':
+                        endpoint = currentEditId
+                            ? `${API_BASE}/alquiler/tipos/${currentEditId}`
+                            : `${API_BASE}/alquiler/tipos`;
+                        method = currentEditId ? 'PUT' : 'POST';
+                        body = {
+                            codigo: document.getElementById('form-codigo').value,
+                            nombre: document.getElementById('form-nombre').value,
+                            categoria: document.getElementById('form-categoria').value,
+                            descripcion: document.getElementById('form-descripcion').value,
+                            activo: document.getElementById('form-activo').checked
+                        };
+                        break;
+
+                    case 'duracion':
+                        endpoint = currentEditId
+                            ? `${API_BASE}/alquiler/duraciones/${currentEditId}`
+                            : `${API_BASE}/alquiler/duraciones`;
+                        method = currentEditId ? 'PUT' : 'POST';
+                        body = {
+                            id_evento: document.getElementById('form-id_evento').value,
+                            horas: parseInt(document.getElementById('form-horas').value),
+                            descripcion: document.getElementById('form-descripcion').value
+                        };
+                        break;
+
+                    case 'precio':
+                        endpoint = currentEditId
+                            ? `${API_BASE}/alquiler/precios/${currentEditId}`
+                            : `${API_BASE}/alquiler/precios`;
+                        method = currentEditId ? 'PUT' : 'POST';
+
+                        // Validaciones en cliente
+                        const idTipoVal = document.getElementById('form-id_evento').value;
+                        const minVal = parseInt(document.getElementById('form-cantidad_min').value);
+                        const maxVal = parseInt(document.getElementById('form-cantidad_max').value);
+                        const precioVal = parseFloat(document.getElementById('form-precio_por_hora').value);
+
+                        if (!idTipoVal) { showBanner('Seleccione un tipo de evento.', 'error'); return; }
+                        if (isNaN(minVal) || isNaN(maxVal) || isNaN(precioVal)) { showBanner('Complete todos los campos obligatorios.', 'error'); return; }
+                        if (minVal > maxVal) { showBanner('La cantidad mínima no puede ser mayor que la máxima.', 'error'); return; }
+
+                        body = {
+                            id_tipo_evento: idTipoVal,
+                            cantidad_min: minVal,
+                            cantidad_max: maxVal,
+                            precio_por_hora: precioVal
+                        };
+
+                        const vDesde = document.getElementById('form-vigente_desde').value;
+                        const vHasta = document.getElementById('form-vigente_hasta').value || null;
+                        if (vDesde) body.vigente_desde = vDesde;
+                        if (vHasta) body.vigente_hasta = vHasta;
+                        break;
+
+                    case 'adicional':
+                        const nuevoNombre = document.getElementById('form-nombre').value;
+                        endpoint = currentEditId
+                            ? `${API_BASE}/alquiler/adicionales/${encodeURIComponent(currentEditId)}`
+                            : `${API_BASE}/alquiler/adicionales`;
+                        method = currentEditId ? 'PUT' : 'POST';
+                        body = {
+                            nombre: nuevoNombre,
+                            nuevo_nombre: currentEditId && nuevoNombre !== currentEditId ? nuevoNombre : undefined,
+                            precio: parseFloat(document.getElementById('form-precio').value),
+                            descripcion: document.getElementById('form-descripcion').value,
+                            url_imagen: document.getElementById('form-url_imagen').value || null
+                        };
+                        break;
+
+                    default:
+                        showBanner('Tipo de modal desconocido', 'error');
+                        return;
+                }
+
+                const res = await fetch(endpoint, {
+                    method,
+                    headers: authHeaders(),
+                    body: JSON.stringify(body)
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    // Guardar el tipo antes de cerrar el modal (que resetea currentModalType)
+                    const savedType = currentModalType;
+                    closeModal();
+                    // Recargar datos según tipo
+                    if (savedType === 'tipo') loadTipos();
+                    else if (savedType === 'duracion') loadDuraciones();
+                    else if (savedType === 'precio') loadPrecios();
+                    else if (savedType === 'adicional') loadAdicionales();
+                    showBanner(data.message || 'Guardado exitosamente', 'success');
+                } else {
+                    showBanner(data.error || 'Error al guardar', 'error');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showBanner('Error de conexión', 'error');
+            }
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) return;
+            navbarManager.injectNavbar('body');
+
+            // Establecer permisos de edición
+            puedeEditarAlquiler = puedeEditar('alquiler');
+
+            // Ocultar botones de crear si no tiene permisos
+            aplicarPermisosUI();
+
+            initTabs();
+            loadTipos();
+            loadDuraciones();
+            loadPrecios();
+            loadAdicionales();
+            loadAlquileres();
+        });
+    </script>
+</body>
+
+</html>

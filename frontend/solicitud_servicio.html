@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud de Servicios - El Templo de Claypole</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/request-forms.css">
+
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+            padding-bottom: 70px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: #1e293b;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--color-rustic);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .coming-soon {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .coming-soon i {
+            font-size: 5rem;
+            color: var(--color-secondary);
+            margin-bottom: 20px;
+            opacity: 0.7;
+        }
+
+        .coming-soon h3 {
+            font-size: 1.8rem;
+            color: var(--color-secondary);
+            margin-bottom: 15px;
+        }
+
+        .coming-soon p {
+            font-size: 1.1rem;
+            color: #9ca3af;
+            max-width: 500px;
+            margin: 0 auto 30px;
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-back:hover {
+            background-color: rgba(132, 63, 172, 0.2);
+            transform: scale(1.05);
+        }
+
+        ::placeholder {
+            color: #9ca3af !important;
+            opacity: 1 !important;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
+                        Inicio</span>
+                </a>
+                <nav class="hidden md:flex space-x-6 items-center">
+                    <a href="seccion_cuidado_personal.html" class="text-sm font-medium hover:text-neon transition">Ver
+                        Servicios</a>
+                    <a href="solicitud_alquiler.html" class="text-sm font-medium hover:text-neon transition">Alquilar
+                        Salón</a>
+                    <a href="solicitud_fecha_bandas.html" class="text-sm font-medium hover:text-neon transition">Tocar
+                        en Vivo</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2><i class="fas fa-spa"></i> Solicitud de Servicios</h2>
+        <p class="subtitle">Reservá tu turno para nuestros servicios de cuidado personal</p>
+
+        <div class="coming-soon">
+            <i class="fas fa-tools"></i>
+            <h3>Próximamente</h3>
+            <p>
+                Estamos preparando un sistema de reservas para nuestros servicios de cuidado personal: masajes, tarot,
+                reiki y más.
+                Mientras tanto, podés contactarnos directamente.
+            </p>
+            <a href="index.html" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al Inicio
+            </a>
+        </div>
+    </div>
+</body>
+
+</html>

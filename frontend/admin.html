@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Administración - Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background: #0c0a09;
+            color: #d6d3d1;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        h1 {
+            color: var(--color-secondary);
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        a.card {
+            display: block;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+            background: linear-gradient(180deg, rgba(240, 171, 252, 0.05), rgba(0, 0, 0, 0.3));
+            border: 1px solid rgba(240, 171, 252, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        a.card:hover {
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 20px rgba(240, 171, 252, 0.3);
+            transform: translateY(-4px);
+        }
+
+        a.card h3 {
+            margin: 0 0 8px;
+            color: var(--color-secondary);
+            font-size: 1.25rem;
+        }
+
+        a.card p {
+            margin: 0;
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        /* Secciones del admin */
+        .admin-section {
+            margin-top: 40px;
+        }
+
+        .section-title {
+            color: var(--color-secondary);
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(240, 171, 252, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            opacity: 0.8;
+        }
+
+        .badge-soon {
+            font-size: 0.7rem;
+            background: #374151;
+            color: #9ca3af;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+
+        .disabled-section {
+            opacity: 0.5;
+        }
+
+        a.card.disabled {
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+
+        a.card.disabled:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: rgba(240, 171, 252, 0.15);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <main class="wrap">
+        <h1 class="text-4xl font-bold">Panel de Administración</h1>
+
+        <!-- Sección General -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-cog"></i> General</h2>
+            <div class="grid">
+                <a class="card" href="/admin_agenda.html">
+                    <h3>📅 Agenda General</h3>
+                    <p>Vista completa de todos los eventos y solicitudes</p>
+                </a>
+                <a class="card" href="/admin_solicitudes.html">
+                    <h3>📝 Solicitudes</h3>
+                    <p>Ver y gestionar todas las solicitudes</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Sección Alquiler del Salón -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-building"></i> Alquiler del Salón</h2>
+            <div class="grid">
+                <a class="card" href="/config_alquiler.html#tipos">
+                    <h3>📋 Tipos de Alquiler</h3>
+                    <p>Configurar tipos de eventos y duración</p>
+                </a>
+                <a class="card" href="/config_alquiler.html#precios">
+                    <h3>💰 Precios y Vigencia</h3>
+                    <p>Tarifas por tipo de evento y período</p>
+                </a>
+                <a class="card" href="/config_alquiler.html#adicionales">
+                    <h3>➕ Adicionales</h3>
+                    <p>Servicios adicionales y sus precios</p>
+                </a>
+                <a class="card" href="/config_alquiler.html#alquileres">
+                    <h3>📅 Alquileres Confirmados</h3>
+                    <p>Eventos de alquiler confirmados</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Sección Bandas/Artistas -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-guitar"></i> Fechas con Bandas</h2>
+            <div class="grid">
+                <a class="card" href="/config_bandas.html#catalogo">
+                    <h3>🎸 Bandas / Artistas</h3>
+                    <p>Catálogo de bandas registradas</p>
+                </a>
+                <a class="card" href="/config_bandas.html#instrumentos">
+                    <h3>🎹 Instrumentos</h3>
+                    <p>Catálogo de instrumentos</p>
+                </a>
+                <a class="card" href="/config_bandas.html#eventos">
+                    <h3>🎫 Shows Confirmados</h3>
+                    <p>Gestionar shows confirmados</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Sección Talleres/Actividades -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-chalkboard-teacher"></i> Talleres / Actividades</h2>
+            <div class="grid">
+                <a class="card" href="/config_talleres.html#tipos">
+                    <h3>📋 Tipos de Taller</h3>
+                    <p>Configurar tipos de talleres</p>
+                </a>
+                <a class="card" href="/config_talleres.html#talleristas">
+                    <h3>👨‍🏫 Talleristas / Profesores</h3>
+                    <p>Gestionar instructores</p>
+                </a>
+                <a class="card" href="/config_talleres.html#precios">
+                    <h3>💰 Precios y Vigencia</h3>
+                    <p>Tarifas por taller y período</p>
+                </a>
+                <a class="card" href="/config_talleres.html#talleres">
+                    <h3>📚 Talleres / Actividades Confirmados</h3>
+                    <p>Gestionar cursos y actividades confirmadas</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Sección Servicios -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-spa"></i> Servicios</h2>
+            <div class="grid">
+                <a class="card" href="/config_servicios.html#tipos">
+                    <h3>Tipos de Servicio</h3>
+                    <p>Catálogo de servicios ofrecidos</p>
+                </a>
+                <a class="card" href="/config_servicios.html#precios">
+                    <h3>💰 Precios y Vigencia</h3>
+                    <p>Tarifas por servicio y período</p>
+                </a>
+                <a class="card" href="/config_servicios.html#profesionales">
+                    <h3>👩‍⚕️ Profesionales</h3>
+                    <p>Gestionar profesionales</p>
+                </a>
+                <a class="card" href="/config_servicios.html#servicios">
+                    <h3>🩺 Servicios Confirmados</h3>
+                    <p>Turnos de servicios confirmados</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Sección Personal -->
+        <section class="admin-section">
+            <h2 class="section-title"><i class="fas fa-cog"></i> Personal</h2>
+            <div class="grid">
+                <a class="card" href="/admin_personal.html">
+                    <h3>👥 Personal</h3>
+                    <p>Administrar personal disponible</p>
+                </a>
+                <a class="card" href="/admin_personal.html#roles">
+                    <h3>👤 Personal Roles</h3>
+                    <p>Administrar los roles del personal</p>
+                </a>
+                <a class="card" href="/admin_personal.html#costos">
+                    <h3>💰 Costos / Pagos</h3>
+                    <p>Costos por hora y viáticos del personal</p>
+                </a>
+                <a class="card" href="/admin_usuarios.html">
+                    <h3>👤 Usuarios</h3>
+                    <p>Gestionar cuentas y permisos</p>
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/navbar.js"></script>
+    <script>
+        // Esperar a que DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            // Crear instancia global del navbar (necesario para logout)
+            navbarManager = new NavbarManager();
+
+            // Proteger la página: redirige a login si no está autenticado
+            if (!navbarManager.protectAdminPage()) {
+                return; // Salir si no está autenticado (protectAdminPage ya redirige)
+            }
+
+            // Inyectar navbar en el body
+            navbarManager.injectNavbar('body');
+        });
+    </script>
+</body>
+
+</html>

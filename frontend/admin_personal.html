@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Administración - Personal y Tarifas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        /* Mantener la barra de navegación pegada al top y espacio para contenido */
+        header.bg-rustic {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+
+        body {
+            /* conservar el padding base y añadir el offset del header (4rem) */
+            padding: calc(20px + 4rem) 20px 20px 20px;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+        }
+
+        .notification-banner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+
+        .notification-banner.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification-banner.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification-banner.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .card {
+            background: #1c1917;
+            border: 1px solid #44403c;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #44403c;
+        }
+
+        th {
+            background: #292524;
+            color: #f0abfc;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #292524;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wrap">
+        <div
+            style="max-width:1600px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; margin-top:1rem;">
+            <a href="/admin.html"
+                style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <h1 class="text-4xl font-bold text-neon" style="margin:0; text-align:center;">Personal y Tarifas</h1>
+            <div style="width: 140px;"></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-section="personal">
+                <i class="fas fa-users"></i> Personal Disponible
+            </button>
+            <button class="tab" data-section="roles">
+                <i class="fas fa-id-badge"></i> Roles de Personal
+            </button>
+            <button class="tab" data-section="tarifas">
+                <i class="fas fa-dollar-sign"></i> Tarifas del Personal
+            </button>
+            <button class="tab" data-section="pagos">
+                <i class="fas fa-money-bill-wave"></i> Pagos del Personal
+            </button>
+        </div>
+
+        <!-- SECCIÓN: Personal Disponible -->
+        <div id="section-personal" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-users"></i> Personal Disponible</span>
+                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
+                        onclick="openPersonalModal()">
+                        <i class="fas fa-plus"></i> Agregar Personal
+                    </button>
+                </div>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Roles</th>
+                            <th>Teléfono</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-personal">
+                        <tr>
+                            <td colspan="5" style="text-align:center;color:#9ca3af;">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Roles de Personal -->
+        <div id="section-roles" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-id-badge"></i> Catálogo de Roles</span>
+                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal" onclick="openRolModal()">
+                        <i class="fas fa-plus"></i> Agregar Rol
+                    </button>
+                </div>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre del Rol</th>
+                            <th>Descripción</th>
+                            <th>Tarifas Vigentes</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-roles">
+                        <tr>
+                            <td colspan="5" style="text-align:center;color:#9ca3af;">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Tarifas del Personal -->
+        <div id="section-tarifas" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-dollar-sign"></i> Tarifas del Personal</span>
+                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
+                        onclick="openTarifaModal()">
+                        <i class="fas fa-plus"></i> Agregar Tarifa
+                    </button>
+                </div>
+                <p style="color:#9ca3af;margin-bottom:16px;">
+                    Define las tarifas por hora y por evento para cada empleado. Las tarifas tienen fecha de vigencia.
+                </p>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Personal</th>
+                            <th>Rol</th>
+                            <th>Tarifa por Hora</th>
+                            <th>Tarifa por Evento</th>
+                            <th>Vigencia</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-tarifas">
+                        <tr>
+                            <td colspan="6" style="text-align:center;color:#9ca3af;">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Pagos del Personal -->
+        <div id="section-pagos" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-money-bill-wave"></i> Pagos del Personal</span>
+                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
+                        onclick="openPagoModal()">
+                        <i class="fas fa-plus"></i> Registrar Pago
+                    </button>
+                </div>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Personal</th>
+                            <th>Evento</th>
+                            <th>Monto Acordado</th>
+                            <th>Monto Pagado</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-pagos">
+                        <tr>
+                            <td colspan="6" style="text-align:center;color:#9ca3af;">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal genérico -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Modal</h3>
+                <button class="btn btn-icon" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveModal()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/navbar.js"></script>
+    <script>
+        // ============================================================
+        // ESTADO
+        // ============================================================
+        let personal = [];
+        let roles = [];
+        let tarifas = [];
+        let pagos = [];
+        let currentModalType = null;
+        let currentEditId = null;
+
+        // Permisos de edición (se inicializan después de navbarManager)
+        let puedeEditarPersonal = false;
+
+        const API_BASE = '/api/admin';
+        const getToken = () => localStorage.getItem('authToken');
+        const authHeaders = () => ({
+            'Authorization': `Bearer ${getToken()}`,
+            'Content-Type': 'application/json'
+        });
+
+        // Función para mostrar notificaciones
+        function showBanner(message, type, duration) {
+            type = type || 'info';
+            duration = duration || 4000;
+            document.querySelectorAll('.notification-banner').forEach(function (n) { n.remove(); });
+            var banner = document.createElement('div');
+            banner.className = 'notification-banner ' + type;
+            var icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-' + icon + '"></i><span>' + message + '</span></div>';
+            document.body.appendChild(banner);
+            setTimeout(function () {
+                banner.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(function () { banner.remove(); }, 300);
+            }, duration);
+        }
+
+        // Inicialización de pestañas
+        function initTabs() {
+            console.log('Inicializando pestañas...');
+            document.querySelectorAll('.tab').forEach(function (tab) {
+                tab.addEventListener('click', function () {
+                    var section = tab.dataset.section;
+                    console.log('Pestaña clickeada:', section);
+
+                    // Remover active de todas las pestañas
+                    document.querySelectorAll('.tab').forEach(function (t) {
+                        t.classList.remove('active');
+                    });
+
+                    // Agregar active a la pestaña clickeada
+                    tab.classList.add('active');
+
+                    // Ocultar todas las secciones
+                    document.querySelectorAll('.section').forEach(function (s) {
+                        s.classList.remove('active');
+                    });
+
+                    // Mostrar la sección correspondiente
+                    var targetSection = document.getElementById('section-' + section);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                        console.log('Sección activada:', targetSection.id);
+                    } else {
+                        console.error('Sección no encontrada:', 'section-' + section);
+                    }
+
+                    // Actualizar URL hash
+                    history.replaceState(null, '', '#' + section);
+                });
+            });
+
+            // Verificar hash en URL
+            var hash = window.location.hash.replace('#', '');
+            console.log('Hash actual:', hash);
+            if (hash && ['personal', 'roles', 'tarifas', 'pagos'].indexOf(hash) !== -1) {
+                var tab = document.querySelector('.tab[data-section="' + hash + '"]');
+                if (tab) {
+                    console.log('Activando pestaña desde hash:', hash);
+                    tab.click();
+                }
+            }
+        }
+
+        // ============================================================
+        // PERMISOS Y AUTENTICACIÓN
+        // ============================================================
+        function puedeEditar(tipo) {
+            var permisos = JSON.parse(localStorage.getItem('userPermisos') || '[]');
+            if (tipo === 'personal') {
+                return permisos.indexOf('personal.gestionar') !== -1 || permisos.indexOf('*') !== -1;
+            }
+            return false;
+        }
+
+        function aplicarPermisosUI() {
+            if (!puedeEditarPersonal) {
+                document.querySelectorAll('.btn-crear[data-requiere-edicion="personal"]').forEach(function (btn) { btn.style.display = 'none'; });
+            }
+        }
+
+        // Funciones de carga de datos
+        async function loadPersonal() {
+            try {
+                console.log('Cargando personal desde:', API_BASE + '/personal');
+                var res = await fetch(API_BASE + '/personal', { headers: authHeaders() });
+                console.log('Respuesta personal:', res.status, res.statusText);
+                if (res.ok) {
+                    personal = await res.json();
+                    console.log('Personal cargado:', personal);
+                    renderPersonal();
+                } else {
+                    console.error('Error HTTP:', res.status, res.statusText);
+                    var tbody = document.getElementById('tbody-personal');
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error al cargar personal: ' + res.status + '</td></tr>';
+                }
+            } catch (err) {
+                console.error('Error cargando personal:', err);
+                var tbody = document.getElementById('tbody-personal');
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error de conexión. Verifica que el servidor esté funcionando.</td></tr>';
+                showBanner('Error de conexión al cargar personal', 'error');
+            }
+        }
+
+        async function loadRoles() {
+            try {
+                console.log('Cargando roles desde:', API_BASE + '/roles');
+                var res = await fetch(API_BASE + '/roles', { headers: authHeaders() });
+                console.log('Respuesta roles:', res.status, res.statusText);
+                if (res.ok) {
+                    roles = await res.json();
+                    console.log('Roles cargados:', roles);
+                    renderRoles();
+                } else {
+                    console.error('Error HTTP:', res.status, res.statusText);
+                    var tbody = document.getElementById('tbody-roles');
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error al cargar roles: ' + res.status + '</td></tr>';
+                }
+            } catch (err) {
+                console.error('Error cargando roles:', err);
+                var tbody = document.getElementById('tbody-roles');
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
+            }
+        }
+
+        async function loadTarifas() {
+            try {
+                console.log('Cargando tarifas desde:', API_BASE + '/personal/tarifas');
+                var res = await fetch(API_BASE + '/personal/tarifas', { headers: authHeaders() });
+                console.log('Respuesta tarifas:', res.status, res.statusText);
+                if (res.ok) {
+                    tarifas = await res.json();
+                    console.log('Tarifas cargadas:', tarifas);
+                    renderTarifas();
+                } else {
+                    console.error('Error HTTP:', res.status, res.statusText);
+                    var tbody = document.getElementById('tbody-tarifas');
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error al cargar tarifas: ' + res.status + '</td></tr>';
+                }
+            } catch (err) {
+                console.error('Error cargando tarifas:', err);
+                var tbody = document.getElementById('tbody-tarifas');
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
+            }
+        }
+
+        async function loadPagos() {
+            try {
+                console.log('Cargando pagos desde:', API_BASE + '/personal/pagos');
+                var res = await fetch(API_BASE + '/personal/pagos', { headers: authHeaders() });
+                console.log('Respuesta pagos:', res.status, res.statusText);
+                if (res.ok) {
+                    pagos = await res.json();
+                    console.log('Pagos cargados:', pagos);
+                    renderPagos();
+                } else {
+                    console.error('Error HTTP:', res.status, res.statusText);
+                    var tbody = document.getElementById('tbody-pagos');
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error al cargar pagos: ' + res.status + '</td></tr>';
+                }
+            } catch (err) {
+                console.error('Error cargando pagos:', err);
+                var tbody = document.getElementById('tbody-pagos');
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
+            }
+        }
+
+        // Funciones de renderizado
+        function renderPersonal() {
+            var tbody = document.getElementById('tbody-personal');
+            if (personal.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay personal registrado</td></tr>';
+                return;
+            }
+            tbody.innerHTML = personal.map(function (p) {
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editPersonal(\'' + p.id + '\')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deletePersonal(\'' + p.id + '\')" title="Desactivar" style="color:#f87171;"><i class="fas fa-user-slash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var estado = p.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>';
+                return '<tr><td><strong>' + p.nombre + '</strong></td><td>' + (p.roles || '-') + '</td><td>' + (p.telefono || '-') + '</td><td>' + estado + '</td><td>' + acciones + '</td></tr>';
+            }).join('');
+        }
+
+        function renderRoles() {
+            var tbody = document.getElementById('tbody-roles');
+            if (roles.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay roles configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = roles.map(function (r) {
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editRol(\'' + r.id + '\')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deleteRol(\'' + r.id + '\')" title="Eliminar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var estado = r.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>';
+
+                // Mostrar tarifas por rol
+                var tarifasHtml = '-';
+                if (r.tarifas && r.tarifas.length > 0) {
+                    tarifasHtml = r.tarifas.map(function (tarifa) {
+                        var porHora = tarifa.monto_por_hora ? '$' + Number(tarifa.monto_por_hora).toLocaleString('es-AR') + '/hora' : '';
+                        var porEvento = tarifa.monto_fijo_evento ? '$' + Number(tarifa.monto_fijo_evento).toLocaleString('es-AR') + '/evento' : '';
+                        var vigencia = tarifa.vigente_desde ? new Date(tarifa.vigente_desde).toLocaleDateString('es-AR') + (tarifa.vigente_hasta ? ' - ' + new Date(tarifa.vigente_hasta).toLocaleDateString('es-AR') : '') : '-';
+
+                        var partes = [];
+                        if (porHora) partes.push(porHora);
+                        if (porEvento) partes.push(porEvento);
+
+                        return '<div style="font-size:0.85rem;margin-bottom:4px;"><strong>' + partes.join(' + ') + '</strong><br><span style="color:#9ca3af;">Vigencia: ' + vigencia + '</span></div>';
+                    }).join('');
+                }
+
+                return '<tr><td><strong>' + r.nombre + '</strong></td><td style="max-width:300px;">' + (r.descripcion || '-') + '</td><td>' + tarifasHtml + '</td><td>' + estado + '</td><td>' + acciones + '</td></tr>';
+            }).join('');
+        }
+
+        function renderTarifas() {
+            var tbody = document.getElementById('tbody-tarifas');
+            if (tarifas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay tarifas configuradas</td></tr>';
+                return;
+            }
+            tbody.innerHTML = tarifas.map(function (t) {
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editTarifa(\'' + t.id + '\')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deleteTarifa(\'' + t.id + '\')" title="Desactivar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var vigencia = t.vigente_desde ? new Date(t.vigente_desde).toLocaleDateString('es-AR') + (t.vigente_hasta ? ' - ' + new Date(t.vigente_hasta).toLocaleDateString('es-AR') : '') : '-';
+                var tarifaHora = '$' + Number(t.monto_por_hora || 0).toLocaleString('es-AR');
+                var tarifaEvento = '$' + Number(t.monto_fijo_evento || 0).toLocaleString('es-AR');
+                return '<tr><td><strong>' + (t.nombre_completo || t.id_personal) + '</strong></td><td>' + (t.nombre_rol || '-') + '</td><td>' + tarifaHora + '</td><td>' + tarifaEvento + '</td><td>' + vigencia + '</td><td>' + acciones + '</td></tr>';
+            }).join('');
+        }
+
+        function renderPagos() {
+            var tbody = document.getElementById('tbody-pagos');
+            if (pagos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay pagos registrados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = pagos.map(function (p) {
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editPago(\'' + p.id + '\')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deletePago(\'' + p.id + '\')" title="Eliminar" style="color:#f87171;"><i class="fas fa-trash"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var estadoClass = p.estado === 'pagado' ? 'badge-success' : (p.estado === 'parcial' ? 'badge-warning' : 'badge-gray');
+                var acordado = '$' + Number(p.monto_acordado || 0).toLocaleString('es-AR');
+                var pagado = '$' + Number(p.monto_pagado || 0).toLocaleString('es-AR');
+                return '<tr><td><strong>' + (p.nombre_completo || p.id_personal) + '</strong></td><td>' + (p.id_solicitud || '-') + '</td><td>' + acordado + '</td><td>' + pagado + '</td><td><span class="badge ' + estadoClass + '">' + (p.estado || '-') + '</span></td><td>' + acciones + '</td></tr>';
+            }).join('');
+        }
+
+        // Funciones de modales
+        function openModal() { document.getElementById('modal-overlay').classList.add('show'); }
+        function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); currentModalType = null; currentEditId = null; }
+
+        function openPersonalModal(id) {
+            currentModalType = 'personal';
+            currentEditId = id || null;
+            var rolesCheckboxes = roles.map(function (r) {
+                return '<label style="display:inline-block;margin-right:16px;"><input type="checkbox" class="rol-checkbox" value="' + r.nombre + '"> ' + r.nombre + '</label>';
+            }).join('');
+            document.getElementById('modal-title').textContent = id ? 'Editar Personal' : 'Nuevo Personal';
+            document.getElementById('modal-body').innerHTML = '<div class="form-group"><label>Nombre Completo *</label><input type="text" id="form-nombre" placeholder="Nombre completo..."></div><div class="form-group"><label>Roles * (seleccione uno o más)</label><div id="roles-container" style="background:#292524;padding:12px;border-radius:6px;">' + (rolesCheckboxes || '<span style="color:#9ca3af;">No hay roles definidos</span>') + '</div></div><div class="form-group"><label>Teléfono / Celular</label><input type="text" id="form-telefono" placeholder="Número de teléfono..."></div><div class="form-group"><label>CVU / Alias (para pagos)</label><input type="text" id="form-cvu_alias" placeholder="Alias o CVU de pago..."></div><div class="form-group"><label><input type="checkbox" id="form-activo" checked> Activo</label></div>';
+            openModal();
+        }
+
+        function editPersonal(id) {
+            var pers = personal.find(function (p) { return p.id == id; });
+            if (!pers) return;
+            openPersonalModal(id);
+            setTimeout(function () {
+                document.getElementById('form-nombre').value = pers.nombre || '';
+                document.getElementById('form-telefono').value = pers.telefono || '';
+                document.getElementById('form-cvu_alias').value = pers.cvu_alias || '';
+                document.getElementById('form-activo').checked = pers.activo !== 0;
+                var rolesArr = (pers.roles || '').split(',').map(function (r) { return r.trim(); });
+                document.querySelectorAll('.rol-checkbox').forEach(function (cb) {
+                    cb.checked = rolesArr.indexOf(cb.value) !== -1;
+                });
+            }, 50);
+        }
+
+        async function deletePersonal(id) {
+            if (!confirm('¿Desactivar este personal?')) return;
+            try {
+                var res = await fetch(API_BASE + '/personal/' + id, { method: 'DELETE', headers: authHeaders() });
+                if (res.ok) { loadPersonal(); showBanner('Personal desactivado correctamente', 'success'); }
+                else { showBanner('Error al desactivar personal', 'error'); }
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        function openRolModal(id) {
+            currentModalType = 'rol';
+            currentEditId = id || null;
+            var rol = id ? roles.find(r => r.id == id) : null;
+            var tarifasHtml = '';
+
+            if (rol && rol.tarifas && rol.tarifas.length > 0) {
+                tarifasHtml = rol.tarifas.map(function (tarifa, index) {
+                    return '<div class="tarifa-item" data-index="' + index + '" style="background:#292524;padding:12px;margin:8px 0;border-radius:6px;border:1px solid #44403c;">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                        '<strong>Tarifa ' + (index + 1) + '</strong>' +
+                        '<button type="button" class="btn btn-icon btn-sm" onclick="removeTarifa(' + index + ')" style="color:#f87171;" title="Eliminar tarifa"><i class="fas fa-trash"></i></button>' +
+                        '</div>' +
+                        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+                        '<div class="form-group"><label>Por Hora ($) *</label><input type="number" id="tarifa-hora-' + index + '" value="' + (tarifa.monto_por_hora || '') + '" placeholder="0" step="0.01" min="0" required></div>' +
+                        '<div class="form-group"><label>Por Evento ($) *</label><input type="number" id="tarifa-evento-' + index + '" value="' + (tarifa.monto_fijo_evento || '') + '" placeholder="0" step="0.01" min="0" required></div>' +
+                        '<div class="form-group"><label>Mínimo Garantizado ($)</label><input type="number" id="tarifa-minimo-' + index + '" value="' + (tarifa.monto_minimo || '') + '" placeholder="0" step="0.01" min="0"><small style="color:#9ca3af;font-size:0.8rem;display:block;margin-top:4px;">Monto mínimo garantizado por evento</small></div>' +
+                        '<div class="form-group"><label>Vigente Desde *</label><input type="date" id="tarifa-desde-' + index + '" value="' + (tarifa.vigente_desde || '') + '" required></div>' +
+                        '<div class="form-group"><label>Vigente Hasta</label><input type="date" id="tarifa-hasta-' + index + '" value="' + (tarifa.vigente_end || '') + '"></div>' +
+                        '<div class="form-group"><label>Descripción</label><input type="text" id="tarifa-desc-' + index + '" value="' + (tarifa.descripcion || '') + '" placeholder="Descripción de la tarifa"></div>' +
+                        '</div>' +
+                        '</div>';
+                }).join('');
+            }
+
+            document.getElementById('modal-title').textContent = id ? 'Editar Rol' : 'Nuevo Rol';
+            document.getElementById('modal-body').innerHTML =
+                '<div class="form-group"><label>Nombre del Rol *</label><input type="text" id="form-nombre" placeholder="Nombre del rol..." value="' + (rol ? rol.nombre : '') + '"></div>' +
+                '<div class="form-group"><label>Descripción</label><textarea id="form-descripcion" rows="3" placeholder="Descripción del rol (opcional)...">' + (rol ? (rol.descripcion || '') : '') + '</textarea></div>' +
+                '<div class="form-group"><label><input type="checkbox" id="form-activo" ' + (rol ? (rol.activo ? 'checked' : '') : 'checked') + '> Activo</label></div>' +
+                '<div class="form-group"><label>Tarifas del Rol</label>' +
+                '<div id="tarifas-container">' + tarifasHtml + '</div>' +
+                '<button type="button" class="btn btn-secondary" onclick="addTarifaField()" style="margin-top:8px;"><i class="fas fa-plus"></i> Agregar Tarifa</button>' +
+                '</div>';
+            openModal();
+        }
+
+        function editRol(id) {
+            var rol = roles.find(function (r) { return r.id == id; });
+            if (!rol) return;
+            openRolModal(id);
+            setTimeout(function () {
+                document.getElementById('form-nombre').value = rol.nombre || '';
+                document.getElementById('form-descripcion').value = rol.descripcion || '';
+                document.getElementById('form-activo').checked = rol.activo !== 0;
+            }, 50);
+        }
+
+        async function deleteRol(id) {
+            if (!confirm('¿Desactivar este rol?')) return;
+            try {
+                var res = await fetch(API_BASE + '/roles/' + id, { method: 'DELETE', headers: authHeaders() });
+                if (res.ok) { loadRoles(); showBanner('Rol desactivado correctamente', 'success'); }
+                else { showBanner('Error al desactivar rol', 'error'); }
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        // Funciones para gestionar tarifas en el modal de roles
+        function addTarifaField() {
+            var container = document.getElementById('tarifas-container');
+            var index = container.children.length;
+
+            var tarifaHtml = '<div class="tarifa-item" data-index="' + index + '" style="background:#292524;padding:12px;margin:8px 0;border-radius:6px;border:1px solid #44403c;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                '<strong>Tarifa ' + (index + 1) + '</strong>' +
+                '<button type="button" class="btn btn-icon btn-sm" onclick="removeTarifa(' + index + ')" style="color:#f87171;" title="Eliminar tarifa"><i class="fas fa-trash"></i></button>' +
+                '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+                '<div class="form-group"><label>Por Hora ($) *</label><input type="number" id="tarifa-hora-' + index + '" placeholder="0" step="0.01" min="0" required></div>' +
+                '<div class="form-group"><label>Por Evento ($) *</label><input type="number" id="tarifa-evento-' + index + '" placeholder="0" step="0.01" min="0" required></div>' +
+                '<div class="form-group"><label>Mínimo Garantizado ($)</label><input type="number" id="tarifa-minimo-' + index + '" placeholder="0" step="0.01" min="0"><small style="color:#9ca3af;font-size:0.8rem;display:block;margin-top:4px;">Monto mínimo garantizado por evento</small></div>' +
+                '<div class="form-group"><label>Vigente Desde *</label><input type="date" id="tarifa-desde-' + index + '" required></div>' +
+                '<div class="form-group"><label>Vigente Hasta</label><input type="date" id="tarifa-hasta-' + index + '"></div>' +
+                '<div class="form-group"><label>Descripción</label><input type="text" id="tarifa-desc-' + index + '" placeholder="Descripción de la tarifa"></div>' +
+                '</div>' +
+                '</div>';
+
+            container.insertAdjacentHTML('beforeend', tarifaHtml);
+        }
+
+        function removeTarifa(index) {
+            var container = document.getElementById('tarifas-container');
+            var tarifaItem = container.querySelector('[data-index="' + index + '"]');
+            if (tarifaItem) {
+                tarifaItem.remove();
+                // Renumerar los índices
+                Array.from(container.children).forEach(function (item, newIndex) {
+                    item.setAttribute('data-index', newIndex);
+                    var title = item.querySelector('strong');
+                    if (title) {
+                        title.textContent = 'Tarifa ' + (newIndex + 1);
+                    }
+                    var button = item.querySelector('button[onclick*="removeTarifa"]');
+                    if (button) {
+                        button.setAttribute('onclick', 'removeTarifa(' + newIndex + ')');
+                    }
+                    // Actualizar IDs de inputs
+                    var inputs = item.querySelectorAll('input');
+                    inputs.forEach(function (input) {
+                        var oldId = input.id;
+                        var fieldType = oldId.split('-')[1]; // hora, evento, minimo, desde, hasta, desc
+                        input.id = 'tarifa-' + fieldType + '-' + newIndex;
+                    });
+                });
+            }
+        }
+
+        function editTarifa(id) {
+            openTarifaModal(id);
+        }
+
+        function editPago(id) {
+            openPagoModal(id);
+        }
+
+        function openTarifaModal(id) {
+            currentModalType = 'tarifa';
+            currentEditId = id || null;
+            var personalOptions = personal.map(function (p) {
+                return '<option value="' + p.id + '">' + p.nombre + '</option>';
+            }).join('');
+            document.getElementById('modal-title').textContent = id ? 'Editar Tarifa' : 'Nueva Tarifa';
+            document.getElementById('modal-body').innerHTML = '<div class="form-group"><label>Personal *</label><select id="form-personal"><option value="">Seleccione personal...</option>' + personalOptions + '</select></div><div class="form-group"><label>Fecha de Vigencia *</label><input type="date" id="form-vigente_desde"></div><div class="form-group"><label>Tarifa por Hora ($)</label><input type="number" id="form-monto_por_hora" placeholder="0" step="0.01" min="0"></div><div class="form-group"><label>Tarifa por Evento ($)</label><input type="number" id="form-monto_fijo_evento" placeholder="0" step="0.01" min="0"></div><div class="form-group"><label>Monto Mínimo ($)</label><input type="number" id="form-monto_minimo" placeholder="0" step="0.01" min="0"></div>';
+            openModal();
+        }
+
+        function openPagoModal(id) {
+            currentModalType = 'pago';
+            currentEditId = id || null;
+            var personalOptions = personal.map(function (p) {
+                return '<option value="' + p.id + '">' + p.nombre + '</option>';
+            }).join('');
+            document.getElementById('modal-title').textContent = id ? 'Editar Pago' : 'Registrar Pago';
+            document.getElementById('modal-body').innerHTML = '<div class="form-group"><label>Personal *</label><select id="form-personal"><option value="">Seleccione personal...</option>' + personalOptions + '</select></div><div class="form-group"><label>Monto Acordado ($)</label><input type="number" id="form-monto_acordado" placeholder="0" step="0.01" min="0"></div><div class="form-group"><label>Monto Pagado ($)</label><input type="number" id="form-monto_pagado" placeholder="0" step="0.01" min="0"></div><div class="form-group"><label>Fecha de Trabajo</label><input type="date" id="form-fecha_trabajo"></div><div class="form-group"><label>Método de Pago</label><select id="form-metodo_pago"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="cheque">Cheque</option></select></div>';
+            openModal();
+        }
+
+        async function saveModal() {
+            try {
+                var endpoint, method, body;
+                switch (currentModalType) {
+                    case 'personal':
+                        var rolesSeleccionados = Array.from(document.querySelectorAll('.rol-checkbox:checked')).map(function (cb) { return cb.value; }).join(', ');
+                        endpoint = currentEditId ? API_BASE + '/personal/' + currentEditId : API_BASE + '/personal';
+                        method = currentEditId ? 'PUT' : 'POST';
+                        body = {
+                            nombre: document.getElementById('form-nombre').value,
+                            roles: rolesSeleccionados,
+                            telefono: document.getElementById('form-telefono').value || null,
+                            cvu_alias: document.getElementById('form-cvu_alias').value || null,
+                            activo: document.getElementById('form-activo').checked
+                        };
+                        break;
+                    case 'rol':
+                        endpoint = currentEditId ? API_BASE + '/roles/' + currentEditId : API_BASE + '/roles';
+                        method = currentEditId ? 'PUT' : 'POST';
+
+                        // Recopilar tarifas del formulario
+                        var tarifas = [];
+                        var container = document.getElementById('tarifas-container');
+                        if (container) {
+                            Array.from(container.children).forEach(function (tarifaItem) {
+                                var index = tarifaItem.getAttribute('data-index');
+                                var tarifa = {
+                                    monto_por_hora: parseFloat(document.getElementById('tarifa-hora-' + index).value) || null,
+                                    monto_fijo_evento: parseFloat(document.getElementById('tarifa-evento-' + index).value) || null,
+                                    monto_minimo: parseFloat(document.getElementById('tarifa-minimo-' + index).value) || null,
+                                    vigente_desde: document.getElementById('tarifa-desde-' + index).value || null,
+                                    vigente_hasta: document.getElementById('tarifa-hasta-' + index).value || null,
+                                    descripcion: document.getElementById('tarifa-desc-' + index).value || null
+                                };
+                                // Validar que cada tarifa tenga al menos un monto
+                                if (!tarifa.monto_por_hora && !tarifa.monto_fijo_evento) {
+                                    showBanner('Error: Cada tarifa debe tener al menos un monto (por hora o por evento)', 'error');
+                                    return;
+                                }
+
+                                // Si no tiene fecha de vigencia, usar fecha actual
+                                if (!tarifa.vigente_desde) {
+                                    var fechaActual = new Date().toISOString().split('T')[0];
+                                    tarifa.vigente_desde = fechaActual;
+                                    showBanner('Tarifa agregada con fecha de vigencia actual (' + fechaActual + ')', 'info');
+                                }
+                                tarifas.push(tarifa);
+                            });
+                        }
+
+                        body = {
+                            nombre: document.getElementById('form-nombre').value,
+                            descripcion: document.getElementById('form-descripcion').value || null,
+                            activo: document.getElementById('form-activo').checked,
+                            tarifas: tarifas
+                        };
+                        break;
+                    case 'tarifa':
+                        endpoint = currentEditId ? API_BASE + '/personal/tarifas/' + currentEditId : API_BASE + '/personal/tarifas';
+                        method = currentEditId ? 'PUT' : 'POST';
+                        body = {
+                            id_personal: document.getElementById('form-personal').value,
+                            vigente_desde: document.getElementById('form-vigente_desde').value,
+                            monto_por_hora: parseFloat(document.getElementById('form-monto_por_hora').value) || 0,
+                            monto_fijo_evento: parseFloat(document.getElementById('form-monto_fijo_evento').value) || 0,
+                            monto_minimo: parseFloat(document.getElementById('form-monto_minimo').value) || 0
+                        };
+                        break;
+                    case 'pago':
+                        endpoint = currentEditId ? API_BASE + '/personal/pagos/' + currentEditId : API_BASE + '/personal/pagos';
+                        method = currentEditId ? 'PUT' : 'POST';
+                        body = {
+                            id_personal: document.getElementById('form-personal').value,
+                            monto_acordado: parseFloat(document.getElementById('form-monto_acordado').value) || 0,
+                            monto_pagado: parseFloat(document.getElementById('form-monto_pagado').value) || 0,
+                            fecha_trabajo: document.getElementById('form-fecha_trabajo').value || null,
+                            metodo_pago: document.getElementById('form-metodo_pago').value || 'efectivo'
+                        };
+                        break;
+                    default:
+                        showBanner('Tipo de modal desconocido', 'error');
+                        return;
+                }
+                var res = await fetch(endpoint, { method: method, headers: authHeaders(), body: JSON.stringify(body) });
+                var data = await res.json();
+                if (res.ok) {
+                    var savedType = currentModalType;
+                    closeModal();
+                    if (savedType === 'personal') { loadPersonal(); loadRoles(); }
+                    else if (savedType === 'rol') { loadRoles(); loadPersonal(); }
+                    else if (savedType === 'tarifa') { loadTarifas(); }
+                    else if (savedType === 'pago') { loadPagos(); }
+                    showBanner(data.message || 'Guardado exitosamente', 'success');
+                } else {
+                    showBanner(data.error || 'Error al guardar', 'error');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showBanner('Error de conexión', 'error');
+            }
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOMContentLoaded disparado');
+            console.log('Iniciando aplicación de administración de personal');
+
+            try {
+                // Inicializar NavbarManager como en config_alquiler
+                navbarManager = new NavbarManager();
+                if (!navbarManager.protectAdminPage()) {
+                    console.log('Acceso denegado por protectAdminPage');
+                    return;
+                }
+                console.log('Acceso permitido');
+                navbarManager.injectNavbar('body');
+                console.log('Navbar inyectado');
+
+                // Establecer permisos de edición
+                console.log('Debugging permisos...');
+                console.log('navbarManager:', navbarManager);
+                console.log('navbarManager.userPermisos:', navbarManager ? navbarManager.userPermisos : 'null');
+                console.log('navbarManager.userRoles:', navbarManager ? navbarManager.userRoles : 'null');
+                console.log('localStorage userPermisos:', localStorage.getItem('userPermisos'));
+                puedeEditarPersonal = puedeEditar('personal');
+                console.log('Permisos de edición personal:', puedeEditarPersonal);
+
+                // Ocultar botones de crear si no tiene permisos
+                aplicarPermisosUI();
+                console.log('Permisos UI aplicados');
+
+                // Inicializar pestañas
+                initTabs();
+                console.log('Pestañas inicializadas');
+
+                console.log('Iniciando carga de datos...');
+                loadPersonal();
+                loadRoles();
+                loadTarifas();
+                loadPagos();
+
+                console.log('Inicialización completada');
+            } catch (error) {
+                console.error('Error durante la inicialización:', error);
+                showBanner('Error al inicializar la página', 'error');
+            }
+        });
+    </script>
+</body>
+
+</html>

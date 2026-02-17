@@ -1,0 +1,91 @@
+services:
+  nginx:
+    build:
+      # El contexto ahora es la raíz del proyecto
+      context: ..
+      dockerfile: docker/Dockerfile.nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ../frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
+    #networks:
+    #  - tdc_network
+
+  backend:
+    build:
+      # El contexto también es la raíz del proyecto
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    depends_on:
+      mariadb:
+        condition: service_healthy # Espera hasta que el healthcheck de mariadb pase
+    environment:
+      PORT: ${PORT}
+      DB_HOST: ${DB_HOST}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      EMAIL_SERVICE: ${EMAIL_SERVICE}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      EMAIL_ADMIN: ${EMAIL_ADMIN}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "3000:3000"
+    #networks:
+    #  - tdc_network
+    volumes:
+      # ¡ESTA ES LA RUTA CORREGIDA Y ROBUSTA!
+      # La ruta es relativa al archivo docker-compose.yml.
+      # Para apuntar a la carpeta `backend` en la raíz, usamos `../backend`.
+      - ../backend:/app
+      # Volumen nombrado para node_modules: preserva los paquetes instalados en la imagen/contenedor
+      - tdc_backend_node_modules:/app/node_modules
+      # Scripts de utilidad (crear-admin.js, etc.)
+      - ../scripts:/app/scripts
+
+  mariadb:
+    image: mariadb:10.6
+    command:
+      - '--max_allowed_packet=64M'
+    healthcheck:
+      # El 'test' ahora usa las variables del archivo .env
+      #test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "${MARIADB_USER}", "-p${MARIADB_PASSWORD}" ]
+      #test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MARIADB_ROOT_PASSWORD}"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MARIADB_ROOT_PASSWORD" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10 # Aumentamos los reintentos
+    ports:
+      - "3306:3306"
+    # La sección 'environment' es crucial aquí. El healthcheck leerá estas variables.
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      # Docker entrypoint ejecuta automáticamente scripts .sql en orden alfabético
+      # SQL refactorizado - Enero 2025: archivos ejecutados en orden
+      # 01_schema.sql - Estructura de tablas (DDL)
+      # 02_seed.sql - Datos de configuración y catálogos
+      # 03_test_data.sql - Datos de prueba (opcional para desarrollo)
+      # 04_personal_tarifas_pagos.sql - Tablas de tarifas y pagos del personal
+      - ../database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ../database/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+      - ../database/03_test_data.sql:/docker-entrypoint-initdb.d/03_test_data.sql
+      - ../database/04_personal_tarifas_pagos.sql:/docker-entrypoint-initdb.d/04_personal_tarifas_pagos.sql
+      - ../database/seeds:/var/lib/mysql-files
+
+# Definición de redes
+#networks:
+#  tdc_network:
+#    driver: bridge
+
+# Definición de volúmenes persistentes
+volumes:
+  mariadb_data:
+  tdc_backend_node_modules:

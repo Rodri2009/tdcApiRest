@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contacto y Confirmación</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* ------------------------------------- */
+    /* DEFINICIÓN DE VARIABLES Y ESTILOS BASE */
+    /* ------------------------------------- */
+    :root {
+      --color-primary: #581c87;
+      /* Morado oscuro de Talleres */
+      --color-secondary: #f0abfc;
+      /* Neon/Fucsia de Talleres */
+      --color-rustic: #44403c;
+      /* Gris/Marrón de Talleres */
+      --color-bg-dark: #0c0a09;
+      /* Fondo principal */
+      --color-card-dark: #1e293b;
+      /* Fondo de la tarjeta/contenedor */
+      --color-text-light: #d6d3d1;
+    }
+
+    /* Estilos generales */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0 0 70px 0;
+      /* Ajuste para el sticky navbar */
+      background-color: var(--color-bg-dark);
+      color: var(--color-text-light);
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 20px auto;
+      /* Ajuste de margen superior */
+      background-color: var(--color-card-dark);
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--color-rustic);
+      position: relative;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 5px;
+      font-size: 2.25rem !important;
+      font-weight: bold;
+      color: var(--color-secondary);
+      /* Color Neon */
+      text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+    }
+
+    h3.subtitle {
+      color: var(--color-secondary);
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 25px;
+      font-size: 1.2em;
+      font-weight: normal;
+    }
+
+    label {
+      display: block;
+      /*margin-bottom: 8px;*/
+      font-weight: bold;
+      color: var(--color-text-light);
+    }
+
+    .form-group {
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #resumen {
+      padding: 15px;
+      border: 1px solid var(--color-secondary);
+      border-radius: 5px;
+      background-color: #0f172a;
+    }
+
+    #resumen p,
+    #resumen ul li {
+      color: #f8fafc;
+      /* Texto en resumen */
+    }
+
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="email"],
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--color-primary);
+      background-color: #0f172a;
+      /* Input Dark */
+      color: var(--color-text-light);
+      border-radius: 6px;
+      box-sizing: border-box;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    input[type="text"]:focus,
+    input[type="tel"]:focus,
+    input[type="email"]:focus,
+    textarea:focus {
+      border-color: var(--color-secondary);
+      outline: none;
+      box-shadow: 0 0 5px var(--color-secondary);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .campo-invalido {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 5px #ef4444 !important;
+    }
+
+    /* ------------------------------------- */
+    /* NAVEGACIÓN SUPERIOR (COPIADA) */
+    /* ------------------------------------- */
+    #top-nav {
+      background-color: var(--color-card-dark);
+      border-bottom: 2px solid var(--color-primary);
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    #top-nav .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    #top-nav .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    #top-nav .nav-item {
+      color: #d6d3d1;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    #top-nav .nav-item:hover {
+      color: var(--color-secondary);
+      background-color: rgba(240, 171, 252, 0.1);
+    }
+
+    /* La página actual es Contacto */
+    #top-nav .active-nav {
+      color: var(--color-secondary);
+      text-shadow: 0 0 5px rgba(240, 171, 252, 0.5);
+      border-bottom: 2px solid var(--color-secondary);
+    }
+
+    .text-neon {
+      color: var(--color-secondary);
+      text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+    }
+
+
+    /* ------------------------------------- */
+    /* BOTONES */
+    /* ------------------------------------- */
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    .button-group button {
+      background-color: transparent;
+      color: var(--color-secondary);
+      border: 2px solid var(--color-secondary);
+      padding: 15px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+      transition: all 0.3s ease-in-out;
+      text-decoration: none;
+      box-sizing: border-box;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    .button-group button:hover {
+      background-color: rgba(132, 63, 172, 0.2);
+      transform: scale(1.02);
+      color: var(--color-secondary);
+      border-color: var(--color-secondary);
+    }
+
+    .button-group button:disabled {
+      background-color: #6b7280;
+      color: #d1d5db;
+      border-color: #6b7280;
+      cursor: not-allowed;
+      transform: scale(1.0);
+    }
+
+    /* ------------------------------------- */
+    /* NOTIFICACIONES */
+    /* ------------------------------------- */
+    #notification-banner {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translate(-50%, 150%);
+      padding: 12px 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      color: white;
+      font-size: 16px;
+      font-weight: 500;
+      z-index: 1000;
+      transition: transform 0.5s ease-in-out;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    #notification-banner.show {
+      transform: translate(-50%, 0);
+    }
+
+    #notification-banner.error {
+      background-color: #ef4444;
+    }
+
+    #notification-banner.warning {
+      background-color: #f59e0b;
+    }
+
+    .client-suggestions {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      position: absolute;
+      width: 100%;
+      z-index: 10;
+      box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+    }
+
+    .suggestion {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #1f2937;
+      color: #d6d3d1;
+      font-size: 0.9rem;
+    }
+
+    .suggestion:hover,
+    .suggestion.active {
+      background: #0f172a;
+      color: var(--color-secondary);
+    }
+
+    .search-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #581c87;
+      border-top-color: #f0abfc;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .client-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(88, 28, 135, 0.2);
+      border: 1px solid #581c87;
+      padding: 6px 10px;
+      border-radius: 4px;
+      color: #f0abfc;
+      margin-top: 6px;
+      font-size: 0.9rem;
+    }
+
+    .client-badge button {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav id="top-nav">
+    <div class="logo">
+      <a href="index.html" class="flex items-center space-x-3">
+        <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+        <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al Inicio</span>
+      </a>
+    </div>
+    <div class="nav-links">
+      <a href="#" onclick="redirigir('presupuesto')" class="nav-item">Presupuesto</a>
+      <a href="#" onclick="redirigir('adicionales')" class="nav-item">Adicionales</a>
+      <a href="/contacto.html" class="nav-item active-nav">Contacto</a>
+    </div>
+  </nav>
+
+  <div id="notification-banner"></div>
+  <div class="container">
+    <h2>Paso Final: Tus Datos de Contacto</h2>
+    <div id="resumen">
+      <p>Cargando resumen...</p>
+    </div>
+
+    <div class="form-group">
+      <label for="nombreCompleto">Nombre y Apellido:</label>
+      <div style="position:relative;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="text" id="nombreCompleto" name="nombreCompleto" required style="flex:1;">
+          <span id="search-spinner" class="search-spinner" style="display:none;"></span>
+        </div>
+        <div id="client-suggestions" class="client-suggestions" style="display:none;"></div>
+        <div id="client-badge" class="client-badge" style="display:none;"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="celular">Celular (con código de área):</label>
+      <input type="text" id="celular" name="celular" required>
+    </div>
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+    <div class="form-group">
+      <label for="detallesAdicionales">¿Algo más que debamos saber? (Opcional)</label>
+      <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
+    </div>
+    <!-- Campos adicionales para eventos de tipo banda -->
+    <div id="band-contacts" class="form-group hidden">
+      <h3 class="subtitle">Contactos para Banda Principal y Invitados</h3>
+      <div>
+        <label for="main_contact_email">Email de contacto de la banda principal</label>
+        <input type="email" id="main_contact_email" name="main_contact_email">
+      </div>
+      <div style="margin-top:12px">
+        <label>Emails de bandas/artistas invitados (hasta 3)</label>
+        <input type="email" id="invitado_1" placeholder="Invitado 1 (email)">
+        <input type="email" id="invitado_2" placeholder="Invitado 2 (email)">
+        <input type="email" id="invitado_3" placeholder="Invitado 3 (email)">
+      </div>
+    </div>
+    <div class="button-group">
+      <button id="btn-volver" class="secondary">Volver</button>
+      <button id="btn-confirmar">Confirmar y Enviar Solicitud</button>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const solicitudId = params.get('solicitudId');
+    const fromPage = params.get('from'); // alquiler, taller, servicio, banda
+    const draftKey = params.get('draftKey');
+    const notificationBanner = document.getElementById('notification-banner');
+    let notificationTimer = null;
+
+    function showNotification(message, type = 'error', duration = 4000) {
+      clearTimeout(notificationTimer);
+      notificationBanner.textContent = message;
+      notificationBanner.className = 'show ' + type;
+      notificationTimer = setTimeout(() => { notificationBanner.className = ''; }, duration);
+    }
+
+    function resetearCamposInvalidos() {
+      const camposInvalidos = document.querySelectorAll('.campo-invalido');
+      camposInvalidos.forEach(campo => {
+        campo.classList.remove('campo-invalido');
+        campo.style.animation = 'none';
+        void campo.offsetWidth;
+        campo.style.animation = '';
+      });
+    }
+
+    function convertirNumero(numero) {
+      const num = typeof numero === 'number' ? numero.toString().trim() : numero.trim();
+      if (num === '') return '';
+      const esAmericano = /^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(num);
+      const esArgentino = /^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(num);
+      if (esArgentino) return num;
+      let numeroLimpio = num.replace(/[^\d.,-]/g, '');
+      numeroLimpio = esAmericano ? num.replace(/,/g, '') : numeroLimpio.replace('.', ',');
+      const partes = numeroLimpio.split(',');
+      let parteEntera = partes[0].replace(/\D/g, '');
+      const parteDecimal = partes[1] || '00';
+      parteEntera = parteEntera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return parteDecimal ? `${parteEntera},${parteDecimal}` : parteEntera;
+    }
+
+    // Búsqueda de clientes
+    let clientSearchTimer = null;
+    let selectedClient = null;
+
+    async function searchClientes(term) {
+      if (!term || term.length < 2) return [];
+      try {
+        const res = await fetch(`/api/solicitudes/clientes/search?q=${encodeURIComponent(term)}`);
+        if (res.ok) return await res.json();
+      } catch (err) { console.error('searchClientes error', err); }
+      return [];
+    }
+
+    function renderClientSuggestions(matches, container) {
+      if (!matches || matches.length === 0) {
+        container.innerHTML = '<div style="padding:10px;color:#9ca3af;">No hay coincidencias</div>';
+        container.style.display = 'block';
+        return;
+      }
+      container.innerHTML = matches.map(c =>
+        `<div class="suggestion" onclick="selectCliente('${c.id || ''}', '${(c.nombre || '').replace(/'/g, "\\'")}', '${(c.telefono || '').replace(/'/g, "\\'")}', '${(c.email || '').replace(/'/g, "\\'")}')" data-id="${c.id}">
+          <strong>${c.nombre || ''}</strong>${c.email ? ' • ' + c.email : ''}${c.telefono ? ' • ' + c.telefono : ''}
+        </div>`
+      ).join('');
+      container.style.display = 'block';
+    }
+
+    function selectCliente(id, nombre, telefono, email) {
+      selectedClient = { id, nombre, telefono, email };
+      document.getElementById('nombreCompleto').value = nombre;
+      document.getElementById('celular').value = telefono;
+      document.getElementById('email').value = email;
+      document.getElementById('client-suggestions').style.display = 'none';
+      showClientBadge(nombre, id);
+    }
+
+    function showClientBadge(nombre, id) {
+      const badge = document.getElementById('client-badge');
+      badge.innerHTML = `<i class="fas fa-user-check"></i> ${nombre} <button onclick="clearClientSelection()" type="button"><i class="fas fa-times"></i></button>`;
+      badge.style.display = 'inline-flex';
+    }
+
+    function clearClientSelection() {
+      selectedClient = null;
+      document.getElementById('client-badge').style.display = 'none';
+      document.getElementById('nombreCompleto').value = '';
+      document.getElementById('celular').value = '';
+      document.getElementById('email').value = '';
+    }
+
+    function renderizarResumenTaller(draft) {
+      const diasMap = { 0: 'Dom', 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb' };
+      const horarios = (draft.schedule || []).map(s => `<li>${diasMap[s.day] || s.day} • ${s.start} • ${s.duration}h</li>`).join('');
+      const excepciones = (draft.exceptions || []).join(', ') || '(ninguna)';
+      const precio = draft.modalidadPago === 'por_clase' ? draft.precioClase : draft.precioSemana;
+      return `
+        <h3>Resumen del Taller/Actividad:</h3>
+        <ul>
+          <li><strong>Tipo:</strong> ${draft.tipoNombre || draft.tipo}</li>
+          <li><strong>Horarios semanales:</strong><ul>${horarios}</ul></li>
+          <li><strong>Excepciones:</strong> ${excepciones}</li>
+          <li><strong>Cupo máximo:</strong> ${draft.cupoMax} alumnos</li>
+          <li><strong>Modalidad de pago:</strong> ${draft.modalidadPago}</li>
+          <li><strong>Precio:</strong> $${convertirNumero(String(precio))}</li>
+          ${draft.detalles ? `<li><strong>Observaciones:</strong> ${draft.detalles}</li>` : ''}
+        </ul>
+      `;
+    }
+
+    function renderizarResumenServicio(draft) {
+      const turnosStr = (draft.turnos || []).map(t => `<li>${t.descripcion} • ${t.fecha} ${t.hora}</li>`).join('');
+      return `
+        <h3>Resumen del Servicio:</h3>
+        <ul>
+          <li><strong>Tipo:</strong> ${draft.servicioNombre || draft.servicio}</li>
+          <li><strong>Turnos:</strong><ul>${turnosStr}</ul></li>
+          ${draft.notas ? `<li><strong>Notas:</strong> ${draft.notas}</li>` : ''}
+        </ul>
+      `;
+    }
+
+    function renderizarResumenAlquiler(draft) {
+      return `
+        <h3>Resumen de Alquiler:</h3>
+        <ul>
+          <li><strong>Tipo:</strong> ${draft.nombreParaMostrar || draft.tipoEvento}</li>
+          <li><strong>Fecha:</strong> ${draft.fechaEvento}</li>
+          <li><strong>Hora inicio:</strong> ${draft.horaInicio}</li>
+          ${draft.horaSalida ? `<li><strong>Hora salida:</strong> ${draft.horaSalida}</li>` : ''}
+          ${draft.precioBase ? `<li><strong>Precio:</strong> $${convertirNumero(String(draft.precioBase))}</li>` : ''}
+        </ul>
+      `;
+    }
+
+    // Resumen para BANDA (registro de banda o solicitud de banda)
+    function renderizarResumenBanda(draft) {
+      const formacion = (draft.formacion && Array.isArray(draft.formacion)) ? draft.formacion.map(f => `<li>${f.instrumento}${f.cantidad > 1 ? ` x${f.cantidad}` : ''}</li>`).join('') : '';
+      const socials = [];
+      if (draft.instagram) socials.push(`Instagram: ${draft.instagram}`);
+      if (draft.facebook) socials.push(`Facebook: ${draft.facebook}`);
+      if (draft.youtube) socials.push(`YouTube: ${draft.youtube}`);
+      if (draft.spotify) socials.push(`Spotify: ${draft.spotify}`);
+      return `
+        <h3>Resumen de Banda:</h3>
+        <ul>
+          <li><strong>Nombre:</strong> ${draft.nombreParaMostrar || draft.nombre_banda || draft.nombre || '—'}</li>
+          ${draft.genero_musical ? `<li><strong>Género:</strong> ${draft.genero_musical}</li>` : ''}
+          ${formacion ? `<li><strong>Formación:</strong><ul>${formacion}</ul></li>` : ''}
+          ${socials.length ? `<li><strong>Redes:</strong> ${socials.join(' • ')}</li>` : ''}
+        </ul>
+      `;
+    }
+
+    // Resumen para FECHA_BANDAS (selección de varias bandas con fechas)
+    function renderizarResumenFechaBandas(draft) {
+      const bandasList = (draft.bandasSeleccionadas || []).map(b => `<li>${b.nombre || b.nombre_banda || '—'} ${b.genero ? `• ${b.genero}` : ''}</li>`).join('');
+      const fechasList = (draft.fechasSeleccionadas || []).map(f => `<li>${f}</li>`).join('');
+      return `
+        <h3>Resumen - Fecha de Bandas:</h3>
+        <ul>
+          <li><strong>Bandas seleccionadas:</strong><ul>${bandasList || '<li>(ninguna)</li>'}</ul></li>
+          <li><strong>Fechas propuestas:</strong><ul>${fechasList || '<li>(ninguna)</li>'}</ul></li>
+          ${draft.comentariosEspeciales ? `<li><strong>Comentarios:</strong> ${draft.comentariosEspeciales}</li>` : ''}
+        </ul>
+      `;
+    }
+
+    // Breadcrumb dinámico: adapta la barra superior según origen y datos
+    function renderBreadcrumb() {
+      const links = document.querySelector('#top-nav .nav-links');
+      if (!links) return;
+      // Default: mostrar Contacto activo
+      let html = '';
+      if (fromPage === 'banda') {
+        html = `<a href="/solicitud_fecha_bandas.html" class="nav-item">Tocar en Vivo</a><span style="margin:0 8px;color:#9ca3af;">›</span><a href="#" class="nav-item active-nav">Contacto</a>`;
+      } else if (fromPage === 'taller') {
+        html = `<a href="/solicitud_taller_actividad.html" class="nav-item">Taller</a><span style="margin:0 8px;color:#9ca3af;">›</span><a href="#" class="nav-item active-nav">Contacto</a>`;
+      } else if (fromPage === 'servicio') {
+        html = `<a href="/seccion_cuidado_personal.html" class="nav-item">Servicios</a><span style="margin:0 8px;color:#9ca3af;">›</span><a href="#" class="nav-item active-nav">Contacto</a>`;
+      } else if (fromPage === 'adicionales') {
+        // Intentar usar solicitudId para generar links a presupuesto/adicionales
+        const baseAlq = solicitudId ? `/solicitud_alquiler.html?solicitudId=${encodeURIComponent(solicitudId)}` : '/solicitud_alquiler.html';
+        const adicionalesLink = solicitudId ? `/adicionales.html?solicitudId=${encodeURIComponent(solicitudId)}` : '/adicionales.html';
+        html = `<a href="${baseAlq}" class="nav-item">Presupuesto</a><span style="margin:0 8px;color:#9ca3af;">›</span><a href="${adicionalesLink}" class="nav-item">Adicionales</a><span style="margin:0 8px;color:#9ca3af;">›</span><a href="#" class="nav-item active-nav">Contacto</a>`;
+      } else {
+        html = `<a href="#" class="nav-item">Presupuesto</a><span style="margin:0 8px;color:#9ca3af;">›</span><a href="#" class="nav-item active-nav">Contacto</a>`;
+      }
+      links.innerHTML = html;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnVolver = document.getElementById('btn-volver');
+      const resumenDiv = document.getElementById('resumen');
+
+      // Actualizar breadcrumb según origen (por si viene de otra página)
+      renderBreadcrumb();
+
+      // Configurar búsqueda de clientes
+      const nombreInput = document.getElementById('nombreCompleto');
+      const suggestionsContainer = document.getElementById('client-suggestions');
+      const spinner = document.getElementById('search-spinner');
+
+      nombreInput.addEventListener('input', () => {
+        clearTimeout(clientSearchTimer);
+        const term = nombreInput.value.trim();
+
+        if (selectedClient && term !== selectedClient.nombre) {
+          clearClientSelection();
+        }
+
+        clientSearchTimer = setTimeout(async () => {
+          if (term.length < 2) {
+            suggestionsContainer.style.display = 'none';
+            return;
+          }
+          spinner.style.display = 'inline-block';
+          const matches = await searchClientes(term);
+          spinner.style.display = 'none';
+          renderClientSuggestions(matches, suggestionsContainer);
+        }, 300);
+      });
+
+      nombreInput.addEventListener('keydown', (ev) => {
+        const active = suggestionsContainer.querySelector('.suggestion.active');
+        if (ev.key === 'ArrowDown') {
+          ev.preventDefault();
+          if (!active) {
+            const first = suggestionsContainer.querySelector('.suggestion');
+            if (first) first.classList.add('active');
+            return;
+          }
+          const next = active.nextElementSibling;
+          if (next) { active.classList.remove('active'); next.classList.add('active'); }
+        } else if (ev.key === 'ArrowUp') {
+          ev.preventDefault();
+          if (!active) {
+            const last = suggestionsContainer.querySelector('.suggestion:last-child');
+            if (last) last.classList.add('active');
+            return;
+          }
+          const prev = active.previousElementSibling;
+          if (prev) { active.classList.remove('active'); prev.classList.add('active'); }
+        } else if (ev.key === 'Enter') {
+          ev.preventDefault();
+          const sel = suggestionsContainer.querySelector('.suggestion.active') || suggestionsContainer.querySelector('.suggestion');
+          if (sel) {
+            selectCliente(sel.dataset.id, sel.textContent.split(' •')[0], '', '');
+          }
+        }
+      });
+
+      nombreInput.addEventListener('blur', () => {
+        setTimeout(() => { suggestionsContainer.style.display = 'none'; }, 200);
+      });
+
+      // Si existe un borrador local (draftKey), priorizamos mostrarlo incluso si hay solicitudId.
+      if (draftKey) {
+        let foundDraft = null;
+        try {
+          const maybe = JSON.parse(localStorage.getItem(draftKey));
+          if (maybe) {
+            foundDraft = maybe;
+            let html = '';
+            // Detectar tipo y llamar al renderer adecuado
+            const tipo = (foundDraft.tipoEvento || foundDraft.tipo || '').toUpperCase();
+            if (tipo === 'TALLER' || foundDraft.schedule) html = renderizarResumenTaller(foundDraft);
+            else if (foundDraft.turnos) html = renderizarResumenServicio(foundDraft);
+            else if (tipo === 'FECHA_BANDAS' || tipo === 'FECHA_EN_VIVO') html = renderizarResumenFechaBandas(foundDraft);
+            else if (tipo === 'BANDA' || tipo === 'BANDA_EDIT') {
+              html = renderizarResumenBanda(foundDraft);
+              if (tipo === 'BANDA_EDIT') html = `<div style="color:#f59e0b;font-weight:600;margin-bottom:8px;">Propuesta de modificación para banda ID: ${foundDraft.id_banda || '(no especificado)'}</div>` + html;
+            }
+            else if (foundDraft.fechaEvento) html = renderizarResumenAlquiler(foundDraft);
+            else html = '<h3>Resumen (Borrador):</h3><pre>' + JSON.stringify(foundDraft, null, 2) + '</pre>';
+            resumenDiv.innerHTML = html;
+            showNotification('Resumen cargado desde borrador', 'success');
+            // Actualizar breadcrumb según origen
+            renderBreadcrumb();
+          } else {
+            // No existe el borrador local: mostrar aviso pero permitir que el flujo continúe a la carga por ID
+            console.warn('Borrador indicado no encontrado en localStorage:', draftKey);
+          }
+        } catch (err) {
+          resumenDiv.innerHTML = '<p style="color: red;">Error leyendo borrador: ' + err.message + '</p>';
+        }
+
+        // Si encontramos un borrador local, configuramos los handlers y NO seguimos al fetch por ID
+        if (foundDraft) {
+          btnVolver.onclick = () => {
+            if (fromPage === 'taller') {
+              window.location.href = '/solicitud_taller_actividad.html';
+            } else if (fromPage === 'servicio') {
+              window.location.href = '/solicitud_servicio.html';
+            } else if (fromPage === 'banda') {
+              window.location.href = '/solicitud_fecha_bandas.html';
+            } else {
+              if (solicitudId) {
+                window.location.href = `/solicitud_alquiler.html?solicitudId=${encodeURIComponent(solicitudId)}`;
+              } else {
+                window.location.href = '/solicitud_alquiler.html';
+              }
+            }
+          };
+
+          document.getElementById('btn-confirmar').onclick = async () => {
+            resetearCamposInvalidos();
+            let hayErrores = false;
+
+            const contactData = {
+              nombreCompleto: document.getElementById('nombreCompleto').value,
+              celular: document.getElementById('celular').value,
+              email: document.getElementById('email').value,
+              detallesAdicionales: document.getElementById('detallesAdicionales').value,
+            };
+
+            if (!contactData.nombreCompleto) { document.getElementById('nombreCompleto').classList.add('campo-invalido'); hayErrores = true; }
+            if (!contactData.celular) { document.getElementById('celular').classList.add('campo-invalido'); hayErrores = true; }
+            if (!contactData.email) { document.getElementById('email').classList.add('campo-invalido'); hayErrores = true; }
+
+            if (hayErrores) {
+              showNotification('Por favor, completa todos los campos obligatorios.', 'warning');
+              return;
+            }
+
+            try {
+              // Si el borrador contiene `proposedChanges` (es edición), lo fusionamos en el payload
+              const base = foundDraft.proposedChanges ? Object.assign({}, foundDraft.proposedChanges) : Object.assign({}, foundDraft);
+              const payload = Object.assign({}, base, contactData);
+
+              // Mantener referencia a id_banda si existe (propuesta de edición)
+              if (foundDraft.id_banda) payload.id_banda = foundDraft.id_banda;
+
+              payload.tipoEvento = payload.tipoEvento || fromPage.toUpperCase() || 'TALLER';
+              payload.nombreParaMostrar = payload.nombreParaMostrar || payload.tipoNombre || '';
+
+              // Normalizar fingerprintId (compatibilidad con versiones anteriores)
+              payload.fingerprintId = payload.fingerprintId || payload.fingerprint || payload.fingerprintid || null;
+              if (payload.fingerprint) delete payload.fingerprint;
+              if (payload.fingerprintid) delete payload.fingerprintid;
+
+              if (solicitudId) {
+                const res = await fetch(`/api/solicitudes/${encodeURIComponent(solicitudId)}/finalizar`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error('Error al confirmar la solicitud.');
+                try { localStorage.removeItem(draftKey); } catch (_) { }
+                window.location.href = `/comprobante.html?solicitudId=${encodeURIComponent(solicitudId)}`;
+              } else {
+                // Detectar si es solicitud de bandas y usar endpoint específico
+                const esBanda = (payload.tipoEvento === 'FECHA_BANDAS' || fromPage === 'banda');
+                const endpoint = esBanda ? '/api/solicitudes-fechas-bandas' : '/api/solicitudes';
+                
+                // Para bandas, mapear campos correctos
+                if (esBanda) {
+                  // Mapear campos del borrador de solicitud_fecha_bandas al formato de la API
+                  const bandaPayload = {
+                    id_banda: payload.id_banda || payload.bandasSeleccionadas?.[0]?.id,
+                    fecha_evento: payload.fechasSeleccionadas?.[0],
+                    contacto_nombre: payload.nombreCompleto,
+                    contacto_email: payload.email,
+                    contacto_telefono: payload.celular,
+                    descripcion: payload.comentariosEspeciales || payload.detallesAdicionales,
+                    es_publico: 1,
+                    fingerprintId: payload.fingerprintId
+                  };
+                  
+                  const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bandaPayload)
+                  });
+                  if (!res.ok) {
+                    const e = await res.json(); throw new Error(e.error || 'Error creando la solicitud.');
+                  }
+                  const created = await res.json();
+                  try { localStorage.removeItem(draftKey); } catch (_) { }
+                  window.location.href = `/comprobante.html?solicitudId=${encodeURIComponent(created.id || created.solicitudId)}`;
+                } else {
+                  const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                  });
+                  if (!res.ok) {
+                    const e = await res.json(); throw new Error(e.error || 'Error creando la solicitud.');
+                  }
+                  const created = await res.json();
+                  try { localStorage.removeItem(draftKey); } catch (_) { }
+                  window.location.href = `/comprobante.html?solicitudId=${encodeURIComponent(created.solicitudId)}`;
+                }
+              }
+            } catch (err) {
+              showNotification('Error: ' + err.message, 'error');
+            }
+          };
+
+          return;
+        }
+      }
+
+      // Caso 2: Solicitud existente en API
+      if (solicitudId) {
+        // 1) Intentar endpoint público primero
+        fetch(`/api/solicitudes/public/${encodeURIComponent(solicitudId)}`)
+          .then(async resPub => {
+            if (resPub.ok) return resPub.json();
+            // 2) Si el público no devuelve OK, intentar la ruta protegida (para el creador autenticado)
+            const resAuth = await fetch(`/api/solicitudes/${encodeURIComponent(solicitudId)}`);
+            if (!resAuth.ok) {
+              if (resAuth.status === 401 || resAuth.status === 403) {
+                const localKey = `solicitud_draft_${solicitudId}`;
+                try {
+                  const localDraft = JSON.parse(localStorage.getItem(localKey));
+                  if (localDraft) {
+                    let html = '';
+                    if (localDraft.schedule) html = renderizarResumenTaller(localDraft);
+                    else if (localDraft.turnos) html = renderizarResumenServicio(localDraft);
+                    else if (localDraft.fechaEvento) html = renderizarResumenAlquiler(localDraft);
+                    else html = '<pre>' + JSON.stringify(localDraft, null, 2) + '</pre>';
+                    resumenDiv.innerHTML = html;
+                    showNotification('Cargando resumen desde borrador local (no autenticado)', 'warning');
+                    return Promise.reject(new Error('Cargado desde borrador local'));
+                  }
+                } catch (e) { /* ignore */ }
+
+                resumenDiv.innerHTML = `<p style="color: red;">No estás autorizado para ver esta solicitud. Si la creaste sin iniciar sesión, vuelve al formulario y completa los datos allí.</p>`;
+                showNotification('No autorizado para ver la solicitud.', 'warning');
+                throw new Error('No autorizado');
+              }
+              throw new Error('No se pudo cargar la solicitud.');
+            }
+            return resAuth.json();
+          })
+          .then(data => {
+            let html = '<h3>Resumen:</h3><ul>';
+
+            const tipo = (data.tipoEvento || '').toUpperCase();
+
+            // Renderizar según tipo
+            if (tipo === 'TALLER' || tipo === 'ACTIVIDAD') {
+              if (data.schedule) {
+                const diasMap = { 0: 'Dom', 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb' };
+                const horarios = data.schedule.map(s => `<li>${diasMap[s.day] || s.day} • ${s.start} • ${s.duration}h</li>`).join('');
+                html += `
+                  <li><strong>Tipo:</strong> ${data.nombreParaMostrar || data.tipoEvento}</li>
+                  <li><strong>Horarios:</strong><ul>${horarios}</ul></li>
+                  <li><strong>Cupo:</strong> ${data.cupoMax}</li>
+                `;
+              }
+            } else if (tipo === 'SERVICIO') {
+              html += `
+                <li><strong>Tipo:</strong> ${data.nombreParaMostrar || data.tipoEvento}</li>
+                ${data.detalles ? `<li><strong>Detalles:</strong> ${data.detalles}</li>` : ''}
+              `;
+            } else if (tipo === 'FECHA_EN_VIVO' || tipo === 'FECHA_BANDAS' || tipo === 'BANDA') {
+              html += `
+                <li><strong>Tipo:</strong> ${data.nombreParaMostrar || data.tipoEvento}</li>
+                <li><strong>Fecha:</strong> ${data.fechaEvento}</li>
+              `;
+              const bandSection = document.getElementById('band-contacts');
+              if (bandSection) bandSection.classList.remove('hidden');
+              if (data.bandaContactoEmail) {
+                document.getElementById('main_contact_email').value = data.bandaContactoEmail;
+              }
+              if (data.bandaInvitados) {
+                try {
+                  const inv = JSON.parse(data.bandaInvitados);
+                  if (Array.isArray(inv)) {
+                    if (inv[0]) document.getElementById('invitado_1').value = inv[0];
+                    if (inv[1]) document.getElementById('invitado_2').value = inv[1];
+                    if (inv[2]) document.getElementById('invitado_3').value = inv[2];
+                  }
+                } catch (e) { /* ignore */ }
+              }
+            } else {
+              // Alquiler o por defecto
+              let totalAdicionales = 0;
+              let listaAdicionales = '';
+              if (data.adicionales && data.adicionales.length > 0) {
+                data.adicionales.forEach(ad => {
+                  totalAdicionales += parseFloat(ad.precio);
+                  listaAdicionales = listaAdicionales === '' ? ad.nombre : listaAdicionales + ', ' + ad.nombre;
+                });
+              }
+              const fecha = new Date(data.fechaEvento).toLocaleDateString('es-AR', { timeZone: 'UTC' });
+              html += `
+                <li><strong>Tipo:</strong> ${data.nombreParaMostrar || data.tipoEvento}</li>
+                <li><strong>Fecha:</strong> ${fecha}</li>
+                <li><strong>Hora:</strong> ${data.horaInicio}</li>
+                <li><strong>Adicionales:</strong> ${listaAdicionales || '(ninguno)'}</li>
+                <li><strong>TOTAL:</strong> $${convertirNumero(parseFloat(data.precioBase || 0) + parseFloat(totalAdicionales))}</li>
+              `;
+            }
+
+            html += '</ul>';
+            resumenDiv.innerHTML = html;
+            showNotification('Datos cargados', 'success');
+          })
+          .catch(error => {
+            if (error.message === 'Cargado desde borrador local') {
+              return;
+            }
+            console.error('Error:', error);
+            resumenDiv.innerHTML = `<p style="color: red;">${error.message}</p>`;
+          });
+
+        // Botón volver para solicitudes existentes
+        btnVolver.onclick = () => {
+          if (fromPage === 'adicionales') {
+            window.location.href = `/adicionales.html?solicitudId=${solicitudId}`;
+          } else if (fromPage === 'taller') {
+            window.location.href = `/editar_solicitud_talleres.html?solicitudId=${solicitudId}`;
+          } else if (fromPage === 'servicio') {
+            window.location.href = `/editar_solicitud_servicios.html?solicitudId=${solicitudId}`;
+          } else if (fromPage === 'banda') {
+            window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${solicitudId}`;
+          } else {
+            window.location.href = `/solicitud_alquiler.html?solicitudId=${solicitudId}`;
+          }
+        };
+
+        document.getElementById('btn-confirmar').onclick = () => {
+          resetearCamposInvalidos();
+          let hayErrores = false;
+
+          const bodyData = {
+            nombreCompleto: document.getElementById('nombreCompleto').value,
+            celular: document.getElementById('celular').value,
+            email: document.getElementById('email').value,
+            detallesAdicionales: document.getElementById('detallesAdicionales').value,
+          };
+
+          if (!bodyData.nombreCompleto) { document.getElementById('nombreCompleto').classList.add('campo-invalido'); hayErrores = true; }
+          if (!bodyData.celular) { document.getElementById('celular').classList.add('campo-invalido'); hayErrores = true; }
+          if (!bodyData.email) { document.getElementById('email').classList.add('campo-invalido'); hayErrores = true; }
+
+          if (hayErrores) {
+            showNotification('Por favor, completa todos los campos obligatorios.', 'warning');
+            return;
+          }
+
+          const main_contact_email = document.getElementById('main_contact_email') ? document.getElementById('main_contact_email').value : null;
+          const invitados = [];
+          ['invitado_1', 'invitado_2', 'invitado_3'].forEach(id => { const el = document.getElementById(id); if (el && el.value) invitados.push(el.value); });
+
+          const payloadToSend = Object.assign({}, bodyData);
+          if (main_contact_email) payloadToSend.main_contact_email = main_contact_email;
+          if (invitados.length > 0) payloadToSend.invitados_emails = invitados;
+
+          fetch(`/api/solicitudes/${solicitudId}/finalizar`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payloadToSend)
+          })
+            .then(response => {
+              if (!response.ok) throw new Error('Error al confirmar la solicitud.');
+              return response.json();
+            })
+            .then(data => {
+              window.location.href = `/comprobante.html?solicitudId=${solicitudId}`;
+            })
+            .catch(error => {
+              showNotification('Error: ' + error.message, 'error');
+            });
+        };
+      }
+
+      // Caso 3: Crear desde borrador (draftKey sin solicitudId)
+      if (draftKey && !solicitudId) {
+        document.getElementById('btn-confirmar').onclick = () => {
+          resetearCamposInvalidos();
+          let hayErrores = false;
+
+          const bodyData = {
+            nombreCompleto: document.getElementById('nombreCompleto').value,
+            celular: document.getElementById('celular').value,
+            email: document.getElementById('email').value,
+            detallesAdicionales: document.getElementById('detallesAdicionales').value,
+          };
+
+          if (!bodyData.nombreCompleto) { document.getElementById('nombreCompleto').classList.add('campo-invalido'); hayErrores = true; }
+          if (!bodyData.celular) { document.getElementById('celular').classList.add('campo-invalido'); hayErrores = true; }
+          if (!bodyData.email) { document.getElementById('email').classList.add('campo-invalido'); hayErrores = true; }
+
+          if (hayErrores) {
+            showNotification('Por favor, completa todos los campos obligatorios.', 'warning');
+            return;
+          }
+
+          try {
+            const draft = JSON.parse(localStorage.getItem(draftKey));
+            if (!draft) throw new Error('Borrador no encontrado.');
+
+            const payload = Object.assign({}, draft, bodyData);
+            payload.tipoEvento = payload.tipoEvento || fromPage.toUpperCase() || 'TALLER';
+            payload.nombreParaMostrar = payload.tipoNombre || payload.nombreParaMostrar || '';
+
+            // Normalizar fingerprintId (compatibilidad con versiones anteriores)
+            payload.fingerprintId = payload.fingerprintId || payload.fingerprint || payload.fingerprintid || null;
+            if (payload.fingerprint) delete payload.fingerprint;
+            if (payload.fingerprintid) delete payload.fingerprintid;
+
+            fetch('/api/solicitudes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            })
+              .then(response => {
+                if (!response.ok) throw new Error('Error creando la solicitud.');
+                return response.json();
+              })
+              .then(created => {
+                try { localStorage.removeItem(draftKey); } catch (_) { }
+                window.location.href = `/comprobante.html?solicitudId=${encodeURIComponent(created.solicitudId)}`;
+              })
+              .catch(err => {
+                showNotification('Error al crear solicitud: ' + err.message, 'error');
+              });
+          } catch (err) {
+            showNotification('Error: ' + err.message, 'error');
+          }
+        };
+      }
+    });
+
+    function redirigir(fromPage) {
+      if (fromPage === 'adicionales') {
+        window.location.href = `/adicionales.html?solicitudId=${solicitudId}`;
+      } else {
+        window.location.href = `/solicitud_alquiler.html?solicitudId=${solicitudId}`;
+      }
+    }
+  </script>
+</body>
+
+</html>
