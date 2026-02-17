@@ -7,8 +7,6 @@ Explica brevemente qué cambia y por qué.
 - Lista de cambios (archivos, endpoints, migraciones)
 
 ## Checklist de revisión (marcar antes de merge)
-- [ ] Tests unitarios añadidos o actualizados
-- [ ] Tests de integración / smoke checks actualizados (`./scripts/verify_migration.sh` pasa)
 - [ ] No quedan referencias a `fechas_bandas_confirmadas` (grep OK)
 - [ ] Frontend: enlaces rotos corregidos / archivos no usados eliminados
 - [ ] Documentación actualizada (`REFACTORIZACION_SOLICITUDES.md`, changelog)
