@@ -1,7 +1,7 @@
 Esta rama `cleanup/fechas-bandas` agrupa las tareas iniciales para iniciar la limpieza.
 
 Tareas propuestas en esta rama (a dividir en PRs más pequeñas):
-- backend: eliminar handlers temporales, actualizar tests, remover rutas legacy si quedan
+- backend: eliminar handlers temporales, actualizar verificación/QA manual, remover rutas legacy si quedan
 - migrations: consolidar migraciones finales (archivo de archivado ya creado)
 - frontend: ejecutar link-checker, remover HTML/JS no referenciado
 - docs: actualizar `REFACTORIZACION_SOLICITUDES.md` y CHANGELOG

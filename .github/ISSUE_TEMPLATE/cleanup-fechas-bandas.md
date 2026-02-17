@@ -17,12 +17,12 @@ Esta issue agrupa las tareas necesarias para eliminar por completo el código y 
 ## Checklist
 - [ ] Crear branch `cleanup/fechas-bandas` y tag `pre-cleanup-YYYYMMDD` (hecho localmente)
 - [ ] Backup DB completo y almacenamiento seguro (`backup_pre_cleanup.sql`)
-- [ ] Ejecutar `./scripts/verify_migration.sh` y añadir tests faltantes
+- [ ] Ejecutar `./scripts/verify_migration.sh` y documentar comprobaciones manuales faltantes
 - [ ] Eliminar handlers/middlewares de trazado (server.js) y endpoints legacy (si quedan)
 - [ ] Buscar y eliminar referencias en código: `grep -R "fechas_bandas_confirmadas"` (excluir migrations y docs)
 - [ ] Revisar frontend: detectar y corregir enlaces rotos (`npx blc`), eliminar HTML/JS no referenciados
 - [ ] Ejecutar `npx depcheck` / `npm run lint` y arreglar dependencias y warnings
-- [ ] Crear PRs pequeños por área (backend, frontend, docs) con tests y reviewers
+- [ ] Crear PRs pequeños por área (backend, frontend, docs) con checklist de QA manual y reviewers
 - [ ] Desplegar a staging, ejecutar `verify_migration.sh` y link-checker en staging
 - [ ] Monitoreo 24–48h, si OK: programar eliminación en producción con ventana de mantenimiento
 

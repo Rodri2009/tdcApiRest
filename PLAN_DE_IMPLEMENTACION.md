@@ -14,7 +14,7 @@ Breve plan por fases para normalizar solicitudes y unificar eventos confirmados.
 
 ## Entregables principales
 - Endpoints y migraciones para `eventos_confirmados`.
-- Corrección de `config_alquiler` (backend+frontend+tests).
+- Corrección de `config_alquiler` (backend+frontend).
 - Vistas/Endpoints uniformes para confirmados (ALQUILERES, BANDAS, TALLERES, SERVICIOS).
 - CRUD instrumentos, búsqueda de talleristas/profesionales y asociación con `clientes`.
 - Checklist de QA y migraciones con backup.
@@ -24,8 +24,7 @@ Breve plan por fases para normalizar solicitudes y unificar eventos confirmados.
 ## Fases y tareas (por prioridad)
 
 ### Fase 0 — Preparación (rápido, ~1h) ⚙️
-- Añadir/ejecutar tests de humo para endpoints críticos (precios, duraciones, tipos, eventos_confirmados, instrumentos, talleres, servicios, personal).
-- Integrar smoke tests en GitHub Actions (`.github/workflows/smoke-tests.yml`) para ejecutar scripts de humo y pruebas E2E básicas. (Nota: configurar secretos necesarios en el repositorio: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `MARIADB_ROOT_PASSWORD`, `MARIADB_USER`, `MARIADB_PASSWORD`, `JWT_SECRET`).
+- Realizar comprobaciones de humo manuales para endpoints críticos (precios, duraciones, tipos, eventos_confirmados, instrumentos, talleres, servicios, personal).
 - Crear rama: `feat/admin-cleanups` y abrir PRs incrementales.
 
 ### Fase 1 — Corregir Config Alquiler (alta, 3–5h) 🔧
@@ -36,16 +35,16 @@ Backend
 - Validar `cantidad_min <= cantidad_max` y devolver errores JSON claros.
 Frontend
 - `config_alquiler.html`: ajustar payload y validaciones (no exigir `vigente_desde` ni `id_evento`).
-Tests
-- Unit/integration para POST/PUT `/api/admin/alquiler/precios`.
+QA (manual)
+- Verificar POST/PUT `/api/admin/alquiler/precios` manualmente.
 
 ### Fase 2 — Tipos de Alquiler / Validación de Código (medio, 2–3h) ✅
 Backend
 - Validar `codigo` con regex: solo `[A-Z0-9_]+` (opcional: `^[A-Z_][A-Z0-9_]*$`). Rechazar con 400 y mensaje claro.
 Frontend
 - Validación en UI en el formulario nuevo (helper y bloqueo de submit).
-Tests
-- Pruebas de validación para `createTipo`.
+QA (manual)
+- Verificar validación para `createTipo` manualmente.
 
 ### Fase 3 — Vistas Confirmadas (alta, 4–6h) 📋
 Objetivo: uniformizar columnas y shape de datos para confirmados.
@@ -55,20 +54,20 @@ Backend
 - Responder con objetos: `fecha, hora, tipo, clienteNombre, descripcionCorta, id`.
 Frontend
 - Renderizar columnas estándar por tipo (ALQ: FECHA,HORA,TIPO,CLIENTE,DESCRIPCION_CORTA,ACCIONES; BANDAS: FECHA,HORA,GENERO,CLIENTE,DESCRIPCION_CORTA,ACCIONES).
-Tests
-- E2E/fixtures para listados confirmados.
+QA (manual)
+- Verificación manual de listados confirmados.
 
 ### Fase 4 — Instrumentos (medio, 2–4h) 🎸
 - Implementar o habilitar CRUD `/api/admin/bandas/instrumentos`.
-- Ajustar formulario/UX y añadir tests de integración.
+- Ajustar formulario/UX y verificar manualmente.
 
 ### Fase 5 — Talleres / Talleristas (med-alto, 6–8h) 🛠️
 Backend/UI
 - Tipos: forzar prefijos (`TALLER_` / `ACTIVIDAD_`) y validaciones.
 - Implementar búsqueda/autocomplete de `clientes` para talleristas; crear `cliente` si no existe.
 - Endpoint de confirmados para talleres: incluir `TALLERISTA`.
-Tests
-- Integración para creación de taller con tallerista nuevo/existente.
+QA (manual)
+- Verificación manual para creación de taller con tallerista nuevo/existente.
 
 ### Fase 6 — Servicios / Profesionales (medio, 4–6h) 🧑‍⚕️
 - Igual patrón que Talleres: búsqueda/creación de `cliente` para profesional.
@@ -76,12 +75,12 @@ Tests
 
 ### Fase 7 — Personal / Clientes (low-med, 3–5h) 👥
 - Propuesta: usar `cliente_id` opcional en tabla `personal_*`.
-- Si se añade FK: planificar migración, backfills y tests; endpoints para asociar.
+- Si se añade FK: planificar migración, backfills y verificaciones manuales; endpoints para asociar.
 
 ---
 
 ## QA, despliegue y documentación ✅
-- Tests unitarios e integración para cada cambio.
+- Verificaciones manuales para cada cambio.
 - PRs pequeños por módulo, revisión obligatoria.
 - Documentar en `README.md` y `REFACTORIZACION.md` (archivo principal de refactor).
 - Desplegar a `staging` y validar checklist UX (formularios, listados, acciones) antes de producción.
@@ -106,7 +105,7 @@ Tests
 ## Siguientes pasos (acción inmediata) ▶️
 1. Si confirmas, hago commit en `cleanup/fechas-bandas` y abro PR con descripción y checklist. 
 2. Crear issues por fase (opcional): tareas y subtareas para asignación. 
-3. Ejecutar tests de humo en staging y proceder con Fase 1.
+3. Ejecutar comprobaciones de humo manuales en staging y proceder con Fase 1.
 
 ---
 

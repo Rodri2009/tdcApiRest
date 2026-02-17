@@ -279,13 +279,13 @@ A continuación tienes una lista accionable, priorizada y con comandos útiles p
   - Crear branch y tag: `git checkout -b cleanup/fechas-bandas && git tag pre-cleanup-$(date +%Y%m%d)`
 
 - **Verificaciones rápidas de endpoints y rutas** 🔎
-  - Ejecutar smoke tests existentes: `./scripts/verify_migration.sh`
+  - Ejecutar verificación de migraciones: `./scripts/verify_migration.sh`
   - Listar rutas registradas (desde backend en ejecución): `curl -s -X GET http://localhost/api/debug/routes -H "Authorization: Bearer $TOKEN" | jq .`
   - Añadir pruebas que verifiquen que los endpoints legacy devuelvan `404` y que los nuevos respondan `200`.
 
 - **Eliminar handlers y trazas temporales** 🧹
   - Revisar `backend/server.js` por middlewares de tracing, `console.warn` y handlers `*fechas_bandas_confirmadas*` y retirarlos (ya se eliminaron de forma principal, verificar no queden más copias).
-  - Ejecutar linter/tests: `cd backend && npm run lint && npm test`
+  - Ejecutar linter y comprobaciones manuales: `cd backend && npm run lint`
 
 ### Prioridad media (limpieza de código y pruebas) ⚙️
 - **Buscar y eliminar referencias**
@@ -320,8 +320,8 @@ A continuación tienes una lista accionable, priorizada y con comandos útiles p
 ### Procedimiento sugerido (paso a paso para mañana)
 1. Crear branch `cleanup/fechas-bandas` y tag `pre-cleanup`.
 2. Ejecutar backup DB y guardar en almacenamiento seguro.
-3. Ejecutar `./scripts/verify_migration.sh` y `npm test` para certificar estado actual.
-4. Buscar y eliminar referencias de código (1 módulo/ruta por PR). Añadir tests que prueben comportamiento esperado (legacy 404, nuevos 200).
+3. Ejecutar `./scripts/verify_migration.sh` y comprobaciones manuales para certificar estado actual.
+4. Buscar y eliminar referencias de código (1 módulo/ruta por PR). Añadir pasos de verificación manual que prueben comportamiento esperado (legacy 404, nuevos 200).
 5. Revisar frontend: ejecutar `npx blc` y corregir/retirar enlaces/HTML sin uso; abrir PRs separados.
 6. Merge a `main` tras revisión; desplegar a staging; ejecutar `verify_migration.sh` y link-checker en staging.
 7. Monitorear logs (nginx + backend) 24–48 horas; si todo ok, planear eliminación final en producción con ventana de mantenimiento.
