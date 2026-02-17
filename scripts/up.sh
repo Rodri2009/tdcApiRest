@@ -202,27 +202,10 @@ eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE ps"
 
 echo ""
 
-# Opcional: ejecutar verificación de integridad SQL si RUN_DB_VERIFICATION=true en el .env
-if [ "${RUN_DB_VERIFICATION,,}" = "true" ]; then
-    echo "--- 🔎 Ejecutando verify_and_fix_inconsistencies.sql (verificación no destructiva) ---"
-    # Esperar a que MariaDB esté lista
-    TRIES=0
-    MAX_TRIES=30
-    until $COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mariadb mysql -u root -p"$MARIADB_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; do
-        TRIES=$((TRIES+1))
-        if [ $TRIES -ge $MAX_TRIES ]; then
-            echo "⚠️ MariaDB no respondió después de $MAX_TRIES intentos. Omitiendo verificación."
-            break
-        fi
-        sleep 1
-    done
-
-    if ! cat verify_and_fix_inconsistencies.sql | $COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""; then
-        echo "⚠️ La verificación devolvió errores o falló. Revisa la salida arriba."
-    else
-        echo "✅ Verificación SQL completada (no destructiva)."
-    fi
-fi
+# Nota: las utilidades automáticas de verificación SQL fueron retiradas del repositorio.
+# Si necesitas comprobar la integridad de la base de datos, sigue los pasos manuales
+# documentados en README.md -> "Verificación manual (QA) — pasos rápidos".
+# (originalmente se ejecutaba `verify_and_fix_inconsistencies.sql` aquí).
 
 echo "--- Mostrando logs del backend en tiempo real (Presiona Ctrl+C para salir) ---"
 eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"

@@ -81,8 +81,7 @@ Las utilidades automatizadas (`check_*`, `apply_*`) y los scripts asociados han 
 Si necesitas reaparecer versiones automatizadas, podemos extraer y proporcionar scripts separados fuera del repositorio principal.
 
 ### SQL
-- `verify_and_fix_inconsistencies.sql` - Plan original SQL
-- `fix_inconsistencies.sql` - Script SQL alternativo
+Las sentencias SQL relevantes están documentadas en este archivo; los scripts `verify_and_fix_inconsistencies.sql` y `fix_inconsistencies.sql` han sido retirados del repositorio. Ejecuta las consultas manualmente con precaución y tras realizar un backup.
 
 ---
 
