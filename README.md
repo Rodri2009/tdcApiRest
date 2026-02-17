@@ -70,6 +70,43 @@ cp .env.example .env   # Editar con tus variables
 
 - o realizar las comprobaciones y pasos de migración manualmente (no hay utilidades automáticas en este repo).
 
+### Verificación manual (QA) — pasos rápidos
+Sigue estos pasos antes y después de aplicar cualquier migración o cambio estructural.
+
+1) Preparar
+   - Asegúrate de tener `.env` configurado y `./scripts/up.sh` corriendo.
+
+2) Backup de la base de datos (obligatorio)
+   - `docker compose -f docker/docker-compose.yml exec -T mariadb sh -c 'mysqldump -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' > backup_pre_migration.sql`
+
+3) Comprobar archivos/migraciones pendientes
+   - `ls database/migrations | sort`  — revisa los SQL a aplicar.
+   - `git log --oneline -- database/migrations | tail -n 10` — historial de migraciones en el repo.
+
+4) Verificar esquema y tablas clave
+   - `docker compose -f docker/docker-compose.yml exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" -D $MARIADB_DATABASE -e \"SHOW TABLES LIKE 'eventos_confirmados'; SELECT COUNT(*) FROM eventos_confirmados;\""`
+
+5) Comprobar que no queden referencias legacy
+   - `grep -R "fechas_bandas_confirmadas" --exclude-dir=.git -n . || true`
+
+6) Verificar endpoints críticos (manual)
+   - `curl -sSf http://localhost:3000/health` (backend UP)
+   - Crear admin localmente y obtener token para comprobar endpoints privados:
+     - `node ./scripts/crear-admin.js`
+     - `TOKEN=$(curl -sS -X POST -H "Content-Type: application/json" -d '{"email":"admin@example","password":"changeme"}' http://localhost:3000/api/auth/login | jq -r .token)`
+     - `curl -sS -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/admin/solicitudes`
+
+7) Comprobar frontend y enlaces
+   - Abre `http://localhost` y revisa las páginas afectadas.
+   - Opcional: `npx blc http://localhost -ro` (link-checker).
+
+8) Logs y rollback
+   - Revisa logs: `docker compose -f docker/docker-compose.yml logs --tail 200 backend`
+   - Si algo falla, restaura DB desde `backup_pre_migration.sql`:
+     `docker compose -f docker/docker-compose.yml exec -T mariadb sh -c 'mysql -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' < backup_pre_migration.sql`
+
+> Nota: las utilidades automáticas `check_*`, `apply_*` y `scripts/verify_migration.sh` fueron retiradas del repositorio; utiliza los pasos anteriores para QA manual.
+
 ### Crear usuario administrador
 
 ```bash
