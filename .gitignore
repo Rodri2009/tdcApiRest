@@ -18,4 +18,5 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-contexto_negocio.md
+contexto_negocio.mduploads/
+backend/uploads/
