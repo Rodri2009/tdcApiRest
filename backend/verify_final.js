@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/**check_inconsistencies_mariadb.js */
+/** referencia a utilidades de verificación (scripts `check_*` eliminados) */
 
 const mariadb = require('mariadb');
 

@@ -8,6 +8,6 @@ Tareas propuestas en esta rama (a dividir en PRs más pequeñas):
 
 Pasos para reviewers:
 1. Revisar cada commit por área
-2. Ejecutar `./scripts/verify_migration.sh`
+2. Ejecutar comprobaciones manuales según la checklist (ver documentación relevante)
 3. Ejecutar `npx blc http://localhost`
 

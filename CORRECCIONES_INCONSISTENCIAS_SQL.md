@@ -72,14 +72,13 @@ FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE
 
 ## 📁 Archivos Generados
 
-### Scripts de Verificación
-- `check_inconsistencies_mariadb.js` - Verificación detallada de inconsistencias
-- `check_inconsistencies_v2.js` - Variante alternativa
-- `check_inconsistencies.js` - Versión original
+### Herramientas y metodología
+Las utilidades automatizadas (`check_*`, `apply_*`) y los scripts asociados han sido eliminados del repositorio para simplificar el mantenimiento. Las verificaciones y correcciones deben realizarse ahora mediante:
+- consultas SQL manuales dirigidas (ver secciones de SQL en este documento),
+- ejecución controlada de sentencias SQL en entorno de staging/producción tras backup, y
+- revisión manual de resultados antes de aplicar cambios en producción.
 
-### Scripts de Corrección  
-- `apply_fixes.js` - Corrección estándar
-- `apply_fixes_aggressive.js` - **Corrección aplicada** (eliminó correctamente AUTO_INCREMENT)
+Si necesitas reaparecer versiones automatizadas, podemos extraer y proporcionar scripts separados fuera del repositorio principal.
 
 ### SQL
 - `verify_and_fix_inconsistencies.sql` - Plan original SQL
@@ -132,14 +131,14 @@ Tabla backup anterior = solicitudes_bandas_old
 
 ### Pasos Ejecutados
 ```bash
-# 1. Verificación de inconsistencias
-docker exec docker-backend-1 node /app/check_inconsistencies_mariadb.js
+# 1. Verificación de inconsistencias (manual)
+#    Ejecuta las consultas SQL de verificación incluidas arriba contra la BD y revisa resultados.
 
-# 2. Aplicación de correcciones agresivas
-docker exec docker-backend-1 node /app/apply_fixes_aggressive.js
+# 2. Aplicación de correcciones (manual)
+#    Aplica las sentencias SQL necesarias tras confirmar backups y revisar impactos.
 
-# 3. Verificación POST-corrección
-docker exec docker-backend-1 node /app/check_inconsistencies_mariadb.js
+# 3. Verificación POST-corrección (manual)
+#    Re-ejecuta las consultas de verificación y confirma que no queden registros inconsistentes.
 ```
 
 ---

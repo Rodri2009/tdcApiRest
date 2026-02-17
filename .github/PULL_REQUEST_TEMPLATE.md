@@ -14,7 +14,7 @@ Explica brevemente qué cambia y por qué.
 
 ## Cómo probar
 Pasos claros para QA / reviewers:
-1. Ejecutar `./scripts/verify_migration.sh`
+1. Ejecutar comprobaciones manuales indicadas en la sección 'Cómo probar'
 2. Probar endpoints claves
 3. Ejecutar `npx blc http://staging` (o local)
 

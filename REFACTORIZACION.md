@@ -205,7 +205,7 @@ Agregar campo `es_publico_cuando_confirmada` a cada tabla (ya existe en algunas,
 - [x] Ejecutada la migración en la DB de prueba y verificado que la tabla fue renombrada correctamente y contenía los registros esperados antes del archivado.
 - [x] Eliminada la tabla backup `fechas_bandas_confirmadas_backup_20260205` (DROP) tras validar que los datos están a salvo en los backups de la migración y que no quedan referencias activas en el código ni en runtime.
 - [x] Eliminado código temporal de trazado y handlers de bloqueo en `backend/server.js` y actualizado `docker/nginx.conf` para devolver 404 en rutas legacy.
-- [x] Actualizado y endurecido `scripts/verify_migration.sh` para excluir migraciones, datos de prueba y archivos internos, añadir reportes robustos y evitar falsos positivos. La verificación final pasó con éxito.
+- [x] Documentadas las comprobaciones manuales de migración; la herramienta automática `scripts/verify_migration.sh` fue retirada del repositorio para simplificar el mantenimiento.
 - [x] Todos los cambios fueron commitados en la rama principal y enviados al remoto (push).
 
 ---
@@ -279,7 +279,7 @@ A continuación tienes una lista accionable, priorizada y con comandos útiles p
   - Crear branch y tag: `git checkout -b cleanup/fechas-bandas && git tag pre-cleanup-$(date +%Y%m%d)`
 
 - **Verificaciones rápidas de endpoints y rutas** 🔎
-  - Ejecutar verificación de migraciones: `./scripts/verify_migration.sh`
+  - Ejecutar verificación de migraciones: realizar comprobaciones manuales descritas en la sección correspondiente
   - Listar rutas registradas (desde backend en ejecución): `curl -s -X GET http://localhost/api/debug/routes -H "Authorization: Bearer $TOKEN" | jq .`
   - Añadir pruebas que verifiquen que los endpoints legacy devuelvan `404` y que los nuevos respondan `200`.
 
@@ -306,7 +306,7 @@ A continuación tienes una lista accionable, priorizada y con comandos útiles p
   - Añadir notas de la limpieza en `REFACTORIZACION_SOLICITUDES.md` (esta sección) y en `CHANGELOG` o release notes.
 
 - **Pruebas de integración y CI**
-  - Añadir paso CI que ejecute `./scripts/verify_migration.sh` y el chequeo de enlaces del frontend en staging.
+  - Añadir paso CI que ejecute la checklist de comprobaciones manuales y el chequeo de enlaces del frontend en staging.
 
 - **DB: limpieza final**
   - Verificar `information_schema.KEY_COLUMN_USAGE` para detectar FKs que referencien tablas legacy antes de borrar (si hay alguna):
@@ -320,10 +320,10 @@ A continuación tienes una lista accionable, priorizada y con comandos útiles p
 ### Procedimiento sugerido (paso a paso para mañana)
 1. Crear branch `cleanup/fechas-bandas` y tag `pre-cleanup`.
 2. Ejecutar backup DB y guardar en almacenamiento seguro.
-3. Ejecutar `./scripts/verify_migration.sh` y comprobaciones manuales para certificar estado actual.
+3. Ejecutar comprobaciones manuales para certificar estado actual.
 4. Buscar y eliminar referencias de código (1 módulo/ruta por PR). Añadir pasos de verificación manual que prueben comportamiento esperado (legacy 404, nuevos 200).
 5. Revisar frontend: ejecutar `npx blc` y corregir/retirar enlaces/HTML sin uso; abrir PRs separados.
-6. Merge a `main` tras revisión; desplegar a staging; ejecutar `verify_migration.sh` y link-checker en staging.
+6. Merge a `main` tras revisión; desplegar a staging; ejecutar la checklist de comprobaciones manuales y link-checker en staging.
 7. Monitorear logs (nginx + backend) 24–48 horas; si todo ok, planear eliminación final en producción con ventana de mantenimiento.
 
 ### Tips y recordatorios 🔔

@@ -68,7 +68,7 @@ cp .env.example .env   # Editar con tus variables
 
   `cat database/migrations/20260210_add_url_flyer_to_eventos_confirmados.sql | docker compose -f docker/docker-compose.yml exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""`
 
-- o usar scripts específicos en `scripts/` cuando estén disponibles (ej.: `node ./scripts/apply_migration_profesionales.js` para migraciones puntuales).
+- o realizar las comprobaciones y pasos de migración manualmente (no hay utilidades automáticas en este repo).
 
 ### Crear usuario administrador
 
