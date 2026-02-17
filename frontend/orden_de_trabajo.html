@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #1a1a1a;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(240, 171, 252, 0.1);
+            margin-top: 2rem;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: var(--color-secondary);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            text-shadow: 0 0 5px var(--color-secondary);
+        }
+
+        h3 {
+            color: #9ca3af;
+            font-weight: normal;
+            margin-top: 0;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 50px;
+            color: #9ca3af;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px 25px;
+            background-color: rgba(240, 171, 252, 0.05);
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            border: 1px solid rgba(240, 171, 252, 0.1);
+        }
+
+        .details-grid div {
+            line-height: 1.5;
+        }
+
+        .details-grid strong {
+            color: var(--color-secondary);
+        }
+
+        .notes-section {
+            background-color: rgba(240, 171, 252, 0.08);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--color-secondary);
+            margin-bottom: 30px;
+        }
+
+        .notes-section h4 {
+            margin-top: 0;
+            color: var(--color-secondary);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            background: linear-gradient(135deg, #581c87 0%, #764ba2 100%);
+            color: var(--color-secondary);
+            font-weight: 600;
+        }
+
+        td.number {
+            text-align: right;
+            font-family: monospace, sans-serif;
+            font-size: 1.1em;
+        }
+
+        .total-row td {
+            border-top: 2px solid rgba(240, 171, 252, 0.2);
+            font-weight: bold;
+            font-size: 1.2em;
+            color: var(--color-secondary);
+        }
+
+        .button-group {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            background-color: #6b7280;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #4b5563;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+    </style>
+    <script src="/navbar.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Orden de Trabajo</h1>
+        </head>
+
+        <body>
+            <div class="container" id="main-container">
+                <div class="loader" id="loader">
+                    <h2>Generando Orden de Trabajo...</h2>
+                </div>
+            </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', async () => {
+                    const params = new URLSearchParams(window.location.search);
+                    const solicitudId = params.get('solicitudId');
+                    const container = document.getElementById('main-container');
+                    if (!solicitudId) {
+                        container.innerHTML = `<h1>Error</h1><p>No se proporcionó un ID de solicitud.</p>`;
+                        return;
+                    }
+                    try {
+                        const response = await fetch(`/api/admin/orden-trabajo/${solicitudId}`);
+                        if (response.status === 401) {
+                            window.location.href = '/login.html';
+                            return;
+                        }
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.message);
+                        renderWorkOrder(data);
+                    } catch (error) {
+                        container.innerHTML = `<h1>Error</h1><p>${error.message}</p>`;
+                    }
+                });
+
+                function renderWorkOrder(data) {
+                    const container = document.getElementById('main-container');
+                    let tableRows = '';
+                    data.assignedStaff.forEach(person => {
+                        tableRows += `
+                <tr>
+                    <td>${person.nombre}</td>
+                    <td>${person.rol}</td>
+                    <td class="number">$ ${person.costoPorHora.toLocaleString('es-AR')}</td>
+                    <td class="number">${data.duracionTotalPersonalEnHoras} hs</td>
+                    <td class="number">$ ${person.viaticos.toLocaleString('es-AR')}</td>
+                    <td class="number">$ ${person.totalPorPersona.toLocaleString('es-AR')}</td>
+                </tr>
+            `;
+                    });
+                    const html = `
+            <h1>Orden de Trabajo</h1>
+            <h3>El Templo de Claypole</h3>
+
+            <div class="details-grid">
+                <div><strong>Solicitud ID:</strong> ${data.solicitudId}</div>
+                <div><strong>Cliente:</strong> ${data.clienteNombre}</div>
+                <div><strong>Fecha del Evento:</strong> ${data.fechaEvento}</div>
+                <div><strong>Tipo de Evento:</strong> ${data.tipoEvento}</div>
+                <div><strong>Horario Evento:</strong> ${data.horaInicio}</div>
+                <div><strong>Duración:</strong> ${data.duracionTotalPersonalEnHoras} hs</div>
+            </div>
+
+            <div class="notes-section">
+                <h4>Detalles Adicionales del Cliente:</h4>
+                <p>${(data.detallesAdicionales || '').replace(/\n/g, '<br>')}</p>
+            </div>
+
+            <h2>Detalle de Personal y Costos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Personal Asignado</th><th>Rol</th><th class="number">Costo/Hora</th><th class="number">Horas</th><th class="number">Viáticos</th><th class="number">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                    <tr class="total-row">
+                        <td colspan="5">Costo Total de Personal</td>
+                        <td class="number">$ ${data.costoTotalPersonal.toLocaleString('es-AR')}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="button-group">
+                <button onclick="window.location.href='/admin_solicitudes.html'">Volver al Panel</button>
+                <button class="btn-work-order" 
+                        onclick="window.location.href='/asignar_personal.html?solicitudId=${data.solicitudId}&tipoEventoId=${data.tipoEventoIdForNav}'">
+                  Volver a Asignar
+                </button>
+            </div>
+        `;
+                    container.innerHTML = html;
+
+                    // Proteger esta página: redirigir a login si no está autenticado
+                    navbarManager = new NavbarManager();
+                    if (!navbarManager.protectAdminPage()) {
+                        return; // Salir si no está autenticado
+                    }
+                    navbarManager.injectNavbar('body');
+                }
+            </script>
+        </body>
+
+</html>

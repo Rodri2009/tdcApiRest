@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administración - Usuarios</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/styles/admin.css">
+  <style>
+    :root {
+      --color-primary: #581c87;
+      --color-secondary: #f0abfc;
+      --color-rustic: #44403c;
+    }
+
+    header.bg-rustic {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+    }
+
+    body {
+      padding: calc(20px + 4rem);
+    }
+
+    /* Estilos específicos de esta página */
+    .checkbox-item .rol-info {
+      flex: 1;
+    }
+
+    .checkbox-item .rol-nombre {
+      font-weight: 500;
+      color: #d6d3d1;
+    }
+
+    .checkbox-item .rol-desc {
+      font-size: 0.75rem;
+      color: #78716c;
+    }
+
+    /* Banner de notificación */
+    .notification-banner {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 500;
+      z-index: 9999;
+      animation: slideIn 0.3s ease;
+      max-width: 400px;
+    }
+
+    .notification-banner.success {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .notification-banner.error {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .notification-banner.info {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <!-- Header (estilo unificado) -->
+    <div
+      style="max-width:1600px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; margin-top:1rem;">
+      <a href="admin.html" class="btn btn-secondary"
+        style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+        <i class="fas fa-arrow-left"></i> Volver al Panel
+      </a>
+      <h1 class="text-4xl font-bold text-neon" style="margin:0; text-align:center;">👥 Administrar Usuarios</h1>
+      <div style="width: 140px;"></div>
+    </div>
+    <p class="mt-2 mb-6 text-gray-400">Gestión de cuentas de usuario y asignación de roles del sistema.</p>
+
+    <!-- Acciones -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button class="btn btn-primary btn-crear" data-requiere-edicion="usuarios" onclick="abrirModalUsuario()">
+            <i class="fas fa-user-plus"></i> Nuevo Usuario
+          </button>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <input type="text" id="buscar" placeholder="🔍 Buscar por email o nombre..." style="width: 250px;"
+            oninput="filtrarUsuarios()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de usuarios -->
+    <div class="card">
+      <div id="tabla-container">
+        <div class="loading">
+          <i class="fas fa-spinner fa-spin fa-2x"></i>
+          <p>Cargando usuarios...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info de roles -->
+    <div class="card">
+      <h3 style="color: var(--color-secondary); margin-bottom: 12px;">📋 Roles del Sistema</h3>
+      <div id="roles-info"
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+        <!-- Se llena dinámicamente -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Crear/Editar Usuario -->
+  <div id="modal-usuario" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Nuevo Usuario</h2>
+        <button class="modal-close" onclick="cerrarModal()">&times;</button>
+      </div>
+      <div id="modal-error"></div>
+      <form id="form-usuario" onsubmit="guardarUsuario(event)">
+        <input type="hidden" id="usuario-id">
+
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="usuario-email" required placeholder="usuario@ejemplo.com">
+        </div>
+
+        <div class="form-group">
+          <label>Nombre</label>
+          <input type="text" id="usuario-nombre" placeholder="Nombre completo">
+        </div>
+
+        <div class="form-group" id="password-group">
+          <label>Contraseña *</label>
+          <input type="password" id="usuario-password" placeholder="Mínimo 6 caracteres" minlength="6">
+          <small style="color: #78716c;">Dejar vacío para mantener la actual (al editar)</small>
+        </div>
+
+        <div class="form-group">
+          <label>Roles</label>
+          <div id="roles-checkboxes" class="checkbox-group">
+            <!-- Se llena dinámicamente -->
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="usuario-activo" checked style="width: auto;">
+            Usuario activo (puede iniciar sesión)
+          </label>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-save"></i> Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar Eliminación -->
+  <div id="modal-eliminar" class="modal-overlay">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2 class="modal-title">⚠️ Confirmar Eliminación</h2>
+        <button class="modal-close" onclick="cerrarModalEliminar()">&times;</button>
+      </div>
+      <p id="eliminar-mensaje" style="margin-bottom: 20px;">¿Estás seguro de eliminar este usuario?</p>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="cerrarModalEliminar()">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmarEliminar()">
+          <i class="fas fa-trash"></i> Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/navbar.js"></script>
+  <script>
+    // Variables globales
+    let usuarios = [];
+    let roles = [];
+    let usuarioAEliminar = null;
+    let puedeEditarUsuarios = false;
+    let puedeEliminarUsuarios = false;
+
+    // Obtener token
+    function getToken() {
+      return localStorage.getItem('authToken');
+    }
+
+    // Headers con autenticación
+    function getHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      };
+    }
+
+    // Banner de notificación
+    function showBanner(message, type = 'info', duration = 4000) {
+      document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+      const banner = document.createElement('div');
+      banner.className = `notification-banner ${type}`;
+      const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+      banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+      document.body.appendChild(banner);
+      setTimeout(() => {
+        banner.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => banner.remove(), 300);
+      }, duration);
+    }
+
+    // Cargar datos iniciales
+    async function cargarDatos() {
+      try {
+        // Cargar roles
+        const resRoles = await fetch('/api/usuarios/roles', { headers: getHeaders() });
+        if (resRoles.ok) {
+          roles = await resRoles.json();
+          renderizarRolesInfo();
+          renderizarRolesCheckboxes();
+        }
+
+        // Cargar usuarios
+        const resUsuarios = await fetch('/api/usuarios', { headers: getHeaders() });
+        if (resUsuarios.ok) {
+          usuarios = await resUsuarios.json();
+          renderizarTabla();
+        } else if (resUsuarios.status === 403) {
+          document.getElementById('tabla-container').innerHTML = `
+                        <div class="error-message">
+                            <i class="fas fa-lock"></i> No tienes permisos para ver usuarios.
+                        </div>
+                    `;
+        }
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+        document.getElementById('tabla-container').innerHTML = `
+                    <div class="error-message">
+                        Error al cargar datos: ${error.message}
+                    </div>
+                `;
+      }
+    }
+
+    // Renderizar tabla de usuarios
+    function renderizarTabla() {
+      const container = document.getElementById('tabla-container');
+
+      if (usuarios.length === 0) {
+        container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <h3>No hay usuarios registrados</h3>
+                        <p>Crea el primer usuario con el botón "Nuevo Usuario"</p>
+                    </div>
+                `;
+        return;
+      }
+
+      let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Email</th>
+                            <th>Nombre</th>
+                            <th>Roles</th>
+                            <th>Estado</th>
+                            <th>Último Acceso</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+      for (const u of usuarios) {
+        const rolesArray = u.roles ? u.roles.split(',') : [];
+        const rolesBadges = rolesArray.map(r => {
+          let badgeClass = 'badge-viewer';
+          if (r === 'SUPER_ADMIN') badgeClass = 'badge-admin';
+          else if (r === 'ADMIN') badgeClass = 'badge-admin';
+          else if (r === 'OPERADOR') badgeClass = 'badge-operador';
+          return `<span class="badge ${badgeClass}">${r}</span>`;
+        }).join(' ');
+
+        const estadoBadge = u.activo
+          ? '<span class="badge badge-active">Activo</span>'
+          : '<span class="badge badge-inactive">Inactivo</span>';
+
+        const ultimoAcceso = u.ultimo_acceso
+          ? new Date(u.ultimo_acceso).toLocaleString('es-AR')
+          : 'Nunca';
+
+        html += `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td>${u.email}</td>
+                        <td>${u.nombre || '-'}</td>
+                        <td>${rolesBadges || '<span style="color:#78716c">Sin rol</span>'}</td>
+                        <td>${estadoBadge}</td>
+                        <td style="font-size: 0.85rem; color: #78716c;">${ultimoAcceso}</td>
+                        <td>
+                            ${puedeEditarUsuarios ? `
+                            <button class="btn btn-secondary" onclick="editarUsuario(${u.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            ` : ''}
+                            ${puedeEliminarUsuarios ? `
+                            <button class="btn btn-danger" onclick="abrirModalEliminar(${u.id}, '${u.email}')" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            ` : ''}
+                            ${!puedeEditarUsuarios && !puedeEliminarUsuarios ? '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>' : ''}
+                        </td>
+                    </tr>
+                `;
+      }
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    // Renderizar info de roles
+    function renderizarRolesInfo() {
+      const container = document.getElementById('roles-info');
+      container.innerHTML = roles.map(r => `
+                <div style="background: #292524; padding: 12px; border-radius: 8px;">
+                    <div style="font-weight: 600; color: var(--color-secondary);">${r.nombre}</div>
+                    <div style="font-size: 0.8rem; color: #78716c; margin-top: 4px;">${r.descripcion || ''}</div>
+                    <div style="font-size: 0.75rem; color: #57534e; margin-top: 4px;">Nivel: ${r.nivel}</div>
+                </div>
+            `).join('');
+    }
+
+    // Renderizar checkboxes de roles en el modal
+    function renderizarRolesCheckboxes() {
+      const container = document.getElementById('roles-checkboxes');
+      container.innerHTML = roles.map(r => `
+                <label class="checkbox-item">
+                    <input type="checkbox" name="roles" value="${r.id}">
+                    <div class="rol-info">
+                        <div class="rol-nombre">${r.nombre}</div>
+                        <div class="rol-desc">${r.descripcion || ''}</div>
+                    </div>
+                </label>
+            `).join('');
+    }
+
+    // Filtrar usuarios
+    function filtrarUsuarios() {
+      const buscar = document.getElementById('buscar').value.toLowerCase();
+      const filtrados = usuarios.filter(u =>
+        u.email.toLowerCase().includes(buscar) ||
+        (u.nombre && u.nombre.toLowerCase().includes(buscar))
+      );
+
+      // Temporalmente reemplazar usuarios y renderizar
+      const original = usuarios;
+      usuarios = filtrados;
+      renderizarTabla();
+      usuarios = original;
+    }
+
+    // Abrir modal para nuevo usuario
+    function abrirModalUsuario() {
+      document.getElementById('modal-title').textContent = 'Nuevo Usuario';
+      document.getElementById('usuario-id').value = '';
+      document.getElementById('usuario-email').value = '';
+      document.getElementById('usuario-nombre').value = '';
+      document.getElementById('usuario-password').value = '';
+      document.getElementById('usuario-password').required = true;
+      document.getElementById('usuario-activo').checked = true;
+      document.getElementById('modal-error').innerHTML = '';
+
+      // Desmarcar todos los roles
+      document.querySelectorAll('input[name="roles"]').forEach(cb => cb.checked = false);
+
+      document.getElementById('modal-usuario').classList.add('active');
+    }
+
+    // Editar usuario existente
+    async function editarUsuario(id) {
+      try {
+        const res = await fetch(`/api/usuarios/${id}`, { headers: getHeaders() });
+        if (!res.ok) throw new Error('Error al obtener usuario');
+
+        const usuario = await res.json();
+
+        document.getElementById('modal-title').textContent = 'Editar Usuario';
+        document.getElementById('usuario-id').value = usuario.id;
+        document.getElementById('usuario-email').value = usuario.email;
+        document.getElementById('usuario-nombre').value = usuario.nombre || '';
+        document.getElementById('usuario-password').value = '';
+        document.getElementById('usuario-password').required = false;
+        document.getElementById('usuario-activo').checked = usuario.activo !== 0;
+        document.getElementById('modal-error').innerHTML = '';
+
+        // Marcar roles del usuario
+        const rolesUsuario = usuario.roles.map(r => r.id);
+        document.querySelectorAll('input[name="roles"]').forEach(cb => {
+          cb.checked = rolesUsuario.includes(parseInt(cb.value));
+        });
+
+        document.getElementById('modal-usuario').classList.add('active');
+      } catch (error) {
+        showBanner('Error al cargar usuario: ' + error.message, 'error');
+      }
+    }
+
+    // Guardar usuario (crear o actualizar)
+    async function guardarUsuario(event) {
+      event.preventDefault();
+
+      const id = document.getElementById('usuario-id').value;
+      const email = document.getElementById('usuario-email').value;
+      const nombre = document.getElementById('usuario-nombre').value;
+      const password = document.getElementById('usuario-password').value;
+      const activo = document.getElementById('usuario-activo').checked;
+
+      // Obtener roles seleccionados
+      const rolesSeleccionados = [];
+      document.querySelectorAll('input[name="roles"]:checked').forEach(cb => {
+        rolesSeleccionados.push(parseInt(cb.value));
+      });
+
+      const datos = {
+        email,
+        nombre,
+        activo,
+        roles: rolesSeleccionados
+      };
+
+      if (password) {
+        datos.password = password;
+      }
+
+      try {
+        const url = id ? `/api/usuarios/${id}` : '/api/usuarios';
+        const method = id ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: getHeaders(),
+          body: JSON.stringify(datos)
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          document.getElementById('modal-error').innerHTML = `
+                        <div class="error-message">${result.message}</div>
+                    `;
+          return;
+        }
+
+        cerrarModal();
+        cargarDatos();
+        mostrarMensaje('success', id ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente');
+      } catch (error) {
+        document.getElementById('modal-error').innerHTML = `
+                    <div class="error-message">Error: ${error.message}</div>
+                `;
+      }
+    }
+
+    // Cerrar modal de usuario
+    function cerrarModal() {
+      document.getElementById('modal-usuario').classList.remove('active');
+    }
+
+    // Abrir modal de confirmación de eliminación
+    function abrirModalEliminar(id, email) {
+      usuarioAEliminar = id;
+      document.getElementById('eliminar-mensaje').textContent =
+        `¿Estás seguro de eliminar al usuario "${email}"? Esta acción no se puede deshacer.`;
+      document.getElementById('modal-eliminar').classList.add('active');
+    }
+
+    // Cerrar modal de eliminación
+    function cerrarModalEliminar() {
+      document.getElementById('modal-eliminar').classList.remove('active');
+      usuarioAEliminar = null;
+    }
+
+    // Confirmar eliminación
+    async function confirmarEliminar() {
+      if (!usuarioAEliminar) return;
+
+      try {
+        const res = await fetch(`/api/usuarios/${usuarioAEliminar}`, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          showBanner(result.message, 'error');
+          return;
+        }
+
+        cerrarModalEliminar();
+        cargarDatos();
+        showBanner('Usuario eliminado exitosamente', 'success');
+      } catch (error) {
+        showBanner('Error al eliminar: ' + error.message, 'error');
+      }
+    }
+
+    // Mostrar mensaje temporal
+    function mostrarMensaje(tipo, texto) {
+      const div = document.createElement('div');
+      div.className = tipo === 'success' ? 'success-message' : 'error-message';
+      div.style.position = 'fixed';
+      div.style.top = '80px';
+      div.style.right = '20px';
+      div.style.zIndex = '9999';
+      div.style.padding = '16px 24px';
+      div.innerHTML = `<i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${texto}`;
+      document.body.appendChild(div);
+
+      setTimeout(() => div.remove(), 3000);
+    }
+
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', () => {
+      navbarManager = new NavbarManager();
+      if (!navbarManager.protectAdminPage()) {
+        return;
+      }
+      navbarManager.injectNavbar('body');
+
+      // Establecer permisos de edición
+      puedeEditarUsuarios = puedeEditar('usuarios');
+      puedeEliminarUsuarios = tienePermiso('usuarios.eliminar');
+
+      // Ocultar botón crear si no tiene permiso
+      aplicarPermisosUI();
+
+      cargarDatos();
+    });
+
+    // Cerrar modales con Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        cerrarModal();
+        cerrarModalEliminar();
+      }
+    });
+  </script>
+</body>
+
+</html>

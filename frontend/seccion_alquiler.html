@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alquiler del Salón - El Templo de Claypole</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
+            border: 1px solid var(--color-rustic);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 20px rgba(240, 171, 252, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .feature-card i {
+            font-size: 2.5rem;
+            color: var(--color-secondary);
+            margin-bottom: 16px;
+        }
+
+        .event-type-card {
+            background: #1c1917;
+            border: 2px solid var(--color-rustic);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .event-type-card:hover {
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 30px rgba(240, 171, 252, 0.3);
+            transform: scale(1.02);
+        }
+
+        .neon-glow-img {
+            box-shadow: 0 0 15px rgba(240, 171, 252, 0.4);
+            transition: transform 0.3s ease;
+        }
+
+        .neon-glow-img:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al Inicio</span>
+                </a>
+
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="seccion_talleres.html" class="text-sm font-medium hover:text-neon transition">Talleres</a>
+                    <a href="seccion_bandas.html" class="text-sm font-medium hover:text-neon transition">Bandas en Vivo</a>
+                    <a href="seccion_servicios.html" class="text-sm font-medium hover:text-neon transition">Servicios</a>
+                    <a href="solicitud_alquiler.html"
+                        class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition">
+                        <i class="fas fa-calculator mr-1"></i> Armar Presupuesto
+                    </a>
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+
+                <button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="seccion_talleres.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <a href="seccion_bandas.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas en Vivo</a>
+                <a href="seccion_servicios.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
+                <a href="solicitud_alquiler.html" class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">
+                    <i class="fas fa-calculator mr-1"></i> Armar Presupuesto
+                </a>
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="py-20 md:py-32 bg-stone-950 text-center">
+            <div class="max-w-4xl mx-auto px-4">
+                <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
+                    <span class="block text-neon"><i class="fas fa-glass-cheers mr-3"></i>Alquiler del Salón</span>
+                </h1>
+                <p class="mt-4 text-2xl text-stone-300 font-medium">
+                    El espacio perfecto para tus celebraciones y eventos
+                </p>
+                <p class="mt-6 text-xl text-fuchsia-400">
+                    Cumpleaños, fiestas infantiles, reuniones familiares y más
+                </p>
+                <div class="mt-8">
+                    <a href="solicitud_alquiler.html"
+                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-calculator mr-2"></i> Armar mi Presupuesto
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tipos de Eventos -->
+        <section class="py-16 bg-stone-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center text-neon mb-4">
+                    <i class="fas fa-party-horn mr-2"></i> Tipos de Eventos
+                </h2>
+                <p class="text-center text-stone-400 mb-10">Adaptamos el espacio a tu celebración</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <a href="solicitud_alquiler.html?tipo=infantiles" class="event-type-card">
+                        <i class="fas fa-birthday-cake text-5xl text-fuchsia-400 mb-4"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Fiestas Infantiles</h3>
+                        <p class="text-stone-400 text-sm">Cumpleaños para los más chicos con espacio para juegos</p>
+                    </a>
+                    <a href="solicitud_alquiler.html?tipo=informales" class="event-type-card">
+                        <i class="fas fa-users text-5xl text-fuchsia-400 mb-4"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Reuniones Informales</h3>
+                        <p class="text-stone-400 text-sm">Juntadas con amigos, asados, cumples de adultos</p>
+                    </a>
+                    <a href="solicitud_alquiler.html?tipo=con_servicio_de_mesa" class="event-type-card">
+                        <i class="fas fa-utensils text-5xl text-fuchsia-400 mb-4"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Con Servicio de Mesa</h3>
+                        <p class="text-stone-400 text-sm">Eventos con catering y servicio completo</p>
+                    </a>
+                    <a href="solicitud_alquiler.html?tipo=baby_showers" class="event-type-card">
+                        <i class="fas fa-baby text-5xl text-fuchsia-400 mb-4"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Baby Showers</h3>
+                        <p class="text-stone-400 text-sm">Celebrá la llegada del bebé en un espacio único</p>
+                    </a>
+                    <a href="solicitud_alquiler.html?tipo=adolescentes" class="event-type-card">
+                        <i class="fas fa-user-graduate text-5xl text-fuchsia-400 mb-4"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Fiestas de Adolescentes</h3>
+                        <p class="text-stone-400 text-sm">15 años, egresos y celebraciones juveniles</p>
+                    </a>
+                    <a href="solicitud_alquiler.html" class="event-type-card">
+                        <i class="fas fa-star text-5xl text-fuchsia-400 mb-4"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Eventos Especiales</h3>
+                        <p class="text-stone-400 text-sm">¿Tenés algo diferente en mente? ¡Consultanos!</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Características del Espacio -->
+        <section class="py-16 bg-stone-950">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center text-neon mb-10">
+                    <i class="fas fa-home mr-2"></i> ¿Qué Incluye?
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="feature-card">
+                        <i class="fas fa-couch"></i>
+                        <h3 class="text-lg font-bold text-white mb-2">Salón Principal</h3>
+                        <p class="text-stone-400 text-sm">Amplio espacio climatizado para hasta 80 personas</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-tree"></i>
+                        <h3 class="text-lg font-bold text-white mb-2">Patio con Parrilla</h3>
+                        <p class="text-stone-400 text-sm">Espacio al aire libre con asador y sillones</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-utensils"></i>
+                        <h3 class="text-lg font-bold text-white mb-2">Cocina Equipada</h3>
+                        <p class="text-stone-400 text-sm">Heladera, microondas y todo lo necesario</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-music"></i>
+                        <h3 class="text-lg font-bold text-white mb-2">Sonido y Luces</h3>
+                        <p class="text-stone-400 text-sm">Sistema de audio y bola de espejos incluidos</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-chair"></i>
+                        <h3 class="text-lg font-bold text-white mb-2">Mobiliario</h3>
+                        <p class="text-stone-400 text-sm">Mesas, sillas y mantelería disponible</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-restroom"></i>
+                        <h3 class="text-lg font-bold text-white mb-2">Baños</h3>
+                        <p class="text-stone-400 text-sm">Baños limpios y en perfectas condiciones</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-parking"></i>
+                        <h3 class="text-lg font-bold text-white mb-2">Estacionamiento</h3>
+                        <p class="text-stone-400 text-sm">Espacio para estacionar en la vereda</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-wifi"></i>
+                        <h3 class="text-lg font-bold text-white mb-2">WiFi Gratis</h3>
+                        <p class="text-stone-400 text-sm">Conexión a internet para tus invitados</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Galería de Fotos -->
+        <section class="py-16 bg-stone-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center text-neon mb-10">
+                    <i class="fas fa-camera mr-2"></i> Conocé el Espacio
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_salon_1.jpg" alt="Salón principal"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Sal%C3%B3n+Principal';">
+                        <p class="text-center text-white font-semibold">Salón Principal</p>
+                    </div>
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_patio_1.jpg" alt="Patio con parrilla"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Patio+con+Parrilla';">
+                        <p class="text-center text-white font-semibold">Patio con Parrilla</p>
+                    </div>
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_evento_1.jpg" alt="Evento en el salón"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Evento+Realizado';">
+                        <p class="text-center text-white font-semibold">Eventos Realizados</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Final -->
+        <section class="py-16 bg-stone-950">
+            <div class="max-w-4xl mx-auto px-4 text-center">
+                <h2 class="text-3xl font-bold text-neon mb-6">¿Listo para reservar?</h2>
+                <p class="text-xl text-stone-300 mb-8">
+                    Armá tu presupuesto en segundos y elegí la fecha perfecta para tu evento
+                </p>
+                <a href="solicitud_alquiler.html"
+                    class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-10 rounded-xl text-xl shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                    <i class="fas fa-rocket mr-2"></i> Empezar Ahora
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-rustic border-t border-stone-700 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Menú móvil
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenuButton && mobileMenu) {
+            mobileMenuButton.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+        }
+
+        // Auth menu
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                if (desktopMenu) desktopMenu.innerHTML = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition">🔐 Admin</a>`;
+                if (mobileMenu) mobileMenu.innerHTML = `<a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐 Admin</a>`;
+            } else {
+                if (desktopMenu) desktopMenu.innerHTML = `<a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition">Login</a>`;
+                if (mobileMenu) mobileMenu.innerHTML = `<a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon text-neon">Login</a>`;
+            }
+        }
+        updateAuthMenu();
+    </script>
+</body>
+
+</html>

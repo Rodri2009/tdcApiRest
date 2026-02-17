@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            color: #007bff;
+            font-size: 1.4em;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+
+        .detail-item strong {
+            display: block;
+            color: #555;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        .detail-item span {
+            font-size: 1.1em;
+        }
+
+        #adicionales-list li,
+        #precios-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        #adicionales-list li:last-child,
+        #precios-list li:last-child {
+            border-bottom: none;
+        }
+
+        #total-final {
+            text-align: right;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #28a745;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #007bff;
+        }
+
+        #loading,
+        #error {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+
+        .button-link {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: background-color 0.2s;
+        }
+
+        .button-link:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>¡Gracias por tu Solicitud!</h1>
+            <p>Se ah enviado un email a su casilla con los siguientes datos. Nos pondremos en contacto a la brevedad.
+            </p>
+        </div>
+
+        <div class="content" id="comprobante-content" style="display: none;">
+            <div class="section">
+
+                <h2>Detalles del Evento</h2>
+                <div class="details-grid">
+                    <div class="detail-item"><strong>Tipo de Evento:</strong> <span id="nombre_para_mostrar"></span>
+                    </div>
+                    <div class="detail-item"><strong>Fecha:</strong> <span id="fecha_evento"></span></div>
+                    <div class="detail-item"><strong>Hora:</strong> <span id="hora_evento"></span></div>
+                    <div class="detail-item"><strong>Duración:</strong> <span id="duracion"></span></div>
+                    <div class="detail-item"><strong>Cantidad de Personas:</strong> <span
+                            id="cantidad_de_personas"></span></div>
+                </div>
+                <!-- Añadimos una sección separada para la descripción larga -->
+                <div class="detail-item" id="detalleTipoEventoDiv"
+                    style="grid-column: 1 / -1; margin-top: 15px; white-space: pre-wrap;">
+                    <strong>Detalles del Tipo de Evento:</strong>
+                    <span id="descripcion_tipo_evento">Cargando...</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Detalles del Solicitante</h2>
+                <div class="details-grid">
+                    <div class="detail-item"><strong>Nombre:</strong> <span id="nombre_cliente"></span></div>
+                    <div class="detail-item"><strong>Email:</strong> <span id="email"></span></div>
+                    <div class="detail-item"><strong>Teléfono:</strong> <span id="telefono"></span></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Resumen de Precios</h2>
+                <ul id="precios-list" style="list-style: none; padding: 0;">
+                    <li><span>Precio Base del Evento</span><strong id="precio_basico"></strong></li>
+                </ul>
+                <div id="adicionales-section" style="display: none;">
+                    <h3>Adicionales Seleccionados:</h3>
+                    <ul id="adicionales-list" style="list-style: none; padding: 0;">
+                        <!-- Los adicionales se insertarán aquí dinámicamente -->
+                    </ul>
+                </div>
+                <div id="total-final">Total: <span id="precio_final"></span></div>
+            </div>
+
+            <div class="section" style="text-align: center; margin-top: 40px;">
+                <a href="/" class="button-link">Realizar una Nueva Consulta</a>
+            </div>
+
+        </div>
+
+        <div id="loading">
+            <p>Cargando tu comprobante...</p>
+        </div>
+        <div id="error" style="display: none;">
+            <p style="color: red;">Error al cargar el comprobante.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const solicitudId = params.get('solicitudId');
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const contentDiv = document.getElementById('comprobante-content');
+            if (!solicitudId) {
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                errorDiv.querySelector('p').textContent = 'Error: No se encontró un ID de solicitud en la URL.';
+                return;
+            }
+            // Llamamos al mismo endpoint que usamos en la página de Contacto
+            Promise.all([
+                    fetch(`/api/solicitudes/${solicitudId}`).then(res => res.json()),
+                    fetch('/api/opciones/tipos-evento').then(res => res.json())
+                ])
+                .then(([solicitudData, todosLosTipos]) => {
+                    // 'solicitudData' tiene los detalles de la solicitud actual
+                    // 'todosLosTipos' es el array completo de tipos de evento
+                    if (!solicitudData || !solicitudData.solicitudId) {
+                        throw new Error('La solicitud solicitada no fue encontrada.');
+                    }
+                    // Buscamos la descripción completa del tipo de evento
+                    const tipoEventoCompleto = todosLosTipos.find(tipo => tipo.id === solicitudData
+                        .tipoEvento);
+                    const descripcionEvento = tipoEventoCompleto ? tipoEventoCompleto.descripcion :
+                        'No disponible.';
+                    document.getElementById('descripcion_tipo_evento').textContent = descripcionEvento;
+                    // Insertamos la nueva sección después de los detalles del evento
+                    const detallesEventoSection = document.querySelector('.section:nth-of-type(2)');
+                    detallesEventoSection.parentNode.insertBefore(detalleTipoEventoDiv,
+                        detallesEventoSection.nextSibling);
+                    // --- EL RESTO DEL CÓDIGO ES IGUAL, SOLO USA 'solicitudData' ---
+                    const formatDate = (dateString) => new Date(dateString).toLocaleDateString('es-AR', {
+                        timeZone: 'UTC'
+                    });
+                    const formatCurrency = (number) => `$${parseFloat(number).toLocaleString('es-AR')}`;
+                    document.getElementById('nombre_cliente').textContent = solicitudData.nombreCliente || solicitudData.nombreCompleto || solicitudData.nombre_completo || '';
+                    document.getElementById('email').textContent = solicitudData.email;
+                    document.getElementById('telefono').textContent = solicitudData.telefono;
+                    document.getElementById('nombre_para_mostrar').textContent = solicitudData
+                        .nombreParaMostrar;
+                    document.getElementById('fecha_evento').textContent = formatDate(solicitudData
+                        .fechaEvento);
+                    document.getElementById('hora_evento').textContent = solicitudData.horaInicio;
+                    document.getElementById('duracion').textContent = solicitudData.duracionEvento;
+                    document.getElementById('cantidad_de_personas').textContent = solicitudData
+                        .cantidadPersonas;
+                    document.getElementById('precio_basico').textContent = formatCurrency(solicitudData
+                        .precioBase);
+                    let totalAdicionales = 0;
+                    if (solicitudData.adicionales && solicitudData.adicionales.length > 0) {
+                        const adicionalesList = document.getElementById('adicionales-list');
+                        solicitudData.adicionales.forEach(ad => {
+                            const li = document.createElement('li');
+                            li.innerHTML =
+                                `<span>${ad.nombre}</span><strong>${formatCurrency(ad.precio)}</strong>`;
+                            adicionalesList.appendChild(li);
+                            totalAdicionales += parseFloat(ad.precio);
+                        });
+                        document.getElementById('adicionales-section').style.display = 'block';
+                    }
+                    const precioFinal = parseFloat(solicitudData.precioBase) + totalAdicionales;
+                    document.getElementById('precio_final').textContent = formatCurrency(precioFinal);
+                    loadingDiv.style.display = 'none';
+                    contentDiv.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loadingDiv.style.display = 'none';
+                    errorDiv.style.display = 'block';
+                    errorDiv.querySelector('p').textContent = error.message;
+                });
+        });
+    </script>
+
+</body>
+
+</html>

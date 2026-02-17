@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuración - Talleres y Actividades</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+            --color-dark: #0c0a09;
+            --color-card: #1c1917;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background: var(--color-dark);
+            color: #d6d3d1;
+            padding-bottom: 80px;
+        }
+
+        .wrap {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
+        h1 {
+            color: var(--color-secondary);
+            text-align: center;
+            margin: 1rem 0;
+            font-size: 1.8rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--color-rustic);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            font-size: 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover {
+            color: var(--color-secondary);
+        }
+
+        .tab.active {
+            color: var(--color-secondary);
+            border-bottom-color: var(--color-secondary);
+            font-weight: 600;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Client suggestions for modal */
+        .client-suggestions .suggestions-list {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow: auto;
+            padding: 4px;
+            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+        }
+
+        .client-suggestions .suggestion {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .client-suggestions .suggestion:hover {
+            background: #0f172a;
+        }
+
+        .client-suggestions .suggestion.active {
+            background: var(--color-secondary);
+            color: var(--color-dark);
+            font-weight: 600;
+            box-shadow: 0 6px 18px rgba(88, 28, 135, 0.12);
+            border-left: 4px solid rgba(88, 28, 135, 0.9);
+        }
+
+        /* Spinner shown while searching */
+        .search-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            border-top-color: var(--color-secondary);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Badge showing selected client with clear action */
+        .client-badge {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-secondary);
+            padding: 6px 8px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+
+        .client-badge .clear-btn {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+
+        .card {
+            background: var(--color-card);
+            border-radius: 12px;
+            border: 1px solid var(--color-rustic);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--color-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-rustic);
+        }
+
+        th {
+            background: rgba(240, 171, 252, 0.1);
+            color: var(--color-secondary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+
+        .badge-gray {
+            background: #374151;
+            color: #9ca3af;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--color-secondary);
+            color: var(--color-dark);
+        }
+
+        .btn-primary:hover {
+            background: #e879f9;
+        }
+
+        .btn-secondary {
+            background: #374151;
+            color: #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-icon {
+            padding: 8px;
+            background: transparent;
+            color: #9ca3af;
+        }
+
+        .btn-icon:hover {
+            color: var(--color-secondary);
+        }
+
+        input,
+        select,
+        textarea {
+            background: #292524;
+            border: 1px solid var(--color-rustic);
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: #d6d3d1;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 16px;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--color-card);
+            border-radius: 12px;
+            border: 1px solid var(--color-rustic);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-rustic);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            color: var(--color-secondary);
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--color-rustic);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--color-secondary);
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            color: #93c5fd;
+            font-size: 0.9rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filters>div {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .filters label {
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        /* Banner de notificación */
+        .notification-banner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+
+        .notification-banner.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification-banner.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification-banner.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <a href="/admin.html" class="btn btn-secondary" style="text-decoration:none;">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <h1 style="margin:0;flex:1;"><i class="fas fa-chalkboard-teacher"></i> Configuración de Talleres</h1>
+            <div style="width:150px;"></div>
+        </div>
+
+        <div class="tabs right">
+            <button class="tab active" data-section="tipos">
+                <i class="fas fa-list"></i> Tipos de Taller
+            </button>
+            <button class="tab" data-section="talleristas">
+                <i class="fas fa-user-tie"></i> Talleristas / Profesores
+            </button>
+            <button class="tab" data-section="precios">
+                <i class="fas fa-dollar-sign"></i> Precios y Vigencia
+            </button>
+            <button class="tab" data-section="talleres">
+                <i class="fas fa-book"></i> Talleres / Actividades Confirmados
+            </button>
+        </div>
+
+        <!-- SECCIÓN: Tipos de Taller -->
+        <div id="section-tipos" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-list"></i> Tipos de Taller</h3>
+                    <button class="btn btn-primary" onclick="openModal('tipo')">
+                        <i class="fas fa-plus"></i> Nuevo Tipo
+                    </button>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    Categorías de talleres: Yoga, Danza, Arte, etc.
+                </div>
+                <div class="filters">
+                    <div>
+                        <label>Buscar:</label>
+                        <input type="text" id="filtro-tipo-nombre" placeholder="Nombre..." oninput="filterTipos()">
+                    </div>
+                    <div>
+                        <label>Estado:</label>
+                        <select id="filtro-tipo-estado" onchange="filterTipos()">
+                            <option value="">Todos</option>
+                            <option value="1">Activos</option>
+                            <option value="0">Inactivos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-tipos"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Talleres / Actividades -->
+        <div id="section-talleres" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-book"></i> Talleres / Actividades</h3>
+                    <button class="btn btn-primary" onclick="openModal('taller')">
+                        <i class="fas fa-plus"></i> Nuevo Taller
+                    </button>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    Talleres específicos con horarios, duración y tallerista asignado.
+                </div>
+                <div class="filters">
+                    <div>
+                        <label>Tipo:</label>
+                        <select id="filtro-taller-tipo" onchange="filterTalleres()">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Estado:</label>
+                        <select id="filtro-taller-estado" onchange="filterTalleres()">
+                            <option value="">Todos</option>
+                            <option value="1">Activos</option>
+                            <option value="0">Inactivos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Tipo</th>
+                                <th>Tallerista</th>
+                                <th>Duración</th>
+                                <th>Horario</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-talleres"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Talleristas / Profesores -->
+        <div id="section-talleristas" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-user-tie"></i> Talleristas / Profesores</h3>
+                    <button class="btn btn-primary" onclick="openModal('tallerista')">
+                        <i class="fas fa-plus"></i> Nuevo Tallerista
+                    </button>
+                </div>
+                <div class="filters">
+                    <div>
+                        <label>Buscar:</label>
+                        <input type="text" id="filtro-tallerista-nombre" placeholder="Nombre..."
+                            oninput="filterTalleristas()">
+                    </div>
+                    <div>
+                        <label>Estado:</label>
+                        <select id="filtro-tallerista-estado" onchange="filterTalleristas()">
+                            <option value="">Todos</option>
+                            <option value="1">Activos</option>
+                            <option value="0">Inactivos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Especialidad</th>
+                                <th>Teléfono</th>
+                                <th>Email</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-talleristas"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Precios y Vigencia -->
+        <div id="section-precios" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-dollar-sign"></i> Precios y Vigencia</h3>
+                    <button class="btn btn-primary" onclick="openModal('precio')">
+                        <i class="fas fa-plus"></i> Nuevo Precio
+                    </button>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    Precios por taller con período de vigencia. El sistema usa el precio vigente automáticamente.
+                </div>
+                <div class="filters">
+                    <div>
+                        <label>Taller:</label>
+                        <select id="filtro-precio-taller" onchange="filterPrecios()">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Estado:</label>
+                        <select id="filtro-precio-estado" onchange="filterPrecios()">
+                            <option value="">Todos</option>
+                            <option value="vigente">Vigentes</option>
+                            <option value="vencido">Vencidos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Taller</th>
+                                <th>Precio</th>
+                                <th>Modalidad</th>
+                                <th>Vigente Desde</th>
+                                <th>Vigente Hasta</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-precios"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Genérico -->
+    <div id="modal-generic" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Título</h3>
+                <button class="btn btn-icon" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" id="modal-save-btn" onclick="saveModal()">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/navbar.js"></script>
+    <script>
+        const API_TALLERES = '/api/talleres';
+
+        let tipos = [];
+        let talleres = [];
+        let talleristas = [];
+        let precios = [];
+        let currentModalType = null;
+        let editingId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) return;
+            navbarManager.injectNavbar('body');
+
+            initTabs();
+            loadAllData();
+
+            // Manejar hash en URL
+            const hash = window.location.hash.replace('#', '');
+            if (hash) {
+                const tab = document.querySelector(`.tab[data-section="${hash}"]`);
+                if (tab) tab.click();
+            }
+        });
+
+        function authHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            };
+        }
+
+        // Banner de notificación
+        function showBanner(message, type = 'info', duration = 4000) {
+            document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+            const banner = document.createElement('div');
+            banner.className = `notification-banner ${type}`;
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+            document.body.appendChild(banner);
+            setTimeout(() => {
+                banner.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => banner.remove(), 300);
+            }, duration);
+        }
+
+        function initTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const section = tab.dataset.section;
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                    document.getElementById(`section-${section}`).classList.add('active');
+                    window.location.hash = section;
+                });
+            });
+        }
+
+        async function loadAllData() {
+            await Promise.all([
+                loadTipos(),
+                loadTalleristas(),
+                loadTalleres(),
+                loadPrecios()
+            ]);
+            populateSelects();
+        }
+
+        function populateSelects() {
+            // Filtro tipo para talleres
+            const filtroTallerTipo = document.getElementById('filtro-taller-tipo');
+            filtroTallerTipo.innerHTML = '<option value="">Todos</option>' +
+                tipos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+
+            // Filtro tipo para precios
+            const filtroPrecioTipo = document.getElementById('filtro-precio-taller');
+            filtroPrecioTipo.innerHTML = '<option value="">Todos</option>' +
+                tipos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+        }
+
+        // ============ TIPOS DE TALLER ============
+        async function loadTipos() {
+            try {
+                const res = await fetch(`${API_TALLERES}/tipos`);
+                if (res.ok) {
+                    tipos = await res.json();
+                    renderTipos();
+                }
+            } catch (err) { console.error('Error:', err); }
+        }
+
+        function renderTipos() {
+            const nombreFiltro = document.getElementById('filtro-tipo-nombre')?.value?.toLowerCase() || '';
+            const estadoFiltro = document.getElementById('filtro-tipo-estado')?.value || '';
+
+            let filtered = tipos;
+            if (nombreFiltro) filtered = filtered.filter(t => t.nombre.toLowerCase().includes(nombreFiltro));
+            if (estadoFiltro !== '') filtered = filtered.filter(t => String(t.esPublico) === estadoFiltro);
+
+            const tbody = document.getElementById('tbody-tipos');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay tipos configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(t => `
+                <tr>
+                    <td><code>${t.id}</code></td>
+                    <td><strong>${t.nombre}</strong></td>
+                    <td>${t.descripcion || '-'}</td>
+                    <td>${t.esPublico ? '<span class="badge badge-success">Público</span>' : '<span class="badge badge-gray">Oculto</span>'}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editTipo('${t.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteTipo('${t.id}')" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTipos() { renderTipos(); }
+
+        // ============ TALLERISTAS ============
+        async function loadTalleristas() {
+            try {
+                const res = await fetch(`${API_TALLERES}/talleristas/lista`);
+                if (res.ok) {
+                    talleristas = await res.json();
+                    renderTalleristas();
+                }
+            } catch (err) { console.error('Error:', err); }
+        }
+
+        // Buscar cliente por término (autocomplete admin)
+        async function searchClientes(term) {
+            if (!term || term.length < 2) return [];
+            try {
+                const token = localStorage.getItem('authToken');
+                const res = await fetch(`/api/admin/clientes/search?q=${encodeURIComponent(term)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) return await res.json();
+            } catch (err) { console.error('searchClientes error', err); }
+            return [];
+        }
+
+        // Manejo de búsqueda con debounce y renderizado de sugerencias en el modal (usa el campo Nombre como input)
+        let clientSearchTimer = null;
+        function attachClientSearchHandlers() {
+            const input = document.getElementById('modal-nombre');
+            const container = document.getElementById('modal-client-suggestions');
+            if (!input || !container) return;
+
+            input.addEventListener('input', () => {
+                clearTimeout(clientSearchTimer);
+                const term = input.value.trim();
+
+                // If user edits the name after selecting a client, clear the association
+                if (selectedClientName && term !== selectedClientName) {
+                    clearClientBadge();
+                }
+
+                clientSearchTimer = setTimeout(async () => {
+                    if (term.length < 2) {
+                        container.innerHTML = '';
+                        return;
+                    }
+                    // show spinner
+                    const spinner = document.getElementById('modal-search-spinner'); if (spinner) spinner.style.display = 'inline-block';
+                    const matches = await searchClientes(term);
+                    // hide spinner
+                    if (spinner) spinner.style.display = 'none';
+                    renderClientSuggestions(matches, container);
+                }, 300);
+            });
+
+            input.addEventListener('keydown', (ev) => {
+                // Basic keyboard navigation over the suggestions container
+                const active = container.querySelector('.suggestion.active');
+                if (ev.key === 'ArrowDown') {
+                    ev.preventDefault();
+                    if (!active) { const first = container.querySelector('.suggestion'); if (first) first.classList.add('active'); return; }
+                    const next = active.nextElementSibling; if (next) { active.classList.remove('active'); next.classList.add('active'); }
+                } else if (ev.key === 'ArrowUp') {
+                    ev.preventDefault();
+                    if (!active) { const last = container.querySelector('.suggestion:last-child'); if (last) last.classList.add('active'); return; }
+                    const prev = active.previousElementSibling; if (prev) { active.classList.remove('active'); prev.classList.add('active'); }
+                } else if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    const sel = container.querySelector('.suggestion.active') || container.querySelector('.suggestion');
+                    if (sel) selectClientFromSuggestion(sel.dataset.id, sel.dataset.nombre, sel.dataset.telefono, sel.dataset.email);
+                }
+            });
+        }
+
+        function renderClientSuggestions(matches, container) {
+            if (!matches || matches.length === 0) { container.innerHTML = ''; return; }
+            container.innerHTML = '<div class="suggestions-list">' + matches.map(m => `
+                <div class="suggestion" data-id="${m.id}" data-nombre="${m.nombre}" data-telefono="${m.telefono || ''}" data-email="${m.email || ''}">
+                    <strong>${m.nombre}</strong> <small style="color:#6b7280">${m.email || m.telefono || ''}</small>
+                </div>`).join('') + '</div>';
+
+            const suggestions = Array.from(container.querySelectorAll('.suggestion'));
+            if (suggestions.length > 0) {
+                // mark first as active for quick keyboard selection
+                suggestions[0].classList.add('active');
+            }
+
+            // Attach handlers for click and hover (mouse)
+            suggestions.forEach(el => {
+                el.addEventListener('click', () => {
+                    selectClientFromSuggestion(el.dataset.id, el.dataset.nombre, el.dataset.telefono, el.dataset.email);
+                });
+                el.addEventListener('mouseenter', () => {
+                    container.querySelectorAll('.suggestion').forEach(s => s.classList.remove('active'));
+                    el.classList.add('active');
+                });
+            });
+        }
+
+        let selectedClientName = null;
+        let selectedClientId = null;
+
+        function showClientBadge(id, nombre) {
+            const el = document.getElementById('modal-client-selected');
+            if (!el) return;
+            selectedClientName = nombre || null;
+            selectedClientId = id || null;
+            el.innerHTML = `<div class="client-badge" data-id="${id}"><span class="name">${nombre}</span><button class="clear-btn" title="Desvincular cliente" onclick="clearClientBadge()">✕</button></div>`;
+        }
+
+        function clearClientBadge() {
+            const el = document.getElementById('modal-client-selected');
+            if (el) el.innerHTML = '';
+            selectedClientName = null;
+            selectedClientId = null;
+            const hid = document.getElementById('tallerista-cliente-id'); if (hid) hid.value = '';
+            showBanner('Cliente desvinculado', 'info');
+        }
+
+        function selectClientFromSuggestion(id, nombre, telefono, email) {
+            document.getElementById('modal-nombre').value = nombre || document.getElementById('modal-nombre').value;
+            document.getElementById('modal-telefono').value = telefono || '';
+            document.getElementById('modal-email').value = email || '';
+            document.getElementById('tallerista-cliente-id').value = id || '';
+
+            // Show selected badge
+            showClientBadge(id, nombre);
+
+            // Clear suggestions
+            const container = document.getElementById('modal-client-suggestions');
+            if (container) container.innerHTML = '';
+
+            showBanner('Cliente seleccionado', 'success');
+        }
+
+        // Interacción simple en el modal de tallerista: autocompletar desde clientes (legacy fallback)
+        async function buscarClienteDesdeModal() {
+            const name = document.getElementById('modal-nombre').value.trim();
+            if (!name) { showBanner('Ingrese nombre para buscar', 'info'); return; }
+            const matches = await searchClientes(name);
+            if (matches.length === 0) { showBanner('No se encontraron clientes con ese término', 'info'); return; }
+            // Prefill with first match
+            const c = matches[0];
+            document.getElementById('modal-telefono').value = c.telefono || '';
+            document.getElementById('modal-email').value = c.email || '';
+            document.getElementById('tallerista-cliente-id').value = c.id || '';
+            showBanner('Datos de cliente autocompletados', 'success');
+        }
+
+        function renderTalleristas() {
+            const nombreFiltro = document.getElementById('filtro-tallerista-nombre')?.value?.toLowerCase() || '';
+            const estadoFiltro = document.getElementById('filtro-tallerista-estado')?.value || '';
+
+            let filtered = talleristas;
+            if (nombreFiltro) filtered = filtered.filter(t => t.nombre.toLowerCase().includes(nombreFiltro));
+            if (estadoFiltro !== '') filtered = filtered.filter(t => String(t.activo) === estadoFiltro);
+
+            const tbody = document.getElementById('tbody-talleristas');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay talleristas registrados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(t => `
+                <tr>
+                    <td><strong>${t.nombre}</strong></td>
+                    <td>${t.especialidad || '-'}</td>
+                    <td>${t.telefono || '-'}</td>
+                    <td>${t.email || '-'}</td>
+                    <td>${t.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editTallerista(${t.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteTallerista(${t.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTalleristas() { renderTalleristas(); }
+
+        // ============ TALLERES ============
+        async function loadTalleres() {
+            try {
+                const res = await fetch(`${API_TALLERES}/`);
+                if (res.ok) {
+                    talleres = await res.json();
+                    renderTalleres();
+                }
+            } catch (err) { console.error('Error:', err); }
+        }
+
+        const DIAS_SEMANA = {
+            'lunes': 'Lunes', 'martes': 'Martes', 'miercoles': 'Miércoles',
+            'jueves': 'Jueves', 'viernes': 'Viernes', 'sabado': 'Sábado', 'domingo': 'Domingo'
+        };
+
+        function renderTalleres() {
+            const tipoFiltro = document.getElementById('filtro-taller-tipo')?.value || '';
+            const estadoFiltro = document.getElementById('filtro-taller-estado')?.value || '';
+
+            let filtered = talleres;
+            if (tipoFiltro) filtered = filtered.filter(t => t.tipoTallerId === tipoFiltro);
+            if (estadoFiltro !== '') filtered = filtered.filter(t => String(t.activo) === estadoFiltro);
+
+            const tbody = document.getElementById('tbody-talleres');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;">No hay talleres configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(t => {
+                const horario = t.diaSemana ? `${DIAS_SEMANA[t.diaSemana] || t.diaSemana} ${t.horaInicio || ''} - ${t.horaFin || ''}` : '-';
+                return `
+                <tr>
+                    <td><strong>${t.nombre}</strong></td>
+                    <td>${t.tipoNombre || t.tipoTallerId || '-'}</td>
+                    <td>${t.talleristaNombre || '-'}</td>
+                    <td>${t.duracionMinutos} min</td>
+                    <td>${horario}</td>
+                    <td>${t.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editTaller(${t.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteTaller(${t.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function filterTalleres() { renderTalleres(); }
+
+        // ============ PRECIOS ============
+        async function loadPrecios() {
+            try {
+                const res = await fetch(`${API_TALLERES}/precios/lista`);
+                if (res.ok) {
+                    precios = await res.json();
+                    renderPrecios();
+                }
+            } catch (err) { console.error('Error:', err); }
+        }
+
+        const MODALIDADES = {
+            'clase_suelta': 'Clase suelta',
+            'pack_4': 'Pack 4 clases',
+            'pack_8': 'Pack 8 clases',
+            'mensual': 'Mensual',
+            'trimestral': 'Trimestral',
+            'anual': 'Anual'
+        };
+
+        function renderPrecios() {
+            const tipoFiltro = document.getElementById('filtro-precio-taller')?.value || '';
+            const estadoFiltro = document.getElementById('filtro-precio-estado')?.value || '';
+
+            let filtered = precios;
+            if (tipoFiltro) filtered = filtered.filter(p => p.tipoTallerId === tipoFiltro);
+            if (estadoFiltro === 'vigente') filtered = filtered.filter(p => p.vigente);
+            else if (estadoFiltro === 'vencido') filtered = filtered.filter(p => !p.vigente);
+
+            const tbody = document.getElementById('tbody-precios');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;">No hay precios configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(p => `
+                <tr>
+                    <td>${p.tipoNombre || p.tallerNombre || '-'}</td>
+                    <td><strong>$${Number(p.precio || 0).toLocaleString('es-AR')}</strong></td>
+                    <td>${MODALIDADES[p.modalidad] || p.modalidad}</td>
+                    <td>${p.vigenteDesde ? new Date(p.vigenteDesde).toLocaleDateString('es-AR') : '-'}</td>
+                    <td>${p.vigenteHasta ? new Date(p.vigenteHasta).toLocaleDateString('es-AR') : 'Indefinido'}</td>
+                    <td>${p.vigente ? '<span class="badge badge-success">Vigente</span>' : '<span class="badge badge-gray">Vencido</span>'}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editPrecio(${p.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="deletePrecio(${p.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterPrecios() { renderPrecios(); }
+
+        // ============ MODALES ============
+        function openModal(type, id = null) {
+            currentModalType = type;
+            editingId = id;
+            const modal = document.getElementById('modal-generic');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            let html = '';
+
+            if (type === 'tipo') {
+                title.textContent = id ? 'Editar Tipo de Taller' : 'Nuevo Tipo de Taller';
+                const item = id ? tipos.find(t => t.id === id) : {};
+                html = `
+                    <div class="form-group">
+                        <label>ID (código único)</label>
+                        <input type="text" id="modal-id" value="${item.id || ''}" ${id ? 'disabled' : ''} placeholder="Ej: TALLER_CERAMICA" style="text-transform:uppercase;">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" id="modal-nombre" value="${item.nombre || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="modal-descripcion" rows="3">${item.descripcion || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="modal-publico" ${item.esPublico !== 0 ? 'checked' : ''}> Visible al público</label>
+                    </div>
+                `;
+            } else if (type === 'tallerista') {
+                title.textContent = id ? 'Editar Tallerista' : 'Nuevo Tallerista';
+                const item = id ? talleristas.find(t => t.id === id) : {};
+                html = `
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                          <input type="text" id="modal-nombre" value="${item.nombre || ''}" required style="flex:1">
+                          <span id="modal-search-spinner" class="search-spinner" style="display:none"></span>
+                        </div>
+                        <div style="margin-top:8px;color:#9ca3af;font-size:0.9rem">Se buscará automáticamente en clientes mientras escribe (sugerencias inmediatas)</div>
+                        <div id="modal-client-selected" style="margin-top:6px;"></div>
+                        <div id="modal-client-suggestions" class="client-suggestions" style="position:relative;margin-top:6px;"></div>
+                        <input type="hidden" id="tallerista-cliente-id" value="${item.cliente_id || ''}" />
+                    </div>
+                    <div class="form-group">
+                        <label>Especialidad</label>
+                        <input type="text" id="modal-especialidad" value="${item.especialidad || ''}" placeholder="Ej: Yoga, Meditación">
+                    </div>
+                    <div class="form-group">
+                        <label>Bio / Descripción</label>
+                        <textarea id="modal-bio" rows="3">${item.bio || ''}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="text" id="modal-telefono" value="${item.telefono || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="modal-email" value="${item.email || ''}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Instagram</label>
+                        <input type="text" id="modal-instagram" value="${item.instagram || ''}" placeholder="@usuario">
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="modal-activo" ${item.activo !== 0 ? 'checked' : ''}> Activo</label>
+                    </div>
+                `;
+            } else if (type === 'taller') {
+                title.textContent = id ? 'Editar Taller' : 'Nuevo Taller';
+                const item = id ? talleres.find(t => t.id === id) : {};
+                html = `
+                    <div class="form-group">
+                        <label>Tipo de Taller</label>
+                        <select id="modal-tipo" required>
+                            <option value="">Seleccionar...</option>
+                            ${tipos.map(t => `<option value="${t.id}" ${item.tipoTallerId === t.id ? 'selected' : ''}>${t.nombre}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del taller</label>
+                        <input type="text" id="modal-nombre" value="${item.nombre || ''}" placeholder="Ej: Yoga Restaurativo - Lunes">
+                    </div>
+                    <div class="form-group">
+                        <label>Tallerista</label>
+                        <select id="modal-tallerista">
+                            <option value="">Sin asignar</option>
+                            ${talleristas.filter(t => t.activo).map(t => `<option value="${t.id}" ${item.talleristaId == t.id ? 'selected' : ''}>${t.nombre}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="modal-descripcion" rows="2">${item.descripcion || ''}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Día de la semana</label>
+                            <select id="modal-dia">
+                                <option value="">Sin definir</option>
+                                <option value="lunes" ${item.diaSemana === 'lunes' ? 'selected' : ''}>Lunes</option>
+                                <option value="martes" ${item.diaSemana === 'martes' ? 'selected' : ''}>Martes</option>
+                                <option value="miercoles" ${item.diaSemana === 'miercoles' ? 'selected' : ''}>Miércoles</option>
+                                <option value="jueves" ${item.diaSemana === 'jueves' ? 'selected' : ''}>Jueves</option>
+                                <option value="viernes" ${item.diaSemana === 'viernes' ? 'selected' : ''}>Viernes</option>
+                                <option value="sabado" ${item.diaSemana === 'sabado' ? 'selected' : ''}>Sábado</option>
+                                <option value="domingo" ${item.diaSemana === 'domingo' ? 'selected' : ''}>Domingo</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Duración (min)</label>
+                            <input type="number" id="modal-duracion" value="${item.duracionMinutos || 60}" min="15" step="15">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hora inicio</label>
+                            <input type="time" id="modal-hora-inicio" value="${item.horaInicio || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Hora fin</label>
+                            <input type="time" id="modal-hora-fin" value="${item.horaFin || ''}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cupo máximo</label>
+                            <input type="number" id="modal-cupo-max" value="${item.cupoMaximo || 15}" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Cupo mínimo</label>
+                            <input type="number" id="modal-cupo-min" value="${item.cupoMinimo || 3}" min="1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Ubicación</label>
+                        <input type="text" id="modal-ubicacion" value="${item.ubicacion || 'Salón TDC'}">
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="modal-activo" ${item.activo !== 0 ? 'checked' : ''}> Activo</label>
+                    </div>
+                `;
+            } else if (type === 'precio') {
+                title.textContent = id ? 'Editar Precio' : 'Nuevo Precio';
+                const item = id ? precios.find(p => p.id === id) : {};
+                html = `
+                    <div class="form-group">
+                        <label>Tipo de Taller</label>
+                        <select id="modal-tipo-taller">
+                            <option value="">Seleccionar tipo...</option>
+                            ${tipos.map(t => `<option value="${t.id}" ${item.tipoTallerId === t.id ? 'selected' : ''}>${t.nombre}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>O Taller específico (opcional)</label>
+                        <select id="modal-taller">
+                            <option value="">Sin especificar (precio genérico)</option>
+                            ${talleres.filter(t => t.activo).map(t => `<option value="${t.id}" ${item.tallerId == t.id ? 'selected' : ''}>${t.nombre}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Modalidad</label>
+                            <select id="modal-modalidad">
+                                <option value="clase_suelta" ${item.modalidad === 'clase_suelta' ? 'selected' : ''}>Clase suelta</option>
+                                <option value="pack_4" ${item.modalidad === 'pack_4' ? 'selected' : ''}>Pack 4 clases</option>
+                                <option value="pack_8" ${item.modalidad === 'pack_8' ? 'selected' : ''}>Pack 8 clases</option>
+                                <option value="mensual" ${item.modalidad === 'mensual' ? 'selected' : ''}>Mensual</option>
+                                <option value="trimestral" ${item.modalidad === 'trimestral' ? 'selected' : ''}>Trimestral</option>
+                                <option value="anual" ${item.modalidad === 'anual' ? 'selected' : ''}>Anual</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Precio ($)</label>
+                            <input type="number" id="modal-precio" value="${item.precio || ''}" min="0" step="100">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Vigente Desde</label>
+                            <input type="date" id="modal-desde" value="${item.vigenteDesde ? item.vigenteDesde.split('T')[0] : new Date().toISOString().split('T')[0]}">
+                        </div>
+                        <div class="form-group">
+                            <label>Vigente Hasta (opcional)</label>
+                            <input type="date" id="modal-hasta" value="${item.vigenteHasta ? item.vigenteHasta.split('T')[0] : ''}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="modal-vigente" ${item.vigente !== 0 ? 'checked' : ''}> Vigente</label>
+                    </div>
+                `;
+            }
+
+            body.innerHTML = html;
+            // Attach client search handlers for tallerista modal
+            if (type === 'tallerista') {
+                // Give DOM a tick to attach event listeners
+                setTimeout(() => attachClientSearchHandlers(), 20);
+            }
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-generic').classList.remove('show');
+            currentModalType = null;
+            editingId = null;
+        }
+
+        async function saveModal() {
+            const type = currentModalType;
+            let url, method, data;
+
+            if (type === 'tipo') {
+                const id = document.getElementById('modal-id').value.toUpperCase().trim();
+                data = {
+                    id: id,
+                    nombre: document.getElementById('modal-nombre').value,
+                    descripcion: document.getElementById('modal-descripcion').value,
+                    esPublico: document.getElementById('modal-publico').checked ? 1 : 0
+                };
+                if (!editingId && !id) {
+                    showBanner('El ID es obligatorio', 'error');
+                    return;
+                }
+                url = editingId ? `${API_TALLERES}/tipos/${editingId}` : `${API_TALLERES}/tipos`;
+                method = editingId ? 'PUT' : 'POST';
+            } else if (type === 'tallerista') {
+                data = {
+                    nombre: document.getElementById('modal-nombre').value,
+                    especialidad: document.getElementById('modal-especialidad').value || null,
+                    bio: document.getElementById('modal-bio').value || null,
+                    telefono: document.getElementById('modal-telefono').value || null,
+                    email: document.getElementById('modal-email').value || null,
+                    instagram: document.getElementById('modal-instagram').value || null,
+                    cliente_id: document.getElementById('tallerista-cliente-id')?.value || null,
+                    activo: document.getElementById('modal-activo').checked ? 1 : 0
+                };
+                url = editingId ? `${API_TALLERES}/talleristas/${editingId}` : `${API_TALLERES}/talleristas`;
+                method = editingId ? 'PUT' : 'POST';
+            } else if (type === 'taller') {
+                data = {
+                    tipoTallerId: document.getElementById('modal-tipo').value,
+                    talleristaId: document.getElementById('modal-tallerista').value || null,
+                    nombre: document.getElementById('modal-nombre').value,
+                    descripcion: document.getElementById('modal-descripcion').value || null,
+                    diaSemana: document.getElementById('modal-dia').value || null,
+                    horaInicio: document.getElementById('modal-hora-inicio').value || null,
+                    horaFin: document.getElementById('modal-hora-fin').value || null,
+                    duracionMinutos: parseInt(document.getElementById('modal-duracion').value) || 60,
+                    cupoMaximo: parseInt(document.getElementById('modal-cupo-max').value) || 15,
+                    cupoMinimo: parseInt(document.getElementById('modal-cupo-min').value) || 3,
+                    ubicacion: document.getElementById('modal-ubicacion').value || 'Salón TDC',
+                    activo: document.getElementById('modal-activo').checked ? 1 : 0
+                };
+                url = editingId ? `${API_TALLERES}/${editingId}` : `${API_TALLERES}/`;
+                method = editingId ? 'PUT' : 'POST';
+            } else if (type === 'precio') {
+                data = {
+                    tipoTallerId: document.getElementById('modal-tipo-taller').value || null,
+                    tallerId: document.getElementById('modal-taller').value || null,
+                    modalidad: document.getElementById('modal-modalidad').value,
+                    precio: parseFloat(document.getElementById('modal-precio').value),
+                    vigenteDesde: document.getElementById('modal-desde').value,
+                    vigenteHasta: document.getElementById('modal-hasta').value || null,
+                    vigente: document.getElementById('modal-vigente').checked ? 1 : 0
+                };
+                url = editingId ? `${API_TALLERES}/precios/${editingId}` : `${API_TALLERES}/precios`;
+                method = editingId ? 'PUT' : 'POST';
+            }
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: authHeaders(),
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    closeModal();
+                    loadAllData();
+                    showBanner('Guardado exitosamente', 'success');
+                } else {
+                    const err = await res.json();
+                    showBanner('Error: ' + (err.error || err.message || 'Error al guardar'), 'error');
+                }
+            } catch (err) {
+                showBanner('Error de conexión', 'error');
+            }
+        }
+
+        // Funciones de edición y eliminación
+        function editTipo(id) { openModal('tipo', id); }
+        function editTallerista(id) { openModal('tallerista', id); }
+        function editTaller(id) { openModal('taller', id); }
+        function editPrecio(id) { openModal('precio', id); }
+
+        async function deleteTipo(id) {
+            if (!confirm('¿Eliminar este tipo de taller?')) return;
+            try {
+                const res = await fetch(`${API_TALLERES}/tipos/${id}`, { method: 'DELETE', headers: authHeaders() });
+                if (!res.ok) {
+                    const err = await res.json();
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
+                    return;
+                }
+                loadTipos();
+                showBanner('Tipo eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        async function deleteTallerista(id) {
+            if (!confirm('¿Eliminar este tallerista?')) return;
+            try {
+                const res = await fetch(`${API_TALLERES}/talleristas/${id}`, { method: 'DELETE', headers: authHeaders() });
+                if (!res.ok) {
+                    const err = await res.json();
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
+                    return;
+                }
+                loadTalleristas();
+                showBanner('Tallerista eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        async function deleteTaller(id) {
+            if (!confirm('¿Eliminar este taller?')) return;
+            try {
+                const res = await fetch(`${API_TALLERES}/${id}`, { method: 'DELETE', headers: authHeaders() });
+                if (!res.ok) {
+                    const err = await res.json();
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
+                    return;
+                }
+                loadTalleres();
+                showBanner('Taller eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        async function deletePrecio(id) {
+            if (!confirm('¿Eliminar este precio?')) return;
+            try {
+                const res = await fetch(`${API_TALLERES}/precios/${id}`, { method: 'DELETE', headers: authHeaders() });
+                if (!res.ok) {
+                    const err = await res.json();
+                    showBanner('Error: ' + (err.error || 'No se pudo eliminar'), 'error');
+                    return;
+                }
+                loadPrecios();
+                showBanner('Precio eliminado', 'success');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+    </script>
+</body>
+
+</html>

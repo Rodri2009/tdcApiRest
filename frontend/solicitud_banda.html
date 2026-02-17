@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <style>
+        ::placeholder {
+            color: #9ca3af !important;
+            opacity: 1 !important;
+            font-style: italic;
+        }
+    </style>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Solicitud para tocar en el templo - El Templo de Claypole</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/request-forms.css">
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+            --color-dark: #0c0a09;
+            --color-card: #1e293b;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        .bg-card {
+            background-color: var(--color-card);
+        }
+
+        body {
+            background: var(--color-dark);
+            color: #d6d3d1;
+            font-family: Arial, sans-serif;
+            padding-bottom: 70px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 25px;
+        }
+
+        .card {
+            background: var(--color-card);
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--color-rustic);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--color-secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            opacity: 0.8;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2.25rem !important;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        h3 {
+            color: var(--color-secondary);
+            font-size: 1.5rem;
+            margin-top: 25px;
+        }
+
+        h3.subtitle {
+            color: #ccc;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            font-weight: normal;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1rem;
+        }
+
+        label {
+            font-weight: bold;
+            color: #f0abfc;
+            /* Color claro para las etiquetas */
+        }
+
+        select,
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 12px 8px !important;
+            border: 1.5px solid #581c87;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 18px;
+            background-color: #0f172a;
+            color: #f8fafc;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            line-height: 1.2;
+        }
+
+        select:focus,
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="tel"]:focus,
+        input[type="number"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 5px var(--color-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .btn {
+            background: #10b981;
+            color: #042014;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #059669;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--color-secondary);
+            color: var(--color-secondary);
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-outline:hover {
+            background: var(--color-secondary);
+            color: var(--color-dark);
+        }
+
+        .campo-invalido {
+            border-color: #e74c3c !important;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        /* Formación/Instrumentos */
+        .formacion-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .formacion-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #374151;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .formacion-item .remove {
+            cursor: pointer;
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .formacion-item .remove:hover {
+            color: #f87171;
+        }
+
+        /* Autocomplete */
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            border: 1px solid var(--color-primary);
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        .autocomplete-results.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .autocomplete-item:hover {
+            background: #374151;
+        }
+
+        .autocomplete-item img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .autocomplete-item .verified {
+            color: #10b981;
+            font-size: 0.8rem;
+        }
+
+        /* Logo upload preview */
+        .logo-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            border: 2px dashed #581c87;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .logo-preview:hover {
+            border-color: var(--color-secondary);
+        }
+
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-preview .placeholder {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 9999;
+        }
+
+        .loading-overlay p {
+            color: #a855f7;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #a855f7;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Notification Banner */
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 14px 28px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 15px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.4s ease;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.warning {
+            background: #f59e0b;
+            color: #1e293b;
+        }
+
+        #notification-banner.error {
+            background: #ef4444;
+        }
+
+        #notification-banner.success {
+            background: #10b981;
+        }
+
+        /* Stepper */
+        .stepper {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 25px;
+        }
+
+        .stepper-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .stepper-step.active {
+            color: var(--color-secondary);
+        }
+
+        .stepper-step.completed {
+            color: #10b981;
+        }
+
+        .stepper-step .step-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #374151;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .stepper-step.active .step-num {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .stepper-step.completed .step-num {
+            background: #10b981;
+            color: white;
+        }
+
+        .stepper-line {
+            width: 30px;
+            height: 2px;
+            background: #374151;
+        }
+
+        .stepper-step.completed+.stepper-line {
+            background: #10b981;
+        }
+
+        /* Fechas ocupadas en el calendario */
+        .flatpickr-day.fecha-ocupada {
+            background: #991b1b !important;
+            color: #fecaca !important;
+            text-decoration: line-through;
+        }
+
+        .flatpickr-day.fecha-ocupada:hover {
+            background: #7f1d1d !important;
+        }
+
+        /* ESTILO DE BOTONES - BUTTON GROUP */
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .button-group button {
+            background-color: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s ease-in-out;
+            text-decoration: none;
+            box-sizing: border-box;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .button-group button:hover {
+            background-color: rgba(132, 63, 172, 0.2);
+            transform: scale(1.05);
+            color: var(--color-secondary);
+            border-color: var(--color-secondary);
+        }
+
+        .button-group button:disabled {
+            background-color: #6b7280;
+            color: #d1d5db;
+            border-color: #6b7280;
+            cursor: not-allowed;
+            transform: scale(1.0);
+        }
+
+        .button-group button.secondary {
+            background-color: #6b7280;
+            border-color: #9ca3af;
+            color: #d1d5db;
+        }
+
+        .button-group button.secondary:hover {
+            background-color: #4b5563;
+            border-color: #d1d5db;
+        }
+
+        @media (min-width: 768px) {
+            .button-group {
+                flex-direction: row;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .button-group button {
+                width: 49%;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
+                        Inicio</span>
+                </a>
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="agenda_de_bandas.html" class="text-sm font-medium hover:text-neon transition">Ver
+                        Agenda</a>
+                    <a href="seccion_talleres.html" class="text-sm font-medium hover:text-neon transition">Talleres</a>
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+                <button id="mobile-menu-button" class="md:hidden p-2 rounded-md hover:bg-stone-700">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 bg-rustic">
+                <a href="agenda_de_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Ver
+                    Agenda</a>
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2><i class="fas fa-guitar"></i> Registrar Nueva Banda o Artista</h2>
+        <h3 class="subtitle">Completa este formulario para registrar tu banda. Te responderemos por email.</h3>
+
+        <!-- Stepper -->
+
+
+        <form id="bandaSolicitudForm">
+            <!-- SECCIÓN 1: Datos de la Banda -->
+            <div class="card" id="section-banda">
+                <h3 class="card-title"><i class="fas fa-users"></i> Datos de la Banda / Artista</h3>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label for="nombre_banda">Nombre de la banda / artista *</label>
+                        <div class="autocomplete-wrapper">
+                            <input type="text" id="nombre_banda" name="nombre_banda" required
+                                placeholder="Ej: Los Redonditos del Sur" autocomplete="off">
+                            <div id="banda-autocomplete" class="autocomplete-results"></div>
+                        </div>
+                        <input type="hidden" id="id_banda" name="id_banda">
+                        <!-- Honeypot anti-bot (mantener oculto) -->
+                        <input type="text" id="website" name="website" autocomplete="off" tabindex="-1"
+                            aria-hidden="true"
+                            style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label for="genero_musical">Género musical</label>
+                        <input type="text" id="genero_musical" name="genero_musical"
+                            placeholder="Ej: Rock, Jazz, Cumbia">
+                    </div>
+                </div>
+
+                <!-- Formación -->
+                <div class="form-group">
+                    <label><i class="fas fa-music"></i> Formación de la banda</label>
+                    <p class="hint">Agregá los instrumentos que usa tu banda. Esto nos ayuda a preparar el escenario.
+                    </p>
+                    <div id="formacion-list" class="formacion-list"></div>
+                    <div class="form-row" style="align-items: flex-end;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <select id="instrumento-select">
+                                <option value="">Seleccionar instrumento...</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0; flex: 0.5;">
+                            <input type="number" id="instrumento-cantidad" min="1" max="5" value="1"
+                                style="width: 70px;">
+                        </div>
+                        <button type="button" id="add-instrumento" class="btn-outline"
+                            style="margin-bottom: 0; height: 46px;">
+                            <i class="fas fa-plus"></i> Agregar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Redes sociales -->
+                <div class="form-group">
+                    <label><i class="fas fa-share-alt"></i> Redes sociales y links</label>
+                    <p class="hint">Compartí tus redes para que podamos conocer tu trabajo y difundir el evento.</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="instagram"><i class="fab fa-instagram"></i> Instagram</label>
+                        <input type="text" id="instagram" name="instagram" placeholder="@tu_banda">
+                    </div>
+                    <div class="form-group">
+                        <label for="facebook"><i class="fab fa-facebook"></i> Facebook</label>
+                        <input type="text" id="facebook" name="facebook" placeholder="facebook.com/tubanda">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="youtube"><i class="fab fa-youtube"></i> Youtube</label>
+                        <input type="text" id="youtube" name="youtube" placeholder="https://youtube.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label for="spotify"><i class="fab fa-spotify"></i> Spotify</label>
+                        <input type="text" id="spotify" name="spotify"
+                            placeholder="https://open.spotify.com/artist/...">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="otras_redes">Otros links (Bandcamp, SoundCloud, etc.)</label>
+                    <textarea id="otras_redes" name="otras_redes" rows="2" placeholder="Un link por línea"></textarea>
+                </div>
+
+                <!-- Logo -->
+                <div class="form-group">
+                    <label><i class="fas fa-image"></i> Logo de la banda (opcional)</label>
+                    <p class="hint">Subí el logo para usarlo en la difusión del evento.</p>
+                    <div style="display: flex; gap: 15px; align-items: flex-start;">
+                        <div class="logo-preview" id="logo-preview"
+                            onclick="document.getElementById('logo_file').click()">
+                            <div class="placeholder">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 5px;"></i>
+                                <div>Click para subir</div>
+                            </div>
+                        </div>
+                        <input type="file" id="logo_file" accept="image/*" style="display: none;">
+                        <input type="hidden" id="logo_url" name="logo_url">
+                        <div style="flex: 1;">
+                            <p class="hint">O pegá la URL de tu logo:</p>
+                            <input type="text" id="logo_url_manual" placeholder="https://..." style="margin-top: 5px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Nota para modo edición (propuesta de cambios) -->
+            <div id="band-mode-note" style="display:none;margin-bottom:12px;color:#f59e0b;font-weight:600;"></div>
+
+            <!-- Botones de acción -->
+            <div class="button-group">
+                <button type="button" id="backBtn" class="secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+                <button type="submit" id="submitBtn">
+                    <i class="fas fa-check"></i> Guardar Datos de Banda
+                </button>
+                <button type="button" id="clearBtn" class="btn btn-secondary ml-8 hidden">
+                    <i class="fas fa-plus-circle"></i> Nueva Banda
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <p>Enviando solicitud...</p>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Notification Banner -->
+    <div id="notification-banner"></div>
+
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN Y ESTADO
+        // ============================================================
+        let fingerprintId = null;
+        let instrumentos = [];
+        let formacion = []; // Array de {instrumento, cantidad}
+        let formacionCompleta = []; // Array completo con estructura del backend para actualizar
+        // Anti-bot / rate-limiting helpers
+        const pageLoadTime = Date.now();
+        const SUBMIT_MIN_DELAY_MS = 3000; // mínimo 3s en la página antes de enviar
+        const SUBMIT_COOLDOWN_MS = 10000; // 10s entre envíos
+        const HONEYPOT_FIELD_ID = 'website';
+
+        // ============================================================
+        // UTILIDADES UI
+        // ============================================================
+        let notificationTimer = null;
+
+        function showNotification(message, type = 'warning', duration = 4000) {
+            const banner = document.getElementById('notification-banner');
+            clearTimeout(notificationTimer);
+            banner.textContent = message;
+            banner.className = 'show ' + type;
+            notificationTimer = setTimeout(() => { banner.className = ''; }, duration);
+        }
+
+        // Mostrar banner con acciones (botón principal + cancelar). No usar alert/confirm.
+        function showActionBanner(message, actionText, actionCallback, cancelText = 'Cancelar', cancelCallback = null) {
+            const banner = document.getElementById('notification-banner');
+            clearTimeout(notificationTimer);
+            banner.innerHTML = `
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:200px">${message}</div>
+                    <div style="display:flex;gap:8px">
+                        <button id="action-banner-btn" class="btn btn-outline">${actionText}</button>
+                        <button id="action-banner-cancel" class="btn btn-secondary">${cancelText}</button>
+                    </div>
+                </div>
+            `;
+            banner.className = 'show warning';
+
+            const actBtn = document.getElementById('action-banner-btn');
+            const cancelBtn = document.getElementById('action-banner-cancel');
+
+            const cleanup = () => { banner.className = ''; banner.innerHTML = ''; };
+
+            actBtn && actBtn.addEventListener('click', () => { cleanup(); try { actionCallback(); } catch (e) { console.error('actionCallback error', e); } });
+            cancelBtn && cancelBtn.addEventListener('click', () => { cleanup(); if (cancelCallback) try { cancelCallback(); } catch (e) { console.error('cancelCallback error', e); } else showNotification('Envío cancelado. Completá los datos de contacto antes de intentar nuevamente.', 'warning'); });
+        }
+
+        function toggleLoading(show, message = 'Procesando...') {
+            const overlay = document.getElementById('loadingOverlay');
+            const p = overlay.querySelector('p');
+            if (p) p.textContent = message;
+            overlay.style.display = show ? 'flex' : 'none';
+        }
+
+        function resetInvalidFields() {
+            document.querySelectorAll('.campo-invalido').forEach(el => {
+                el.classList.remove('campo-invalido');
+            });
+        }
+
+        // ============================================================
+        // CARGAR INSTRUMENTOS
+        // ============================================================
+        async function loadInstrumentos() {
+            try {
+                const res = await fetch('/api/bandas/instrumentos');
+                if (res.ok) {
+                    instrumentos = await res.json();
+                    const select = document.getElementById('instrumento-select');
+                    select.innerHTML = '<option value="">Seleccionar instrumento...</option>';
+
+                    // Agrupar por categoría
+                    const categorias = {};
+                    instrumentos.forEach(inst => {
+                        const cat = inst.categoria || 'Otros';
+                        if (!categorias[cat]) categorias[cat] = [];
+                        categorias[cat].push(inst);
+                    });
+
+                    Object.keys(categorias).sort().forEach(cat => {
+                        const group = document.createElement('optgroup');
+                        group.label = cat;
+                        categorias[cat].forEach(inst => {
+                            const opt = document.createElement('option');
+                            opt.value = inst.nombre;
+                            opt.textContent = inst.nombre;
+                            group.appendChild(opt);
+                        });
+                        select.appendChild(group);
+                    });
+                }
+            } catch (err) {
+                console.error('Error cargando instrumentos:', err);
+            }
+        }
+
+        // ============================================================
+        // GESTIÓN DE FORMACIÓN
+        // ============================================================
+        function renderFormacion() {
+            const container = document.getElementById('formacion-list');
+            container.innerHTML = '';
+
+            formacion.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'formacion-item';
+                div.innerHTML = `
+                    <i class="fas fa-music"></i>
+                    <span>${item.instrumento}${item.cantidad > 1 ? ' x' + item.cantidad : ''}</span>
+                    <span class="remove" onclick="removeFormacion(${idx})">&times;</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addFormacion() {
+            const select = document.getElementById('instrumento-select');
+            const cantidadInput = document.getElementById('instrumento-cantidad');
+
+            const instrumento = select.value;
+            const cantidad = parseInt(cantidadInput.value) || 1;
+
+            if (!instrumento) {
+                showNotification('Seleccioná un instrumento', 'warning');
+                return;
+            }
+
+            // Verificar si ya existe
+            const existing = formacion.find(f => f.instrumento === instrumento);
+            if (existing) {
+                existing.cantidad += cantidad;
+                console.debug('[formacion] agregado:', instrumento, 'cantidad ahora:', existing.cantidad);
+            } else {
+                formacion.push({ instrumento, cantidad });
+                console.debug('[formacion] agregado nuevo:', instrumento, 'cantidad:', cantidad);
+            }
+
+            // Log estado completo
+            try { console.debug('[formacion] estado actual:', JSON.stringify(formacion)); } catch (e) { console.debug('[formacion] estado actual (non-serializable)'); }
+
+            renderFormacion();
+            select.value = '';
+            cantidadInput.value = 1;
+        }
+
+        function removeFormacion(idx) {
+            const removed = formacion.splice(idx, 1);
+            try { console.debug('[formacion] eliminado:', removed[0] || removed, 'nuevo estado:', JSON.stringify(formacion)); } catch (e) { console.debug('[formacion] eliminado, estado actualizado'); }
+            renderFormacion();
+        }
+
+        // ============================================================
+        // ============================================================
+        // AUTOCOMPLETE DE BANDAS
+        // ============================================================
+        async function handleBandaAutocomplete(e) {
+            const input = e.target;
+            const query = input.value.trim();
+            const resultsContainer = document.getElementById('banda-autocomplete');
+
+            if (query.length < 2) {
+                resultsContainer.classList.remove('show');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/bandas/buscar?q=${encodeURIComponent(query)}`);
+                if (!res.ok) return;
+
+                const bandas = await res.json();
+
+                if (bandas.length === 0) {
+                    resultsContainer.classList.remove('show');
+                    return;
+                }
+
+                resultsContainer.innerHTML = '';
+                bandas.forEach(banda => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    div.innerHTML = `
+                        ${banda.logo_url ? `<img src="${banda.logo_url}" alt="">` : '<i class="fas fa-users"></i>'}
+                        <div style="flex:1;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;"><span>${banda.nombre}</span>${banda.verificada ? '<span class="verified"><i class="fas fa-check-circle"></i></span>' : ''}</div>
+                            <small style="color: #9ca3af;">${banda.genero_musical || ''}</small>
+                            <div style="margin-top:6px;color:var(--color-secondary);font-weight:600;">Usar "${banda.nombre}"</div>
+                        </div>
+                    `;
+                    div.onclick = () => selectBanda(banda);
+                    resultsContainer.appendChild(div);
+                });
+
+                // Opción para crear nueva
+                const newDiv = document.createElement('div');
+                newDiv.className = 'autocomplete-item';
+                newDiv.style.borderTop = '2px solid var(--color-primary)';
+                newDiv.innerHTML = `
+                    <i class="fas fa-plus-circle" style="color: var(--color-secondary);"></i>
+                    <div>
+                        <div style="color: var(--color-secondary);">Crear nueva banda "${query}"</div>
+                    </div>
+                `;
+                newDiv.onclick = () => {
+                    // Usar el texto de búsqueda como nuevo nombre y cerrar la lista
+                    document.getElementById('nombre_banda').value = query;
+                    resultsContainer.classList.remove('show');
+                    document.getElementById('id_banda').value = '';
+                    formacion = [];
+                    formacionCompleta = [];
+                    // Asegurarse que el modo edición esté desactivado
+                    const note = document.getElementById('band-mode-note'); if (note) { note.textContent = ''; note.style.display = 'none'; }
+                    const clearBtn = document.getElementById('clearBtn'); if (clearBtn) clearBtn.style.display = 'none';
+                    document.getElementById('submitBtn').textContent = 'Guardar Datos de Banda';
+                };
+                resultsContainer.appendChild(newDiv);
+
+                resultsContainer.classList.add('show');
+            } catch (err) {
+                console.error('Error en autocomplete:', err);
+            }
+        }
+
+        async function selectBanda(banda) {
+            try {
+                console.debug('[selectBanda] id:', banda.id);
+
+                // Nombre
+                const nombreEl = document.getElementById('nombre_banda');
+                if (nombreEl) { nombreEl.value = banda.nombre || ''; } else console.warn('[selectBanda] nombre_banda element missing');
+
+                // ID
+                const idEl = document.getElementById('id_banda');
+                if (idEl) { idEl.value = banda.id || ''; } else console.warn('[selectBanda] id_banda element missing');
+
+                // Género (preliminar)
+                const generoEl = document.getElementById('genero_musical');
+                if (generoEl) { generoEl.value = banda.genero_musical || ''; }
+                const ac = document.getElementById('banda-autocomplete');
+                if (ac) ac.classList.remove('show');
+
+                // Always attempt to fetch full details from the safe endpoint when a banda is selected
+                let full = banda;
+                try {
+                    // Fetch full details from the main endpoint
+                    const resp = await fetch(`/api/bandas/${encodeURIComponent(banda.id)}`);
+                    if (resp.ok) {
+                        full = await resp.json();
+                        console.debug(`[selectBanda] fetched full id:${banda.id} logo:${full.logo_url || 'none'} formacion:${(full.formacion && full.formacion.length) || 0}`);
+                    } else {
+                        console.warn('[selectBanda] could not fetch full banda, status:', resp.status, 'endpoint:', usedEndpoint);
+                    }
+                } catch (e) {
+                    console.warn('[selectBanda] fetch error:', e);
+                }
+
+                // Fill full data
+                const instagramEl = document.getElementById('instagram'); if (instagramEl) { instagramEl.value = full.instagram || ''; }
+                const facebookEl = document.getElementById('facebook'); if (facebookEl) { facebookEl.value = full.facebook || ''; }
+                const youtubeEl = document.getElementById('youtube'); if (youtubeEl) { youtubeEl.value = full.youtube || ''; }
+                const spotifyEl = document.getElementById('spotify'); if (spotifyEl) { spotifyEl.value = full.spotify || ''; }
+                const otrasEl = document.getElementById('otras_redes'); if (otrasEl) { otrasEl.value = full.otras_redes || full.web_oficial || ''; }
+
+                // Contacto (si existe en catálogo)
+                const contactoEmailEl = document.getElementById('contactoEmailInput'); if (contactoEmailEl) { contactoEmailEl.value = full.contacto_email || full.contactoEmail || ''; }
+
+                // Mostrar preview de logo si existe y llenar hidden logo_url y el input manual
+                try {
+                    const preview = document.getElementById('logo-preview');
+                    const logoHidden = document.getElementById('logo_url');
+                    const logoManual = document.getElementById('logo_url_manual');
+
+                    if (full.logo_url) {
+                        if (logoHidden) logoHidden.value = full.logo_url;
+                        if (logoManual) logoManual.value = full.logo_url;
+                        if (preview) {
+                            preview.innerHTML = `<img src="${full.logo_url}" alt="Logo" style="max-width:120px;max-height:120px;object-fit:cover;border-radius:6px;">`;
+                        }
+                    } else {
+                        if (logoHidden) logoHidden.value = '';
+                        if (logoManual) logoManual.value = '';
+                        if (preview) preview.innerHTML = '';
+                    }
+                } catch (e) { console.warn('[selectBanda] preview error', e); }
+
+                // Formación: mapear y renderizar
+                try {
+                    let formData = [];
+                    if (Array.isArray(full.formacion)) formData = full.formacion;
+                    else if (full.formacion_json) {
+                        try { formData = JSON.parse(full.formacion_json); } catch (e) { formData = []; }
+                    }
+
+                    // Guardar formación completa para cuando actualicemos
+                    formacionCompleta = Array.isArray(formData) ? formData : [];
+
+                    if (Array.isArray(formData) && formData.length > 0) {
+                        formacion = formData.map(f => ({ instrumento: f.instrumento || f.nombre_integrante || f.nombre || '', cantidad: f.cantidad || f.cantidad_integrantes || 1 }));
+                        renderFormacion();
+                        console.debug(`[selectBanda] formacion count: ${formacion.length}`);
+                        console.debug(`[selectBanda] formacionCompleta count: ${formacionCompleta.length}`);
+                    } else {
+                        formacion = [];
+                        formacionCompleta = [];
+                        renderFormacion();
+                        console.debug('[selectBanda] formacion count: 0');
+                    }
+                } catch (e) { console.warn('[selectBanda] formacion parse error', e); }
+
+                // Indicar modo edición: proponer cambios (no se actualiza directamente sin contacto)
+                const note = document.getElementById('band-mode-note');
+                const clearBtn = document.getElementById('clearBtn');
+                if (note) {
+                    note.textContent = `Estás viendo la banda registrada. Podés actualizar la información.`;
+                    note.style.display = 'block';
+                }
+                if (clearBtn) clearBtn.style.display = 'inline-block';
+
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn) {
+                    submitBtn.textContent = 'Actualizar Datos de Banda';
+                    // efecto visual sutil
+                    submitBtn.style.boxShadow = '0 0 0 4px rgba(240,171,252,0.08)';
+                    setTimeout(() => { submitBtn.style.boxShadow = ''; }, 800);
+                }
+            } catch (err) {
+                console.error('[selectBanda] error:', err);
+            }
+        }
+
+        // ============================================================
+        // LOGO UPLOAD
+        // ============================================================
+        function setupLogoUpload() {
+            const fileInput = document.getElementById('logo_file');
+            const preview = document.getElementById('logo-preview');
+            const manualUrl = document.getElementById('logo_url_manual');
+
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Preview local while uploading
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    preview.innerHTML = `<img src="${ev.target.result}" alt="Logo preview">`;
+                };
+                reader.readAsDataURL(file);
+
+                // Subir al servidor
+                try {
+                    const fd = new FormData();
+                    fd.append('logo', file);
+                    const nombre = (document.getElementById('nombre_banda').value || '').trim();
+                    fd.append('nombre', nombre);
+
+                    preview.innerHTML = '<div class="placeholder">Subiendo...</div>';
+                    const res = await fetch('/api/bandas/upload', {
+                        method: 'POST',
+                        body: fd
+                    });
+
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Error al subir logo');
+
+                    // Setear URL retornada en hidden, campo manual y mostrar preview remoto
+                    document.getElementById('logo_url').value = data.url;
+                    const manual = document.getElementById('logo_url_manual'); if (manual) manual.value = data.url;
+                    preview.innerHTML = `<img src="${data.url}" alt="Logo preview" style="max-width:120px;max-height:120px;object-fit:cover;border-radius:6px;">`;
+                    showNotification('Logo subido correctamente', 'success');
+                } catch (err) {
+                    console.error('Upload error:', err);
+                    showNotification('No se pudo subir el logo: ' + (err.message || ''), 'error');
+                    // revert preview if error
+                    preview.innerHTML = `<div class="placeholder"><i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 5px;"></i><div>Click para subir</div></div>`;
+                }
+            });
+
+            manualUrl.addEventListener('input', (e) => {
+                const url = e.target.value.trim();
+                if (url) {
+                    preview.innerHTML = `<img src="${url}" alt="Logo preview" onerror="this.src='';this.parentElement.innerHTML='<div class=\\'placeholder\\'><i class=\\'fas fa-exclamation-triangle\\'></i><div>Error al cargar</div></div>'">`;
+                    document.getElementById('logo_url').value = url;
+                } else {
+                    document.getElementById('logo_url').value = '';
+                }
+            });
+        }
+
+        // ============================================================
+        // CALENDARIOS
+        // ============================================================
+        let fechasOcupadas = []; // Fechas ya ocupadas por eventos
+
+        async function loadFechasOcupadas() {
+            try {
+                const res = await fetch('/api/opciones/fechas-ocupadas');
+                if (res.ok) {
+                    fechasOcupadas = await res.json();
+                    console.log('Fechas ocupadas cargadas:', fechasOcupadas);
+                }
+            } catch (err) {
+                console.error('Error cargando fechas ocupadas:', err);
+            }
+        }
+
+        function setupCalendars() {
+            const config = {
+                locale: 'es',
+                altInput: true,
+                altFormat: 'j \\de F, Y',
+                dateFormat: 'Y-m-d',
+                minDate: 'today',
+                disable: [
+                    function (date) {
+                        // Solo sábados y domingos habilitados
+                        if (date.getDay() !== 0 && date.getDay() !== 6) {
+                            return true;
+                        }
+                        // Deshabilitar fechas ya ocupadas por eventos
+                        const dateStr = date.toISOString().split('T')[0];
+                        return fechasOcupadas.includes(dateStr);
+                    }
+                ],
+                onDayCreate: function (dObj, dStr, fp, dayElem) {
+                    // Marcar visualmente las fechas ocupadas
+                    const dateStr = dayElem.dateObj.toISOString().split('T')[0];
+                    if (fechasOcupadas.includes(dateStr)) {
+                        dayElem.classList.add('fecha-ocupada');
+                        dayElem.title = 'Fecha ocupada por otro evento';
+                    }
+                }
+            };
+        }
+
+        // ============================================================
+        // VALIDACIÓN
+        // ============================================================
+        function validateForm() {
+            resetInvalidFields();
+
+            const nombre = document.getElementById('nombre_banda').value.trim();
+
+            // Honeypot anti-bot
+            try {
+                const hp = document.getElementById(HONEYPOT_FIELD_ID);
+                if (hp && hp.value && hp.value.trim() !== '') {
+                    console.warn('Honeypot triggered - posible bot');
+                    showNotification('Formulario inválido', 'error');
+                    return false;
+                }
+            } catch (e) { /* noop */ }
+
+            // Tiempo mínimo en la página (evitar envíos instantáneos)
+            const elapsed = Date.now() - pageLoadTime;
+            if (elapsed < SUBMIT_MIN_DELAY_MS) {
+                const left = Math.ceil((SUBMIT_MIN_DELAY_MS - elapsed) / 1000);
+                showNotification(`Por favor esperá ${left} s antes de enviar.`, 'warning');
+                return false;
+            }
+
+            // Cooldown local entre envíos
+            try {
+                const last = parseInt(localStorage.getItem('last_banda_submit') || '0');
+                const now = Date.now();
+                if (!isNaN(last) && (now - last) < SUBMIT_COOLDOWN_MS) {
+                    const waitSec = Math.ceil((SUBMIT_COOLDOWN_MS - (now - last)) / 1000);
+                    showNotification(`Por favor esperá ${waitSec} s antes de reintentar.`, 'warning');
+                    return false;
+                }
+            } catch (e) { /* noop */ }
+
+            if (!nombre) {
+                document.getElementById('nombre_banda').classList.add('campo-invalido');
+                showNotification('El nombre de la banda es obligatorio', 'warning');
+                document.getElementById('nombre_banda').focus();
+                return false;
+            }
+
+            return true;
+        }
+
+        // ============================================================
+        // ENVÍO DEL FORMULARIO
+        // ============================================================
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            if (!validateForm()) return;
+
+            // Anti-bot checks: honeypot and timing/cooldown are enforced in validateForm()
+            // Proceed with submission (band registration does not require contacto fields).
+            // Además, aseguramos que exista fingerprintId (si no, intentamos generarlo ahora)
+            if (!fingerprintId) {
+                try {
+                    const fp = await FingerprintJS.load();
+                    const resFp = await fp.get();
+                    fingerprintId = resFp.visitorId;
+                } catch (err) {
+                    console.warn('Fingerprint still unavailable at submit:', err);
+                    // No bloqueamos por fingerprint, el backend puede manejarlo
+                }
+            }
+
+            // Registrar hora de intento para throttle local
+            try { localStorage.setItem('last_banda_submit', String(Date.now())); } catch (e) { /* noop */ }
+
+            toggleLoading(true, 'Enviando solicitud...');
+            document.getElementById('submitBtn').disabled = true;
+
+            // Recopilar invitadas actualizadas desde el DOM
+            document.querySelectorAll('.invitada-nombre').forEach((input, i) => {
+                const idx = parseInt(input.dataset.idx);
+                if (invitadas[idx]) {
+                    invitadas[idx].nombre = input.value.trim();
+                    const idInput = document.querySelector(`.invitada-id[data-idx="${idx}"]`);
+                    if (idInput) invitadas[idx].id_banda = idInput.value || null;
+                }
+            });
+
+            const logoHiddenVal = document.getElementById('logo_url').value;
+            const logoManualVal = document.getElementById('logo_url_manual').value.trim();
+            // Key debug: show only presence and lengths, avoid noisy logs
+            console.debug('[handleSubmit] Logo present:', !!(logoHiddenVal || logoManualVal));
+            const existingId = document.getElementById('id_banda').value || null;
+
+            const payload = {
+                // Datos para crear/actualizar banda
+                nombre: document.getElementById('nombre_banda').value.trim(),
+                genero_musical: document.getElementById('genero_musical').value.trim() || null,
+
+                // Redes
+                instagram: document.getElementById('instagram').value.trim() || null,
+                facebook: document.getElementById('facebook').value.trim() || null,
+                youtube: document.getElementById('youtube').value.trim() || null,
+                spotify: document.getElementById('spotify').value.trim() || null,
+                otras_redes: document.getElementById('otras_redes').value.trim() || null,
+                logo_url: logoHiddenVal || logoManualVal || null,
+
+                // Meta: incluir fingerprintId para trazabilidad (el backend lo ignorará si no lo usa)
+                fingerprintId: fingerprintId || null
+            };
+
+            // Añadir formación solo si corresponde (evitar enviar array vacío que borre datos)
+            // Si el usuario editó la formacion en la UI (formacion - simplificada), la usamos para construir
+            // la estructura completa que el backend espera, preservando nombre/notas si coinciden por instrumento.
+                if (existingId) {
+                    // Actualizar banda existente (PUT) - ID va en el body
+                    // Usar la formación actual de la UI (formacion), que representa el estado deseado
+                    if (formacion && formacion.length > 0) {
+                        // Convertir la formación simplificada de UI a estructura completa para el backend
+                        payload.formacion = formacion.map(f => ({ 
+                            nombre_integrante: null, 
+                            instrumento: f.instrumento, 
+                            es_lider: 0, 
+                            notas: null 
+                        }));
+                        console.debug('[handleSubmit] Usando formación de UI, longitud:', payload.formacion.length);
+                    } else {
+                        // Si no hay formación en UI, mantener la formación existente (no enviar cambios)
+                        payload.formacion = [];
+                        console.debug('[handleSubmit] No hay formación en UI, enviando array vacío para mantener estado actual');
+                    }
+                    console.debug('[handleSubmit] Sending PUT id:' + existingId + ' logo:' + (payload.logo_url ? 'yes' : 'no') + ' formacion:' + (payload.formacion ? payload.formacion.length : 0));
+                    try { console.debug('[handleSubmit] payload.formacion details:', JSON.stringify(payload.formacion || [])); } catch (e) { console.debug('[handleSubmit] payload.formacion details (non-serializable)'); }
+                    const token = localStorage.getItem('authToken');
+                    res = await fetch(`/api/bandas/${encodeURIComponent(existingId)}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    // Crear nueva banda (POST)
+                    console.debug('[handleSubmit] Sending POST logo:' + (payload.logo_url ? 'yes' : 'no') + ' formacion:' + (payload.formacion ? payload.formacion.length : 0));
+                    const token = localStorage.getItem('authToken');
+                    res = await fetch('/api/bandas', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                }
+
+                try {
+                    const data = await res.json();
+
+                if (!res.ok) {
+                    // Manejo especial para conflicto por banda existente (solo en POST)
+                    if (res.status === 409 && data && data.id) {
+                        showNotification('Ya existe una banda con ese nombre en nuestro catálogo. ID: ' + data.id, 'warning');
+                        return;
+                    }
+                    throw new Error(data.error || 'Error al procesar la banda');
+                }
+
+                const isUpdate = !!existingId;
+                showNotification(
+                    isUpdate
+                        ? '¡Banda actualizada exitosamente!'
+                        : '¡Banda registrada exitosamente!',
+                    'success',
+                    4000
+                );
+
+                if (isUpdate) {
+                    // En modo actualización: usamos la respuesta del PUT (banda actualizada) para refrescar la UI
+                    try {
+                        if (data && data.id) {
+                            // El endpoint devuelve la banda actualizada
+                            selectBanda(data);
+                        } else {
+                            // Fallback: intentar recargar desde endpoint principal
+                            const resp = await fetch(`/api/bandas/${encodeURIComponent(existingId)}`);
+                            if (resp.ok) {
+                                const updated = await resp.json();
+                                selectBanda(updated);
+                            } else {
+                                console.warn('No se pudo recargar banda actualizada:', resp.status);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Error recargando banda actualizada', e);
+                    }
+
+                    // Asegurar que el botón vuelva a estar habilitado y texto correcto
+                    document.getElementById('submitBtn').disabled = false;
+                    document.getElementById('submitBtn').textContent = 'Actualizar Datos de Banda';
+                } else {
+                    // Limpiar formulario para nuevo registro
+                    document.getElementById('bandaSolicitudForm').reset();
+                    formacion = [];
+                    formacionCompleta = [];
+                    renderFormacion();
+                    const preview = document.getElementById('logo-preview'); if (preview) preview.innerHTML = '';
+                    document.getElementById('id_banda').value = '';
+                    // Reset boton y nota
+                    document.getElementById('submitBtn').textContent = 'Guardar Datos de Banda';
+                    const note = document.getElementById('band-mode-note'); if (note) { note.textContent = ''; note.style.display = 'none'; }
+
+                    // Refrescar cache/local buscando actualizado catálogo (opcional)
+                    try { await loadBandas(); } catch (e) { /* noop */ }
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showNotification(err.message || 'Error al enviar. Intentá de nuevo.', 'error');
+                document.getElementById('submitBtn').disabled = false;
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        // ============================================================
+        // MENÚ Y AUTH
+        // ============================================================
+        function setupMobileMenu() {
+            const btn = document.getElementById('mobile-menu-button');
+            const menu = document.getElementById('mobile-menu');
+            if (btn && menu) {
+                btn.addEventListener('click', () => menu.classList.toggle('hidden'));
+            }
+        }
+
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktop = document.getElementById('auth-menu-desktop');
+            const mobile = document.getElementById('auth-menu-mobile');
+
+            const html = token ? `
+                <a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400">
+                    🔐 Admin
+                </a>
+            ` : `
+                <a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700">
+                    Login
+                </a>
+            `;
+
+            if (desktop) desktop.innerHTML = html;
+            if (mobile) mobile.innerHTML = html.replace('text-sm', 'text-base').replace('px-3 py-1', 'px-3 py-2 block');
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Fingerprint
+            try {
+                const fp = await FingerprintJS.load();
+                const result = await fp.get();
+                fingerprintId = result.visitorId;
+            } catch (e) {
+                console.warn('Fingerprint error:', e);
+            }
+
+            // Cargar instrumentos y fechas ocupadas
+            await loadInstrumentos();
+            await loadFechasOcupadas();
+
+            // Setup
+            setupCalendars();
+            setupLogoUpload();
+            setupMobileMenu();
+            updateAuthMenu();
+
+            // Event listeners
+            document.getElementById('add-instrumento').addEventListener('click', addFormacion);
+            document.getElementById('bandaSolicitudForm').addEventListener('submit', handleSubmit);
+            const clearBtn = document.getElementById('clearBtn'); if (clearBtn) clearBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const ok = confirm('Limpiar todos los campos para agregar una nueva banda?');
+                if (!ok) return;
+                // Limpiar la forma para crear nueva banda
+                document.getElementById('bandaSolicitudForm').reset();
+                formacion = [];
+                formacionCompleta = [];
+                renderFormacion();
+                const preview = document.getElementById('logo-preview'); if (preview) preview.innerHTML = '';
+                document.getElementById('id_banda').value = '';
+                document.getElementById('submitBtn').textContent = 'Guardar Datos de Banda';
+                const note = document.getElementById('band-mode-note'); if (note) { note.textContent = ''; note.style.display = 'none'; }
+                if (clearBtn) clearBtn.style.display = 'none';
+                try { await loadBandas(); } catch (e) { /* noop */ }
+            });
+
+            // Cargar banda por query param ?id=123 si existe
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const qid = params.get('id');
+                if (qid) {
+                    try {
+                        const resp = await fetch(`/api/bandas/${encodeURIComponent(qid)}`);
+                        if (resp.ok) {
+                            const b = await resp.json();
+                            selectBanda(b);
+                        } else {
+                            console.warn('No se pudo cargar banda desde ?id=');
+                        }
+                    } catch (e) { console.warn('Error cargando banda por query param', e); }
+                }
+            } catch (e) { /* noop */ }
+
+            document.getElementById('backBtn').addEventListener('click', () => {
+                // Obtener parámetro returnTo si existe
+                const params = new URLSearchParams(window.location.search);
+                const returnTo = params.get('returnTo');
+
+                if (returnTo) {
+                    window.location.href = returnTo;
+                } else if (document.referrer) {
+                    window.history.back();
+                } else {
+                    window.location.href = 'agenda_de_bandas.html';
+                }
+            });
+
+            // Autocomplete para banda principal
+            const nombreBandaInput = document.getElementById('nombre_banda');
+            nombreBandaInput.addEventListener('input', (e) => handleBandaAutocomplete(e, false));
+            nombreBandaInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    document.getElementById('banda-autocomplete').classList.remove('show');
+                }, 200);
+            });
+
+            // Limpiar id_banda si se edita manualmente el nombre
+            nombreBandaInput.addEventListener('input', () => {
+                document.getElementById('id_banda').value = '';
+            });
+
+            // Render inicial
+            renderFormacion();
+        });
+    </script>
+</body>
+
+</html>

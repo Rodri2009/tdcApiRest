@@ -1,0 +1,1 @@
+Usa las herramientas disponibles para completar las tareas de forma independiente

@@ -1,0 +1,26 @@
+{
+  "name": "tdc-scripts",
+  "version": "1.0.0",
+  "description": "Scripts de utilidad para el proyecto TDC",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "contexto": "node ./scripts/generar-contexto.js",
+    "crear-admin": "node ./scripts/crear-admin.js",
+    "test:e2e": "playwright test --reporter=list",
+    "test:integration-bandas": "node ./scripts/integration_test_bandas.js",
+    "optimize-images": "node ./scripts/optimize-images.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "iconv-lite": "^0.6.3",
+    "mariadb": "^3.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "imagemin": "^9.0.1",
+    "imagemin-mozjpeg": "^10.0.0",
+    "imagemin-pngquant": "^10.0.0"
+  }
+}

@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuración - Bandas y Artistas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+            --color-dark: #0c0a09;
+            --color-card: #1c1917;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background: var(--color-dark);
+            color: #d6d3d1;
+            padding-bottom: 80px;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .wrap {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
+        h1 {
+            color: var(--color-secondary);
+            text-align: center;
+            margin: 1rem 0;
+            font-size: 1.8rem;
+        }
+
+        /* Tabs de navegación */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--color-rustic);
+            padding-bottom: 0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            font-size: 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover {
+            color: var(--color-secondary);
+        }
+
+        .tab.active {
+            color: var(--color-secondary);
+            border-bottom-color: var(--color-secondary);
+            font-weight: 600;
+        }
+
+        /* Secciones */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Cards y tablas */
+        .card {
+            background: var(--color-card);
+            border-radius: 12px;
+            border: 1px solid var(--color-rustic);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--color-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Tabla */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-rustic);
+        }
+
+        th {
+            background: rgba(240, 171, 252, 0.1);
+            color: var(--color-secondary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+
+        .badge-warning {
+            background: #92400e;
+            color: #fcd34d;
+        }
+
+        .badge-info {
+            background: #1e40af;
+            color: #93c5fd;
+        }
+
+        .badge-danger {
+            background: #991b1b;
+            color: #fca5a5;
+        }
+
+        .badge-gray {
+            background: #374151;
+            color: #9ca3af;
+        }
+
+        /* Botones */
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--color-secondary);
+            color: var(--color-dark);
+        }
+
+        .btn-primary:hover {
+            background: #e879f9;
+        }
+
+        .btn-secondary {
+            background: #374151;
+            color: #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-icon {
+            padding: 8px;
+            background: transparent;
+            color: #9ca3af;
+        }
+
+        .btn-icon:hover {
+            color: var(--color-secondary);
+        }
+
+        /* Inputs */
+        input,
+        select,
+        textarea {
+            background: #292524;
+            border: 1px solid var(--color-rustic);
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: #d6d3d1;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+        }
+
+        /* Filtros y búsqueda */
+        .filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .filters input,
+        .filters select {
+            width: auto;
+            min-width: 200px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 16px;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--color-card);
+            border-radius: 12px;
+            border: 1px solid var(--color-rustic);
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-rustic);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            color: var(--color-secondary);
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--color-rustic);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--color-secondary);
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        /* Estados de carga */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Acciones de fila */
+        .row-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* Detalle expandible */
+        .detail-row {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .detail-content {
+            padding: 16px;
+        }
+
+        /* Contador */
+        .counter {
+            background: var(--color-rustic);
+            color: #d6d3d1;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+
+        /* Logo pequeño */
+        .logo-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #292524;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        /* Banner de notificación */
+        .notification-banner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+
+        .notification-banner.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification-banner.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification-banner.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wrap">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <a href="admin.html" class="btn"
+                style="background: var(--color-rustic); padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <h1 style="margin: 0;"><i class="fas fa-guitar"></i> Configuración de Bandas</h1>
+            <div style="width: 140px;"></div>
+        </div>
+
+        <!-- Tabs de navegación -->
+        <div class="tabs right">
+            <button class="tab active" data-section="catalogo">
+                <i class="fas fa-users"></i> Catálogo de Bandas
+            </button>
+            <button class="tab" data-section="instrumentos">
+                <i class="fas fa-music"></i> Instrumentos
+            </button>
+            <button class="tab" data-section="eventos">
+                <i class="fas fa-calendar-star"></i> Shows Confirmados <span class="counter" id="eventos-count">0</span>
+            </button>
+        </div>
+
+        <!-- SECCIÓN: Catálogo de Bandas -->
+        <div id="section-catalogo" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-users"></i> Bandas Registradas</h3>
+                    <button class="btn btn-primary" onclick="openBandaModal()">
+                        <i class="fas fa-plus"></i> Nueva Banda
+                    </button>
+                </div>
+                <div class="filters">
+                    <input type="text" id="search-bandas" placeholder="Buscar banda..." oninput="filterBandas()">
+                    <select id="filter-verificada" onchange="filterBandas()">
+                        <option value="">Todas</option>
+                        <option value="1">Verificadas</option>
+                        <option value="0">No verificadas</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table id="table-bandas">
+                        <thead>
+                            <tr>
+                                <th>Logo</th>
+                                <th>Nombre</th>
+                                <th>Género</th>
+                                <th>Contacto</th>
+                                <th>Redes</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-bandas">
+                            <tr>
+                                <td colspan="7" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Fechas / Eventos -->
+        <div id="section-eventos" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-calendar-star"></i> Fechas Programadas</h3>
+                    <button class="btn btn-primary" onclick="openEventoModal()">
+                        <i class="fas fa-plus"></i> Nueva Fecha
+                    </button>
+                </div>
+                <div class="filters">
+                    <input type="text" id="search-eventos" placeholder="Buscar banda/evento..."
+                        oninput="filterEventos()">
+                    <select id="filter-estado-evento" onchange="loadEventos()">
+                        <option value="Confirmado">Confirmados</option>
+                        <option value="Solicitado">Solicitados</option>
+                        <option value="Cancelado">Cancelados</option>
+                        <option value="">Todos los estados</option>
+                    </select>
+                    <select id="filter-mes-evento" onchange="filterEventos()">
+                        <option value="">Todos los meses</option>
+                        <option value="0">Enero</option>
+                        <option value="1">Febrero</option>
+                        <option value="2">Marzo</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Mayo</option>
+                        <option value="5">Junio</option>
+                        <option value="6">Julio</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Septiembre</option>
+                        <option value="9">Octubre</option>
+                        <option value="10">Noviembre</option>
+                        <option value="11">Diciembre</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table id="table-eventos">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Banda Principal</th>
+                                <th>Bandas Invitadas</th>
+                                <th>Género</th>
+                                <th>Horario</th>
+                                <th>Entradas</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-eventos">
+                            <tr>
+                                <td colspan="8" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Instrumentos -->
+        <div id="section-instrumentos" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-music"></i> Catálogo de Instrumentos</h3>
+                    <button class="btn btn-primary" onclick="openInstrumentoModal()">
+                        <i class="fas fa-plus"></i> Nuevo Instrumento
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="table-instrumentos">
+                        <thead>
+                            <tr>
+                                <th>Icono</th>
+                                <th>Nombre</th>
+                                <th>Categoría</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-instrumentos">
+                            <tr>
+                                <td colspan="4" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Editar Banda -->
+    <div id="modal-banda" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-banda-title">Nueva Banda</h3>
+                <button class="btn btn-icon" onclick="closeModal('modal-banda')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form-banda">
+                    <input type="hidden" id="banda-id">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre de la banda *</label>
+                            <input type="text" id="banda-nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Género musical</label>
+                            <input type="text" id="banda-genero">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Bio / Descripción</label>
+                        <textarea id="banda-bio" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fab fa-instagram"></i> Instagram</label>
+                            <input type="text" id="banda-instagram" placeholder="@usuario">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fab fa-facebook"></i> Facebook</label>
+                            <input type="text" id="banda-facebook">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fab fa-youtube"></i> YouTube</label>
+                            <input type="url" id="banda-youtube">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fab fa-spotify"></i> Spotify</label>
+                            <input type="url" id="banda-spotify">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre contacto</label>
+                            <input type="text" id="banda-contacto-nombre">
+                        </div>
+                        <div class="form-group">
+                            <label>Email contacto</label>
+                            <input type="email" id="banda-contacto-email">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fab fa-whatsapp"></i> WhatsApp</label>
+                            <input type="tel" id="banda-contacto-telefono">
+                        </div>
+                        <div class="form-group">
+                            <label>Rol del contacto</label>
+                            <input type="text" id="banda-contacto-rol" placeholder="Ej: Manager, Cantante">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="banda-verificada"> Banda verificada
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="banda-activa" checked> Activa
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-banda')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveBanda()">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Instrumento -->
+    <div id="modal-instrumento" class="modal-overlay">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 id="modal-instrumento-title">Nuevo Instrumento</h3>
+                <button class="btn btn-icon" onclick="closeModal('modal-instrumento')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form-instrumento">
+                    <input type="hidden" id="instrumento-id">
+                    <div class="form-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="instrumento-nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría *</label>
+                        <select id="instrumento-categoria" required>
+                            <option value="Cuerdas">Cuerdas</option>
+                            <option value="Vientos">Vientos</option>
+                            <option value="Percusión">Percusión</option>
+                            <option value="Teclados">Teclados</option>
+                            <option value="Voces">Voces</option>
+                            <option value="Electrónica">Electrónica</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Icono (FontAwesome)</label>
+                        <input type="text" id="instrumento-icono" placeholder="fa-guitar">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-instrumento')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveInstrumento()">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Editar/Crear Evento -->
+    <div id="modal-evento" class="modal-overlay">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 id="modal-evento-title">Editar Evento</h3>
+                <button class="btn btn-icon" onclick="closeModal('modal-evento')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form-evento">
+                    <input type="hidden" id="evento-id">
+
+                    <!-- Fecha y Hora -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar"></i> Fecha del Evento *</label>
+                            <input type="date" id="evento-fecha" required>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Hora de Inicio</label>
+                            <select id="evento-hora">
+                                <option value="">Seleccionar...</option>
+                                <option value="19:00">19:00 hs</option>
+                                <option value="20:00">20:00 hs</option>
+                                <option value="21:00">21:00 hs</option>
+                                <option value="22:00">22:00 hs</option>
+                                <option value="23:00">23:00 hs</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Hora de Fin</label>
+                            <select id="evento-hora-fin">
+                                <option value="">Seleccionar...</option>
+                                <option value="00:00">00:00 hs</option>
+                                <option value="01:00">01:00 hs</option>
+                                <option value="02:00">02:00 hs</option>
+                                <option value="03:00">03:00 hs</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Banda principal y Género -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-music"></i> Banda Principal *</label>
+                            <input type="text" id="evento-banda" required placeholder="Nombre de la banda">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-guitar"></i> Género Musical</label>
+                            <input type="text" id="evento-genero" placeholder="Ej: Rock, Metal, Pop">
+                        </div>
+                    </div>
+
+                    <!-- Bandas invitadas -->
+                    <div class="form-group">
+                        <label><i class="fas fa-user-friends"></i> Bandas Invitadas</label>
+                        <p class="hint" style="margin-top:0;margin-bottom:8px;color:#9ca3af;font-size:0.8rem;">Separar
+                            por coma. Ej: Banda1, Banda2, Banda3</p>
+                        <input type="text" id="evento-invitadas" placeholder="Banda invitada 1, Banda invitada 2...">
+                    </div>
+
+                    <!-- Precios -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-ticket-alt"></i> Precio Anticipada ($)</label>
+                            <input type="number" id="evento-precio-anticipada" min="0" step="100"
+                                placeholder="Ej: 5000">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-ticket-alt"></i> Precio Puerta ($)</label>
+                            <input type="number" id="evento-precio-puerta" min="0" step="100" placeholder="Ej: 7000">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-users"></i> Aforo Máximo</label>
+                            <input type="number" id="evento-aforo" min="0" placeholder="Ej: 150">
+                        </div>
+                    </div>
+
+                    <!-- Estado y Visibilidad -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-flag"></i> Estado</label>
+                            <select id="evento-estado">
+                                <option value="Solicitado">Solicitado</option>
+                                <option value="Confirmado">Confirmado</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-globe"></i> Visibilidad</label>
+                            <select id="evento-publico">
+                                <option value="1">Público (visible en agenda)</option>
+                                <option value="0">Privado (solo admin)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Contacto -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-user"></i> Nombre de Contacto</label>
+                            <input type="text" id="evento-contacto-nombre" placeholder="Nombre del contacto">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fab fa-whatsapp"></i> WhatsApp</label>
+                            <input type="text" id="evento-contacto-whatsapp" placeholder="Ej: 1155001122">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-envelope"></i> Email</label>
+                            <input type="email" id="evento-contacto-email" placeholder="email@ejemplo.com">
+                        </div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="form-group">
+                        <label><i class="fas fa-comment"></i> Descripción / Notas</label>
+                        <textarea id="evento-descripcion" rows="3"
+                            placeholder="Notas adicionales, rider técnico, etc."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-evento')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveEvento()">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/navbar.js"></script>
+    <script>
+        // ============================================================
+        // ESTADO Y CONFIGURACIÓN
+        // ============================================================
+        let bandas = [];
+        let eventos = [];
+        let instrumentos = [];
+        let currentSection = 'catalogo';
+
+        // Banner de notificación
+        function showBanner(message, type = 'info', duration = 4000) {
+            document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+            const banner = document.createElement('div');
+            banner.className = `notification-banner ${type}`;
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+            document.body.appendChild(banner);
+            setTimeout(() => {
+                banner.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => banner.remove(), 300);
+            }, duration);
+        }
+
+        // ============================================================
+        // NAVEGACIÓN POR TABS
+        // ============================================================
+        function initTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const section = tab.dataset.section;
+                    switchSection(section);
+                });
+            });
+
+            // Detectar hash en URL
+            const hash = window.location.hash.replace('#', '');
+            if (hash && ['catalogo', 'eventos', 'instrumentos'].includes(hash)) {
+                switchSection(hash);
+            }
+        }
+
+        function switchSection(section) {
+            currentSection = section;
+
+            // Actualizar tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[data-section="${section}"]`).classList.add('active');
+
+            // Mostrar sección
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(`section-${section}`).classList.add('active');
+
+            // Actualizar URL
+            history.replaceState(null, '', `#${section}`);
+        }
+
+        // ============================================================
+        // CARGA DE DATOS
+        // ============================================================
+        async function loadBandas() {
+            try {
+                const res = await fetch('/api/bandas');
+                if (res.ok) {
+                    bandas = await res.json();
+                    renderBandas();
+                }
+            } catch (err) {
+                console.error('Error cargando bandas:', err);
+                document.getElementById('tbody-bandas').innerHTML =
+                    '<tr><td colspan="7" style="color:#ef4444;">Error al cargar bandas</td></tr>';
+            }
+        }
+
+        async function loadEventos() {
+            try {
+                const estado = document.getElementById('filter-estado-evento').value || 'Confirmado';
+                const url = `/api/solicitudes-fechas-bandas?estado=${estado}`;
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                });
+                if (res.ok) {
+                    // Normalizar la respuesta para que la UI use campos consistentes (id, nombre_banda, hora_inicio, precio_anticipada...)
+                    const raw = await res.json();
+                    eventos = (raw || []).map(it => ({
+                        // backend lista devuelve `id_solicitud`, `id_banda`, `fecha_evento`, `hora_evento`, `precio_basico`, `banda_nombre`, ...
+                        id: it.id_solicitud || it.id || null,
+                        id_banda: it.id_banda || null,
+                        fecha: it.fecha_evento || it.fecha || null,
+                        hora_inicio: it.hora_evento || it.hora_inicio || null,
+                        nombre_banda: it.banda_nombre || it.nombre_banda || it.nombre_evento || '',
+                        genero_musical: it.genero_musical || null,
+                        invitadas: it.invitadas || (it.invitadas_json ? (typeof it.invitadas_json === 'string' ? JSON.parse(it.invitadas_json || '[]') : it.invitadas_json) : []),
+                        estado: it.estado || 'Solicitado',
+                        es_publico: typeof it.es_publico !== 'undefined' ? it.es_publico : 1,
+                        precio_anticipada: it.precio_basico || it.precio_base || null,
+                        precio_puerta: it.precio_puerta_propuesto || it.precio_puerta || null,
+                        aforo_maximo: it.expectativa_publico || null,
+                        descripcion: it.descripcion || null
+                    }));
+
+                    renderEventos();
+                    updateEventosCount();
+                } else {
+                    let msg = 'Error al cargar eventos';
+                    if (res.status === 404) msg = 'No se encontró el endpoint de eventos (404)';
+                    else if (res.status === 401) msg = 'No autorizado para ver los eventos (401)';
+                    else if (res.status === 500) msg = 'Error interno del servidor (500)';
+                    document.getElementById('tbody-eventos').innerHTML = `<tr><td colspan="8" style="color:#ef4444;">${msg}</td></tr>`;
+                    console.error(msg, res.status);
+                }
+            } catch (err) {
+                console.error('Error cargando eventos:', err);
+                document.getElementById('tbody-eventos').innerHTML =
+                    '<tr><td colspan="8" style="color:#ef4444;">Error al cargar eventos</td></tr>';
+            }
+        }
+
+        async function loadInstrumentos() {
+            try {
+                const res = await fetch('/api/bandas/instrumentos');
+                if (res.ok) {
+                    instrumentos = await res.json();
+                    renderInstrumentos();
+                }
+            } catch (err) {
+                console.error('Error cargando instrumentos:', err);
+            }
+        }
+
+        // ============================================================
+        // RENDERIZADO DE TABLAS
+        // ============================================================
+        function renderBandas() {
+            const tbody = document.getElementById('tbody-bandas');
+            const search = document.getElementById('search-bandas').value.toLowerCase();
+            const filterVerif = document.getElementById('filter-verificada').value;
+
+            let filtered = bandas.filter(b => {
+                if (search && !b.nombre.toLowerCase().includes(search)) return false;
+                if (filterVerif !== '' && String(b.verificada) !== filterVerif) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;">No hay bandas</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(b => `
+                <tr>
+                    <td>
+                        ${b.logo_url ? `<img src="${b.logo_url}" class="logo-thumb" alt="">` : '<div class="logo-thumb" style="display:flex;align-items:center;justify-content:center;"><i class="fas fa-users" style="color:#666;"></i></div>'}
+                    </td>
+                    <td><strong>${b.nombre}</strong></td>
+                    <td>${b.genero_musical || '-'}</td>
+                    <td>
+                        <div style="font-size:0.85rem;">
+                            ${b.contacto_nombre || '-'}<br>
+                            <span style="color:#9ca3af;">${b.contacto_email || ''}</span>
+                        </div>
+                    </td>
+                    <td>
+                        ${b.instagram ? `<a href="https://instagram.com/${b.instagram.replace('@', '')}" target="_blank" class="btn btn-icon btn-sm"><i class="fab fa-instagram"></i></a>` : ''}
+                        ${b.youtube ? `<a href="${b.youtube}" target="_blank" class="btn btn-icon btn-sm"><i class="fab fa-youtube"></i></a>` : ''}
+                        ${b.spotify ? `<a href="${b.spotify}" target="_blank" class="btn btn-icon btn-sm"><i class="fab fa-spotify"></i></a>` : ''}
+                    </td>
+                    <td>
+                        ${b.verificada ? '<span class="badge badge-success">Verificada</span>' : '<span class="badge badge-gray">No verificada</span>'}
+                        ${!b.activa ? '<span class="badge badge-danger">Inactiva</span>' : ''}
+                    </td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-icon btn-sm" onclick="editBanda(${b.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterBandas() {
+            renderBandas();
+        }
+
+        function renderEventos() {
+            const tbody = document.getElementById('tbody-eventos');
+            const search = (document.getElementById('search-eventos')?.value || '').toLowerCase();
+            const filterMes = document.getElementById('filter-mes-evento')?.value;
+
+            let filtered = eventos.filter(e => {
+                if (search && !e.nombre_banda.toLowerCase().includes(search) &&
+                    !(e.genero_musical || '').toLowerCase().includes(search)) return false;
+                if (filterMes !== '' && filterMes !== undefined) {
+                    const eventoMes = new Date(e.fecha + 'T00:00:00').getMonth();
+                    if (String(eventoMes) !== filterMes) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#9ca3af;">No hay eventos</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(e => {
+                const fecha = e.fecha ? new Date(e.fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-';
+                const estadoBadge = {
+                    'Confirmado': 'badge-success',
+                    'Solicitado': 'badge-warning',
+                    'Cancelado': 'badge-danger'
+                }[e.estado] || 'badge-gray';
+
+                // Bandas invitadas
+                let invitadasHtml = '-';
+                if (e.invitadas && e.invitadas.length > 0) {
+                    invitadasHtml = e.invitadas.map(b => `<span class="badge badge-gray" style="margin:2px;">${b.nombre_banda}</span>`).join('');
+                }
+
+                const horario = e.hora_inicio ? e.hora_inicio.substring(0, 5) + 'hs' : '-';
+                const precios = e.precio_anticipada || e.precio_puerta
+                    ? `$${e.precio_anticipada || '-'} / $${e.precio_puerta || '-'}`
+                    : '-';
+
+                return `
+                    <tr>
+                        <td><strong>${fecha}</strong></td>
+                        <td>
+                            <strong>${e.nombre_banda}</strong>
+                            ${e.es_publico ? '<i class="fas fa-globe" title="Público" style="color:#9ca3af;margin-left:5px;"></i>' : '<i class="fas fa-lock" title="Privado" style="color:#9ca3af;margin-left:5px;"></i>'}
+                        </td>
+                        <td style="max-width:200px;">${invitadasHtml}</td>
+                        <td>${e.genero_musical || '-'}</td>
+                        <td>${horario}</td>
+                        <td style="font-size:0.85rem;">${precios}</td>
+                        <td><span class="badge ${estadoBadge}">${e.estado}</span></td>
+                        <td>
+                            <div class="row-actions">
+                                <button class="btn btn-icon btn-sm" onclick="editEvento(${e.id})" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-icon btn-sm" onclick="deleteEvento(${e.id})" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterEventos() {
+            renderEventos();
+        }
+
+        function updateEventosCount() {
+            document.getElementById('eventos-count').textContent = eventos.length;
+        }
+
+        function editEvento(id) {
+            const evento = eventos.find(e => e.id === id);
+            if (!evento) {
+                showBanner('Evento no encontrado', 'error');
+                return;
+            }
+
+            document.getElementById('modal-evento-title').textContent = 'Editar Evento';
+            document.getElementById('evento-id').value = evento.id;
+            document.getElementById('evento-fecha').value = evento.fecha || '';
+            document.getElementById('evento-hora').value = evento.hora_inicio ? evento.hora_inicio.substring(0, 5) : '';
+            document.getElementById('evento-hora-fin').value = evento.hora_fin ? evento.hora_fin.substring(0, 5) : '';
+            document.getElementById('evento-banda').value = evento.nombre_banda || '';
+            document.getElementById('evento-genero').value = evento.genero_musical || '';
+
+            // Bandas invitadas (convertir array a string separado por comas)
+            const invitadasStr = evento.invitadas && evento.invitadas.length > 0
+                ? evento.invitadas.map(b => b.nombre_banda).join(', ')
+                : '';
+            document.getElementById('evento-invitadas').value = invitadasStr;
+
+            document.getElementById('evento-precio-anticipada').value = evento.precio_anticipada || '';
+            document.getElementById('evento-precio-puerta').value = evento.precio_puerta || '';
+            document.getElementById('evento-aforo').value = evento.aforo_maximo || '';
+            document.getElementById('evento-estado').value = evento.estado || 'Solicitado';
+            document.getElementById('evento-publico').value = evento.es_publico ? '1' : '0';
+            document.getElementById('evento-contacto-nombre').value = evento.nombre_contacto || '';
+            document.getElementById('evento-contacto-whatsapp').value = evento.whatsapp_contacto || '';
+            document.getElementById('evento-contacto-email').value = evento.email_contacto || '';
+            document.getElementById('evento-descripcion').value = evento.descripcion || '';
+
+            openModal('modal-evento');
+        }
+
+        function openEventoModal() {
+            // Abrir modal para nuevo evento
+            document.getElementById('modal-evento-title').textContent = 'Nuevo Evento';
+            document.getElementById('form-evento').reset();
+            document.getElementById('evento-id').value = '';
+            document.getElementById('evento-estado').value = 'Solicitado';
+            document.getElementById('evento-publico').value = '1';
+            openModal('modal-evento');
+        }
+
+        async function saveEvento() {
+            const id = document.getElementById('evento-id').value;
+            const fecha = document.getElementById('evento-fecha').value;
+            const banda = document.getElementById('evento-banda').value;
+
+            if (!fecha || !banda) {
+                showBanner('Fecha y banda son obligatorios', 'error');
+                return;
+            }
+
+            // Preparar datos y mapear a la API de `solicitudes_fechas_bandas` (backend espera claves como fecha_evento, hora_evento, precio_basico, etc.)
+            const invitadasRaw = (document.getElementById('evento-invitadas').value || '').split(',').map(s => s.trim()).filter(Boolean);
+            const payload = {
+                // Si el administrador no selecciona un id_banda, enviamos nombre_banda para que el backend cree/la vincule
+                nombre_banda: banda,
+                genero_musical: document.getElementById('evento-genero').value || null,
+                descripcion: document.getElementById('evento-descripcion').value || null,
+                fecha_evento: fecha,
+                hora_evento: document.getElementById('evento-hora').value || null,
+                duracion: null,
+                precio_basico: parseFloat(document.getElementById('evento-precio-anticipada').value) || null,
+                precio_puerta_propuesto: parseFloat(document.getElementById('evento-precio-puerta').value) || null,
+                expectativa_publico: document.getElementById('evento-aforo').value ? String(document.getElementById('evento-aforo').value) : null,
+                es_publico: document.getElementById('evento-publico').value === '1' ? 1 : 0,
+                contacto_nombre: document.getElementById('evento-contacto-nombre').value || null,
+                contacto_email: document.getElementById('evento-contacto-email').value || null,
+                contacto_telefono: document.getElementById('evento-contacto-whatsapp').value || null,
+                invitadas_json: invitadasRaw.length ? invitadasRaw.map(n => ({ nombre: n })) : null
+            };
+
+            try {
+                const url = id ? `/api/solicitudes-fechas-bandas/${id}` : '/api/solicitudes-fechas-bandas';
+                const method = id ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showBanner(data.message || 'Solicitud/evento guardado correctamente', 'success');
+                    closeModal('modal-evento');
+                    loadEventos();
+                } else {
+                    throw new Error(data.message || 'Error al guardar');
+                }
+            } catch (err) {
+                showBanner('Error: ' + err.message, 'error');
+            }
+        }
+
+        async function deleteEvento(id) {
+            if (!confirm('¿Estás seguro de eliminar este evento?')) return;
+            try {
+                const res = await fetch(`/api/solicitudes-fechas-bandas/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                });
+                if (res.ok) {
+                    showBanner('Evento eliminado', 'success');
+                    loadEventos();
+                } else {
+                    throw new Error('Error al eliminar');
+                }
+            } catch (err) {
+                showBanner('Error: ' + err.message, 'error');
+            }
+        }
+
+        function renderInstrumentos() {
+            const tbody = document.getElementById('tbody-instrumentos');
+
+            if (instrumentos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;">No hay instrumentos</td></tr>';
+                return;
+            }
+
+            // Agrupar por categoría
+            const grouped = {};
+            instrumentos.forEach(i => {
+                const cat = i.categoria || 'Otros';
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(i);
+            });
+
+            let html = '';
+            Object.keys(grouped).sort().forEach(cat => {
+                grouped[cat].forEach(i => {
+                    html += `
+                        <tr>
+                            <td><i class="fas ${i.icono || 'fa-music'}" style="font-size:1.2rem;color:var(--color-secondary);"></i></td>
+                            <td>${i.nombre}</td>
+                            <td><span class="badge badge-info">${i.categoria}</span></td>
+                            <td>
+                                <div class="row-actions">
+                                    <button class="btn btn-icon btn-sm" onclick="editInstrumento(${i.id})" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-icon btn-sm" onclick="deleteInstrumento(${i.id})" title="Eliminar" style="margin-left:6px">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // ============================================================
+        // MODALES Y CRUD
+        // ============================================================
+        function openModal(id) {
+            document.getElementById(id).classList.add('show');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        // --- Bandas ---
+        function openBandaModal() {
+            document.getElementById('modal-banda-title').textContent = 'Nueva Banda';
+            document.getElementById('form-banda').reset();
+            document.getElementById('banda-id').value = '';
+            document.getElementById('banda-activa').checked = true;
+            openModal('modal-banda');
+        }
+
+        function editBanda(id) {
+            const banda = bandas.find(b => b.id === id);
+            if (!banda) return;
+
+            document.getElementById('modal-banda-title').textContent = 'Editar Banda';
+            document.getElementById('banda-id').value = banda.id;
+            document.getElementById('banda-nombre').value = banda.nombre || '';
+            document.getElementById('banda-genero').value = banda.genero_musical || '';
+            document.getElementById('banda-bio').value = banda.bio || '';
+            document.getElementById('banda-instagram').value = banda.instagram || '';
+            document.getElementById('banda-facebook').value = banda.facebook || '';
+            document.getElementById('banda-youtube').value = banda.youtube || '';
+            document.getElementById('banda-spotify').value = banda.spotify || '';
+            document.getElementById('banda-contacto-nombre').value = banda.contacto_nombre || '';
+            document.getElementById('banda-contacto-email').value = banda.contacto_email || '';
+            document.getElementById('banda-contacto-telefono').value = banda.contacto_telefono || '';
+            document.getElementById('banda-contacto-rol').value = banda.contacto_rol || '';
+            document.getElementById('banda-verificada').checked = !!banda.verificada;
+            document.getElementById('banda-activa').checked = banda.activa !== 0;
+
+            openModal('modal-banda');
+        }
+
+        async function saveBanda() {
+            const id = document.getElementById('banda-id').value;
+            const payload = {
+                nombre: document.getElementById('banda-nombre').value,
+                genero_musical: document.getElementById('banda-genero').value || null,
+                bio: document.getElementById('banda-bio').value || null,
+                instagram: document.getElementById('banda-instagram').value || null,
+                facebook: document.getElementById('banda-facebook').value || null,
+                youtube: document.getElementById('banda-youtube').value || null,
+                spotify: document.getElementById('banda-spotify').value || null,
+                contacto_nombre: document.getElementById('banda-contacto-nombre').value || null,
+                contacto_email: document.getElementById('banda-contacto-email').value || null,
+                contacto_telefono: document.getElementById('banda-contacto-telefono').value || null,
+                contacto_rol: document.getElementById('banda-contacto-rol').value || null,
+                verificada: document.getElementById('banda-verificada').checked ? 1 : 0,
+                activa: document.getElementById('banda-activa').checked ? 1 : 0
+            };
+
+            try {
+                const url = id ? `/api/bandas/${id}` : '/api/bandas';
+                const method = id ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    closeModal('modal-banda');
+                    loadBandas();
+                    showBanner('Banda guardada exitosamente', 'success');
+                } else {
+                    const err = await res.json();
+                    showBanner(err.error || 'Error al guardar', 'error');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showBanner('Error de conexión', 'error');
+            }
+        }
+
+        // --- Instrumentos ---
+        function openInstrumentoModal() {
+            document.getElementById('modal-instrumento-title').textContent = 'Nuevo Instrumento';
+            document.getElementById('form-instrumento').reset();
+            document.getElementById('instrumento-id').value = '';
+            openModal('modal-instrumento');
+        }
+
+        function editInstrumento(id) {
+            const inst = instrumentos.find(i => i.id === id);
+            if (!inst) return;
+
+            document.getElementById('modal-instrumento-title').textContent = 'Editar Instrumento';
+            document.getElementById('instrumento-id').value = inst.id;
+            document.getElementById('instrumento-nombre').value = inst.nombre || '';
+            document.getElementById('instrumento-categoria').value = inst.categoria || 'Otros';
+            document.getElementById('instrumento-icono').value = inst.icono || '';
+
+            openModal('modal-instrumento');
+        }
+
+        async function saveInstrumento() {
+            const id = document.getElementById('instrumento-id').value;
+            const payload = {
+                nombre: document.getElementById('instrumento-nombre').value.trim(),
+                categoria: document.getElementById('instrumento-categoria').value,
+                icono: document.getElementById('instrumento-icono').value || null
+            };
+
+            if (!payload.nombre) { showBanner('El nombre es requerido', 'error'); return; }
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+                let res;
+                if (id) {
+                    res = await fetch(`/api/admin/bandas/instrumentos/${id}`, { method: 'PUT', headers, body: JSON.stringify(payload) });
+                } else {
+                    res = await fetch('/api/admin/bandas/instrumentos', { method: 'POST', headers, body: JSON.stringify(payload) });
+                }
+                if (res.ok) {
+                    showBanner(id ? 'Instrumento actualizado' : 'Instrumento creado', 'success');
+                    closeModal('modal-instrumento');
+                    await loadInstrumentos();
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || 'Error guardando instrumento');
+                }
+            } catch (err) {
+                showBanner('Error: ' + err.message, 'error');
+                console.error('saveInstrumento error', err);
+            }
+        }
+
+        async function deleteInstrumento(id) {
+            if (!confirm('¿Eliminar este instrumento?')) return;
+            try {
+                const token = localStorage.getItem('authToken');
+                const res = await fetch(`/api/admin/bandas/instrumentos/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    showBanner('Instrumento eliminado', 'success');
+                    await loadInstrumentos();
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || 'Error al eliminar instrumento');
+                }
+            } catch (err) {
+                showBanner('Error: ' + err.message, 'error');
+                console.error('deleteInstrumento error', err);
+            }
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) return;
+            navbarManager.injectNavbar('body');
+
+            initTabs();
+            loadBandas();
+            loadEventos();
+            loadInstrumentos();
+        });
+    </script>
+</body>
+
+</html>

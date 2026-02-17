@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud Fecha para Show en Vivo - El Templo de Claypole</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/request-forms.css">
+
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+            padding-bottom: 70px;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 20px auto;
+            background-color: #1e293b;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            border: 1px solid var(--color-rustic);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2.25rem !important;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        h3 {
+            color: var(--color-secondary);
+            font-size: 1.5rem;
+            margin-top: 25px;
+        }
+
+        h3.subtitle {
+            color: #ccc;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            font-weight: normal;
+        }
+
+        label {
+            font-weight: bold;
+            color: #f0abfc;
+        }
+
+        select,
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 8px !important;
+            border: 1.5px solid #581c87;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 18px;
+            background-color: #0f172a;
+            color: #f8fafc;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            line-height: 1.2;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 5px var(--color-secondary);
+        }
+
+        .form-group {
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .campo-invalido {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 5px #ef4444 !important;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .button-group button {
+            background-color: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s ease-in-out;
+            text-decoration: none;
+            box-sizing: border-box;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .button-group button:hover {
+            background-color: rgba(132, 63, 172, 0.2);
+            transform: scale(1.02);
+        }
+
+        .button-group button:disabled {
+            background-color: #6b7280;
+            color: #d1d5db;
+            border-color: #6b7280;
+            cursor: not-allowed;
+            transform: scale(1.0);
+        }
+
+        .info-banner {
+            background-color: rgba(88, 28, 135, 0.2);
+            border: 1px solid var(--color-secondary);
+            border-radius: 6px;
+            padding: 12px;
+            margin: 15px 0;
+            color: #d6d3d1;
+            font-size: 0.95rem;
+        }
+
+        .banda-item {
+            background-color: #0f172a;
+            border: 1px solid #581c87;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .banda-item:hover {
+            background-color: #1a1f3a;
+            border-color: var(--color-secondary);
+        }
+
+        .banda-item.selected {
+            background-color: rgba(88, 28, 135, 0.3);
+            border-color: var(--color-secondary);
+        }
+
+        .banda-item-text {
+            flex: 1;
+        }
+
+        .banda-item-name {
+            color: var(--color-secondary);
+            font-weight: bold;
+        }
+
+        .banda-item-genre {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--color-secondary);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .checkbox-custom.checked {
+            background-color: var(--color-secondary);
+            color: #000;
+        }
+
+        .date-slot {
+            background-color: #0f172a;
+            border: 1px solid #581c87;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .date-slot input {
+            flex: 1;
+            padding: 8px !important;
+            font-size: 16px !important;
+        }
+
+        .order-number {
+            background-color: var(--color-primary);
+            color: var(--color-secondary);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.5s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        .notification-banner.error {
+            background-color: #ef4444;
+        }
+
+        .notification-banner.warning {
+            background-color: #f59e0b;
+        }
+
+        .notification-banner.success {
+            background-color: #10b981;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(240, 171, 252, 0.3);
+            border-top: 4px solid var(--color-secondary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #top-nav {
+            background-color: #1e293b;
+            border-bottom: 2px solid var(--color-primary);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        #top-nav .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        #top-nav .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        #top-nav .nav-item {
+            color: #d6d3d1;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+        }
+
+        #top-nav .nav-item:hover {
+            color: var(--color-secondary);
+        }
+
+        #top-nav .active-nav {
+            color: var(--color-secondary);
+            border-bottom: 2px solid var(--color-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <nav id="top-nav">
+        <div class="logo">
+            <a href="index.html" class="flex items-center space-x-3">
+                <img src="./img/logo_transparente.png" alt="El Templo de Claypole" class="h-10 w-auto">
+                <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Show en Vivo</span>
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="#" class="nav-item active-nav">Solicitar Fecha</a>
+        </div>
+    </nav>
+
+    <div id="notification-banner" class="notification-banner"></div>
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <h2>Solicitud para fecha de bandas en vivo</h2>
+        <h3 class="subtitle">Organiza tu evento con bandas en vivo</h3>
+
+        <!-- SECCIÓN BANDAS -->
+        <h3><i class="fas fa-music"></i> Bandas (Máximo 5)</h3>
+        <div class="info-banner">
+            Selecciona las bandas que deseas incluir. Si la banda que buscas no está registrada, puedes crear una nueva.
+        </div>
+
+        <div class="form-group">
+            <label for="bandaSearch">Buscar o Crear Banda:</label>
+            <div class="flex-row" style="margin-bottom:15px;">
+                <input type="text" id="bandaSearch" placeholder="Buscar por nombre..." class="search-input">
+                <button type="button" id="btnCrearBanda" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Crear Banda
+                </button>
+            </div>
+            <div id="bandasList" class="band-list"></div>
+        </div>
+
+        <div id="bandasSeleccionadas" class="mt-20">
+            <h4 class="section-title">Bandas Seleccionadas (<span id="countBandas">0</span>/5)</h4>
+            <div id="listaBandasSeleccionadas"></div>
+        </div>
+
+        <!-- SECCIÓN FECHAS -->
+        <h3><i class="fas fa-calendar"></i> Fechas Propuestas (Máximo 3)</h3>
+        <div class="info-banner">
+            Selecciona hasta 3 fechas tentativas. Al menos una es obligatoria. El horario se definirá más adelante.
+        </div>
+
+        <div class="form-group">
+            <div id="fechasContainer">
+                <div class="date-slot">
+                    <label class="label-inline">Fecha 1 (Obligatoria):</label>
+                    <input type="text" class="fechaEvento" data-fecha-index="0" placeholder="Selecciona fecha" required>
+                </div>
+                <div class="date-slot">
+                    <label class="label-inline">Fecha 2 (Opcional):</label>
+                    <input type="text" class="fechaEvento" data-fecha-index="1" placeholder="Selecciona fecha">
+                </div>
+                <div class="date-slot">
+                    <label class="label-inline">Fecha 3 (Opcional):</label>
+                    <input type="text" class="fechaEvento" data-fecha-index="2" placeholder="Selecciona fecha">
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN ORDEN DE BANDAS -->
+        <h3><i class="fas fa-list-ol"></i> Orden de Presentación</h3>
+        <div class="info-banner">
+            Define el orden en que tocarán las bandas. Arrastra para cambiar el orden (opcional).
+        </div>
+
+        <div id="ordenBandas" style="margin-top: 15px;">
+            <p style="color: #9ca3af; text-align: center;">Las bandas aparecerán aquí en el orden de selección</p>
+        </div>
+
+        <!-- SECCIÓN ESCENARIO -->
+        <h3><i class="fas fa-microphone"></i> Escenario - Backline y Sonido</h3>
+        <div class="info-banner">
+            <strong>ℹ️ Información Importante:</strong><br>
+            Es crucial que sepamos la formación de las bandas (instrumentos que tocan). Esto nos ayuda a preparar el
+            backline y sonido adecuadamente.
+            <br><br>
+            Si aún no has completado esta información, puedes hacerlo en tu perfil de banda. Haz clic <a
+                href="solicitud_banda.html" style="color: var(--color-secondary); text-decoration: underline;">aquí para
+                ir a Solicitud de Banda</a>.
+        </div>
+
+        <div class="form-group">
+            <label for="backlineInfo">Backline Disponible:</label>
+            <div
+                style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li>Batería (equipo completo)</li>
+                    <li>Amplificadores para bajos y guitarras</li>
+                    <li>Micrófono principal y micrófonos de bajo nivel</li>
+                    <li>Monitores de escenario</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="sonidoInfo">Sistema de Sonido:</label>
+            <div
+                style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
+                <p>Contamos con sistema de sonido profesional para garantizar la mejor calidad de audio. Se realizará
+                    sonido previo de las bandas.</p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="comentariosEspeciales">Comentarios o Requerimientos Especiales:</label>
+            <textarea id="comentariosEspeciales" rows="4"
+                placeholder="Ej: necesitamos teclado, batería sin batería, etc."
+                style="width: 100%; padding: 12px; border: 1.5px solid #581c87; border-radius: 4px; background-color: #0f172a; color: #f8fafc; box-sizing: border-box;"></textarea>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="button-group">
+            <button id="btnVolver" class="secondary">Volver</button>
+            <button id="btnContacto">Continuar a Contacto</button>
+        </div>
+    </div>
+
+    <script src="/navbar.js"></script>
+    <script>
+        let solicitudId = null;
+        let visitorsId = null;
+        let bandasDisponibles = [];
+        let bandasSeleccionadas = [];
+        let fechasSeleccionadas = [null, null, null];
+        let calendarios = [];
+
+        // Obtener parámetros URL
+        const params = new URLSearchParams(window.location.search);
+        solicitudId = params.get('solicitudId');
+
+        // Mostrar/ocultar notificaciones
+        function showNotification(msg, type = 'error', duration = 4000) {
+            const banner = document.getElementById('notification-banner');
+            banner.textContent = msg;
+            banner.className = 'notification-banner show ' + type;
+            setTimeout(() => { banner.className = 'notification-banner'; }, duration);
+        }
+
+        // Mostrar/ocultar overlay de carga
+        function toggleLoadingOverlay(show, msg = 'Cargando...') {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.toggle('show', show);
+        }
+
+        // Inicializar Fingerprint
+        function initFingerprint() {
+            if (typeof FingerprintJS !== 'undefined') {
+                FingerprintJS.load().then(fp => fp.get()).then(result => {
+                    visitorsId = result.visitorId;
+                    console.log('[FINGERPRINT]', visitorsId);
+                }).catch(err => console.warn('Fingerprint error:', err));
+            }
+        }
+
+        // Cargar bandas disponibles
+        async function loadBandas() {
+            try {
+                const res = await fetch('/api/bandas');
+                if (!res.ok) throw new Error('Error cargando bandas');
+                bandasDisponibles = await res.json();
+                renderBandasLista();
+            } catch (err) {
+                console.error('Error:', err);
+                showNotification('Error al cargar las bandas disponibles', 'error');
+            }
+        }
+
+        // Renderizar lista de bandas
+        function renderBandasLista() {
+            const container = document.getElementById('bandasList');
+            const searchTerm = document.getElementById('bandaSearch').value.toLowerCase();
+
+            const filtered = bandasDisponibles.filter(b =>
+                b.nombre.toLowerCase().includes(searchTerm) ||
+                (b.genero_musical && b.genero_musical.toLowerCase().includes(searchTerm))
+            );
+
+            container.innerHTML = filtered.map(banda => {
+                const isSelected = bandasSeleccionadas.some(b => b.id === banda.id);
+                return `
+                    <div class="banda-item ${isSelected ? 'selected' : ''}" onclick="toggleBanda(${banda.id}, '${banda.nombre}', '${banda.genero_musical || ''}', '${banda.logo_url || ''}')">
+                        ${banda.logo_url ? `<img src="${banda.logo_url}" alt="${banda.nombre}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
+                        <div class="banda-item-text">
+                            <div class="banda-item-name">${banda.nombre}</div>
+                            ${banda.genero_musical ? `<div class="banda-item-genre">${banda.genero_musical}</div>` : ''}
+                        </div>
+                        <div class="checkbox-custom ${isSelected ? 'checked' : ''}">
+                            ${isSelected ? '<i class="fas fa-check"></i>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="helper-text text-center p-20">No hay bandas disponibles</div>';
+            }
+        }
+
+        // Toggle selección de banda
+        function toggleBanda(id, nombre, genero, logoUrl) {
+            const idx = bandasSeleccionadas.findIndex(b => b.id === id);
+            if (idx >= 0) {
+                bandasSeleccionadas.splice(idx, 1);
+            } else {
+                if (bandasSeleccionadas.length >= 5) {
+                    showNotification('Máximo 5 bandas seleccionadas', 'warning');
+                    return;
+                }
+                bandasSeleccionadas.push({ id, nombre, genero, logoUrl });
+            }
+            renderBandasLista();
+            renderBandasSeleccionadas();
+        }
+
+        // Renderizar bandas seleccionadas
+        function renderBandasSeleccionadas() {
+            const container = document.getElementById('listaBandasSeleccionadas');
+            const ordenContainer = document.getElementById('ordenBandas');
+            const count = document.getElementById('countBandas');
+            count.textContent = bandasSeleccionadas.length;
+
+            container.innerHTML = bandasSeleccionadas.map((banda, idx) => `
+                <div class="card card-row">
+                    <div style="display:flex;align-items:center;gap:10px;flex:1;">
+                        ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${banda.nombre}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
+                        <div>
+                            <div class="text-neon" style="font-weight:bold">${banda.nombre}</div>
+                            ${banda.genero ? `<div class="helper-text">${banda.genero}</div>` : ''}
+                        </div>
+                    </div>
+                    <button type="button" onclick="toggleBanda(${banda.id}, '${banda.nombre}', '${banda.genero}', '${banda.logoUrl || ''}')" class="btn btn-ghost text-danger" style="font-size:1.2rem">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            // Actualizar orden de bandas con drag-and-drop
+            if (bandasSeleccionadas.length === 0) {
+                ordenContainer.innerHTML = '<p class="helper-text text-center">Las bandas aparecerán aquí en el orden de selección</p>';
+            } else {
+                ordenContainer.innerHTML = bandasSeleccionadas.map((banda, idx) => `
+                    <div class="banda-item-orden" draggable="true" data-idx="${idx}">
+                        <div class="order-number">${idx + 1}</div>
+                        ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${banda.nombre}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
+                        <div style="flex: 1;">
+                            <div class="text-neon" style="font-weight: bold">${banda.nombre}</div>
+                            ${banda.genero ? `<div class="helper-text">${banda.genero}</div>` : ''}
+                        </div>
+                        <div style="color: #9ca3af; font-size: 0.85rem;">
+                            <i class="fas fa-arrows-alt"></i>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Configurar drag-and-drop
+                setupDragAndDrop();
+            }
+        }
+
+        // Configurar drag-and-drop para reordenar bandas
+        function setupDragAndDrop() {
+            const items = document.querySelectorAll('.banda-item-orden');
+            let draggedItem = null;
+
+            items.forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    draggedItem = item;
+                    item.style.opacity = '0.5';
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                item.addEventListener('dragend', () => {
+                    item.style.opacity = '1';
+                    draggedItem = null;
+                });
+
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (item !== draggedItem) {
+                        item.style.borderTop = '2px solid var(--color-secondary)';
+                    }
+                });
+
+                item.addEventListener('dragleave', () => {
+                    item.style.borderTop = '';
+                });
+
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (item !== draggedItem) {
+                        const fromIdx = parseInt(draggedItem.dataset.idx);
+                        const toIdx = parseInt(item.dataset.idx);
+
+                        // Reordenar array
+                        const [movedBanda] = bandasSeleccionadas.splice(fromIdx, 1);
+                        bandasSeleccionadas.splice(toIdx, 0, movedBanda);
+
+                        // Re-renderizar
+                        renderBandasSeleccionadas();
+                    }
+                    item.style.borderTop = '';
+                });
+            });
+        }
+
+        // Inicializar calendarios de fechas
+        function initCalendarios() {
+            try {
+                // Cargar fechas ocupadas
+                fetch('/api/opciones/fechas-ocupadas')
+                    .then(res => res.json())
+                    .then(data => {
+                        const ocupadas = data.alquilerConfirmado || [];
+                        const feriados = data.feriados || [];
+
+                        document.querySelectorAll('.fechaEvento').forEach((input, idx) => {
+                            const calendar = flatpickr(input, {
+                                locale: 'es',
+                                dateFormat: 'Y-m-d',
+                                minDate: 'today',
+                                disable: [...ocupadas, ...feriados],
+                                onChange: (selectedDates, dateStr) => {
+                                    fechasSeleccionadas[idx] = dateStr;
+                                }
+                            });
+                            calendarios[idx] = calendar;
+                        });
+                    });
+            } catch (err) {
+                console.error('Error init calendarios:', err);
+            }
+        }
+
+        // Botón crear banda
+        document.getElementById('btnCrearBanda').addEventListener('click', () => {
+            window.location.href = '/solicitud_banda.html?returnTo=solicitud_fecha_bandas.html';
+        });
+
+        // Búsqueda de bandas
+        document.getElementById('bandaSearch').addEventListener('input', () => {
+            renderBandasLista();
+        });
+
+        // Botón volver
+        document.getElementById('btnVolver').addEventListener('click', () => {
+            window.location.href = '/index.html';
+        });
+
+        // Botón continuar
+        document.getElementById('btnContacto').addEventListener('click', () => {
+            // Validar
+            if (bandasSeleccionadas.length === 0) {
+                showNotification('Debes seleccionar al menos una banda', 'warning');
+                return;
+            }
+            if (!fechasSeleccionadas[0]) {
+                showNotification('Debes seleccionar al menos una fecha obligatoria', 'warning');
+                return;
+            }
+
+            // Guardar borrador en localStorage
+            const draft = {
+                tipoEvento: 'FECHA_BANDAS',
+                bandasSeleccionadas,
+                fechasSeleccionadas: fechasSeleccionadas.filter(f => f),
+                comentariosEspeciales: document.getElementById('comentariosEspeciales').value,
+                nombreParaMostrar: 'Show en Vivo',
+                fingerprintId: visitorsId || null
+            };
+
+            const draftKey = `draft_fecha_bandas_${Date.now()}`;
+            localStorage.setItem(draftKey, JSON.stringify(draft));
+
+            // Redirigir a contacto
+            window.location.href = `/contacto.html?from=banda&draftKey=${encodeURIComponent(draftKey)}`;
+        });
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            initFingerprint();
+            loadBandas();
+            initCalendarios();
+        });
+    </script>
+</body>
+
+</html>

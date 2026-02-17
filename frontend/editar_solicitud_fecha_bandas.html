@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Evento - Bandas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/request-forms.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: calc(16px + 4rem);
+            background: #0c0a09;
+            min-height: 100vh;
+            color: #d6d3d1;
+        }
+
+        header.bg-rustic {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #1a1a1a;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid rgba(240, 171, 252, 0.1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            margin-bottom: 25px;
+        }
+
+        .form-section {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-section h3 {
+            color: var(--color-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #374151;
+        }
+
+        /* Copiado de solicitud_fecha_bandas.html: estilos para bandas, info-banner y date-slot */
+        .info-banner {
+            background-color: rgba(88, 28, 135, 0.12);
+            border: 1px solid var(--color-secondary);
+            border-radius: 6px;
+            padding: 12px;
+            margin: 15px 0;
+            color: #d6d3d1;
+            font-size: 0.95rem;
+        }
+
+        .banda-item {
+            background-color: #0f172a;
+            border: 1px solid #581c87;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .banda-item:hover {
+            border-color: var(--color-secondary);
+        }
+
+        .banda-item.selected {
+            background-color: rgba(88, 28, 135, 0.25);
+            border-color: var(--color-secondary);
+        }
+
+        .banda-item-text {
+            flex: 1;
+        }
+
+        .banda-item-name {
+            color: var(--color-secondary);
+            font-weight: bold;
+        }
+
+        .banda-item-genre {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .date-slot {
+            background-color: #0f172a;
+            border: 1px solid #581c87;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 640px) {
+            .form-grid-2 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .form-grid-3 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #d6d3d1;
+            font-size: 0.9rem;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            background-color: #1f2937;
+            color: #d6d3d1;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .estado-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .estado-solicitado {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .estado-contactado {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .estado-confirmado {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .estado-cancelado {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed, #581c87);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+        }
+
+        .btn-secondary {
+            background: #44403c;
+            color: #d6d3d1;
+        }
+
+        .btn-secondary:hover {
+            background: #57534e;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 4px solid #4b5563;
+            border-top: 4px solid var(--color-secondary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1001;
+            transition: transform 0.4s ease;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.success {
+            background: #10b981;
+        }
+
+        #notification-banner.error {
+            background: #ef4444;
+        }
+
+        #notification-banner.warning {
+            background: #f59e0b;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .back-btn {
+            background: #44403c;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #d6d3d1;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #57534e;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #111827;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header-row">
+            <a href="admin_solicitudes.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+            <h2><i class="fas fa-guitar"></i> Editar Solicitud Banda / Fecha</h2>
+            <div style="width: 100px;"></div>
+        </div>
+
+        <div class="info-row">
+            <div>
+                <span style="color: #9ca3af;">ID:</span>
+                <span id="eventoId" style="font-weight: bold;">-</span>
+            </div>
+            <div>
+                <span style="color: #9ca3af;">Estado:</span>
+                <select id="estadoSelect" class="estado-badge" style="width: auto; padding: 4px 12px;">
+                    <option value="Solicitado">Solicitado</option>
+                    <option value="Contactado">Contactado</option>
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- SECCIÓN BANDAS (modo admin) -->
+        <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:6px;">
+            <h3 style="color:var(--color-secondary);"><i class="fas fa-music"></i> Bandas</h3>
+            <button type="button" id="btnCrearBanda" class="btn btn-primary"
+                style="height:36px;padding:6px 10px;font-size:0.9rem;">
+                <i class="fas fa-plus"></i> Crear banda
+            </button>
+        </div>
+
+        <div class="form-group" style="margin-top:8px;">
+            <label for="bandaSearch">Buscar banda:</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" id="bandaSearch" placeholder="Buscar por nombre..." style="flex:1;">
+                <button type="button" id="btnLimpiarBusqueda" class="btn btn-secondary"
+                    style="height:36px;padding:6px 10px;">Limpiar</button>
+            </div>
+            <div id="bandasList" class="band-list" style="margin-top:8px;"></div>
+        </div>
+
+        <div id="bandasSeleccionadas" class="mt-20" style="margin-bottom:12px;">
+            <h4 class="section-title">Bandas Seleccionadas</h4>
+            <div id="listaBandasSeleccionadas"></div>
+        </div>
+
+        <!-- NUEVA SECCIÓN: Nombre de la fecha / show + Flyer -->
+        <div class="form-section">
+            <h3><i class="fas fa-tag"></i> Nombre de la fecha / show & Flyer</h3>
+            <div class="form-grid form-grid-1">
+                <div class="form-group">
+                    <label for="nombreEvento">Nombre de la fecha / show</label>
+                    <input type="text" id="nombreEvento" placeholder="Ej: Rock Legends — Presentación Oficial">
+                </div>
+                <div class="form-group">
+                    <label for="descripcion">Descripción (opcional)</label>
+                    <textarea id="descripcion"
+                        placeholder="Descripción corta del show (se mostrará en la agenda)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="urlFlyer">Flyer (URL editable o subir)</label>
+                    <input type="text" id="urlFlyer" placeholder="https://...">
+                    <div style="margin-top:6px;">
+                        <input type="file" id="flyerFile" accept="image/png,image/jpeg" />
+                        <small style="color:#999;margin-left:6px;">Subir imagen (JPEG/PNG, ≤ 3 MB)</small>
+                    </div>
+                    <div id="flyerPreview" style="margin-top:8px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fecha y Horarios -->
+        <div class="form-section">
+            <h3><i class="fas fa-calendar-alt"></i> Fecha y Horarios</h3>
+            <div class="info-banner">Este formulario usa una única fecha de evento (no múltiple). Selecciona la fecha
+                definitiva abajo.</div>
+            <div class="form-grid form-grid-3">
+                <div class="form-group">
+                    <label for="fechaEvento">Fecha del Evento *</label>
+                    <input type="text" id="fechaEvento" placeholder="Seleccionar fecha...">
+                </div>
+                <div class="form-group">
+                    <label for="horaInicio">Hora de Inicio</label>
+                    <input type="time" id="horaInicio" value="21:00">
+                </div>
+                <div class="form-group">
+                    <label for="horaFin">Hora de Fin</label>
+                    <input type="time" id="horaFin" value="02:00">
+                </div>
+            </div>
+            <div class="form-grid form-grid-2" style="margin-top: 15px;">
+                <div class="form-group">
+                    <label for="aforoMaximo">Aforo Máximo</label>
+                    <input type="number" id="aforoMaximo" value="120" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="esPublico">Visibilidad</label>
+                    <select id="esPublico">
+                        <option value="1">Público (visible en agenda)</option>
+                        <option value="0">Privado (solo admin)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Precios -->
+        <div class="form-section">
+            <h3><i class="fas fa-ticket-alt"></i> Precios de Entrada</h3>
+            <div class="form-grid form-grid-3">
+                <div class="form-group">
+                    <label for="precioBase">Precio Base</label>
+                    <input type="number" id="precioBase" value="0" min="0" step="100">
+                </div>
+                <div class="form-group">
+                    <label for="precioAnticipada">Precio Anticipada</label>
+                    <input type="number" id="precioAnticipada" min="0" step="100" placeholder="Ej: 3000">
+                </div>
+                <div class="form-group">
+                    <label for="precioPuerta">Precio en Puerta</label>
+                    <input type="number" id="precioPuerta" min="0" step="100" placeholder="Ej: 4000">
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacto -->
+        <div class="form-section">
+            <h3><i class="fas fa-address-book"></i> Datos de Contacto</h3>
+            <div class="form-grid form-grid-3">
+                <div class="form-group">
+                    <label for="nombreContacto">Nombre del Contacto</label>
+                    <input type="text" id="nombreContacto" placeholder="Responsable/Manager">
+                </div>
+                <div class="form-group">
+                    <label for="emailContacto">Email</label>
+                    <input type="email" id="emailContacto" placeholder="email@ejemplo.com">
+                </div>
+                <div class="form-group">
+                    <label for="telefonoContacto">Teléfono</label>
+                    <input type="tel" id="telefonoContacto" placeholder="11-1234-5678">
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="window.location.href='admin_solicitudes.html'">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn btn-danger" id="btnEliminar" style="flex: 0.5;">
+                <i class="fas fa-trash"></i>
+            </button>
+            <button class="btn btn-primary" id="btnGuardar">
+                <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px; color: var(--color-secondary);">Cargando...</p>
+    </div>
+
+    <div id="notification-banner"></div>
+
+    <script src="/navbar.js"></script>
+    <script>
+        // Variables globales
+        let eventoId = null;
+        let eventoPrefix = '';
+        let calendario = null;
+
+        // Bandas (lista disponible + seleccionadas)
+        let bandasDisponibles = [];
+        let bandasSeleccionadas = [];
+
+        // Helper: escapar texto para insertar en HTML (previene XSS en nombres/geo)
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"'`]/g, function (s) {
+                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' })[s];
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Proteger página admin
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) return;
+            navbarManager.injectNavbar('body');
+
+            // Obtener ID de la URL
+            const params = new URLSearchParams(window.location.search);
+            const idParam = params.get('id') || params.get('solicitudId');
+
+            console.log('[BANDAS] ===== INICIALIZACIÓN =====');
+            console.log('[BANDAS] Parámetro solicitudId recibido:', idParam);
+
+            if (!idParam) {
+                showNotification('ID no especificado', 'error');
+                setTimeout(() => window.location.href = 'config_bandas.html#eventos', 2000);
+                return;
+            }
+
+            // Cargar lista de bandas disponibles (para selección)
+            loadBandas();
+
+            // Modo nuevo evento
+            if (idParam === 'new') {
+                eventoId = null;
+                document.getElementById('eventoId').textContent = 'Nuevo Evento';
+                document.querySelector('h2').textContent = 'Crear Nuevo Evento';
+                document.getElementById('btnEliminar').style.display = 'none';
+                initCalendario();
+                showLoading(false);
+                document.getElementById('btnGuardar').addEventListener('click', guardarEvento);
+                return;
+            }
+
+            // Extraer ID numérico (acepta prefijos como 'ev_', 'bnd_' u otros con sufijo numérico)
+            const numericMatch = idParam.toString().match(/(\d+)$/);
+            if (numericMatch) {
+                eventoId = parseInt(numericMatch[1], 10);
+            } else {
+                showNotification('ID inválido', 'error');
+                console.error('[BANDAS] ID inválido recibido:', idParam);
+                return;
+            }
+
+            // Mantener prefijo original si aplica (ev_ o bnd_)
+            const rawPrefix = idParam.toString().replace(/\d+$/, '');
+            eventoPrefix = (rawPrefix === 'ev_' || rawPrefix === 'bnd_' || rawPrefix === '') ? rawPrefix : '';
+
+            console.log('[BANDAS] Después del parsing:');
+            console.log('[BANDAS]   idParam:', idParam);
+            console.log('[BANDAS]   rawPrefix:', rawPrefix);
+            console.log('[BANDAS]   eventoId:', eventoId);
+            console.log('[BANDAS]   eventoPrefix:', eventoPrefix);
+
+            document.getElementById('eventoId').textContent = `${eventoPrefix}${eventoId}`;
+
+            // REDIRECCIÓN A LOGIN: Si es una solicitud pública (prefijo bnd_) sin autenticación
+            const isPublicRequest = eventoPrefix && eventoPrefix.length > 0;
+            const authToken = localStorage.getItem('authToken');
+            const hasAuth = authToken && typeof authToken === 'string' && authToken.trim().length > 0;
+
+            console.log('[BANDAS] isPublicRequest:', isPublicRequest);
+            console.log('[BANDAS] hasAuth:', hasAuth);
+            if (isPublicRequest && !hasAuth) {
+                console.log('[BANDAS] Solicitud pública detectada sin autenticación. Redirigiendo a login...');
+                // Guardar la URL a la que el usuario intentaba acceder para regresar después del login
+                sessionStorage.setItem('redirectAfterLogin', window.location.href);
+                window.location.href = 'login.html?mensaje=Debe%20iniciar%20sesión%20como%20administrador%20para%20editar%20eventos';
+                return;
+            }
+
+            // Inicializar calendario
+            initCalendario();
+
+            // Cargar datos del evento
+            cargarEvento();
+
+            // Event listeners
+            document.getElementById('btnGuardar').addEventListener('click', guardarEvento);
+            document.getElementById('btnEliminar').addEventListener('click', eliminarEvento);
+        });
+
+        function initCalendario() {
+            calendario = flatpickr('#fechaEvento', {
+                locale: 'es',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'j \\de F, Y',
+                minDate: 'today'
+            });
+        }
+
+        async function cargarEvento() {
+            showLoading(true);
+            try {
+                console.log('[BANDAS] ========== CARGAR EVENTO ==========');
+                console.log('[BANDAS] eventoId:', eventoId);
+                console.log('[BANDAS] Usando nuevo endpoint: /api/solicitudes-fechas-bandas/:id');
+
+                if (!eventoId) {
+                    throw new Error('ID de evento no válido');
+                }
+
+                const res = await fetch(`/api/solicitudes-fechas-bandas/${eventoId}`);
+                console.log('[BANDAS] GET /api/solicitudes-fechas-bandas/' + eventoId + ' status: ' + res.status);
+
+                if (!res.ok) {
+                    throw new Error('No se pudo cargar la solicitud: ' + res.status);
+                }
+
+                const evento = await res.json();
+                console.log('[BANDAS] ✓ Evento cargado desde nuevo endpoint:', evento);
+
+                // Normalizar campos recibidos (compatibilidad con nombres SQL/DB)
+                if (evento.hora_evento && !evento.hora_inicio) evento.hora_inicio = evento.hora_evento;
+                if (evento.precio_basico && typeof evento.precio_base === 'undefined') evento.precio_base = evento.precio_basico;
+                if (evento.banda_nombre && !evento.nombre_banda) evento.nombre_banda = evento.banda_nombre;
+
+                // Mapear nombres de columna/refactor a keys que usa el formulario
+                if (typeof evento.expectativa_publico !== 'undefined' && typeof evento.aforo_maximo === 'undefined') evento.aforo_maximo = evento.expectativa_publico;
+                if (typeof evento.precio_puerta_propuesto !== 'undefined' && typeof evento.precio_puerta === 'undefined') evento.precio_puerta = evento.precio_puerta_propuesto;
+                if (typeof evento.cliente_nombre !== 'undefined' && typeof evento.contacto_nombre === 'undefined') evento.contacto_nombre = evento.cliente_nombre;
+                if (typeof evento.cliente_email !== 'undefined' && typeof evento.contacto_email === 'undefined') evento.contacto_email = evento.cliente_email;
+                if (typeof evento.cliente_telefono !== 'undefined' && typeof evento.contacto_telefono === 'undefined') evento.contacto_telefono = evento.cliente_telefono;
+
+                if (evento.invitadas_json && !evento.invitadas) {
+                    try { evento.invitadas = JSON.parse(evento.invitadas_json || '[]'); } catch (e) { evento.invitadas = []; }
+                }
+
+                // Llenar formulario usando el objeto 'evento' retornado por la API
+                document.getElementById('nombreEvento').value = evento.nombre_evento || evento.nombre_banda || '';
+                document.getElementById('descripcion').value = evento.descripcion || '';
+                document.getElementById('urlFlyer').value = evento.url_flyer || '';
+                if (window.App && App.updateFlyerPreview) App.updateFlyerPreview();
+
+                // Inicializar selección de bandas con la banda del evento
+                bandasSeleccionadas = [];
+                if (evento.nombre_banda) {
+                    const match = bandasDisponibles.find(b => (b.nombre || '').toLowerCase() === (evento.nombre_banda || '').toLowerCase());
+                    if (match) {
+                        bandasSeleccionadas.push({ id: match.id, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' });
+                    } else {
+                        bandasSeleccionadas.push({ id: evento.id_banda || null, nombre: evento.nombre_banda, genero: evento.genero_musical || '', logoUrl: evento.logo_url || '' });
+                    }
+                }
+                renderBandasLista();
+                renderBandasSeleccionadas();
+
+                // Marcar fecha como readonly si es evento existente (no editable)
+                const fechaInput = document.getElementById('fechaEvento');
+                if (eventoId && fechaInput) {
+                    fechaInput.readOnly = true;
+                    fechaInput.title = 'La fecha no puede ser editada para eventos confirmados';
+                    console.log('[BANDAS] Fecha marcada como readonly (evento existente)');
+                }
+
+                if (evento.fecha_evento) {
+                    try {
+                        const ymd = typeof evento.fecha_evento === 'string' ? evento.fecha_evento.substring(0, 10) : evento.fecha_evento;
+                        if (ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+                            calendario.setDate(ymd, false);
+                        }
+                    } catch (err) {
+                        console.error('[BANDAS] Error setDate fecha:', evento.fecha_evento, err);
+                    }
+                }
+
+                if (evento.hora_inicio) {
+                    document.getElementById('horaInicio').value = evento.hora_inicio.substring(0, 5);
+                }
+                if (evento.hora_fin) {
+                    document.getElementById('horaFin').value = evento.hora_fin ? evento.hora_fin.substring(0, 5) : '';
+                }
+
+                document.getElementById('aforoMaximo').value = evento.aforo_maximo || 120;
+                document.getElementById('esPublico').value = evento.es_publico ? '1' : '0';
+
+                document.getElementById('precioBase').value = evento.precio_base || 0;
+                document.getElementById('precioAnticipada').value = evento.precio_anticipada || '';
+                document.getElementById('precioPuerta').value = evento.precio_puerta || '';
+
+                document.getElementById('nombreContacto').value = evento.contacto_nombre || '';
+                document.getElementById('emailContacto').value = evento.contacto_email || '';
+                document.getElementById('telefonoContacto').value = evento.contacto_telefono || '';
+
+                document.getElementById('estadoSelect').value = evento.estado || 'Solicitado';
+
+                // Actualizar estado de botones según autenticación
+                const authToken = localStorage.getItem('authToken');
+                const hasAuth = authToken && typeof authToken === 'string' && authToken.trim().length > 0;
+                const btnGuardar = document.getElementById('btnGuardar');
+                const btnEliminar = document.getElementById('btnEliminar');
+
+                if (!hasAuth) {
+                    if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.title = 'Requiere autenticación de administrador'; }
+                    if (btnEliminar) { btnEliminar.disabled = true; btnEliminar.title = 'Requiere autenticación de administrador'; }
+                    showNotification('Vista de solo lectura: no tiene autorización para editar. Inicie sesión como administrador.', 'warning');
+                } else {
+                    if (btnGuardar) { btnGuardar.disabled = false; }
+                    if (btnEliminar) { btnEliminar.disabled = false; }
+                }
+
+            } catch (err) {
+                console.error(err);
+                showNotification('Error al cargar el evento: ' + err.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function guardarEvento() {
+            console.log('[BANDAS] ========== GUARDAR EVENTO ==========');
+            const fecha = document.getElementById('fechaEvento').value;
+            const nombreEventoVal = document.getElementById('nombreEvento').value.trim();
+
+            console.log('[BANDAS] eventoId:', eventoId);
+            console.log('[BANDAS] fecha:', fecha);
+            console.log('[BANDAS] nombreEventoVal:', nombreEventoVal);
+
+            // Validar autenticación PRIMERO
+            const authToken = localStorage.getItem('authToken');
+            const hasAuth = authToken && typeof authToken === 'string' && authToken.trim().length > 0;
+
+            console.log('[BANDAS] hasAuth:', hasAuth);
+
+            if (!hasAuth) {
+                showNotification('No tiene autorización para guardar. Por favor, inicie sesión como administrador.', 'error');
+                return;
+            }
+
+            // Obtener datos de la banda a partir de la selección (si existe)
+            const bandaSel = (bandasSeleccionadas && bandasSeleccionadas.length) ? bandasSeleccionadas[0] : null;
+            const nombreBanda = bandaSel ? (bandaSel.nombre || '') : '';
+            const idBanda = bandaSel ? bandaSel.id : null;
+
+            console.log('[BANDAS] bandaSel:', bandaSel);
+            console.log('[BANDAS] nombreBanda:', nombreBanda);
+            console.log('[BANDAS] idBanda:', idBanda);
+
+            if (!nombreBanda || !idBanda) {
+                showNotification('Debe haber una banda válida seleccionada', 'warning');
+                return;
+            }
+
+            // Para eventos existentes, la fecha NO es requerida (no se debe editar)
+            // Para nuevos eventos, la fecha SÍ es requerida
+            if (!eventoId && !fecha) {
+                showNotification('La fecha es obligatoria para nuevos eventos', 'warning');
+                return;
+            }
+
+            showLoading(true);
+
+            // Preparar datos para la API (mapear claves a lo que el backend espera)
+            const datos = {
+                id_banda: idBanda,
+                fecha_evento: fecha || undefined,
+                descripcion: document.getElementById('descripcion').value.trim(),
+                hora_evento: document.getElementById('horaInicio').value || '21:00',                    // backend espera `hora_evento`
+                expectativa_publico: parseInt(document.getElementById('aforoMaximo').value, 10) || 120, // backend espera `expectativa_publico`
+                es_publico: document.getElementById('esPublico').value === '1' ? 1 : 0,
+                precio_basico: parseFloat(document.getElementById('precioBase').value) || 0,            // backend espera `precio_basico`
+                precio_puerta_propuesto: document.getElementById('precioPuerta').value ? parseFloat(document.getElementById('precioPuerta').value) : null,
+                url_flyer: document.getElementById('urlFlyer').value.trim()
+            };
+
+            // Incluir datos de contacto: enviar tanto en POST como en PUT (backend soporta persistir contacto_* en PUT)
+            datos.contacto_nombre = document.getElementById('nombreContacto').value.trim();
+            datos.contacto_email = document.getElementById('emailContacto').value.trim();
+            datos.contacto_telefono = document.getElementById('telefonoContacto').value.trim();
+
+            // Nombre de la fecha / show -> persistir en la fila padre (solicitudes.descripcion_corta)
+            if (nombreEventoVal) datos.descripcion_corta = nombreEventoVal;
+
+            // Precio Anticipada -> mapear a precio_basico (DB usa precio_basico para la anticipada en solicitudes)
+            const precioAnt = parseFloat(document.getElementById('precioAnticipada').value) || null;
+            if (precioAnt && precioAnt > 0) {
+                datos.precio_basico = precioAnt;
+            } else {
+                // fallback al campo precioBase si anticipada no fue completada
+                datos.precio_basico = parseFloat(document.getElementById('precioBase').value) || 0;
+            }
+
+            // Bandas invitadas (si hay más de una seleccionada) -> enviar como invitadas_json
+            if (bandasSeleccionadas && bandasSeleccionadas.length > 1) {
+                // omitimos la primera (principal) y enviamos el resto como invitadas
+                const invitadas = bandasSeleccionadas.slice(1).map(b => ({ id_banda: b.id || null, nombre: b.nombre || '' }));
+                datos.invitadas_json = invitadas;
+            }
+
+            // Remover campos undefined
+            Object.keys(datos).forEach(key => datos[key] === undefined && delete datos[key]);
+
+            console.log('[BANDAS] Datos a enviar (final):', datos);
+
+            try {
+                // Usar nuevo endpoint /api/solicitudes-fechas-bandas/:id
+                const url = eventoId ? `/api/solicitudes-fechas-bandas/${eventoId}` : '/api/solicitudes-fechas-bandas';
+                const method = eventoId ? 'PUT' : 'POST';
+
+                console.log('[BANDAS] Envío - method:', method, 'url:', url);
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(datos)
+                });
+
+                console.log('[BANDAS] Response status:', res.status);
+                const resData = await res.json();
+                console.log('[BANDAS] Response body:', resData);
+
+                if (!res.ok) {
+                    console.error('[BANDAS] ✗ Error HTTP:', res.status);
+                    const debugInfo = resData.debug ? `\nDebug: ${JSON.stringify(resData.debug)}` : '';
+                    throw new Error((resData.message || resData.error || 'Error al guardar') + debugInfo);
+                }
+
+                console.log('[BANDAS] ✓ Evento ' + (eventoId ? 'actualizado' : 'creado') + ' correctamente');
+                showNotification(eventoId ? 'Los cambios se realizaron correctamente' : 'Evento creado correctamente', 'success');
+
+                // Redirigir después de guardar
+                if (eventoId) {
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    setTimeout(() => window.location.href = 'config_bandas.html#eventos', 1500);
+                }
+
+            } catch (err) {
+                console.error('[BANDAS] ✗ Error:', err);
+                showNotification('Error: ' + err.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function eliminarEvento() {
+            console.log('[BANDAS] ========== ELIMINAR EVENTO ==========');
+            console.log('[BANDAS] eventoId:', eventoId);
+
+            // Validar autenticación PRIMERO
+            const authToken = localStorage.getItem('authToken');
+            const hasAuth = authToken && typeof authToken === 'string' && authToken.trim().length > 0;
+
+            console.log('[BANDAS] hasAuth:', hasAuth);
+
+            if (!hasAuth) {
+                showNotification('No tiene autorización para eliminar. Por favor, inicie sesión como administrador.', 'error');
+                return;
+            }
+
+            if (!confirm('¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const url = `/api/solicitudes-fechas-bandas/${eventoId}`;
+                console.log('[BANDAS] Eliminando desde:', url);
+
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                console.log('[BANDAS] Response status:', res.status);
+                const resData = await res.json();
+                console.log('[BANDAS] Response body:', resData);
+
+                if (!res.ok) {
+                    const err = resData;
+                    throw new Error(err.message || err.error || 'Error al eliminar');
+                }
+
+                console.log('[BANDAS] ✓ Evento eliminado correctamente');
+                showNotification('Evento eliminado', 'success');
+                setTimeout(() => window.location.href = 'config_bandas.html#eventos', 1500);
+
+            } catch (err) {
+                console.error('[BANDAS] ✗ Error:', err);
+                showNotification('Error: ' + err.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        function showNotification(message, type = 'success') {
+            const banner = document.getElementById('notification-banner');
+            banner.textContent = message;
+            banner.className = `${type} show`;
+            setTimeout(() => banner.classList.remove('show'), 3000);
+        }
+
+        /* ------------------- Bandas: carga y UI (copiado/adaptado de solicitud_fecha_bandas.html) ------------------- */
+        async function loadBandas() {
+            try {
+                const res = await fetch('/api/bandas');
+                if (!res.ok) throw new Error('Error cargando bandas');
+                bandasDisponibles = await res.json();
+
+                // Reconciliar selecciones placeholder (si existen) con bandas cargadas por nombre
+                if (bandasSeleccionadas && bandasSeleccionadas.length) {
+                    bandasSeleccionadas = bandasSeleccionadas.map(sel => {
+                        if (sel.id) return sel;
+                        const match = bandasDisponibles.find(b => (b.nombre || '').toLowerCase() === (sel.nombre || '').toLowerCase());
+                        return match ? { id: match.id, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' } : sel;
+                    });
+                }
+
+                renderBandasLista();
+                renderBandasSeleccionadas();
+            } catch (err) {
+                console.error('Error cargando bandas:', err);
+            }
+        }
+
+        function renderBandasLista() {
+            const container = document.getElementById('bandasList');
+            if (!container) return;
+            const searchTerm = (document.getElementById('bandaSearch')?.value || '').toLowerCase();
+
+            const filtered = bandasDisponibles.filter(b =>
+                (b.nombre || '').toLowerCase().includes(searchTerm) ||
+                ((b.genero_musical || '').toLowerCase().includes(searchTerm))
+            );
+
+            container.innerHTML = filtered.map(banda => {
+                const isSelected = bandasSeleccionadas.some(b => b.id === banda.id);
+                return `
+                    <div class="banda-item ${isSelected ? 'selected' : ''}" onclick="toggleBanda(${banda.id}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero_musical || '')}', '${escapeHtml(banda.logo_url || '')}')">
+                        ${banda.logo_url ? `<img src="${banda.logo_url}" alt="${escapeHtml(banda.nombre)}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
+                        <div class="banda-item-text">
+                            <div class="banda-item-name">${escapeHtml(banda.nombre)}</div>
+                            ${banda.genero_musical ? `<div class="banda-item-genre">${escapeHtml(banda.genero_musical)}</div>` : ''}
+                        </div>
+                        <div class="checkbox-custom ${isSelected ? 'checked' : ''}">
+                            ${isSelected ? '<i class="fas fa-check"></i>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (filtered.length === 0) container.innerHTML = '<div class="helper-text text-center p-20">No hay bandas disponibles</div>';
+        }
+
+        function toggleBanda(id, nombre, genero, logoUrl) {
+            const idx = bandasSeleccionadas.findIndex(b => b.id === id);
+            if (idx >= 0) {
+                bandasSeleccionadas.splice(idx, 1);
+            } else {
+                // En edición permitimos hasta 5 (como en el formulario público)
+                if (bandasSeleccionadas.length >= 5) {
+                    showNotification('Máximo 5 bandas seleccionadas', 'warning');
+                    return;
+                }
+                bandasSeleccionadas.push({ id, nombre, genero, logoUrl });
+            }
+            renderBandasLista();
+            renderBandasSeleccionadas();
+        }
+
+        function renderBandasSeleccionadas() {
+            const container = document.getElementById('listaBandasSeleccionadas');
+            const count = document.getElementById('countBandas');
+            if (count) count.textContent = bandasSeleccionadas.length;
+            if (!container) return;
+
+            container.innerHTML = bandasSeleccionadas.map((banda, idx) => `
+                <div class="card card-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:10px;flex:1;">
+                        ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${escapeHtml(banda.nombre)}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
+                        <div>
+                            <div class="text-neon" style="font-weight:bold">${escapeHtml(banda.nombre)}</div>
+                            ${banda.genero ? `<div class="helper-text">${escapeHtml(banda.genero)}</div>` : ''}
+                        </div>
+                    </div>
+                    <button type="button" onclick="toggleBanda(${banda.id || 'null'}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero || '')}', '${escapeHtml(banda.logoUrl || '')}')" class="btn btn-ghost text-danger" style="font-size:1.2rem">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function setupDragAndDrop() {
+            // (opcional) reordenado — no implementado aquí, placeholder para futura mejora
+        }
+
+        // Listeners para búsqueda/crear
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'btnCrearBanda') {
+                window.location.href = '/solicitud_banda.html?returnTo=editar_solicitud_fecha_bandas.html';
+            }
+        });
+        const bandaSearchEl = document.getElementById('bandaSearch');
+        if (bandaSearchEl) bandaSearchEl.addEventListener('input', () => renderBandasLista());
+        const btnLimpiarBusqueda = document.getElementById('btnLimpiarBusqueda');
+        if (btnLimpiarBusqueda) btnLimpiarBusqueda.addEventListener('click', () => { if (bandaSearchEl) bandaSearchEl.value = ''; renderBandasLista(); });
+
+        /* -------------------------------------------------------------------------------- */
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panel de Administración - Solicitudes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            /* conservar el padding base y añadir el offset del header (4rem) */
+            padding: calc(16px + 4rem) 16px 16px 16px;
+            background: #0c0a09;
+            min-height: 100vh;
+            color: #d6d3d1;
+        }
+
+        /* Si la navbar está presente, dejarla fija en el top */
+        header.bg-rustic {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--color-secondary);
+            font-size: 2em;
+            margin-bottom: 30px;
+            margin-top: 2rem;
+            text-shadow: 0 0 5px var(--color-secondary);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2.25rem !important;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .table-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            padding: 20px;
+            padding-left: 32px;
+            padding-right: 32px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            overflow-x: auto;
+            border: 1px solid rgba(240, 171, 252, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+
+        th,
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #333;
+            text-align: left;
+            font-size: 14px;
+
+        }
+
+        th {
+            background: linear-gradient(135deg, #581c87 0%, #764ba2 100%);
+            color: var(--color-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background-color: rgba(240, 171, 252, 0.05);
+            transition: background-color 0.2s ease;
+        }
+
+        /* Colores suaves según estado */
+        .estado-solicitado {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+        }
+
+        .estado-contactado {
+            background: linear-gradient(90deg, rgba(66, 153, 225, 0.03), rgba(66, 153, 225, 0.02));
+        }
+
+        .estado-confirmado {
+            background: linear-gradient(90deg, rgba(72, 187, 120, 0.08), rgba(72, 187, 120, 0.06));
+            border-left: 4px solid #10B981;
+        }
+
+        .estado-confirmado td {
+            font-weight: 600;
+        }
+
+        .estado-cancelado {
+            background: linear-gradient(90deg, rgba(245, 101, 101, 0.03), rgba(245, 101, 101, 0.02));
+        }
+
+        .actions-cell {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .action-btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-edit-event {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-delete {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #333;
+        }
+
+        .btn-delete-event {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #333;
+        }
+
+        .btn-assign {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .btn-work-order {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        select.estado-select {
+            padding: 8px 12px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            font-size: 13px;
+            background-color: #fff;
+            color: #333;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        select.estado-select:hover {
+            border-color: #764ba2;
+        }
+
+        select.estado-select:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        #loader {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.success {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        #notification-banner.error {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        #notification-banner.info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        #notification-banner.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        /* Responsive: stack cells on small screens */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+                margin-bottom: 20px;
+            }
+
+            .table-container {
+                padding: 12px;
+                background: #1a1a1a;
+                border: 1px solid rgba(240, 171, 252, 0.1);
+            }
+
+            table,
+            thead,
+            tbody,
+            th,
+            td,
+            tr {
+                display: block;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tr {
+                margin-bottom: 16px;
+                border: 1px solid rgba(240, 171, 252, 0.2);
+                padding: 12px;
+                border-radius: 8px;
+                background: #2a2a2a;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            }
+
+            tr:hover {
+                background-color: #333333;
+                box-shadow: 0 4px 12px rgba(240, 171, 252, 0.15);
+                border-color: rgba(240, 171, 252, 0.4);
+            }
+
+            td {
+                display: grid;
+                grid-template-columns: 120px 1fr;
+                gap: 8px;
+                padding: 10px 8px;
+                border: none;
+                align-items: center;
+                color: #d6d3d1;
+            }
+
+            td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--color-secondary);
+                text-transform: uppercase;
+                font-size: 12px;
+                letter-spacing: 0.5px;
+                text-shadow: 0 0 5px rgba(240, 171, 252, 0.5);
+            }
+
+            td.label {
+                display: none;
+            }
+
+            .actions-cell {
+                grid-column: 1 / -1;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 12px 8px;
+                margin-top: 8px;
+                border-top: 1px solid rgba(240, 171, 252, 0.2);
+            }
+
+            .action-btn {
+                flex: 1;
+                min-width: 100px;
+                padding: 10px 12px;
+                font-size: 12px;
+                border-radius: 6px;
+            }
+
+            select.estado-select {
+                width: 100%;
+                padding: 8px 12px;
+                border: 2px solid #667eea;
+                border-radius: 6px;
+                background-color: #2a2a2a;
+                color: #d6d3d1;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+
+            h1 {
+                font-size: 1.3em;
+                margin-bottom: 16px;
+            }
+
+            .table-container {
+                padding: 8px;
+            }
+
+            td {
+                grid-template-columns: 100px 1fr;
+            }
+
+            .action-btn {
+                min-width: 80px;
+                padding: 8px 10px;
+                font-size: 11px;
+            }
+        }
+
+        /* Estilos para navbar inyectado */
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="./navbar.js"></script>
+</head>
+
+<body>
+    <div style="max-width: 1600px; margin: 0 auto; padding: 0;">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; margin-top: 1rem;">
+            <a href="admin.html"
+                style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <!-- <h2 style="margin: 0;">Panel de Administración de Solicitudes</h2> -->
+            <h1 class="text-4xl font-bold">Administración de Solicitudes</h1>
+
+            <div style="width: 140px;"></div>
+        </div>
+
+        <!-- FILTROS -->
+        <div
+            style="background: #1a1a1a; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid rgba(240, 171, 252, 0.1);">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+                <!-- Búsqueda por texto -->
+                <div style="flex: 1; min-width: 200px;">
+                    <label
+                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Buscar</label>
+                    <input type="text" id="filtro-busqueda" placeholder="Cliente, ID, banda..."
+                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                </div>
+
+                <!-- Filtro por Estado -->
+                <div style="min-width: 150px;">
+                    <label
+                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Estado</label>
+                    <select id="filtro-estado"
+                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                        <option value="">Todos</option>
+                        <option value="Solicitado">Solicitado</option>
+                        <option value="Contactado">Contactado</option>
+                        <option value="Confirmado">Confirmado</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+
+                <!-- Filtro por Tipo -->
+                <div style="min-width: 180px;">
+                    <label
+                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Tipo</label>
+                    <select id="filtro-tipo"
+                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                        <option value="">Todos</option>
+                        <option value="ALQUILER_SALON">Alquiler del Salón</option>
+                        <option value="FECHA_BANDAS">Fecha para Bandas</option>
+                        <option value="TALLERES">Talleres</option>
+                        <option value="SERVICIOS">Servicios</option>
+                    </select>
+                </div>
+
+                <!-- Filtro por Fecha Desde -->
+                <div style="min-width: 150px;">
+                    <label
+                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Fecha
+                        Desde</label>
+                    <input type="date" id="filtro-fecha-desde"
+                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                </div>
+
+                <!-- Filtro por Fecha Hasta -->
+                <div style="min-width: 150px;">
+                    <label
+                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Fecha
+                        Hasta</label>
+                    <input type="date" id="filtro-fecha-hasta"
+                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                </div>
+
+                <!-- Botón Limpiar -->
+                <div>
+                    <button id="btn-limpiar-filtros"
+                        style="padding: 8px 16px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; cursor: pointer; font-size: 14px;">
+                        <i class="fas fa-times"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contador de resultados -->
+            <div id="contador-resultados" style="margin-top: 12px; color: #888; font-size: 13px;"></div>
+        </div>
+    </div>
+    <div class="table-container" id="admin-table-container">
+        <div id="loader">Cargando solicitudes...</div>
+        <table id="solicitudes-table" style="display:none">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha Solicitud</th>
+                    <th>Categoría</th>
+                    <th>Tipo</th>
+                    <th>Cliente</th>
+                    <th>Fecha Evento</th>
+                    <th>Hora Inicio</th>
+                    <th>Flyer</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Público</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="solicitudes-tbody"></tbody>
+        </table>
+    </div>
+    <div id="notification-banner"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tbody = document.getElementById('solicitudes-tbody');
+            const table = document.getElementById('solicitudes-table');
+            const loader = document.getElementById('loader');
+            let notificationTimer;
+
+            // Datos originales para filtrado
+            let todasLasSolicitudes = [];
+
+            // Referencias a filtros
+            const filtroBusqueda = document.getElementById('filtro-busqueda');
+            const filtroEstado = document.getElementById('filtro-estado');
+            const filtroTipo = document.getElementById('filtro-tipo');
+            const filtroFechaDesde = document.getElementById('filtro-fecha-desde');
+            const filtroFechaHasta = document.getElementById('filtro-fecha-hasta');
+            const btnLimpiar = document.getElementById('btn-limpiar-filtros');
+            const contadorResultados = document.getElementById('contador-resultados');
+
+            // Event listeners para filtros
+            filtroBusqueda.addEventListener('input', aplicarFiltros);
+            filtroEstado.addEventListener('change', aplicarFiltros);
+            filtroTipo.addEventListener('change', aplicarFiltros);
+            filtroFechaDesde.addEventListener('change', aplicarFiltros);
+            filtroFechaHasta.addEventListener('change', aplicarFiltros);
+            btnLimpiar.addEventListener('click', limpiarFiltros);
+
+            function limpiarFiltros() {
+                filtroBusqueda.value = '';
+                filtroEstado.value = '';
+                filtroTipo.value = '';
+                filtroFechaDesde.value = '';
+                filtroFechaHasta.value = '';
+                aplicarFiltros();
+            }
+
+            function aplicarFiltros() {
+                const busqueda = filtroBusqueda.value.toLowerCase().trim();
+                const estado = filtroEstado.value;
+                const tipo = filtroTipo.value;
+                const fechaDesde = filtroFechaDesde.value;
+                const fechaHasta = filtroFechaHasta.value;
+
+                const filtradas = todasLasSolicitudes.filter(s => {
+                    // Filtro por búsqueda de texto
+                    if (busqueda) {
+                        const textoCompleto = [
+                            s.id,
+                            s.nombreCliente,
+                            s.subtipo,
+                            s.tipoNombre,
+                            s.descripcionCorta,
+                            s.tipoEventoId
+                        ].filter(Boolean).join(' ').toLowerCase();
+                        if (!textoCompleto.includes(busqueda)) return false;
+                    }
+
+                    // Filtro por estado
+                    if (estado && s.estado !== estado) return false;
+
+                    // Filtro por tipo (categoría)
+                    if (tipo) {
+                        // Normalizar valores del filtro para que coincidan con los valores devueltos por el backend
+                        const mapTipo = {
+                            'TALLERES': 'TALLER',
+                            'TALLERES_ACTIVIDADES': 'TALLER',
+                            'SERVICIOS': 'SERVICIO',
+                            'FECHA_BANDAS': 'BANDA'
+                        };
+                        const tipoNormalizado = mapTipo[tipo] || tipo;
+                        // Soportar filtrado por categoría o por tipoName (comparar tanto con el valor original como con la versión normalizada)
+                        if (
+                            s.tipoEvento !== tipoNormalizado && s.tipoEvento !== tipo &&
+                            s.categoria !== tipoNormalizado && s.categoria !== tipo &&
+                            s.tipoNombre !== tipoNormalizado && s.tipoNombre !== tipo
+                        ) return false;
+                    }
+
+                    // Filtro por fecha desde
+                    if (fechaDesde && s.fechaEvento && s.fechaEvento < fechaDesde) return false;
+
+                    // Filtro por fecha hasta
+                    if (fechaHasta && s.fechaEvento && s.fechaEvento > fechaHasta) return false;
+
+                    return true;
+                });
+
+                renderizarSolicitudes(filtradas);
+                contadorResultados.textContent = `Mostrando ${filtradas.length} de ${todasLasSolicitudes.length} solicitudes`;
+            }
+
+            // Event delegation for button clicks
+            tbody.addEventListener('click', (event) => {
+                const button = event.target.closest('button.action-btn');
+                if (!button) return;
+
+                const tr = button.closest('tr');
+                if (!tr) return;
+
+                const solicitudId = tr.dataset.solicitudId;
+                const tipoEventoId = tr.dataset.tipoEventoId;
+
+                const categoria = tr.dataset.categoria;
+                const origen = tr.dataset.origen;
+
+                if (button.classList.contains('btn-delete')) {
+                    eliminarSolicitud(solicitudId);
+                } else if (button.classList.contains('btn-edit')) {
+                    modificarSolicitud(solicitudId, categoria, origen);
+                } else if (button.classList.contains('btn-edit-event')) {
+                    // Eventos de bandas -> editor especializado
+                    window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(solicitudId)}`;
+                } else if (button.classList.contains('btn-delete-event')) {
+                    eliminarEventoClient(solicitudId);
+                } else if (button.dataset.action === 'assign') {
+                    // data-id puede ser 'ev_<id>' o id numérico
+                    asignarPersonal(button.dataset.id || solicitudId, button.dataset.tipo || tipoEventoId);
+                } else if (button.dataset.action === 'work-order') {
+                    verOrdenDeTrabajo(button.dataset.id || solicitudId);
+                }
+            });
+
+            // Event delegation for status changes
+            tbody.addEventListener('change', (event) => {
+                const select = event.target.closest('select.estado-select');
+                if (!select) return;
+
+                const id = select.dataset.id;
+                const nuevoEstado = select.value;
+
+                // Buscar el estado anterior en los datos cargados para revertir si falla
+                const solicitud = todasLasSolicitudes.find(s => String(s.id) === String(id));
+                const estadoAnterior = solicitud ? solicitud.estado : select.value;
+
+                // Actualizar visualmente el estado inmediatamente
+                select.dataset.estadoAnterior = estadoAnterior;
+
+                cambiarEstado(id, nuevoEstado, select, estadoAnterior);
+            });
+
+            // Event delegation for visibility toggle
+            tbody.addEventListener('change', (event) => {
+                const checkbox = event.target.closest('input.publico-checkbox');
+                if (!checkbox) return;
+                cambiarVisibilidad(checkbox.dataset.id, checkbox.checked);
+            });
+
+            function asignarPersonal(id, tipo) {
+                if (!id || !tipo) {
+                    showNotification('Faltan datos', 'error');
+                    return;
+                }
+                window.location.href = `/asignar_personal.html?solicitudId=${id}&tipoEventoId=${tipo}`;
+            }
+
+            function verOrdenDeTrabajo(id) {
+                if (!id) return;
+                window.location.href = `/orden_de_trabajo.html?solicitudId=${id}`;
+            }
+
+            function modificarSolicitud(id, categoria, origen) {
+                console.log('modificarSolicitud:', { id, categoria, origen });
+                // Redirigir al editor correcto según categoría/origen
+                // Si es origen 'solicitud', usar editor específico según tipo
+                // Los editores especializados son para datos ya convertidos (inscripciones, turnos, eventos)
+                if (origen === 'evento') {
+                    console.log('Redirigiendo a editor de evento banda con id:', id);
+                    window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
+                } else if (origen === 'inscripcion') {
+                    window.location.href = `/editar_inscripcion_taller.html?id=${encodeURIComponent(id)}`;
+                } else if (origen === 'turno') {
+                    window.location.href = `/editar_turno_servicio.html?id=${encodeURIComponent(id)}`;
+                } else if (categoria === 'FECHA_BANDAS' || categoria === 'BANDA') {
+                    console.log('Redirigiendo a editor de solicitud fecha bandas con id:', id);
+                    window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
+                } else if (categoria === 'ALQUILER_SALON') {
+                    window.location.href = `/editar_solicitud_alquiler.html?solicitudId=${encodeURIComponent(id)}`;
+                } else {
+                    // Si el id contiene un prefijo conocido, usarlo para decidir el editor (prioritario)
+                    const idStr = String(id || '');
+                    if (idStr.startsWith('tll_')) {
+                        window.location.href = `/editar_solicitud_talleres.html?solicitudId=${encodeURIComponent(id)}`;
+                        return;
+                    }
+                    if (idStr.startsWith('bnd_')) {
+                        window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
+                        return;
+                    }
+                    if (idStr.startsWith('srv_')) {
+                        window.location.href = `/editar_solicitud_servicios.html?solicitudId=${encodeURIComponent(id)}`;
+                        return;
+                    }
+
+                    // Normalizar categoría amplia (incluye 'TALLER', 'TALLERES', 'TALLERES_ACTIVIDADES', etc.)
+                    const norm = String(categoria || origen || '').toUpperCase();
+
+                    if (norm.includes('TALLER')) {
+                        window.location.href = `/editar_solicitud_talleres.html?solicitudId=${encodeURIComponent(id)}`;
+                    } else if (norm.includes('BAND')) {
+                        window.location.href = `/editar_solicitud_fecha_bandas.html?solicitudId=${encodeURIComponent(id)}`;
+                    } else if (norm.includes('SERVIC')) {
+                        window.location.href = `/editar_solicitud_servicios.html?solicitudId=${encodeURIComponent(id)}`;
+                    } else {
+                        console.warn('Categoría no reconocida:', categoria, 'para id:', id);
+                        alert('Editor no disponible para este tipo de solicitud.');
+                    }
+                }
+            }
+
+            async function cargarSolicitudes() {
+                console.log('Iniciando carga de solicitudes...');
+                loader.style.display = 'block';
+                table.style.display = 'none';
+
+                try {
+                    const res = await fetch('/api/admin/solicitudes');
+
+                    if (res.status === 401) {
+                        window.location.href = '/login.html';
+                        return;
+                    }
+
+                    if (!res.ok) throw new Error('Error al conectar con el servidor');
+
+                    const data = await res.json();
+                    console.log('Solicitudes recibidas:', data);
+
+                    if (data.length === 0) {
+                        loader.textContent = 'No se encontraron solicitudes.';
+                        return;
+                    }
+
+                    // Log tipos de eventos (normalizamos varios campos posibles para evitar undefined)
+                    const tipos = data.map(s => s.tipoEvento || s.tipoEventoId || s.categoria || s.tipoNombre || s.tipoServicioId).filter(Boolean);
+                    console.log('Tipos de eventos encontrados:', [...new Set(tipos)]);
+
+                    // Guardar datos para filtrado
+                    todasLasSolicitudes = data;
+
+                    // Renderizar todas las solicitudes
+                    renderizarSolicitudes(data);
+                    contadorResultados.textContent = `Mostrando ${data.length} de ${data.length} solicitudes`;
+
+                    showNotification(`${data.length} solicitud${data.length !== 1 ? 'es' : ''} cargada${data.length !== 1 ? 's' : ''}`, 'success', 2500);
+                } catch (error) {
+                    console.error(error);
+                    loader.textContent = `Error: ${error.message}`;
+                }
+            }
+
+            function renderizarSolicitudes(solicitudes) {
+                console.log('Renderizando', solicitudes.length, 'solicitudes');
+                tbody.innerHTML = '';
+
+                if (solicitudes.length === 0) {
+                    loader.style.display = 'block';
+                    loader.textContent = 'No se encontraron solicitudes con los filtros aplicados.';
+                    table.style.display = 'none';
+                    return;
+                }
+
+                solicitudes.forEach((solicitud) => {
+                    const tr = document.createElement('tr');
+                    tr.dataset.solicitudId = solicitud.id;
+                    tr.dataset.tipoEventoId = solicitud.tipoEventoId || solicitud.tipoEvento || '';
+                    // Preferimos 'categoria' devuelto por el backend; si no existe, usamos 'tipoEvento'
+                    tr.dataset.categoria = solicitud.categoria || solicitud.tipoEvento || '';
+                    // Fecha de solicitud (timestamp) - mostrar fecha+hora local
+                    const fechaSolicitud = solicitud.fechaSolicitud ? (new Date(solicitud.fechaSolicitud)).toLocaleString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A';
+                    // Formato Fecha Evento: Nombre corto del día, DD, MM, AAAA
+                    const fechaEvento = solicitud.fechaEvento ? (() => {
+                        const d = new Date(String(solicitud.fechaEvento) + 'T00:00:00');
+                        const weekday = d.toLocaleDateString('es-AR', { weekday: 'short' });
+                        const date = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        return `${weekday} ${date}`;
+                    })() : 'N/A';
+                    const horaInicio = solicitud.horaInicio ? String(solicitud.horaInicio).slice(0, 5) : '-';
+                    const descripcionCorta = solicitud.descripcionCorta || '<em>Sin descripción</em>';
+
+                    let botones = '';
+                    // Mostrar Modificar y Eliminar siempre. Si está confirmado, mostrar Asignar y Orden.
+                    // Para eventos `id` viene como 'ev_<id>' y `solicitud.origen==='evento'`.
+                    const isEvento = solicitud.origen === 'evento';
+                    const isConfirmado = (String(solicitud.estado).toLowerCase() === 'confirmado');
+                    if (isConfirmado) tr.classList.add('estado-confirmado');
+
+                    // Verificar permisos de edición
+                    const puedeEditarSolicitudes = puedeEditar('solicitudes');
+                    const puedeEliminarSolicitudes = tienePermiso('solicitudes.eliminar');
+                    const puedeCambiarEstado = tienePermiso('solicitudes.cambiar_estado');
+                    const puedeGestionarPersonal = tienePermiso('personal.gestionar');
+
+                    // Botones base (solo si tiene permisos)
+                    if (puedeEditarSolicitudes) {
+                        if (isEvento) {
+                            botones += `<button class="action-btn btn-edit-event">Modificar</button>`;
+                        } else {
+                            botones += `<button class="action-btn btn-edit">Modificar</button>`;
+                        }
+                    }
+
+                    if (puedeEliminarSolicitudes) {
+                        if (isEvento) {
+                            botones += `<button class="action-btn btn-delete-event">Eliminar</button>`;
+                        } else {
+                            botones += `<button class="action-btn btn-delete">Eliminar</button>`;
+                        }
+                    }
+
+                    if (isConfirmado) {
+                        // Mostrar botón "Asignar Personal" siempre que esté confirmado (si tiene permiso)
+                        if (puedeGestionarPersonal) {
+                            botones += `<button class="action-btn btn-assign" data-action="assign" data-id="${solicitud.id}" data-tipo="${solicitud.tipoEventoId}">Asignar Personal</button>`;
+                        }
+                        // Solo mostrar "Orden de Trabajo" si ya tiene personal asignado
+                        if (solicitud.tienePersonalAsignado) {
+                            botones += `<button class="action-btn btn-work-order" data-action="work-order" data-id="${solicitud.id}">Orden de Trabajo</button>`;
+                        }
+                    }
+
+                    // Si no tiene ningún permiso de edición, mostrar solo lectura
+                    if (!botones) {
+                        botones = '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                    }
+
+                    // Mapear categoría a nombre legible
+                    const tiposLegibles = {
+                        'ALQUILER_SALON': 'Alquiler del Salón',
+                        'FECHA_BANDAS': 'Fecha para Bandas',
+                        'TALLERES': 'Taller',
+                        'TALLERES_ACTIVIDADES': 'Taller',
+                        'SERVICIO': 'Servicio',
+                        'SERVICIOS': 'Servicio',
+                        'OTRO': 'Otro'
+                    };
+                    const tipoLegible = tiposLegibles[solicitud.tipoEvento] || solicitud.tipoEvento;
+
+                    // Para ALQUILER_SALON, mostrar el subtipo específico (INFANTILES, INFORMALES, etc.)
+                    // Si no hay subtipo, usar tipoEventoId si es diferente de la categoría
+                    let subtipoDisplay = solicitud.subtipo;
+                    if (!subtipoDisplay && solicitud.tipoEvento === 'ALQUILER_SALON' && solicitud.tipoEventoId) {
+                        // Mapear IDs a nombres legibles
+                        const subtiposAlquiler = {
+                            'INFANTILES': 'Infantiles',
+                            'INFORMALES': 'Informales',
+                            'CON_SERVICIO_DE_MESA': 'Con servicio de mesa',
+                            'BABY_SHOWERS': 'Baby Showers',
+                            'ADOLESCENTES': 'Adolescentes'
+                        };
+                        subtipoDisplay = subtiposAlquiler[solicitud.tipoEventoId] || solicitud.tipoEventoId;
+                    }
+                    subtipoDisplay = subtipoDisplay || '<em>Sin especificar</em>';
+
+                    // Banda/Artista and Cantidad/Aforo removed from admin view (use descripcionCorta/tipoNombre)
+                    // (Field kept in other forms/controllers if needed)
+
+                    tr.innerHTML = `
+                            <td data-label="ID">${solicitud.id}</td>
+                            <td data-label="Fecha Solicitud">${fechaSolicitud}</td>
+                            <td data-label="Categoría">${solicitud.categoria || '-'}</td>
+                            <td data-label="Tipo">${solicitud.tipoNombre || tipoLegible}</td>
+                            <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
+                            <td data-label="Fecha Evento">${fechaEvento}</td>
+                            <td data-label="Hora Inicio">${horaInicio}</td>
+                            <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td>
+                            <td data-label="Descripción"><div class="description">${descripcionCorta}</div></td>
+                            <td data-label="Estado">
+                                <select data-id="${solicitud.id}" class="estado-select" ${puedeCambiarEstado ? '' : 'disabled style="opacity:0.6;cursor:not-allowed;"'}>
+                                        <option value="Solicitado" ${solicitud.estado === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
+                                        <option value="Contactado" ${solicitud.estado === 'Contactado' ? 'selected' : ''}>Contactado</option>
+                                        <option value="Confirmado" ${solicitud.estado === 'Confirmado' ? 'selected' : ''}>Confirmado</option>
+                                        <option value="Cancelado" ${solicitud.estado === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
+                                </select>
+                            </td>
+                            <td data-label="Público" class="text-center">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="publico-checkbox sr-only peer" data-id="${solicitud.id}" ${solicitud.es_publico ? 'checked' : ''}>
+                                    <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-fuchsia-400 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-fuchsia-500"></div>
+                                </label>
+                            </td>
+                            <td data-label="Acciones" class="actions-cell">
+                                ${botones}
+                            </td>
+                        `;
+
+                    tbody.appendChild(tr);
+                });
+
+                loader.style.display = 'none';
+                table.style.display = 'table';
+            }
+
+            async function cambiarEstado(id, nuevoEstado, selectElement, estadoAnterior) {
+                showNotification('Actualizando estado...', 'info', 1500); try {
+                    let res;
+                    // Si es un evento (id empieza con ev_), usamos endpoints de eventos
+                    if (String(id).startsWith('ev_')) {
+                        const raw = String(id).replace('ev_', '');
+                        const eventId = parseInt(raw, 10);
+                        if (isNaN(eventId)) throw new Error('ID de evento inválido');
+
+                        if (nuevoEstado === 'Confirmado') {
+                            // marcar activo y estado
+                            res = await fetch(`/api/admin/eventos_confirmados/${eventId}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ activo: 1, estado: 'Confirmado' })
+                            });
+                        } else if (nuevoEstado === 'Cancelado') {
+                            // usar endpoint de cancel
+                            res = await fetch(`/api/admin/eventos_confirmados/${eventId}/cancel`, { method: 'PATCH' });
+                        } else {
+                            // Solicitud o Contactado -> actualizar solo estado
+                            res = await fetch(`/api/admin/eventos_confirmados/${eventId}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ estado: nuevoEstado })
+                            });
+                        }
+                    } else {
+                        // solicitud normal
+                        res = await fetch(`/api/admin/solicitudes/${id}/estado`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ estado: nuevoEstado })
+                        });
+                    }
+
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Error al cambiar estado');
+
+                    showNotification(data.message, 'success');
+
+                    // Recargar la lista completa para actualizar botones y estado visual
+                    await cargarSolicitudes();
+                } catch (error) {
+                    showNotification(error.message, 'error');
+
+                    // Revertir el cambio visual si la API falla
+                    if (selectElement && estadoAnterior !== undefined) {
+                        selectElement.value = estadoAnterior;
+                    }
+
+                    // Recargar para asegurar que el estado de la UI y los datos coincidan
+                    cargarSolicitudes();
+                }
+            }
+
+            async function cambiarVisibilidad(id, esPublico) {
+                showNotification('Actualizando visibilidad...', 'info', 1500);
+                try {
+                    const res = await fetch(`/api/admin/solicitudes/${id}/visibilidad`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ es_publico: esPublico })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Error al cambiar visibilidad');
+                    showNotification(esPublico ? 'Solicitud visible en agenda pública' : 'Solicitud oculta de agenda pública', 'success');
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                    // Revertir checkbox en caso de error
+                    const checkbox = document.querySelector(`.publico-checkbox[data-id="${id}"]`);
+                    if (checkbox) checkbox.checked = !esPublico;
+                }
+            }
+
+            // Funciones para gestionar eventos (desde filas con id 'ev_<id>')
+            async function modificarEvento(evId) {
+                // evId expected like 'ev_1'
+                if (!evId) return;
+                const raw = String(evId).replace('ev_', '');
+                const id = parseInt(raw, 10);
+                if (isNaN(id)) return showNotification('ID de evento inválido', 'error');
+
+                const nombre = prompt('Nuevo nombre de banda (dejar vacío para no cambiar):');
+                const fecha_hora = prompt('Nueva fecha y hora (YYYY-MM-DD HH:MM) (dejar vacío para no cambiar):');
+                const descripcion = prompt('Descripción (dejar vacío para no cambiar):');
+
+                const body = {};
+                if (nombre) body.nombre_banda = nombre;
+                if (fecha_hora) body.fecha_hora = fecha_hora;
+                if (descripcion) body.descripcion = descripcion;
+
+                if (Object.keys(body).length === 0) return;
+
+                showNotification('Actualizando evento...', 'info');
+                try {
+                    const res = await fetch(`/api/admin/eventos_confirmados/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Error al actualizar evento');
+                    showNotification(data.message || 'Evento actualizado', 'success');
+                    cargarSolicitudes();
+                } catch (err) {
+                    showNotification(err.message, 'error');
+                }
+            }
+
+            async function cancelarEventoClient(evId) {
+                if (!confirm('¿Deseas cancelar/desactivar este evento?')) return;
+                const raw = String(evId).replace('ev_', '');
+                const id = parseInt(raw, 10);
+                if (isNaN(id)) return showNotification('ID de evento inválido', 'error');
+
+                showNotification('Cancelando evento...', 'info');
+                try {
+                    const res = await fetch(`/api/admin/eventos_confirmados/${id}/cancel`, { method: 'PATCH' });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Error al cancelar evento');
+                    showNotification(data.message || 'Evento cancelado', 'success');
+                    cargarSolicitudes();
+                } catch (err) {
+                    showNotification(err.message, 'error');
+                }
+            }
+
+            async function eliminarEventoClient(evId) {
+                if (!confirm(`¿Estás seguro de que deseas eliminar el evento ${evId}? Esta acción borrará datos relacionados.`)) return;
+                const raw = String(evId).replace('ev_', '');
+                const id = parseInt(raw, 10);
+                if (isNaN(id)) return showNotification('ID de evento inválido', 'error');
+
+                showNotification('Eliminando evento...', 'info');
+                try {
+                    const res = await fetch(`/api/admin/eventos_confirmados/${id}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Error al eliminar evento');
+                    showNotification(data.message || 'Evento eliminado', 'success');
+                    cargarSolicitudes();
+                } catch (err) {
+                    showNotification(err.message, 'error');
+                }
+            }
+
+            async function eliminarSolicitud(id) {
+                if (!confirm(`¿Estás seguro de que deseas eliminar la solicitud ID ${id}? Esta acción no se puede deshacer.`)) {
+                    return;
+                }
+
+                showNotification('Eliminando solicitud...', 'info');
+
+                try {
+                    const res = await fetch(`/api/admin/solicitudes/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        throw new Error(data.message || 'Error al eliminar');
+                    }
+
+                    showNotification(data.message, 'success');
+
+                    // Recargar la lista completa para asegurar consistencia
+                    await cargarSolicitudes();
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            }
+
+            function showNotification(message, type = 'warning', duration = 4000) {
+                clearTimeout(notificationTimer);
+
+                const banner = document.getElementById('notification-banner');
+                banner.textContent = message;
+                banner.className = `show ${type}`;
+
+                notificationTimer = setTimeout(() => {
+                    banner.className = '';
+                }, duration);
+            }
+
+            // Proteger esta página: redirigir a login si no está autenticado
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) {
+                return; // Salir si no está autenticado
+            }
+            navbarManager.injectNavbar('body');
+
+            // Load solicitudes on page load
+            cargarSolicitudes();
+        });
+    </script>
+</body>
+
+</html>

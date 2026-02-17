@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bandas en Vivo - El Templo de Claypole</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+        }
+
+        .neon-glow-img {
+            box-shadow: 0 0 15px rgba(240, 171, 252, 0.4);
+            transition: transform 0.3s ease;
+        }
+
+        .neon-glow-img:hover {
+            transform: scale(1.05);
+        }
+
+        .evento-card {
+            background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
+            border: 1px solid var(--color-rustic);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .evento-card:hover {
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 20px rgba(240, 171, 252, 0.2);
+        }
+
+        /* Mantener la barra de navegación pegada al top y dejar espacio para el contenido */
+        header.bg-rustic {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+
+        /* Empujar el contenido para que no quede oculto bajo el header (h-16 = 4rem) */
+        main {
+            padding-top: 4rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
+                        Inicio</span>
+                </a>
+
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <a href="seccion_servicios.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
+                    <a href="seccion_alquiler.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
+                        Salón</a>
+                    <a href="solicitud_banda.html"
+                        class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition">
+                        <i class="fas fa-guitar mr-1"></i> Quiero tocar acá
+                    </a>
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+
+                <button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <a href="seccion_servicios.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
+                <a href="solicitud_banda.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">
+                    <i class="fas fa-guitar mr-1"></i> Quiero tocar acá
+                </a>
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <!-- <section class="py-20 md:py-32 bg-stone-950 text-center">
+            <div class="max-w-4xl mx-auto px-4">
+                <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
+                    <span class="block text-neon"><i class="fas fa-music mr-3"></i>Bandas en Vivo</span>
+                </h1>
+                 <p class="mt-4 text-2xl text-stone-300 font-medium">
+                    El escenario donde las bandas independientes hacen vibrar Claypole
+                </p>
+                <p class="mt-6 text-xl text-fuchsia-400">
+                    ¿Tenés una banda? ¡Proponé tu fecha y tocá en El Templo!
+                </p>
+                <div class="mt-8">
+                    <a href="solicitud_fecha_bandas.html"
+                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-guitar mr-2"></i> Solicitar nueva fecha da banda o artistas en vivo
+                    </a>
+                </div> 
+            </div>
+        </section> -->
+
+        <!-- Próximos Eventos -->
+        <section class="py-16 bg-stone-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center text-neon mb-4">
+                    <i class="fas fa-info-circle mr-2"></i> Próximos Shows
+                </h2>
+                <p class="text-center text-stone-400 mb-10">Mirá la agenda y conseguí tus entradas anticipadas</p>
+
+                <!-- Contenedor: muestra hasta 4 próximos shows -->
+                <div id="eventos-container" class="space-y-6">
+                    <div class="text-center py-10 col-span-full">
+                        <i class="fas fa-spinner fa-spin text-4xl text-fuchsia-400 mb-4"></i>
+                        <p class="text-stone-400">Cargando eventos...</p>
+                    </div>
+                </div>
+
+                <div class="text-center mt-10">
+                    <button id="toggle-full-agenda"
+                        class="inline-flex items-center text-fuchsia-400 hover:text-fuchsia-300 font-semibold">
+                        Ver agenda de bandas completa <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+
+                <!-- Agenda completa (hidden por defecto) -->
+                <div id="agenda-completa" class="hidden mt-10">
+                    <h3 class="text-2xl font-bold text-neon mb-4 text-center">Agenda Completa</h3>
+                    <div id="agenda-list" class="space-y-6"></div>
+                    <div class="text-center mt-8">
+                        <button id="hide-full-agenda"
+                            class="inline-flex items-center text-stone-400 hover:text-stone-200">Ocultar agenda
+                            completa</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Info del Espacio -->
+        <section class="py-16 bg-stone-950">
+            <div class="max-w-5xl mx-auto px-4">
+                <h2 class="text-3xl font-bold text-center text-neon mb-10">
+                    <i class="fas fa-info-circle mr-2"></i> Sobre el Escenario
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-stone-900 p-6 rounded-xl border border-stone-700">
+                        <h3 class="text-xl font-bold text-fuchsia-400 mb-4"><i class="fas fa-microphone-alt mr-2"></i>
+                            Equipamiento</h3>
+                        <ul class="space-y-2 text-stone-300">
+                            <li><i class="fas fa-check text-green-400 mr-2"></i> Sonido profesional</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i> Escenario con luces</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i> Backline disponible</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i> Técnico de sonido</li>
+                        </ul>
+                    </div>
+                    <div class="bg-stone-900 p-6 rounded-xl border border-stone-700">
+                        <h3 class="text-xl font-bold text-fuchsia-400 mb-4"><i class="fas fa-users mr-2"></i> Capacidad
+                        </h3>
+                        <ul class="space-y-2 text-stone-300">
+                            <li><i class="fas fa-check text-green-400 mr-2"></i> Aforo: hasta 150 personas</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i> Barra con bebidas</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i> Patio con parrilla</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i> Ambiente climatizado</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-8">
+                    <a href="solicitud_fecha_bandas.html"
+                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-guitar mr-2"></i> Solicitar nueva fecha da banda o artistas en vivo
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Galería de Fotos -->
+        <section class="py-16 bg-stone-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center text-neon mb-10">
+                    <i class="fas fa-camera mr-2"></i> Shows Anteriores
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_banda_1.jpg" alt="Show en vivo"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Show+en+Vivo';">
+                        <p class="text-center text-white font-semibold">Noche de Rock</p>
+                    </div>
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_banda_2.jpg" alt="Público disfrutando"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=El+P%C3%BAblico';">
+                        <p class="text-center text-white font-semibold">La energía del público</p>
+                    </div>
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_banda_3.jpg" alt="Escenario"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=El+Escenario';">
+                        <p class="text-center text-white font-semibold">Nuestro escenario</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-rustic border-t border-stone-700 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos
+                reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Menú móvil
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenuButton && mobileMenu) {
+            mobileMenuButton.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+        }
+
+        // Auth menu
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                if (desktopMenu) desktopMenu.innerHTML = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition">🔐 Admin</a>`;
+                if (mobileMenu) mobileMenu.innerHTML = `<a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐 Admin</a>`;
+            } else {
+                if (desktopMenu) desktopMenu.innerHTML = `<a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition">Login</a>`;
+                if (mobileMenu) mobileMenu.innerHTML = `<a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon text-neon">Login</a>`;
+            }
+        }
+        updateAuthMenu();
+
+        // UTILIDADES: parseo y formato
+        function parseFecha(fechaStr, horaStr = null) {
+            if (!fechaStr) return null;
+            let s = String(fechaStr).trim();
+            if (horaStr && !s.includes('T')) {
+                // combinar fecha + hora si se da por separado
+                const horaPart = String(horaStr).trim().split(':').slice(0, 3).join(':');
+                s = `${s}T${horaPart}`;
+            } else if (s.includes(' ') && !s.includes('T')) {
+                s = s.replace(' ', 'T');
+            } else if (!s.includes('T') && s.length === 10) {
+                s = s + 'T00:00:00';
+            }
+            const d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        function formatDateTime(fechaObj) {
+            if (!fechaObj) return { day: '--', month: '--', time: '--' };
+            const day = fechaObj.toLocaleDateString('es-AR', { day: '2-digit' });
+            const month = fechaObj.toLocaleDateString('es-AR', { month: 'short' }).toUpperCase().replace('.', '');
+            const time = fechaObj.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+            return { day, month, time };
+        }
+
+        function generateEventCard(e, opts = { allowPurchase: true, compact: false }) {
+            const fechaObj = e._fechaObj || parseFecha(e.fecha_hora || e.fecha, e.hora_inicio);
+            const now = new Date();
+            const isPast = fechaObj ? fechaObj < now : false;
+            const { day, month, time } = formatDateTime(fechaObj);
+
+            const precioAnt = (e.precio_anticipada !== undefined && e.precio_anticipada !== null) ? parseFloat(e.precio_anticipada) : null;
+            const precioPta = (e.precio_puerta !== undefined && e.precio_puerta !== null) ? parseFloat(e.precio_puerta) : null;
+            const precioBase = (e.precio_base !== undefined && e.precio_base !== null) ? parseFloat(e.precio_base) : 0;
+            const esGratis = (precioAnt === null || precioAnt === 0) && (precioPta === null || precioPta === 0) && precioBase === 0;
+
+            let priceHtml = '';
+            if (esGratis) priceHtml = `<p class="text-emerald-400 font-semibold">¡GRATIS!</p>`;
+            else {
+                if (precioAnt) priceHtml += `<p class="text-green-400 font-semibold">Anticipada: $${precioAnt}</p>`;
+                if (precioPta) priceHtml += `<p class="text-stone-400 text-sm">En puerta: $${precioPta}</p>`;
+                if (!precioAnt && !precioPta && precioBase) priceHtml = `<p class="text-neon font-semibold">$${precioBase}</p>`;
+            }
+
+            // estilos por estado (pasado / futuro)
+            const borderClass = isPast ? 'border-rose-500' : 'border-emerald-500';
+            const dateBg = isPast ? 'bg-rose-900' : 'bg-emerald-900';
+            const dateColor = 'text-white';
+
+            // acción
+            let actionHtml = '';
+            if (!isPast && opts.allowPurchase) {
+                const btnClass = esGratis ? 'bg-emerald-500 hover:bg-emerald-400' : 'bg-fuchsia-500 hover:bg-fuchsia-400';
+                const btnText = esGratis ? 'Reservar Lugar' : 'Sacar Entrada';
+                const link = `checkout_form.html?event_id=${e.id}${esGratis ? '&free=true' : ''}`;
+                actionHtml = `<a href="${link}" class="w-full sm:w-auto ${btnClass} text-gray-900 font-bold py-3 px-6 rounded-full transition shadow-lg text-center whitespace-normal flex items-center justify-center h-16">${btnText}</a>`;
+            } else if (isPast) {
+                actionHtml = `<div class="px-3 py-2 rounded-full text-sm font-semibold text-rose-200 bg-rose-900/30">Evento finalizado</div>`;
+            }
+
+            // compact flag: different spacing if needed
+            const containerClass = opts.compact ? 'p-4' : 'p-6';
+
+            return `
+                <div data-event-id="${e.id}" class="${containerClass} bg-stone-800 rounded-xl event-card border-l-4 ${borderClass}">
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="text-center p-2 rounded-lg ${dateBg} ${dateColor} flex-shrink-0">
+                            <p class="text-xl font-bold">${day}</p>
+                            <p class="text-xs">${month}</p>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-semibold text-white">${e.nombre_banda}</h4>
+                            <p class="text-sm text-stone-400">${(e.descripcion || '').substring(0, 80)}${(e.descripcion || '').length > 80 ? '...' : ''}</p>
+                            <div class="mt-2">${priceHtml}</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end items-center">
+                        ${actionHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Cargar eventos y renderizar próximos 4
+        async function loadEventos() {
+            const container = document.getElementById('eventos-container');
+            try {
+                // Usar el endpoint público de eventos confirmados (API unificada)
+                const res = await fetch('/api/eventos/publicos');
+                if (!res.ok) throw new Error('Error al cargar eventos, status:' + res.status);
+
+                const eventosRaw = await res.json();
+                console.log('Eventos públicos (eventos_confirmados):', eventosRaw);
+
+                if (!Array.isArray(eventosRaw) || eventosRaw.length === 0) {
+                    container.innerHTML = `<div class="text-center py-10"><i class="fas fa-calendar-times text-4xl text-stone-500 mb-4"></i><p class="text-stone-400">No hay shows de bandas programados por el momento</p><p class="text-fuchsia-400 mt-2">¡Pero podés proponer tu fecha!</p></div>`;
+                    document.getElementById('toggle-full-agenda').style.display = 'none';
+                    return;
+                }
+
+                // Mapear al formato esperado por generateEventCard (normalizar campos)
+                const mapped = eventosRaw.map(e => {
+                    const fechaHoraRaw = e.fecha_evento || e.fecha_hora || e.fecha;
+                    const horaRaw = e.hora_inicio || e.hora || null;
+                    let _fechaObj = parseFecha(fechaHoraRaw, horaRaw);
+                    return {
+                        ...e,
+                        _fechaObj,
+                        nombre_banda: e.nombre_evento || e.nombre_banda || e.banda_nombre,
+                        precio_base: e.precio_base || e.precio_final || null,
+                        precio_puerta: e.precio_puerta || null,
+                        fecha_hora: fechaHoraRaw,
+                        hora_inicio: horaRaw,
+                        es_publico: typeof e.es_publico !== 'undefined' ? e.es_publico : 1
+                    };
+                }).filter(e => e._fechaObj && e.es_publico === 1); // quitar los inválidos y privados
+
+                // próximos futuros (>= today)
+                const todayStart = new Date();
+                todayStart.setHours(0, 0, 0, 0);
+                const futuros = mapped.filter(e => e._fechaObj >= todayStart).sort((a, b) => a._fechaObj - b._fechaObj);
+
+                // render
+                container.innerHTML = futuros.slice(0, 4).map(e => generateEventCard(e, { allowPurchase: true, compact: true })).join('');
+
+                // preparar botón de mostrar agenda completa
+                if (mapped.length > 0) {
+                    document.getElementById('toggle-full-agenda').addEventListener('click', () => showFullAgenda(mapped));
+                    document.getElementById('hide-full-agenda').addEventListener('click', () => hideFullAgenda());
+                } else {
+                    document.getElementById('toggle-full-agenda').style.display = 'none';
+                }
+
+                if (futuros.length === 0) {
+                    container.innerHTML = `<div class="text-center py-10"><i class="fas fa-calendar-times text-4xl text-stone-500 mb-4"></i><p class="text-stone-400">No hay próximos shows de bandas programados.</p><p class="text-stone-300 mt-2">Revisa la agenda completa para ver eventos pasados.</p></div>`;
+                }
+
+
+            } catch (err) {
+                console.error('Error cargando eventos:', err);
+                container.innerHTML = `<div class="text-center py-10"><i class="fas fa-exclamation-circle text-4xl text-red-400 mb-4"></i><p class="text-stone-400">No se pudieron cargar los eventos</p><p>${err}</p></div>`;
+            }
+        }
+
+        // Mostrar agenda completa (todos los eventos, incluidos pasados)
+        function showFullAgenda(allEvents) {
+            const list = document.getElementById('agenda-list');
+            const wrapper = document.getElementById('agenda-completa');
+            // ordenar por fecha asc
+            const sorted = allEvents.sort((a, b) => (a._fechaObj ? a._fechaObj.getTime() : 0) - (b._fechaObj ? b._fechaObj.getTime() : 0));
+            list.innerHTML = sorted.map(e => generateEventCard(e, { allowPurchase: true, compact: false })).join('');
+            wrapper.classList.remove('hidden');
+            document.getElementById('toggle-full-agenda').classList.add('hidden');
+        }
+
+        function hideFullAgenda() {
+            document.getElementById('agenda-completa').classList.add('hidden');
+            document.getElementById('toggle-full-agenda').classList.remove('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', loadEventos);
+    </script>
+</body>
+
+</html>
