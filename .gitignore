@@ -18,7 +18,12 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-contexto_negocio.mduploads/
-backend/uploads/
+contexto_negocio.md
 uploads/
+backend/uploads/
 gemini-env/
+
+# Backups comprimidos (archivos de respaldo)
+*.tar.gz
+tdcApiRest_backup_*.tar.gz
+_backups/*.tar.gz
