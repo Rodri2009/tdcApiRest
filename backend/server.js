@@ -71,6 +71,8 @@ try {
     const usuariosRoutes = require('./routes/usuariosRoutes');
     const eventosRoutes = require('./routes/eventosRoutes');
     const uploadsRoutes = require('./routes/uploadsRoutes');
+    const mercadopagoRoutes = require('./routes/mercadopagoRoutes'); // NUEVO: Integración Mercado Pago
+    const whatsappRoutes = require('./routes/whatsappRoutes'); // NUEVO: Integración WhatsApp
 
     app.use('/api/opciones', opcionesRoutes);
     app.use('/api/solicitudes', solicitudesRoutes);
@@ -92,7 +94,11 @@ try {
     app.use('/api/eventos', eventosRoutes);
     app.use('/api/uploads', uploadsRoutes);
 
-    console.log("Rutas configuradas correctamente (incluidas nuevas rutas de bandas y solicitudes de fechas).");
+    // NUEVAS INTEGRACIONES - Servicios Puppeteer (Fase 1)
+    app.use('/api/mercadopago', mercadopagoRoutes); // Integración con serverMP
+    app.use('/api/whatsapp', whatsappRoutes); // Integración con serverWhatsApp
+
+    console.log("Rutas configuradas correctamente (incluidas nuevas rutas de bandas y solicitudes de fechas, y servicios Puppeteer).");
 
 
 
