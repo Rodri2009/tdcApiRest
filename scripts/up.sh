@@ -24,6 +24,16 @@ COMPOSE_FILE="docker/docker-compose.yml"
 # Ruta raíz del repo (útil para invocar scripts desde cualquier cwd)
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
+# Permitir opción CLI: --migrate (o usar env var APPLY_MIGRATIONS=true)
+APPLY_MIGRATIONS_CLI=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --migrate|--apply-migrations) APPLY_MIGRATIONS_CLI=1; shift;;
+        -h|--help) echo "Usage: $0 [--migrate]"; exit 0;;
+        *) echo "Unknown arg: $1"; exit 1;;
+    esac
+done
+
 # --- Comprobaciones previas: comandos y daemon ---
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -199,6 +209,41 @@ echo "--- Mostrando estado de los contenedores... ---"
 # Damos una pequeña pausa para que los servicios terminen de estabilizarse.
 sleep 3
 eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE ps"
+
+# -- Opcional: aplicar migraciones si se solicitó (CLI o env var)
+# Soporta: `./scripts/up.sh --migrate` o `APPLY_MIGRATIONS=true ./scripts/up.sh`
+if [ "${APPLY_MIGRATIONS_CLI:-0}" = "1" ] || [ "${APPLY_MIGRATIONS,,}" = "true" ] || [ "${APPLY_MIGRATIONS:-0}" = "1" ]; then
+    echo "--- ⤴️ Aplicando migraciones SQL desde database/migrations (solicitado) ---"
+    MIG_DIR="database/migrations"
+    if [ -d "$MIG_DIR" ] && ls $MIG_DIR/*.sql >/dev/null 2>&1; then
+        # Esperar a que MariaDB esté lista
+        TRIES=0
+        MAX_TRIES=30
+        until $COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mariadb mysql -u root -p"$MARIADB_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; do
+            TRIES=$((TRIES+1))
+            if [ $TRIES -ge $MAX_TRIES ]; then
+                echo "❌ ERROR: MariaDB no respondió después de $MAX_TRIES intentos. No se pueden aplicar migraciones."
+                exit 1
+            fi
+            sleep 2
+        done
+
+        for sqlfile in $(ls $MIG_DIR/*.sql | sort); do
+            if grep -q '^-- ARCHIVED:' "$sqlfile" 2>/dev/null; then
+                echo "Saltando migración archivada: $sqlfile"
+                continue
+            fi
+            echo "Aplicando: $sqlfile"
+            if ! cat "$sqlfile" | $COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""; then
+                echo "❌ ERROR: Falló la migración $sqlfile."
+                exit 1
+            fi
+        done
+        echo "--- ✅ Migraciones aplicadas correctamente ---"
+    else
+        echo "--- ℹ️ No se encontraron migraciones en $MIG_DIR (o no hay archivos .sql) ---"
+    fi
+fi
 
 echo ""
 

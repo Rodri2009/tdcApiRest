@@ -59,7 +59,7 @@ cp .env.example .env   # Editar con tus variables
 
 | Script | Descripción |
 |--------|-------------|
-| `./scripts/up.sh` | Levanta todos los servicios (NO aplica migraciones en `database/migrations`) |
+| `./scripts/up.sh` | Levanta todos los servicios. No aplica migraciones por defecto — usa `./scripts/up.sh --migrate` o `APPLY_MIGRATIONS=true ./scripts/up.sh` para aplicarlas desde `database/migrations` |
 | `./scripts/down-and-backup.sh` | Detiene servicios y crea backup de la BD |
 | `./scripts/reset.sh` | Reinicia completamente (elimina datos y reconstruye) — **aplica** las migraciones SQL que estén en `database/migrations` después de recrear la BD |
 
