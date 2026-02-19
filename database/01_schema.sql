@@ -173,6 +173,7 @@ CREATE TABLE IF NOT EXISTS solicitudes (
     es_publico TINYINT(1) DEFAULT 0 COMMENT 'Visibilidad pública por defecto para la solicitud (padre)',
     descripcion_corta VARCHAR(255) DEFAULT NULL,
     descripcion_larga TEXT DEFAULT NULL,
+    url_flyer MEDIUMTEXT DEFAULT NULL COMMENT 'URL del flyer/cartel/promocional adjunto por el solicitante',
     descripcion TEXT,
     cliente_id INT NULL,
     INDEX idx_categoria (categoria),
