@@ -384,10 +384,10 @@
                             ${flyerUrl ? `<img src="${flyerUrl}" alt="${e.nombre_evento || e.nombre_banda || e.banda_nombre}">` : `<div class="helper-text">No Flyer</div>`}
                         </div>
                         <div class="agenda-meta">
-                            <div class="text-center p-3 rounded-lg ${dateBg} ${dateColor} flex-shrink-0 min-w-[72px] flex flex-col justify-center items-center">
-                                <p class="text-xl font-bold">${day}</p>
-                                <p class="text-xs">${month}</p>
-                                <p class="text-xs mt-1">${year}</p>
+                            <div class="text-center p-3 rounded-lg ${dateBg} ${dateColor} flex-shrink-0 min-w-[88px] flex flex-col justify-center items-center">
+                                <p class="text-2xl font-extrabold leading-none">${day}</p>
+                                <p class="text-sm uppercase tracking-wide mt-1">${month}</p>
+                                <p class="text-sm mt-1 font-medium">${year}</p>
                             </div>
                             <div class="flex-1">
                                 <h4 class="text-xl font-semibold text-white">${e.nombre_evento || e.nombre_banda || e.banda_nombre}</h4>

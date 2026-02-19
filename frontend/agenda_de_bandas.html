@@ -291,10 +291,10 @@
                 <!-- Evento ID: ${id} - ${nombre_banda} -->
                 <div data-event-id="${id}" class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 ${borderClass}">
                     <div class="flex items-center space-x-4 mb-4 sm:mb-0">
-                        <div class="text-center p-3 rounded-lg ${dateBgClass} ${dateTextColor} flex-shrink-0 min-w-[72px] flex flex-col justify-center items-center">
-                            <p class="text-xl font-bold">${day}</p>
-                            <p class="text-xs">${month}</p>
-                            <p class="text-xs mt-1">${year}</p>
+                        <div class="text-center p-3 rounded-lg ${dateBgClass} ${dateTextColor} flex-shrink-0 min-w-[88px] flex flex-col justify-center items-center">
+                            <p class="text-2xl font-extrabold leading-none">${day}</p>
+                            <p class="text-sm uppercase tracking-wide mt-1">${month}</p>
+                            <p class="text-sm mt-1 font-medium">${year}</p>
                         </div>
                         <div>
                             <h4 class="text-2xl font-semibold text-white">${event.nombre_evento || nombre_banda} <span class="text-sm text-stone-400">(ID: ${id})</span></h4>

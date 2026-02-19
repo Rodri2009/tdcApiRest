@@ -423,6 +423,7 @@
             return {
                 day: date.toLocaleDateString('es-AR', { day: '2-digit' }),
                 month: date.toLocaleDateString('es-AR', { month: 'short' }).toUpperCase().replace('.', ''),
+                year: date.toLocaleDateString('es-AR', { year: 'numeric' }),
                 weekday: date.toLocaleDateString('es-AR', { weekday: 'short' })
             };
         }
@@ -484,9 +485,10 @@
                         ${item.flyer_url ? `<img src="${item.flyer_url}" alt="${item.nombre || item.tipo}">` : `<div class="helper-text">No Flyer</div>`}
                     </div>
                     <div class="agenda-meta">
-                        <div class="text-center p-2 rounded-lg ${cat.bgDate} text-white flex-shrink-0 min-w-[50px]">
-                            <p class="text-xl font-bold">${day}</p>
-                            <p class="text-xs">${month}</p>
+                        <div class="text-center p-3 rounded-lg ${cat.bgDate} text-white flex-shrink-0 min-w-[88px] flex flex-col justify-center items-center">
+                            <p class="text-2xl font-extrabold leading-none">${day}</p>
+                            <p class="text-sm uppercase tracking-wide mt-1">${month}</p>
+                            <p class="text-sm mt-1 font-medium">${year}</p>
                         </div>
                         <div>
                             <div class="flex items-center gap-2 mb-1">
