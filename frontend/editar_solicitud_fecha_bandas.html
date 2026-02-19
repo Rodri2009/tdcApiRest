@@ -911,14 +911,25 @@
             try {
                 console.log('[BANDAS] ========== CARGAR EVENTO ==========');
                 console.log('[BANDAS] eventoId:', eventoId);
-                console.log('[BANDAS] Usando nuevo endpoint: /api/solicitudes-fechas-bandas/:id');
+                console.log('[BANDAS] eventoPrefix:', eventoPrefix);
+                
+                let endpoint;
+                if (eventoPrefix === 'ev_') {
+                    // Acceso público a evento confirmado (desde calendario público)
+                    endpoint = `/api/eventos/${eventoId}/detalle-publico`;
+                    console.log('[BANDAS] Modo público detectado. Usando endpoint:', endpoint);
+                } else {
+                    // Acceso tradicional (directo a solicitudes_fechas_bandas)
+                    endpoint = `/api/solicitudes-fechas-bandas/${eventoId}`;
+                    console.log('[BANDAS] Modo tradicional. Usando endpoint:', endpoint);
+                }
 
                 if (!eventoId) {
                     throw new Error('ID de evento no válido');
                 }
 
-                const res = await fetch(`/api/solicitudes-fechas-bandas/${eventoId}`);
-                console.log('[BANDAS] GET /api/solicitudes-fechas-bandas/' + eventoId + ' status: ' + res.status);
+                const res = await fetch(endpoint);
+                console.log('[BANDAS] GET ' + endpoint + ' status: ' + res.status);
 
                 if (!res.ok) {
                     throw new Error('No se pudo cargar la solicitud: ' + res.status);
