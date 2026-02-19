@@ -562,10 +562,14 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             urlFlyerPendiente = url_flyer && url_flyer.trim() ? url_flyer.trim() : null;
             console.log(`[FECHA_BANDA] url_flyer será guardado en tabla 'solicitudes' (length=${flyerLen})`);
         }
+
+        // NOTE: 'es_publico' ahora vive en la tabla padre `solicitudes`.
+        // No intentar actualizar `solicitudes_fechas_bandas.es_publico` (columna inexistente).
+        // En su lugar: marcar para actualizar la fila padre y sincronizar `eventos_confirmados`.
+        let parentEsPublico = null;
         if (es_publico !== undefined) {
-            actualizaciones.push('es_publico = ?');
-            params.push(es_publico ? 1 : 0);
-            console.log(`[FECHA_BANDA] es_publico será guardado:`, es_publico ? 1 : 0);
+            parentEsPublico = es_publico ? 1 : 0;
+            console.log(`[FECHA_BANDA] es_publico será guardado en tabla 'solicitudes':`, parentEsPublico);
         }
 
         // Siempre actualizar timestamp
@@ -606,6 +610,16 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                     }
                 }
             }
+        }
+
+        // Si se pidió actualizar es_publico en el PUT, persistirlo en la tabla padre `solicitudes`
+        if (parentEsPublico !== null) {
+            await conn.query('UPDATE solicitudes SET es_publico = ? WHERE id = ?', [parentEsPublico, idNum]);
+            console.log(`[FECHA_BANDA] ✓ es_publico guardado en tabla 'solicitudes' (id=${idNum} -> es_publico=${parentEsPublico})`);
+
+            // Sincronizar valor en eventos_confirmados (si existe)
+            await conn.query('UPDATE eventos_confirmados SET es_publico = ? WHERE id_solicitud = ?', [parentEsPublico, idNum]);
+            console.log(`[FECHA_BANDA] ✓ es_publico sincronizado en 'eventos_confirmados' para solicitud ${idNum}`);
         }
         // Si en este PUT se cambió el estado a 'Confirmado', garantizar que exista el registro en eventos_confirmados
         if (typeof estado !== 'undefined' && estado === 'Confirmado') {
