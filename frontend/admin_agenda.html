@@ -614,7 +614,7 @@
 
             const tipo = (item.tipo || '').toString().toUpperCase();
 
-            
+
             // Detectar explícitamente por tipo
             if (tipo === 'BANDA') {
                 return 'BANDA';
@@ -628,7 +628,7 @@
             if (tipo === 'ALQUILER_SALON') {
                 return 'ALQUILER';
             }
-            
+
             // Fallbacks para detección por palabras clave
             if (tipo.includes('BANDA')) {
                 return 'BANDA';
@@ -639,19 +639,19 @@
             if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) {
                 return 'SERVICIO';
             }
-            
+
             return 'ALQUILER';
         }
 
         function combineItems() {
             // Normalizar solicitudes (ahora incluye tanto solicitudes como eventos)
             const normalizedSolicitudes = solicitudes.map((s, idx) => {
-                
+
                 // Mapeo de campos para compatibilidad
                 const esBanda = s.origen === 'evento' || (s.tipoEvento && s.tipoEvento.toUpperCase() === 'BANDA');
                 const esServicio = s.tipoEvento && s.tipoEvento.toUpperCase() === 'SERVICIO';
                 const esTaller = s.tipoEvento && s.tipoEvento.toUpperCase() === 'TALLER';
-                
+
                 const normalized = {
                     id: s.id,
                     source: s.origen || 'solicitud',
@@ -659,7 +659,7 @@
                     hora: s.horaInicio || s.hora_evento,
                     tipo: s.tipoEvento || 'Otro',
                     // Nombre: para eventos/bandas usar tipoNombre o descripcionCorta, sino nombreCliente
-                    nombre: (esBanda) ? (s.tipoNombre || s.descripcionCorta || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda || 'Evento') : (s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda || s.tipoNombre || s.descripcionCorta || '-'),
+                    nombre: (esBanda) ? (s.nombreEvento || s.tipoNombre || s.descripcionCorta || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda || 'Evento') : (s.nombreEvento || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda || s.tipoNombre || s.descripcionCorta || '-'),
                     telefono: s.telefono || '',
                     email: s.email || '',
                     descripcion: s.descripcion || '',
@@ -753,7 +753,7 @@
             filtered.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
             const tbody = document.getElementById('tbody-proximos');
-            
+
             if (filtered.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay eventos próximos</td></tr>';
                 return;

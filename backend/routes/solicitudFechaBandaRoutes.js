@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const solicitudFechaBandaController = require('../controllers/solicitudFechaBandaController');
 const { protect } = require('../middleware/authMiddleware');
+const requireAdmin = require('../middleware/requireAdmin');
 
 // GET /api/solicitudes-fechas-bandas - Listar solicitudes
 router.get('/', solicitudFechaBandaController.listarSolicitudesFechasBandas);
@@ -20,7 +21,7 @@ router.get('/:id', solicitudFechaBandaController.obtenerSolicitudFechaBanda);
 router.put('/:id', protect, solicitudFechaBandaController.actualizarSolicitudFechaBanda);
 
 // PUT /api/solicitudes-fechas-bandas/:id/confirmar - Confirmar solicitud y crear evento
-router.put('/:id/confirmar', protect, solicitudFechaBandaController.confirmarSolicitudFechaBanda);
+router.put('/:id/confirmar', protect, requireAdmin, solicitudFechaBandaController.confirmarSolicitudFechaBanda);
 
 // DELETE /api/solicitudes-fechas-bandas/:id - Eliminar solicitud
 router.delete('/:id', protect, solicitudFechaBandaController.eliminarSolicitudFechaBanda);

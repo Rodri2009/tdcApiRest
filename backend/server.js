@@ -8,9 +8,20 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // --- Middlewares ---
-app.use(express.json());
+// Aumento límite para aceptar payloads con imágenes en base64 (ej. url_flyer)
+app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser()); // <-- USAR
-app.use(express.urlencoded({ extended: true }));
+// También limitar urlencoded para paridad
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+// Capturar errores de body-parser (PayloadTooLarge) y devolver 413 legible
+app.use((err, req, res, next) => {
+    if (err && (err.type === 'entity.too.large' || /request entity too large/i.test(err.message || ''))) {
+        console.warn(`[BODY_PARSER] Payload demasiado grande en ${req.method} ${req.originalUrl}: ${err.message}`);
+        return res.status(413).json({ error: 'Payload demasiado grande. Suba imágenes mediante /api/uploads o reduzca el tamaño del archivo.' });
+    }
+    next(err);
+});
 
 // App-level normalization for legacy payload keys targeting admin eventos_confirmados
 // This guarantees legacy keys (fecha, nombre_banda, aforo_maximo, nombre_contacto, precio_puerta)
@@ -79,14 +90,14 @@ try {
     app.use('/api/test', testRoutes);
     app.use('/api/auth', authRoutes);
     app.use('/api/admin', adminRoutes);
-    
+
     // NUEVAS RUTAS (refactored 3NF)
     app.use('/api/bandas', bandaRoutes); // GET, POST, PUT, DELETE para bandas_artistas
     app.use('/api/solicitudes-fechas-bandas', solicitudFechaBandaRoutes); // GET, POST, PUT, DELETE para solicitudes_fechas_bandas
-    
+
     // Legacy (mantener por compatibilidad)
     // app.use('/api/bandas', bandasRoutes); // COMENTADO: usar nueva estructura
-    
+
     app.use('/api/tickets', ticketsRoutes);
     app.use('/api/talleres', talleresRoutes);
     app.use('/api/servicios', serviciosRoutes);

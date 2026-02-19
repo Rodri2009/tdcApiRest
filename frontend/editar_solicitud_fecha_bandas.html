@@ -128,6 +128,208 @@
             font-size: 0.9rem;
         }
 
+        /* GRID DE BANDAS */
+        .band-list-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #0f172a;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        .banda-grid-item {
+            background-color: #1f2937;
+            border: 2px solid #581c87;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .banda-grid-item:hover {
+            border-color: var(--color-secondary);
+            background-color: rgba(88, 28, 135, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .banda-grid-item.selected {
+            background-color: rgba(88, 28, 135, 0.3);
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 15px rgba(240, 171, 252, 0.3);
+        }
+
+        .banda-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .banda-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .banda-logo-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.5rem;
+        }
+
+        .banda-grid-name {
+            color: var(--color-secondary);
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .banda-grid-genre {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            text-align: center;
+        }
+
+        .checkbox-custom {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #581c87;
+            background-color: transparent;
+            transition: all 0.2s;
+        }
+
+        .checkbox-custom.checked {
+            background-color: var(--color-secondary);
+            border-color: var(--color-secondary);
+        }
+
+        .checkbox-custom i {
+            color: #1f2937;
+            font-size: 0.8rem;
+        }
+
+        /* BANDAS SELECCIONADAS CON NUMERACIÓN */
+        .bandas-seleccionadas-container {
+            background: linear-gradient(135deg, rgba(88, 28, 135, 0.1) 0%, rgba(240, 171, 252, 0.05) 100%);
+            border: 2px solid var(--color-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 0 20px rgba(240, 171, 252, 0.1);
+        }
+
+        .bandas-seleccionadas-titulo {
+            color: var(--color-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(240, 171, 252, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .banda-seleccionada-item {
+            background-color: #1f2937;
+            border: 1px solid rgba(240, 171, 252, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .banda-numero {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-secondary) 0%, #c84ade 100%);
+            color: #1f2937;
+            font-weight: bold;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .banda-seleccionada-info {
+            flex: 1;
+        }
+
+        .banda-seleccionada-nombre {
+            color: var(--color-secondary);
+            font-weight: bold;
+        }
+
+        .banda-seleccionada-genre {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+
+        .banda-seleccionada-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-reorder {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-reorder:hover {
+            color: var(--color-secondary);
+            transform: scale(1.2);
+        }
+
+        .btn-remove {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-remove:hover {
+            color: #ff6b6b;
+            transform: scale(1.2);
+        }
+
         .date-slot {
             background-color: #0f172a;
             border: 1px solid #581c87;
@@ -333,6 +535,51 @@
             background: #f59e0b;
         }
 
+        /* FLYER PREVIEW - Lado izquierdo */
+        .flyer-form-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .flyer-preview-side {
+            flex-shrink: 0;
+        }
+
+        #flyerPreview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            border: 2px dashed rgba(240, 171, 252, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            width: 120px;
+            height: 160px;
+        }
+
+        #flyerPreview img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 6px;
+            box-shadow: 0 0 20px rgba(240, 171, 252, 0.3);
+        }
+
+        #flyerPreview .preview-placeholder {
+            color: #9ca3af;
+            text-align: center;
+            font-size: 0.8rem;
+            padding: 10px;
+        }
+
+        .flyer-input-side {
+            flex: 1;
+        }
+
+        .flyer-input-side .form-group {
+            margin-bottom: 0;
+        }
+
         .header-row {
             display: flex;
             justify-content: space-between;
@@ -394,32 +641,8 @@
             </div>
         </div>
 
-        <!-- SECCIÓN BANDAS (modo admin) -->
-        <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:6px;">
-            <h3 style="color:var(--color-secondary);"><i class="fas fa-music"></i> Bandas</h3>
-            <button type="button" id="btnCrearBanda" class="btn btn-primary"
-                style="height:36px;padding:6px 10px;font-size:0.9rem;">
-                <i class="fas fa-plus"></i> Crear banda
-            </button>
-        </div>
-
-        <div class="form-group" style="margin-top:8px;">
-            <label for="bandaSearch">Buscar banda:</label>
-            <div style="display:flex;gap:8px;align-items:center;">
-                <input type="text" id="bandaSearch" placeholder="Buscar por nombre..." style="flex:1;">
-                <button type="button" id="btnLimpiarBusqueda" class="btn btn-secondary"
-                    style="height:36px;padding:6px 10px;">Limpiar</button>
-            </div>
-            <div id="bandasList" class="band-list" style="margin-top:8px;"></div>
-        </div>
-
-        <div id="bandasSeleccionadas" class="mt-20" style="margin-bottom:12px;">
-            <h4 class="section-title">Bandas Seleccionadas</h4>
-            <div id="listaBandasSeleccionadas"></div>
-        </div>
-
         <!-- NUEVA SECCIÓN: Nombre de la fecha / show + Flyer -->
-        <div class="form-section">
+        <div class="form-section" style="margin-top: 14px;">
             <h3><i class="fas fa-tag"></i> Nombre de la fecha / show & Flyer</h3>
             <div class="form-grid form-grid-1">
                 <div class="form-group">
@@ -431,16 +654,53 @@
                     <textarea id="descripcion"
                         placeholder="Descripción corta del show (se mostrará en la agenda)"></textarea>
                 </div>
-                <div class="form-group">
-                    <label for="urlFlyer">Flyer (URL editable o subir)</label>
-                    <input type="text" id="urlFlyer" placeholder="https://...">
-                    <div style="margin-top:6px;">
-                        <input type="file" id="flyerFile" accept="image/png,image/jpeg" />
-                        <small style="color:#999;margin-left:6px;">Subir imagen (JPEG/PNG, ≤ 3 MB)</small>
+            </div>
+            <!-- Flyer con preview a la izquierda -->
+            <div class="flyer-form-container" style="margin-top:15px;">
+                <div class="flyer-preview-side">
+                    <div id="flyerPreview"></div>
+                </div>
+                <div class="flyer-input-side">
+                    <div class="form-group">
+                        <label for="urlFlyer">Flyer (URL editable o subir)</label>
+                        <input type="text" id="urlFlyer" placeholder="https://..." onchange="updateFlyerPreview()"
+                            oninput="updateFlyerPreview()">
+                        <div style="margin-top:8px;">
+                            <input type="file" id="flyerFile" accept="image/png,image/jpeg"
+                                onchange="handleFlyerUpload()" />
+                            <small style="color:#999;margin-left:6px;display:block;margin-top:4px;">Subir imagen
+                                (JPEG/PNG, ≤ 3 MB)</small>
+                        </div>
                     </div>
-                    <div id="flyerPreview" style="margin-top:8px;"></div>
                 </div>
             </div>
+        </div>
+
+        <!-- SECCIÓN BANDAS (modo admin) -->
+        <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:18px;">
+            <h3 style="color:var(--color-secondary);"><i class="fas fa-music"></i> Bandas</h3>
+            <button type="button" id="btnCrearBanda" class="btn btn-primary"
+                style="height:36px;padding:6px 10px;font-size:0.9rem;">
+                <i class="fas fa-plus"></i> Crear banda
+            </button>
+        </div>
+
+        <div class="form-group" style="margin-top:8px;">
+            <label for="bandaSearch">Buscar y seleccionar bandas:</label>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                <input type="text" id="bandaSearch" placeholder="Buscar por nombre o género..." style="flex:1;">
+                <button type="button" id="btnLimpiarBusqueda" class="btn btn-secondary"
+                    style="height:36px;padding:6px 10px;">Limpiar</button>
+            </div>
+            <div id="bandasList" class="band-list-grid"></div>
+        </div>
+
+        <!-- BANDAS SELECCIONADAS CON NUMERACIÓN Y REORDEN -->
+        <div class="bandas-seleccionadas-container">
+            <div class="bandas-seleccionadas-titulo">
+                <i class="fas fa-star"></i> Bandas Seleccionadas
+            </div>
+            <div id="listaBandasSeleccionadas"></div>
         </div>
 
         <!-- Fecha y Horarios -->
@@ -668,29 +928,70 @@
                 console.log('[BANDAS] ✓ Evento cargado desde nuevo endpoint:', evento);
 
                 // Normalizar campos recibidos (compatibilidad con nombres SQL/DB)
-                if (evento.hora_evento && !evento.hora_inicio) evento.hora_inicio = evento.hora_evento;
-                if (evento.precio_basico && typeof evento.precio_base === 'undefined') evento.precio_base = evento.precio_basico;
-                if (evento.banda_nombre && !evento.nombre_banda) evento.nombre_banda = evento.banda_nombre;
+                // Banda: usar banda_nombre del backend
+                if (!evento.nombre_banda && evento.banda_nombre) {
+                    evento.nombre_banda = evento.banda_nombre;
+                }
+                if (!evento.id_banda && evento.banda_id) {
+                    evento.id_banda = evento.banda_id;
+                }
+                // Hora
+                if (evento.hora_evento && !evento.hora_inicio) {
+                    evento.hora_inicio = evento.hora_evento;
+                }
+                // Precio
+                if (evento.precio_basico && typeof evento.precio_base === 'undefined') {
+                    evento.precio_base = evento.precio_basico;
+                }
+                // Aforo/expectativa
+                if (typeof evento.expectativa_publico !== 'undefined' && typeof evento.aforo_maximo === 'undefined') {
+                    evento.aforo_maximo = evento.expectativa_publico;
+                }
+                if (typeof evento.precio_puerta_propuesto !== 'undefined' && typeof evento.precio_puerta === 'undefined') {
+                    evento.precio_puerta = evento.precio_puerta_propuesto;
+                }
+                // Contacto
+                if (typeof evento.cliente_nombre !== 'undefined' && typeof evento.contacto_nombre === 'undefined') {
+                    evento.contacto_nombre = evento.cliente_nombre;
+                }
+                if (typeof evento.cliente_email !== 'undefined' && typeof evento.contacto_email === 'undefined') {
+                    evento.contacto_email = evento.cliente_email;
+                }
+                if (typeof evento.cliente_telefono !== 'undefined' && typeof evento.contacto_telefono === 'undefined') {
+                    evento.contacto_telefono = evento.cliente_telefono;
+                }
 
-                // Mapear nombres de columna/refactor a keys que usa el formulario
-                if (typeof evento.expectativa_publico !== 'undefined' && typeof evento.aforo_maximo === 'undefined') evento.aforo_maximo = evento.expectativa_publico;
-                if (typeof evento.precio_puerta_propuesto !== 'undefined' && typeof evento.precio_puerta === 'undefined') evento.precio_puerta = evento.precio_puerta_propuesto;
-                if (typeof evento.cliente_nombre !== 'undefined' && typeof evento.contacto_nombre === 'undefined') evento.contacto_nombre = evento.cliente_nombre;
-                if (typeof evento.cliente_email !== 'undefined' && typeof evento.contacto_email === 'undefined') evento.contacto_email = evento.cliente_email;
-                if (typeof evento.cliente_telefono !== 'undefined' && typeof evento.contacto_telefono === 'undefined') evento.contacto_telefono = evento.cliente_telefono;
+                console.log('[BANDAS] Después de normalización - nombre_banda:', evento.nombre_banda, 'id_banda:', evento.id_banda);
 
                 if (evento.invitadas_json && !evento.invitadas) {
                     try { evento.invitadas = JSON.parse(evento.invitadas_json || '[]'); } catch (e) { evento.invitadas = []; }
+                }
+                // Asegurar que invitadas siempre es un array (por si viene como undefined o null)
+                if (!evento.invitadas || !Array.isArray(evento.invitadas)) {
+                    if (evento.invitadas_json && typeof evento.invitadas_json === 'string') {
+                        try { evento.invitadas = JSON.parse(evento.invitadas_json); } catch (e) { evento.invitadas = []; }
+                    } else {
+                        evento.invitadas = [];
+                    }
                 }
 
                 // Llenar formulario usando el objeto 'evento' retornado por la API
                 document.getElementById('nombreEvento').value = evento.nombre_evento || evento.nombre_banda || '';
                 document.getElementById('descripcion').value = evento.descripcion || '';
                 document.getElementById('urlFlyer').value = evento.url_flyer || '';
-                if (window.App && App.updateFlyerPreview) App.updateFlyerPreview();
 
-                // Inicializar selección de bandas con la banda del evento
+                // Intentar cargar preview, pero no fallar si hay un problema
+                try {
+                    updateFlyerPreview();
+                } catch (err) {
+                    console.warn('[BANDAS] Error cargando preview del flyer:', err);
+                    // Continuar sin fallar
+                }
+
+                // Inicializar selección de bandas con la banda del evento + invitadas
                 bandasSeleccionadas = [];
+
+                // 1. Agregar banda principal
                 if (evento.nombre_banda) {
                     const match = bandasDisponibles.find(b => (b.nombre || '').toLowerCase() === (evento.nombre_banda || '').toLowerCase());
                     if (match) {
@@ -699,6 +1000,23 @@
                         bandasSeleccionadas.push({ id: evento.id_banda || null, nombre: evento.nombre_banda, genero: evento.genero_musical || '', logoUrl: evento.logo_url || '' });
                     }
                 }
+
+                // 2. Agregar bandas invitadas (si existen)
+                if (evento.invitadas && Array.isArray(evento.invitadas) && evento.invitadas.length > 0) {
+                    console.log('[BANDAS] Bandas invitadas encontradas en evento:', evento.invitadas);
+                    evento.invitadas.forEach(invitada => {
+                        // Buscar en bandasDisponibles si existe o crear objeto placeholder
+                        const match = bandasDisponibles.find(b => b.id === invitada.id_banda);
+                        if (match) {
+                            bandasSeleccionadas.push({ id: match.id, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' });
+                        } else {
+                            // Si no existe en bandasDisponibles, usar datos de invitada
+                            bandasSeleccionadas.push({ id: invitada.id_banda, nombre: invitada.nombre, genero: '', logoUrl: '' });
+                        }
+                    });
+                    console.log('[BANDAS] bandasSeleccionadas poblado con principal + invitadas (total ' + bandasSeleccionadas.length + ')');
+                }
+
                 renderBandasLista();
                 renderBandasSeleccionadas();
 
@@ -820,6 +1138,13 @@
                 url_flyer: document.getElementById('urlFlyer').value.trim()
             };
 
+            // Evitar enviar data:URI dentro del JSON (usar /api/uploads/flyers)
+            if (datos.url_flyer && datos.url_flyer.startsWith('data:')) {
+                showNotification('No envíe imágenes como data URI. Use el botón de subir para cargar el flyer.', 'error');
+                showLoading(false);
+                return;
+            }
+
             // Incluir datos de contacto: enviar tanto en POST como en PUT (backend soporta persistir contacto_* en PUT)
             datos.contacto_nombre = document.getElementById('nombreContacto').value.trim();
             datos.contacto_email = document.getElementById('emailContacto').value.trim();
@@ -842,12 +1167,31 @@
                 // omitimos la primera (principal) y enviamos el resto como invitadas
                 const invitadas = bandasSeleccionadas.slice(1).map(b => ({ id_banda: b.id || null, nombre: b.nombre || '' }));
                 datos.invitadas_json = invitadas;
+                console.log('[BANDAS] Bandas invitadas a enviar:', invitadas);
+            } else {
+                console.log('[BANDAS] No hay bandas invitadas (solo una banda seleccionada)');
             }
 
             // Remover campos undefined
             Object.keys(datos).forEach(key => datos[key] === undefined && delete datos[key]);
 
-            console.log('[BANDAS] Datos a enviar (final):', datos);
+            console.log('[BANDAS] ========== PAYLOAD COMPLETO A ENVIAR ==========');
+            console.log('[BANDAS] ID Banda Principal:', datos.id_banda);
+            console.log('[BANDAS] Fecha Evento:', datos.fecha_evento);
+            console.log('[BANDAS] Hora Evento:', datos.hora_evento);
+            console.log('[BANDAS] Descripción:', datos.descripcion);
+            console.log('[BANDAS] Descripción Corta (nombre evento):', datos.descripcion_corta);
+            console.log('[BANDAS] Expectativa Público:', datos.expectativa_publico);
+            console.log('[BANDAS] Es Público:', datos.es_publico);
+            console.log('[BANDAS] Precio Básico:', datos.precio_basico);
+            console.log('[BANDAS] Precio Anticipada:', document.getElementById('precioAnticipada').value);
+            console.log('[BANDAS] Precio Puerta:', datos.precio_puerta_propuesto);
+            console.log('[BANDAS] URL Flyer:', datos.url_flyer);
+            console.log('[BANDAS] Contacto Nombre:', datos.contacto_nombre);
+            console.log('[BANDAS] Contacto Email:', datos.contacto_email);
+            console.log('[BANDAS] Contacto Teléfono:', datos.contacto_telefono);
+            console.log('[BANDAS] Invitadas JSON:', datos.invitadas_json);
+            console.log('[BANDAS] PAYLOAD COMPLETO:', JSON.stringify(datos, null, 2));
 
             try {
                 // Usar nuevo endpoint /api/solicitudes-fechas-bandas/:id
@@ -878,12 +1222,7 @@
                 console.log('[BANDAS] ✓ Evento ' + (eventoId ? 'actualizado' : 'creado') + ' correctamente');
                 showNotification(eventoId ? 'Los cambios se realizaron correctamente' : 'Evento creado correctamente', 'success');
 
-                // Redirigir después de guardar
-                if (eventoId) {
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    setTimeout(() => window.location.href = 'config_bandas.html#eventos', 1500);
-                }
+                // NO redirigir - verificar logs primero
 
             } catch (err) {
                 console.error('[BANDAS] ✗ Error:', err);
@@ -991,12 +1330,13 @@
             container.innerHTML = filtered.map(banda => {
                 const isSelected = bandasSeleccionadas.some(b => b.id === banda.id);
                 return `
-                    <div class="banda-item ${isSelected ? 'selected' : ''}" onclick="toggleBanda(${banda.id}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero_musical || '')}', '${escapeHtml(banda.logo_url || '')}')">
-                        ${banda.logo_url ? `<img src="${banda.logo_url}" alt="${escapeHtml(banda.nombre)}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
-                        <div class="banda-item-text">
-                            <div class="banda-item-name">${escapeHtml(banda.nombre)}</div>
-                            ${banda.genero_musical ? `<div class="banda-item-genre">${escapeHtml(banda.genero_musical)}</div>` : ''}
+                    <div class="banda-grid-item ${isSelected ? 'selected' : ''}" onclick="toggleBanda(${banda.id}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero_musical || '')}', '${escapeHtml(banda.logo_url || '')}')">
+                        <div class="banda-logo">
+                            ${banda.logo_url && banda.logo_url.trim() ? `<img src="${banda.logo_url}" alt="${escapeHtml(banda.nombre)}" onerror="this.style.display='none'">` : ''}
+                            ${!banda.logo_url || !banda.logo_url.trim() ? `<div class="banda-logo-placeholder"><i class="fas fa-music"></i></div>` : ''}
                         </div>
+                        <div class="banda-grid-name">${escapeHtml(banda.nombre)}</div>
+                        ${banda.genero_musical ? `<div class="banda-grid-genre">${escapeHtml(banda.genero_musical)}</div>` : ''}
                         <div class="checkbox-custom ${isSelected ? 'checked' : ''}">
                             ${isSelected ? '<i class="fas fa-check"></i>' : ''}
                         </div>
@@ -1004,7 +1344,7 @@
                 `;
             }).join('');
 
-            if (filtered.length === 0) container.innerHTML = '<div class="helper-text text-center p-20">No hay bandas disponibles</div>';
+            if (filtered.length === 0) container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#9ca3af;">No hay bandas disponibles</div>';
         }
 
         function toggleBanda(id, nombre, genero, logoUrl) {
@@ -1012,7 +1352,7 @@
             if (idx >= 0) {
                 bandasSeleccionadas.splice(idx, 1);
             } else {
-                // En edición permitimos hasta 5 (como en el formulario público)
+                // En edición permitimos hasta 5 bandas
                 if (bandasSeleccionadas.length >= 5) {
                     showNotification('Máximo 5 bandas seleccionadas', 'warning');
                     return;
@@ -1025,28 +1365,160 @@
 
         function renderBandasSeleccionadas() {
             const container = document.getElementById('listaBandasSeleccionadas');
-            const count = document.getElementById('countBandas');
-            if (count) count.textContent = bandasSeleccionadas.length;
             if (!container) return;
 
+            if (bandasSeleccionadas.length === 0) {
+                container.innerHTML = '<div style="color:#9ca3af;text-align:center;padding:20px;">No hay bandas seleccionadas</div>';
+                return;
+            }
+
             container.innerHTML = bandasSeleccionadas.map((banda, idx) => `
-                <div class="card card-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px;margin-bottom:8px;">
-                    <div style="display:flex;align-items:center;gap:10px;flex:1;">
-                        ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${escapeHtml(banda.nombre)}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
-                        <div>
-                            <div class="text-neon" style="font-weight:bold">${escapeHtml(banda.nombre)}</div>
-                            ${banda.genero ? `<div class="helper-text">${escapeHtml(banda.genero)}</div>` : ''}
-                        </div>
+                <div class="banda-seleccionada-item">
+                    <div class="banda-numero">${idx + 1}</div>
+                    <div class="banda-seleccionada-info">
+                        <div class="banda-seleccionada-nombre">${escapeHtml(banda.nombre)}</div>
+                        ${banda.genero ? `<div class="banda-seleccionada-genre">${escapeHtml(banda.genero)}</div>` : ''}
                     </div>
-                    <button type="button" onclick="toggleBanda(${banda.id || 'null'}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero || '')}', '${escapeHtml(banda.logoUrl || '')}')" class="btn btn-ghost text-danger" style="font-size:1.2rem">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="banda-seleccionada-actions">
+                        ${idx > 0 ? `<button type="button" class="btn-reorder" onclick="reorderBanda(${idx}, 'up')" title="Mover arriba"><i class="fas fa-arrow-up"></i></button>` : ''}
+                        ${idx < bandasSeleccionadas.length - 1 ? `<button type="button" class="btn-reorder" onclick="reorderBanda(${idx}, 'down')" title="Mover abajo"><i class="fas fa-arrow-down"></i></button>` : ''}
+                        <button type="button" class="btn-remove" onclick="toggleBanda(${banda.id || 'null'}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero || '')}', '${escapeHtml(banda.logoUrl || '')}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
             `).join('');
         }
 
-        function setupDragAndDrop() {
-            // (opcional) reordenado — no implementado aquí, placeholder para futura mejora
+        function reorderBanda(idx, direction) {
+            if (direction === 'up' && idx > 0) {
+                [bandasSeleccionadas[idx], bandasSeleccionadas[idx - 1]] = [bandasSeleccionadas[idx - 1], bandasSeleccionadas[idx]];
+            } else if (direction === 'down' && idx < bandasSeleccionadas.length - 1) {
+                [bandasSeleccionadas[idx], bandasSeleccionadas[idx + 1]] = [bandasSeleccionadas[idx + 1], bandasSeleccionadas[idx]];
+            }
+            renderBandasSeleccionadas();
+        }
+
+        /* ---- FLYER PREVIEW ---- */
+        function updateFlyerPreview() {
+            console.log('[FLYER] ===== updateFlyerPreview() INICIADA =====');
+            try {
+                console.log('[FLYER] Buscando elementos del DOM...');
+                const urlInput = document.getElementById('urlFlyer');
+                const previewContainer = document.getElementById('flyerPreview');
+
+                console.log('[FLYER] urlInput:', urlInput ? 'ENCONTRADO' : 'NO ENCONTRADO');
+                console.log('[FLYER] previewContainer:', previewContainer ? 'ENCONTRADO' : 'NO ENCONTRADO');
+
+                if (!urlInput) {
+                    console.warn('[FLYER] ❌ Element #urlFlyer no encontrado');
+                    return;
+                }
+                if (!previewContainer) {
+                    console.warn('[FLYER] ❌ Element #flyerPreview no encontrado');
+                    return;
+                }
+
+                const url = urlInput.value.trim();
+                console.log('[FLYER] updateFlyerPreview - URL recibida:', url);
+
+                if (!url) {
+                    console.log('[FLYER] URL vacía, mostrando placeholder');
+                    previewContainer.innerHTML = '<div class="preview-placeholder"><i class="fas fa-image" style="font-size:2rem;margin-bottom:6px;display:block;"></i><p style="margin:0;font-size:0.75rem;">Sin<br>flyer</p></div>';
+                    return;
+                }
+
+                // Mostrar loading mientras carga
+                previewContainer.innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;"><i class="fas fa-spinner fa-pulse" style="font-size:1.4rem"></i><div style="font-size:0.8rem;margin-top:6px;">Cargando preview...</div></div>';
+
+                // Crear imagen y asignar listeners ANTES de establecer src (importante para imágenes en caché)
+                const img = document.createElement('img');
+                img.alt = 'Flyer preview';
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '100%';
+
+                // Asignar listeners PRIMERO
+                img.onload = function () {
+                    console.log('[FLYER] ✓ Imagen cargada exitosamente desde:', url);
+                    previewContainer.innerHTML = '';
+                    previewContainer.appendChild(img);
+                };
+
+                img.onerror = function () {
+                    console.warn('[FLYER] ✗ Error cargando imagen desde:', url);
+                    console.warn('[FLYER]   Status: Image failed to load (network/CORS/404)');
+                    previewContainer.innerHTML = '<div class="preview-placeholder"><i class="fas fa-exclamation-circle" style="font-size:2rem;margin-bottom:6px;display:block;"></i><p style="margin:0;font-size:0.75rem;">Error al<br>cargar img</p></div>';
+                };
+
+                // Establecer src ÚLTIMO (dispara la carga/caché)
+                img.src = url;
+
+            } catch (err) {
+                console.error('[FLYER] ✗ Error en updateFlyerPreview:', err.message);
+                try {
+                    const previewContainer = document.getElementById('flyerPreview');
+                    if (previewContainer) {
+                        previewContainer.innerHTML = '<div class="preview-placeholder"><i class="fas fa-image" style="font-size:2rem;margin-bottom:6px;display:block;"></i><p style="margin:0;font-size:0.75rem;">Error<br>preview</p></div>';
+                    }
+                } catch (e) { /* fallback */ }
+            }
+        }
+
+        function handleFlyerUpload() {
+            const fileInput = document.getElementById('flyerFile');
+            const urlInput = document.getElementById('urlFlyer');
+            const btnGuardar = document.getElementById('btnGuardar');
+            const file = fileInput.files[0];
+
+            if (!file) return;
+
+            // Validar tipo y tamaño (máx 3MB)
+            const allowed = ['image/png', 'image/jpeg'];
+            const maxSize = 3 * 1024 * 1024;
+            if (!allowed.includes(file.type)) {
+                showNotification('Formato no soportado. Use JPG o PNG.', 'error');
+                fileInput.value = '';
+                return;
+            }
+            if (file.size > maxSize) {
+                showNotification('La imagen no puede superar 3 MB', 'error');
+                fileInput.value = '';
+                return;
+            }
+
+            // Estado UI: deshabilitar guardar mientras sube
+            if (btnGuardar) btnGuardar.disabled = true;
+            showNotification('Subiendo flyer...', 'info');
+            document.getElementById('flyerPreview').innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;"><i class="fas fa-spinner fa-pulse" style="font-size:1.4rem"></i><div style="font-size:0.8rem;margin-top:6px;">Subiendo...</div></div>';
+
+            const form = new FormData();
+            form.append('flyer', file);
+
+            fetch('/api/uploads/flyers', {
+                method: 'POST',
+                body: form
+            }).then(async res => {
+                if (!res.ok) {
+                    const txt = await res.text().catch(() => '');
+                    throw new Error((res.status ? res.status + ' ' : '') + (txt || res.statusText || 'Error al subir'));
+                }
+                return res.json();
+            }).then(json => {
+                if (json && json.url) {
+                    urlInput.value = json.url;
+                    updateFlyerPreview();
+                    showNotification('Flyer subido correctamente', 'success');
+                } else {
+                    throw new Error('Respuesta inválida del servidor');
+                }
+            }).catch(err => {
+                console.error('Error subiendo flyer:', err);
+                showNotification('Error al subir el flyer: ' + (err.message || ''), 'error');
+                // limpiar preview / input en caso de error
+                document.getElementById('flyerPreview').innerHTML = '<div class="preview-placeholder"><i class="fas fa-image" style="font-size:2rem;margin-bottom:6px;display:block;"></i><p style="margin:0;font-size:0.75rem;">Sin<br>flyer</p></div>';
+                urlInput.value = '';
+                fileInput.value = '';
+            }).finally(() => {
+                if (btnGuardar) btnGuardar.disabled = false;
+            });
         }
 
         // Listeners para búsqueda/crear

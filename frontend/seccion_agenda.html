@@ -37,6 +37,40 @@
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(240, 171, 252, 0.1);
         }
+
+        /* Estilos para flyers */
+        .agenda-flyer {
+            flex-shrink-0;
+            width: 100px;
+            height: 140px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(240, 171, 252, 0.2);
+        }
+
+        .agenda-flyer img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            box-shadow: 0 0 15px rgba(240, 171, 252, 0.3);
+        }
+
+        .agenda-flyer .helper-text {
+            color: #666;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .agenda-meta {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            flex: 1;
+        }
     </style>
 </head>
 
@@ -171,14 +205,16 @@
             // Opciones de formato
             const dayOptions = { day: '2-digit' };
             const monthOptions = { month: 'short' }; // Ej: NOV, DIC
+            const yearOptions = { year: 'numeric' };
             const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false }; // Ej: 21:00
 
-            // Convertir a tu zona horaria local o de preferencia (puede variar según dónde se ejecute el script)
+            // Convertir a tu zona horaria local o de preferencia
             const day = date.toLocaleDateString('es-AR', dayOptions);
             const month = date.toLocaleDateString('es-AR', monthOptions).toUpperCase().replace('.', '');
+            const year = date.toLocaleDateString('es-AR', yearOptions);
             const time = date.toLocaleTimeString('es-AR', timeOptions);
 
-            return { day, month, time };
+            return { day, month, year, time };
         }
 
         function getCategoria(item) {
@@ -201,10 +237,12 @@
         function generateEventCard(event) {
             const categoria = getCategoria(event);
             const cat = CATEGORIAS[categoria];
-            const { day, month, time } = formatDateTime(event.fecha_hora || event.fecha);
+            const { day, month, year, time } = formatDateTime(event.fecha_hora || event.fecha);
             const hora = event.hora_evento || event.hora || time;
             const precio = event.precio_base || event.precio_basico || event.precio_final || 0;
-            const nombre = event.nombre_banda || event.nombreCliente || event.nombre_completo || event.nombreCompleto || event.descripcion || 'Evento';
+            // Preferir nombre del evento (título del show) si está disponible, sino banda o nombre del cliente
+            const nombre = event.nombreEvento || event.nombre_evento || event.nombre_banda || event.nombreCliente || event.nombreCompleto || event.nombre_completo || event.descripcion || 'Evento';
+            const flyerUrl = event.url_flyer || event.flyer_url || event.flyer || null;
 
             // Estilo y texto dinámico para precio y botón
             const esGratis = precio === 0 || precio === null;
@@ -220,16 +258,24 @@
             let priceTextColor = cat.textColor;
             let link = '#'; // Placeholder, ajustar según necesidad
 
-            if (esGratis) {
-                priceText = '¡GRATIS!';
-                buttonText = 'Reservar';
+            // Preferir acción de compra para BANDAS si tenemos id (checkout_form)
+            // usar la variable `categoria` ya declarada al inicio de la función
+            if (categoria === 'BANDA' && event.id) {
+                link = `checkout_form.html?event_id=${event.id}`;
+                buttonText = esGratis ? 'Reservar' : 'Sacar entrada';
+            } else {
+                // Fallback genérico
+                if (esGratis) buttonText = 'Reservar';
             }
 
             return `
                 <!-- Evento - ${nombre} -->
                 <div class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 ${borderClass}">
-                    <div class="flex items-center space-x-4 mb-4 sm:mb-0">
-                        <div class="text-center p-2 rounded-lg ${dateBgClass} flex-shrink-0">
+                    <div class="agenda-flyer">
+                        ${flyerUrl ? `<img src="${flyerUrl}" alt="${nombre}" onerror="this.src='https://placehold.co/100x140/581c87/f0abfc?text=No+Flyer'">` : `<div class="helper-text">No Flyer</div>`}
+                    </div>
+                    <div class="agenda-meta">
+                        <div class="text-center p-2 rounded-lg ${dateBgClass} flex-shrink-0 min-w-[60px]">
                             <p class="text-xl font-bold">${day}</p>
                             <p class="text-xs">${month}</p>
                         </div>
@@ -268,8 +314,8 @@
                 return;
             }
 
-            // Ordenar por fecha
-            events.sort((a, b) => new Date(a.fecha_hora || a.fecha) - new Date(b.fecha_hora || b.fecha));
+            // Ordenar por fecha (inverso: más reciente primero)
+            events.sort((a, b) => new Date(b.fecha_hora || b.fecha) - new Date(a.fecha_hora || a.fecha));
 
             events.forEach(event => {
                 const cardHtml = generateEventCard(event);
@@ -283,21 +329,28 @@
          */
         async function fetchEvents() {
             try {
-                // Cargar eventos de bandas públicos
-                const resEventos = await fetch(`${API_BASE_URL}/api/tickets/eventos_confirmados`);
+                // Cargar eventos confirmados públicos (usar endpoint /api/eventos/publicos para incluir flyers)
+                const resEventos = await fetch(`${API_BASE_URL}/api/eventos/publicos`);
                 let eventos = [];
                 if (resEventos.ok) {
                     const data = await resEventos.json();
-                    eventos = data.filter(e => e.activo === 1).map(e => ({
+                    console.debug('[AGENDA] /api/eventos/publicos raw ->', data);
+                    eventos = data.map(e => ({
                         source: 'evento',
-                        fecha_hora: e.fecha_hora,
-                        fecha: e.fecha,
-                        hora: e.hora_inicio,
-                        nombre_banda: e.nombre_banda,
-                        tipo: e.genero_musical || 'Banda',
-                        precio_base: e.precio_anticipada || e.precio_base,
-                        descripcion: e.descripcion
+                        id: e.id,
+                        id_solicitud: e.id_solicitud || null,
+                        fecha_hora: e.fecha_evento || e.fecha_hora || e.fecha,
+                        fecha: e.fecha_evento || e.fecha,
+                        hora: e.hora_inicio || e.hora || null,
+                        nombre_banda: e.nombre_banda || e.nombre_evento,
+                        nombre_evento: e.nombre_evento,
+                        tipo: e.tipo_evento || e.genero_musical || 'Banda',
+                        precio_base: e.precio_anticipada || e.precio_base || e.precio_final || null,
+                        descripcion: e.descripcion,
+                        flyer_url: e.url_flyer || e.flyer_url || null
                     }));
+                } else {
+                    console.warn('[AGENDA] /api/eventos/publicos response status', resEventos.status);
                 }
 
                 // Cargar solicitudes públicas confirmadas
@@ -305,21 +358,41 @@
                 let solicitudes = [];
                 if (resSolicitudes.ok) {
                     const data = await resSolicitudes.json();
+                    console.debug('[AGENDA] /api/solicitudes/publicas raw ->', data);
                     solicitudes = data.map(s => ({
                         source: 'solicitud',
+                        id: s.id,
                         fecha: s.fecha_evento || s.fechaEvento,
                         hora_evento: s.hora_evento || s.horaEvento,
+                        nombre_evento: s.nombreEvento || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda,
                         nombreCliente: s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda,
+                        tipo: s.tipo_de_evento || s.tipoEvento || s.tipo || null,
                         tipo_de_evento: s.tipo_de_evento || s.tipoEvento,
                         precio_basico: s.precio_basico || s.precio,
-                        descripcion: s.descripcion
+                        descripcion: s.descripcion,
+                        flyer_url: s.flyer_url || s.url_flyer || null
                     }));
+                } else {
+                    console.warn('[AGENDA] /api/solicitudes/publicas response status', resSolicitudes.status);
                 }
 
-                // Combinar
+                // Combinar y loguear (antes de dedupe)
                 const allEvents = [...eventos, ...solicitudes];
+                console.debug('[AGENDA] combined (before dedupe) ->', allEvents);
 
-                renderEvents(allEvents);
+                // Dedupe: preferir items de 'evento' cuando comparten id_solicitud
+                const seen = new Set();
+                const deduped = [];
+                for (const it of [...eventos, ...solicitudes]) {
+                    const solKey = it.id_solicitud || (it.source === 'solicitud' ? it.id : null);
+                    const key = solKey ? `sol:${solKey}` : `${it.source}:${it.id || Math.random()}`;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    deduped.push(it);
+                }
+                console.debug('[AGENDA] combined (after dedupe) ->', deduped);
+
+                renderEvents(deduped);
 
             } catch (error) {
                 console.error('Error al cargar la agenda:', error);

@@ -51,6 +51,40 @@
             box-shadow: 0 0 20px rgba(240, 171, 252, 0.2);
         }
 
+        /* Estilos para flyers */
+        .agenda-flyer {
+            flex-shrink-0;
+            width: 100px;
+            height: 140px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(240, 171, 252, 0.2);
+        }
+
+        .agenda-flyer img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            box-shadow: 0 0 15px rgba(240, 171, 252, 0.3);
+        }
+
+        .agenda-flyer .helper-text {
+            color: #666;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .agenda-meta {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            flex: 1;
+        }
+
         /* Mantener la barra de navegación pegada al top y dejar espacio para el contenido */
         header.bg-rustic {
             position: fixed;
@@ -296,18 +330,19 @@
         }
 
         function formatDateTime(fechaObj) {
-            if (!fechaObj) return { day: '--', month: '--', time: '--' };
+            if (!fechaObj) return { day: '--', month: '--', year: '--', time: '--' };
             const day = fechaObj.toLocaleDateString('es-AR', { day: '2-digit' });
             const month = fechaObj.toLocaleDateString('es-AR', { month: 'short' }).toUpperCase().replace('.', '');
+            const year = fechaObj.toLocaleDateString('es-AR', { year: 'numeric' });
             const time = fechaObj.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
-            return { day, month, time };
+            return { day, month, year, time };
         }
 
         function generateEventCard(e, opts = { allowPurchase: true, compact: false }) {
             const fechaObj = e._fechaObj || parseFecha(e.fecha_hora || e.fecha, e.hora_inicio);
             const now = new Date();
             const isPast = fechaObj ? fechaObj < now : false;
-            const { day, month, time } = formatDateTime(fechaObj);
+            const { day, month, year, time } = formatDateTime(fechaObj);
 
             const precioAnt = (e.precio_anticipada !== undefined && e.precio_anticipada !== null) ? parseFloat(e.precio_anticipada) : null;
             const precioPta = (e.precio_puerta !== undefined && e.precio_puerta !== null) ? parseFloat(e.precio_puerta) : null;
@@ -340,21 +375,28 @@
 
             // compact flag: different spacing if needed
             const containerClass = opts.compact ? 'p-4' : 'p-6';
+            const flyerUrl = e.url_flyer || e.flyer_url || e.flyer || null;
 
             return `
                 <div data-event-id="${e.id}" class="${containerClass} bg-stone-800 rounded-xl event-card border-l-4 ${borderClass}">
-                    <div class="flex items-center space-x-4 mb-3">
-                        <div class="text-center p-2 rounded-lg ${dateBg} ${dateColor} flex-shrink-0">
-                            <p class="text-xl font-bold">${day}</p>
-                            <p class="text-xs">${month}</p>
+                    <div class="flex items-center space-x-4">
+                        <div class="agenda-flyer">
+                            ${flyerUrl ? `<img src="${flyerUrl}" alt="${e.nombre_evento || e.nombre_banda || e.banda_nombre}">` : `<div class="helper-text">No Flyer</div>`}
                         </div>
-                        <div class="flex-1">
-                            <h4 class="text-xl font-semibold text-white">${e.nombre_banda}</h4>
-                            <p class="text-sm text-stone-400">${(e.descripcion || '').substring(0, 80)}${(e.descripcion || '').length > 80 ? '...' : ''}</p>
-                            <div class="mt-2">${priceHtml}</div>
+                        <div class="agenda-meta">
+                            <div class="text-center p-3 rounded-lg ${dateBg} ${dateColor} flex-shrink-0 min-w-[72px] flex flex-col justify-center items-center">
+                                <p class="text-xl font-bold">${day}</p>
+                                <p class="text-xs">${month}</p>
+                                <p class="text-xs mt-1">${year}</p>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-xl font-semibold text-white">${e.nombre_evento || e.nombre_banda || e.banda_nombre}</h4>
+                                <p class="text-sm text-stone-400">${(e.descripcion || '').substring(0, 80)}${(e.descripcion || '').length > 80 ? '...' : ''}</p>
+                                <div class="mt-2">${priceHtml}</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex justify-end items-center">
+                    <div class="flex justify-end items-center mt-3">
                         ${actionHtml}
                     </div>
                 </div>

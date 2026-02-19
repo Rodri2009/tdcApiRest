@@ -215,6 +215,7 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
                 s.descripcion_corta AS nombre_evento,
                 s.categoria,
                 s.es_publico,
+                s.url_flyer,
                 c.nombre as cliente_nombre,
                 c.email as cliente_email,
                 c.telefono as cliente_telefono,
@@ -351,7 +352,7 @@ const listarSolicitudesFechasBandas = async (req, res) => {
 const actualizarSolicitudFechaBanda = async (req, res) => {
     const { id } = req.params;
     console.log(`[FECHA_BANDA] PUT - Actualizar solicitud ID: ${id}`);
-    console.log('[FECHA_BANDA] Body:', JSON.stringify(req.body, null, 2));
+    console.log('[FECHA_BANDA] Body completo:', JSON.stringify(req.body, null, 2));
 
     const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
@@ -373,11 +374,19 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
         estado,
         fecha_alternativa,
         notas_admin,
+        url_flyer,
+        es_publico,
         // contacto_*: permitir actualizar datos de cliente desde el formulario
         contacto_nombre,
         contacto_email,
         contacto_telefono
     } = req.body;
+
+    console.log('[FECHA_BANDA] Parámetros desestructurados:');
+    console.log('  id_banda:', id_banda);
+    console.log('  invitadas_json:', invitadas_json);
+    console.log('  invitadas_json type:', typeof invitadas_json);
+    console.log('  es Array?:', Array.isArray(invitadas_json));
 
     let conn;
     try {
@@ -505,10 +514,30 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             params.push(cantidad_bandas ? parseInt(cantidad_bandas, 10) : 1);
         }
         if (invitadas_json !== undefined) {
+            console.log(`[FECHA_BANDA] invitadas_json recibido:`, invitadas_json);
+            console.log(`[FECHA_BANDA] invitadas_json tipo:`, typeof invitadas_json);
+            console.log(`[FECHA_BANDA] invitadas_json es array:`, Array.isArray(invitadas_json));
+            if (Array.isArray(invitadas_json)) {
+                console.log(`[FECHA_BANDA] invitadas_json cantidad de elementos:`, invitadas_json.length);
+                invitadas_json.forEach((inv, idx) => {
+                    console.log(`[FECHA_BANDA]   invitada[${idx}]:`, JSON.stringify(inv));
+                });
+            }
+            const jsonString = invitadas_json ? JSON.stringify(invitadas_json) : null;
+            console.log(`[FECHA_BANDA] invitadas_json stringificado:`, jsonString);
             actualizaciones.push('invitadas_json = ?');
-            params.push(invitadas_json ? JSON.stringify(invitadas_json) : null);
+            params.push(jsonString);
         }
         if (estado !== undefined) {
+            // Sólo admin/staff puede cambiar el estado a 'Confirmado'
+            if (String(estado) === 'Confirmado') {
+                const rol = req.user && (req.user.role || (req.user.roles && req.user.roles[0]));
+                const nivel = req.user && req.user.nivel;
+                if (!(rol === 'admin' || rol === 'staff' || (nivel && nivel >= 50))) {
+                    console.warn(`[FECHA_BANDA] Intento de cambiar estado a 'Confirmado' por usuario no-admin (user=${req.user && req.user.id})`);
+                    return res.status(403).json({ error: 'Sólo administrador puede confirmar solicitudes.' });
+                }
+            }
             actualizaciones.push('estado = ?');
             params.push(estado);
         }
@@ -519,6 +548,24 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
         if (notas_admin !== undefined) {
             actualizaciones.push('notas_admin = ?');
             params.push(notas_admin);
+        }
+        // url_flyer se guarda en la tabla padre 'solicitudes', no en solicitudes_fechas_bandas
+        let urlFlyerPendiente = null;
+        if (url_flyer !== undefined) {
+            const flyerLen = url_flyer ? url_flyer.length : 0;
+            console.log(`[FECHA_BANDA] url_flyer length: ${flyerLen}`);
+            // Rechazar payloads excesivamente grandes y sugerir la API de uploads
+            if (flyerLen > 1_000_000) {
+                console.warn(`[FECHA_BANDA] url_flyer demasiado grande (${flyerLen} chars). Rechazando.`);
+                return res.status(413).json({ error: 'Flyer demasiado grande. Suba la imagen vía /api/uploads y guarde la URL.' });
+            }
+            urlFlyerPendiente = url_flyer && url_flyer.trim() ? url_flyer.trim() : null;
+            console.log(`[FECHA_BANDA] url_flyer será guardado en tabla 'solicitudes' (length=${flyerLen})`);
+        }
+        if (es_publico !== undefined) {
+            actualizaciones.push('es_publico = ?');
+            params.push(es_publico ? 1 : 0);
+            console.log(`[FECHA_BANDA] es_publico será guardado:`, es_publico ? 1 : 0);
         }
 
         // Siempre actualizar timestamp
@@ -533,8 +580,159 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                 WHERE id_solicitud = ?
             `;
 
+            console.log(`[FECHA_BANDA] SQL UPDATE:`, sqlUpdate);
+            console.log(`[FECHA_BANDA] Parámetros:`, JSON.stringify(params, null, 2));
+            
             const result = await conn.query(sqlUpdate, params);
             console.log(`[FECHA_BANDA] ✓ Solicitud actualizada: ${result.affectedRows} fila(s)`);
+            
+            // Verificación POST-actualización: leer recurso actualizado
+            const [verifyRow] = await conn.query(
+                'SELECT id_solicitud, id_banda, invitadas_json FROM solicitudes_fechas_bandas WHERE id_solicitud = ?',
+                [idNum]
+            );
+            if (verifyRow) {
+                console.log(`[FECHA_BANDA] ✓ Verificación POST-UPDATE:`);
+                console.log(`[FECHA_BANDA]   id_solicitud:`, verifyRow.id_solicitud);
+                console.log(`[FECHA_BANDA]   id_banda:`, verifyRow.id_banda);
+                console.log(`[FECHA_BANDA]   invitadas_json (raw):`, verifyRow.invitadas_json);
+                if (verifyRow.invitadas_json) {
+                    try {
+                        const parsed = JSON.parse(verifyRow.invitadas_json);
+                        console.log(`[FECHA_BANDA]   invitadas_json (parsed):`, JSON.stringify(parsed, null, 2));
+                        console.log(`[FECHA_BANDA]   cantidad de invitadas:`, Array.isArray(parsed) ? parsed.length : 'NO ES ARRAY');
+                    } catch(e) {
+                        console.log(`[FECHA_BANDA]   Error parsing invitadas_json:`, e.message);
+                    }
+                }
+            }
+        }
+        // Si en este PUT se cambió el estado a 'Confirmado', garantizar que exista el registro en eventos_confirmados
+        if (typeof estado !== 'undefined' && estado === 'Confirmado') {
+            console.log(`[FECHA_BANDA] Estado cambiado a 'Confirmado' en PUT - verificación idempotente para id=${idNum}`);
+            // Comprobar si ya existe un eventos_confirmados para esta solicitud
+            const [existingEventoRow] = await conn.query(
+                "SELECT id FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = 'BANDA'",
+                [idNum]
+            );
+
+            const eventoExiste = existingEventoRow && existingEventoRow.id;
+            if (eventoExiste) {
+                console.log(`[FECHA_BANDA] Ya existe evento_confirmado (id=${existingEventoRow.id}) para solicitud ${idNum} — no se crea otro.`);
+            } else {
+                console.log(`[FECHA_BANDA] No existe evento_confirmado para solicitud ${idNum} — procediendo a crear.`);
+
+                // Obtener datos necesarios para crear el evento_confirmado
+                const [solicitudData] = await conn.query(`
+                    SELECT
+                        sfb.id_solicitud,
+                        sfb.id_banda,
+                        sfb.fecha_evento,
+                        sfb.hora_evento,
+                        sfb.duracion,
+                        sfb.descripcion,
+                        sfb.precio_basico,
+                        sfb.precio_puerta_propuesto,
+                        sfb.invitadas_json,
+                        sfb.cantidad_bandas,
+                        s.descripcion_corta AS nombre_evento,
+                        s.es_publico AS solicitud_es_publico,
+                        ba.nombre as banda_nombre,
+                        ba.genero_musical,
+                        c.nombre as cliente_nombre,
+                        c.email as cliente_email,
+                        c.telefono as cliente_telefono
+                    FROM solicitudes_fechas_bandas sfb
+                    JOIN solicitudes s ON sfb.id_solicitud = s.id
+                    LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id
+                    LEFT JOIN clientes c ON s.cliente_id = c.id
+                    WHERE sfb.id_solicitud = ?
+                `, [idNum]);
+
+                if (solicitudData) {
+                    const sqlEventoConfirmado = `
+                        INSERT INTO eventos_confirmados (
+                            id_solicitud,
+                            tipo_evento,
+                            tabla_origen,
+                            nombre_evento,
+                            descripcion,
+                            fecha_evento,
+                            hora_inicio,
+                            duracion_estimada,
+                            nombre_cliente,
+                            email_cliente,
+                            telefono_cliente,
+                            precio_base,
+                            precio_final,
+                            genero_musical,
+                            cantidad_personas,
+                            es_publico,
+                            activo,
+                            confirmado_en
+                        ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+                    `;
+
+                    const precioFinalParaEvento = typeof precio_final !== 'undefined' ? (precio_final ? parseFloat(precio_final) : solicitudData.precio_basico) : solicitudData.precio_basico;
+                    const esPublicoParaEvento = (typeof es_publico !== 'undefined') ? (es_publico ? 1 : 0) : (solicitudData.solicitud_es_publico ? 1 : 0);
+
+                    const resultEvento = await conn.query(sqlEventoConfirmado, [
+                        idNum,
+                        solicitudData.banda_nombre || solicitudData.nombre_evento || 'Sin nombre',
+                        solicitudData.descripcion || '',
+                        solicitudData.fecha_evento,
+                        solicitudData.hora_evento || '21:00',
+                        solicitudData.duracion || null,
+                        solicitudData.cliente_nombre || '',
+                        solicitudData.cliente_email || '',
+                        solicitudData.cliente_telefono || '',
+                        solicitudData.precio_basico || 0,
+                        precioFinalParaEvento,
+                        solicitudData.genero_musical || solicitudData.banda_nombre || '',
+                        solicitudData.cantidad_bandas || 120,
+                        esPublicoParaEvento
+                    ]);
+
+                    const nuevoEventoId = Number(resultEvento.insertId);
+                    console.log(`[FECHA_BANDA] Evento confirmado creado (id=${nuevoEventoId}) para solicitud ${idNum}`);
+
+                    // Insertar lineup: banda principal + invitadas
+                    try {
+                        await conn.query(
+                            `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, 99, 1, 1, 'confirmada')`,
+                            [nuevoEventoId, solicitudData.id_banda || null, solicitudData.banda_nombre || solicitudData.nombre_evento || 'Sin nombre']
+                        );
+
+                        if (solicitudData.invitadas_json) {
+                            let invitadas = [];
+                            try { invitadas = JSON.parse(solicitudData.invitadas_json || '[]'); } catch (e) { invitadas = []; }
+                            let orden = 0;
+                            for (const inv of invitadas) {
+                                await conn.query(
+                                    `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, ?, 0, 0, 'invitada')`,
+                                    [nuevoEventoId, inv.id_banda || null, inv.nombre || '', orden++]
+                                );
+                            }
+                        }
+                    } catch (e) {
+                        console.warn(`[FECHA_BANDA] Error insertando lineup para evento ${nuevoEventoId}:`, e.message);
+                    }
+
+                    // Actualizar id_evento_generado en la solicitud
+                    await conn.query('UPDATE solicitudes_fechas_bandas SET id_evento_generado = ? WHERE id_solicitud = ?', [nuevoEventoId, idNum]);
+                    console.log(`[FECHA_BANDA] solicitudes_fechas_bandas.id_evento_generado actualizado para solicitud ${idNum} -> evento ${nuevoEventoId}`);
+                } else {
+                    console.warn(`[FECHA_BANDA] No se encontraron datos de solicitud para id=${idNum} al intentar crear evento_confirmado`);
+                }
+            }
+        }
+        // Guardar url_flyer en la tabla padre 'solicitudes' si está pendiente
+        if (urlFlyerPendiente !== null) {
+            await conn.query(
+                'UPDATE solicitudes SET url_flyer = ? WHERE id = ?',
+                [urlFlyerPendiente, idNum]
+            );
+            console.log(`[FECHA_BANDA] ✓ url_flyer guardado en tabla 'solicitudes'`);
         }
 
         await conn.commit();
@@ -586,6 +784,7 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
                 sfb.descripcion,
                 sfb.precio_basico,
                 sfb.precio_puerta_propuesto,
+                sfb.invitadas_json,
                 ba.nombre as banda_nombre,
                 c.nombre as cliente_nombre,
                 c.email as cliente_email,
@@ -598,6 +797,66 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
         `;
 
         const [solicitudFecha] = await conn.query(sqlSelect, [idNum]);
+
+        // Si ya existe un evento_confirmado para esta solicitud, reutilizarlo (idempotencia)
+        const [existingEventoRow] = await conn.query(
+            "SELECT id FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = 'BANDA'",
+            [idNum]
+        );
+        console.log('[FECHA_BANDA] existingEventoRow (raw):', JSON.stringify(existingEventoRow));
+        let eventoId = existingEventoRow && existingEventoRow.id ? existingEventoRow.id : null;
+
+        if (eventoId) {
+            console.log(`[FECHA_BANDA] Evento ya existe para solicitud ${idNum}: eventoId=${eventoId}. Procediendo a sincronizar lineup si hace falta.`);
+
+            // Asegurar que el lineup tenga la banda principal y las invitadas (insertar faltantes)
+            const existingLineup = await conn.query('SELECT id, id_banda, nombre_banda, es_principal, orden_show FROM eventos_lineup WHERE id_evento_confirmado = ?', [eventoId]);
+            const hasPrincipal = (existingLineup || []).some(r => r.es_principal === 1 || r.es_principal === '1');
+
+            if (!hasPrincipal) {
+                await conn.query(
+                    `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, 99, 1, 1, 'confirmada')`,
+                    [eventoId, solicitudFecha.id_banda || null, solicitudFecha.banda_nombre || solicitudFecha.descripcion || 'Sin nombre']
+                );
+                console.log(`[FECHA_BANDA] Banda principal insertada en eventos_lineup para evento ${eventoId}`);
+            }
+
+            // Insertar invitadas faltantes (si vienen en la solicitud)
+            if (solicitudFecha.invitadas_json) {
+                let invitadas;
+                try {
+                    invitadas = JSON.parse(solicitudFecha.invitadas_json || '[]');
+                } catch (e) {
+                    invitadas = [];
+                }
+
+                // Re-leer lineup actual para calcular orden inicial (incluye la posible inserción de la principal)
+                const freshLineupRows = await conn.query('SELECT id, id_banda, nombre_banda, es_principal, orden_show FROM eventos_lineup WHERE id_evento_confirmado = ?', [eventoId]);
+                const lineupArray = Array.isArray(freshLineupRows) ? freshLineupRows : (freshLineupRows || []);
+
+                // Calcular orden inicial (último orden existente + 1)
+                const maxOrdenRow = lineupArray.reduce((acc, r) => Math.max(acc, Number(r.orden_show || 0)), 0);
+                let orden = maxOrdenRow + 1;
+
+                for (const inv of invitadas) {
+                    const exists = lineupArray.some(r => (r.id_banda && inv.id_banda && Number(r.id_banda) === Number(inv.id_banda)) || (r.nombre_banda && r.nombre_banda === (inv.nombre || '')));
+                    if (!exists) {
+                        await conn.query(
+                            `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, ?, 0, 0, 'invitada')`,
+                            [eventoId, inv.id_banda || null, inv.nombre || '', orden++]
+                        );
+                        console.log(`[FECHA_BANDA] Invitada '${inv.nombre || inv.id_banda}' insertada en eventos_lineup para evento ${eventoId}`);
+                    }
+                }
+            }
+
+            // Asegurar id_evento_generado en la solicitud
+            await conn.query('UPDATE solicitudes_fechas_bandas SET id_evento_generado = ? WHERE id_solicitud = ?', [eventoId, idNum]);
+
+            await conn.commit();
+
+            return res.status(200).json({ solicitudId: idNum, eventoId, message: 'Solicitud ya confirmada anteriormente; lineup sincronizado.' });
+        }
 
         if (!solicitudFecha) {
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
@@ -668,7 +927,36 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
             es_publico ? 1 : 0
         ]);
 
-        const eventoId = Number(resultEvento.insertId);
+        eventoId = Number(resultEvento.insertId);
+
+        // Insertar lineup: banda principal + bandas invitadas (si existen)
+        try {
+            // Banda principal (si existe catálogo o nombre de banda)
+            await conn.query(
+                `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, 99, 1, 1, 'confirmada')`,
+                [eventoId, solicitudFecha.id_banda || null, solicitudFecha.banda_nombre || solicitudFecha.descripcion || 'Sin nombre']
+            );
+
+            // Invitadas desde invitadas_json
+            if (solicitudFecha.invitadas_json) {
+                try {
+                    const invitadas = JSON.parse(solicitudFecha.invitadas_json || '[]');
+                    let orden = 0;
+                    for (const inv of invitadas) {
+                        await conn.query(
+                            `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, ?, 0, 0, 'invitada')`,
+                            [eventoId, inv.id_banda || null, inv.nombre || '', orden++]
+                        );
+                    }
+                    console.log(`[FECHA_BANDA] Se insertaron ${invitadas.length} bandas invitadas en eventos_lineup para evento ${eventoId}`);
+                } catch (e) {
+                    console.warn(`[FECHA_BANDA] No se pudo parsear/insertar invitadas_json para solicitud ${idNum}: ${e.message}`);
+                }
+            }
+        } catch (e) {
+            console.warn(`[FECHA_BANDA] Error al insertar lineup para evento ${eventoId}: ${e.message}`);
+            // No abortamos la confirmación por fallo al insertar lineup; registrar y continuar
+        }
 
         // 5. Actualizar id_evento_generado en solicitudes_fechas_bandas
         await conn.query(

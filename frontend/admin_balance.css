@@ -1,0 +1,29 @@
+/* Estilos simples — líneas y espaciado, sin fondos ni colores excepto el banner verde */
+body{
+  font-family: Inter, Roboto, Arial, sans-serif;
+  color: #111;
+  margin: 20px;
+}
+.container{ max-width:800px; margin:0 auto; }
+h1{ margin:0 0 18px 0; font-size:20px; }
+.balance-section, .tx-section{ padding:12px 0; }
+.balance-amount{ font-size:1.6rem; font-weight:700; margin:6px 0; }
+.controls{ display:flex; align-items:center; gap:12px; }
+.btn{ padding:6px 10px; border:1px solid #bbb; background:transparent; cursor:pointer; border-radius:4px; }
+.status{ font-size:0.85rem; color:#666; }
+
+/* Banner verde para ingresos */
+.banner{ display:block; padding:10px 12px; border-radius:4px; margin-bottom:12px; border:1px solid #c3e6cb; background:#d4edda; color:#155724; font-weight:600; }
+.hidden{ display:none; }
+
+/* Lista de transacciones — sólo líneas */
+.tx-list{ list-style:none; margin:0; padding:0; border-top:1px solid #e6e6e6; }
+.tx-list li{ display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid #e6e6e6; }
+.tx-desc{ flex:1; font-size:0.95rem; color:#222; }
+.tx-meta{ display:flex; gap:12px; align-items:center; min-width:160px; justify-content:flex-end; }
+.tx-amount{ font-weight:700; font-variant-numeric: tabular-nums; }
+.tx-date{ font-size:0.82rem; color:#666; }
+
+/* Separadores y pequeñas utilidades */
+.small{ font-size:0.85rem; color:#666; }
+@media (max-width:520px){ .tx-meta{ min-width:120px; font-size:0.95rem; } }

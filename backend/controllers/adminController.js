@@ -864,6 +864,23 @@ const crearEvento = async (req, res) => {
 
         const flyerUrl = url_flyer || url_imagen || null;
 
+        // Asegurar que el evento esté siempre vinculado a una solicitud (no permitir id_solicitud=0)
+        let idSolicitudParaEvento = req.body.id_solicitud ? parseInt(req.body.id_solicitud, 10) : null;
+
+        if (idSolicitudParaEvento) {
+            // verificar existencia
+            const [exists] = await conn.query('SELECT id FROM solicitudes WHERE id = ? LIMIT 1', [idSolicitudParaEvento]);
+            if (!exists || !exists.id) {
+                return res.status(400).json({ error: 'id_solicitud inválido.' });
+            }
+        } else {
+            // Crear una solicitud padre automática para este evento (categoria según tipo_evento)
+            const categoria = (tipo_evento === 'BANDA') ? 'BANDAS' : (tipo_evento === 'TALLER' ? 'TALLERES' : (tipo_evento === 'ALQUILER_SALON' ? 'ALQUILER' : 'SERVICIOS'));
+            const [resSolicitud] = await conn.query('INSERT INTO solicitudes (categoria, estado, descripcion_corta, creado_en) VALUES (?, ?, ?, NOW())', [categoria, 'Confirmado', nombre_banda || descripcion || 'Evento creado por admin']);
+            idSolicitudParaEvento = Number(resSolicitud.insertId);
+            console.log('[ADMIN] crearEvento - solicitud padre creada con id=', idSolicitudParaEvento);
+        }
+
         const insertSql = `
             INSERT INTO eventos_confirmados SET
               id_solicitud = ?,
@@ -887,7 +904,7 @@ const crearEvento = async (req, res) => {
         `;
 
         const params = [
-            0,
+            idSolicitudParaEvento,
             tipo_evento || 'BANDA',
             'manual_admin',
             nombre_banda,

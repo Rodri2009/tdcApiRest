@@ -755,24 +755,11 @@
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-clock"></i> Hora de Inicio</label>
-                            <select id="evento-hora">
-                                <option value="">Seleccionar...</option>
-                                <option value="19:00">19:00 hs</option>
-                                <option value="20:00">20:00 hs</option>
-                                <option value="21:00">21:00 hs</option>
-                                <option value="22:00">22:00 hs</option>
-                                <option value="23:00">23:00 hs</option>
-                            </select>
+                            <input type="time" id="evento-hora" value="21:00">
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-clock"></i> Hora de Fin</label>
-                            <select id="evento-hora-fin">
-                                <option value="">Seleccionar...</option>
-                                <option value="00:00">00:00 hs</option>
-                                <option value="01:00">01:00 hs</option>
-                                <option value="02:00">02:00 hs</option>
-                                <option value="03:00">03:00 hs</option>
-                            </select>
+                            <input type="time" id="evento-hora-fin" value="02:00">
                         </div>
                     </div>
 
@@ -786,6 +773,12 @@
                             <label><i class="fas fa-guitar"></i> Género Musical</label>
                             <input type="text" id="evento-genero" placeholder="Ej: Rock, Metal, Pop">
                         </div>
+                    </div>
+
+                    <!-- Flyer URL -->
+                    <div class="form-group">
+                        <label><i class="fas fa-image"></i> URL del Flyer</label>
+                        <input type="url" id="evento-flyer-url" placeholder="https://...">
                     </div>
 
                     <!-- Bandas invitadas -->
@@ -943,28 +936,58 @@
             try {
                 const estado = document.getElementById('filter-estado-evento').value || 'Confirmado';
                 const url = `/api/solicitudes-fechas-bandas?estado=${estado}`;
+                console.log('[EVENTOS] ========== LOADING EVENTOS ==========');
+                console.log('[EVENTOS] URL:', url);
+                console.log('[EVENTOS] Estado filter:', estado);
+
                 const res = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
                 });
+
+                console.log('[EVENTOS] Response status:', res.status);
+
                 if (res.ok) {
                     // Normalizar la respuesta para que la UI use campos consistentes (id, nombre_banda, hora_inicio, precio_anticipada...)
                     const raw = await res.json();
-                    eventos = (raw || []).map(it => ({
-                        // backend lista devuelve `id_solicitud`, `id_banda`, `fecha_evento`, `hora_evento`, `precio_basico`, `banda_nombre`, ...
-                        id: it.id_solicitud || it.id || null,
-                        id_banda: it.id_banda || null,
-                        fecha: it.fecha_evento || it.fecha || null,
-                        hora_inicio: it.hora_evento || it.hora_inicio || null,
-                        nombre_banda: it.banda_nombre || it.nombre_banda || it.nombre_evento || '',
-                        genero_musical: it.genero_musical || null,
-                        invitadas: it.invitadas || (it.invitadas_json ? (typeof it.invitadas_json === 'string' ? JSON.parse(it.invitadas_json || '[]') : it.invitadas_json) : []),
-                        estado: it.estado || 'Solicitado',
-                        es_publico: typeof it.es_publico !== 'undefined' ? it.es_publico : 1,
-                        precio_anticipada: it.precio_basico || it.precio_base || null,
-                        precio_puerta: it.precio_puerta_propuesto || it.precio_puerta || null,
-                        aforo_maximo: it.expectativa_publico || null,
-                        descripcion: it.descripcion || null
-                    }));
+                    console.log('[EVENTOS] Raw API response:', raw);
+                    console.log('[EVENTOS] Number of events:', raw.length);
+
+                    eventos = (raw || []).map((it, idx) => {
+                        console.log(`[EVENTOS] Event ${idx}:`, it);
+                        console.log(`[EVENTOS]   - id: ${it.id_solicitud || it.id}`);
+                        console.log(`[EVENTOS]   - id_banda: ${it.id_banda}`);
+                        console.log(`[EVENTOS]   - fecha_evento: ${it.fecha_evento || it.fecha}`);
+                        console.log(`[EVENTOS]   - hora_evento: ${it.hora_evento || it.hora_inicio}`);
+                        console.log(`[EVENTOS]   - banda_nombre: ${it.banda_nombre || it.nombre_banda || it.nombre_evento}`);
+                        console.log(`[EVENTOS]   - genero_musical: ${it.genero_musical}`);
+                        console.log(`[EVENTOS]   - precio_basico: ${it.precio_basico || it.precio_base}`);
+                        console.log(`[EVENTOS]   - precio_puerta_propuesto: ${it.precio_puerta_propuesto || it.precio_puerta}`);
+                        console.log(`[EVENTOS]   - expectativa_publico: ${it.expectativa_publico}`);
+                        console.log(`[EVENTOS]   - es_publico: ${it.es_publico}`);
+                        console.log(`[EVENTOS]   - estado: ${it.estado}`);
+                        console.log(`[EVENTOS]   - invitadas_json: ${it.invitadas_json}`);
+                        console.log(`[EVENTOS]   - descripcion: ${it.descripcion}`);
+
+                        return {
+                            // backend lista devuelve `id_solicitud`, `id_banda`, `fecha_evento`, `hora_evento`, `precio_basico`, `banda_nombre`, ...
+                            id: it.id_solicitud || it.id || null,
+                            id_banda: it.id_banda || null,
+                            fecha: it.fecha_evento || it.fecha || null,
+                            hora_inicio: it.hora_evento || it.hora_inicio || null,
+                            nombre_banda: it.banda_nombre || it.nombre_banda || it.nombre_evento || '',
+                            genero_musical: it.genero_musical || null,
+                            invitadas: it.invitadas || (it.invitadas_json ? (typeof it.invitadas_json === 'string' ? JSON.parse(it.invitadas_json || '[]') : it.invitadas_json) : []),
+                            estado: it.estado || 'Solicitado',
+                            es_publico: typeof it.es_publico !== 'undefined' ? it.es_publico : 1,
+                            precio_anticipada: it.precio_basico || it.precio_base || null,
+                            precio_puerta: it.precio_puerta_propuesto || it.precio_puerta || null,
+                            aforo_maximo: it.expectativa_publico || null,
+                            descripcion: it.descripcion || null
+                        };
+                    });
+
+                    console.log('[EVENTOS] ✓ Eventos procesados:', eventos.length);
+                    console.log('[EVENTOS] Normalized eventos:', eventos);
 
                     renderEventos();
                     updateEventosCount();
@@ -1132,13 +1155,30 @@
                 return;
             }
 
+            console.log('[EVENTOS] ========== EDIT EVENTO ==========');
+            console.log('[EVENTOS] Evento a editar:', evento);
+            console.log('[EVENTOS] Verificando campos:');
+            console.log('[EVENTOS]   - evento.id:', evento.id);
+            console.log('[EVENTOS]   - evento.fecha:', evento.fecha);
+            console.log('[EVENTOS]   - evento.hora_inicio:', evento.hora_inicio);
+            console.log('[EVENTOS]   - evento.nombre_banda:', evento.nombre_banda);
+            console.log('[EVENTOS]   - evento.genero_musical:', evento.genero_musical);
+            console.log('[EVENTOS]   - evento.precio_anticipada:', evento.precio_anticipada);
+            console.log('[EVENTOS]   - evento.precio_puerta:', evento.precio_puerta);
+            console.log('[EVENTOS]   - evento.aforo_maximo:', evento.aforo_maximo);
+            console.log('[EVENTOS]   - evento.estado:', evento.estado);
+            console.log('[EVENTOS]   - evento.es_publico:', evento.es_publico);
+            console.log('[EVENTOS]   - evento.invitadas:', evento.invitadas);
+            console.log('[EVENTOS]   - evento.descripcion:', evento.descripcion);
+
             document.getElementById('modal-evento-title').textContent = 'Editar Evento';
             document.getElementById('evento-id').value = evento.id;
             document.getElementById('evento-fecha').value = evento.fecha || '';
-            document.getElementById('evento-hora').value = evento.hora_inicio ? evento.hora_inicio.substring(0, 5) : '';
-            document.getElementById('evento-hora-fin').value = evento.hora_fin ? evento.hora_fin.substring(0, 5) : '';
+            document.getElementById('evento-hora').value = evento.hora_inicio ? evento.hora_inicio.substring(0, 5) : '21:00';
+            document.getElementById('evento-hora-fin').value = evento.hora_fin ? evento.hora_fin.substring(0, 5) : '02:00';
             document.getElementById('evento-banda').value = evento.nombre_banda || '';
             document.getElementById('evento-genero').value = evento.genero_musical || '';
+            document.getElementById('evento-flyer-url').value = evento.url_flyer || '';
 
             // Bandas invitadas (convertir array a string separado por comas)
             const invitadasStr = evento.invitadas && evento.invitadas.length > 0
@@ -1156,6 +1196,7 @@
             document.getElementById('evento-contacto-email').value = evento.email_contacto || '';
             document.getElementById('evento-descripcion').value = evento.descripcion || '';
 
+            console.log('[EVENTOS] ✓ Campos cargados en el formulario');
             openModal('modal-evento');
         }
 
@@ -1173,6 +1214,21 @@
             const id = document.getElementById('evento-id').value;
             const fecha = document.getElementById('evento-fecha').value;
             const banda = document.getElementById('evento-banda').value;
+
+            console.log('[EVENTOS] ========== SAVE EVENTO ==========');
+            console.log('[EVENTOS] Editando evento id:', id);
+            console.log('[EVENTOS] Valores del formulario:');
+            console.log('[EVENTOS]   - fecha:', fecha);
+            console.log('[EVENTOS]   - banda:', banda);
+            console.log('[EVENTOS]   - hora:', document.getElementById('evento-hora').value);
+            console.log('[EVENTOS]   - genero:', document.getElementById('evento-genero').value);
+            console.log('[EVENTOS]   - flyer_url:', document.getElementById('evento-flyer-url').value);
+            console.log('[EVENTOS]   - precio_anticipada:', document.getElementById('evento-precio-anticipada').value);
+            console.log('[EVENTOS]   - precio_puerta:', document.getElementById('evento-precio-puerta').value);
+            console.log('[EVENTOS]   - aforo:', document.getElementById('evento-aforo').value);
+            console.log('[EVENTOS]   - estado:', document.getElementById('evento-estado').value);
+            console.log('[EVENTOS]   - es_publico:', document.getElementById('evento-publico').value);
+            console.log('[EVENTOS]   - contacto_nombre:', document.getElementById('evento-contacto-nombre').value);
 
             if (!fecha || !banda) {
                 showBanner('Fecha y banda son obligatorios', 'error');
@@ -1196,12 +1252,18 @@
                 contacto_nombre: document.getElementById('evento-contacto-nombre').value || null,
                 contacto_email: document.getElementById('evento-contacto-email').value || null,
                 contacto_telefono: document.getElementById('evento-contacto-whatsapp').value || null,
+                url_flyer: document.getElementById('evento-flyer-url').value || null,
                 invitadas_json: invitadasRaw.length ? invitadasRaw.map(n => ({ nombre: n })) : null
             };
+
+            console.log('[EVENTOS] Payload a enviar:', payload);
 
             try {
                 const url = id ? `/api/solicitudes-fechas-bandas/${id}` : '/api/solicitudes-fechas-bandas';
                 const method = id ? 'PUT' : 'POST';
+
+                console.log('[EVENTOS] URL:', url);
+                console.log('[EVENTOS] Método:', method);
 
                 const res = await fetch(url, {
                     method: method,
@@ -1214,7 +1276,11 @@
 
                 const data = await res.json();
 
+                console.log('[EVENTOS] Response status:', res.status);
+                console.log('[EVENTOS] Response data:', data);
+
                 if (res.ok) {
+                    console.log('[EVENTOS] ✓ Evento guardado exitosamente');
                     showBanner(data.message || 'Solicitud/evento guardado correctamente', 'success');
                     closeModal('modal-evento');
                     loadEventos();
@@ -1222,6 +1288,7 @@
                     throw new Error(data.message || 'Error al guardar');
                 }
             } catch (err) {
+                console.error('[EVENTOS] ✗ Error:', err);
                 showBanner('Error: ' + err.message, 'error');
             }
         }

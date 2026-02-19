@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Test: Cached Image Load</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .waiting {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .flyer-preview {
+            max-width: 300px;
+            max-height: 300px;
+            border: 2px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+            margin: 10px 0;
+        }
+
+        .flyer-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Test: Cached Image Loading en updateFlyerPreview()</h1>
+
+    <div class="test-box">
+        <h2>Test Sistema: Verificar que la imagen se carga correctamente</h2>
+        <div class="result waiting">⏳ Iniciando prueba...</div>
+    </div>
+
+    <div class="test-box">
+        <h2>Usando updateFlyerPreview() (Fix Aplicado)</h2>
+        <div id="flyerPreview" class="flyer-preview"></div>
+        <p id="status1" class="result waiting">⏳ Esperando a que se ejecute updateFlyerPreview()...</p>
+    </div>
+
+    <div class="test-box">
+        <h2>URL de Prueba</h2>
+        <p><code>/uploads/flyers/1771436174139-dsvly0.jpeg</code></p>
+        <p id="file-check" class="result waiting">✓ Archivo confirma que existe en el servidor</p>
+    </div>
+
+    <script>
+        const testUrl = '/uploads/flyers/1771436174139-dsvly0.jpeg';
+
+        // Funcion updateFlyerPreview() - VERSIÓN CORREGIDA
+        function updateFlyerPreview() {
+            console.log('[TEST] updateFlyerPreview() llamada');
+            try {
+                const urlInput = { value: testUrl }; // Mock del input
+                const previewContainer = document.getElementById('flyerPreview');
+
+                if (!previewContainer) {
+                    console.error('[FLYER] Element #flyerPreview no encontrado');
+                    document.getElementById('status1').innerHTML = '✗ FAIL: Elemento #flyerPreview no encontrado';
+                    document.getElementById('status1').className = 'result fail';
+                    return;
+                }
+
+                const url = urlInput.value.trim();
+                console.log('[FLYER] updateFlyerPreview - URL:', url);
+                document.getElementById('status1').innerHTML = `⏳ Cargando imagen: ${url}`;
+                document.getElementById('status1').className = 'result waiting';
+
+                if (!url) {
+                    console.log('[FLYER] URL vacía');
+                    previewContainer.innerHTML = '<div style="color:#9ca3af;">Sin flyer</div>';
+                    document.getElementById('status1').innerHTML = '✓ PASS: URL vacía, mostrando placeholder';
+                    document.getElementById('status1').className = 'result pass';
+                    return;
+                }
+
+                // Mostrar loading
+                previewContainer.innerHTML = '<div style="color:#9ca3af;">Cargando...</div>';
+
+                // ✓ FIX: Crear imagen
+                const img = document.createElement('img');
+                img.alt = 'Flyer preview';
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '100%';
+
+                // ✓ FIX: Asignar listeners PRIMERO
+                img.onload = function () {
+                    console.log('[FLYER] ✓ Imagen cargada exitosamente desde:', url);
+                    previewContainer.innerHTML = '';
+                    previewContainer.appendChild(img);
+                    document.getElementById('status1').innerHTML = '✓ PASS: Imagen cargada correctamente (onload disparó)';
+                    document.getElementById('status1').className = 'result pass';
+                };
+
+                img.onerror = function () {
+                    console.error('[FLYER] ✗ Error cargando imagen desde:', url);
+                    previewContainer.innerHTML = '<div style="color:#d32f2f;">Error al cargar imagen</div>';
+                    document.getElementById('status1').innerHTML = '✗ FAIL: Error cargando imagen (onerror disparó)';
+                    document.getElementById('status1').className = 'result fail';
+                };
+
+                // ✓ FIX: Establecer src ÚLTIMO (dispara la carga/caché)
+                img.src = url;
+                console.log('[TEST] src establecido, esperando evento...');
+
+            } catch (err) {
+                console.error('[FLYER] ✗ Error en updateFlyerPreview:', err.message);
+                document.getElementById('status1').innerHTML = '✗ FAIL: Excepción: ' + err.message;
+                document.getElementById('status1').className = 'result fail';
+            }
+        }
+
+        // Verificar archivo
+        fetch(testUrl, { method: 'HEAD' })
+            .then(res => {
+                console.log('[TEST] Archivo check:', res.status, res.statusText);
+                if (res.ok) {
+                    document.getElementById('file-check').innerHTML = `✓ Archivo existe (HTTP ${res.status})`;
+                    document.getElementById('file-check').className = 'result pass';
+                } else {
+                    document.getElementById('file-check').innerHTML = `✗ Archivo no existe (HTTP ${res.status})`;
+                    document.getElementById('file-check').className = 'result fail';
+                }
+            })
+            .catch(err => {
+                console.error('[TEST] Fetch error:', err);
+                document.getElementById('file-check').innerHTML = `✗ Error: ${err.message}`;
+                document.getElementById('file-check').className = 'result fail';
+            });
+
+        // Llamar a updateFlyerPreview después de que el DOM esté listo
+        window.addEventListener('load', function () {
+            console.log('[TEST] Página cargada, ejecutando updateFlyerPreview()...');
+            updateFlyerPreview();
+        });
+
+        console.log('[TEST] Script iniciado, esperando a que página cargue completamente...');
+    </script>
+</body>
+
+</html>

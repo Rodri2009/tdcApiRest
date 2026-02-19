@@ -983,6 +983,8 @@ const getSolicitudesPublicas = async (req, res) => {
                 sb.duracion,
                 sb.cantidad_bandas as cantidad,
                 sb.precio_basico as precio,
+                -- Priorizar nombre de evento (si existe), luego nombre_banda, luego descripción, luego cliente
+                COALESCE(e.nombre_evento, b.nombre, sb.descripcion, COALESCE(c.nombre, '')) AS nombreEvento,
                 COALESCE(c.nombre, '') as nombreCompleto,
                 sb.descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
@@ -990,6 +992,7 @@ const getSolicitudesPublicas = async (req, res) => {
             FROM solicitudes_fechas_bandas sb
             JOIN solicitudes sol ON sb.id_solicitud = sol.id
             LEFT JOIN clientes c ON sol.cliente_id = c.id
+            LEFT JOIN bandas_artistas b ON sb.id_banda = b.id
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = sb.id_solicitud AND e.tipo_evento = 'BANDA' AND e.activo = 1
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'
@@ -1007,12 +1010,14 @@ const getSolicitudesPublicas = async (req, res) => {
                 st.duracion,
                 NULL as cantidad,
                 st.precio as precio,
-                st.nombre_taller as nombreCompleto,
+                -- Preferir nombre de evento si existe, luego nombre del taller, luego cliente
+                COALESCE(e.nombre_evento, st.nombre_taller, COALESCE(c.nombre, '')) AS nombreEvento,
                 NULL as descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
                 e.url_flyer as flyer_url
             FROM solicitudes_talleres st
             JOIN solicitudes sol ON st.id_solicitud = sol.id
+            LEFT JOIN clientes c ON sol.cliente_id = c.id
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = st.id_solicitud AND e.tipo_evento = 'TALLER' AND e.activo = 1
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'
@@ -1030,12 +1035,14 @@ const getSolicitudesPublicas = async (req, res) => {
                 ss.duracion,
                 NULL as cantidad,
                 ss.precio as precio,
-                ss.tipo_servicio as nombreCompleto,
+                -- Preferir nombre de evento si existe, luego tipo_servicio, luego cliente
+                COALESCE(e.nombre_evento, ss.tipo_servicio, COALESCE(c.nombre, '')) AS nombreEvento,
                 NULL as descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
                 e.url_flyer as flyer_url
             FROM solicitudes_servicios ss
             JOIN solicitudes sol ON ss.id_solicitud = sol.id
+            LEFT JOIN clientes c ON sol.cliente_id = c.id
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = ss.id_solicitud AND e.tipo_evento = 'SERVICIO' AND e.activo = 1
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'

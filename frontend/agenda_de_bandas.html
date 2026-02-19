@@ -210,14 +210,16 @@
             // Opciones de formato
             const dayOptions = { day: '2-digit' };
             const monthOptions = { month: 'short' }; // Ej: NOV, DIC
+            const yearOptions = { year: 'numeric' };
             const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false }; // Ej: 21:00
 
             // Convertir a tu zona horaria local o de preferencia (puede variar según dónde se ejecute el script)
             const day = date.toLocaleDateString('es-AR', dayOptions);
             const month = date.toLocaleDateString('es-AR', monthOptions).toUpperCase().replace('.', '');
+            const year = date.toLocaleDateString('es-AR', yearOptions);
             const time = date.toLocaleTimeString('es-AR', timeOptions);
 
-            return { day, month, time };
+            return { day, month, year, time };
         }
 
         /**
@@ -227,7 +229,7 @@
          */
         function generateEventCard(event) {
             const { id, nombre_banda, fecha_hora, precio_base, precio_anticipada, precio_puerta, descripcion, activo, aforo_maximo } = event;
-            const { day, month, time } = formatDateTime(fecha_hora);
+            const { day, month, year, time } = formatDateTime(fecha_hora);
             const eventDate = parseDateTimeString(fecha_hora);
             const now = new Date();
             const isPast = eventDate ? eventDate < now : false;
@@ -289,12 +291,13 @@
                 <!-- Evento ID: ${id} - ${nombre_banda} -->
                 <div data-event-id="${id}" class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 ${borderClass}">
                     <div class="flex items-center space-x-4 mb-4 sm:mb-0">
-                        <div class="text-center p-2 rounded-lg ${dateBgClass} ${dateTextColor} flex-shrink-0">
+                        <div class="text-center p-3 rounded-lg ${dateBgClass} ${dateTextColor} flex-shrink-0 min-w-[72px] flex flex-col justify-center items-center">
                             <p class="text-xl font-bold">${day}</p>
                             <p class="text-xs">${month}</p>
+                            <p class="text-xs mt-1">${year}</p>
                         </div>
                         <div>
-                            <h4 class="text-2xl font-semibold text-white">${nombre_banda} <span class="text-sm text-stone-400">(ID: ${id})</span></h4>
+                            <h4 class="text-2xl font-semibold text-white">${event.nombre_evento || nombre_banda} <span class="text-sm text-stone-400">(ID: ${id})</span></h4>
                             <!-- Nota: Aquí podrías añadir más detalles como género musical si tu API los provee -->
                             <p class="text-sm text-stone-400">${descripcion.substring(0, 50)}... | Puertas: ${time} hs. | Aforo Máximo: ${aforo_maximo}</p>
                             <p class="text-xl font-bold ${priceTextColor} mt-1">${priceText}</p>
