@@ -17,6 +17,23 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$ROOT_DIR/.env"
 COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.yml"
 
+# CLI flags
+TRUNCATE_FIRST=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --truncate-first|-t)
+      TRUNCATE_FIRST=1
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: $0 [--truncate-first]"; exit 0
+      ;;
+    *)
+      echo "Unknown arg: $1"; exit 1
+      ;;
+  esac
+done
+
 # Detectar comando compose (preferir plugin)
 if docker compose version >/dev/null 2>&1; then
   COMPOSE_CMD="docker compose"
@@ -73,8 +90,22 @@ cat > "$OUT_FILE" <<EOF
 --       Review the file before committing it into source control.
 -- ------------------------------------------------------------------
 SET FOREIGN_KEY_CHECKS=0;
-START TRANSACTION;
 EOF
+
+# Si se solicitó, insertar TRUNCATE TABLE para reproducir exactamente el
+# estado actual (elimina filas obsoletas antes de los REPLACE INTO).
+if [ "${TRUNCATE_FIRST:-0}" = "1" ] || [ "${TRUNCATE_FIRST,,}" = "true" ]; then
+  echo "-- TRUNCATE FIRST: se incluirán TRUNCATE TABLE para todas las tablas" >> "$OUT_FILE"
+  TABLES=$($COMPOSE_CMD -f "$COMPOSE_FILE" exec -T "$DB_SERVICE" sh -lc \
+    "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" -N -e \"SELECT TABLE_NAME FROM information_schema.tables WHERE TABLE_SCHEMA='${MARIADB_DATABASE}' AND TABLE_TYPE='BASE TABLE' ORDER BY TABLE_NAME;\"")
+  for t in $TABLES; do
+    echo "TRUNCATE TABLE \\`$t\\`;" >> "$OUT_FILE"
+  done
+  echo "" >> "$OUT_FILE"
+fi
+
+# Iniciar la transacción para las inserciones (REPLACE INTO)
+echo "START TRANSACTION;" >> "$OUT_FILE"
 
 # Ejecutar mysqldump (solo data, REPLACE INTO, complete-insert para legibilidad)
 echo "Exportando datos de '${MARIADB_DATABASE}' a: $OUT_FILE"
