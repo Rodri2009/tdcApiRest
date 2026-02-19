@@ -60,13 +60,15 @@ const crearSolicitudFechaBanda = async (req, res) => {
                 cliente_id,
                 estado,
                 descripcion,
-                fecha_creacion
-            ) VALUES ('BANDA', ?, 'Solicitado', ?, NOW())
+                fecha_creacion,
+                url_flyer
+            ) VALUES ('BANDA', ?, 'Solicitado', ?, NOW(), ?)
         `;
 
         const resultSolicitud = await conn.query(sqlSolicitud, [
             clienteId,
-            descripcion || ''
+            descripcion || '',
+            req.body.url_flyer || null
         ]);
 
         const solicitudId = Number(resultSolicitud.insertId);
@@ -215,7 +217,8 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
                 s.descripcion_corta AS nombre_evento,
                 s.categoria,
                 s.es_publico,
-                s.url_flyer,
+                -- Usar COALESCE: primero el de eventos_confirmados, luego el de solicitudes
+                COALESCE(ec.url_flyer, s.url_flyer) as url_flyer,
                 c.nombre as cliente_nombre,
                 c.email as cliente_email,
                 c.telefono as cliente_telefono,
@@ -231,6 +234,7 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
             JOIN solicitudes s ON sfb.id_solicitud = s.id
             LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id
             LEFT JOIN clientes c ON s.cliente_id = c.id
+            LEFT JOIN eventos_confirmados ec ON ec.id_solicitud = sfb.id_solicitud AND ec.tipo_evento = 'BANDA'
             WHERE sfb.id_solicitud = ?
         `;
 
@@ -586,10 +590,10 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
 
             console.log(`[FECHA_BANDA] SQL UPDATE:`, sqlUpdate);
             console.log(`[FECHA_BANDA] Parámetros:`, JSON.stringify(params, null, 2));
-            
+
             const result = await conn.query(sqlUpdate, params);
             console.log(`[FECHA_BANDA] ✓ Solicitud actualizada: ${result.affectedRows} fila(s)`);
-            
+
             // Verificación POST-actualización: leer recurso actualizado
             const [verifyRow] = await conn.query(
                 'SELECT id_solicitud, id_banda, invitadas_json FROM solicitudes_fechas_bandas WHERE id_solicitud = ?',
@@ -605,7 +609,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                         const parsed = JSON.parse(verifyRow.invitadas_json);
                         console.log(`[FECHA_BANDA]   invitadas_json (parsed):`, JSON.stringify(parsed, null, 2));
                         console.log(`[FECHA_BANDA]   cantidad de invitadas:`, Array.isArray(parsed) ? parsed.length : 'NO ES ARRAY');
-                    } catch(e) {
+                    } catch (e) {
                         console.log(`[FECHA_BANDA]   Error parsing invitadas_json:`, e.message);
                     }
                 }

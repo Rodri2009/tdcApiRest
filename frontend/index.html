@@ -462,7 +462,7 @@
             const categoria = getCategoria(item);
             const cat = CATEGORIAS[categoria];
             const fechaObj = item._fechaObj ? item._fechaObj : (item.fecha ? new Date(item.fecha) : null);
-            const { day, month } = fechaObj ? formatDate(fechaObj) : { day: '--', month: '--' };
+            const { day, month, year } = fechaObj ? formatDate(fechaObj) : { day: '--', month: '--', year: '--' };
             const hora = item.hora || '';
             const precio = item.precio ? `$${Number(item.precio).toLocaleString('es-AR')}` : '';
 

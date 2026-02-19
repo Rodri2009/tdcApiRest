@@ -89,15 +89,16 @@ const crearSolicitud = async (req, res) => {
         const clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
 
         const sqlGeneral = `
-            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion_corta, descripcion_larga, descripcion, cliente_id)
-            VALUES (?, NOW(), 'Solicitado', ?, ?, ?, ?)
+            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion_corta, descripcion_larga, descripcion, cliente_id, url_flyer)
+            VALUES (?, NOW(), 'Solicitado', ?, ?, ?, ?, ?)
         `;
         const paramsGeneral = [
             categoria,
             descripcionCorta || (descripcion ? descripcion.substring(0, 200) : null),
             descripcionLarga || null,
             descripcion || '',
-            clienteId
+            clienteId,
+            req.body.url_flyer || null
         ];
         const resultGeneral = await conn.query(sqlGeneral, paramsGeneral);
         const newId = Number(resultGeneral.insertId);

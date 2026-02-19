@@ -29,11 +29,12 @@ const getSolicitudes = async (req, res) => {
                 s.hora_evento as horaInicio,
                 COALESCE(sol.es_publico, 0) as es_publico,
                 COALESCE(sol.descripcion_corta, '') as descripcionCorta,
-                NULL as url_flyer
+                COALESCE(ec_alq.url_flyer, sol.url_flyer) as url_flyer
             FROM solicitudes_alquiler s
             LEFT JOIN solicitudes sol ON sol.id = s.id_solicitud
             LEFT JOIN clientes c ON sol.cliente_id = c.id
             LEFT JOIN opciones_tipos ot ON (s.tipo_de_evento = ot.id_tipo_evento OR s.tipo_servicio = ot.id_tipo_evento)
+            LEFT JOIN eventos_confirmados ec_alq ON ec_alq.id_solicitud = s.id_solicitud AND ec_alq.tipo_evento = 'ALQUILER_SALON'
             UNION ALL
             SELECT
                 CONCAT('bnd_', s.id_solicitud) as id,
@@ -51,12 +52,13 @@ const getSolicitudes = async (req, res) => {
                 s.hora_evento as horaInicio,
                 COALESCE(sol2.es_publico, 0) as es_publico,
                 COALESCE(sol2.descripcion_corta, '') as descripcionCorta,
-                NULL as url_flyer
+                COALESCE(ec_bnd.url_flyer, sol2.url_flyer) as url_flyer
             FROM solicitudes_fechas_bandas s
             LEFT JOIN solicitudes sol2 ON sol2.id = s.id_solicitud
             LEFT JOIN clientes c2 ON sol2.cliente_id = c2.id
             /* solicitudes_fechas_bandas no tiene columna tipo_de_evento — evitar JOIN que referencia columnas inexistentes */
             LEFT JOIN opciones_tipos ot2 ON 1 = 0
+            LEFT JOIN eventos_confirmados ec_bnd ON ec_bnd.id_solicitud = s.id_solicitud AND ec_bnd.tipo_evento = 'BANDA'
             UNION ALL
             SELECT
                 CONCAT('ev_', e.id) as id,
@@ -94,11 +96,12 @@ const getSolicitudes = async (req, res) => {
                 ss.hora_evento as horaInicio,
                 COALESCE(sol3.es_publico, 0) as es_publico,
                 COALESCE(sol3.descripcion_corta, '') as descripcionCorta,
-                NULL as url_flyer
+                COALESCE(ec_srv.url_flyer, sol3.url_flyer) as url_flyer
             FROM solicitudes_servicios ss
             JOIN solicitudes sol3 ON ss.id_solicitud = sol3.id
             LEFT JOIN clientes c3 ON sol3.cliente_id = c3.id
             LEFT JOIN opciones_tipos ot3 ON ss.tipo_servicio = ot3.id_tipo_evento
+            LEFT JOIN eventos_confirmados ec_srv ON ec_srv.id_solicitud = ss.id_solicitud AND ec_srv.tipo_evento = 'SERVICIO'
             UNION ALL
             SELECT
                 CONCAT('tll_', st.id_solicitud) as id,
@@ -116,11 +119,12 @@ const getSolicitudes = async (req, res) => {
                 st.hora_evento as horaInicio,
                 COALESCE(sol4.es_publico, 0) as es_publico,
                 COALESCE(sol4.descripcion_corta, '') as descripcionCorta,
-                NULL as url_flyer
+                COALESCE(ec_tll.url_flyer, sol4.url_flyer) as url_flyer
             FROM solicitudes_talleres st
             JOIN solicitudes sol4 ON st.id_solicitud = sol4.id
             LEFT JOIN clientes c4 ON sol4.cliente_id = c4.id
             LEFT JOIN opciones_tipos ot4 ON st.nombre_taller = ot4.nombre_para_mostrar
+            LEFT JOIN eventos_confirmados ec_tll ON ec_tll.id_solicitud = st.id_solicitud AND ec_tll.tipo_evento = 'TALLER'
         `;
 
         // Aplicar filtros por query params (tipo, estado) en el resultado final
@@ -249,9 +253,10 @@ const actualizarEstadoSolicitud = async (req, res) => {
 
         // Manejar eventos_confirmados para TODOS los tipos
         if (estado === 'Confirmado') {
-            // Determinar si debe ser público (según la tabla padre `solicitudes`)
-            const [parent] = await conn.query('SELECT es_publico FROM solicitudes WHERE id = ?', [realId]);
+            // Determinar si debe ser público y obtener url_flyer (según la tabla padre `solicitudes`)
+            const [parent] = await conn.query('SELECT es_publico, url_flyer FROM solicitudes WHERE id = ?', [realId]);
             const esPublico = parent && parent.es_publico ? 1 : 0;
+            const urlFlyer = parent && parent.url_flyer ? parent.url_flyer : null;
 
             // Buscar evento existente (incluyendo su estado 'activo')
             const [eventoExistente] = await conn.query(
@@ -309,7 +314,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     tablaOrigen,
                     nombreEvento,
                     solicitud.descripcion || null,
-                    solicitud.logo_url || null,
+                    urlFlyer,
                     solicitud.fecha_evento,
                     solicitud.hora_evento || '21:00:00',
                     solicitud.duracion || null,
@@ -330,7 +335,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     esPublico,
                     nombreEvento,
                     solicitud.descripcion || null,
-                    solicitud.logo_url || null,
+                    urlFlyer,
                     solicitud.fecha_evento,
                     solicitud.hora_evento || '21:00:00',
                     solicitud.duracion || null,
