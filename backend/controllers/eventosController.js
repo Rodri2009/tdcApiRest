@@ -51,9 +51,14 @@ const getEventoDetallePublico = async (req, res) => {
         // Si es de tipo BANDA, cargar datos de solicitudes_fechas_bandas
         if (evento.tipo_evento === 'BANDA' && evento.id_solicitud) {
             const [fechaBanda] = await pool.query(`
-                SELECT sfb.*, 
+                SELECT sfb.id_solicitud as id_solicitud_fecha_banda,
+                       sfb.fecha_evento, sfb.hora_evento, sfb.duracion, sfb.id_banda,
+                       sfb.precio_basico, sfb.precio_puerta_propuesto, sfb.cantidad_bandas,
+                       sfb.expectativa_publico, sfb.estado, sfb.notas_admin,
+                       sfb.invitadas_json, sfb.creado_en, sfb.actualizado_en,
                        s.descripcion_corta, s.descripcion_larga, s.url_flyer as solicitud_url_flyer,
-                       s.cliente_id, c.nombre as cliente_nombre, c.email as cliente_email, c.telefono as cliente_telefono
+                       s.cliente_id, s.es_publico,
+                       c.nombre as cliente_nombre, c.email as cliente_email, c.telefono as cliente_telefono
                 FROM solicitudes_fechas_bandas sfb
                 JOIN solicitudes s ON sfb.id_solicitud = s.id
                 LEFT JOIN clientes c ON s.cliente_id = c.id
@@ -62,11 +67,13 @@ const getEventoDetallePublico = async (req, res) => {
             `, [evento.id_solicitud]);
 
             if (fechaBanda) {
-                // Combinar datos del evento con los de fechaBanda para edición
+                // Combinar datos: evento tiene id_evento (4), fechaBanda tiene id_solicitud_fecha_banda (11)
                 const datos = {
                     ...evento,
                     ...fechaBanda,
-                    // Asegurar que url_flyer del evento tiene prioridad sobre el de solicitud
+                    // Preservar ambos IDs claramente
+                    id_evento: evento.id,
+                    // id_solicitud_fecha_banda viene como el id_solicitud de sfb
                     url_flyer: evento.url_flyer || fechaBanda.solicitud_url_flyer
                 };
 
