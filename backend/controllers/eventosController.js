@@ -58,10 +58,13 @@ const getEventoDetallePublico = async (req, res) => {
                        sfb.invitadas_json, sfb.creado_en, sfb.actualizado_en,
                        s.descripcion_corta, s.descripcion_larga, s.url_flyer as solicitud_url_flyer,
                        s.cliente_id, s.es_publico,
-                       c.nombre as cliente_nombre, c.email as cliente_email, c.telefono as cliente_telefono
+                       c.nombre as cliente_nombre, c.email as cliente_email, c.telefono as cliente_telefono,
+                       ba.id as banda_id, ba.nombre as banda_nombre, ba.genero_musical, 
+                       ba.logo_url, ba.facebook, ba.instagram, ba.youtube, ba.spotify
                 FROM solicitudes_fechas_bandas sfb
                 JOIN solicitudes s ON sfb.id_solicitud = s.id
                 LEFT JOIN clientes c ON s.cliente_id = c.id
+                LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id
                 WHERE sfb.id_solicitud = ?
                 LIMIT 1
             `, [evento.id_solicitud]);
