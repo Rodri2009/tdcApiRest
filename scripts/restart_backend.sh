@@ -83,10 +83,17 @@ if [ -n "$DEBUG_FLAGS" ]; then
   echo "[restart_backend] Esperando que MariaDB esté listo..."
   sleep 5
   
-  echo "[restart_backend] Ejecutando backend con flags:$DEBUG_FLAGS"
-  # Usar run para crear un contenedor transitorios que esté en la red correcta
-  # run automáticamente conecta a la red del proyecto y recibe peticiones de nginx
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run --rm -it backend $DEBUG_FLAGS
+  echo "[restart_backend] Ejecutando backend en background con flags:$DEBUG_FLAGS"
+  # Usar run -d para crear contenedor en background que persista
+  # Esto permite que siga ejecutándose aunque cerremos la sesión de logs
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run -d backend $DEBUG_FLAGS
+  
+  # Dar tiempo para que se inicialice
+  sleep 2
+  
+  # Mostrar logs en foreground
+  echo "[restart_backend] Mostrando logs (Ctrl+C solo detiene los logs, el backend sigue ejecutándose)..."
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" logs -f backend
 else
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d backend
   

@@ -125,8 +125,14 @@ if [ -n "$DEBUG_FLAGS" ]; then
     echo "--- 🐛 Esperando que MariaDB esté listo... ---"
     sleep 5
     
-    echo "--- 🐛 Ejecutando backend con flags:$DEBUG_FLAGS ---"
-    $COMPOSE_CMD run --rm -it backend $DEBUG_FLAGS
+    echo "--- 🐛 Ejecutando backend en background con flags:$DEBUG_FLAGS ---"
+    $COMPOSE_CMD run -d backend $DEBUG_FLAGS
+    
+    # Dar tiempo para que se inicialice
+    sleep 2
+    
+    echo "--- 🐛 Mostrando logs en tiempo real (Ctrl+C solo detiene los logs, el backend sigue ejecutándose)... ---"
+    $COMPOSE_CMD logs -f backend
 fi
 echo ""
 

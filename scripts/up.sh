@@ -277,8 +277,14 @@ if [ -n "$DEBUG_FLAGS" ]; then
     echo "--- 🐛 Esperando que MariaDB esté listo... ---"
     sleep 5
     
-    echo "--- 🐛 Ejecutando backend con flags:$DEBUG_FLAGS ---"
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE run --rm -it backend $DEBUG_FLAGS"
+    echo "--- 🐛 Ejecutando backend en background con flags:$DEBUG_FLAGS ---"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE run -d backend $DEBUG_FLAGS"
+    
+    # Dar tiempo para que se inicialice
+    sleep 2
+    
+    echo "--- 🐛 Mostrando logs en tiempo real (Ctrl+C solo detiene los logs, el backend sigue ejecutándose)... ---"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
 else
     echo "--- Mostrando logs del backend en tiempo real (Presiona Ctrl+C para salir) ---"
     eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
