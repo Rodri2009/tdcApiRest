@@ -6,6 +6,7 @@ const path = require('path');
 
 const pool = require('./db');
 const { logRequest, logVerbose, logError, logWarning, logSuccess } = require('./lib/debugFlags');
+const logResponseMiddleware = require('./middleware/logResponseMiddleware');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -64,6 +65,9 @@ app.use((req, res, next) => {
     logVerbose(`Body recibido: ${JSON.stringify(req.body)}`);
     next();
 });
+
+// Middleware para interceptar y loguear respuestas JSON
+app.use(logResponseMiddleware);
 
 // Health check
 app.get('/health', (req, res) => {

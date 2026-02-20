@@ -107,6 +107,37 @@ function logQuery(sql, params = null) {
 }
 
 /**
+ * Log de respuesta API (solo con -v o -d)
+ * Muestra la respuesta JSON que se envía al cliente
+ * @param {string} endpoint - URL del endpoint
+ * @param {*} data - Datos respondidos
+ * @param {number} [statusCode] - Código HTTP de respuesta
+ */
+function logResponse(endpoint, data = null, statusCode = 200) {
+    if (!flags.verbose && !flags.debug) return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] 📤 [RESPUESTA]`;
+    const status = `(HTTP ${statusCode})`;
+    if (data !== null && typeof data === 'object') {
+        console.log(`${prefix} ${endpoint} ${status}`);
+        console.log(JSON.stringify(data, null, 2));
+    } else if (data !== null) {
+        console.log(`${prefix} ${endpoint} ${status}: ${data}`);
+    } else {
+        console.log(`${prefix} ${endpoint} ${status}`);
+    }
+}
+
+/**
+ * Separador entre peticiones (solo con -v o -d)
+ * Agrega un salto de línea para mejorar la legibilidad
+ */
+function logSeparator() {
+    if (!flags.verbose && !flags.debug) return;
+    console.log('');
+}
+
+/**
  * Mostrar mensaje de ayuda
  */
 function showHelp() {
@@ -203,6 +234,8 @@ module.exports = {
     logSuccess,
     logWarning,
     logQuery,
+    logResponse,
+    logSeparator,
 
     // Utilidades
     getTimestamp,
