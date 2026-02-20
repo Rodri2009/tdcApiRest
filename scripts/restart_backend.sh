@@ -71,20 +71,22 @@ fi
 
 echo "[restart_backend] Levantando backend..."
 if [ -n "$DEBUG_FLAGS" ]; then
-  # Si hay flags, hacer down + levantar solo dependencias + run con network correcto
-  echo "[restart_backend] Haciendo down completo..."
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down
+  # Si hay flags, levantar TODO (incluyendo backend)
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
   
-  # Levantar solo mariadb y nginx
-  echo "[restart_backend] Levantando mariadb y nginx..."
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d mariadb nginx
+  # Esperar a que se estabilicen
+  echo "[restart_backend] Esperando que los servicios estén listos..."
+  sleep 3
   
-  # Esperar a que mariadb esté listo
-  sleep 5
+  # Matar el node anterior que se inició automáticamente
+  echo "[restart_backend] Matando instancia anterior de backend..."
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend pkill -f "node.*server.js" 2>/dev/null || true
+  
+  sleep 1
   
   echo "[restart_backend] Ejecutando backend con flags:$DEBUG_FLAGS"
-  # Usar run con --network para que esté en la red correcta (docker_default)
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run --rm -it --network docker_default backend $DEBUG_FLAGS
+  # Ejecutar dentro del contenedor que ya está en la red correcta
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -it backend node server.js $DEBUG_FLAGS
 else
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d backend
   
