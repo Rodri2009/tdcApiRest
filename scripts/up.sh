@@ -272,7 +272,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
     echo ""
     echo "--- 🐛 Ejecutando backend con flags de depuración:$DEBUG_FLAGS ---"
     sleep 2
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T backend node backend/server.js $DEBUG_FLAGS"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T backend node server.js $DEBUG_FLAGS"
 else
     echo "--- Mostrando logs del backend en tiempo real (Presiona Ctrl+C para salir) ---"
     eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"

@@ -83,7 +83,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
   sleep 1
   
   echo "[restart_backend] Ejecutando backend con flags:$DEBUG_FLAGS"
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend node backend/server.js $DEBUG_FLAGS
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend node server.js $DEBUG_FLAGS
 else
   if [ $SHOW_LOGS -eq 1 ]; then
     echo "[restart_backend] Mostrando logs del backend (Ctrl+C para salir)..."

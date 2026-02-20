@@ -120,7 +120,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
     echo ""
     echo "--- 🐛 Ejecutando backend con flags de depuración:$DEBUG_FLAGS ---"
     sleep 2
-    $COMPOSE_CMD exec -T backend node backend/server.js $DEBUG_FLAGS
+    $COMPOSE_CMD exec -T backend node server.js $DEBUG_FLAGS
 fi
 echo ""
 
