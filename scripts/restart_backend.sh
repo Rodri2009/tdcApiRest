@@ -80,7 +80,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
   
   echo "[restart_backend] Ejecutando backend con flags:$DEBUG_FLAGS"
   # Ejecutar el backend con un contenedor de una sola vez (interactivo)
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run --rm backend $DEBUG_FLAGS
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run --rm -it backend $DEBUG_FLAGS
 else
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d backend
   

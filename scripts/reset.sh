@@ -125,7 +125,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
     echo ""
     echo "--- 🐛 Ejecutando backend con flags de depuración:$DEBUG_FLAGS ---"
     sleep 2
-    $COMPOSE_CMD run --rm backend $DEBUG_FLAGS
+    $COMPOSE_CMD run --rm -it backend $DEBUG_FLAGS
 fi
 echo ""
 
