@@ -3,8 +3,16 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 // NOTA: Asegúrate de haber eliminado la línea: require('dotenv').config();
 // como hablamos antes, para evitar conflictos con las variables de Docker.
+
+// LOG INICIAL ANTES DE CARGAR POOL
+console.log('[server.js] ✓ Express y módulos base cargados');
+
 const pool = require('./db');
+console.log('[server.js] ✓ Pool de base de datos cargado');
+
 const { logRequest, logVerbose, logError, logWarning, logSuccess } = require('./lib/debugFlags');
+console.log('[server.js] ✓ Sistema de logging cargado');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -133,9 +141,11 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- FUNCIÓN DE INICIO RESILIENTE ---
 async function startServer() {
+    console.log('[startServer] ✓ Función startServer iniciada');
     logVerbose("Levantando servicio");
 
     // 1. Validar variables críticas (Si esto falla, no tiene sentido seguir)
+    console.log('[startServer] Validando variables de entorno...');
     const requiredVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
     const missingVars = requiredVars.filter(v => !process.env[v]);
     if (missingVars.length > 0) {
@@ -146,15 +156,18 @@ async function startServer() {
     }
 
     // 2. Bucle de intentos de conexión
+    console.log('[startServer] Iniciando loop de conexión a base de datos...');
     let connected = false;
     let attempts = 0;
 
     while (!connected) {
         attempts++;
+        console.log(`[startServer] Intento ${attempts} de conexión...`);
         try {
             logVerbose(`Conectando a la base de datos (intento #${attempts})...`, { host: process.env.DB_HOST });
             const conn = await pool.getConnection();
             conn.release(); // Liberamos inmediatamente si tuvo éxito
+            console.log('[startServer] ✓ Conexión exitosa a pool');
             logSuccess("Conexión exitosa a MariaDB");
             connected = true;
         } catch (err) {
@@ -172,9 +185,13 @@ async function startServer() {
     }
 
     // 3. Iniciar Express solo después de conectar a la DB
+    console.log('[startServer] Iniciando app.listen()...');
     app.listen(port, () => {
+        console.log(`[startServer] ✓ Express escuchando en puerto ${port}`);
         logSuccess(`SERVIDOR LISTO: Backend escuchando en el puerto ${port}`);
     });
+    console.log('[startServer] ✓ app.listen() completado');
 }
 
 startServer();
+console.log('[server.js] ✓ startServer() fue llamada');
