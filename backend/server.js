@@ -77,10 +77,14 @@ app.get('/health', (req, res) => {
 });
 
 // --- Rutas de la API ---
+console.log('[server.js] ✓ Antes de INICIANDO BACKEND');
 logSuccess("INICIANDO BACKEND");
 logVerbose("Cargando rutas de la API...");
+console.log('[server.js] ✓ Iniciando try-catch de rutas');
 try {
+    console.log('[server.js] ✓ Dentro de try - iniciando require de rutas');
     const opcionesRoutes = require('./routes/opcionesRoutes');
+    console.log('[server.js] ✓ opcionesRoutes cargadas');
     const solicitudesRoutes = require('./routes/solicitudRoutes');
     const testRoutes = require('./routes/testRoutes');
     const authRoutes = require('./routes/authRoutes');
@@ -122,12 +126,16 @@ try {
     app.use('/api/whatsapp', whatsappRoutes); // Integración con serverWhatsApp
 
     logSuccess("Rutas configuradas correctamente (incluidas nuevas rutas de bandas y solicitudes de fechas, y servicios Puppeteer).");
+    console.log('[server.js] ✓ Rutas confirmadas - saliendo de try-catch');
 
 } catch (error) {
+    console.error('[server.js] ✗ ERROR EN CATCH DE RUTAS:', error.message, error.stack);
     logError("ERROR CRÍTICO AL CARGAR RUTAS", error);
     // Aquí sí podríamos querer salir si el código está roto, 
     // pero para seguir tu petición, solo lo logueamos.
 }
+
+console.log('[server.js] ✓ Después de bloque de rutas, antes de startServer');
 
 
 // --- Manejador de Errores Global ---

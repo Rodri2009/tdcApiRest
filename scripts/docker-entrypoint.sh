@@ -23,4 +23,4 @@ else
 fi
 
 echo "[entrypoint] Iniciando la aplicación..."
-exec node server.js "$@"
+exec node --unhandled-rejections=warn server.js "$@"
