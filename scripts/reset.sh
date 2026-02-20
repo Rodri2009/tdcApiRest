@@ -61,7 +61,12 @@ echo "✅ Entorno anterior completamente eliminado."
 echo ""
 echo "--- ✨ Paso 2: Reconstruyendo y levantando el entorno desde cero... ---"
 # El flag --build es crucial aquí para aplicar cualquier cambio que hayas hecho en el backend
-$COMPOSE_CMD up --build -d
+# Si hay flags de depuración, se levanta todo EXCEPTO el backend (--scale backend=0)
+if [ -n "$DEBUG_FLAGS" ]; then
+    $COMPOSE_CMD up --build -d --scale backend=0
+else
+    $COMPOSE_CMD up --build -d
+fi
 if [ $? -ne 0 ]; then
     echo "❌ ERROR: 'docker-compose up' falló. Por favor, revisa los mensajes de arriba."
     exit 1
@@ -120,7 +125,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
     echo ""
     echo "--- 🐛 Ejecutando backend con flags de depuración:$DEBUG_FLAGS ---"
     sleep 2
-    $COMPOSE_CMD exec -T backend node server.js $DEBUG_FLAGS
+    $COMPOSE_CMD run --rm backend $DEBUG_FLAGS
 fi
 echo ""
 

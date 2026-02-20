@@ -70,21 +70,24 @@ if [ $REBUILD -eq 1 ]; then
 fi
 
 echo "[restart_backend] Levantando backend..."
-$COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d backend
-
-# Esperar a que el contenedor esté listo
-echo "[restart_backend] Esperando a que el contenedor esté listo..."
-sleep 2
-
-# Si hay flags de depuración, ejecutar el backend con esos flags
 if [ -n "$DEBUG_FLAGS" ]; then
-  echo "[restart_backend] Matando proceso anterior de node..."
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend pkill -f "node.*server.js" || true
-  sleep 1
+  # Si hay flags, hacer down antes para matar completamente
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down
+  
+  # Levantar solo los otros servicios primero
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d mariadb nginx
+  sleep 2
   
   echo "[restart_backend] Ejecutando backend con flags:$DEBUG_FLAGS"
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend node server.js $DEBUG_FLAGS
+  # Ejecutar el backend con un contenedor de una sola vez (interactivo)
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run --rm backend $DEBUG_FLAGS
 else
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d backend
+  
+  # Esperar a que el contenedor esté listo
+  echo "[restart_backend] Esperando a que el contenedor esté listo..."
+  sleep 2
+  
   if [ $SHOW_LOGS -eq 1 ]; then
     echo "[restart_backend] Mostrando logs del backend (Ctrl+C para salir)..."
     $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" logs -f backend
