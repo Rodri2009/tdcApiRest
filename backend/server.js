@@ -4,14 +4,8 @@ const path = require('path');
 // NOTA: Asegúrate de haber eliminado la línea: require('dotenv').config();
 // como hablamos antes, para evitar conflictos con las variables de Docker.
 
-// LOG INICIAL ANTES DE CARGAR POOL
-console.log('[server.js] ✓ Express y módulos base cargados');
-
 const pool = require('./db');
-console.log('[server.js] ✓ Pool de base de datos cargado');
-
 const { logRequest, logVerbose, logError, logWarning, logSuccess } = require('./lib/debugFlags');
-console.log('[server.js] ✓ Sistema de logging cargado');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -77,14 +71,10 @@ app.get('/health', (req, res) => {
 });
 
 // --- Rutas de la API ---
-console.log('[server.js] ✓ Antes de INICIANDO BACKEND');
 logSuccess("INICIANDO BACKEND");
 logVerbose("Cargando rutas de la API...");
-console.log('[server.js] ✓ Iniciando try-catch de rutas');
 try {
-    console.log('[server.js] ✓ Dentro de try - iniciando require de rutas');
     const opcionesRoutes = require('./routes/opcionesRoutes');
-    console.log('[server.js] ✓ opcionesRoutes cargadas');
     const solicitudesRoutes = require('./routes/solicitudRoutes');
     const testRoutes = require('./routes/testRoutes');
     const authRoutes = require('./routes/authRoutes');
@@ -126,16 +116,12 @@ try {
     app.use('/api/whatsapp', whatsappRoutes); // Integración con serverWhatsApp
 
     logSuccess("Rutas configuradas correctamente (incluidas nuevas rutas de bandas y solicitudes de fechas, y servicios Puppeteer).");
-    console.log('[server.js] ✓ Rutas confirmadas - saliendo de try-catch');
 
 } catch (error) {
-    console.error('[server.js] ✗ ERROR EN CATCH DE RUTAS:', error.message, error.stack);
     logError("ERROR CRÍTICO AL CARGAR RUTAS", error);
     // Aquí sí podríamos querer salir si el código está roto, 
     // pero para seguir tu petición, solo lo logueamos.
 }
-
-console.log('[server.js] ✓ Después de bloque de rutas, antes de startServer');
 
 
 // --- Manejador de Errores Global ---
@@ -149,11 +135,9 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- FUNCIÓN DE INICIO RESILIENTE ---
 async function startServer() {
-    console.log('[startServer] ✓ Función startServer iniciada');
     logVerbose("Levantando servicio");
 
     // 1. Validar variables críticas (Si esto falla, no tiene sentido seguir)
-    console.log('[startServer] Validando variables de entorno...');
     const requiredVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
     const missingVars = requiredVars.filter(v => !process.env[v]);
     if (missingVars.length > 0) {
@@ -164,18 +148,15 @@ async function startServer() {
     }
 
     // 2. Bucle de intentos de conexión
-    console.log('[startServer] Iniciando loop de conexión a base de datos...');
     let connected = false;
     let attempts = 0;
 
     while (!connected) {
         attempts++;
-        console.log(`[startServer] Intento ${attempts} de conexión...`);
         try {
             logVerbose(`Conectando a la base de datos (intento #${attempts})...`, { host: process.env.DB_HOST });
             const conn = await pool.getConnection();
             conn.release(); // Liberamos inmediatamente si tuvo éxito
-            console.log('[startServer] ✓ Conexión exitosa a pool');
             logSuccess("Conexión exitosa a MariaDB");
             connected = true;
         } catch (err) {
@@ -193,16 +174,12 @@ async function startServer() {
     }
 
     // 3. Iniciar Express solo después de conectar a la DB
-    console.log('[startServer] Iniciando app.listen()...');
     app.listen(port, () => {
-        console.log(`[startServer] ✓ Express escuchando en puerto ${port}`);
         logSuccess(`SERVIDOR LISTO: Backend escuchando en el puerto ${port}`);
     });
-    console.log('[startServer] ✓ app.listen() completado');
 }
 
 startServer();
-console.log('[server.js] ✓ startServer() fue llamada');
 
 // Agregar handlers para SIGINT y SIGTERM para permitir Ctrl+C
 process.on('SIGINT', () => {
