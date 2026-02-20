@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 echo "[entrypoint] Comprobando node_modules y dependencias..."
+echo "[entrypoint] Argumentos recibidos: $@"
 
 cd /app || exit 1
 
