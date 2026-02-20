@@ -173,12 +173,17 @@ COMBINACIONES:
 
 // Parsear argumentos de línea de comandos
 const args = process.argv.slice(2);
+console.log('[debugFlags] process.argv completo:', process.argv);
+console.log('[debugFlags] args parseados:', args);
+
 const flags = {
   verbose: args.includes('--verbose') || args.includes('-v'),
   error: args.includes('--error') || args.includes('-e'),
   debug: args.includes('--debug') || args.includes('-d'),
   help: args.includes('--help') || args.includes('-h')
 };
+
+console.log('[debugFlags] Flags después de parsear:', flags);
 
 // Si debug está activo, activar verbose y error también
 if (flags.debug) {

@@ -203,3 +203,18 @@ async function startServer() {
 
 startServer();
 console.log('[server.js] ✓ startServer() fue llamada');
+
+// Agregar handlers para SIGINT y SIGTERM para permitir Ctrl+C
+process.on('SIGINT', () => {
+  console.log('\n[server.js] ✓ SIGINT recibida - terminando...');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('[server.js] ✓ SIGTERM recibida - terminando...');
+  process.exit(0);
+});
+
+process.on('SIGHUP', () => {
+  console.log('[server.js] ✓ SIGHUP recibida - ignorada');
+});
