@@ -21,6 +21,22 @@ ENV_FILE=".env"
 COMPOSE_FILE="docker/docker-compose.yml"
 COMPOSE_CMD="docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE"
 
+# Soportar flags de depuración
+DEBUG_FLAGS=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -v|--verbose|-e|--error|-d|--debug|-h|--help)
+      DEBUG_FLAGS="$DEBUG_FLAGS $1"
+      shift
+      ;;
+    *)
+      echo "❌ Argumento desconocido: $1"
+      echo "Flags soportados: -v, -e, -d, --verbose, --error, --debug, --help"
+      exit 1
+      ;;
+  esac
+done
+
 echo "--- 🚀 Iniciando Reseteo Rápido del Entorno TDC ---"
 echo "ADVERTENCIA: Se eliminarán todos los datos de la base de datos."
 
@@ -98,6 +114,14 @@ fi
 echo ""
 echo "--- ✅ ¡Reseteo completado! ---"
 echo "La base de datos ha sido recreada y los datos semilla de tus archivos CSV han sido recargados."
+
+# Si se proporcionaron flags de depuración, ejecutar el backend con esos flags
+if [ -n "$DEBUG_FLAGS" ]; then
+    echo ""
+    echo "--- 🐛 Ejecutando backend con flags de depuración:$DEBUG_FLAGS ---"
+    sleep 2
+    $COMPOSE_CMD exec -T backend node backend/server.js $DEBUG_FLAGS
+fi
 echo ""
 
 echo "--- Mostrando estado de los contenedores (espera unos segundos a que se estabilicen)... ---"

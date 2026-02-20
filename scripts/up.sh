@@ -25,11 +25,27 @@ COMPOSE_FILE="docker/docker-compose.yml"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Permitir opción CLI: --migrate (o usar env var APPLY_MIGRATIONS=true)
+# También soporta flags de depuración: -v, -e, -d, --verbose, --error, --debug
 APPLY_MIGRATIONS_CLI=0
+DEBUG_FLAGS=""
+
 while [ $# -gt 0 ]; do
     case "$1" in
         --migrate|--apply-migrations) APPLY_MIGRATIONS_CLI=1; shift;;
-        -h|--help) echo "Usage: $0 [--migrate]"; exit 0;;
+        # Flags de depuración que se pasan a node
+        -v|--verbose|-e|--error|-d|--debug|-h|--help)
+          DEBUG_FLAGS="$DEBUG_FLAGS $1"
+          shift
+          ;;
+        -h|--help)
+          echo "Usage: $0 [--migrate] [-v|-e|-d|-h]"
+          echo "Flags de depuración:"
+          echo "  -v, --verbose    : muestra procesamiento detallado"
+          echo "  -e, --error      : muestra solo errores"
+          echo "  -d, --debug      : verbose + error (máximo detalle)"
+          echo "  -h, --help       : muestra ayuda"
+          exit 0
+          ;;
         *) echo "Unknown arg: $1"; exit 1;;
     esac
 done
@@ -252,5 +268,12 @@ echo ""
 # documentados en README.md -> "Verificación manual (QA) — pasos rápidos".
 # (originalmente se ejecutaba `verify_and_fix_inconsistencies.sql` aquí).
 
-echo "--- Mostrando logs del backend en tiempo real (Presiona Ctrl+C para salir) ---"
-eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
+if [ -n "$DEBUG_FLAGS" ]; then
+    echo ""
+    echo "--- 🐛 Ejecutando backend con flags de depuración:$DEBUG_FLAGS ---"
+    sleep 2
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T backend node backend/server.js $DEBUG_FLAGS"
+else
+    echo "--- Mostrando logs del backend en tiempo real (Presiona Ctrl+C para salir) ---"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
+fi
