@@ -7,7 +7,7 @@
  * Generar timestamp en formato ISO
  */
 function getTimestamp() {
-  return new Date().toISOString();
+    return new Date().toISOString();
 }
 
 /**
@@ -17,9 +17,9 @@ function getTimestamp() {
  * @param {string} [extra] - Información adicional opcional
  */
 function logRequest(method, endpoint, extra = '') {
-  const timestamp = getTimestamp();
-  const extraText = extra ? ` - ${extra}` : '';
-  console.log(`[${timestamp}] Petición recibida: ${method} ${endpoint}${extraText}`);
+    const timestamp = getTimestamp();
+    const extraText = extra ? ` - ${extra}` : '';
+    console.log(`[${timestamp}] Petición recibida: ${method} ${endpoint}${extraText}`);
 }
 
 /**
@@ -28,14 +28,14 @@ function logRequest(method, endpoint, extra = '') {
  * @param {*} [data] - Datos opcionales para inspeccionar
  */
 function logVerbose(message, data = null) {
-  if (!flags.verbose && !flags.debug) return;
-  const timestamp = getTimestamp();
-  const prefix = `[${timestamp}] ℹ [VERBOSE]`;
-  if (data !== null && typeof data === 'object') {
-    console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
-  } else {
-    console.log(`${prefix} ${message}`);
-  }
+    if (!flags.verbose && !flags.debug) return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] ℹ [VERBOSE]`;
+    if (data !== null && typeof data === 'object') {
+        console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    } else {
+        console.log(`${prefix} ${message}`);
+    }
 }
 
 /**
@@ -44,17 +44,17 @@ function logVerbose(message, data = null) {
  * @param {*} [error] - Error object o datos relacionados
  */
 function logError(message, error = null) {
-  if (!flags.error && !flags.debug) return;
-  const timestamp = getTimestamp();
-  const prefix = `[${timestamp}] ✗ [ERROR]`;
-  if (error instanceof Error) {
-    console.error(`${prefix} ${message}`);
-    console.error(`  Stack: ${error.stack}`);
-  } else if (error && typeof error === 'object') {
-    console.error(`${prefix} ${message}`, JSON.stringify(error, null, 2));
-  } else {
-    console.error(`${prefix} ${message}`);
-  }
+    if (!flags.error && !flags.debug) return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] ✗ [ERROR]`;
+    if (error instanceof Error) {
+        console.error(`${prefix} ${message}`);
+        console.error(`  Stack: ${error.stack}`);
+    } else if (error && typeof error === 'object') {
+        console.error(`${prefix} ${message}`, JSON.stringify(error, null, 2));
+    } else {
+        console.error(`${prefix} ${message}`);
+    }
 }
 
 /**
@@ -63,14 +63,14 @@ function logError(message, error = null) {
  * @param {*} [data] - Datos opcionales
  */
 function logSuccess(message, data = null) {
-  if (!flags.verbose && !flags.debug) return;
-  const timestamp = getTimestamp();
-  const prefix = `[${timestamp}] ✓ [EXITO]`;
-  if (data !== null && typeof data === 'object') {
-    console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
-  } else {
-    console.log(`${prefix} ${message}`);
-  }
+    if (!flags.verbose && !flags.debug) return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] ✓ [EXITO]`;
+    if (data !== null && typeof data === 'object') {
+        console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    } else {
+        console.log(`${prefix} ${message}`);
+    }
 }
 
 /**
@@ -79,14 +79,14 @@ function logSuccess(message, data = null) {
  * @param {*} [data] - Datos opcionales
  */
 function logWarning(message, data = null) {
-  if (!flags.verbose && !flags.debug) return;
-  const timestamp = getTimestamp();
-  const prefix = `[${timestamp}] ⚠ [ADVERTENCIA]`;
-  if (data !== null && typeof data === 'object') {
-    console.warn(`${prefix} ${message}`, JSON.stringify(data, null, 2));
-  } else {
-    console.warn(`${prefix} ${message}`);
-  }
+    if (!flags.verbose && !flags.debug) return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] ⚠ [ADVERTENCIA]`;
+    if (data !== null && typeof data === 'object') {
+        console.warn(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    } else {
+        console.warn(`${prefix} ${message}`);
+    }
 }
 
 /**
@@ -95,22 +95,22 @@ function logWarning(message, data = null) {
  * @param {*} [params] - Parámetros de la consulta
  */
 function logQuery(sql, params = null) {
-  if (!flags.verbose && !flags.debug) return;
-  const timestamp = getTimestamp();
-  const prefix = `[${timestamp}] 🔍 [QUERY]`;
-  if (params && Array.isArray(params)) {
-    console.log(`${prefix} ${sql}`);
-    console.log(`  Parámetros:`, params);
-  } else {
-    console.log(`${prefix} ${sql}`);
-  }
+    if (!flags.verbose && !flags.debug) return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] 🔍 [QUERY]`;
+    if (params && Array.isArray(params)) {
+        console.log(`${prefix} ${sql}`);
+        console.log(`  Parámetros:`, params);
+    } else {
+        console.log(`${prefix} ${sql}`);
+    }
 }
 
 /**
  * Mostrar mensaje de ayuda
  */
 function showHelp() {
-  console.log(`
+    console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║        SISTEMA DE DEPURACIÓN - FLAGS DISPONIBLES              ║
 ╚════════════════════════════════════════════════════════════════╝
@@ -174,37 +174,37 @@ COMBINACIONES:
 // Parsear argumentos de línea de comandos
 const args = process.argv.slice(2);
 const flags = {
-  verbose: args.includes('--verbose') || args.includes('-v'),
-  error: args.includes('--error') || args.includes('-e'),
-  debug: args.includes('--debug') || args.includes('-d'),
-  help: args.includes('--help') || args.includes('-h')
+    verbose: args.includes('--verbose') || args.includes('-v'),
+    error: args.includes('--error') || args.includes('-e'),
+    debug: args.includes('--debug') || args.includes('-d'),
+    help: args.includes('--help') || args.includes('-h')
 };
 
 // Si debug está activo, activar verbose y error también
 if (flags.debug) {
-  flags.verbose = true;
-  flags.error = true;
+    flags.verbose = true;
+    flags.error = true;
 }
 
 // Mostrar ayuda si se solicita
 if (flags.help) {
-  showHelp();
-  process.exit(0);
+    showHelp();
+    process.exit(0);
 }
 
 module.exports = {
-  // Flags activos
-  flags,
-  
-  // Funciones de logging
-  logRequest,
-  logVerbose,
-  logError,
-  logSuccess,
-  logWarning,
-  logQuery,
-  
-  // Utilidades
-  getTimestamp,
-  showHelp
+    // Flags activos
+    flags,
+
+    // Funciones de logging
+    logRequest,
+    logVerbose,
+    logError,
+    logSuccess,
+    logWarning,
+    logQuery,
+
+    // Utilidades
+    getTimestamp,
+    showHelp
 };

@@ -126,7 +126,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
     sleep 5
     
     echo "--- 🐛 Ejecutando backend en background con flags:$DEBUG_FLAGS ---"
-    $COMPOSE_CMD run -d backend $DEBUG_FLAGS
+    $COMPOSE_CMD run -d --rm backend $DEBUG_FLAGS
     
     # Dar tiempo para que se inicialice
     sleep 2

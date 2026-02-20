@@ -278,7 +278,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
     sleep 5
     
     echo "--- 🐛 Ejecutando backend en background con flags:$DEBUG_FLAGS ---"
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE run -d backend $DEBUG_FLAGS"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE run -d --rm backend $DEBUG_FLAGS"
     
     # Dar tiempo para que se inicialice
     sleep 2

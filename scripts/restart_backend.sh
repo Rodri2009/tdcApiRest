@@ -84,9 +84,9 @@ if [ -n "$DEBUG_FLAGS" ]; then
   sleep 5
   
   echo "[restart_backend] Ejecutando backend en background con flags:$DEBUG_FLAGS"
-  # Usar run -d para crear contenedor en background que persista
+  # Usar run -d --rm para contenedor en background que se limpie automáticamente
   # Esto permite que siga ejecutándose aunque cerremos la sesión de logs
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run -d backend $DEBUG_FLAGS
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run -d --rm backend $DEBUG_FLAGS
   
   # Dar tiempo para que se inicialice
   sleep 2

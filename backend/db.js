@@ -16,13 +16,13 @@ const initPool = (async () => {
 
 // Exportar un proxy que espere a que la promesa se resuelva
 module.exports = {
-    getConnection: function() {
+    getConnection: function () {
         return initPool.then(p => p.getConnection());
     },
-    execute: function(sql, params) {
+    execute: function (sql, params) {
         return initPool.then(p => p.execute(sql, params));
     },
-    query: function(sql, params) {
+    query: function (sql, params) {
         return initPool.then(p => p.query(sql, params));
     }
 };
