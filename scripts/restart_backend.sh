@@ -71,22 +71,22 @@ fi
 
 echo "[restart_backend] Levantando backend..."
 if [ -n "$DEBUG_FLAGS" ]; then
-  # Si hay flags, levantar TODO (incluyendo backend)
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
+  # Si hay flags, hacer down completo para liberar puertos
+  echo "[restart_backend] Haciendo down para limpiar..."
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down
   
-  # Esperar a que se estabilicen
-  echo "[restart_backend] Esperando que los servicios estén listos..."
-  sleep 3
+  # Levantar SOLO las dependencias (mariadb, nginx)
+  echo "[restart_backend] Levantando dependencias (mariadb, nginx)..."
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d mariadb nginx
   
-  # Matar el node anterior que se inició automáticamente
-  echo "[restart_backend] Matando instancia anterior de backend..."
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend pkill -f "node.*server.js" 2>/dev/null || true
-  
-  sleep 1
+  # Esperar a que mariadb esté listo
+  echo "[restart_backend] Esperando que MariaDB esté listo..."
+  sleep 5
   
   echo "[restart_backend] Ejecutando backend con flags:$DEBUG_FLAGS"
-  # Ejecutar dentro del contenedor que ya está en la red correcta
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -it backend node server.js $DEBUG_FLAGS
+  # Usar run para crear un contenedor transitorios que esté en la red correcta
+  # run automáticamente conecta a la red del proyecto y recibe peticiones de nginx
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run --rm -it backend $DEBUG_FLAGS
 else
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d backend
   

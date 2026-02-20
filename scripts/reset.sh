@@ -61,7 +61,11 @@ echo "✅ Entorno anterior completamente eliminado."
 echo ""
 echo "--- ✨ Paso 2: Reconstruyendo y levantando el entorno desde cero... ---"
 # El flag --build es crucial aquí para aplicar cualquier cambio que hayas hecho en el backend
-$COMPOSE_CMD up --build -d
+if [ -n "$DEBUG_FLAGS" ]; then
+    $COMPOSE_CMD up --build -d mariadb nginx
+else
+    $COMPOSE_CMD up --build -d
+fi
 if [ $? -ne 0 ]; then
     echo "❌ ERROR: 'docker-compose up' falló. Por favor, revisa los mensajes de arriba."
     exit 1
@@ -118,15 +122,11 @@ echo "La base de datos ha sido recreada y los datos semilla de tus archivos CSV 
 # Si se proporcionaron flags de depuración, ejecutar el backend con esos flags
 if [ -n "$DEBUG_FLAGS" ]; then
     echo ""
-    echo "--- 🐛 Esperando que los servicios estén listos... ---"
+    echo "--- 🐛 Esperando que MariaDB esté listo... ---"
     sleep 5
     
-    echo "--- 🐛 Matando backend anterior... ---"
-    $COMPOSE_CMD exec -T backend pkill -f "node.*server.js" 2>/dev/null || true
-    sleep 1
-    
     echo "--- 🐛 Ejecutando backend con flags:$DEBUG_FLAGS ---"
-    $COMPOSE_CMD exec -it backend node server.js $DEBUG_FLAGS
+    $COMPOSE_CMD run --rm -it backend $DEBUG_FLAGS
 fi
 echo ""
 
