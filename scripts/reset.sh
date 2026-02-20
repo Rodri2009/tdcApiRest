@@ -123,9 +123,15 @@ echo "La base de datos ha sido recreada y los datos semilla de tus archivos CSV 
 # Si se proporcionaron flags de depuración, ejecutar el backend con esos flags
 if [ -n "$DEBUG_FLAGS" ]; then
     echo ""
+    echo "--- 🐛 Esperando que los servicios estén listos... ---"
+    sleep 5
+    
+    echo "--- 🐛 Matando backend anterior... ---"
+    $COMPOSE_CMD exec -T backend pkill -f "node.*server.js" || true
+    sleep 1
+    
     echo "--- 🐛 Ejecutando backend con flags de depuración:$DEBUG_FLAGS ---"
-    sleep 2
-    $COMPOSE_CMD run --rm -it backend $DEBUG_FLAGS
+    $COMPOSE_CMD exec -it backend node server.js $DEBUG_FLAGS
 fi
 echo ""
 

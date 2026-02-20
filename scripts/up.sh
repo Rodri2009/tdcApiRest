@@ -206,12 +206,7 @@ echo "--- Levantando los contenedores de Docker (la BD se creará desde los SQLs
 # Se ejecuta docker-compose pasando explícitamente tanto el archivo de compose como el de entorno.
 # --build: Reconstruye las imágenes si hay cambios en los Dockerfiles.
 # -d: Modo "detached", ejecuta los contenedores en segundo plano.
-# Si hay flags de depuración, se levanta todo EXCEPTO el backend (--scale backend=0)
-if [ -n "$DEBUG_FLAGS" ]; then
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d --scale backend=0"
-else
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d"
-fi
+eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d"
 
 # Comprobar el código de salida del comando anterior. Si es diferente de 0, algo falló.
 if [ $? -ne 0 ]; then
@@ -275,9 +270,15 @@ echo ""
 
 if [ -n "$DEBUG_FLAGS" ]; then
     echo ""
-    echo "--- 🐛 Ejecutando backend con flags de depuración:$DEBUG_FLAGS ---"
-    sleep 2
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE run --rm -it backend $DEBUG_FLAGS"
+    echo "--- 🐛 Esperando que los servicios estén listos... ---"
+    sleep 5
+    
+    echo "--- 🐛 Matando backend anterior... ---"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T backend pkill -f 'node.*server.js'" || true
+    sleep 1
+    
+    echo "--- 🐛 Ejecutando backend con flags:$DEBUG_FLAGS ---"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -it backend node server.js $DEBUG_FLAGS"
 else
     echo "--- Mostrando logs del backend en tiempo real (Presiona Ctrl+C para salir) ---"
     eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"

@@ -71,16 +71,22 @@ fi
 
 echo "[restart_backend] Levantando backend..."
 if [ -n "$DEBUG_FLAGS" ]; then
-  # Si hay flags, hacer down antes para matar completamente
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down
+  # Si hay flags, levantar TODO primero (para que esté en la red correcta)
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
   
-  # Levantar solo los otros servicios primero
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d mariadb nginx
-  sleep 2
+  # Esperar a que los servicios se estabilicen
+  echo "[restart_backend] Esperando a que los servicios estén listos..."
+  sleep 3
   
-  echo "[restart_backend] Ejecutando backend con flags:$DEBUG_FLAGS"
-  # Ejecutar el backend con un contenedor de una sola vez (interactivo)
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run --rm -it backend $DEBUG_FLAGS
+  # Matar el backend anterior
+  echo "[restart_backend] Matando instancia anterior de backend..."
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend pkill -f "node.*server.js" || true
+  
+  sleep 1
+  
+  echo "[restart_backend] Ejecutando backend con flags:$DEBUG_FLAGS en modo interactivo..."
+  # Ejecutar backend dentro del contenedor que ESTÁ en la red (el que subió con up -d)
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -it backend node server.js $DEBUG_FLAGS
 else
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d backend
   
