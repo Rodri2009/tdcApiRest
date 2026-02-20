@@ -40,7 +40,7 @@ function getTimestamp() {
 function logRequest(method, endpoint, extra = '') {
   const timestamp = getTimestamp();
   const extraText = extra ? ` - ${extra}` : '';
-  logVerbose(`[${timestamp}] Petición recibida: ${method} ${endpoint}${extraText}`);
+  console.log(`[${timestamp}] Petición recibida: ${method} ${endpoint}${extraText}`);
 }
 
 /**
@@ -53,9 +53,9 @@ function logVerbose(message, data = null) {
   const timestamp = getTimestamp();
   const prefix = `[${timestamp}] ℹ [VERBOSE]`;
   if (data !== null && typeof data === 'object') {
-    logVerbose(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
   } else {
-    logVerbose(`${prefix} ${message}`, data || '');
+    console.log(`${prefix} ${message}`);
   }
 }
 
@@ -69,12 +69,12 @@ function logError(message, error = null) {
   const timestamp = getTimestamp();
   const prefix = `[${timestamp}] ✗ [ERROR]`;
   if (error instanceof Error) {
-    logError(`${prefix} ${message}`);
-    logError(`  Stack: ${error.stack}`);
+    console.error(`${prefix} ${message}`);
+    console.error(`  Stack: ${error.stack}`);
   } else if (error && typeof error === 'object') {
-    logError(`${prefix} ${message}`, JSON.stringify(error, null, 2));
+    console.error(`${prefix} ${message}`, JSON.stringify(error, null, 2));
   } else {
-    logError(`${prefix} ${message}`, error || '');
+    console.error(`${prefix} ${message}`);
   }
 }
 
@@ -88,9 +88,9 @@ function logSuccess(message, data = null) {
   const timestamp = getTimestamp();
   const prefix = `[${timestamp}] ✓ [EXITO]`;
   if (data !== null && typeof data === 'object') {
-    logVerbose(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
   } else {
-    logVerbose(`${prefix} ${message}`, data || '');
+    console.log(`${prefix} ${message}`);
   }
 }
 
@@ -104,9 +104,9 @@ function logWarning(message, data = null) {
   const timestamp = getTimestamp();
   const prefix = `[${timestamp}] ⚠ [ADVERTENCIA]`;
   if (data !== null && typeof data === 'object') {
-    logWarning(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    console.warn(`${prefix} ${message}`, JSON.stringify(data, null, 2));
   } else {
-    logWarning(`${prefix} ${message}`, data || '');
+    console.warn(`${prefix} ${message}`);
   }
 }
 
@@ -120,9 +120,10 @@ function logQuery(sql, params = null) {
   const timestamp = getTimestamp();
   const prefix = `[${timestamp}] 🔍 [QUERY]`;
   if (params && Array.isArray(params)) {
-    logVerbose(`${prefix} ${sql}`, `Parámetros:`, params);
+    console.log(`${prefix} ${sql}`);
+    console.log(`  Parámetros:`, params);
   } else {
-    logVerbose(`${prefix} ${sql}`);
+    console.log(`${prefix} ${sql}`);
   }
 }
 
@@ -130,7 +131,7 @@ function logQuery(sql, params = null) {
  * Mostrar mensaje de ayuda
  */
 function showHelp() {
-  logVerbose(`
+  console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║        SISTEMA DE DEPURACIÓN - FLAGS DISPONIBLES              ║
 ╚════════════════════════════════════════════════════════════════╝
