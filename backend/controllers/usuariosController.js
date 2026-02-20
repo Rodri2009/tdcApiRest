@@ -4,6 +4,7 @@
  */
 
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const bcrypt = require('bcryptjs');
 
 /**
@@ -28,7 +29,7 @@ const getUsuarios = async (req, res) => {
 
         res.json(usuarios);
     } catch (err) {
-        console.error('Error obteniendo usuarios:', err);
+        logError('Error obteniendo usuarios:', err);
         res.status(500).json({ message: 'Error al obtener usuarios', error: err.message });
     } finally {
         if (conn) conn.release();
@@ -55,7 +56,7 @@ const getUsuarioPorId = async (req, res) => {
 
         res.json(usuario);
     } catch (err) {
-        console.error('Error obteniendo usuario:', err);
+        logError('Error obteniendo usuario:', err);
         res.status(500).json({ message: 'Error al obtener usuario', error: err.message });
     } finally {
         if (conn) conn.release();
@@ -101,7 +102,7 @@ const crearUsuario = async (req, res) => {
             id: Number(result.insertId)
         });
     } catch (err) {
-        console.error('Error creando usuario:', err);
+        logError('Error creando usuario:', err);
         res.status(500).json({ message: 'Error al crear usuario', error: err.message });
     } finally {
         if (conn) conn.release();
@@ -170,7 +171,7 @@ const actualizarUsuario = async (req, res) => {
 
         res.json({ message: 'Usuario actualizado exitosamente' });
     } catch (err) {
-        console.error('Error actualizando usuario:', err);
+        logError('Error actualizando usuario:', err);
         res.status(500).json({ message: 'Error al actualizar usuario', error: err.message });
     } finally {
         if (conn) conn.release();
@@ -203,7 +204,7 @@ const eliminarUsuario = async (req, res) => {
 
         res.json({ message: `Usuario ${usuario.email} eliminado exitosamente` });
     } catch (err) {
-        console.error('Error eliminando usuario:', err);
+        logError('Error eliminando usuario:', err);
         res.status(500).json({ message: 'Error al eliminar usuario', error: err.message });
     } finally {
         if (conn) conn.release();
@@ -274,7 +275,7 @@ const asignarRoles = async (req, res) => {
 
         res.json({ message: 'Rol asignado exitosamente' });
     } catch (err) {
-        console.error('Error asignando rol:', err);
+        logError('Error asignando rol:', err);
         res.status(500).json({ message: 'Error al asignar rol', error: err.message });
     } finally {
         if (conn) conn.release();
@@ -316,7 +317,7 @@ const cambiarPassword = async (req, res) => {
 
         res.json({ message: 'Contraseña actualizada exitosamente' });
     } catch (err) {
-        console.error('Error cambiando contraseña:', err);
+        logError('Error cambiando contraseña:', err);
         res.status(500).json({ message: 'Error al cambiar contraseña', error: err.message });
     } finally {
         if (conn) conn.release();

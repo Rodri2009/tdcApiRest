@@ -1,14 +1,15 @@
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 // --- LOG DE DEPURACIÓN (NUEVO) ---
-//console.log("Controlador de 'opciones' cargado.");
+//logVerbose("Controlador de 'opciones' cargado.");
 
 // Obtener todos los tipos de eventos disponibles para solicitudes
 // NOTA: es_publico indica si aparece en la agenda pública de index.html,
 //       NO si está disponible para crear solicitudes.
 //       El filtrado por categoría se hace en el frontend (categoriaFiltro).
 const getTiposDeEvento = async (req, res) => {
-    //console.log("\n-> Ejecutando controlador getTiposDeEvento...");
+    //logVerbose("\n-> Ejecutando controlador getTiposDeEvento...");
     let conn;
     try {
         conn = await pool.getConnection();
@@ -32,7 +33,7 @@ const getTiposDeEvento = async (req, res) => {
         }
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error al obtener tipos de evento:", err);
+        logError("Error al obtener tipos de evento:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -41,14 +42,14 @@ const getTiposDeEvento = async (req, res) => {
 
 // Obtener todas las opciones de adicionales
 const getAdicionales = async (req, res) => {
-    //console.log("\n-> Ejecutando controlador getAdicionales...");
+    //logVerbose("\n-> Ejecutando controlador getAdicionales...");
     let conn;
     try {
         conn = await pool.getConnection();
         const rows = await conn.query("SELECT `nombre`, `precio`, `descripcion`, `url_imagen` as imageUrl FROM `opciones_adicionales`;");
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error al obtener adicionales:", err);
+        logError("Error al obtener adicionales:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -56,7 +57,7 @@ const getAdicionales = async (req, res) => {
 };
 
 const getConfig = async (req, res) => {
-    //console.log("\n-> Ejecutando controlador getConfig...");
+    //logVerbose("\n-> Ejecutando controlador getConfig...");
     let conn;
     try {
         conn = await pool.getConnection();
@@ -75,7 +76,7 @@ const getConfig = async (req, res) => {
 };
 
 const getTarifas = async (req, res) => {
-    //console.log("\n-> Ejecutando controlador getTarifas...");
+    //logVerbose("\n-> Ejecutando controlador getTarifas...");
     let conn;
     try {
         conn = await pool.getConnection();
@@ -96,7 +97,7 @@ const getTarifas = async (req, res) => {
         `);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getTarifas:", err);
+        logError("Error en getTarifas:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -132,7 +133,7 @@ const getOpcionesCantidad = async (req, res) => {
         }, {});
         res.status(200).json(cantidadesObject);
     } catch (err) {
-        console.error("Error en getOpcionesCantidad:", err);
+        logError("Error en getOpcionesCantidad:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -140,7 +141,7 @@ const getOpcionesCantidad = async (req, res) => {
 };
 
 const getOpcionesDuracion = async (req, res) => {
-    //console.log("\n-> Ejecutando controlador getOpcionesDuracion...");
+    //logVerbose("\n-> Ejecutando controlador getOpcionesDuracion...");
     let conn;
     try {
         conn = await pool.getConnection();
@@ -162,7 +163,7 @@ const getOpcionesDuracion = async (req, res) => {
 };
 
 const getOpcionesHorarios = async (req, res) => {
-    //console.log("\n-> Ejecutando controlador getOpcionesHorarios...");
+    //logVerbose("\n-> Ejecutando controlador getOpcionesHorarios...");
     let conn;
     try {
         conn = await pool.getConnection();
@@ -184,7 +185,7 @@ const getOpcionesHorarios = async (req, res) => {
         }, {});
         res.status(200).json(horariosObject);
     } catch (err) {
-        console.error("Error en getOpcionesHorarios:", err);
+        logError("Error en getOpcionesHorarios:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -192,7 +193,7 @@ const getOpcionesHorarios = async (req, res) => {
 };
 
 const getFechasOcupadas = async (req, res) => {
-    //console.log("\n-> Ejecutando controlador getFechasOcupadas...");
+    //logVerbose("\n-> Ejecutando controlador getFechasOcupadas...");
     let conn;
     try {
         conn = await pool.getConnection();

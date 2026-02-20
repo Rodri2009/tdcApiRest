@@ -2,6 +2,7 @@
 // Rutas para gestión de bandas/artistas
 
 const express = require('express');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const router = express.Router();
 const bandasController = require('../controllers/bandasController');
 const { protect } = require('../middleware/authMiddleware');
@@ -97,10 +98,10 @@ router.put('/:id', protect, requireAdmin, checkPermiso('config.bandas'), bandasC
 router.delete('/:id', protect, requireAdmin, checkPermiso('config.bandas'), bandasController.deleteBanda);
 
 // Debug: listar rutas definidas en este router al requerir
-console.log('DEBUG bandasRoutes: rutas definidas:');
+logVerbose('DEBUG bandasRoutes: rutas definidas:');
 router.stack.forEach(r => {
     if (r.route && r.route.path) {
-        console.log(' -', Object.keys(r.route.methods).join(',').toUpperCase(), r.route.path);
+        logVerbose(' -', Object.keys(r.route.methods).join(',').toUpperCase(), r.route.path);
     }
 });
 

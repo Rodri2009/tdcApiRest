@@ -1,6 +1,7 @@
 // backend/controllers/serviciosController.js
 // Controlador para gestión de Servicios (Depilación, Masajes, etc.)
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 // =============================================================================
 // PROFESIONALES DE SERVICIOS
@@ -27,7 +28,7 @@ const getProfesionales = async (req, res) => {
         const rows = await conn.query(sql);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getProfesionales:", err);
+        logError("Error en getProfesionales:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -45,7 +46,7 @@ const getProfesionalById = async (req, res) => {
         }
         res.status(200).json(rows[0]);
     } catch (err) {
-        console.error("Error en getProfesionalById:", err);
+        logError("Error en getProfesionalById:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -58,7 +59,7 @@ const createProfesional = async (req, res) => {
         conn = await pool.getConnection();
         const { nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo = 1, cliente_id = null } = req.body;
 
-        console.log('[PROF] createProfesional payload:', { nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo, cliente_id });
+        logVerbose('[PROF] createProfesional payload:', { nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo, cliente_id });
 
         if (!nombre) {
             return res.status(400).json({ error: 'El nombre es obligatorio' });
@@ -75,7 +76,7 @@ const createProfesional = async (req, res) => {
             id: Number(result.insertId)
         });
     } catch (err) {
-        console.error("Error en createProfesional:", err);
+        logError("Error en createProfesional:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -110,7 +111,7 @@ const updateProfesional = async (req, res) => {
 
         res.status(200).json({ message: 'Profesional actualizado exitosamente' });
     } catch (err) {
-        console.error("Error en updateProfesional:", err);
+        logError("Error en updateProfesional:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -140,7 +141,7 @@ const deleteProfesional = async (req, res) => {
 
         res.status(200).json({ message: 'Profesional eliminado exitosamente' });
     } catch (err) {
-        console.error("Error en deleteProfesional:", err);
+        logError("Error en deleteProfesional:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -182,7 +183,7 @@ const getServiciosCatalogo = async (req, res) => {
         const rows = await conn.query(sql, params);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getServiciosCatalogo:", err);
+        logError("Error en getServiciosCatalogo:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -208,7 +209,7 @@ const getServicioById = async (req, res) => {
         }
         res.status(200).json(rows[0]);
     } catch (err) {
-        console.error("Error en getServicioById:", err);
+        logError("Error en getServicioById:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -236,7 +237,7 @@ const createServicio = async (req, res) => {
             id: Number(result.insertId)
         });
     } catch (err) {
-        console.error("Error en createServicio:", err);
+        logError("Error en createServicio:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -268,7 +269,7 @@ const updateServicio = async (req, res) => {
 
         res.status(200).json({ message: 'Servicio actualizado exitosamente' });
     } catch (err) {
-        console.error("Error en updateServicio:", err);
+        logError("Error en updateServicio:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -298,7 +299,7 @@ const deleteServicio = async (req, res) => {
 
         res.status(200).json({ message: 'Servicio eliminado exitosamente' });
     } catch (err) {
-        console.error("Error en deleteServicio:", err);
+        logError("Error en deleteServicio:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -345,7 +346,7 @@ const getPreciosServicios = async (req, res) => {
         const rows = await conn.query(sql, params);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getPreciosServicios:", err);
+        logError("Error en getPreciosServicios:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -373,7 +374,7 @@ const createPrecioServicio = async (req, res) => {
             id: Number(result.insertId)
         });
     } catch (err) {
-        console.error("Error en createPrecioServicio:", err);
+        logError("Error en createPrecioServicio:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -404,7 +405,7 @@ const updatePrecioServicio = async (req, res) => {
 
         res.status(200).json({ message: 'Precio actualizado exitosamente' });
     } catch (err) {
-        console.error("Error en updatePrecioServicio:", err);
+        logError("Error en updatePrecioServicio:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -425,7 +426,7 @@ const deletePrecioServicio = async (req, res) => {
 
         res.status(200).json({ message: 'Precio eliminado exitosamente' });
     } catch (err) {
-        console.error("Error en deletePrecioServicio:", err);
+        logError("Error en deletePrecioServicio:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -490,7 +491,7 @@ const getTurnos = async (req, res) => {
         const rows = await conn.query(sql, params);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getTurnos:", err);
+        logError("Error en getTurnos:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -517,7 +518,7 @@ const getTurnoById = async (req, res) => {
         }
         res.status(200).json(rows[0]);
     } catch (err) {
-        console.error("Error en getTurnoById:", err);
+        logError("Error en getTurnoById:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -569,7 +570,7 @@ const createTurno = async (req, res) => {
             id: Number(result.insertId)
         });
     } catch (err) {
-        console.error("Error en createTurno:", err);
+        logError("Error en createTurno:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -615,7 +616,7 @@ const updateTurno = async (req, res) => {
 
         res.status(200).json({ message: 'Turno actualizado exitosamente' });
     } catch (err) {
-        console.error("Error en updateTurno:", err);
+        logError("Error en updateTurno:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -636,7 +637,7 @@ const deleteTurno = async (req, res) => {
 
         res.status(200).json({ message: 'Turno eliminado exitosamente' });
     } catch (err) {
-        console.error("Error en deleteTurno:", err);
+        logError("Error en deleteTurno:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -659,7 +660,7 @@ const getTiposServicio = async (req, res) => {
         `);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getTiposServicio:", err);
+        logError("Error en getTiposServicio:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -690,7 +691,7 @@ const createTipoServicio = async (req, res) => {
 
         res.status(201).json({ message: 'Tipo de servicio creado exitosamente', id: id.toUpperCase() });
     } catch (err) {
-        console.error("Error en createTipoServicio:", err);
+        logError("Error en createTipoServicio:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -719,7 +720,7 @@ const updateTipoServicio = async (req, res) => {
 
         res.status(200).json({ message: 'Tipo de servicio actualizado exitosamente' });
     } catch (err) {
-        console.error("Error en updateTipoServicio:", err);
+        logError("Error en updateTipoServicio:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -752,7 +753,7 @@ const deleteTipoServicio = async (req, res) => {
 
         res.status(200).json({ message: 'Tipo de servicio eliminado exitosamente' });
     } catch (err) {
-        console.error("Error en deleteTipoServicio:", err);
+        logError("Error en deleteTipoServicio:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();

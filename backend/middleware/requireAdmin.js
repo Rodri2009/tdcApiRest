@@ -20,6 +20,6 @@ module.exports = (req, res, next) => {
         return next();
     }
 
-    console.warn(`Acceso denegado para usuario ${req.user.id} - rol: ${rol}, nivel: ${req.user.nivel}`);
+    logWarning(`Acceso denegado para usuario ${req.user.id} - rol: ${rol}, nivel: ${req.user.nivel}`);
     return res.status(403).json({ message: 'Requiere permisos de administrador.' });
 };

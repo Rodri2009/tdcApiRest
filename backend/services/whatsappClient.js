@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 const WA_API_URL = process.env.WA_API_URL || 'http://localhost:9002';
 
@@ -18,7 +19,7 @@ class WhatsappClient {
       );
       return response.data;
     } catch (error) {
-      console.error('[WhatsappClient] sendMessage error:', error.message);
+      logError('[WhatsappClient] sendMessage error:', error.message);
       throw new Error(`WhatsApp service unavailable: ${error.message}`);
     }
   }
@@ -36,7 +37,7 @@ class WhatsappClient {
       );
       return response.data;
     } catch (error) {
-      console.error('[WhatsappClient] getChats error:', error.message);
+      logError('[WhatsappClient] getChats error:', error.message);
       throw new Error(`WhatsApp service unavailable: ${error.message}`);
     }
   }
@@ -55,7 +56,7 @@ class WhatsappClient {
       );
       return response.data;
     } catch (error) {
-      console.error('[WhatsappClient] getMessages error:', error.message);
+      logError('[WhatsappClient] getMessages error:', error.message);
       throw new Error(`WhatsApp service unavailable: ${error.message}`);
     }
   }
@@ -74,7 +75,7 @@ class WhatsappClient {
       );
       return response.data;
     } catch (error) {
-      console.error('[WhatsappClient] refresh error:', error.message);
+      logError('[WhatsappClient] refresh error:', error.message);
       throw new Error(`WhatsApp refresh failed: ${error.message}`);
     }
   }

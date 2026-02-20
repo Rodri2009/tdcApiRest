@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 // =============================================================================
 // TARIFAS DEL PERSONAL
@@ -30,7 +31,7 @@ const getTarifas = async (req, res) => {
         `);
         res.status(200).json(tarifas);
     } catch (err) {
-        console.error("Error al obtener tarifas:", err);
+        logError("Error al obtener tarifas:", err);
         res.status(500).json({ message: 'Error del servidor al obtener tarifas.' });
     } finally {
         if (conn) conn.release();
@@ -63,7 +64,7 @@ const getTarifasVigentes = async (req, res) => {
         `);
         res.status(200).json(tarifas);
     } catch (err) {
-        console.error("Error al obtener tarifas vigentes:", err);
+        logError("Error al obtener tarifas vigentes:", err);
         res.status(500).json({ message: 'Error del servidor al obtener tarifas vigentes.' });
     } finally {
         if (conn) conn.release();
@@ -91,7 +92,7 @@ const getTarifaById = async (req, res) => {
 
         res.status(200).json(tarifa);
     } catch (err) {
-        console.error("Error al obtener tarifa:", err);
+        logError("Error al obtener tarifa:", err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -143,7 +144,7 @@ const createTarifa = async (req, res) => {
             id: result.insertId.toString()
         });
     } catch (err) {
-        console.error("Error al crear tarifa:", err);
+        logError("Error al crear tarifa:", err);
         res.status(500).json({ message: 'Error del servidor al crear tarifa.' });
     } finally {
         if (conn) conn.release();
@@ -210,7 +211,7 @@ const updateTarifa = async (req, res) => {
             message: 'Tarifa actualizada correctamente.'
         });
     } catch (err) {
-        console.error("Error al actualizar tarifa:", err);
+        logError("Error al actualizar tarifa:", err);
         res.status(500).json({ message: 'Error del servidor al actualizar tarifa.' });
     } finally {
         if (conn) conn.release();
@@ -240,7 +241,7 @@ const deleteTarifa = async (req, res) => {
             message: 'Tarifa desactivada correctamente.'
         });
     } catch (err) {
-        console.error("Error al eliminar tarifa:", err);
+        logError("Error al eliminar tarifa:", err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -280,7 +281,7 @@ const getPagos = async (req, res) => {
         `);
         res.status(200).json(pagos);
     } catch (err) {
-        console.error("Error al obtener pagos:", err);
+        logError("Error al obtener pagos:", err);
         res.status(500).json({ message: 'Error del servidor al obtener pagos.' });
     } finally {
         if (conn) conn.release();
@@ -313,7 +314,7 @@ const getPagosPendientes = async (req, res) => {
         `);
         res.status(200).json(pagos);
     } catch (err) {
-        console.error("Error al obtener pagos pendientes:", err);
+        logError("Error al obtener pagos pendientes:", err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -343,7 +344,7 @@ const getPagoById = async (req, res) => {
 
         res.status(200).json(pago);
     } catch (err) {
-        console.error("Error al obtener pago:", err);
+        logError("Error al obtener pago:", err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -412,7 +413,7 @@ const createPago = async (req, res) => {
             id: result.insertId.toString()
         });
     } catch (err) {
-        console.error("Error al crear pago:", err);
+        logError("Error al crear pago:", err);
         res.status(500).json({ message: 'Error del servidor al crear pago.' });
     } finally {
         if (conn) conn.release();
@@ -497,7 +498,7 @@ const updatePago = async (req, res) => {
             message: 'Pago actualizado correctamente.'
         });
     } catch (err) {
-        console.error("Error al actualizar pago:", err);
+        logError("Error al actualizar pago:", err);
         res.status(500).json({ message: 'Error del servidor al actualizar pago.' });
     } finally {
         if (conn) conn.release();
@@ -527,7 +528,7 @@ const deletePago = async (req, res) => {
             message: 'Pago eliminado correctamente.'
         });
     } catch (err) {
-        console.error("Error al eliminar pago:", err);
+        logError("Error al eliminar pago:", err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -560,7 +561,7 @@ const getResumenPagosPorPersonal = async (req, res) => {
         `);
         res.status(200).json(resumen);
     } catch (err) {
-        console.error("Error al obtener resumen de pagos:", err);
+        logError("Error al obtener resumen de pagos:", err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();

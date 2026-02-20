@@ -1,4 +1,5 @@
 const mercadopagoClient = require('../services/mercadopagoClient');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 /**
  * GET /api/mercadopago/balance
@@ -10,7 +11,7 @@ exports.getBalance = async (req, res) => {
     const data = await mercadopagoClient.getBalance(fresh);
     res.json(data);
   } catch (error) {
-    console.error('[mercadopagoController] getBalance error:', error);
+    logError('[mercadopagoController] getBalance error:', error);
     res.status(503).json({ error: error.message });
   }
 };
@@ -28,11 +29,11 @@ exports.getActivity = async (req, res) => {
     const fresh = req.query.fresh === 'true';
     const limit = parseInt(req.query.limit) || 20;
     const since = req.query.since || null;
-    
+
     const data = await mercadopagoClient.getActivity(fresh, limit, since);
     res.json(data);
   } catch (error) {
-    console.error('[mercadopagoController] getActivity error:', error);
+    logError('[mercadopagoController] getActivity error:', error);
     res.status(503).json({ error: error.message });
   }
 };
@@ -49,7 +50,7 @@ exports.refresh = async (req, res) => {
     const result = await mercadopagoClient.refresh(page);
     res.json(result);
   } catch (error) {
-    console.error('[mercadopagoController] refresh error:', error);
+    logError('[mercadopagoController] refresh error:', error);
     res.status(503).json({ error: error.message });
   }
 };

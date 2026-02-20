@@ -4,6 +4,7 @@ const path = require('path');
 // NOTA: Asegúrate de haber eliminado la línea: require('dotenv').config();
 // como hablamos antes, para evitar conflictos con las variables de Docker.
 const pool = require('./db');
+const { logRequest, logVerbose, logError, logWarning, logSuccess } = require('./lib/debugFlags');
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -17,7 +18,7 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 // Capturar errores de body-parser (PayloadTooLarge) y devolver 413 legible
 app.use((err, req, res, next) => {
     if (err && (err.type === 'entity.too.large' || /request entity too large/i.test(err.message || ''))) {
-        console.warn(`[BODY_PARSER] Payload demasiado grande en ${req.method} ${req.originalUrl}: ${err.message}`);
+        logWarning(`Payload demasiado grande en ${req.method} ${req.originalUrl}`, err.message);
         return res.status(413).json({ error: 'Payload demasiado grande. Suba imágenes mediante /api/uploads o reduzca el tamaño del archivo.' });
     }
     next(err);
@@ -37,11 +38,11 @@ app.use((req, res, next) => {
             if (typeof b.aforo_maximo !== 'undefined' && typeof b.cantidad_personas === 'undefined') { b.cantidad_personas = b.aforo_maximo; changed = true; delete b.aforo_maximo; }
             if (typeof b.nombre_contacto !== 'undefined' && typeof b.nombre_cliente === 'undefined') { b.nombre_cliente = b.nombre_contacto; changed = true; delete b.nombre_contacto; }
             if (typeof b.precio_puerta !== 'undefined' && typeof b.precio_final === 'undefined') { b.precio_final = b.precio_puerta; changed = true; delete b.precio_puerta; }
-            if (changed) console.log('[MIDDLEWARE] Normalized legacy payload keys for', req.method, req.path, '->', Object.keys(b));
+            if (changed) logVerbose('Normalized legacy payload keys', { method: req.method, path: req.path, keys: Object.keys(b) });
             req.body = b;
         }
     } catch (err) {
-        console.warn('[MIDDLEWARE] Failed to normalize legacy payload keys:', err.message);
+        logError('Fallo al normalizar legacy payload keys', err.message);
     }
     next();
 });
@@ -54,8 +55,11 @@ app.use(express.static('frontend'));
 // Servir uploads (logos, fotos) desde /uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Middleware de logging con flags de depuración
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] Petición recibida: ${req.method} ${req.originalUrl}`);
+    logRequest(req.method, req.originalUrl);
+    logVerbose(`Query params: ${JSON.stringify(req.query)}`);
+    logVerbose(`Body recibido: ${JSON.stringify(req.body)}`);
     next();
 });
 
@@ -65,8 +69,8 @@ app.get('/health', (req, res) => {
 });
 
 // --- Rutas de la API ---
-console.log("\n------------INICIANDO BACKEND------------.");
-console.log("Cargando rutas de la API...");
+logSuccess("INICIANDO BACKEND");
+logVerbose("Cargando rutas de la API...");
 try {
     const opcionesRoutes = require('./routes/opcionesRoutes');
     const solicitudesRoutes = require('./routes/solicitudRoutes');
@@ -109,13 +113,10 @@ try {
     app.use('/api/mercadopago', mercadopagoRoutes); // Integración con serverMP
     app.use('/api/whatsapp', whatsappRoutes); // Integración con serverWhatsApp
 
-    console.log("Rutas configuradas correctamente (incluidas nuevas rutas de bandas y solicitudes de fechas, y servicios Puppeteer).");
-
-
-
+    logSuccess("Rutas configuradas correctamente (incluidas nuevas rutas de bandas y solicitudes de fechas, y servicios Puppeteer).");
 
 } catch (error) {
-    console.error("¡ERROR CRÍTICO AL CARGAR RUTAS!", error);
+    logError("ERROR CRÍTICO AL CARGAR RUTAS", error);
     // Aquí sí podríamos querer salir si el código está roto, 
     // pero para seguir tu petición, solo lo logueamos.
 }
@@ -123,7 +124,7 @@ try {
 
 // --- Manejador de Errores Global ---
 app.use((err, req, res, next) => {
-    console.error("🔥 ERROR NO CAPTURADO:", err.stack);
+    logError("ERROR NO CAPTURADO", err);
     res.status(500).json({ error: 'Ocurrió un error inesperado en el servidor.' });
 });
 
@@ -132,13 +133,13 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- FUNCIÓN DE INICIO RESILIENTE ---
 async function startServer() {
-    console.log("Levantando servicio");
+    logVerbose("Levantando servicio");
 
     // 1. Validar variables críticas (Si esto falla, no tiene sentido seguir)
     const requiredVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
     const missingVars = requiredVars.filter(v => !process.env[v]);
     if (missingVars.length > 0) {
-        console.error(`❌ ERROR FATAL: Faltan variables de entorno: ${missingVars.join(', ')}`);
+        logError(`ERROR FATAL: Faltan variables de entorno: ${missingVars.join(', ')}`);
         // Aquí sí debemos salir, porque nunca funcionará sin credenciales.
         // Pero el contenedor se reiniciará si tienes restart_policy.
         process.exit(1);
@@ -151,28 +152,28 @@ async function startServer() {
     while (!connected) {
         attempts++;
         try {
-            console.log(`Attempt #${attempts}: Conectando a la base de datos (${process.env.DB_HOST})...`);
+            logVerbose(`Conectando a la base de datos (intento #${attempts})...`, { host: process.env.DB_HOST });
             const conn = await pool.getConnection();
             conn.release(); // Liberamos inmediatamente si tuvo éxito
-            console.log("✅ ¡Conexión exitosa a MariaDB!");
+            logSuccess("Conexión exitosa a MariaDB");
             connected = true;
         } catch (err) {
-            console.error(`❌ Falló el intento #${attempts}.`);
+            logWarning(`Intento #${attempts} falló`, { error: err.message });
 
             // Diagnóstico básico del error para el log
-            if (err.code === 'ECONNREFUSED') console.error("   -> Causa: Conexión rechazada. La base de datos podría no estar lista aún.");
-            else if (err.code === 'ER_ACCESS_DENIED_ERROR') console.error("   -> Causa: Credenciales incorrectas.");
-            else if (err.code === 'ENOTFOUND') console.error(`   -> Causa: No se encuentra el host '${process.env.DB_HOST}'.`);
-            else console.error(`   -> Causa: ${err.message}`);
+            if (err.code === 'ECONNREFUSED') logWarning("Causa: Conexión rechazada. La base de datos podría no estar lista aún.");
+            else if (err.code === 'ER_ACCESS_DENIED_ERROR') logWarning("Causa: Credenciales incorrectas.");
+            else if (err.code === 'ENOTFOUND') logWarning(`Causa: No se encuentra el host '${process.env.DB_HOST}'.`);
+            else logWarning(`Causa: ${err.message}`);
 
-            console.log("⏳ Reintentando en 5 segundos...");
+            logVerbose("Reintentando en 5 segundos...");
             await wait(5000); // Espera 5 segundos antes del siguiente intento
         }
     }
 
     // 3. Iniciar Express solo después de conectar a la DB
     app.listen(port, () => {
-        console.log(`🚀 SERVIDOR LISTO: Backend escuchando en el puerto ${port}`);
+        logSuccess(`SERVIDOR LISTO: Backend escuchando en el puerto ${port}`);
     });
 }
 

@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 /**
  * GET /api/admin/clientes/search?q=term
@@ -18,7 +19,7 @@ const searchClientes = async (req, res) => {
         );
         res.status(200).json(rows);
     } catch (err) {
-        console.error('Error en searchClientes:', err);
+        logError('Error en searchClientes:', err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -42,7 +43,7 @@ const createCliente = async (req, res) => {
         );
         res.status(201).json({ id: Number(result.insertId), message: 'Cliente creado' });
     } catch (err) {
-        console.error('Error en createCliente:', err);
+        logError('Error en createCliente:', err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();

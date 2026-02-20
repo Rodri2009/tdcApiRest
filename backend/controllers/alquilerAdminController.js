@@ -2,6 +2,7 @@
 // API para administración de configuración de alquileres
 
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 // Helper para convertir BigInt a Number
 const serializeBigInt = (obj) => {
@@ -44,7 +45,7 @@ const getTipos = async (req, res) => {
         const tipos = await pool.query(query, params);
         res.json(serializeBigInt(tipos));
     } catch (err) {
-        console.error('Error al obtener tipos:', err);
+        logError('Error al obtener tipos:', err);
         res.status(500).json({ error: 'Error al obtener tipos' });
     }
 };
@@ -78,7 +79,7 @@ const createTipo = async (req, res) => {
 
         res.status(201).json({ message: 'Tipo creado exitosamente', id: codigo });
     } catch (err) {
-        console.error('Error al crear tipo:', err);
+        logError('Error al crear tipo:', err);
         res.status(500).json({ error: 'Error al crear tipo' });
     }
 };
@@ -129,7 +130,7 @@ const updateTipo = async (req, res) => {
 
         res.json({ message: 'Tipo actualizado exitosamente' });
     } catch (err) {
-        console.error('Error al actualizar tipo:', err);
+        logError('Error al actualizar tipo:', err);
         res.status(500).json({ error: 'Error al actualizar tipo' });
     }
 };
@@ -153,7 +154,7 @@ const deleteTipo = async (req, res) => {
 
         res.json({ message: 'Tipo eliminado exitosamente' });
     } catch (err) {
-        console.error('Error al eliminar tipo:', err);
+        logError('Error al eliminar tipo:', err);
         res.status(500).json({ error: 'Error al eliminar tipo' });
     }
 };
@@ -194,7 +195,7 @@ const getDuraciones = async (req, res) => {
         const duraciones = await pool.query(query, params);
         res.json(serializeBigInt(duraciones));
     } catch (err) {
-        console.error('Error al obtener duraciones:', err);
+        logError('Error al obtener duraciones:', err);
         res.status(500).json({ error: 'Error al obtener duraciones' });
     }
 };
@@ -225,7 +226,7 @@ const createDuracion = async (req, res) => {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ error: 'Ya existe esa duración para este tipo de evento' });
         }
-        console.error('Error al crear duración:', err);
+        logError('Error al crear duración:', err);
         res.status(500).json({ error: 'Error al crear duración' });
     }
 };
@@ -273,7 +274,7 @@ const updateDuracion = async (req, res) => {
 
         res.json({ message: 'Duración actualizada exitosamente' });
     } catch (err) {
-        console.error('Error al actualizar duración:', err);
+        logError('Error al actualizar duración:', err);
         res.status(500).json({ error: 'Error al actualizar duración' });
     }
 };
@@ -297,7 +298,7 @@ const deleteDuracion = async (req, res) => {
 
         res.json({ message: 'Duración eliminada exitosamente' });
     } catch (err) {
-        console.error('Error al eliminar duración:', err);
+        logError('Error al eliminar duración:', err);
         res.status(500).json({ error: 'Error al eliminar duración' });
     }
 };
@@ -353,7 +354,7 @@ const getPrecios = async (req, res) => {
         const precios = await pool.query(query, params);
         res.json(serializeBigInt(precios));
     } catch (err) {
-        console.error('Error al obtener precios:', err);
+        logError('Error al obtener precios:', err);
         res.status(500).json({ error: 'Error al obtener precios' });
     }
 };
@@ -393,7 +394,7 @@ const createPrecio = async (req, res) => {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ error: 'Ya existe un precio para esa combinación y fecha de vigencia' });
         }
-        console.error('Error al crear precio:', err);
+        logError('Error al crear precio:', err);
         res.status(500).json({ error: 'Error al crear precio' });
     }
 };
@@ -460,7 +461,7 @@ const updatePrecio = async (req, res) => {
 
         res.json({ message: 'Precio actualizado exitosamente' });
     } catch (err) {
-        console.error('Error al actualizar precio:', err);
+        logError('Error al actualizar precio:', err);
         res.status(500).json({ error: 'Error al actualizar precio' });
     }
 };
@@ -484,7 +485,7 @@ const deletePrecio = async (req, res) => {
 
         res.json({ message: 'Precio eliminado exitosamente' });
     } catch (err) {
-        console.error('Error al eliminar precio:', err);
+        logError('Error al eliminar precio:', err);
         res.status(500).json({ error: 'Error al eliminar precio' });
     }
 };
@@ -512,7 +513,7 @@ const getAdicionales = async (req, res) => {
         `);
         res.json(serializeBigInt(adicionales));
     } catch (err) {
-        console.error('Error al obtener adicionales:', err);
+        logError('Error al obtener adicionales:', err);
         res.status(500).json({ error: 'Error al obtener adicionales' });
     }
 };
@@ -539,7 +540,7 @@ const createAdicional = async (req, res) => {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ error: 'Ya existe un adicional con ese nombre' });
         }
-        console.error('Error al crear adicional:', err);
+        logError('Error al crear adicional:', err);
         res.status(500).json({ error: 'Error al crear adicional' });
     }
 };
@@ -604,7 +605,7 @@ const updateAdicional = async (req, res) => {
 
         res.json({ message: 'Adicional actualizado exitosamente' });
     } catch (err) {
-        console.error('Error al actualizar adicional:', err);
+        logError('Error al actualizar adicional:', err);
         res.status(500).json({ error: 'Error al actualizar adicional' });
     }
 };
@@ -628,7 +629,7 @@ const deleteAdicional = async (req, res) => {
 
         res.json({ message: 'Adicional eliminado exitosamente' });
     } catch (err) {
-        console.error('Error al eliminar adicional:', err);
+        logError('Error al eliminar adicional:', err);
         res.status(500).json({ error: 'Error al eliminar adicional' });
     }
 };
@@ -667,7 +668,7 @@ const getPersonal = async (req, res) => {
         const personal = await pool.query(query, params);
         res.json(serializeBigInt(personal));
     } catch (err) {
-        console.error('Error al obtener personal:', err);
+        logError('Error al obtener personal:', err);
         res.status(500).json({ error: 'Error al obtener personal' });
     }
 };
@@ -697,7 +698,7 @@ const createPersonal = async (req, res) => {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ error: 'Ya existe personal con ese ID' });
         }
-        console.error('Error al crear personal:', err);
+        logError('Error al crear personal:', err);
         res.status(500).json({ error: 'Error al crear personal' });
     }
 };
@@ -752,7 +753,7 @@ const updatePersonal = async (req, res) => {
 
         res.json({ message: 'Personal actualizado exitosamente' });
     } catch (err) {
-        console.error('Error al actualizar personal:', err);
+        logError('Error al actualizar personal:', err);
         res.status(500).json({ error: 'Error al actualizar personal' });
     }
 };
@@ -777,7 +778,7 @@ const deletePersonal = async (req, res) => {
 
         res.json({ message: 'Personal desactivado exitosamente' });
     } catch (err) {
-        console.error('Error al eliminar personal:', err);
+        logError('Error al eliminar personal:', err);
         res.status(500).json({ error: 'Error al eliminar personal' });
     }
 };
@@ -821,7 +822,7 @@ const getRoles = async (req, res) => {
             GROUP BY pt.nombre_rol
         `);
 
-        //console.log('Tarifas obtenidas:', tarifas);
+        //logVerbose('Tarifas obtenidas:', tarifas);
 
         // Combinamos los datos
         const rolesConTarifas = roles.map(rol => {
@@ -834,7 +835,7 @@ const getRoles = async (req, res) => {
 
         res.json(serializeBigInt(rolesConTarifas));
     } catch (err) {
-        console.error('Error al obtener roles:', err);
+        logError('Error al obtener roles:', err);
         res.status(500).json({ error: 'Error al obtener roles' });
     }
 };
@@ -903,7 +904,7 @@ const createRol = async (req, res) => {
         });
     } catch (err) {
         if (conn) await conn.rollback();
-        console.error('Error al crear rol:', err);
+        logError('Error al crear rol:', err);
         res.status(500).json({ error: 'Error al crear rol' });
     } finally {
         if (conn) conn.release();
@@ -987,7 +988,7 @@ const updateRol = async (req, res) => {
         res.json({ message: 'Rol actualizado exitosamente' });
     } catch (err) {
         if (conn) await conn.rollback();
-        console.error('Error al actualizar rol:', err);
+        logError('Error al actualizar rol:', err);
         res.status(500).json({ error: 'Error al actualizar rol' });
     } finally {
         if (conn) conn.release();
@@ -1012,7 +1013,7 @@ const deleteRol = async (req, res) => {
 
         res.json({ message: 'Rol desactivado exitosamente' });
     } catch (err) {
-        console.error('Error al eliminar rol:', err);
+        logError('Error al eliminar rol:', err);
         res.status(500).json({ error: 'Error al eliminar rol' });
     }
 };
@@ -1034,7 +1035,7 @@ const getCostosPersonal = async (req, res) => {
         `);
         res.json(serializeBigInt(costos));
     } catch (err) {
-        console.error('Error al obtener costos:', err);
+        logError('Error al obtener costos:', err);
         res.status(500).json({ error: 'Error al obtener costos de personal' });
     }
 };
@@ -1058,7 +1059,7 @@ const createCostoPersonal = async (req, res) => {
 
         res.status(201).json({ message: 'Costo creado exitosamente' });
     } catch (err) {
-        console.error('Error al crear costo:', err);
+        logError('Error al crear costo:', err);
         res.status(500).json({ error: 'Error al crear costo de personal' });
     }
 };
@@ -1085,7 +1086,7 @@ const updateCostoPersonal = async (req, res) => {
 
         res.json({ message: 'Costo actualizado exitosamente' });
     } catch (err) {
-        console.error('Error al actualizar costo:', err);
+        logError('Error al actualizar costo:', err);
         res.status(500).json({ error: 'Error al actualizar costo de personal' });
     }
 };
@@ -1107,7 +1108,7 @@ const deleteCostoPersonal = async (req, res) => {
 
         res.json({ message: 'Costo eliminado exitosamente' });
     } catch (err) {
-        console.error('Error al eliminar costo:', err);
+        logError('Error al eliminar costo:', err);
         res.status(500).json({ error: 'Error al eliminar costo de personal' });
     }
 };

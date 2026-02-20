@@ -1,4 +1,5 @@
 const whatsappClient = require('../services/whatsappClient');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 /**
  * POST /api/whatsapp/send-message
@@ -10,17 +11,17 @@ const whatsappClient = require('../services/whatsappClient');
 exports.sendMessage = async (req, res) => {
   try {
     const { phone, message } = req.body;
-    
+
     if (!phone || !message) {
       return res.status(400).json({
         error: 'phone and message are required'
       });
     }
-    
+
     const result = await whatsappClient.sendMessage(phone, message);
     res.json(result);
   } catch (error) {
-    console.error('[whatsappController] sendMessage error:', error);
+    logError('[whatsappController] sendMessage error:', error);
     res.status(503).json({ error: error.message });
   }
 };
@@ -37,7 +38,7 @@ exports.getChats = async (req, res) => {
     const data = await whatsappClient.getChats(fresh);
     res.json(data);
   } catch (error) {
-    console.error('[whatsappController] getChats error:', error);
+    logError('[whatsappController] getChats error:', error);
     res.status(503).json({ error: error.message });
   }
 };
@@ -54,17 +55,17 @@ exports.getMessages = async (req, res) => {
   try {
     const { chatId } = req.params;
     const limit = parseInt(req.query.limit) || 20;
-    
+
     if (!chatId) {
       return res.status(400).json({
         error: 'chatId is required'
       });
     }
-    
+
     const data = await whatsappClient.getMessages(chatId, limit);
     res.json(data);
   } catch (error) {
-    console.error('[whatsappController] getMessages error:', error);
+    logError('[whatsappController] getMessages error:', error);
     res.status(503).json({ error: error.message });
   }
 };
@@ -81,7 +82,7 @@ exports.refresh = async (req, res) => {
     const result = await whatsappClient.refresh(page);
     res.json(result);
   } catch (error) {
-    console.error('[whatsappController] refresh error:', error);
+    logError('[whatsappController] refresh error:', error);
     res.status(503).json({ error: error.message });
   }
 };

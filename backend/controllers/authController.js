@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -68,8 +69,8 @@ const login = async (req, res) => {
         }
 
         // Depuración: Verificar contraseña proporcionada y hash almacenado
-        console.log('Contraseña proporcionada:', password);
-        console.log('Hash almacenado:', user.password_hash);
+        logVerbose('Contraseña proporcionada:', password);
+        logVerbose('Hash almacenado:', user.password_hash);
 
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
@@ -112,7 +113,7 @@ const login = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Error en login:', err);
+        logError('Error en login:', err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -158,7 +159,7 @@ const me = async (req, res) => {
             nivel: nivel
         });
     } catch (err) {
-        console.error('Error obteniendo usuario actual:', err);
+        logError('Error obteniendo usuario actual:', err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();

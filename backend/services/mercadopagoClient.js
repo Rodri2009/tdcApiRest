@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 const MP_API_URL = process.env.MP_API_URL || 'http://localhost:9001';
 
@@ -16,7 +17,7 @@ class MercadopagoClient {
       );
       return response.data;
     } catch (error) {
-      console.error('[MercadopagoClient] getBalance error:', error.message);
+      logError('[MercadopagoClient] getBalance error:', error.message);
       throw new Error(`Mercado Pago service unavailable: ${error.message}`);
     }
   }
@@ -32,11 +33,11 @@ class MercadopagoClient {
     try {
       let url = `${MP_API_URL}/api/activity?fresh=${fresh}&limit=${limit}`;
       if (since) url += `&since=${since}`;
-      
+
       const response = await axios.get(url, { timeout: 30000 });
       return response.data;
     } catch (error) {
-      console.error('[MercadopagoClient] getActivity error:', error.message);
+      logError('[MercadopagoClient] getActivity error:', error.message);
       throw new Error(`Mercado Pago service unavailable: ${error.message}`);
     }
   }
@@ -55,7 +56,7 @@ class MercadopagoClient {
       );
       return response.data;
     } catch (error) {
-      console.error('[MercadopagoClient] refresh error:', error.message);
+      logError('[MercadopagoClient] refresh error:', error.message);
       throw new Error(`Mercado Pago refresh failed: ${error.message}`);
     }
   }

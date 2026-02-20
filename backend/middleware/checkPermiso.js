@@ -30,7 +30,7 @@ const checkPermiso = (permisoRequerido) => {
             return next();
         }
 
-        console.warn(`Acceso denegado: Usuario ${req.user.id} no tiene permiso '${permisoRequerido}'`);
+        logWarning(`Acceso denegado: Usuario ${req.user.id} no tiene permiso '${permisoRequerido}'`);
         return res.status(403).json({
             message: 'No tienes permisos para realizar esta acción.',
             permiso_requerido: permisoRequerido
@@ -63,7 +63,7 @@ const checkAnyPermiso = (permisosRequeridos) => {
             return next();
         }
 
-        console.warn(`Acceso denegado: Usuario ${req.user.id} no tiene ninguno de los permisos: ${permisosRequeridos.join(', ')}`);
+        logWarning(`Acceso denegado: Usuario ${req.user.id} no tiene ninguno de los permisos: ${permisosRequeridos.join(', ')}`);
         return res.status(403).json({
             message: 'No tienes permisos para realizar esta acción.',
             permisos_requeridos: permisosRequeridos
@@ -96,7 +96,7 @@ const checkAllPermisos = (permisosRequeridos) => {
             return next();
         }
 
-        console.warn(`Acceso denegado: Usuario ${req.user.id} no tiene todos los permisos requeridos`);
+        logWarning(`Acceso denegado: Usuario ${req.user.id} no tiene todos los permisos requeridos`);
         return res.status(403).json({
             message: 'No tienes todos los permisos necesarios para esta acción.',
             permisos_requeridos: permisosRequeridos
@@ -125,7 +125,7 @@ const checkRol = (rolRequerido) => {
             return next();
         }
 
-        console.warn(`Acceso denegado: Usuario ${req.user.id} no tiene rol '${rolRequerido}'`);
+        logWarning(`Acceso denegado: Usuario ${req.user.id} no tiene rol '${rolRequerido}'`);
         return res.status(403).json({
             message: 'No tienes el rol necesario para esta acción.',
             rol_requerido: rolRequerido
@@ -147,7 +147,7 @@ const checkNivel = (nivelMinimo) => {
             return next();
         }
 
-        console.warn(`Acceso denegado: Usuario ${req.user.id} tiene nivel ${req.user.nivel}, requiere ${nivelMinimo}`);
+        logWarning(`Acceso denegado: Usuario ${req.user.id} tiene nivel ${req.user.nivel}, requiere ${nivelMinimo}`);
         return res.status(403).json({
             message: 'No tienes el nivel de acceso necesario.',
             nivel_requerido: nivelMinimo

@@ -1,5 +1,6 @@
 // backend/services/emailService.js
 const nodemailer = require('nodemailer');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const fs = require('fs'); // <-- Importa el File System de Node
 const path = require('path'); // <-- Importa el Path
 
@@ -27,7 +28,7 @@ const transporter = nodemailer.createTransport({
  * @param {object} headers - Objeto con { titulo, subtitulo } para el encabezado.
  */
 const sendComprobanteEmail = async (to, subject, solicitud, headers) => {
-    console.log(`-> Preparando email de comprobante para: ${to}`);
+    logVerbose(`-> Preparando email de comprobante para: ${to}`);
 
     try {
         // 1. Cargar la plantilla
@@ -71,10 +72,10 @@ const sendComprobanteEmail = async (to, subject, solicitud, headers) => {
             html: htmlBody,
         });
 
-        console.log(`✅ Email de comprobante enviado exitosamente a ${to}.`);
+        logVerbose(`✅ Email de comprobante enviado exitosamente a ${to}.`);
 
     } catch (error) {
-        console.error(`❌ Error al enviar el email de comprobante a ${to}:`, error);
+        logError(`❌ Error al enviar el email de comprobante a ${to}:`, error);
     }
 };
 
@@ -84,7 +85,7 @@ const sendComprobanteEmail = async (to, subject, solicitud, headers) => {
  * Envía un correo de prueba simple para verificar la configuración.
  */
 const sendTestEmail = async () => {
-    console.log("-> Intentando enviar email de prueba...");
+    logVerbose("-> Intentando enviar email de prueba...");
 
     const mailOptions = {
         from: `"Sistema de Pruebas TDC" <${process.env.EMAIL_USER}>`,
@@ -95,10 +96,10 @@ const sendTestEmail = async () => {
 
     try {
         const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Email de prueba enviado con éxito. Message ID: ${info.messageId}`);
+        logVerbose(`✅ Email de prueba enviado con éxito. Message ID: ${info.messageId}`);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error("❌ Error al enviar el email de prueba:", error);
+        logError("❌ Error al enviar el email de prueba:", error);
         // Lanzamos el error para que el controlador pueda informar del fallo.
         throw error;
     }

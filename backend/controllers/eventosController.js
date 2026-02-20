@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const serializeBigInt = (obj) => JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? Number(value) : value));
 
 /**
@@ -17,7 +18,7 @@ const getPublicEvents = async (req, res) => {
         const rows = await pool.query(query);
         res.json(serializeBigInt(rows));
     } catch (err) {
-        console.error('Error getting public events:', err);
+        logError('Error getting public events:', err);
         res.status(500).json({ error: 'Error al obtener eventos públicos' });
     }
 };
@@ -99,7 +100,7 @@ const getEventoDetallePublico = async (req, res) => {
         res.json(serializeBigInt(evento));
 
     } catch (err) {
-        console.error('Error getting evento detalle:', err);
+        logError('Error getting evento detalle:', err);
         res.status(500).json({ error: 'Error al obtener detalles del evento' });
     }
 };

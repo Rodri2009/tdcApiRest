@@ -1,5 +1,6 @@
 // backend/controllers/ticketsController.js
 const ticketsModel = require('../models/ticketsModel');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const pool = require('../db');
 // const mercadopagoService = require('../services/mercadopagoService'); // Necesario más adelante
 
@@ -33,7 +34,7 @@ const getFechasBandasConfirmadas = async (req, res) => {
         res.json(serializedEvents);
 
     } catch (error) {
-        console.error('Error al obtener eventos:', error);
+        logError('Error al obtener eventos:', error);
         res.status(500).json({ message: 'Error interno del servidor al obtener eventos.' });
     }
 };
@@ -82,7 +83,7 @@ const simulateCheckout = async (req, res) => {
                 // Verificar ámbito del cupón: TODAS, ANTICIPADA o PUERTA
                 if (cupon.aplica_a && cupon.aplica_a !== 'TODAS' && cupon.aplica_a !== tipo_venta) {
                     // Cupón no aplicable para este tipo de venta
-                    console.log(`Cupón ${codigo_cupon} no aplica para tipo_venta=${tipo_venta}.`);
+                    logVerbose(`Cupón ${codigo_cupon} no aplica para tipo_venta=${tipo_venta}.`);
                 } else {
                     if (cupon.tipo_descuento === 'PORCENTAJE') {
                         descuentoAplicado = precioFinal * (cupon.porcentaje_descuento / 100);
@@ -97,7 +98,7 @@ const simulateCheckout = async (req, res) => {
 
             } else {
                 // No detenemos el checkout, solo avisamos que el cupón no es válido.
-                console.log(`Cupón ${codigo_cupon} no válido o expirado.`);
+                logVerbose(`Cupón ${codigo_cupon} no válido o expirado.`);
             }
         }
 
@@ -112,7 +113,7 @@ const simulateCheckout = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error en la simulación de checkout:", error);
+        logError("Error en la simulación de checkout:", error);
         res.status(500).json({ error: 'Error interno en la simulación.' });
     }
 };
@@ -175,7 +176,7 @@ const initCheckout = async (req, res) => {
         }
 
     } catch (error) {
-        console.error("Error al iniciar el checkout:", error);
+        logError("Error al iniciar el checkout:", error);
         res.status(500).json({ error: 'Error interno al procesar la solicitud.' });
     }
 };

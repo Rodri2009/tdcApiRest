@@ -1,5 +1,6 @@
 // backend/controllers/testController.js
 const { sendTestEmail } = require('../services/emailService');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 const testEmail = async (req, res) => {
     try {

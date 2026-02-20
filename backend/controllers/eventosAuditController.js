@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 /**
  * List audit entries with optional filters: id_solicitud, tipo_evento, limit
@@ -26,7 +27,7 @@ const listAudits = async (req, res) => {
         const resultados = await conn.query(sql, params);
         res.status(200).json(resultados);
     } catch (err) {
-        console.error('Error listing audit entries:', err);
+        logError('Error listing audit entries:', err);
         res.status(500).json({ message: 'Error interno al listar auditoría.' });
     } finally {
         if (conn) conn.release();
@@ -45,7 +46,7 @@ const getAuditById = async (req, res) => {
         if (!row) return res.status(404).json({ message: 'Entrada de auditoría no encontrada' });
         res.status(200).json(row);
     } catch (err) {
-        console.error('Error getting audit by id:', err);
+        logError('Error getting audit by id:', err);
         res.status(500).json({ message: 'Error interno al obtener auditoría.' });
     } finally {
         if (conn) conn.release();

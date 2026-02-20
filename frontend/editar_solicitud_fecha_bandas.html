@@ -1031,6 +1031,13 @@
                 renderBandasLista();
                 renderBandasSeleccionadas();
 
+                // IMPORTANTE: Si vinimos desde modo público (ev_X), reasignar eventoId al ID real de solicitud_fecha_bandas
+                // porque el evento_id (4) es del evento_confirmado, no de solicitudes_fechas_bandas
+                if (eventoPrefix === 'ev_' && evento.id_solicitud_fecha_banda) {
+                    console.log('[BANDAS] Reasignando ID: evento=' + eventoId + ' → solicitud_fecha_banda=' + evento.id_solicitud_fecha_banda);
+                    eventoId = evento.id_solicitud_fecha_banda;
+                }
+
                 // Marcar fecha como readonly si es evento existente (no editable)
                 const fechaInput = document.getElementById('fechaEvento');
                 if (eventoId && fechaInput) {

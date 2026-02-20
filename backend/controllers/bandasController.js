@@ -2,6 +2,7 @@
 // API para gestión de bandas/artistas y solicitudes de fechas
 
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const { getOrCreateClient, updateClient } = require('../lib/clients');
 
 // Helper para convertir BigInt a Number (MariaDB devuelve BigInt para COUNT, etc.)
@@ -61,7 +62,7 @@ const getBandas = async (req, res) => {
         const bandas = await pool.query(query, params);
         res.json(serializeBigInt(bandas));
     } catch (err) {
-        console.error('Error al obtener bandas:', err);
+        logError('Error al obtener bandas:', err);
         res.status(500).json({ error: 'Error al obtener bandas' });
     }
 };
@@ -97,7 +98,7 @@ const getBandaById = async (req, res) => {
             );
             console.debug('DEBUG getBandaById: fetched formacion count', (formacion || []).length);
         } catch (e) {
-            console.warn('Warning: no se pudo obtener formacion para banda', id, e.message || e);
+            logWarning('Warning: no se pudo obtener formacion para banda', id, e.message || e);
             formacion = [];
         }
 
@@ -119,7 +120,7 @@ const getBandaById = async (req, res) => {
             // `, [id]);
             eventos = [];
         } catch (e) {
-            console.warn('Warning: no se pudo obtener eventos para banda (deshabilitado temporalmente)', id, e.message || e);
+            logWarning('Warning: no se pudo obtener eventos para banda (deshabilitado temporalmente)', id, e.message || e);
             eventos = [];
         }
 
@@ -130,7 +131,7 @@ const getBandaById = async (req, res) => {
             eventos
         }));
     } catch (err) {
-        console.error('Error al obtener banda:', err);
+        logError('Error al obtener banda:', err);
         res.status(500).json({ error: 'Error al obtener banda' });
     }
 };
@@ -211,7 +212,7 @@ const createBanda = async (req, res) => {
             id: bandaId
         });
     } catch (err) {
-        console.error('Error al crear banda:', err);
+        logError('Error al crear banda:', err);
         res.status(500).json({ error: 'Error al crear banda' });
     }
 };
@@ -291,7 +292,7 @@ const updateBanda = async (req, res) => {
         try { formacion = await pool.query('SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento', [id]); } catch (e) { formacion = []; }
         res.json(serializeBigInt({ ...updated, formacion }));
     } catch (err) {
-        console.error('Error al actualizar banda:', err);
+        logError('Error al actualizar banda:', err);
         res.status(500).json({ error: 'Error al actualizar banda' });
     }
 };
@@ -323,7 +324,7 @@ const uploadLogoPublic = async (req, res) => {
                 fs.renameSync(originalPath, target);
                 finalFilename = path.basename(target);
             } catch (e) {
-                console.warn('No se pudo renombrar archivo a nombre limpio, usando nombre temporal', e.message || e);
+                logWarning('No se pudo renombrar archivo a nombre limpio, usando nombre temporal', e.message || e);
                 // en caso de error, mantenemos el archivo temporal
             }
         }
@@ -331,7 +332,7 @@ const uploadLogoPublic = async (req, res) => {
         const url = `/uploads/bandas/${finalFilename}`;
         res.status(201).json({ url });
     } catch (err) {
-        console.error('Error al subir logo:', err);
+        logError('Error al subir logo:', err);
         res.status(500).json({ error: 'Error al subir archivo' });
     }
 };
@@ -431,7 +432,7 @@ const updateBandaPublic = async (req, res) => {
         try { formacion = await pool.query('SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento', [id]); } catch (e) { formacion = []; }
         res.json(serializeBigInt({ ...updated, formacion }));
     } catch (err) {
-        console.error('Error al actualizar banda (público):', err);
+        logError('Error al actualizar banda (público):', err);
         res.status(500).json({ error: 'Error al actualizar banda' });
     }
 };
@@ -449,7 +450,7 @@ const deleteBanda = async (req, res) => {
 
         res.json({ message: 'Banda desactivada exitosamente' });
     } catch (err) {
-        console.error('Error al eliminar banda:', err);
+        logError('Error al eliminar banda:', err);
         res.status(500).json({ error: 'Error al eliminar banda' });
     }
 };
@@ -479,7 +480,7 @@ const getInstrumentos = async (req, res) => {
         const instrumentos = await pool.query(query, params);
         res.json(serializeBigInt(instrumentos));
     } catch (err) {
-        console.error('Error al obtener instrumentos:', err);
+        logError('Error al obtener instrumentos:', err);
         res.status(500).json({ error: 'Error al obtener instrumentos' });
     }
 };
@@ -509,7 +510,7 @@ const createInstrumento = async (req, res) => {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ error: 'Ya existe un instrumento con ese nombre' });
         }
-        console.error('Error al crear instrumento:', err);
+        logError('Error al crear instrumento:', err);
         res.status(500).json({ error: 'Error al crear instrumento' });
     }
 };
@@ -556,7 +557,7 @@ const updateInstrumento = async (req, res) => {
 
         res.json({ message: 'Instrumento actualizado exitosamente' });
     } catch (err) {
-        console.error('Error al actualizar instrumento:', err);
+        logError('Error al actualizar instrumento:', err);
         res.status(500).json({ error: 'Error al actualizar instrumento' });
     }
 };
@@ -580,7 +581,7 @@ const deleteInstrumento = async (req, res) => {
 
         res.json({ message: 'Instrumento eliminado exitosamente' });
     } catch (err) {
-        console.error('Error al eliminar instrumento:', err);
+        logError('Error al eliminar instrumento:', err);
         res.status(500).json({ error: 'Error al eliminar instrumento' });
     }
 };
@@ -625,7 +626,7 @@ const getSolicitudes = async (req, res) => {
         const solicitudes = await pool.query(query, params);
         res.json(serializeBigInt(solicitudes));
     } catch (err) {
-        console.error('Error al obtener solicitudes:', err);
+        logError('Error al obtener solicitudes:', err);
         res.status(500).json({ error: 'Error al obtener solicitudes' });
     }
 };
@@ -670,7 +671,7 @@ const getSolicitudById = async (req, res) => {
 
         res.json(serializeBigInt(solicitud));
     } catch (err) {
-        console.error('Error al obtener solicitud:', err);
+        logError('Error al obtener solicitud:', err);
         res.status(500).json({ error: 'Error al obtener solicitud' });
     }
 };
@@ -813,13 +814,13 @@ const updateSolicitud = async (req, res) => {
             res.json({ message: 'Solicitud actualizada exitosamente' });
         } catch (err) {
             if (conn) await conn.rollback();
-            console.error('Error al actualizar solicitud:', err);
+            logError('Error al actualizar solicitud:', err);
             res.status(500).json({ error: 'Error al actualizar solicitud' });
         } finally {
             if (conn) conn.release();
         }
     } catch (err) {
-        console.error('Error al actualizar solicitud:', err);
+        logError('Error al actualizar solicitud:', err);
         res.status(500).json({ error: 'Error al actualizar solicitud' });
     }
 };
@@ -949,7 +950,7 @@ const aprobarSolicitud = async (req, res) => {
             banda_id: bandaId
         });
     } catch (err) {
-        console.error('Error al aprobar solicitud:', err);
+        logError('Error al aprobar solicitud:', err);
         res.status(500).json({ error: 'Error al aprobar solicitud' });
     }
 };
@@ -975,7 +976,7 @@ const rechazarSolicitud = async (req, res) => {
 
         res.json({ message: 'Solicitud rechazada' });
     } catch (err) {
-        console.error('Error al rechazar solicitud:', err);
+        logError('Error al rechazar solicitud:', err);
         res.status(500).json({ error: 'Error al rechazar solicitud' });
     }
 };
@@ -1050,7 +1051,7 @@ const getEventosBandas = async (req, res) => {
 
         res.json(serializeBigInt(eventos));
     } catch (err) {
-        console.error('Error al obtener eventos de bandas:', err);
+        logError('Error al obtener eventos de bandas:', err);
         res.status(500).json({ error: 'Error al obtener eventos' });
     }
 };
@@ -1087,7 +1088,7 @@ const getEventoBandaById = async (req, res) => {
 
         res.json(serializeBigInt(evento));
     } catch (err) {
-        console.error('Error al obtener evento:', err);
+        logError('Error al obtener evento:', err);
         res.status(500).json({ error: 'Error al obtener evento' });
     }
 };
@@ -1117,7 +1118,7 @@ const getEventoLineup = async (req, res) => {
 
         res.json(serializeBigInt(lineup));
     } catch (err) {
-        console.error('Error al obtener lineup:', err);
+        logError('Error al obtener lineup:', err);
         res.status(500).json({ error: 'Error al obtener lineup' });
     }
 };
@@ -1172,7 +1173,7 @@ const updateEventoLineup = async (req, res) => {
 
         res.json({ message: 'Lineup actualizado exitosamente' });
     } catch (err) {
-        console.error('Error al actualizar lineup:', err);
+        logError('Error al actualizar lineup:', err);
         res.status(500).json({ error: 'Error al actualizar lineup' });
     }
 };
@@ -1184,7 +1185,7 @@ const updateEventoLineup = async (req, res) => {
 const getBandaDetalle = async (req, res) => {
     try {
         const { id } = req.params;
-        console.log('DEBUG getBandaDetalle called for id', id);
+        logVerbose('DEBUG getBandaDetalle called for id', id);
         const [banda] = await pool.query('SELECT * FROM bandas_artistas WHERE id = ?', [id]);
         if (!banda) return res.status(404).json({ error: 'Banda no encontrada' });
 
@@ -1192,7 +1193,7 @@ const getBandaDetalle = async (req, res) => {
         try {
             formacion = await pool.query('SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento', [id]);
         } catch (e) {
-            console.warn('Warning: no se pudo obtener formacion para banda (detalle)', id, e.message || e);
+            logWarning('Warning: no se pudo obtener formacion para banda (detalle)', id, e.message || e);
             formacion = [];
         }
 
@@ -1209,13 +1210,13 @@ const getBandaDetalle = async (req, res) => {
                 LIMIT 10
             `, [id]);
         } catch (e) {
-            console.warn('Warning: no se pudo obtener eventos para banda (detalle)', id, e.message || e);
+            logWarning('Warning: no se pudo obtener eventos para banda (detalle)', id, e.message || e);
             eventos = [];
         }
 
         res.json(serializeBigInt({ ...banda, formacion, eventos }));
     } catch (err) {
-        console.error('Error al obtener detalle de banda:', err);
+        logError('Error al obtener detalle de banda:', err);
         res.status(500).json({ error: 'Error al obtener detalle de banda' });
     }
 };
@@ -1246,7 +1247,7 @@ const buscarBandas = async (req, res) => {
 
         res.json(serializeBigInt(bandas));
     } catch (err) {
-        console.error('Error en búsqueda:', err);
+        logError('Error en búsqueda:', err);
         res.status(500).json({ error: 'Error en búsqueda' });
     }
 };
@@ -1255,7 +1256,7 @@ const buscarBandas = async (req, res) => {
 const getBandaByIdSafe = async (req, res) => {
     try {
         const { id } = req.params;
-        console.log('DEBUG: getBandaByIdSafe called for id', id);
+        logVerbose('DEBUG: getBandaByIdSafe called for id', id);
 
         const [banda] = await pool.query('SELECT * FROM bandas_artistas WHERE id = ?', [id]);
         if (!banda) return res.status(404).json({ error: 'Banda no encontrada' });
@@ -1264,13 +1265,13 @@ const getBandaByIdSafe = async (req, res) => {
         try {
             formacion = await pool.query('SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento', [id]);
         } catch (e) {
-            console.warn('Warning: no se pudo obtener formacion para banda (safe)', id, e.message || e);
+            logWarning('Warning: no se pudo obtener formacion para banda (safe)', id, e.message || e);
             formacion = [];
         }
 
         res.json(serializeBigInt({ ...banda, formacion }));
     } catch (err) {
-        console.error('Error al obtener banda (safe):', err);
+        logError('Error al obtener banda (safe):', err);
         res.status(500).json({ error: 'Error al obtener banda' });
     }
 };

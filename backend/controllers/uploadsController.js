@@ -1,4 +1,5 @@
 const path = require('path');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 // Devuelve la URL pública del archivo subido
 const uploadFlyerPublic = async (req, res) => {
@@ -8,7 +9,7 @@ const uploadFlyerPublic = async (req, res) => {
         const url = `/uploads/flyers/${finalFilename}`;
         return res.status(200).json({ url });
     } catch (err) {
-        console.error('Error subiendo flyer:', err);
+        logError('Error subiendo flyer:', err);
         return res.status(500).json({ message: 'Error subiendo flyer.' });
     }
 };

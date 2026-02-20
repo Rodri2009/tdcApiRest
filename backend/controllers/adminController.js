@@ -1,5 +1,5 @@
 const pool = require('../db');
-console.log('[ADMINCONTROLLER FILE LOADED] (workspace)');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 // Función para generar ID único para asignaciones
 function generateAssignmentId() {
@@ -10,7 +10,7 @@ const getSolicitudes = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        console.log('[ADMINCONTROLLER] getSolicitudes - workspace version');
+        logVerbose('getSolicitudes - workspace version');
         // Unión de solicitudes de alquiler, solicitudes de bandas, fechas de bandas, servicios y talleres
         const baseSql = `
             SELECT
@@ -153,16 +153,16 @@ const getSolicitudes = async (req, res) => {
 
         // Detect stale schema references before running the query
         if (String(sql).includes('s.tipo_de_evento') || String(sql).includes('sb.cantidad_de_personas') || String(sql).includes('s.cantidad_de_personas')) {
-            console.error('[ADMINCONTROLLER] Detected stale column reference(s) in SQL - aborting query', {
+            logError('Detected stale column reference(s) in SQL - aborting query', {
                 contains_tipo_de_evento: String(sql).includes('s.tipo_de_evento'),
                 contains_cantidad_de_personas: String(sql).includes('cantidad_de_personas')
             });
         }
-        console.log('DEBUG SQL getSolicitudes:', sql, params);
+        logVerbose('DEBUG SQL getSolicitudes', { sql, paramsCount: params.length });
         const solicitudes = await conn.query(sql, params);
         res.status(200).json(solicitudes);
     } catch (err) {
-        console.error("Error al obtener solicitudes de admin:", err);
+        logError('Error al obtener solicitudes de admin', err);
         res.status(500).json({ message: 'Error del servidor al obtener solicitudes.' });
     } finally {
         if (conn) conn.release();
@@ -370,7 +370,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     await conn.query('DELETE FROM eventos_confirmados WHERE id = ?', [evento.id]);
                 }
             } catch (err) {
-                console.warn('No se pudo auditar/eliminar eventos_confirmados:', err.message);
+                logWarning('No se pudo auditar/eliminar eventos_confirmados', err.message);
             }
         } else if (estado === 'Cancelado') {
             // Marcar como inactivo en eventos_confirmados
@@ -390,7 +390,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
         });
     } catch (err) {
         if (conn) await conn.rollback();
-        console.error('Error al actualizar estado:', err);
+        logError('Error al actualizar estado', err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -439,7 +439,7 @@ const eliminarSolicitud = async (req, res) => {
             } catch (e) {
                 // ER_NO_SUCH_TABLE = 1146
                 if (e && (e.errno === 1146 || e.code === 'ER_NO_SUCH_TABLE')) {
-                    console.warn('Tabla inexistente al intentar borrar (omitido):', query, params, e.message);
+                    logWarning('Tabla inexistente al intentar borrar (omitido)', { query, error: e.message });
                 } else {
                     throw e; // relanzar para que el catch externo lo maneje
                 }
@@ -458,7 +458,7 @@ const eliminarSolicitud = async (req, res) => {
 
         res.status(200).json({ success: true, message: `Solicitud ${id} eliminada permanentemente.` });
     } catch (err) {
-        console.error('Error al eliminar solicitud:', err);
+        logError('Error al eliminar solicitud', err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -483,7 +483,7 @@ const eliminarEvento = async (req, res) => {
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado.' });
         res.status(200).json({ success: true, message: 'Evento eliminado correctamente.' });
     } catch (err) {
-        console.error('Error al eliminar evento:', err);
+        logError('Error al eliminar evento', err);
         res.status(500).json({ message: 'Error del servidor al eliminar evento.' });
     } finally {
         if (conn) conn.release();
@@ -543,7 +543,7 @@ const getDatosAsignacion = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Error en getDatosAsignacion:', err);
+        logError('Error en getDatosAsignacion', err);
         res.status(500).json({ message: 'Error del servidor al obtener datos de asignación.' });
     } finally {
         if (conn) conn.release();
@@ -626,7 +626,7 @@ const guardarAsignaciones = async (req, res) => {
 
     } catch (err) {
         if (conn) await conn.rollback();
-        console.error("Error al guardar asignaciones:", err);
+        logError('Error al guardar asignaciones', err);
         res.status(500).json({ message: 'Error del servidor al guardar asignaciones: ' + err.message });
     } finally {
         if (conn) conn.release();
@@ -822,7 +822,7 @@ const getOrdenDeTrabajo = async (req, res) => {
         res.status(200).json(respuesta);
 
     } catch (err) {
-        console.error("Error al generar la orden de trabajo:", err);
+        logError('Error al generar la orden de trabajo', err);
         res.status(500).json({ message: 'Error del servidor al generar la orden.' });
     } finally {
         if (conn) conn.release();
@@ -839,7 +839,7 @@ const getAllTiposDeEvento = async (req, res) => {
         );
         res.status(200).json(rows);
     } catch (err) {
-        console.error("[ADMIN][TIPOS] Error al obtener tipos:", err);
+        logError('Error al obtener tipos', err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -883,7 +883,7 @@ const crearEvento = async (req, res) => {
             const categoria = (tipo_evento === 'BANDA') ? 'BANDAS' : (tipo_evento === 'TALLER' ? 'TALLERES' : (tipo_evento === 'ALQUILER_SALON' ? 'ALQUILER' : 'SERVICIOS'));
             const [resSolicitud] = await conn.query('INSERT INTO solicitudes (categoria, estado, descripcion_corta, creado_en) VALUES (?, ?, ?, NOW())', [categoria, 'Confirmado', nombre_banda || descripcion || 'Evento creado por admin']);
             idSolicitudParaEvento = Number(resSolicitud.insertId);
-            console.log('[ADMIN] crearEvento - solicitud padre creada con id=', idSolicitudParaEvento);
+            logVerbose('crearEvento - solicitud padre creada', { id: idSolicitudParaEvento });
         }
 
         const insertSql = `
@@ -930,9 +930,7 @@ const crearEvento = async (req, res) => {
         ];
 
         // Debug: asegurar que placeholders y params coinciden
-        console.log('[ADMIN] crearEvento: placeholders=', (insertSql.match(/\?/g) || []).length, 'params=', params.length);
-        console.log('[ADMIN] crearEvento SQL:', insertSql);
-        console.log('[ADMIN] crearEvento params sample:', params.slice(0, 5));
+        logVerbose('crearEvento SQL', { placeholders: (insertSql.match(/\?/g) || []).length, paramsCount: params.length, paramsSample: params.slice(0, 3) });
 
         const result = await conn.query(insertSql, params);
 
@@ -942,7 +940,7 @@ const crearEvento = async (req, res) => {
             id: nuevoId
         });
     } catch (err) {
-        console.error("[ADMIN] Error al crear evento:", err);
+        logError('Error al crear evento', err);
         res.status(500).json({ error: 'Error al crear evento.' });
     } finally {
         if (conn) conn.release();
@@ -1021,16 +1019,14 @@ const actualizarEvento = async (req, res) => {
 
         const sql = `UPDATE eventos_confirmados SET ${updates.join(', ')} WHERE id = ?`;
         params.push(eventId);
-        console.log('[ADMIN] ejecutar SQL:', sql);
-        console.log('[ADMIN] updates:', updates.join(', '));
-        console.log('[ADMIN] params:', params);
+        logVerbose('Ejecutar SQL actualizar evento', { sql: sql.substring(0, 100), updates: updates.join(', '), paramsCount: params.length });
         const result = await conn.query(sql, params);
 
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado.' });
 
         res.status(200).json({ success: true, message: 'Evento actualizado correctamente.' });
     } catch (err) {
-        console.error('Error al actualizar evento:', err);
+        logError('Error al actualizar evento', err);
         res.status(500).json({ message: 'Error al actualizar evento.' });
     } finally {
         if (conn) conn.release();
@@ -1057,7 +1053,7 @@ const cancelarEvento = async (req, res) => {
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado.' });
         res.status(200).json({ success: true, message: 'Evento cancelado correctamente.' });
     } catch (err) {
-        console.error('Error al cancelar evento:', err);
+        logError('Error al cancelar evento', err);
         res.status(500).json({ message: 'Error al cancelar evento.' });
     } finally {
         if (conn) conn.release();
@@ -1107,7 +1103,7 @@ const getEventoById = async (req, res) => {
 
         res.status(200).json(rows[0]);
     } catch (err) {
-        console.error('Error al obtener evento:', err);
+        logError('Error al obtener evento', err);
         res.status(500).json({ message: 'Error al obtener evento.' });
     } finally {
         if (conn) conn.release();
@@ -1161,7 +1157,7 @@ const getEventosConfirmados = async (req, res) => {
         const rows = await conn.query(sql, params);
         res.status(200).json(rows);
     } catch (err) {
-        console.error('Error al obtener eventos confirmados:', err);
+        logError('Error al obtener eventos confirmados', err);
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();

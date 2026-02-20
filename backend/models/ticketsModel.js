@@ -20,13 +20,13 @@ const loadUuid = async () => {
                 uuidv4 = mod.v4;
                 return uuidv4;
             } catch (impErr) {
-                console.error("Error al importar 'uuid' como ESM:", impErr);
+                logError("Error al importar 'uuid' como ESM:", impErr);
                 throw impErr;
             }
         }
 
         // Si no se encuentra el paquete, dejamos un mensaje claro
-        console.error("Paquete 'uuid' no encontrado. Instala con 'npm install uuid' o 'npm install uuid@8' para compatibilidad CommonJS.", err);
+        logError("Paquete 'uuid' no encontrado. Instala con 'npm install uuid' o 'npm install uuid@8' para compatibilidad CommonJS.", err);
         throw err;
     }
 };

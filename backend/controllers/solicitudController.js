@@ -1,12 +1,13 @@
 // backend/controllers/solicitudController.js
 const pool = require('../db');
-console.log('[SOLICITUDCONTROLLER FILE LOADED] (workspace)');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
+logVerbose('[SOLICITUDCONTROLLER FILE LOADED] (workspace)');
 const { sendAdminNotification } = require('../services/emailService');
 const { sendComprobanteEmail } = require('../services/emailService');
 const { getOrCreateClient, updateClient } = require('../lib/clients');
 
 const crearSolicitud = async (req, res) => {
-    console.log("\n-> Controlador crearSolicitud. Body recibido:", req.body);
+    logVerbose("\n-> Controlador crearSolicitud. Body recibido:", req.body);
 
     const {
         tipoEvento,
@@ -34,7 +35,7 @@ const crearSolicitud = async (req, res) => {
     const telefonoFinal = telefono || telefono_solicitante || '';
     const emailFinal = email || email_solicitante || '';
 
-    console.log("[DEBUG] nombreFinal:", nombreFinal, "telefonoFinal:", telefonoFinal, "emailFinal:", emailFinal);
+    logVerbose("[DEBUG] nombreFinal:", nombreFinal, "telefonoFinal:", telefonoFinal, "emailFinal:", emailFinal);
 
     if (!tipoEvento || !fechaEvento) {
         return res.status(400).json({ error: 'Faltan datos obligatorios (tipoEvento, fechaEvento).' });
@@ -136,11 +137,11 @@ const crearSolicitud = async (req, res) => {
 
         await conn.commit();
         const respuesta = { solicitudId: newId };
-        console.log(`Nueva solicitud creada con ID: ${newId}. Enviando respuesta:`, respuesta);
+        logVerbose(`Nueva solicitud creada con ID: ${newId}. Enviando respuesta:`, respuesta);
         res.status(201).json(respuesta);
 
     } catch (err) {
-        console.error("Error al crear la solicitud:", err);
+        logError("Error al crear la solicitud:", err);
         res.status(500).json({ error: 'Error interno del servidor al guardar la solicitud.' });
     } finally {
         if (conn) conn.release();
@@ -153,7 +154,7 @@ const crearSolicitud = async (req, res) => {
  */
 const getSolicitudPorId = async (req, res) => {
     const { id } = req.params;
-    console.log(`[SOLICITUD][GET] Obteniendo solicitud/evento ID: ${id}`);
+    logVerbose(`[SOLICITUD][GET] Obteniendo solicitud/evento ID: ${id}`);
 
     let conn;
     try {
@@ -162,7 +163,7 @@ const getSolicitudPorId = async (req, res) => {
         // Verificar si es un evento (prefijo ev_)
         if (id && id.toString().startsWith('ev_')) {
             const eventoId = parseInt(id.substring(3)); // Remover 'ev_' y convertir a número
-            console.log(`[SOLICITUD][GET] Detectado evento con ID: ${eventoId}`);
+            logVerbose(`[SOLICITUD][GET] Detectado evento con ID: ${eventoId}`);
 
             const sql = `
                 SELECT 
@@ -195,18 +196,18 @@ const getSolicitudPorId = async (req, res) => {
             const [evento] = await conn.query(sql, [eventoId]);
 
             if (!evento) {
-                console.warn(`[SOLICITUD][GET] Evento no encontrado: ${eventoId}`);
+                logWarning(`[SOLICITUD][GET] Evento no encontrado: ${eventoId}`);
                 return res.status(404).json({ error: 'Evento no encontrado.' });
             }
 
-            console.log(`[SOLICITUD][GET] Evento obtenido: ${evento.nombreCompleto}`);
+            logVerbose(`[SOLICITUD][GET] Evento obtenido: ${evento.nombreCompleto}`);
             return res.status(200).json(evento);
         }
 
         // Verificar si es una solicitud de alquiler (prefijo alq_)
         if (id && id.toString().startsWith('alq_')) {
             const alquilerId = parseInt(id.substring(4)); // Remover 'alq_' y convertir a número
-            console.log(`[SOLICITUD][GET] Detectado alquiler con ID: ${alquilerId}`);
+            logVerbose(`[SOLICITUD][GET] Detectado alquiler con ID: ${alquilerId}`);
 
             const sql = `
                 SELECT
@@ -235,7 +236,7 @@ const getSolicitudPorId = async (req, res) => {
             const [alquiler] = await conn.query(sql, [alquilerId]);
 
             if (!alquiler) {
-                console.warn(`[SOLICITUD][GET] Alquiler no encontrado: ${alquilerId}`);
+                logWarning(`[SOLICITUD][GET] Alquiler no encontrado: ${alquilerId}`);
                 return res.status(404).json({ error: 'Solicitud no encontrada.' });
             }
 
@@ -249,7 +250,7 @@ const getSolicitudPorId = async (req, res) => {
                     [alquilerId]
                 );
             } catch (e) {
-                console.warn('No se pudieron obtener adicionales para la solicitud', alquilerId, e);
+                logWarning('No se pudieron obtener adicionales para la solicitud', alquilerId, e);
             }
 
             const respuesta = {
@@ -257,14 +258,14 @@ const getSolicitudPorId = async (req, res) => {
                 adicionales: adicionalesRows || []
             };
 
-            console.log(`[SOLICITUD][GET] Alquiler obtenido: ${alquiler.nombreCompleto}`);
+            logVerbose(`[SOLICITUD][GET] Alquiler obtenido: ${alquiler.nombreCompleto}`);
             return res.status(200).json(respuesta);
         }
 
         // Verificar si es una solicitud de banda (prefijo bnd_)
         if (id && id.toString().startsWith('bnd_')) {
             const bandaId = parseInt(id.substring(4)); // Remover 'bnd_' y convertir a número
-            console.log(`[SOLICITUD][GET] Detectado banda con ID: ${bandaId}`);
+            logVerbose(`[SOLICITUD][GET] Detectado banda con ID: ${bandaId}`);
 
             const sql = `
                 SELECT
@@ -307,7 +308,7 @@ const getSolicitudPorId = async (req, res) => {
             const [banda] = await conn.query(sql, [bandaId]);
 
             if (!banda) {
-                console.warn(`[SOLICITUD][GET] Banda no encontrada: ${bandaId}`);
+                logWarning(`[SOLICITUD][GET] Banda no encontrada: ${bandaId}`);
                 return res.status(404).json({ error: 'Solicitud no encontrada.' });
             }
 
@@ -316,14 +317,14 @@ const getSolicitudPorId = async (req, res) => {
                 adicionales: []
             };
 
-            console.log(`[SOLICITUD][GET] Banda obtenida: ${banda.nombreCompleto}`);
+            logVerbose(`[SOLICITUD][GET] Banda obtenida: ${banda.nombreCompleto}`);
             return res.status(200).json(respuesta);
         }
 
         // Verificar si es una solicitud de servicio (prefijo srv_)
         if (id && id.toString().startsWith('srv_')) {
             const servicioId = parseInt(id.substring(4)); // Remover 'srv_' y convertir a número
-            console.log(`[SOLICITUD][GET] Detectado servicio con ID: ${servicioId}`);
+            logVerbose(`[SOLICITUD][GET] Detectado servicio con ID: ${servicioId}`);
 
             const sql = `
                 SELECT
@@ -346,12 +347,12 @@ const getSolicitudPorId = async (req, res) => {
                 LEFT JOIN clientes c ON sol.cliente_id = c.id
                 WHERE ss.id_solicitud = ?
             `;
-            console.log('[SOLICITUD][GET] SQL servicio:', sql);
+            logVerbose('[SOLICITUD][GET] SQL servicio:', sql);
 
             const [servicio] = await conn.query(sql, [servicioId]);
 
             if (!servicio) {
-                console.warn(`[SOLICITUD][GET] Servicio no encontrado: ${servicioId}`);
+                logWarning(`[SOLICITUD][GET] Servicio no encontrado: ${servicioId}`);
                 return res.status(404).json({ error: 'Solicitud no encontrada.' });
             }
 
@@ -360,14 +361,14 @@ const getSolicitudPorId = async (req, res) => {
                 adicionales: []
             };
 
-            console.log(`[SOLICITUD][GET] Servicio obtenido: ${servicio.nombreCompleto}`);
+            logVerbose(`[SOLICITUD][GET] Servicio obtenido: ${servicio.nombreCompleto}`);
             return res.status(200).json(respuesta);
         }
 
         // Verificar si es una solicitud de taller (prefijo tll_)
         if (id && id.toString().startsWith('tll_')) {
             const tallerId = parseInt(id.substring(4)); // Remover 'tll_' y convertir a número
-            console.log(`[SOLICITUD][GET] Detectado taller con ID: ${tallerId}`);
+            logVerbose(`[SOLICITUD][GET] Detectado taller con ID: ${tallerId}`);
 
             const sql = `
                 SELECT
@@ -394,7 +395,7 @@ const getSolicitudPorId = async (req, res) => {
             const [taller] = await conn.query(sql, [tallerId]);
 
             if (!taller) {
-                console.warn(`[SOLICITUD][GET] Taller no encontrado: ${tallerId}`);
+                logWarning(`[SOLICITUD][GET] Taller no encontrado: ${tallerId}`);
                 return res.status(404).json({ error: 'Solicitud no encontrada.' });
             }
 
@@ -403,16 +404,16 @@ const getSolicitudPorId = async (req, res) => {
                 adicionales: []
             };
 
-            console.log(`[SOLICITUD][GET] Taller obtenido: ${taller.nombreCompleto}`);
+            logVerbose(`[SOLICITUD][GET] Taller obtenido: ${taller.nombreCompleto}`);
             return res.status(200).json(respuesta);
         }
 
         // Si no tiene prefijo conocido, devolver error
-        console.warn(`[SOLICITUD][GET] ID no reconocido: ${id}`);
+        logWarning(`[SOLICITUD][GET] ID no reconocido: ${id}`);
         return res.status(404).json({ error: 'Solicitud no encontrada.' });
 
     } catch (err) {
-        console.error(`Error al obtener la solicitud ${id}:`, err);
+        logError(`Error al obtener la solicitud ${id}:`, err);
         res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -428,7 +429,7 @@ const finalizarSolicitud = async (req, res) => {
     const { id } = req.params;
     const { nombreCompleto, celular, email, detallesAdicionales, main_contact_email, invitados_emails, descripcionCorta, descripcionLarga } = req.body;
 
-    console.log(`-> Finalizando solicitud con ID: ${id}`);
+    logVerbose(`-> Finalizando solicitud con ID: ${id}`);
 
     if (!nombreCompleto || !celular || !email) {
         return res.status(400).json({ error: 'Nombre, celular y email son obligatorios.' });
@@ -477,7 +478,7 @@ const finalizarSolicitud = async (req, res) => {
 
         await conn.commit();
         res.status(200).json({ message: 'Solicitud creada como solicitada.', solicitudId: parseInt(id) });
-        console.log(`Solicitud ${id} creada como solicitada. Respuesta enviada al cliente.`);
+        logVerbose(`Solicitud ${id} creada como solicitada. Respuesta enviada al cliente.`);
 
         // Emails (en segundo plano)
         if (solicitudCompleta) {
@@ -502,7 +503,7 @@ const finalizarSolicitud = async (req, res) => {
         }
     } catch (err) {
         if (conn) await conn.rollback();
-        console.error(`Error al finalizar la solicitud ${id}:`, err);
+        logError(`Error al finalizar la solicitud ${id}:`, err);
         if (!res.headersSent) {
             res.status(500).json({ error: 'Error interno del servidor.' });
         }
@@ -520,13 +521,13 @@ const finalizarSolicitud = async (req, res) => {
 const guardarAdicionales = async (req, res) => {
     const { id } = req.params;
     const adicionales = req.body;
-    console.log("\n-> Controlador guardarAdicionales. Body recibido:", req.body);
+    logVerbose("\n-> Controlador guardarAdicionales. Body recibido:", req.body);
 
     if (!id || !Array.isArray(adicionales)) {
         return res.status(400).json({ error: 'Se requiere un ID de solicitud y un array de adicionales.' });
     }
 
-    console.log(`Guardando ${adicionales.length} adicionales para la solicitud ID: ${id}...`);
+    logVerbose(`Guardando ${adicionales.length} adicionales para la solicitud ID: ${id}...`);
 
     let conn;
     try {
@@ -549,12 +550,12 @@ const guardarAdicionales = async (req, res) => {
 
         await conn.commit();
 
-        console.log(`Adicionales guardados correctamente, solicitud ID: ${id} .`);
+        logVerbose(`Adicionales guardados correctamente, solicitud ID: ${id} .`);
         res.status(200).json({ message: 'Adicionales guardados exitosamente.' });
 
     } catch (err) {
         if (conn) await conn.rollback();
-        console.error(`Error al guardar adicionales para la solicitud ID: ${id}:`, err);
+        logError(`Error al guardar adicionales para la solicitud ID: ${id}:`, err);
         res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -567,9 +568,9 @@ const guardarAdicionales = async (req, res) => {
  */
 const actualizarSolicitud = async (req, res) => {
     const { id } = req.params;
-    console.log(`[SOLICITUD][EDIT] ========== ACTUALIZAR SOLICITUD ==========`);
-    console.log(`[SOLICITUD][EDIT] ID recibido (raw): ${id}`);
-    console.log(`[SOLICITUD][EDIT] Body recibido:`, JSON.stringify(req.body, null, 2));
+    logVerbose(`[SOLICITUD][EDIT] ========== ACTUALIZAR SOLICITUD ==========`);
+    logVerbose(`[SOLICITUD][EDIT] ID recibido (raw): ${id}`);
+    logVerbose(`[SOLICITUD][EDIT] Body recibido:`, JSON.stringify(req.body, null, 2));
 
     // Parsear ID con prefijo (bnd_11, alq_5, etc.)
     const match = String(id).match(/^([a-z]*_)?(\d+)$/);
@@ -579,9 +580,9 @@ const actualizarSolicitud = async (req, res) => {
     if (match) {
         prefijo = match[1] || '';
         idNumerico = parseInt(match[2], 10);
-        console.log(`[SOLICITUD][EDIT] ID parseado: prefijo="${prefijo}" idNumerico=${idNumerico}`);
+        logVerbose(`[SOLICITUD][EDIT] ID parseado: prefijo="${prefijo}" idNumerico=${idNumerico}`);
     } else {
-        console.error(`[SOLICITUD][EDIT] ID inválido: ${id}`);
+        logError(`[SOLICITUD][EDIT] ID inválido: ${id}`);
         return res.status(400).json({ error: 'ID de solicitud inválido.' });
     }
 
@@ -619,7 +620,7 @@ const actualizarSolicitud = async (req, res) => {
     const telefonoFinal = telefono || telefono_solicitante || telefono_cliente || '';
     const emailFinal = email || email_solicitante || email_cliente || '';
 
-    console.log(`[SOLICITUD][EDIT] Determinando tabla según prefijo: "${prefijo}"`);
+    logVerbose(`[SOLICITUD][EDIT] Determinando tabla según prefijo: "${prefijo}"`);
 
     let conn;
     try {
@@ -645,7 +646,7 @@ const actualizarSolicitud = async (req, res) => {
             clienteId,
             idNumerico
         ];
-        console.log(`[SOLICITUD][EDIT] Ejecutando UPDATE en solicitudes (id=${idNumerico})`);
+        logVerbose(`[SOLICITUD][EDIT] Ejecutando UPDATE en solicitudes (id=${idNumerico})`);
         await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
 
         // NUEVA LÓGICA: Determinar tabla según tipo de evento
@@ -654,7 +655,7 @@ const actualizarSolicitud = async (req, res) => {
         let tipoEventoReal = null;
 
         // PASO 0: Consultar el tipo real según prefijo
-        console.log(`[SOLICITUD][EDIT] PASO 0: Consultando tipo de evento (prefijo="${prefijo}") para id=${idNumerico}`);
+        logVerbose(`[SOLICITUD][EDIT] PASO 0: Consultando tipo de evento (prefijo="${prefijo}") para id=${idNumerico}`);
 
         // Si es evento confirmado (ev_*), consultar eventos_confirmados.tipo_evento
         if (prefijo === 'ev_') {
@@ -662,9 +663,9 @@ const actualizarSolicitud = async (req, res) => {
             const rowsEvento = await conn.query(sqlSelectEvento, [idNumerico]);
             if (rowsEvento.length > 0) {
                 tipoEventoReal = rowsEvento[0].tipo_evento;
-                console.log(`[SOLICITUD][EDIT] ✓ Evento confirmado encontrado: tipo_evento=${tipoEventoReal}`);
+                logVerbose(`[SOLICITUD][EDIT] ✓ Evento confirmado encontrado: tipo_evento=${tipoEventoReal}`);
             } else {
-                console.warn(`[SOLICITUD][EDIT] ⚠️ Evento confirmado no encontrado en eventos_confirmados (id=${idNumerico})`);
+                logWarning(`[SOLICITUD][EDIT] ⚠️ Evento confirmado no encontrado en eventos_confirmados (id=${idNumerico})`);
             }
         } else {
             // Para solicitudes normales (bnd_, alq_, etc.), consultar solicitudes.categoria
@@ -672,9 +673,9 @@ const actualizarSolicitud = async (req, res) => {
             const rowsSolicitud = await conn.query(sqlSelectSolicitud, [idNumerico]);
             if (rowsSolicitud.length > 0) {
                 tipoEventoReal = rowsSolicitud[0].categoria;
-                console.log(`[SOLICITUD][EDIT] ✓ Solicitud encontrada: categoria=${tipoEventoReal}`);
+                logVerbose(`[SOLICITUD][EDIT] ✓ Solicitud encontrada: categoria=${tipoEventoReal}`);
             } else {
-                console.warn(`[SOLICITUD][EDIT] ⚠️ Solicitud no encontrada en tabla solicitudes (id=${idNumerico})`);
+                logWarning(`[SOLICITUD][EDIT] ⚠️ Solicitud no encontrada en tabla solicitudes (id=${idNumerico})`);
             }
         }
 
@@ -683,31 +684,31 @@ const actualizarSolicitud = async (req, res) => {
 
         if (tipoEventoReal === 'BANDA' || tipoEventoReal === 'BANDAS') {
             tableTarget = 'solicitudes_fechas_bandas';
-            console.log(`[SOLICITUD][EDIT] PASO 1: Tipo BANDA → usando solicitudes_fechas_bandas`);
+            logVerbose(`[SOLICITUD][EDIT] PASO 1: Tipo BANDA → usando solicitudes_fechas_bandas`);
         } else if (tipoEventoReal === 'ALQUILER') {
             tableTarget = 'solicitudes_alquiler';
-            console.log(`[SOLICITUD][EDIT] PASO 1: Tipo ALQUILER → usando solicitudes_alquiler`);
+            logVerbose(`[SOLICITUD][EDIT] PASO 1: Tipo ALQUILER → usando solicitudes_alquiler`);
         } else if (tipoEventoReal) {
             // Otros tipos: determinar por prefijo
-            console.log(`[SOLICITUD][EDIT] PASO 1: Tipo desconocido (${tipoEventoReal}). Usando fallback por prefijo`);
+            logVerbose(`[SOLICITUD][EDIT] PASO 1: Tipo desconocido (${tipoEventoReal}). Usando fallback por prefijo`);
             if (prefijo === 'bnd_') tableTarget = 'solicitudes_fechas_bandas';
             else if (prefijo === 'alq_') tableTarget = 'solicitudes_alquiler';
             else if (prefijo === 'ev_') tableTarget = 'solicitudes_fechas_bandas'; // Eventos confirmados suelen ser bandas
             else tableTarget = 'solicitudes_alquiler'; // Por defecto
         } else {
             // Sin tipo encontrado: usar prefijo
-            console.log(`[SOLICITUD][EDIT] PASO 1: Tipo no determinado. Usando fallback por prefijo (${prefijo})`);
+            logVerbose(`[SOLICITUD][EDIT] PASO 1: Tipo no determinado. Usando fallback por prefijo (${prefijo})`);
             if (prefijo === 'bnd_') tableTarget = 'solicitudes_fechas_bandas';
             else if (prefijo === 'alq_') tableTarget = 'solicitudes_alquiler';
             else if (prefijo === 'ev_') tableTarget = 'solicitudes_fechas_bandas'; // Eventos confirmados suelen ser bandas
             else tableTarget = 'solicitudes_alquiler'; // Por defecto
         }
 
-        console.log(`[SOLICITUD][EDIT] PASO 2: Tabla destino = ${tableTarget}`);
+        logVerbose(`[SOLICITUD][EDIT] PASO 2: Tabla destino = ${tableTarget}`);
 
         // Para eventos confirmados (ev_*), actualizar eventos_confirmados directamente
         if (prefijo === 'ev_') {
-            console.log(`[SOLICITUD][EDIT] PASO 3: Actualizando eventos_confirmados (id=${idNumerico}) - EVENTO CONFIRMADO`);
+            logVerbose(`[SOLICITUD][EDIT] PASO 3: Actualizando eventos_confirmados (id=${idNumerico}) - EVENTO CONFIRMADO`);
 
             // Construir SQL dinámico que solo actualice campos proporcionados
             let setClauses = [];
@@ -747,7 +748,7 @@ const actualizarSolicitud = async (req, res) => {
             }
 
             if (setClauses.length === 0) {
-                console.log(`[SOLICITUD][EDIT] ⚠️ No hay campos para actualizar`);
+                logVerbose(`[SOLICITUD][EDIT] ⚠️ No hay campos para actualizar`);
                 await conn.commit();
                 return res.status(400).json({ error: 'No hay campos para actualizar.' });
             }
@@ -757,20 +758,20 @@ const actualizarSolicitud = async (req, res) => {
             const sqlUpdateEvento = `UPDATE eventos_confirmados SET ${setClauses.join(', ')} WHERE id = ?`;
 
             try {
-                console.log(`[SOLICITUD][EDIT] SQL dinámico:`, sqlUpdateEvento);
+                logVerbose(`[SOLICITUD][EDIT] SQL dinámico:`, sqlUpdateEvento);
                 const result = await conn.query(sqlUpdateEvento, params);
                 affectedRowsEspecifico = result.affectedRows || 0;
                 tablaActualizada = 'eventos_confirmados';
-                console.log(`[SOLICITUD][EDIT] ✓ UPDATE eventos_confirmados: affectedRows=${affectedRowsEspecifico}`);
+                logVerbose(`[SOLICITUD][EDIT] ✓ UPDATE eventos_confirmados: affectedRows=${affectedRowsEspecifico}`);
             } catch (eventoErr) {
-                console.error(`[SOLICITUD][EDIT] ✗ Error en eventos_confirmados:`, eventoErr.message);
+                logError(`[SOLICITUD][EDIT] ✗ Error en eventos_confirmados:`, eventoErr.message);
                 throw eventoErr;
             }
         }
         // ACTUALIZAR EN LA TABLA DE SOLICITUDES ESPECÍFICA
         else if (tableTarget === 'solicitudes_fechas_bandas' || tableTarget === 'solicitudes_bandas') {
             // Soportar tanto la nueva tabla normalizada como el nombre legacy (compatibilidad)
-            console.log(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_fechas_bandas (id=${idNumerico})`);
+            logVerbose(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_fechas_bandas (id=${idNumerico})`);
 
             const sqlUpdateBandas = `
                 UPDATE solicitudes_fechas_bandas SET
@@ -805,13 +806,13 @@ const actualizarSolicitud = async (req, res) => {
                 const result = await conn.query(sqlUpdateBandas, paramsBandas);
                 affectedRowsEspecifico = result.affectedRows || 0;
                 tablaActualizada = 'solicitudes_fechas_bandas';
-                console.log(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_fechas_bandas: affectedRows=${affectedRowsEspecifico}`);
+                logVerbose(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_fechas_bandas: affectedRows=${affectedRowsEspecifico}`);
             } catch (bandaErr) {
-                console.error(`[SOLICITUD][EDIT] ✗ Error en solicitudes_fechas_bandas:`, bandaErr.message);
+                logError(`[SOLICITUD][EDIT] ✗ Error en solicitudes_fechas_bandas:`, bandaErr.message);
                 throw bandaErr;
             }
         } else if (tableTarget === 'solicitudes_alquiler') {
-            console.log(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_alquiler (id=${idNumerico})`);
+            logVerbose(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_alquiler (id=${idNumerico})`);
 
             const sqlUpdateAlquiler = `
                 UPDATE solicitudes_alquiler SET
@@ -838,16 +839,16 @@ const actualizarSolicitud = async (req, res) => {
                 const result = await conn.query(sqlUpdateAlquiler, paramsAlquiler);
                 affectedRowsEspecifico = result.affectedRows || 0;
                 tablaActualizada = 'solicitudes_alquiler';
-                console.log(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_alquiler: affectedRows=${affectedRowsEspecifico}`);
+                logVerbose(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_alquiler: affectedRows=${affectedRowsEspecifico}`);
             } catch (alqErr) {
-                console.error(`[SOLICITUD][EDIT] ✗ Error en solicitudes_alquiler:`, alqErr.message);
+                logError(`[SOLICITUD][EDIT] ✗ Error en solicitudes_alquiler:`, alqErr.message);
                 throw alqErr;
             }
         }
 
         // VERIFICAR que realmente se actualizó algo
         if (affectedRowsEspecifico === 0) {
-            console.warn(`[SOLICITUD][EDIT] ⚠️ ADVERTENCIA: UPDATE en ${tablaActualizada} no afectó ninguna fila. ID=${id}`);
+            logWarning(`[SOLICITUD][EDIT] ⚠️ ADVERTENCIA: UPDATE en ${tablaActualizada} no afectó ninguna fila. ID=${id}`);
             await conn.commit();
             return res.status(404).json({
                 error: 'Solicitud no encontrada en la tabla esperada.',
@@ -866,12 +867,12 @@ const actualizarSolicitud = async (req, res) => {
             affectedRows: affectedRowsEspecifico,
             tablaActualizada: tablaActualizada
         };
-        console.log(`[SOLICITUD][EDIT] ✓ Solicitud ID: ${id} actualizada exitosamente en ${tablaActualizada} (affectedRows=${affectedRowsEspecifico})`);
+        logVerbose(`[SOLICITUD][EDIT] ✓ Solicitud ID: ${id} actualizada exitosamente en ${tablaActualizada} (affectedRows=${affectedRowsEspecifico})`);
         res.status(200).json(respuesta);
     } catch (err) {
         if (conn) await conn.rollback();
-        console.error(`[SOLICITUD][ERROR] Error al actualizar la solicitud ID: ${id}: ${err.message}`);
-        console.error(`[SOLICITUD][ERROR] Stack:`, err.stack);
+        logError(`[SOLICITUD][ERROR] Error al actualizar la solicitud ID: ${id}: ${err.message}`);
+        logError(`[SOLICITUD][ERROR] Stack:`, err.stack);
         res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -881,13 +882,13 @@ const actualizarSolicitud = async (req, res) => {
 // ... (al final del archivo, antes de module.exports)
 const getSesionExistente = async (req, res) => {
     const { fingerprintId } = req.query;
-    console.log(`\n-> Controlador getSesionExistente. query recibido:`, req.query);
+    logVerbose(`\n-> Controlador getSesionExistente. query recibido:`, req.query);
 
     if (!fingerprintId) {
         return res.status(400).json({ error: 'fingerprintId es requerido' });
     }
 
-    console.log(`Buscando sesión para Fingerprint ID: ${fingerprintId}`);
+    logVerbose(`Buscando sesión para Fingerprint ID: ${fingerprintId}`);
 
     let conn;
     try {
@@ -914,15 +915,15 @@ const getSesionExistente = async (req, res) => {
         const [sesion] = await conn.query(sql, [fingerprintId]);
 
         if (sesion) {
-            console.log(`Sesión encontrada:`, sesion);
+            logVerbose(`Sesión encontrada:`, sesion);
             res.status(200).json(sesion);
         } else {
-            console.log("No se encontró ninguna sesión reciente.");
+            logVerbose("No se encontró ninguna sesión reciente.");
             // Es importante devolver null para que el frontend sepa que no hay nada que rellenar.
             res.status(200).json(null);
         }
     } catch (err) {
-        console.error("Error al buscar sesión existente:", err);
+        logError("Error al buscar sesión existente:", err);
         res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
         if (conn) conn.release();
@@ -957,8 +958,8 @@ const obtenerAdicionales = async (req, res) => {
         });
     } catch (error) {
         // Registrar y devolver lista vacía en caso de cualquier error para no bloquear la UI
-        console.error(`Error al obtener adicionales para solicitud ${id}:`, error);
-        console.warn('Devolviendo lista vacía de adicionales debido a un error.');
+        logError(`Error al obtener adicionales para solicitud ${id}:`, error);
+        logWarning('Devolviendo lista vacía de adicionales debido a un error.');
         return res.status(200).json({ seleccionados: [] });
     } finally {
         if (conn) conn.release();
@@ -1059,7 +1060,7 @@ const getSolicitudesPublicas = async (req, res) => {
 
         return res.status(200).json(resultados);
     } catch (error) {
-        console.error('Error al obtener solicitudes públicas:', error);
+        logError('Error al obtener solicitudes públicas:', error);
         return res.status(500).json({
             error: 'Error interno al obtener solicitudes públicas.',
             details: error.message
@@ -1076,7 +1077,7 @@ const updateVisibilidad = async (req, res) => {
     const { id } = req.params;
     const { es_publico } = req.body;
 
-    console.log(`[VISIBILIDAD][REQ] id recibido: ${id}, es_publico: ${es_publico}`);
+    logVerbose(`[VISIBILIDAD][REQ] id recibido: ${id}, es_publico: ${es_publico}`);
 
     if (typeof es_publico === 'undefined') {
         return res.status(400).json({ message: 'Falta el campo es_publico' });
@@ -1115,12 +1116,12 @@ const updateVisibilidad = async (req, res) => {
         try {
             await conn.query(`UPDATE eventos_confirmados SET es_publico = ? WHERE id_solicitud = ?`, [es_publico ? 1 : 0, idValue]);
         } catch (err) {
-            console.warn('No se pudo propagar es_publico a eventos_confirmados:', err.message);
+            logWarning('No se pudo propagar es_publico a eventos_confirmados:', err.message);
         }
 
         return res.status(200).json({ message: es_publico ? 'Solicitud visible en agenda pública' : 'Solicitud oculta de agenda pública', es_publico: es_publico ? 1 : 0 });
     } catch (error) {
-        console.error('Error al actualizar visibilidad:', error);
+        logError('Error al actualizar visibilidad:', error);
         return res.status(500).json({ message: 'Error interno al actualizar visibilidad' });
     } finally {
         if (conn) conn.release();
@@ -1133,16 +1134,16 @@ const updateVisibilidad = async (req, res) => {
  */
 const getSolicitudPublicById = async (req, res) => {
     const { id } = req.params;
-    console.log(`[SOLICITUD][PUBLIC GET] Obteniendo (público) solicitud/evento ID: ${id}`);
+    logVerbose(`[SOLICITUD][PUBLIC GET] Obteniendo (público) solicitud/evento ID: ${id}`);
 
     let conn;
     try {
         conn = await pool.getConnection();
-        console.log('[PUBLIC GET] conexión obtenida para id:', id);
+        logVerbose('[PUBLIC GET] conexión obtenida para id:', id);
 
         // Si es un ID con prefijo (ev_, alq_, bnd_, srv_, tll_) lo manejamos como antes
         const hasPrefix = !!(id && (id.toString().startsWith('ev_') || id.toString().startsWith('alq_') || id.toString().startsWith('bnd_') || id.toString().startsWith('srv_') || id.toString().startsWith('tll_')));
-        console.log('[PUBLIC GET] hasPrefix=', hasPrefix, ' idString=', String(id));
+        logVerbose('[PUBLIC GET] hasPrefix=', hasPrefix, ' idString=', String(id));
         if (hasPrefix) {
             // Aprovechamos la lógica previa: delegar al mismo flujo
             // Evento confirmado (ev_)
@@ -1300,7 +1301,7 @@ const getSolicitudPublicById = async (req, res) => {
         // Si es un ID numérico simple, intentamos consultar directamente cada tabla específica
         const idNum = parseInt(id, 10);
         if (!isNaN(idNum)) {
-            console.log('[PUBLIC GET] entrando en rama numérica con idNum =', idNum);
+            logVerbose('[PUBLIC GET] entrando en rama numérica con idNum =', idNum);
             // 1) intentar alquiler
             const sqlAlq = `
                 SELECT
@@ -1320,7 +1321,7 @@ const getSolicitudPublicById = async (req, res) => {
                 WHERE sa.id_solicitud = ?
             `;
             const resAlq = await conn.query(sqlAlq, [idNum]);
-            console.log('[PUBLIC GET] sqlAlq result sample:', Array.isArray(resAlq) ? (resAlq.length > 0 ? resAlq[0] : '[]') : typeof resAlq);
+            logVerbose('[PUBLIC GET] sqlAlq result sample:', Array.isArray(resAlq) ? (resAlq.length > 0 ? resAlq[0] : '[]') : typeof resAlq);
             const alquiler = Array.isArray(resAlq) ? resAlq[0] : resAlq;
             if (alquiler) {
                 let adicionalesRows = [];
@@ -1390,7 +1391,7 @@ const getSolicitudPublicById = async (req, res) => {
         return res.status(404).json({ error: 'Solicitud no encontrada.' });
 
     } catch (err) {
-        console.error(`Error al obtener la solicitud (público) ${id}:`, err);
+        logError(`Error al obtener la solicitud (público) ${id}:`, err);
         res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
         if (conn) conn.release();

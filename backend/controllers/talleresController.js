@@ -1,6 +1,7 @@
 // backend/controllers/talleresController.js
 // Controlador para gestión de Talleres/Actividades
 const pool = require('../db');
+const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 // =============================================================================
 // TALLERISTAS
@@ -17,7 +18,7 @@ const getTalleristas = async (req, res) => {
         const rows = await conn.query(sql);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getTalleristas:", err);
+        logError("Error en getTalleristas:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -35,7 +36,7 @@ const getTalleristaById = async (req, res) => {
         }
         res.status(200).json(rows[0]);
     } catch (err) {
-        console.error("Error en getTalleristaById:", err);
+        logError("Error en getTalleristaById:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -53,8 +54,8 @@ const createTallerista = async (req, res) => {
         }
 
         const params = [nombre, especialidad || null, bio || null, telefono || null, email || null, instagram || null, cliente_id || null, activo];
-        console.error('[TALLER] createTallerista payload:', { nombre, especialidad, telefono, email, cliente_id, activo });
-        console.error('[TALLER] createTallerista params:', params);
+        logError('[TALLER] createTallerista payload:', { nombre, especialidad, telefono, email, cliente_id, activo });
+        logError('[TALLER] createTallerista params:', params);
         const result = await conn.query(
             `INSERT INTO talleristas (nombre, especialidad, bio, telefono, email, instagram, cliente_id, activo) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -66,7 +67,7 @@ const createTallerista = async (req, res) => {
             id: Number(result.insertId)
         });
     } catch (err) {
-        console.error("Error en createTallerista:", err);
+        logError("Error en createTallerista:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -100,7 +101,7 @@ const updateTallerista = async (req, res) => {
 
         res.status(200).json({ message: 'Tallerista actualizado exitosamente' });
     } catch (err) {
-        console.error("Error en updateTallerista:", err);
+        logError("Error en updateTallerista:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -130,7 +131,7 @@ const deleteTallerista = async (req, res) => {
 
         res.status(200).json({ message: 'Tallerista eliminado exitosamente' });
     } catch (err) {
-        console.error("Error en deleteTallerista:", err);
+        logError("Error en deleteTallerista:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -184,7 +185,7 @@ const getTalleres = async (req, res) => {
         const rows = await conn.query(sql, params);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getTalleres:", err);
+        logError("Error en getTalleres:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -211,7 +212,7 @@ const getTallerById = async (req, res) => {
         }
         res.status(200).json(rows[0]);
     } catch (err) {
-        console.error("Error en getTallerById:", err);
+        logError("Error en getTallerById:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -244,7 +245,7 @@ const createTaller = async (req, res) => {
             id: Number(result.insertId)
         });
     } catch (err) {
-        console.error("Error en createTaller:", err);
+        logError("Error en createTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -286,7 +287,7 @@ const updateTaller = async (req, res) => {
 
         res.status(200).json({ message: 'Taller actualizado exitosamente' });
     } catch (err) {
-        console.error("Error en updateTaller:", err);
+        logError("Error en updateTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -319,7 +320,7 @@ const deleteTaller = async (req, res) => {
 
         res.status(200).json({ message: 'Taller eliminado exitosamente' });
     } catch (err) {
-        console.error("Error en deleteTaller:", err);
+        logError("Error en deleteTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -367,7 +368,7 @@ const getPreciosTalleres = async (req, res) => {
         const rows = await conn.query(sql, params);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getPreciosTalleres:", err);
+        logError("Error en getPreciosTalleres:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -403,7 +404,7 @@ const createPrecioTaller = async (req, res) => {
             id: Number(result.insertId)
         });
     } catch (err) {
-        console.error("Error en createPrecioTaller:", err);
+        logError("Error en createPrecioTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -440,7 +441,7 @@ const updatePrecioTaller = async (req, res) => {
 
         res.status(200).json({ message: 'Precio actualizado exitosamente' });
     } catch (err) {
-        console.error("Error en updatePrecioTaller:", err);
+        logError("Error en updatePrecioTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -461,7 +462,7 @@ const deletePrecioTaller = async (req, res) => {
 
         res.status(200).json({ message: 'Precio eliminado exitosamente' });
     } catch (err) {
-        console.error("Error en deletePrecioTaller:", err);
+        logError("Error en deletePrecioTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -484,7 +485,7 @@ const getTiposTaller = async (req, res) => {
         `);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getTiposTaller:", err);
+        logError("Error en getTiposTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -515,7 +516,7 @@ const createTipoTaller = async (req, res) => {
 
         res.status(201).json({ message: 'Tipo de taller creado exitosamente', id: id.toUpperCase() });
     } catch (err) {
-        console.error("Error en createTipoTaller:", err);
+        logError("Error en createTipoTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -544,7 +545,7 @@ const updateTipoTaller = async (req, res) => {
 
         res.status(200).json({ message: 'Tipo de taller actualizado exitosamente' });
     } catch (err) {
-        console.error("Error en updateTipoTaller:", err);
+        logError("Error en updateTipoTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -577,7 +578,7 @@ const deleteTipoTaller = async (req, res) => {
 
         res.status(200).json({ message: 'Tipo de taller eliminado exitosamente' });
     } catch (err) {
-        console.error("Error en deleteTipoTaller:", err);
+        logError("Error en deleteTipoTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -623,7 +624,7 @@ const getInscripciones = async (req, res) => {
         const rows = await conn.query(sql, params);
         res.status(200).json(rows);
     } catch (err) {
-        console.error("Error en getInscripciones:", err);
+        logError("Error en getInscripciones:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -650,7 +651,7 @@ const getInscripcionById = async (req, res) => {
 
         res.status(200).json(rows[0]);
     } catch (err) {
-        console.error("Error en getInscripcionById:", err);
+        logError("Error en getInscripcionById:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -684,7 +685,7 @@ const createInscripcion = async (req, res) => {
             id: Number(result.insertId)
         });
     } catch (err) {
-        console.error("Error en createInscripcion:", err);
+        logError("Error en createInscripcion:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -723,7 +724,7 @@ const updateInscripcion = async (req, res) => {
 
         res.status(200).json({ message: 'Inscripción actualizada exitosamente' });
     } catch (err) {
-        console.error("Error en updateInscripcion:", err);
+        logError("Error en updateInscripcion:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -747,7 +748,7 @@ const deleteInscripcion = async (req, res) => {
 
         res.status(200).json({ message: 'Inscripción eliminada exitosamente' });
     } catch (err) {
-        console.error("Error en deleteInscripcion:", err);
+        logError("Error en deleteInscripcion:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
