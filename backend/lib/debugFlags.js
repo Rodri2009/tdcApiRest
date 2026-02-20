@@ -3,27 +3,6 @@
  * Uso: node server.js [--verbose|-v] [--error|-e] [--debug|-d] [--help|-h]
  */
 
-// Parsear argumentos de línea de comandos
-const args = process.argv.slice(2);
-const flags = {
-  verbose: args.includes('--verbose') || args.includes('-v'),
-  error: args.includes('--error') || args.includes('-e'),
-  debug: args.includes('--debug') || args.includes('-d'),
-  help: args.includes('--help') || args.includes('-h')
-};
-
-// Si debug está activo, activar verbose y error también
-if (flags.debug) {
-  flags.verbose = true;
-  flags.error = true;
-}
-
-// Mostrar ayuda si se solicita
-if (flags.help) {
-  showHelp();
-  process.exit(0);
-}
-
 /**
  * Generar timestamp en formato ISO
  */
@@ -188,6 +167,29 @@ COMBINACIONES:
 ║  Para más información, consulta la documentación del backend.  ║
 ╚════════════════════════════════════════════════════════════════╝
   `);
+}
+
+// ===== AQUÍ SE PARSEAN LOS ARGUMENTOS (DESPUÉS DE DEFINIR LAS FUNCIONES) =====
+
+// Parsear argumentos de línea de comandos
+const args = process.argv.slice(2);
+const flags = {
+  verbose: args.includes('--verbose') || args.includes('-v'),
+  error: args.includes('--error') || args.includes('-e'),
+  debug: args.includes('--debug') || args.includes('-d'),
+  help: args.includes('--help') || args.includes('-h')
+};
+
+// Si debug está activo, activar verbose y error también
+if (flags.debug) {
+  flags.verbose = true;
+  flags.error = true;
+}
+
+// Mostrar ayuda si se solicita
+if (flags.help) {
+  showHelp();
+  process.exit(0);
 }
 
 module.exports = {
