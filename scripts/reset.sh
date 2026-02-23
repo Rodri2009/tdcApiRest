@@ -1,165 +1,173 @@
 #!/bin/bash
 
-# ==============================================================================
-# Script de Reseteo Rápido para el Entorno TDC
-#
-# Uso: ./reset.sh [OPTIONS]
-#
-# Opciones:
-#   --delete-uploads Elimina todas las imágenes subidas (bandas, flyers)
-#                    Sin este flag, se mantienen todos los uploads
-#
-# Este script realiza un ciclo completo de DESTRUCCIÓN y RECONSTRUCCIÓN:
-#   1. Valida que el archivo .env exista.
-#   2. Destruye todos los contenedores, redes Y VOLÚMENES (incluyendo la base de datos).
-#   3. Opcionalmente elimina imágenes subidas (backend/uploads/)
-#   4. Reconstruye las imágenes de Docker desde cero (para aplicar cambios en el backend).
-#   5. Levanta un entorno completamente nuevo.
-#
-# ADVERTENCIA: Este proceso es DESTRUCTIVO. Todos los datos en la base de datos
-# (incluyendo solicitudes de prueba) serán eliminados permanentemente.
-# La base de datos se recreará usando los scripts `schema.sql` y `seed.sql`.
-# Las imágenes subidas se PRESERVAN por defecto. Usa --delete-uploads para eliminarlas.
-# ==============================================================================
+###############################################################################
+# reset.sh - Reinicializa la base de datos desde cero
+###############################################################################
+# Este script:
+# 1. Elimina la base de datos existente
+# 2. Crea la base de datos nueva
+# 3. Carga el esquema (01_schema.sql)
+# 4. Carga las semillas (02_seed.sql)
+# 5. Carga los datos de prueba (03_test_data.sql)
+# 6. Verifica la integridad de los datos
+###############################################################################
 
-# --- Sección de Configuración ---
-ENV_FILE=".env"
-COMPOSE_FILE="docker/docker-compose.yml"
-COMPOSE_CMD="docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE"
+set -e
 
-# Control de uploads
-DELETE_UPLOADS=false
+# Colores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Soportar flags
-DEBUG_FLAGS=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    -v|--verbose|-e|--error|-d|--debug|-h|--help)
-      DEBUG_FLAGS="$DEBUG_FLAGS $1"
-      shift
-      ;;
-    --delete-uploads)
-      DELETE_UPLOADS=true
-      echo "⚠️  Flag --delete-uploads activado: se eliminarán todas las imágenes subidas"
-      shift
-      ;;
-    *)
-      echo "❌ Argumento desconocido: $1"
-      echo "Flags soportados: -v, -e, -d, --verbose, --error, --debug, --help, --delete-uploads"
-      exit 1
-      ;;
-  esac
+# Configuración
+DB_NAME="tdc_db"
+DB_USER="root"
+DB_PASSWORD=""
+DB_HOST="localhost"
+DB_PORT="3306"
+SQL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../database" && pwd)"
+
+echo -e "${YELLOW}=================================================${NC}"
+echo -e "${YELLOW}  TDC App - Database Reset${NC}"
+echo -e "${YELLOW}=================================================${NC}"
+echo ""
+
+# Función para ejecutar SQL
+run_sql() {
+    local file=$1
+    local description=$2
+    
+    echo -ne "${YELLOW}[*]${NC} Cargando: $description... "
+    
+    if [ -z "$DB_PASSWORD" ]; then
+        mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" "$DB_NAME" < "$file" 2>/dev/null
+    else
+        mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < "$file" 2>/dev/null
+    fi
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ OK${NC}"
+        return 0
+    else
+        echo -e "${RED}✗ FALLÓ${NC}"
+        return 1
+    fi
+}
+
+# Verificar que existan los archivos SQL
+echo -e "${YELLOW}[*]${NC} Verificando archivos SQL..."
+for file in "01_schema.sql" "02_seed.sql" "03_test_data.sql"; do
+    if [ ! -f "$SQL_DIR/$file" ]; then
+        echo -e "${RED}[✗] ERROR: Archivo no encontrado: $SQL_DIR/$file${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}    ✓${NC} $file"
+done
+echo ""
+
+# Drop database
+echo -ne "${YELLOW}[*]${NC} Eliminando base de datos existente... "
+if [ -z "$DB_PASSWORD" ]; then
+    mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -e "DROP DATABASE IF EXISTS \`$DB_NAME\`;" 2>/dev/null
+else
+    mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" -e "DROP DATABASE IF EXISTS \`$DB_NAME\`;" 2>/dev/null
+fi
+echo -e "${GREEN}✓ OK${NC}"
+
+# Create database
+echo -ne "${YELLOW}[*]${NC} Creando base de datos nueva... "
+if [ -z "$DB_PASSWORD" ]; then
+    mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -e "CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null
+else
+    mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" -e "CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null
+fi
+echo -e "${GREEN}✓ OK${NC}"
+echo ""
+
+# Load schema
+if ! run_sql "$SQL_DIR/01_schema.sql" "Schema (Estructura de tablas)"; then
+    echo -e "${RED}[✗] ERROR: No se pudo cargar el schema${NC}"
+    exit 1
+fi
+
+# Load seed data
+if ! run_sql "$SQL_DIR/02_seed.sql" "Seed Data (Configuración y catálogos)"; then
+    echo -e "${RED}[✗] ERROR: No se pudo cargar los datos de semilla${NC}"
+    exit 1
+fi
+
+# Load test data
+if ! run_sql "$SQL_DIR/03_test_data.sql" "Test Data (Datos dinámicos de prueba)"; then
+    echo -e "${RED}[✗] ERROR: No se pudo cargar los datos de prueba${NC}"
+    exit 1
+fi
+
+echo ""
+echo -e "${YELLOW}[*]${NC} Verificando integridad de datos..."
+
+# Verificación básica
+if [ -z "$DB_PASSWORD" ]; then
+    TABLE_COUNT=$(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" "$DB_NAME" -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '$DB_NAME';" 2>/dev/null | tail -1)
+else
+    TABLE_COUNT=$(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '$DB_NAME';" 2>/dev/null | tail -1)
+fi
+
+if [ "$TABLE_COUNT" -gt 0 ]; then
+    echo -e "${GREEN}    ✓${NC} Base de datos creada con $TABLE_COUNT tablas"
+else
+    echo -e "${RED}    ✗${NC} No se encontraron tablas en la base de datos"
+    exit 1
+fi
+
+# Verificar datos críticos
+echo -e "${YELLOW}[*]${NC} Verificando datos cargados..."
+
+QUERIES=(
+    "SELECT COUNT(*) FROM configuracion;"
+    "SELECT COUNT(*) FROM opciones_tipos;"
+    "SELECT COUNT(*) FROM clientes;"
+    "SELECT COUNT(*) FROM usuarios;"
+    "SELECT COUNT(*) FROM solicitudes;"
+    "SELECT COUNT(*) FROM eventos_confirmados;"
+    "SELECT COUNT(*) FROM bandas_artistas;"
+)
+
+LABELS=(
+    "Configuración"
+    "Tipos de eventos"
+    "Clientes"
+    "Usuarios"
+    "Solicitudes"
+    "Eventos confirmados"
+    "Bandas artistas"
+)
+
+for i in "${!QUERIES[@]}"; do
+    if [ -z "$DB_PASSWORD" ]; then
+        result=$(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" "$DB_NAME" -NB -e "${QUERIES[$i]}" 2>/dev/null)
+    else
+        result=$(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" -NB -e "${QUERIES[$i]}" 2>/dev/null)
+    fi
+    
+    if [ -n "$result" ] && [ "$result" -gt 0 ]; then
+        echo -e "${GREEN}    ✓${NC} ${LABELS[$i]}: $result registros"
+    else
+        echo -e "${YELLOW}    ⚠${NC}  ${LABELS[$i]}: Sin registros"
+    fi
 done
 
-# Si hay DEBUG_FLAGS, mostrar qué se está usando
-if [ -n "$DEBUG_FLAGS" ]; then
-  echo "ℹ️  Debug flags detectados: $DEBUG_FLAGS"
-  export DEBUG_FLAGS
-fi
-
-echo "--- 🚀 Iniciando Reseteo Rápido del Entorno TDC ---"
-echo "ADVERTENCIA: Se eliminarán todos los datos de la base de datos."
-
-# --- Fase 1: Validación ---
-if [ ! -f "$ENV_FILE" ]; then
-    echo "❌ ERROR: No se encuentra el archivo de configuración '$ENV_FILE'. Abortando."
-    exit 1
-fi
-echo "✅ Archivo '.env' encontrado."
-
-# Cargar variables del archivo .env
-source "$ENV_FILE"
-
-# --- Fase 2: Destrucción Completa ---
 echo ""
-echo "--- 🗑️  Paso 1: Destruyendo entorno anterior (incluyendo volúmenes de base de datos)... ---"
-
-# ⚠️ PRIMERO: Limpiar todos los contenedores duplicados que hayan quedado
-echo "Limpiando contenedores duplicados que puedan haber quedado..."
-docker ps -a --filter "name=docker-backend" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
-docker ps -a --filter "name=docker-backend-run-" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
-docker ps -a --filter "name=docker-nginx" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
-docker ps -a --filter "name=docker-mariadb" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
-echo "✅ Contenedores viejos limpiados"
+echo -e "${GREEN}=================================================${NC}"
+echo -e "${GREEN}  ✓ Base de datos reiniciada exitosamente${NC}"
+echo -e "${GREEN}=================================================${NC}"
+echo ""
+echo -e "${YELLOW}Detalles:${NC}"
+echo "  Database: $DB_NAME"
+echo "  Host: $DB_HOST:$DB_PORT"
+echo "  Schema: 01_schema.sql"
+echo "  Seeds: 02_seed.sql"
+echo "  Test Data: 03_test_data.sql"
 echo ""
 
-# Ahora hacer down normal (debería ser rápido porque no hay mucho que limpiar)
-$COMPOSE_CMD down --volumes
-if [ $? -ne 0 ]; then
-    echo "❌ ERROR: 'docker-compose down' falló. Por favor, revisa los mensajes de arriba."
-    exit 1
-fi
-echo "✅ Entorno anterior completamente eliminado."
-
-# --- Limpieza Opcional de Uploads ---
-if [ "$DELETE_UPLOADS" = true ]; then
-    echo ""
-    echo "--- 🗑️  Paso 1.5: Eliminando imágenes subidas (bandas, flyers)... ---"
-    rm -rf "backend/uploads/bandas" "backend/uploads/flyers" "/app/uploads/bandas" "/app/uploads/flyers" 2>/dev/null
-    echo "✅ Directorios de uploads eliminados."
-else
-    echo ""
-    echo "--- ✔️  Paso 1.5: Preservando imágenes subidas (sin --delete-uploads)... ---"
-    echo "✅ Los directorios backend/uploads/ se mantienen intactos."
-fi
-
-# --- Fase 3: Reconstrucción y Arranque ---
-echo ""
-echo "--- ✨ Paso 2: Reconstruyendo y levantando el entorno desde cero... ---"
-# El flag --build es crucial aquí para aplicar cualquier cambio que hayas hecho en el backend
-# IMPORTANTE: Siempre levantar TODOS los servicios (mariadb, backend, nginx)
-# Los DEBUG_FLAGS se pasan vía variable de entorno (exportada arriba si fueron especificados)
-$COMPOSE_CMD up --build -d
-if [ $? -ne 0 ]; then
-    echo "❌ ERROR: 'docker-compose up' falló. Por favor, revisa los mensajes de arriba."
-    exit 1
-fi
-
-# Esperar que la DB esté lista (aproximación simple pero confiable)
-echo "--- 🔎 Esperando que MariaDB esté lista para aceptar conexiones... ---"
-# Simplemente esperamos un tiempo fijo que es suficiente para que MariaDB inicie
-# Los healthchecks de docker-compose también validan que esté healthy
-sleep 15
-echo "✅ MariaDB debería estar listo ahora"
-
-# --- Aplicar migraciones (si existen) ---
-# Nota: las migraciones en database/migrations se aplican **solo** cuando ejecutás ./reset.sh
-MIG_DIR="database/migrations"
-if [ -d "$MIG_DIR" ] && ls $MIG_DIR/*.sql >/dev/null 2>&1; then
-    echo "--- ⤴️  Aplicando migraciones SQL desde $MIG_DIR ---"
-    for sqlfile in $(ls $MIG_DIR/*.sql | sort); do
-        # Saltar migraciones archivadas (consolidadas en `01_schema.sql` / `02_seed.sql`)
-        if grep -q '^-- ARCHIVED:' "$sqlfile" 2>/dev/null; then
-            echo "Saltando migración archivada: $sqlfile"
-            continue
-        fi
-        echo "Aplicando: $sqlfile"
-        # Ejecutar migración directamente sin sh -c intermedio (más confiable)
-        if ! cat "$sqlfile" | $COMPOSE_CMD exec -T mariadb mysql -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE" 2>&1; then
-            echo "⚠️  Advertencia: hay errores en $sqlfile, pero continuando..."
-            # No abortar en primer error - algunas migraciones pueden tener REPLACE INTO que son idempotentes
-        fi
-    done
-    echo "--- ✅ Migraciones procesadas ---"
-else
-    echo "--- ℹ️ No se encontraron migraciones en $MIG_DIR (o no hay archivos .sql) ---"
-fi
-
-# --- Nota: verificación/fixes automáticos retirados ---
-# Las utilidades `verify_and_fix_inconsistencies.sql` y `fix_inconsistencies.sql` han sido
-# eliminadas del repositorio para simplificar el mantenimiento. Si necesitas ejecutar
-# verificaciones o correcciones, sigue el procedimiento manual descrito en README.md
-# bajo "Verificación manual (QA) — pasos rápidos". Las variables de entorno
-# RUN_DB_VERIFICATION / APPLY_FIXES / FORCE_APPLY_FIXES ya no son utilizadas.
-
-# --- Fase 4: Información Final ---
-echo ""
-echo "--- ✅ ¡Reseteo completado! ---"
-echo "La base de datos ha sido recreada con los scripts iniciales."
-echo ""
-echo "--- 📊 Estado de los contenedores ---"
-sleep 3  # Damos tiempo a que se estabilicen
-$COMPOSE_CMD ps
-echo ""
-echo "--- 🚀 Backend levantado - Viendo logs (Ctrl+C para salir)... ---"
-$COMPOSE_CMD logs -f backend
+exit 0
