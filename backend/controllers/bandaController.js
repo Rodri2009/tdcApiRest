@@ -717,6 +717,85 @@ const buscarBandas = async (req, res) => {
 };
 
 /**
+ * GET /api/bandas/sync-logos
+ * Busca logos en filesystem para bandas sin logo_url y actualiza la BD
+ * Ejecutado automáticamente al cargar la página
+ */
+const syncLogos = async (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
+    const uploadsDir = path.join(__dirname, '..', 'uploads', 'bandas');
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Obtener todas las bandas sin logo_url
+        const bandas = await conn.query(
+            `SELECT id_banda, nombre FROM bandas_artistas WHERE logo_url IS NULL OR logo_url = ''`
+        );
+
+        logVerbose(`[BANDA-SYNC] Buscando logos para ${bandas.length} bandas sin logo_url`);
+
+        let actualizadas = 0;
+
+        for (const banda of bandas) {
+            // Sanitizar nombre: lowercase, sin acentos, reemplazar espacios por _
+            const sanitized = banda.nombre
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-zA-Z0-9 ]/g, '')
+                .trim()
+                .replace(/\s+/g, '_')
+                .toLowerCase();
+
+            // Buscar archivos que comiencen con logo_<sanitized>
+            let logoEncontrado = null;
+            try {
+                if (fs.existsSync(uploadsDir)) {
+                    const archivos = fs.readdirSync(uploadsDir);
+                    const logoMatch = archivos.find(f => 
+                        f.toLowerCase().startsWith(`logo_${sanitized}`) &&
+                        (f.endsWith('.jpg') || f.endsWith('.jpeg') || f.endsWith('.png'))
+                    );
+
+                    if (logoMatch) {
+                        logoEncontrado = `/uploads/bandas/${logoMatch}`;
+                        logVerbose(`[BANDA-SYNC] ✓ Logo encontrado para "${banda.nombre}": ${logoMatch}`);
+                    }
+                }
+            } catch (err) {
+                logWarning(`[BANDA-SYNC] Error al leer directorio para "${banda.nombre}":`, err.message);
+            }
+
+            // Actualizar BD si se encontró logo
+            if (logoEncontrado) {
+                await conn.query(
+                    `UPDATE bandas_artistas SET logo_url = ? WHERE id_banda = ?`,
+                    [logoEncontrado, banda.id_banda]
+                );
+                actualizadas++;
+                logVerbose(`[BANDA-SYNC] BD actualizada: ${banda.nombre} → ${logoEncontrado}`);
+            }
+        }
+
+        logVerbose(`[BANDA-SYNC] ✓ Sincronización completada: ${actualizadas}/${bandas.length} logos actualizados`);
+
+        return res.status(200).json({
+            message: `Sincronización de logos completada`,
+            total: bandas.length,
+            actualizadas: actualizadas
+        });
+
+    } catch (err) {
+        logError('[BANDA-SYNC] Error en sincronización:', err.message);
+        return res.status(500).json({ error: 'Error al sincronizar logos' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+/**
  * POST /api/bandas/upload
  * Subir logo de banda (público, sin autenticación)
  */
@@ -765,5 +844,6 @@ module.exports = {
     eliminarBanda,
     obtenerInstrumentos,
     buscarBandas,
+    syncLogos,
     uploadLogo
 };

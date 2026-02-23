@@ -40,6 +40,9 @@ router.get('/instrumentos', bandaController.obtenerInstrumentos);
 // GET /api/bandas/buscar?q=... - Buscar bandas por nombre
 router.get('/buscar', bandaController.buscarBandas);
 
+// GET /api/bandas/sync-logos - Sincronizar logos del filesystem con BD (público)
+router.get('/sync-logos', bandaController.syncLogos);
+
 // POST /api/bandas/upload - Subir logo (público, sin autenticación)
 router.post('/upload', upload.single('logo'), bandaController.uploadLogo);
 
