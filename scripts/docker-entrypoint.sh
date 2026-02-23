@@ -19,8 +19,22 @@ if [ "$need_install" -eq 1 ]; then
   npm install
   echo "[entrypoint] npm install finalizado."
 else
-  echo "[entrypoint] node_modules y dependencias presentes."
+  echo "[entrypoint] node_modules y dependencias presentes. TODO OK"
 fi
 
 echo "[entrypoint] Iniciando la aplicación..."
-exec node --unhandled-rejections=warn server.js "$@"
+
+# Soportar DEBUG_FLAGS desde variable de entorno
+# Ejemplo: docker run -e DEBUG_FLAGS="-d" ...
+NODE_ARGS=""
+if [ -n "$DEBUG_FLAGS" ]; then
+  echo "[entrypoint] DEBUG_FLAGS detectado: $DEBUG_FLAGS"
+  NODE_ARGS="$DEBUG_FLAGS"
+fi
+
+# Pasar argumentos también si se proporcionan directamente ($@)
+if [ $# -gt 0 ]; then
+  NODE_ARGS="$NODE_ARGS $@"
+fi
+
+exec node --unhandled-rejections=warn server.js $NODE_ARGS

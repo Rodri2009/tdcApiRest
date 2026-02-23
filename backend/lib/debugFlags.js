@@ -27,12 +27,23 @@ function logRequest(method, endpoint, extra = '') {
  * @param {string} message - Mensaje a mostrar
  * @param {*} [data] - Datos opcionales para inspeccionar
  */
+// helper for JSON.stringify that handles BigInt gracefully
+function safeStringify(obj) {
+    return JSON.stringify(obj, (key, value) => {
+        if (typeof value === 'bigint') {
+            // convert BigInt to string to avoid serialization errors
+            return value.toString();
+        }
+        return value;
+    }, 2);
+}
+
 function logVerbose(message, data = null) {
     if (!flags.verbose && !flags.debug) return;
     const timestamp = getTimestamp();
     const prefix = `[${timestamp}] ℹ [VERBOSE]`;
     if (data !== null && typeof data === 'object') {
-        console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+        console.log(`${prefix} ${message}`, safeStringify(data));
     } else {
         console.log(`${prefix} ${message}`);
     }
@@ -44,14 +55,15 @@ function logVerbose(message, data = null) {
  * @param {*} [error] - Error object o datos relacionados
  */
 function logError(message, error = null) {
-    if (!flags.error && !flags.debug) return;
+    // ALWAYS log errors regardless of flags, since they indicate something
+    // went wrong and should be visible even in production mode.
     const timestamp = getTimestamp();
     const prefix = `[${timestamp}] ✗ [ERROR]`;
     if (error instanceof Error) {
         console.error(`${prefix} ${message}`);
         console.error(`  Stack: ${error.stack}`);
     } else if (error && typeof error === 'object') {
-        console.error(`${prefix} ${message}`, JSON.stringify(error, null, 2));
+        console.error(`${prefix} ${message}`, safeStringify(error));
     } else {
         console.error(`${prefix} ${message}`);
     }
@@ -67,7 +79,7 @@ function logSuccess(message, data = null) {
     const timestamp = getTimestamp();
     const prefix = `[${timestamp}] ✓ [EXITO]`;
     if (data !== null && typeof data === 'object') {
-        console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+        console.log(`${prefix} ${message}`, safeStringify(data));
     } else {
         console.log(`${prefix} ${message}`);
     }
@@ -83,7 +95,7 @@ function logWarning(message, data = null) {
     const timestamp = getTimestamp();
     const prefix = `[${timestamp}] ⚠ [ADVERTENCIA]`;
     if (data !== null && typeof data === 'object') {
-        console.warn(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+        console.warn(`${prefix} ${message}`, safeStringify(data));
     } else {
         console.warn(`${prefix} ${message}`);
     }

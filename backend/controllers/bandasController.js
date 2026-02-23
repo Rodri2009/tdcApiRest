@@ -21,6 +21,10 @@ const serializeBigInt = (obj) => {
  * Lista todas las bandas activas (público) o todas (admin)
  */
 const getBandas = async (req, res) => {
+    console.error('[BANDA-DEBUG] Función getCálledandas llamada');
+    console.error('[BANDA-DEBUG] req.user:', JSON.stringify(req.user || null));
+    console.error('[BANDA-DEBUG] req.query:', JSON.stringify(req.query || {}));
+
     try {
         const isAdmin = req.user && req.user.rol === 'admin';
         const { buscar, genero, verificada } = req.query;
@@ -28,7 +32,7 @@ const getBandas = async (req, res) => {
         let query = `
             SELECT 
                 b.*,
-                (SELECT COUNT(*) FROM bandas_formacion WHERE id_banda = b.id) as cantidad_integrantes
+                (SELECT COUNT(*) FROM bandas_formacion WHERE id_banda = b.id_banda) as cantidad_integrantes
             FROM bandas_artistas b
             WHERE 1=1
         `;
@@ -62,8 +66,9 @@ const getBandas = async (req, res) => {
         const bandas = await pool.query(query, params);
         res.json(serializeBigInt(bandas));
     } catch (err) {
-        logError('Error al obtener bandas:', err);
-        res.status(500).json({ error: 'Error al obtener bandas' });
+        logError('[BANDA] Error al obtener bandas:', err.message);
+        logError('[BANDA] Stack:', err.stack);
+        res.status(500).json({ error: 'Error al obtener bandas.', debug: err.message });
     }
 };
 
@@ -79,7 +84,7 @@ const getBandaById = async (req, res) => {
         // Obtener datos de la banda
         console.debug('DEBUG getBandaById: fetching banda row for id', id);
         const [banda] = await pool.query(
-            'SELECT * FROM bandas_artistas WHERE id = ?',
+            'SELECT * FROM bandas_artistas WHERE id_banda = ?',
             [id]
         );
         console.debug('DEBUG getBandaById: fetched banda row', !!banda);
@@ -156,7 +161,7 @@ const createBanda = async (req, res) => {
 
         // Verificar si ya existe
         const [existente] = await pool.query(
-            'SELECT id FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?)',
+            'SELECT id_banda FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?)',
             [nombre]
         );
 
@@ -260,7 +265,7 @@ const updateBanda = async (req, res) => {
         params.push(id);
 
         await pool.query(
-            `UPDATE bandas_artistas SET ${setClauses.join(', ')} WHERE id = ?`,
+            `UPDATE bandas_artistas SET ${setClauses.join(', ')} WHERE id_banda = ?`,
             params
         );
 
@@ -287,7 +292,7 @@ const updateBanda = async (req, res) => {
         }
 
         // Return updated banda for frontend to refresh view
-        const [updated] = await pool.query('SELECT * FROM bandas_artistas WHERE id = ?', [id]);
+        const [updated] = await pool.query('SELECT * FROM bandas_artistas WHERE id_banda = ?', [id]);
         let formacion = [];
         try { formacion = await pool.query('SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento', [id]); } catch (e) { formacion = []; }
         res.json(serializeBigInt({ ...updated, formacion }));
@@ -360,7 +365,7 @@ const updateBandaPublic = async (req, res) => {
         // Si intenta cambiar el nombre, verificar que no exista otro con ese nombre
         if (updates.nombre) {
             const [existente] = await pool.query(
-                'SELECT id FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?) AND id != ?',
+                'SELECT id_banda FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?) AND id_banda != ?',
                 [updates.nombre, id]
             );
 
@@ -399,7 +404,7 @@ const updateBandaPublic = async (req, res) => {
             params.push(id);
 
             await pool.query(
-                `UPDATE bandas_artistas SET ${setClauses.join(', ')} WHERE id = ?`,
+                `UPDATE bandas_artistas SET ${setClauses.join(', ')} WHERE id_banda = ?`,
                 params
             );
         }
@@ -427,7 +432,7 @@ const updateBandaPublic = async (req, res) => {
         }
 
         // Return updated banda for frontend to refresh view
-        const [updated] = await pool.query('SELECT * FROM bandas_artistas WHERE id = ?', [id]);
+        const [updated] = await pool.query('SELECT * FROM bandas_artistas WHERE id_banda = ?', [id]);
         let formacion = [];
         try { formacion = await pool.query('SELECT * FROM bandas_formacion WHERE id_banda = ? ORDER BY es_lider DESC, instrumento', [id]); } catch (e) { formacion = []; }
         res.json(serializeBigInt({ ...updated, formacion }));
@@ -610,8 +615,8 @@ const getSolicitudes = async (req, res) => {
                 c.telefono AS cliente_telefono
             FROM solicitudes_fechas_bandas sfb
             JOIN solicitudes s ON sfb.id_solicitud = s.id
-            LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id
-            LEFT JOIN clientes c ON s.cliente_id = c.id
+            LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
+            LEFT JOIN clientes c ON s.id_cliente = c.id_cliente
             WHERE 1=1
         `;
         const params = [];
@@ -651,8 +656,8 @@ const getSolicitudById = async (req, res) => {
                 c.telefono AS cliente_telefono
             FROM solicitudes_fechas_bandas sfb
             JOIN solicitudes s ON sfb.id_solicitud = s.id
-            LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id
-            LEFT JOIN clientes c ON s.cliente_id = c.id
+            LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
+            LEFT JOIN clientes c ON s.id_cliente = c.id_cliente
             WHERE sfb.id_solicitud = ?
         `, [id]);
 
@@ -738,9 +743,9 @@ const updateSolicitud = async (req, res) => {
             await conn.beginTransaction();
 
             if (Object.keys(contactoUpdates).length > 0) {
-                const [row] = await conn.query('SELECT sol.cliente_id FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id WHERE sfb.id_solicitud = ?', [id]);
-                if (row && row.cliente_id) {
-                    await updateClient(conn, row.cliente_id, contactoUpdates);
+                const [row] = await conn.query('SELECT sol.id_cliente FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id WHERE sfb.id_solicitud = ?', [id]);
+                if (row && row.id_cliente) {
+                    await updateClient(conn, row.id_cliente, contactoUpdates);
                 }
             }
 
@@ -798,7 +803,7 @@ const updateSolicitud = async (req, res) => {
                     if (bandUpdates.logo_url) { setB.push('logo_url = ?'); paramsB.push(bandUpdates.logo_url); }
                     if (setB.length > 0) {
                         paramsB.push(idBanda);
-                        await conn.query(`UPDATE bandas_artistas SET ${setB.join(', ')} WHERE id = ?`, paramsB);
+                        await conn.query(`UPDATE bandas_artistas SET ${setB.join(', ')} WHERE id_banda = ?`, paramsB);
                     }
                 }
             }
@@ -840,10 +845,10 @@ const aprobarSolicitud = async (req, res) => {
 
         // Obtener la solicitud (normalizada)
         const [solicitud] = await pool.query(
-            `SELECT sfb.*, s.cliente_id, b.nombre AS banda_nombre, b.id AS banda_id, b.genero_musical AS banda_genero
+            `SELECT sfb.*, s.id_cliente, b.nombre AS banda_nombre, b.id_banda AS banda_id, b.genero_musical AS banda_genero
              FROM solicitudes_fechas_bandas sfb
              JOIN solicitudes s ON sfb.id_solicitud = s.id
-             LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id
+             LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
              WHERE sfb.id_solicitud = ?`,
             [id]
         );
@@ -869,12 +874,13 @@ const aprobarSolicitud = async (req, res) => {
 
         // Obtener contacto desde clientes si existe
         let contacto = { nombre: null, email: null, telefono: null };
-        if (solicitud.cliente_id) {
-            const [cliente] = await pool.query('SELECT nombre, email, telefono FROM clientes WHERE id = ?', [solicitud.cliente_id]);
+        if (solicitud.id_cliente) {
+            const [cliente] = await pool.query('SELECT nombre, email, telefono FROM clientes WHERE id_cliente = ?', [solicitud.id_cliente]);
             if (cliente) contacto = { nombre: cliente.nombre, email: cliente.email, telefono: cliente.telefono };
         }
 
-        // Crear evento_confirmado (estructura unificada)
+        // ✅ Opción B3: No insertar precios en eventos_confirmados
+        // Precios viven SOLO en solicitudes_fechas_bandas (Single Source of Truth)
         const sqlEvento = `
             INSERT INTO eventos_confirmados (
                 id_solicitud,
@@ -885,17 +891,13 @@ const aprobarSolicitud = async (req, res) => {
                 fecha_evento,
                 hora_inicio,
                 duracion_estimada,
-                nombre_cliente,
-                email_cliente,
-                telefono_cliente,
-                precio_base,
-                precio_final,
+                id_cliente,
                 genero_musical,
                 cantidad_personas,
                 es_publico,
                 activo,
                 confirmado_en
-            ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+            ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
         `;
 
         const [resultEvento] = await pool.query(sqlEvento, [
@@ -905,8 +907,7 @@ const aprobarSolicitud = async (req, res) => {
             fechaFinal,
             hora_inicio || solicitud.hora_evento || '21:00:00',
             hora_fin || null,
-            precio_anticipada || solicitud.precio_basico || 0,
-            precio_puerta || solicitud.precio_puerta_propuesto || 0,
+            solicitud.cliente_id || null,
             solicitud.banda_genero || solicitud.genero_musical || null,
             solicitud.cantidad_bandas || 1,
             1 // es_publico
@@ -917,7 +918,7 @@ const aprobarSolicitud = async (req, res) => {
         // Crear/obtener banda en catálogo si no existe
         let bandaId = solicitud.banda_id || null;
         if (!bandaId && solicitud.banda_nombre) {
-            const [bExist] = await pool.query('SELECT id FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?)', [solicitud.banda_nombre]);
+            const [bExist] = await pool.query('SELECT id_banda FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?)', [solicitud.banda_nombre]);
             if (bExist) bandaId = bExist.id;
             else {
                 const [bRes] = await pool.query(`INSERT INTO bandas_artistas (nombre, genero_musical, verificada, activa, creado_en) VALUES (?, ?, 0, 1, NOW())`, [solicitud.banda_nombre, solicitud.banda_genero || null]);
@@ -1008,15 +1009,16 @@ const getEventosBandas = async (req, res) => {
                 e.precio_base,
                 NULL as precio_anticipada,
                 e.precio_final as precio_puerta,
-                e.nombre_cliente as nombre_contacto,
-                e.email_cliente as email_contacto,
-                e.telefono_cliente as telefono_contacto,
+                COALESCE(c.nombre, '') as nombre_contacto,
+                COALESCE(c.email, '') as email_contacto,
+                COALESCE(c.telefono, '') as telefono_contacto,
                 e.tipo_evento,
                 e.activo,
                 CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Cancelado' END as estado,
                 e.confirmado_en as creado_en,
                 (SELECT COUNT(*) FROM tickets WHERE id_evento = e.id) as entradas_vendidas
             FROM eventos_confirmados e
+            LEFT JOIN clientes c ON e.id_cliente = c.id_cliente
             WHERE e.tipo_evento = 'BANDA'
         `;
         const params = [];
@@ -1033,7 +1035,7 @@ const getEventosBandas = async (req, res) => {
             params.push(`%${buscar}%`);
         }
 
-        query += ' ORDER BY fbc.fecha DESC, fbc.hora_inicio ASC';
+        query += ' ORDER BY e.fecha_evento DESC, e.hora_inicio ASC';
 
         const eventos = await pool.query(query, params);
 
@@ -1067,8 +1069,12 @@ const getEventoBandaById = async (req, res) => {
         const [evento] = await pool.query(`
             SELECT 
                 e.*,
+                COALESCE(c.nombre, '') as nombre_contacto,
+                COALESCE(c.email, '') as email_contacto,
+                COALESCE(c.telefono, '') as telefono_contacto,
                 (SELECT COUNT(*) FROM tickets WHERE id_evento = e.id) as entradas_vendidas
             FROM eventos_confirmados e
+            LEFT JOIN clientes c ON e.id_cliente = c.id_cliente
             WHERE e.id = ? AND e.tipo_evento = 'BANDA'
         `, [id]);
 
@@ -1111,7 +1117,7 @@ const getEventoLineup = async (req, res) => {
                 b.genero_musical, b.instagram, b.youtube, b.spotify, b.logo_url,
                 b.verificada
             FROM eventos_lineup el
-            LEFT JOIN bandas_artistas b ON el.id_banda = b.id
+            LEFT JOIN bandas_artistas b ON el.id_banda = b.id_banda
             WHERE el.id_evento_confirmado = ?
             ORDER BY el.orden_show ASC
         `, [id]);
@@ -1186,7 +1192,7 @@ const getBandaDetalle = async (req, res) => {
     try {
         const { id } = req.params;
         logVerbose('DEBUG getBandaDetalle called for id', id);
-        const [banda] = await pool.query('SELECT * FROM bandas_artistas WHERE id = ?', [id]);
+        const [banda] = await pool.query('SELECT * FROM bandas_artistas WHERE id_banda = ?', [id]);
         if (!banda) return res.status(404).json({ error: 'Banda no encontrada' });
 
         let formacion = [];
@@ -1238,7 +1244,7 @@ const buscarBandas = async (req, res) => {
         }
 
         const bandas = await pool.query(`
-            SELECT id, nombre, genero_musical, logo_url, verificada
+            SELECT id_banda, nombre, genero_musical, logo_url, verificada
             FROM bandas_artistas
             WHERE activa = 1 AND nombre LIKE ?
             ORDER BY verificada DESC, nombre ASC
@@ -1258,7 +1264,7 @@ const getBandaByIdSafe = async (req, res) => {
         const { id } = req.params;
         logVerbose('DEBUG: getBandaByIdSafe called for id', id);
 
-        const [banda] = await pool.query('SELECT * FROM bandas_artistas WHERE id = ?', [id]);
+        const [banda] = await pool.query('SELECT * FROM bandas_artistas WHERE id_banda = ?', [id]);
         if (!banda) return res.status(404).json({ error: 'Banda no encontrada' });
 
         let formacion = [];

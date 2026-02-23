@@ -1,2 +1,0 @@
-❌ Error: (conn:-1, no: 45028, SQLState: HY000) pool timeout: failed to retrieve a connection from pool after 10000ms
-    (pool connections: active=0 idle=0 limit=5)

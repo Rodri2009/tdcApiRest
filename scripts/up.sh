@@ -207,7 +207,8 @@ echo "--- Levantando los contenedores de Docker (la BD se creará desde los SQLs
 # --build: Reconstruye las imágenes si hay cambios en los Dockerfiles.
 # -d: Modo "detached", ejecuta los contenedores en segundo plano.
 if [ -n "$DEBUG_FLAGS" ]; then
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d mariadb nginx"
+    # Con flags de debug, solo levantamos mariadb aquí para evitar que nginx auto-inicie backend sin flags
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d mariadb"
 else
     eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d"
 fi
@@ -278,13 +279,26 @@ if [ -n "$DEBUG_FLAGS" ]; then
     sleep 5
     
     echo "--- 🐛 Ejecutando backend en background con flags:$DEBUG_FLAGS ---"
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE run -d --rm backend $DEBUG_FLAGS"
+    BACKEND_RUN_ID=$(eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE run -d --rm backend $DEBUG_FLAGS")
+    
+    # Conectar el contenedor a la red docker con alias "backend" para que nginx pueda encontrarlo
+    NETWORK_NAME="docker_default"
+    echo "--- 🐛 Configurando aliases de red para que nginx y backend se comuniquen... ---"
+    # Primero desconectar (para limpiar el alias automático)
+    docker network disconnect "$NETWORK_NAME" "$BACKEND_RUN_ID" 2>/dev/null || true
+    # Luego reconectar con los aliases correctos
+    docker network connect --alias backend "$NETWORK_NAME" "$BACKEND_RUN_ID" 2>/dev/null || true
     
     # Dar tiempo para que se inicialice
     sleep 2
     
+    echo "--- 🐛 Levantando nginx ahora que backend está en ejecución... ---"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up -d --no-deps nginx"
+    
+    sleep 1
+    
     echo "--- 🐛 Mostrando logs en tiempo real (Ctrl+C solo detiene los logs, el backend sigue ejecutándose)... ---"
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
+    docker logs -f "$BACKEND_RUN_ID" 2>/dev/null || eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
 else
     echo "--- Mostrando logs del backend en tiempo real (Presiona Ctrl+C para salir) ---"
     eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"

@@ -96,6 +96,11 @@ try {
     const whatsappRoutes = require('./routes/whatsappRoutes'); // NUEVO: Integración WhatsApp
 
     app.use('/api/opciones', opcionesRoutes);
+
+    // ⚠️ IMPORTANTE: Registrar solicitudes-fechas-bandas ANTES de solicitudes
+    // porque /api/solicitudes-fechas-bandas/:id puede ser capturada por /api/solicitudes/:id
+    app.use('/api/solicitudes-fechas-bandas', solicitudFechaBandaRoutes); // GET, POST, PUT, DELETE para solicitudes_fechas_bandas
+
     app.use('/api/solicitudes', solicitudesRoutes);
     app.use('/api/test', testRoutes);
     app.use('/api/auth', authRoutes);
@@ -103,7 +108,6 @@ try {
 
     // NUEVAS RUTAS (refactored 3NF)
     app.use('/api/bandas', bandaRoutes); // GET, POST, PUT, DELETE para bandas_artistas
-    app.use('/api/solicitudes-fechas-bandas', solicitudFechaBandaRoutes); // GET, POST, PUT, DELETE para solicitudes_fechas_bandas
 
     // Legacy (mantener por compatibilidad)
     // app.use('/api/bandas', bandasRoutes); // COMENTADO: usar nueva estructura

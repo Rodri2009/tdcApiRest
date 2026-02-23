@@ -148,13 +148,58 @@ CREATE TABLE IF NOT EXISTS costos_personal_vigencia (
     INDEX idx_vigencia (fecha_de_vigencia)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Tabla: personal_tarifas
+CREATE TABLE IF NOT EXISTS personal_tarifas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_rol VARCHAR(100) NOT NULL COMMENT 'Nombre del rol (DJ, Mesera, etc.)',
+    monto_por_hora DECIMAL(10,2) NULL COMMENT 'Tarifa por hora trabajada',
+    monto_fijo_evento DECIMAL(10,2) NULL COMMENT 'Tarifa fija por evento completo',
+    monto_minimo DECIMAL(10,2) NULL COMMENT 'Monto mínimo garantizado',
+    vigente_desde DATE NOT NULL COMMENT 'Fecha desde cuando es válida esta tarifa',
+    vigente_hasta DATE NULL COMMENT 'Fecha hasta cuando es válida (NULL = indefinida)',
+    moneda VARCHAR(3) DEFAULT 'ARS' COMMENT 'Moneda (ARS, USD, EUR)',
+    descripcion TEXT NULL COMMENT 'Descripción de la tarifa',
+    activo BOOLEAN DEFAULT TRUE COMMENT 'Si la tarifa está activa',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_rol (nombre_rol),
+    INDEX idx_vigencia (vigente_desde, vigente_hasta),
+    INDEX idx_activo (activo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tarifas por rol';
+
+-- Tabla: personal_pagos
+CREATE TABLE IF NOT EXISTS personal_pagos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_personal VARCHAR(50) NOT NULL COMMENT 'ID del empleado',
+    id_solicitud INT NULL COMMENT 'ID del evento/solicitud (opcional)',
+    monto_acordado DECIMAL(10,2) NOT NULL COMMENT 'Monto acordado para este trabajo',
+    monto_pagado DECIMAL(10,2) DEFAULT 0 COMMENT 'Monto realmente pagado',
+    fecha_trabajo DATE NULL COMMENT 'Fecha en que se realizó el trabajo',
+    fecha_pago DATE NULL COMMENT 'Fecha en que se realizó el pago',
+    metodo_pago VARCHAR(50) DEFAULT 'efectivo' COMMENT 'efectivo, transferencia, cheque, etc.',
+    comprobante VARCHAR(255) NULL COMMENT 'Número de comprobante o referencia',
+    estado ENUM('pendiente', 'parcial', 'pagado') DEFAULT 'pendiente' COMMENT 'Estado del pago',
+    descripcion TEXT NULL COMMENT 'Descripción del trabajo realizado',
+    notas TEXT NULL COMMENT 'Notas adicionales',
+    creado_por INT NULL COMMENT 'ID del usuario que creó el registro',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_personal (id_personal),
+    INDEX idx_solicitud (id_solicitud),
+    INDEX idx_estado (estado),
+    INDEX idx_fecha_trabajo (fecha_trabajo),
+    INDEX idx_fecha_pago (fecha_pago),
+    INDEX idx_metodo_pago (metodo_pago),
+    INDEX idx_creado_por (creado_por)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Pagos realizados al personal';
+
 -- =============================================================================
 -- TABLAS DE SOLICITUDES
 -- =============================================================================
 
 -- Tabla de clientes centralizada
 CREATE TABLE IF NOT EXISTS clientes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) DEFAULT NULL,
     telefono VARCHAR(50) DEFAULT NULL,
     email VARCHAR(255) DEFAULT NULL,
@@ -164,7 +209,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     UNIQUE KEY uk_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Tabla general para solicitudes (ahora referencia a clientes por cliente_id)
+-- Tabla general para solicitudes (ahora referencia a clientes por id_cliente)
 CREATE TABLE IF NOT EXISTS solicitudes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     categoria ENUM('ALQUILER', 'BANDA', 'BANDAS', 'SERVICIOS', 'TALLERES') NOT NULL,
@@ -175,11 +220,11 @@ CREATE TABLE IF NOT EXISTS solicitudes (
     descripcion_larga TEXT DEFAULT NULL,
     url_flyer MEDIUMTEXT DEFAULT NULL COMMENT 'URL del flyer/cartel/promocional adjunto por el solicitante',
     descripcion TEXT,
-    cliente_id INT NULL,
+    id_cliente INT NULL,
     INDEX idx_categoria (categoria),
     INDEX idx_estado (estado),
     INDEX idx_es_publico (es_publico),
-    INDEX idx_cliente_id (cliente_id)
+    INDEX idx_cliente_id (id_cliente)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Tabla específica para solicitudes de alquiler (sin columnas de contacto redundantes)
@@ -200,7 +245,7 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
 
 -- FK para vincular solicitudes a clientes
 ALTER TABLE solicitudes DROP FOREIGN KEY IF EXISTS fk_solicitudes_cliente;
-ALTER TABLE solicitudes ADD CONSTRAINT fk_solicitudes_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL; 
+ALTER TABLE solicitudes ADD CONSTRAINT fk_solicitudes_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE SET NULL; 
 
 -- Tabla específica para solicitudes de bandas
 
@@ -244,10 +289,8 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
     hora_inicio TIME NOT NULL,
     duracion_estimada VARCHAR(100),
     
-    -- Información de contacto
-    nombre_cliente VARCHAR(255),
-    email_cliente VARCHAR(255),
-    telefono_cliente VARCHAR(50),
+    -- Información de contacto reducida: solo referenciamos al cliente
+    id_cliente INT DEFAULT NULL COMMENT 'FK a clientes.id_cliente',
     
     -- Datos económicos
     precio_base DECIMAL(10,2),
@@ -274,6 +317,7 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
     INDEX idx_es_publico (es_publico),
     INDEX idx_activo (activo),
     INDEX idx_id_solicitud (id_solicitud),
+    INDEX idx_id_cliente (id_cliente),
     UNIQUE KEY uk_solicitud_tipo (id_solicitud, tipo_evento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Eventos confirmados unificados de todas las solicitudes';
 
@@ -294,7 +338,7 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
 
 -- Catálogo maestro de bandas/artistas (pueden registrarse solos o ser agregados por admin)
 CREATE TABLE IF NOT EXISTS bandas_artistas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_banda INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL COMMENT 'Nombre de la banda o artista',
     genero_musical VARCHAR(100) DEFAULT NULL COMMENT 'Rock, Jazz, Cumbia, etc.',
     bio TEXT COMMENT 'Biografía o descripción',
@@ -339,7 +383,7 @@ CREATE TABLE IF NOT EXISTS bandas_formacion (
     es_lider TINYINT(1) DEFAULT 0 COMMENT '1=Es el líder/frontman',
     notas VARCHAR(255) DEFAULT NULL COMMENT 'Ej: Guitarra rítmica, Segunda voz',
     INDEX idx_banda (id_banda),
-    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE CASCADE
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Catálogo de instrumentos disponibles (para autocompletado)
@@ -379,7 +423,7 @@ CREATE TABLE IF NOT EXISTS eventos_lineup (
     INDEX idx_banda (id_banda),
     INDEX idx_orden (id_evento_confirmado, orden_show),
     FOREIGN KEY (id_evento_confirmado) REFERENCES eventos_confirmados(id) ON DELETE CASCADE,
-    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Bandas invitadas por evento (hasta 3 adicionales a la principal)
@@ -393,7 +437,7 @@ CREATE TABLE IF NOT EXISTS eventos_bandas_invitadas (
     INDEX idx_evento (id_evento),
     INDEX idx_banda (id_banda),
     FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE,
-    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Eliminar tabla vieja si existe (migración)
@@ -421,10 +465,13 @@ CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
     descripcion TEXT COMMENT 'Descripción del show/evento',
     precio_basico DECIMAL(10,2) DEFAULT NULL,
     precio_final DECIMAL(10,2) DEFAULT NULL,
-    precio_puerta_propuesto DECIMAL(10,2) DEFAULT NULL,
+    precio_anticipada DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de venta anticipada',
+    precio_puerta DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de puerta / venta en puerta',
+    precio_puerta_propuesto DECIMAL(10,2) DEFAULT NULL COMMENT '[DEPRECATED] Usar precio_puerta en su lugar',
     cantidad_bandas INT DEFAULT 1,
     expectativa_publico VARCHAR(100) DEFAULT NULL,
-    invitadas_json TEXT COMMENT 'JSON: [{nombre, id_banda?, confirmada}]',
+    bandas_json LONGTEXT COMMENT 'JSON array de bandas: [{id_banda, nombre, orden_show, es_principal}] - ÚNICA FUENTE DE VERDAD',
+    invitadas_json TEXT COMMENT '[DEPRECATED] JSON: [{nombre, id_banda?, confirmada}]',
     estado VARCHAR(50) DEFAULT 'Solicitado',
     fecha_alternativa DATE DEFAULT NULL,
     notas_admin TEXT,
@@ -435,7 +482,7 @@ CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
     INDEX idx_estado (estado),
     INDEX idx_banda (id_banda),
     FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE,
-    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id) ON DELETE SET NULL
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Solicitudes de fechas/shows para bandas (3NF)';
 
 -- Personal asignado a eventos de bandas
@@ -624,15 +671,15 @@ CREATE TABLE IF NOT EXISTS profesionales_servicios (
     especialidad VARCHAR(255),
     telefono VARCHAR(20),
     email VARCHAR(255),
-    cliente_id INT NULL DEFAULT NULL,
+    id_cliente INT NULL DEFAULT NULL,
     dias_trabaja VARCHAR(255),
     hora_inicio TIME,
     hora_fin TIME,
     activo TINYINT(1) DEFAULT 1,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_profesionales_cliente_id (cliente_id),
-    CONSTRAINT fk_profesionales_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
+    INDEX idx_profesionales_cliente_id (id_cliente),
+    CONSTRAINT fk_profesionales_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Tabla para almacenar los turnos de servicios
@@ -669,3 +716,25 @@ CREATE TABLE IF NOT EXISTS solicitudes_adicionales (
     INDEX idx_solicitudes_adicionales_solicitud_id (id_solicitud),
     CONSTRAINT fk_solicitudes_adicionales_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Modificaciones a solicitudes_fechas_bandas
+ALTER TABLE solicitudes_fechas_bandas 
+ADD COLUMN IF NOT EXISTS precio_anticipada DECIMAL(10,2) NULL DEFAULT NULL AFTER precio_basico,
+ADD COLUMN IF NOT EXISTS precio_puerta DECIMAL(10,2) NULL DEFAULT NULL AFTER precio_anticipada;
+
+-- Modificaciones a eventos_confirmados
+ALTER TABLE eventos_confirmados DROP COLUMN IF EXISTS precio_base;
+ALTER TABLE eventos_confirmados DROP COLUMN IF EXISTS precio_final;
+-- remover campos de contacto que ahora se normalizan
+ALTER TABLE eventos_confirmados DROP COLUMN IF EXISTS nombre_cliente;
+ALTER TABLE eventos_confirmados DROP COLUMN IF EXISTS email_cliente;
+ALTER TABLE eventos_confirmados DROP COLUMN IF EXISTS telefono_cliente;
+-- agregar referencia a tabla clientes
+ALTER TABLE eventos_confirmados ADD COLUMN IF NOT EXISTS id_cliente INT DEFAULT NULL;
+ALTER TABLE eventos_confirmados ADD CONSTRAINT fk_eventos_clientes FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE SET NULL;
+ALTER TABLE eventos_confirmados ADD COLUMN IF NOT EXISTS tabla_origen VARCHAR(100) DEFAULT 'solicitudes_fechas_bandas';
+ALTER TABLE eventos_confirmados ADD COLUMN IF NOT EXISTS tipo_evento VARCHAR(100) DEFAULT 'FECHA_BANDAS';
+CREATE INDEX IF NOT EXISTS idx_eventos_solicitud ON eventos_confirmados(id_solicitud);
+CREATE INDEX IF NOT EXISTS idx_eventos_tabla_origen ON eventos_confirmados(tabla_origen);
+CREATE INDEX IF NOT EXISTS idx_eventos_tipo ON eventos_confirmados(tipo_evento);
+CREATE INDEX IF NOT EXISTS idx_eventos_cliente ON eventos_confirmados(id_cliente);

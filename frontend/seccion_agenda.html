@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agenda Completa - El Templo de Claypole</title>
     <!-- Carga de Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
     <style>
         :root {
             --color-primary: #581c87;
@@ -330,6 +330,8 @@
          */
         async function fetchEvents() {
             try {
+                console.debug('[AGENDA] API base URL', API_BASE_URL);
+                console.debug('[AGENDA] Fetching eventos from', `${API_BASE_URL}/api/eventos/publicos`);
                 // Cargar eventos confirmados públicos (usar endpoint /api/eventos/publicos para incluir flyers)
                 const resEventos = await fetch(`${API_BASE_URL}/api/eventos/publicos`);
                 let eventos = [];
@@ -354,6 +356,7 @@
                     console.warn('[AGENDA] /api/eventos/publicos response status', resEventos.status);
                 }
 
+                console.debug('[AGENDA] Fetching solicitudes from', `${API_BASE_URL}/api/solicitudes/publicas`);
                 // Cargar solicitudes públicas confirmadas
                 const resSolicitudes = await fetch(`${API_BASE_URL}/api/solicitudes/publicas`);
                 let solicitudes = [];
@@ -379,6 +382,8 @@
 
                 // Combinar y loguear (antes de dedupe)
                 const allEvents = [...eventos, ...solicitudes];
+                console.debug('[AGENDA] mapped eventos ->', eventos);
+                console.debug('[AGENDA] mapped solicitudes ->', solicitudes);
                 console.debug('[AGENDA] combined (before dedupe) ->', allEvents);
 
                 // Dedupe: preferir items de 'evento' cuando comparten id_solicitud
@@ -392,6 +397,7 @@
                     deduped.push(it);
                 }
                 console.debug('[AGENDA] combined (after dedupe) ->', deduped);
+                console.debug('[AGENDA] rendering events count', deduped.length);
 
                 renderEvents(deduped);
 

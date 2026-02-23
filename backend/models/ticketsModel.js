@@ -38,23 +38,25 @@ const pool = require('../db');
  * La tabla eventos usa columnas separadas: fecha DATE + hora_inicio TIME
  */
 const getEventosActivos = async () => {
+    // ✅ Opción B3: Obtener precios desde solicitudes_fechas_bandas
     const query = `
         SELECT 
             e.id, 
             e.nombre_evento AS nombre_banda, 
             CONCAT(e.fecha_evento, ' ', COALESCE(e.hora_inicio, '00:00:00')) as fecha_hora,
-            e.precio_base,
-            NULL as precio_anticipada,
-            e.precio_final as precio_puerta,
+            sfb.precio_basico as precio_base,
+            sfb.precio_anticipada,
+            sfb.precio_puerta as precio_puerta,
             e.cantidad_personas as aforo_maximo, 
             e.activo, 
             e.descripcion,
             CAST((e.cantidad_personas - COUNT(t.id_evento)) AS SIGNED) as tickets_disponibles
         FROM eventos_confirmados e
+        LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
         LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
-        WHERE e.activo = TRUE
+        WHERE e.activo = TRUE AND e.tipo_evento = 'BANDA'
         GROUP BY e.id
-        HAVING tickets_disponibles > 0 OR e.precio_base = 0.00 OR e.precio_final = 0.00
+        HAVING tickets_disponibles > 0 OR sfb.precio_basico = 0.00 OR sfb.precio_puerta = 0.00
         ORDER BY e.fecha_evento ASC, e.hora_inicio ASC;
     `;
     const rows = await pool.query(query);
@@ -65,18 +67,20 @@ const getEventosActivos = async () => {
  * Obtiene los detalles de un evento por su ID.
  */
 const getEventoById = async (id) => {
+    // ✅ Opción B3: Obtener precios desde solicitudes_fechas_bandas
     const query = `
         SELECT 
             e.id, 
             e.nombre_evento AS nombre_banda, 
             CONCAT(e.fecha_evento, ' ', COALESCE(e.hora_inicio, '00:00:00')) as fecha_hora,
-            e.precio_base,
-            NULL as precio_anticipada,
-            e.precio_final as precio_puerta,
+            sfb.precio_basico as precio_base,
+            sfb.precio_anticipada,
+            sfb.precio_puerta as precio_puerta,
             e.cantidad_personas as aforo_maximo, 
             e.descripcion,
             (e.cantidad_personas - COUNT(t.id_evento)) as tickets_disponibles
         FROM eventos_confirmados e
+        LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
         LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
         WHERE e.id = ? AND e.activo = TRUE
         GROUP BY e.id

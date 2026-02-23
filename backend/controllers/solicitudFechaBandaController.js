@@ -4,6 +4,7 @@
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const { getOrCreateClient } = require('../lib/clients');
+const { tryRecoverFlyerUrl } = require('./uploadsController');
 
 /**
  * POST /api/solicitudes-fechas-bandas
@@ -25,11 +26,15 @@ const crearSolicitudFechaBanda = async (req, res) => {
         duracion,
         descripcion,
         precio_basico,
-        precio_puerta_propuesto,
+        precio_puerta,
         expectativa_publico,
         cantidad_bandas,
-        invitadas_json
+        bandas_json,
+        invitadas_json  // ← Aceptar ambas para compatibilidad
     } = req.body;
+
+    // Usar invitadas_json si se envía en lugar de bandas_json (compatibilidad de transición)
+    const gandasArrayParaGuardarEnPOST = bandas_json || invitadas_json;
 
     // Validar campos obligatorios
     if (!fecha_evento) {
@@ -58,7 +63,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
         const sqlSolicitud = `
             INSERT INTO solicitudes (
                 categoria,
-                cliente_id,
+                id_cliente,
                 estado,
                 descripcion,
                 fecha_creacion,
@@ -82,12 +87,12 @@ const crearSolicitudFechaBanda = async (req, res) => {
         if (!bandaId && nombre_banda) {
             // Verificar si ya existe una banda con ese nombre
             const [bandaExistente] = await conn.query(
-                'SELECT id FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?)',
+                'SELECT id_banda FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?)',
                 [nombre_banda.trim()]
             );
 
             if (bandaExistente) {
-                bandaId = bandaExistente.id;
+                bandaId = bandaExistente.id_banda;
                 logVerbose(`[FECHA_BANDA] Banda encontrada en catálogo: ${bandaId}`);
             } else {
                 // Crear banda nueva en el catálogo
@@ -117,38 +122,83 @@ const crearSolicitudFechaBanda = async (req, res) => {
             }
         }
 
+        // 4. Construir bandas_json desde banda principal + invitadas
+        // ✅ NUEVA LÓGICA: bandas_json es la única fuente de verdad
+        // Estructura: [{id_banda, nombre, orden_show, es_principal}, ...]
+        let bandasArray = [];
+
+        // Si bandas_json viene COMPLETO (con principal), usarlo directamente
+        if (bandas_json && Array.isArray(bandas_json) && bandas_json.length > 0 && bandas_json.some(b => b.es_principal === true)) {
+            bandasArray = bandas_json.map((b, idx) => ({
+                id_banda: b.id_banda || b.id || null,
+                nombre: b.nombre || '',
+                orden_show: b.orden_show ?? idx,
+                es_principal: b.es_principal === true
+            }));
+            logVerbose(`[FECHA_BANDA] POST: bandas_json COMPLETO recibido: ${bandasArray.length} bandas`);
+        } else {
+            // Si no viene bandas_json completo, construir desde id_banda + bandas_json parcial
+            if (bandaId) {
+                // Obtener nombre de la banda desde bandas_artistas
+                const [bandaPrincipal] = await conn.query(
+                    'SELECT id_banda, nombre FROM bandas_artistas WHERE id_banda = ?',
+                    [bandaId]
+                );
+
+                if (bandaPrincipal) {
+                    bandasArray.push({
+                        id_banda: bandaPrincipal.id_banda,
+                        nombre: bandaPrincipal.nombre,
+                        orden_show: 0,
+                        es_principal: true
+                    });
+                }
+            }
+
+            // Agregar bandas invitadas si existen (bandas_json parcial o gandasArrayParaGuardarEnPOST)
+            const invitadas = bandas_json || gandasArrayParaGuardarEnPOST;
+            if (invitadas && Array.isArray(invitadas)) {
+                invitadas.forEach((banda, idx) => {
+                    bandasArray.push({
+                        id_banda: banda.id_banda || banda.id || null,
+                        nombre: banda.nombre || '',
+                        orden_show: idx + 1,
+                        es_principal: false
+                    });
+                });
+            }
+        }
+
         // 4. Crear registro en solicitudes_fechas_bandas
         const sqlFechaBanda = `
             INSERT INTO solicitudes_fechas_bandas (
                 id_solicitud,
-                id_banda,
                 fecha_evento,
                 hora_evento,
                 duracion,
                 descripcion,
                 precio_basico,
-                precio_puerta_propuesto,
+                precio_puerta,
                 expectativa_publico,
                 cantidad_bandas,
-                invitadas_json,
+                bandas_json,
                 estado,
                 creado_en,
                 actualizado_en
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Solicitado', NOW(), NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Solicitado', NOW(), NOW())
         `;
 
         const paramsFechaBanda = [
             solicitudId,
-            bandaId || null,
             fecha_evento,
             hora_evento || '21:00',
             duracion || null,
             descripcion || '',
             parseFloat(precio_basico) || 0,
-            precio_puerta_propuesto ? parseFloat(precio_puerta_propuesto) : null,
+            precio_puerta ? parseFloat(precio_puerta) : null,
             expectativa_publico || null,
-            cantidad_bandas || 1,
-            invitadas_json ? JSON.stringify(invitadas_json) : null
+            bandasArray.length,
+            bandasArray.length > 0 ? JSON.stringify(bandasArray) : null
         ];
 
         await conn.query(sqlFechaBanda, paramsFechaBanda);
@@ -191,50 +241,34 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
+        // ✅ B3 ARCHITECTURE: Single Source of Truth
+        // - Precios: SOLO desde solicitudes_fechas_bandas
+        // - Bandas: SOLO desde bandas_json (not denormalized join)
+        // - Cliente: FK only (id_cliente, no nested data)
         const sql = `
             SELECT
                 sfb.id_solicitud,
-                sfb.id_banda,
                 sfb.fecha_evento,
                 sfb.hora_evento,
                 sfb.duracion,
                 sfb.descripcion,
-                sfb.precio_basico,
-                sfb.precio_final,
                 sfb.id_evento_generado,
-                sfb.precio_puerta_propuesto,
-                sfb.cantidad_bandas,
-                sfb.invitadas_json,
                 sfb.estado,
                 sfb.fecha_alternativa,
                 sfb.notas_admin,
                 sfb.creado_en,
                 sfb.actualizado_en,
-                -- Exponer expectativa_publico para que el frontend muestre/edite aforo
                 sfb.expectativa_publico,
-                -- Representar precio anticipada (frontend usa 'precio_anticipada') a partir de precio_basico
-                sfb.precio_basico AS precio_anticipada,
-                -- Devolver nombre corto desde la fila padre 'solicitudes' como 'nombre_evento' para la UI
                 s.descripcion_corta AS nombre_evento,
                 s.categoria,
                 s.es_publico,
-                -- Usar COALESCE: primero el de eventos_confirmados, luego el de solicitudes
+                s.id_cliente,
                 COALESCE(ec.url_flyer, s.url_flyer) as url_flyer,
-                c.nombre as cliente_nombre,
-                c.email as cliente_email,
-                c.telefono as cliente_telefono,
-                ba.id as banda_id,
-                ba.nombre as banda_nombre,
-                ba.genero_musical,
-                ba.logo_url,
-                ba.instagram,
-                ba.facebook,
-                ba.youtube,
-                ba.spotify
+                sfb.precio_anticipada,
+                sfb.precio_puerta,
+                sfb.bandas_json
             FROM solicitudes_fechas_bandas sfb
             JOIN solicitudes s ON sfb.id_solicitud = s.id
-            LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id
-            LEFT JOIN clientes c ON s.cliente_id = c.id
             LEFT JOIN eventos_confirmados ec ON ec.id_solicitud = sfb.id_solicitud AND ec.tipo_evento = 'BANDA'
             WHERE sfb.id_solicitud = ?
         `;
@@ -246,24 +280,39 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
         }
 
-        // Parsear invitadas_json si existe
-        if (solicitud.invitadas_json) {
+        // ✅ Parsear bandas_json a array (si es string)
+        if (solicitud.bandas_json && typeof solicitud.bandas_json === 'string') {
             try {
-                solicitud.invitadas = JSON.parse(solicitud.invitadas_json);
+                solicitud.bandas_json = JSON.parse(solicitud.bandas_json);
             } catch (e) {
-                solicitud.invitadas = [];
+                logWarning(`[FECHA_BANDA] Error parseando bandas_json a JSON:`, e.message);
+                solicitud.bandas_json = [];
             }
-        } else {
-            solicitud.invitadas = [];
+        } else if (!solicitud.bandas_json) {
+            solicitud.bandas_json = [];
         }
 
-        logVerbose(`[FECHA_BANDA] ✓ Solicitud obtenida`);
+        // ✅ cantidad_bandas es CALCULADO frontend-side (not denormalized)
+        solicitud.cantidad_bandas = Array.isArray(solicitud.bandas_json) ? solicitud.bandas_json.length : 0;
+
+        // ✅ AUTO-RECUPERACIÓN: Si url_flyer es NULL, intentar recuperar del disco
+        if (!solicitud.url_flyer) {
+            const recoveredUrl = tryRecoverFlyerUrl(solicitud.id_solicitud);
+            if (recoveredUrl) {
+                solicitud.url_flyer = recoveredUrl;
+                logVerbose(`[FECHA_BANDA] ℹ url_flyer auto-recuperada para solicitud ${solicitud.id_solicitud}`);
+            }
+        }
+
+        logVerbose(`[FECHA_BANDA] ✓ Solicitud #${solicitud.id_solicitud} obtenida - id_cliente: ${solicitud.id_cliente}, bandas: ${solicitud.cantidad_bandas}`);
 
         return res.status(200).json(solicitud);
 
     } catch (err) {
         logError('[FECHA_BANDA] Error al obtener solicitud:', err.message);
-        return res.status(500).json({ error: 'Error al obtener solicitud.' });
+        logError('[FECHA_BANDA] Stack:', err.stack);
+        logError('[FECHA_BANDA] Detalles:', JSON.stringify({ idNum, message: err.message }, null, 2));
+        return res.status(500).json({ error: 'Error al obtener solicitud.', debug: err.message });
     } finally {
         if (conn) conn.release();
     }
@@ -285,22 +334,20 @@ const listarSolicitudesFechasBandas = async (req, res) => {
         let sql = `
             SELECT
                 sfb.id_solicitud,
-                sfb.id_banda,
                 sfb.fecha_evento,
                 sfb.hora_evento,
                 sfb.duracion,
                 sfb.descripcion,
-                sfb.precio_basico,
+                sfb.precio_anticipada,
+                sfb.precio_puerta,
                 sfb.estado,
-                ba.nombre as banda_nombre,
-                ba.genero_musical,
-                c.nombre as cliente_nombre,
-                c.email as cliente_email,
+                sfb.expectativa_publico,
+                sfb.bandas_json,
+                s.descripcion_corta AS nombre_evento,
+                s.id_cliente,
                 sfb.creado_en
             FROM solicitudes_fechas_bandas sfb
-            LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id
             JOIN solicitudes s ON sfb.id_solicitud = s.id
-            LEFT JOIN clientes c ON s.cliente_id = c.id
             WHERE 1=1
         `;
 
@@ -338,9 +385,55 @@ const listarSolicitudesFechasBandas = async (req, res) => {
 
         const solicitudes = await conn.query(sql, params);
 
-        logVerbose(`[FECHA_BANDA] ✓ ${solicitudes.length} solicitudes encontradas`);
+        // ✅ Parsear bandas_json para cada solicitud y limpiar campos denormalizados
+        const result = solicitudes.map(s => {
+            // Limpiar campos denormalizados que no debería haber
+            delete s.cliente_nombre;
+            delete s.cliente_email;
+            delete s.cliente_telefono;
+            delete s.banda_id;
+            delete s.banda_nombre;
+            delete s.genero_musical;
+            delete s.logo_url;
+            delete s.instagram;
+            delete s.facebook;
+            delete s.youtube;
+            delete s.spotify;
+            delete s.precio_base;
+            delete s.precio_puerta_propuesto;
+            delete s.invitadas;
 
-        return res.status(200).json(solicitudes);
+            // Parsear bandas_json
+            if (s.bandas_json && typeof s.bandas_json === 'string') {
+                try {
+                    s.bandas_json = JSON.parse(s.bandas_json);
+                } catch (e) {
+                    logWarning(`[FECHA_BANDA] Error parseando bandas_json para id=${s.id_solicitud}:`, e.message);
+                    s.bandas_json = [];
+                }
+            } else if (!s.bandas_json) {
+                s.bandas_json = [];
+            }
+
+            // Calcular cantidad_bandas
+            s.cantidad_bandas = s.bandas_json && Array.isArray(s.bandas_json)
+                ? s.bandas_json.length
+                : 0;
+
+            // ✅ AUTO-RECUPERACIÓN: Si url_flyer es NULL, intentar recuperar del disco
+            if (!s.url_flyer) {
+                const recoveredUrl = tryRecoverFlyerUrl(s.id_solicitud);
+                if (recoveredUrl) {
+                    s.url_flyer = recoveredUrl;
+                }
+            }
+
+            return s;
+        });
+
+        logVerbose(`[FECHA_BANDA] ✓ ${result.length} solicitudes encontradas`);
+
+        return res.status(200).json(result);
 
     } catch (err) {
         logError('[FECHA_BANDA] Error al listar solicitudes:', err.message);
@@ -370,17 +463,18 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
         hora_evento,
         duracion,
         descripcion,
-        precio_basico,
-        precio_final,
-        precio_puerta_propuesto,
+        precio_anticipada,
+        precio_puerta,
         expectativa_publico,
         cantidad_bandas,
-        invitadas_json,
+        bandas_json,
+        invitadas_json,  // ← Aceptar para compatibilidad de transición
         estado,
         fecha_alternativa,
         notas_admin,
         url_flyer,
         es_publico,
+        id_cliente,  // ← Agregar id_cliente para actualizar tabla padre
         // contacto_*: permitir actualizar datos de cliente desde el formulario
         contacto_nombre,
         contacto_email,
@@ -389,9 +483,17 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
 
     logVerbose('[FECHA_BANDA] Parámetros desestructurados:');
     logVerbose('  id_banda:', id_banda);
+    logVerbose('  id_cliente:', id_cliente);
+    logVerbose('  precio_anticipada:', precio_anticipada);
+    logVerbose('  precio_puerta:', precio_puerta);
+    logVerbose('  bandas_json:', bandas_json);
     logVerbose('  invitadas_json:', invitadas_json);
-    logVerbose('  invitadas_json type:', typeof invitadas_json);
-    logVerbose('  es Array?:', Array.isArray(invitadas_json));
+    // Usar invitadas_json si se envía en lugar de bandas_json (compatibilidad de transición)
+    const gandasArrayParaGuardar = bandas_json || invitadas_json;
+    logVerbose('  gandasArrayParaGuardar:', gandasArrayParaGuardar);
+    logVerbose('  gandasArrayParaGuardar type:', typeof gandasArrayParaGuardar);
+    logVerbose('  es Array?:', Array.isArray(gandasArrayParaGuardar));
+    logVerbose('[FECHA_BANDA] Body completo para debugging:', JSON.stringify(req.body, null, 2));
 
     let conn;
     try {
@@ -417,9 +519,9 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
 
         // Si vienen campos de contacto, actualizarlos en `clientes` (o crearlos) y propagar a eventos_confirmados
         if (typeof contacto_nombre !== 'undefined' || typeof contacto_email !== 'undefined' || typeof contacto_telefono !== 'undefined') {
-            // Obtener cliente_id desde la tabla padre `solicitudes`
-            const [parentRow] = await conn.query('SELECT cliente_id FROM solicitudes WHERE id = ?', [idNum]);
-            const clienteId = parentRow && parentRow.cliente_id ? parentRow.cliente_id : null;
+            // Obtener id_cliente desde la tabla padre `solicitudes`
+            const [parentRow] = await conn.query('SELECT id_cliente FROM solicitudes WHERE id = ?', [idNum]);
+            const clienteId = parentRow && parentRow.id_cliente ? parentRow.id_cliente : null;
 
             if (clienteId) {
                 const clientUpdates = [];
@@ -436,10 +538,10 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                     } catch (err) {
                         // Si el UPDATE falla por email duplicado, intentar ligar la solicitud al cliente existente con ese email
                         if (err && err.errno === 1062 && contacto_email) {
-                            const [existing] = await conn.query('SELECT id FROM clientes WHERE email = ?', [contacto_email]);
-                            if (existing && existing.id && existing.id !== clienteId) {
-                                await conn.query('UPDATE solicitudes SET cliente_id = ? WHERE id = ?', [existing.id, idNum]);
-                                logVerbose(`[FECHA_BANDA] Cliente conflict (email existente). Solicitud ${idNum} ligada a cliente id=${existing.id}`);
+                            const [existing] = await conn.query('SELECT id_cliente FROM clientes WHERE email = ?', [contacto_email]);
+                            if (existing && existing.id_cliente && existing.id_cliente !== clienteId) {
+                                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id = ?', [existing.id_cliente, idNum]);
+                                logVerbose(`[FECHA_BANDA] Cliente conflict (email existente). Solicitud ${idNum} ligada a cliente id=${existing.id_cliente}`);
                             } else {
                                 // No podemos resolver el conflicto automáticamente
                                 throw err;
@@ -456,32 +558,116 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                     telefono: contacto_telefono || null,
                     email: contacto_email || null
                 });
-                await conn.query('UPDATE solicitudes SET cliente_id = ? WHERE id = ?', [newClienteId, idNum]);
+                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id = ?', [newClienteId, idNum]);
                 logVerbose(`[FECHA_BANDA] Nuevo cliente id=${newClienteId} ligado a solicitud ${idNum}`);
             }
 
-            // Propagar cambios al evento confirmado (si existe)
-            const evUpdates = [];
-            const evParams = [];
-            if (typeof contacto_nombre !== 'undefined') { evUpdates.push('nombre_cliente = ?'); evParams.push(contacto_nombre); }
-            if (typeof contacto_email !== 'undefined') { evUpdates.push('email_cliente = ?'); evParams.push(contacto_email); }
-            if (typeof contacto_telefono !== 'undefined') { evUpdates.push('telefono_cliente = ?'); evParams.push(contacto_telefono); }
-
-            if (evUpdates.length) {
-                evParams.push(idNum);
-                await conn.query(`UPDATE eventos_confirmados SET ${evUpdates.join(', ')} WHERE id_solicitud = ?`, evParams);
-                logVerbose(`[FECHA_BANDA] eventos_confirmados sincronizado con contacto para solicitud ${idNum}`);
-            }
+            // No se propagan campos de contacto a eventos_confirmados: ahora usamos id_cliente en la tabla
+            // Si hubo cambios de contacto (getOrCreateClient arriba los actualizó en clientes), no hacemos nada extra aquí.
         }
 
         // Construir UPDATE dinámico
         const actualizaciones = [];
         const params = [];
 
-        if (id_banda !== undefined) {
-            actualizaciones.push('id_banda = ?');
-            params.push(id_banda ? parseInt(id_banda, 10) : null);
+        // Declarar bandasActual en scope de función para usar en sincronización
+        let bandasActual = [];
+
+        // ✅ REFACTORIZACIÓN: Construir bandas_json cuando viene id_banda o bandas_json/invitadas_json
+        if (id_banda !== undefined || gandasArrayParaGuardar !== undefined) {
+            // Obtener bandas_json actual para preservar datos no modificados
+            const [currentRecord] = await conn.query(
+                'SELECT bandas_json FROM solicitudes_fechas_bandas WHERE id_solicitud = ?',
+                [idNum]
+            );
+            if (currentRecord && currentRecord.bandas_json) {
+                try {
+                    bandasActual = JSON.parse(currentRecord.bandas_json);
+                } catch (e) {
+                    bandasActual = [];
+                }
+            }
+
+            // ✅ NUEVA LÓGICA: bandas_json es la ÚNICA fuente de verdad
+            // Si viene bandas_json COMPLETO (con principal + invitadas), usarlo directamente
+            if (bandas_json !== undefined && Array.isArray(bandas_json) && bandas_json.length > 0) {
+                // Verificar si contiene una banda marcada como principal
+                const tienePrincipal = bandas_json.some(b => b.es_principal === true);
+
+                if (tienePrincipal) {
+                    // bandas_json está COMPLETO: principal + invitadas
+                    // Usarlo como está, es la nueva fuente de verdad
+                    bandasActual = bandas_json.map((b, idx) => ({
+                        id_banda: b.id_banda || b.id || null,
+                        nombre: b.nombre || '',
+                        orden_show: b.orden_show ?? idx,
+                        es_principal: b.es_principal === true
+                    }));
+                    logVerbose(`[FECHA_BANDA] bandas_json COMPLETO recibido: ${bandasActual.length} bandas (incluye principal)`);
+                } else {
+                    // bandas_json solo contiene invitadas (sin principal)
+                    // Combinar con banda principal existente o nueva
+                    bandasActual = bandasActual.filter(b => b.es_principal === true);
+                    bandas_json.forEach((banda, idx) => {
+                        bandasActual.push({
+                            id_banda: banda.id_banda || banda.id || null,
+                            nombre: banda.nombre || '',
+                            orden_show: idx + 1,
+                            es_principal: false
+                        });
+                    });
+                    logVerbose(`[FECHA_BANDA] bandas_json PARCIAL recibido: ${bandas_json.length} invitadas + principal existente`);
+                }
+            } else if (gandasArrayParaGuardar !== undefined && Array.isArray(gandasArrayParaGuardar)) {
+                // Compatibilidad: si viene invitadas_json (frontend viejo)
+                // Remover invitadas anteriores
+                bandasActual = bandasActual.filter(b => b.es_principal === true);
+
+                // Agregar nuevas invitadas
+                if (gandasArrayParaGuardar.length > 0) {
+                    gandasArrayParaGuardar.forEach((banda, idx) => {
+                        bandasActual.push({
+                            id_banda: banda.id_banda,
+                            nombre: banda.nombre || '',
+                            orden_show: idx + 1,
+                            es_principal: false
+                        });
+                    });
+                }
+                logVerbose(`[FECHA_BANDA] invitadas_json PARCIAL recibido: ${gandasArrayParaGuardar.length} invitadas`);
+            }
+
+            // Si viene id_banda SEPARADO, actualizar banda principal (compatibilidad)
+            if (id_banda !== undefined && (!bandas_json || !Array.isArray(bandas_json) || !bandas_json.some(b => b.es_principal === true))) {
+                // Solo aplicar si bandas_json no existe, no es array, o no tiene una principal
+                bandasActual = bandasActual.filter(b => !b.es_principal);
+
+                if (id_banda) {
+                    const [bandaInfo] = await conn.query(
+                        'SELECT id_banda, nombre FROM bandas_artistas WHERE id_banda = ?',
+                        [id_banda]
+                    );
+                    if (bandaInfo) {
+                        bandasActual.unshift({
+                            id_banda: bandaInfo.id_banda,
+                            nombre: bandaInfo.nombre,
+                            orden_show: 0,
+                            es_principal: true
+                        });
+                    }
+                }
+                logVerbose(`[FECHA_BANDA] Banda principal actualizada (compatibilidad): ${id_banda}`);
+            }
+
+            // Persistir bandas_json actualizado
+            actualizaciones.push('bandas_json = ?');
+            params.push(bandasActual.length > 0 ? JSON.stringify(bandasActual) : null);
+
+            // También actualizar cantidad_bandas automáticamente
+            actualizaciones.push('cantidad_bandas = ?');
+            params.push(bandasActual.length);
         }
+
         if (fecha_evento !== undefined) {
             actualizaciones.push('fecha_evento = ?');
             params.push(fecha_evento);
@@ -498,40 +684,24 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             actualizaciones.push('descripcion = ?');
             params.push(descripcion);
         }
-        if (precio_basico !== undefined) {
-            actualizaciones.push('precio_basico = ?');
-            params.push(parseFloat(precio_basico) || 0);
+        // ✅ B3: Precios desde solicitudes_fechas_bandas (ÚNICA fuente de verdad)
+        if (precio_anticipada !== undefined) {
+            actualizaciones.push('precio_anticipada = ?');
+            params.push(precio_anticipada ? parseFloat(precio_anticipada) : null);
         }
-        if (precio_final !== undefined) {
-            actualizaciones.push('precio_final = ?');
-            params.push(precio_final ? parseFloat(precio_final) : null);
+        if (precio_puerta !== undefined) {
+            actualizaciones.push('precio_puerta = ?');
+            params.push(precio_puerta ? parseFloat(precio_puerta) : null);
         }
-        if (precio_puerta_propuesto !== undefined) {
-            actualizaciones.push('precio_puerta_propuesto = ?');
-            params.push(precio_puerta_propuesto ? parseFloat(precio_puerta_propuesto) : null);
-        }
+
         if (expectativa_publico !== undefined) {
             actualizaciones.push('expectativa_publico = ?');
             params.push(expectativa_publico);
         }
-        if (cantidad_bandas !== undefined) {
+        // NOTA: cantidad_bandas ya fue actualizado arriba si bandas_json cambió
+        if (cantidad_bandas !== undefined && id_banda === undefined && gandasArrayParaGuardar === undefined) {
             actualizaciones.push('cantidad_bandas = ?');
             params.push(cantidad_bandas ? parseInt(cantidad_bandas, 10) : 1);
-        }
-        if (invitadas_json !== undefined) {
-            logVerbose(`[FECHA_BANDA] invitadas_json recibido:`, invitadas_json);
-            logVerbose(`[FECHA_BANDA] invitadas_json tipo:`, typeof invitadas_json);
-            logVerbose(`[FECHA_BANDA] invitadas_json es array:`, Array.isArray(invitadas_json));
-            if (Array.isArray(invitadas_json)) {
-                logVerbose(`[FECHA_BANDA] invitadas_json cantidad de elementos:`, invitadas_json.length);
-                invitadas_json.forEach((inv, idx) => {
-                    logVerbose(`[FECHA_BANDA]   invitada[${idx}]:`, JSON.stringify(inv));
-                });
-            }
-            const jsonString = invitadas_json ? JSON.stringify(invitadas_json) : null;
-            logVerbose(`[FECHA_BANDA] invitadas_json stringificado:`, jsonString);
-            actualizaciones.push('invitadas_json = ?');
-            params.push(jsonString);
         }
         if (estado !== undefined) {
             // Sólo admin/staff puede cambiar el estado a 'Confirmado'
@@ -594,27 +764,60 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
 
             const result = await conn.query(sqlUpdate, params);
             logVerbose(`[FECHA_BANDA] ✓ Solicitud actualizada: ${result.affectedRows} fila(s)`);
+        }
 
-            // Verificación POST-actualización: leer recurso actualizado
-            const [verifyRow] = await conn.query(
-                'SELECT id_solicitud, id_banda, invitadas_json FROM solicitudes_fechas_bandas WHERE id_solicitud = ?',
-                [idNum]
-            );
-            if (verifyRow) {
-                logVerbose(`[FECHA_BANDA] ✓ Verificación POST-UPDATE:`);
-                logVerbose(`[FECHA_BANDA]   id_solicitud:`, verifyRow.id_solicitud);
-                logVerbose(`[FECHA_BANDA]   id_banda:`, verifyRow.id_banda);
-                logVerbose(`[FECHA_BANDA]   invitadas_json (raw):`, verifyRow.invitadas_json);
-                if (verifyRow.invitadas_json) {
-                    try {
-                        const parsed = JSON.parse(verifyRow.invitadas_json);
-                        logVerbose(`[FECHA_BANDA]   invitadas_json (parsed):`, JSON.stringify(parsed, null, 2));
-                        logVerbose(`[FECHA_BANDA]   cantidad de invitadas:`, Array.isArray(parsed) ? parsed.length : 'NO ES ARRAY');
-                    } catch (e) {
-                        logVerbose(`[FECHA_BANDA]   Error parsing invitadas_json:`, e.message);
+        // ✅ Opción B3: Single Source of Truth
+        // Los precios viven SOLO en solicitudes_fechas_bandas
+        // NO se sincronizan a eventos_confirmados (que ya no tiene campos precio_base/precio_final)
+        // Si se edita el precio en solicitudes_fechas_bandas,
+        // eventos_confirmado automáticamente reflejará el cambio al hacer JOIN para lecturas
+
+        // ✅ SINCRONIZAR bandas_json CON eventos_lineup
+        // Sincronizar si se recibió bandas_json (completo o parcial) o invitadas_json
+        logVerbose(`[FECHA_BANDA] SINCRONIZANDO BANDAS - bandasActual: ${bandasActual.length}, gandasArrayParaGuardar: ${(gandasArrayParaGuardar && Array.isArray(gandasArrayParaGuardar) ? gandasArrayParaGuardar.length : 0)}`);
+
+        try {
+            // Extraer INVITADAS de bandasActual (bandas sin es_principal=true)
+            const invitadas = bandasActual.filter(b => b.es_principal !== true);
+
+            if ((bandas_json || gandasArrayParaGuardar) && invitadas.length > 0) {
+                // Obtener el id_evento_confirmado para esta solicitud
+                const [eventoRow] = await conn.query(
+                    "SELECT id FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = 'BANDA'",
+                    [idNum]
+                );
+
+                if (eventoRow && eventoRow.id) {
+                    const eventoId = eventoRow.id;
+                    logVerbose(`[FECHA_BANDA] Evento encontrado para solicitud ${idNum}: id=${eventoId}`);
+
+                    // Borrar todas las invitadas EXCEPTO la banda principal (es_principal=1)
+                    await conn.query(
+                        `DELETE FROM eventos_lineup 
+                         WHERE id_evento_confirmado = ? AND es_principal = 0 AND es_solicitante = 0`,
+                        [eventoId]
+                    );
+                    logVerbose(`[FECHA_BANDA] Invitadas borradas de eventos_lineup para evento ${eventoId}`);
+
+                    // Insertar nuevas bandas invitadas desde bandasActual
+                    let orden = 0;
+                    for (const inv of invitadas) {
+                        if (inv.id_banda && inv.nombre) {
+                            await conn.query(
+                                `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) 
+                                 VALUES (?, ?, ?, ?, 0, 0, 'invitada')`,
+                                [eventoId, inv.id_banda, inv.nombre, orden++]
+                            );
+                        }
                     }
+                    logVerbose(`[FECHA_BANDA] ${invitadas.length} nuevas bandas invitadas insertadas en eventos_lineup para evento ${eventoId}`);
+                } else {
+                    logWarning(`[FECHA_BANDA] No existe evento_confirmado para solicitud ${idNum} - no se pueden sincronizar bandas`);
                 }
             }
+        } catch (e) {
+            logWarning(`[FECHA_BANDA] Error sincronizando bandas con eventos_lineup:`, e.message);
+            // No fallar el PUT por error en sincronización de invitadas
         }
 
         // Si se pidió actualizar es_publico en el PUT, persistirlo en la tabla padre `solicitudes`
@@ -625,6 +828,17 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             // Sincronizar valor en eventos_confirmados (si existe)
             await conn.query('UPDATE eventos_confirmados SET es_publico = ? WHERE id_solicitud = ?', [parentEsPublico, idNum]);
             logVerbose(`[FECHA_BANDA] ✓ es_publico sincronizado en 'eventos_confirmados' para solicitud ${idNum}`);
+        }
+
+        // Si se pidió actualizar id_cliente en el PUT, persistirlo en la tabla padre `solicitudes`
+        if (id_cliente !== undefined && id_cliente !== null) {
+            const idClienteNum = parseInt(id_cliente, 10);
+            if (!isNaN(idClienteNum)) {
+                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id = ?', [idClienteNum, idNum]);
+                logVerbose(`[FECHA_BANDA] ✓ id_cliente guardado en tabla 'solicitudes' (id=${idNum} -> id_cliente=${idClienteNum})`);
+            } else {
+                logWarning(`[FECHA_BANDA] ⚠ id_cliente inválido recibido: ${id_cliente}`);
+            }
         }
         // Si en este PUT se cambió el estado a 'Confirmado', garantizar que exista el registro en eventos_confirmados
         if (typeof estado !== 'undefined' && estado === 'Confirmado') {
@@ -645,14 +859,11 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                 const [solicitudData] = await conn.query(`
                     SELECT
                         sfb.id_solicitud,
-                        sfb.id_banda,
                         sfb.fecha_evento,
                         sfb.hora_evento,
                         sfb.duracion,
                         sfb.descripcion,
                         sfb.precio_basico,
-                        sfb.precio_puerta_propuesto,
-                        sfb.invitadas_json,
                         sfb.cantidad_bandas,
                         s.descripcion_corta AS nombre_evento,
                         s.es_publico AS solicitud_es_publico,
@@ -663,8 +874,10 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                         c.telefono as cliente_telefono
                     FROM solicitudes_fechas_bandas sfb
                     JOIN solicitudes s ON sfb.id_solicitud = s.id
-                    LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id
-                    LEFT JOIN clientes c ON s.cliente_id = c.id
+                    LEFT JOIN eventos_confirmados ec ON ec.id_solicitud = sfb.id_solicitud AND ec.tipo_evento = 'BANDA'
+                    LEFT JOIN eventos_lineup el_principal ON el_principal.id_evento_confirmado = ec.id AND (el_principal.es_principal = 1 OR el_principal.es_solicitante = 1)
+                    LEFT JOIN bandas_artistas ba ON ba.id_banda = el_principal.id_banda
+                    LEFT JOIN clientes c ON s.id_cliente = c.id_cliente
                     WHERE sfb.id_solicitud = ?
                 `, [idNum]);
 
@@ -679,20 +892,17 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                             fecha_evento,
                             hora_inicio,
                             duracion_estimada,
-                            nombre_cliente,
-                            email_cliente,
-                            telefono_cliente,
-                            precio_base,
-                            precio_final,
+                            id_cliente,
                             genero_musical,
                             cantidad_personas,
                             es_publico,
                             activo,
                             confirmado_en
-                        ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+                        ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NOW())
                     `;
 
-                    const precioFinalParaEvento = typeof precio_final !== 'undefined' ? (precio_final ? parseFloat(precio_final) : solicitudData.precio_basico) : solicitudData.precio_basico;
+                    // ✅ Opción B3: No insertar precios en eventos_confirmados
+                    // Los precios viven SOLO en solicitudes_fechas_bandas (Single Source of Truth)
                     const esPublicoParaEvento = (typeof es_publico !== 'undefined') ? (es_publico ? 1 : 0) : (solicitudData.solicitud_es_publico ? 1 : 0);
 
                     const resultEvento = await conn.query(sqlEventoConfirmado, [
@@ -702,11 +912,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                         solicitudData.fecha_evento,
                         solicitudData.hora_evento || '21:00',
                         solicitudData.duracion || null,
-                        solicitudData.cliente_nombre || '',
-                        solicitudData.cliente_email || '',
-                        solicitudData.cliente_telefono || '',
-                        solicitudData.precio_basico || 0,
-                        precioFinalParaEvento,
+                        solicitudData.cliente_id || null,
                         solicitudData.genero_musical || solicitudData.banda_nombre || '',
                         solicitudData.cantidad_bandas || 120,
                         esPublicoParaEvento
@@ -717,22 +923,14 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
 
                     // Insertar lineup: banda principal + invitadas
                     try {
+                        // Banda principal desde eventos_lineup (obtenida en el SELECT anterior)
                         await conn.query(
                             `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, 99, 1, 1, 'confirmada')`,
-                            [nuevoEventoId, solicitudData.id_banda || null, solicitudData.banda_nombre || solicitudData.nombre_evento || 'Sin nombre']
+                            [nuevoEventoId, null, solicitudData.banda_nombre || solicitudData.nombre_evento || 'Sin nombre']
                         );
 
-                        if (solicitudData.invitadas_json) {
-                            let invitadas = [];
-                            try { invitadas = JSON.parse(solicitudData.invitadas_json || '[]'); } catch (e) { invitadas = []; }
-                            let orden = 0;
-                            for (const inv of invitadas) {
-                                await conn.query(
-                                    `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, ?, 0, 0, 'invitada')`,
-                                    [nuevoEventoId, inv.id_banda || null, inv.nombre || '', orden++]
-                                );
-                            }
-                        }
+                        // ✅ invitadas_json fue removido en Phase 2 - ahora se gestiona directamente en eventos_lineup
+                        logVerbose(`[FECHA_BANDA] Banda principal insertada en eventos_lineup. Invitadas se gestionan directamente en eventos_lineup.`);
                     } catch (e) {
                         logWarning(`[FECHA_BANDA] Error insertando lineup para evento ${nuevoEventoId}:`, e.message);
                     }
@@ -766,7 +964,8 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
     } catch (err) {
         if (conn) await conn.rollback();
         logError('[FECHA_BANDA] Error al actualizar solicitud:', err.message);
-        return res.status(500).json({ error: 'Error al actualizar solicitud.' });
+        logError('[FECHA_BANDA] Stack:', err.stack);
+        return res.status(500).json({ error: 'Error al actualizar solicitud.', debug: err.message });
     } finally {
         if (conn) conn.release();
     }
@@ -785,7 +984,7 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
         return res.status(400).json({ error: 'ID inválido.' });
     }
 
-    const { precio_final, es_publico } = req.body;
+    const { es_publico } = req.body;
 
     let conn;
     try {
@@ -796,22 +995,19 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
         const sqlSelect = `
             SELECT
                 sfb.id_solicitud,
-                sfb.id_banda,
                 sfb.fecha_evento,
                 sfb.hora_evento,
                 sfb.duracion,
                 sfb.descripcion,
                 sfb.precio_basico,
-                sfb.precio_puerta_propuesto,
-                sfb.invitadas_json,
                 ba.nombre as banda_nombre,
                 c.nombre as cliente_nombre,
                 c.email as cliente_email,
                 c.telefono as cliente_telefono
             FROM solicitudes_fechas_bandas sfb
-            LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id
             JOIN solicitudes s ON sfb.id_solicitud = s.id
-            LEFT JOIN clientes c ON s.cliente_id = c.id
+            LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id_banda
+            LEFT JOIN clientes c ON s.id_cliente = c.id_cliente
             WHERE sfb.id_solicitud = ?
         `;
 
@@ -884,14 +1080,11 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
         // 2. Actualizar estado en solicitudes_fechas_bandas
         const sqlUpdateFecha = `
             UPDATE solicitudes_fechas_bandas 
-            SET estado = 'Confirmado', precio_final = ?, actualizado_en = NOW()
+            SET estado = 'Confirmado', actualizado_en = NOW()
             WHERE id_solicitud = ?
         `;
 
-        await conn.query(sqlUpdateFecha, [
-            precio_final ? parseFloat(precio_final) : solicitudFecha.precio_basico,
-            idNum
-        ]);
+        await conn.query(sqlUpdateFecha, [idNum]);
 
         // 3. Actualizar tabla solicitudes
         const sqlUpdateSolicitud = `
@@ -916,19 +1109,16 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
                 fecha_evento,
                 hora_inicio,
                 duracion_estimada,
-                nombre_cliente,
-                email_cliente,
-                telefono_cliente,
-                precio_base,
-                precio_final,
+                id_cliente,
                 genero_musical,
                 cantidad_personas,
                 es_publico,
                 activo,
                 confirmado_en
-            ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+            ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
         `;
 
+        // ✅ precio_final fue removido en Phase 2 - usar solo precio_basico
         const resultEvento = await conn.query(sqlEventoConfirmado, [
             idNum,
             solicitudFecha.banda_nombre || 'Sin nombre',
@@ -936,11 +1126,7 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
             solicitudFecha.fecha_evento,
             solicitudFecha.hora_evento || '21:00',
             solicitudFecha.duracion || null,
-            solicitudFecha.cliente_nombre || '',
-            solicitudFecha.cliente_email || '',
-            solicitudFecha.cliente_telefono || '',
-            solicitudFecha.precio_basico || 0,
-            precio_final ? parseFloat(precio_final) : solicitudFecha.precio_basico,
+            solicitudFecha.cliente_id || null,
             solicitudFecha.banda_nombre || '',
             solicitudFecha.cantidad_personas || 120,
             es_publico ? 1 : 0
@@ -953,25 +1139,11 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
             // Banda principal (si existe catálogo o nombre de banda)
             await conn.query(
                 `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, 99, 1, 1, 'confirmada')`,
-                [eventoId, solicitudFecha.id_banda || null, solicitudFecha.banda_nombre || solicitudFecha.descripcion || 'Sin nombre']
+                [eventoId, solicitudFecha.id_banda || null, solicitudFecha.banda_nombre || 'Sin nombre']
             );
 
-            // Invitadas desde invitadas_json
-            if (solicitudFecha.invitadas_json) {
-                try {
-                    const invitadas = JSON.parse(solicitudFecha.invitadas_json || '[]');
-                    let orden = 0;
-                    for (const inv of invitadas) {
-                        await conn.query(
-                            `INSERT INTO eventos_lineup (id_evento_confirmado, id_banda, nombre_banda, orden_show, es_principal, es_solicitante, estado) VALUES (?, ?, ?, ?, 0, 0, 'invitada')`,
-                            [eventoId, inv.id_banda || null, inv.nombre || '', orden++]
-                        );
-                    }
-                    logVerbose(`[FECHA_BANDA] Se insertaron ${invitadas.length} bandas invitadas en eventos_lineup para evento ${eventoId}`);
-                } catch (e) {
-                    logWarning(`[FECHA_BANDA] No se pudo parsear/insertar invitadas_json para solicitud ${idNum}: ${e.message}`);
-                }
-            }
+            // ✅ invitadas_json fue removido en Phase 2 - ahora se gestiona a través de eventos_lineup directamente
+            logVerbose(`[FECHA_BANDA] Banda principal insertada en eventos_lineup para evento ${eventoId}. Invitadas se gestionan directamente en eventos_lineup.`);
         } catch (e) {
             logWarning(`[FECHA_BANDA] Error al insertar lineup para evento ${eventoId}: ${e.message}`);
             // No abortamos la confirmación por fallo al insertar lineup; registrar y continuar

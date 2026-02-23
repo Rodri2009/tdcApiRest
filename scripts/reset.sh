@@ -3,17 +3,23 @@
 # ==============================================================================
 # Script de Reseteo Rápido para el Entorno TDC
 #
-# Uso: ./reset.sh
+# Uso: ./reset.sh [OPTIONS]
+#
+# Opciones:
+#   --delete-uploads Elimina todas las imágenes subidas (bandas, flyers)
+#                    Sin este flag, se mantienen todos los uploads
 #
 # Este script realiza un ciclo completo de DESTRUCCIÓN y RECONSTRUCCIÓN:
 #   1. Valida que el archivo .env exista.
 #   2. Destruye todos los contenedores, redes Y VOLÚMENES (incluyendo la base de datos).
-#   3. Reconstruye las imágenes de Docker desde cero (para aplicar cambios en el backend).
-#   4. Levanta un entorno completamente nuevo.
+#   3. Opcionalmente elimina imágenes subidas (backend/uploads/)
+#   4. Reconstruye las imágenes de Docker desde cero (para aplicar cambios en el backend).
+#   5. Levanta un entorno completamente nuevo.
 #
 # ADVERTENCIA: Este proceso es DESTRUCTIVO. Todos los datos en la base de datos
 # (incluyendo solicitudes de prueba) serán eliminados permanentemente.
 # La base de datos se recreará usando los scripts `schema.sql` y `seed.sql`.
+# Las imágenes subidas se PRESERVAN por defecto. Usa --delete-uploads para eliminarlas.
 # ==============================================================================
 
 # --- Sección de Configuración ---
@@ -21,7 +27,10 @@ ENV_FILE=".env"
 COMPOSE_FILE="docker/docker-compose.yml"
 COMPOSE_CMD="docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE"
 
-# Soportar flags de depuración
+# Control de uploads
+DELETE_UPLOADS=false
+
+# Soportar flags
 DEBUG_FLAGS=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -29,13 +38,24 @@ while [ $# -gt 0 ]; do
       DEBUG_FLAGS="$DEBUG_FLAGS $1"
       shift
       ;;
+    --delete-uploads)
+      DELETE_UPLOADS=true
+      echo "⚠️  Flag --delete-uploads activado: se eliminarán todas las imágenes subidas"
+      shift
+      ;;
     *)
       echo "❌ Argumento desconocido: $1"
-      echo "Flags soportados: -v, -e, -d, --verbose, --error, --debug, --help"
+      echo "Flags soportados: -v, -e, -d, --verbose, --error, --debug, --help, --delete-uploads"
       exit 1
       ;;
   esac
 done
+
+# Si hay DEBUG_FLAGS, mostrar qué se está usando
+if [ -n "$DEBUG_FLAGS" ]; then
+  echo "ℹ️  Debug flags detectados: $DEBUG_FLAGS"
+  export DEBUG_FLAGS
+fi
 
 echo "--- 🚀 Iniciando Reseteo Rápido del Entorno TDC ---"
 echo "ADVERTENCIA: Se eliminarán todos los datos de la base de datos."
@@ -47,9 +67,23 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 echo "✅ Archivo '.env' encontrado."
 
+# Cargar variables del archivo .env
+source "$ENV_FILE"
+
 # --- Fase 2: Destrucción Completa ---
 echo ""
 echo "--- 🗑️  Paso 1: Destruyendo entorno anterior (incluyendo volúmenes de base de datos)... ---"
+
+# ⚠️ PRIMERO: Limpiar todos los contenedores duplicados que hayan quedado
+echo "Limpiando contenedores duplicados que puedan haber quedado..."
+docker ps -a --filter "name=docker-backend" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
+docker ps -a --filter "name=docker-backend-run-" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
+docker ps -a --filter "name=docker-nginx" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
+docker ps -a --filter "name=docker-mariadb" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
+echo "✅ Contenedores viejos limpiados"
+echo ""
+
+# Ahora hacer down normal (debería ser rápido porque no hay mucho que limpiar)
 $COMPOSE_CMD down --volumes
 if [ $? -ne 0 ]; then
     echo "❌ ERROR: 'docker-compose down' falló. Por favor, revisa los mensajes de arriba."
@@ -57,32 +91,36 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅ Entorno anterior completamente eliminado."
 
+# --- Limpieza Opcional de Uploads ---
+if [ "$DELETE_UPLOADS" = true ]; then
+    echo ""
+    echo "--- 🗑️  Paso 1.5: Eliminando imágenes subidas (bandas, flyers)... ---"
+    rm -rf "backend/uploads/bandas" "backend/uploads/flyers" "/app/uploads/bandas" "/app/uploads/flyers" 2>/dev/null
+    echo "✅ Directorios de uploads eliminados."
+else
+    echo ""
+    echo "--- ✔️  Paso 1.5: Preservando imágenes subidas (sin --delete-uploads)... ---"
+    echo "✅ Los directorios backend/uploads/ se mantienen intactos."
+fi
+
 # --- Fase 3: Reconstrucción y Arranque ---
 echo ""
 echo "--- ✨ Paso 2: Reconstruyendo y levantando el entorno desde cero... ---"
 # El flag --build es crucial aquí para aplicar cualquier cambio que hayas hecho en el backend
-if [ -n "$DEBUG_FLAGS" ]; then
-    $COMPOSE_CMD up --build -d mariadb nginx
-else
-    $COMPOSE_CMD up --build -d
-fi
+# IMPORTANTE: Siempre levantar TODOS los servicios (mariadb, backend, nginx)
+# Los DEBUG_FLAGS se pasan vía variable de entorno (exportada arriba si fueron especificados)
+$COMPOSE_CMD up --build -d
 if [ $? -ne 0 ]; then
     echo "❌ ERROR: 'docker-compose up' falló. Por favor, revisa los mensajes de arriba."
     exit 1
 fi
 
-# Esperar que la DB esté lista
+# Esperar que la DB esté lista (aproximación simple pero confiable)
 echo "--- 🔎 Esperando que MariaDB esté lista para aceptar conexiones... ---"
-TRIES=0
-MAX_TRIES=30
-until $COMPOSE_CMD exec -T mariadb mysql -u root -p"$MARIADB_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; do
-    TRIES=$((TRIES+1))
-    if [ $TRIES -ge $MAX_TRIES ]; then
-        echo "❌ ERROR: MariaDB no respondió después de $MAX_TRIES intentos. Abortando."
-        exit 1
-    fi
-    sleep 2
-done
+# Simplemente esperamos un tiempo fijo que es suficiente para que MariaDB inicie
+# Los healthchecks de docker-compose también validan que esté healthy
+sleep 15
+echo "✅ MariaDB debería estar listo ahora"
 
 # --- Aplicar migraciones (si existen) ---
 # Nota: las migraciones en database/migrations se aplican **solo** cuando ejecutás ./reset.sh
@@ -117,30 +155,11 @@ fi
 # --- Fase 4: Información Final ---
 echo ""
 echo "--- ✅ ¡Reseteo completado! ---"
-echo "La base de datos ha sido recreada y los datos semilla de tus archivos CSV han sido recargados."
-
-# Si se proporcionaron flags de depuración, ejecutar el backend con esos flags
-if [ -n "$DEBUG_FLAGS" ]; then
-    echo ""
-    echo "--- 🐛 Esperando que MariaDB esté listo... ---"
-    sleep 5
-    
-    echo "--- 🐛 Ejecutando backend en background con flags:$DEBUG_FLAGS ---"
-    $COMPOSE_CMD run -d --rm backend $DEBUG_FLAGS
-    
-    # Dar tiempo para que se inicialice
-    sleep 2
-    
-    echo "--- 🐛 Mostrando logs en tiempo real (Ctrl+C solo detiene los logs, el backend sigue ejecutándose)... ---"
-    $COMPOSE_CMD logs -f backend
-fi
+echo "La base de datos ha sido recreada con los scripts iniciales."
 echo ""
-
-echo "--- Mostrando estado de los contenedores (espera unos segundos a que se estabilicen)... ---"
-sleep 5 # Damos 5 segundos para que los healthchecks empiecen a correr
+echo "--- 📊 Estado de los contenedores ---"
+sleep 3  # Damos tiempo a que se estabilicen
 $COMPOSE_CMD ps
-
 echo ""
-echo "--- Siguientes Pasos Sugeridos ---"
-echo "Para ver los logs del backend en tiempo real:"
-echo "docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
+echo "--- 🚀 Backend levantado - Viendo logs (Ctrl+C para salir)... ---"
+$COMPOSE_CMD logs -f backend

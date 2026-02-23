@@ -90,7 +90,7 @@ const crearSolicitud = async (req, res) => {
         const clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
 
         const sqlGeneral = `
-            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion_corta, descripcion_larga, descripcion, cliente_id, url_flyer)
+            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion_corta, descripcion_larga, descripcion, id_cliente, url_flyer)
             VALUES (?, NOW(), 'Solicitado', ?, ?, ?, ?, ?)
         `;
         const paramsGeneral = [
@@ -187,9 +187,10 @@ const getSolicitudPorId = async (req, res) => {
                     NULL as bandaPropuesta,
                     NULL as bandaEventId,
                     NULL as bandaInvitados,
-                    NULL as bandaPrecioAnticipada,
-                    e.precio_final as bandaPrecioPuerta
+                    sfb.precio_anticipada as bandaPrecioAnticipada,
+                    sfb.precio_puerta as bandaPrecioPuerta
                 FROM eventos_confirmados e
+                LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
                 WHERE e.id = ?;
             `;
 
@@ -229,7 +230,7 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(sol.descripcion_larga, '') as descripcion_larga
                 FROM solicitudes_alquiler sa
                 JOIN solicitudes sol ON sa.id_solicitud = sol.id
-                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE sa.id_solicitud = ?
             `;
 
@@ -290,7 +291,7 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(b.logo_url, sfb.logo_url) as logo_url,
                     COALESCE(b.contacto_rol, sfb.contacto_rol) as contacto_rol,
                     sfb.fecha_alternativa,
-                    sfb.invitadas_json,
+                    sfb.bandas_json,
                     sfb.cantidad_bandas,
                     sfb.precio_puerta_propuesto,
                     sfb.expectativa_publico,
@@ -300,8 +301,8 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(sol.descripcion_larga, '') as descripcion_larga
                 FROM solicitudes_fechas_bandas sfb
                 JOIN solicitudes sol ON sfb.id_solicitud = sol.id
-                LEFT JOIN clientes c ON sol.cliente_id = c.id
-                LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id
+                LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+                LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
                 WHERE sfb.id_solicitud = ?
             `;
 
@@ -344,7 +345,7 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_servicios ss
                 JOIN solicitudes sol ON ss.id_solicitud = sol.id
-                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE ss.id_solicitud = ?
             `;
             logVerbose('[SOLICITUD][GET] SQL servicio:', sql);
@@ -388,7 +389,7 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_talleres st
                 JOIN solicitudes sol ON st.id_solicitud = sol.id
-                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE st.id_solicitud = ?
             `;
 
@@ -446,7 +447,7 @@ const finalizarSolicitud = async (req, res) => {
         // Actualizar datos en la tabla general 'solicitudes'
         const sqlUpdateGeneral = `
             UPDATE solicitudes SET 
-                cliente_id = ?,
+                id_cliente = ?,
                 descripcion_corta = ?,
                 descripcion_larga = ?,
                 descripcion = ?, 
@@ -636,7 +637,7 @@ const actualizarSolicitud = async (req, res) => {
                 descripcion_corta = ?,
                 descripcion_larga = ?,
                 descripcion = ?,
-                cliente_id = ?
+                id_cliente = ?
             WHERE id = ?
         `;
         const paramsUpdateGeneral = [
@@ -734,17 +735,16 @@ const actualizarSolicitud = async (req, res) => {
                 setClauses.push('hora_inicio = ?');
                 params.push(horaInicio);
             }
-            if (precioBase || precioBase === 0) {
-                setClauses.push('precio_base = ?');
-                params.push(parseFloat(precioBase) || 0);
-            }
-            if (precio_final) {
-                setClauses.push('precio_final = ?');
-                params.push(precio_final);
-            }
+            // ✅ Opción B3: NO actualizar precios en eventos_confirmados
+            // Los precios viven SOLO en tabla de origen (solicitudes_fechas_bandas, etc)
+            // Removido: precioBase, precio_final (columnas no existen)
             if (cantidad_personas || cantidadPersonas) {
                 setClauses.push('cantidad_personas = ?');
                 params.push(cantidad_personas || cantidadPersonas || 0);
+            }
+            if (typeof id_cliente !== 'undefined') {
+                setClauses.push('id_cliente = ?');
+                params.push(id_cliente);
             }
 
             if (setClauses.length === 0) {
@@ -985,6 +985,8 @@ const getSolicitudesPublicas = async (req, res) => {
                 sb.duracion,
                 sb.cantidad_bandas as cantidad,
                 sb.precio_basico as precio,
+                sb.precio_anticipada as precio_anticipada,
+                sb.precio_puerta as precio_puerta,
                 -- Priorizar nombre de evento (si existe), luego nombre_banda, luego descripción, luego cliente
                 COALESCE(e.nombre_evento, b.nombre, sb.descripcion, COALESCE(c.nombre, '')) AS nombreEvento,
                 COALESCE(c.nombre, '') as nombreCompleto,
@@ -993,8 +995,8 @@ const getSolicitudesPublicas = async (req, res) => {
                 e.url_flyer as flyer_url
             FROM solicitudes_fechas_bandas sb
             JOIN solicitudes sol ON sb.id_solicitud = sol.id
-            LEFT JOIN clientes c ON sol.cliente_id = c.id
-            LEFT JOIN bandas_artistas b ON sb.id_banda = b.id
+            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+            LEFT JOIN bandas_artistas b ON sb.id_banda = b.id_banda
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = sb.id_solicitud AND e.tipo_evento = 'BANDA' AND e.activo = 1
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'
@@ -1019,7 +1021,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 e.url_flyer as flyer_url
             FROM solicitudes_talleres st
             JOIN solicitudes sol ON st.id_solicitud = sol.id
-            LEFT JOIN clientes c ON sol.cliente_id = c.id
+            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = st.id_solicitud AND e.tipo_evento = 'TALLER' AND e.activo = 1
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'
@@ -1044,7 +1046,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 e.url_flyer as flyer_url
             FROM solicitudes_servicios ss
             JOIN solicitudes sol ON ss.id_solicitud = sol.id
-            LEFT JOIN clientes c ON sol.cliente_id = c.id
+            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = ss.id_solicitud AND e.tipo_evento = 'SERVICIO' AND e.activo = 1
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'
@@ -1184,7 +1186,7 @@ const getSolicitudPublicById = async (req, res) => {
                         COALESCE(sol.es_publico, 0) as esPublico
                     FROM solicitudes_alquiler sa
                     JOIN solicitudes sol ON sa.id_solicitud = sol.id
-                    LEFT JOIN clientes c ON sol.cliente_id = c.id
+                    LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                     WHERE sa.id_solicitud = ?
                 `;
 
@@ -1229,7 +1231,7 @@ const getSolicitudPublicById = async (req, res) => {
                         COALESCE(b.logo_url, sfb.logo_url) as logo_url,
                         COALESCE(b.contacto_rol, sfb.contacto_rol) as contacto_rol,
                         sfb.fecha_alternativa,
-                        sfb.invitadas_json,
+                        sfb.bandas_json,
                         sfb.cantidad_bandas,
                         sfb.precio_puerta_propuesto,
                         sfb.expectativa_publico,
@@ -1239,8 +1241,8 @@ const getSolicitudPublicById = async (req, res) => {
                         COALESCE(sol.descripcion_larga, '') as descripcion_larga
                     FROM solicitudes_fechas_bandas sfb
                     JOIN solicitudes sol ON sfb.id_solicitud = sol.id
-                    LEFT JOIN clientes c ON sol.cliente_id = c.id
-                    LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id
+                    LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+                    LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
                     WHERE sfb.id_solicitud = ?
                 `;
 
@@ -1264,7 +1266,7 @@ const getSolicitudPublicById = async (req, res) => {
                         sol.estado
                     FROM solicitudes_servicios ss
                     JOIN solicitudes sol ON ss.id_solicitud = sol.id
-                    LEFT JOIN clientes c ON sol.cliente_id = c.id
+                    LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                     WHERE ss.id_solicitud = ?
                 `;
 
@@ -1288,7 +1290,7 @@ const getSolicitudPublicById = async (req, res) => {
                         sol.estado
                     FROM solicitudes_talleres st
                     JOIN solicitudes sol ON st.id_solicitud = sol.id
-                    LEFT JOIN clientes c ON sol.cliente_id = c.id
+                    LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                     WHERE st.id_solicitud = ?
                 `;
 
@@ -1317,7 +1319,7 @@ const getSolicitudPublicById = async (req, res) => {
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_alquiler sa
                 JOIN solicitudes sol ON sa.id_solicitud = sol.id
-                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE sa.id_solicitud = ?
             `;
             const resAlq = await conn.query(sqlAlq, [idNum]);
@@ -1343,7 +1345,7 @@ const getSolicitudPublicById = async (req, res) => {
                     sfb.estado
                 FROM solicitudes_fechas_bandas sfb
                 JOIN solicitudes sol ON sfb.id_solicitud = sol.id
-                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE sfb.id_solicitud = ?
             `;
             const [banda] = await conn.query(sqlBnd, [idNum]);
@@ -1362,7 +1364,7 @@ const getSolicitudPublicById = async (req, res) => {
                     sol.estado
                 FROM solicitudes_servicios ss
                 JOIN solicitudes sol ON ss.id_solicitud = sol.id
-                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE ss.id_solicitud = ?
             `;
             const [servicio] = await conn.query(sqlSrv, [idNum]);
@@ -1381,7 +1383,7 @@ const getSolicitudPublicById = async (req, res) => {
                     sol.estado
                 FROM solicitudes_talleres st
                 JOIN solicitudes sol ON st.id_solicitud = sol.id
-                LEFT JOIN clientes c ON sol.cliente_id = c.id
+                LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE st.id_solicitud = ?
             `;
             const [taller] = await conn.query(sqlTll, [idNum]);

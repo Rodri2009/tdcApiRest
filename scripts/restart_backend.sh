@@ -70,32 +70,47 @@ if [ $REBUILD -eq 1 ]; then
 fi
 
 echo "[restart_backend] Levantando backend..."
+
+# ⚠️ PRIMERO: Limpiar todos los contenedores viejos de backend para evitar duplicados
+echo "[restart_backend] 🧹 Limpiando contenedores backend antiguos..."
+docker ps -a --filter "ancestor=$(docker images --filter 'reference=docker-backend' -q 2>/dev/null)" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
+docker ps -a --filter "name=docker-backend" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
+docker ps -a --filter "name=docker-backend-run-" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
+
 if [ -n "$DEBUG_FLAGS" ]; then
   # Si hay flags, hacer down completo para liberar puertos
   echo "[restart_backend] Haciendo down para limpiar..."
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down
   
-  # Levantar SOLO las dependencias (mariadb, nginx)
-  echo "[restart_backend] Levantando dependencias (mariadb, nginx)..."
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d mariadb nginx
+  # Exportar DEBUG_FLAGS para que docker-compose lo recoja
+  export DEBUG_FLAGS
+  echo "[restart_backend] Debug flags detectados:$DEBUG_FLAGS"
+  
+  # Levantar SOLO mariadb (sin nginx para evitar que auto-inicie backend sin flags)
+  echo "[restart_backend] Levantando solo MariaDB..."
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d mariadb
   
   # Esperar a que mariadb esté listo
   echo "[restart_backend] Esperando que MariaDB esté listo..."
   sleep 5
   
-  echo "[restart_backend] Ejecutando backend en background con flags:$DEBUG_FLAGS"
-  # Usar run -d --rm para contenedor en background que se limpie automáticamente
-  # Esto permite que siga ejecutándose aunque cerremos la sesión de logs
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run -d --rm backend $DEBUG_FLAGS
+  echo "[restart_backend] Levantando backend con flags:$DEBUG_FLAGS"
+  # Usar up -d para levantar el backend con los variables de entorno exportadas
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d backend
   
-  # Dar tiempo para que se inicialice
   sleep 2
+  
+  # Ahora levantar nginx
+  echo "[restart_backend] Levantando nginx..."
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps nginx
+  
+  sleep 1
   
   # Mostrar logs en foreground
   echo "[restart_backend] Mostrando logs (Ctrl+C solo detiene los logs, el backend sigue ejecutándose)..."
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" logs -f backend
 else
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d backend
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps backend
   
   # Esperar a que el contenedor esté listo
   echo "[restart_backend] Esperando a que el contenedor esté listo..."

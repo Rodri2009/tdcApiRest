@@ -18,10 +18,10 @@ const getProfesionales = async (req, res) => {
                    TIME_FORMAT(p.hora_inicio, '%H:%i') as horaInicio,
                    TIME_FORMAT(p.hora_fin, '%H:%i') as horaFin,
                    p.activo, p.creado_en as creadoEn,
-                   p.cliente_id as cliente_id,
+                   p.id_cliente as id_cliente,
                    c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.email as cliente_email
             FROM profesionales_servicios p
-            LEFT JOIN clientes c ON p.cliente_id = c.id
+            LEFT JOIN clientes c ON p.id_cliente = c.id
         `;
         if (soloActivos) sql += ` WHERE activo = 1`;
         sql += ` ORDER BY nombre`;
@@ -57,18 +57,18 @@ const createProfesional = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const { nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo = 1, cliente_id = null } = req.body;
+        const { nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo = 1, id_cliente = null } = req.body;
 
-        logVerbose('[PROF] createProfesional payload:', { nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo, cliente_id });
+        logVerbose('[PROF] createProfesional payload:', { nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo, id_cliente });
 
         if (!nombre) {
             return res.status(400).json({ error: 'El nombre es obligatorio' });
         }
 
         const result = await conn.query(
-            `INSERT INTO profesionales_servicios (nombre, especialidad, telefono, email, dias_trabaja, hora_inicio, hora_fin, activo, cliente_id) 
+            `INSERT INTO profesionales_servicios (nombre, especialidad, telefono, email, dias_trabaja, hora_inicio, hora_fin, activo, id_cliente) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [nombre, especialidad || null, telefono || null, email || null, diasTrabaja || null, horaInicio || '09:00:00', horaFin || '18:00:00', activo, cliente_id || null]
+            [nombre, especialidad || null, telefono || null, email || null, diasTrabaja || null, horaInicio || '09:00:00', horaFin || '18:00:00', activo, id_cliente || null]
         );
 
         res.status(201).json({
@@ -88,7 +88,7 @@ const updateProfesional = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const { id } = req.params;
-        const { nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo, cliente_id = null } = req.body;
+        const { nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo, id_cliente = null } = req.body;
 
         const result = await conn.query(
             `UPDATE profesionales_servicios SET 
@@ -100,9 +100,9 @@ const updateProfesional = async (req, res) => {
                 hora_inicio = COALESCE(?, hora_inicio),
                 hora_fin = COALESCE(?, hora_fin),
                 activo = COALESCE(?, activo),
-                cliente_id = COALESCE(?, cliente_id)
+                id_cliente = COALESCE(?, id_cliente)
              WHERE id = ?`,
-            [nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo, cliente_id, id]
+            [nombre, especialidad, telefono, email, diasTrabaja, horaInicio, horaFin, activo, id_cliente, id]
         );
 
         if (result.affectedRows === 0) {

@@ -32,6 +32,7 @@ services:
       EMAIL_PASS: ${EMAIL_PASS}
       EMAIL_ADMIN: ${EMAIL_ADMIN}
       JWT_SECRET: ${JWT_SECRET}
+      DEBUG_FLAGS: ${DEBUG_FLAGS:-}
     ports:
       - "3000:3000"
     #networks:
@@ -69,15 +70,13 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql
       # Docker entrypoint ejecuta automáticamente scripts .sql en orden alfabético
-      # SQL refactorizado - Enero 2025: archivos ejecutados en orden
-      # 01_schema.sql - Estructura de tablas (DDL)
+      # SQL refactorizado - Febrero 2026: archivos ejecutados en orden
+      # 01_schema.sql - Estructura de tablas (DDL) + bandas_json + precio_anticipada
       # 02_seed.sql - Datos de configuración y catálogos
       # 03_test_data.sql - Datos de prueba (opcional para desarrollo)
-      # 04_personal_tarifas_pagos.sql - Tablas de tarifas y pagos del personal
       - ../database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
       - ../database/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
       - ../database/03_test_data.sql:/docker-entrypoint-initdb.d/03_test_data.sql
-      - ../database/04_personal_tarifas_pagos.sql:/docker-entrypoint-initdb.d/04_personal_tarifas_pagos.sql
       - ../database/seeds:/var/lib/mysql-files
 
 # Definición de redes

@@ -19,7 +19,7 @@ const obtenerBandas = async (req, res) => {
 
         let sql = `
             SELECT
-                id,
+                id_banda as id_banda,
                 nombre,
                 genero_musical,
                 bio,
@@ -69,8 +69,10 @@ const obtenerBandas = async (req, res) => {
         return res.status(200).json(bandas);
 
     } catch (err) {
+        console.error('[BANDA-ERROR] Fallo en obtenerBandas:', err.message);
+        console.error('[BANDA-ERROR] Stack:', err.stack);
         logError('[BANDA] Error al obtener bandas:', err.message);
-        return res.status(500).json({ error: 'Error al obtener bandas.' });
+        return res.status(500).json({ error: 'Error al obtener bandas.', debug: err.message });
     } finally {
         if (conn) conn.release();
     }
@@ -95,7 +97,7 @@ const obtenerBandaPorId = async (req, res) => {
 
         const sql = `
             SELECT
-                id,
+                id_banda as id,
                 nombre,
                 genero_musical,
                 bio,
@@ -118,7 +120,7 @@ const obtenerBandaPorId = async (req, res) => {
                 creado_en,
                 actualizado_en
             FROM bandas_artistas
-            WHERE id = ?
+            WHERE id_banda = ?
         `;
 
         const [banda] = await conn.query(sql, [idNum]);
@@ -339,7 +341,7 @@ const actualizarBanda = async (req, res) => {
 
         // 1. Verificar que la banda existe
         const [bandaExistente] = await conn.query(
-            'SELECT id FROM bandas_artistas WHERE id = ?',
+            'SELECT id_banda FROM bandas_artistas WHERE id_banda = ?',
             [idNum]
         );
 
@@ -432,7 +434,7 @@ const actualizarBanda = async (req, res) => {
             actualizaciones.push('actualizado_en = NOW()');
             params.push(idNum);
 
-            const sqlUpdate = `UPDATE bandas_artistas SET ${actualizaciones.join(', ')} WHERE id = ?`;
+            const sqlUpdate = `UPDATE bandas_artistas SET ${actualizaciones.join(', ')} WHERE id_banda = ?`;
 
             const result = await conn.query(sqlUpdate, params);
             logVerbose(`[BANDA] ✓ Banda actualizada: ${result.affectedRows} fila(s)`);
@@ -530,7 +532,7 @@ const eliminarBanda = async (req, res) => {
 
         // Verificar que la banda existe
         const [bandaExistente] = await conn.query(
-            'SELECT id, nombre FROM bandas_artistas WHERE id = ?',
+            'SELECT id_banda, nombre FROM bandas_artistas WHERE id_banda = ?',
             [idNum]
         );
 
@@ -550,7 +552,7 @@ const eliminarBanda = async (req, res) => {
 
         if (soft_delete !== 'false') {
             // Soft delete: marcar como inactiva
-            const sqlSoftDel = 'UPDATE bandas_artistas SET activa = 0, actualizado_en = NOW() WHERE id = ?';
+            const sqlSoftDel = 'UPDATE bandas_artistas SET activa = 0, actualizado_en = NOW() WHERE id_banda = ?';
             const result = await conn.query(sqlSoftDel, [idNum]);
             logVerbose(`[BANDA] ✓ Banda marcada como inactiva`);
         } else {
@@ -562,7 +564,7 @@ const eliminarBanda = async (req, res) => {
             // Eliminar formación
             await conn.query('DELETE FROM bandas_formacion WHERE id_banda = ?', [idNum]);
             // Eliminar banda
-            const sqlHardDel = 'DELETE FROM bandas_artistas WHERE id = ?';
+            const sqlHardDel = 'DELETE FROM bandas_artistas WHERE id_banda = ?';
             await conn.query(sqlHardDel, [idNum]);
             logVerbose(`[BANDA] ✓ Banda eliminada permanentemente`);
         }
@@ -634,7 +636,7 @@ const buscarBandas = async (req, res) => {
 
         const bandas = await conn.query(
             `SELECT 
-                id,
+                id_banda as id,
                 nombre,
                 genero_musical,
                 logo_url,

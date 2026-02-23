@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor de Evento - Bandas</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
     <link rel="stylesheet" href="styles/request-forms.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
@@ -706,8 +706,6 @@
         <!-- Fecha y Horarios -->
         <div class="form-section">
             <h3><i class="fas fa-calendar-alt"></i> Fecha y Horarios</h3>
-            <div class="info-banner">Este formulario usa una única fecha de evento (no múltiple). Selecciona la fecha
-                definitiva abajo.</div>
             <div class="form-grid form-grid-3">
                 <div class="form-group">
                     <label for="fechaEvento">Fecha del Evento *</label>
@@ -740,11 +738,7 @@
         <!-- Precios -->
         <div class="form-section">
             <h3><i class="fas fa-ticket-alt"></i> Precios de Entrada</h3>
-            <div class="form-grid form-grid-3">
-                <div class="form-group">
-                    <label for="precioBase">Precio Base</label>
-                    <input type="number" id="precioBase" value="0" min="0" step="100">
-                </div>
+            <div class="form-grid form-grid-2">
                 <div class="form-group">
                     <label for="precioAnticipada">Precio Anticipada</label>
                     <input type="number" id="precioAnticipada" min="0" step="100" placeholder="Ej: 3000">
@@ -759,18 +753,26 @@
         <!-- Contacto -->
         <div class="form-section">
             <h3><i class="fas fa-address-book"></i> Datos de Contacto</h3>
+            <!-- Campo oculto: id del cliente asociado -->
+            <input type="hidden" id="clienteId" value="" />
+            <div class="btn-group" style="margin-bottom:8px;">
+                <button type="button" class="btn btn-secondary" id="btnEditCliente" onclick="openEditClienteModal()"
+                    style="flex:0.3; padding:6px 10px; font-size:0.9rem;">
+                    <i class="fas fa-edit"></i> Editar Cliente
+                </button>
+            </div>
             <div class="form-grid form-grid-3">
                 <div class="form-group">
                     <label for="nombreContacto">Nombre del Contacto</label>
-                    <input type="text" id="nombreContacto" placeholder="Responsable/Manager">
+                    <input type="text" id="nombreContacto" placeholder="Responsable/Manager" readonly>
                 </div>
                 <div class="form-group">
                     <label for="emailContacto">Email</label>
-                    <input type="email" id="emailContacto" placeholder="email@ejemplo.com">
+                    <input type="email" id="emailContacto" placeholder="email@ejemplo.com" readonly>
                 </div>
                 <div class="form-group">
                     <label for="telefonoContacto">Teléfono</label>
-                    <input type="tel" id="telefonoContacto" placeholder="11-1234-5678">
+                    <input type="tel" id="telefonoContacto" placeholder="11-1234-5678" readonly>
                 </div>
             </div>
         </div>
@@ -894,6 +896,14 @@
             // Event listeners
             document.getElementById('btnGuardar').addEventListener('click', guardarEvento);
             document.getElementById('btnEliminar').addEventListener('click', eliminarEvento);
+
+            // Recalcular hora de fin cuando cambia la hora de inicio
+            document.getElementById('horaInicio').addEventListener('change', calcularHoraFin);
+            document.getElementById('horaInicio').addEventListener('input', calcularHoraFin);
+
+            // Recalcular duración cuando cambia horaFin (permitir que el usuario edite manualmente)
+            document.getElementById('horaFin').addEventListener('change', calcularDuracion);
+            document.getElementById('horaFin').addEventListener('input', calcularDuracion);
         });
 
         function initCalendario() {
@@ -906,13 +916,126 @@
             });
         }
 
+        // Helper para asegurar formato HH:MM (24hs)
+        function formatTime24(timeStr) {
+            if (!timeStr) return '';
+            const parts = timeStr.split(':');
+            if (parts.length < 2) return '';
+            const h = String(parseInt(parts[0], 10) || 0).padStart(2, '0');
+            const m = String(parseInt(parts[1], 10) || 0).padStart(2, '0');
+            return `${h}:${m}`;
+        }
+
+        // Validar que una hora sea válida (HH:MM en formato 24h)
+        function isValidTime(timeStr) {
+            if (!timeStr || typeof timeStr !== 'string') return false;
+            const match = timeStr.match(/^([0-2][0-9]|23):([0-5][0-9])$/);
+            return match !== null;
+        }
+
+        // Calcular duración basada en hora de inicio y hora de fin
+        // Si horaFin < horaInicio, significa que es del día siguiente
+        function calcularDuracion() {
+            const horaInicio = document.getElementById('horaInicio').value;
+            const horaFin = document.getElementById('horaFin').value;
+
+            if (!horaInicio || !horaFin) {
+                console.log('[HORARIOS] Falta horaInicio o horaFin para calcular duración');
+                return;
+            }
+
+            try {
+                const [horaIni, minIni] = horaInicio.split(':').map(Number);
+                const [horaFinNum, minFin] = horaFin.split(':').map(Number);
+
+                if (isNaN(horaIni) || isNaN(minIni) || isNaN(horaFinNum) || isNaN(minFin)) {
+                    console.error('[HORARIOS] Horas inválidas');
+                    return;
+                }
+
+                // Convertir a minutos desde medianoche
+                const minutosinicio = horaIni * 60 + minIni;
+                const minutosfinales = horaFinNum * 60 + minFin;
+
+                let duracionMinutos;
+                if (minutosfinales >= minutosinicio) {
+                    // Mismo día
+                    duracionMinutos = minutosfinales - minutosinicio;
+                } else {
+                    // Día siguiente (horaFin < horaInicio)
+                    duracionMinutos = (24 * 60 - minutosinicio) + minutosfinales;
+                }
+
+                const horas = Math.floor(duracionMinutos / 60);
+                const minutos = duracionMinutos % 60;
+
+                const duracionStr = minutos > 0 ? `${horas}h ${minutos}m` : `${horas} horas`;
+                window.duracionCalculada = `${horas} horas`;  // Guardar en formato "X horas"
+
+                console.log('[HORARIOS] ✓ Duración calculada:', horaInicio, '-', horaFin, '=', duracionStr);
+            } catch (err) {
+                console.error('[HORARIOS] Error calculando duración:', err);
+            }
+        }
+
+        // Calcular hora de fin basada en hora de inicio + duración (como string "X horas")
+        function calcularHoraFin() {
+            const horaInicio = document.getElementById('horaInicio').value;
+            const duracionText = document.querySelector('[data-duracion]')?.dataset?.duracion || window.duracionEvento || '';
+
+            if (!horaInicio || !duracionText) {
+                console.log('[HORARIOS] Falta horaInicio o duración para calcular horaFin');
+                return;
+            }
+
+            try {
+                // Parsear duración de string como "3 horas" o "180 minutos"
+                const duracionMatch = duracionText.match(/(\d+)\s*(hora|horas|minuto|minutos)?/i);
+                if (!duracionMatch) {
+                    console.warn('[HORARIOS] No se pudo parsear duración:', duracionText);
+                    return;
+                }
+
+                const valor = parseInt(duracionMatch[1], 10);
+                const unidad = (duracionMatch[2] || 'horas').toLowerCase();
+                let duracionMinutos = valor;
+
+                if (unidad.includes('hora')) {
+                    duracionMinutos = valor * 60;
+                }
+
+                const [horas, minutos] = horaInicio.split(':').map(Number);
+
+                if (isNaN(horas) || isNaN(minutos) || isNaN(duracionMinutos)) {
+                    console.error('[HORARIOS] Valores inválidos:', { horas, minutos, duracionMinutos });
+                    return;
+                }
+
+                let nuevaHora = horas;
+                let nuevosMinutos = minutos + duracionMinutos;
+
+                // Ajustar si minutos exceden 60
+                nuevaHora += Math.floor(nuevosMinutos / 60);
+                nuevosMinutos = nuevosMinutos % 60;
+
+                // Ajustar si horas exceden 24 (siguiente día)
+                nuevaHora = nuevaHora % 24;
+
+                const horaFinStr = String(nuevaHora).padStart(2, '0') + ':' + String(nuevosMinutos).padStart(2, '0');
+                document.getElementById('horaFin').value = horaFinStr;
+                console.log('[HORARIOS] ✓ Hora fin calculada:', horaInicio, '+', duracionMinutos, 'min =', horaFinStr);
+            } catch (err) {
+                console.error('[HORARIOS] Error calculando hora fin:', err);
+            }
+        }
+
         async function cargarEvento() {
             showLoading(true);
             try {
                 console.log('[BANDAS] ========== CARGAR EVENTO ==========');
                 console.log('[BANDAS] eventoId:', eventoId);
                 console.log('[BANDAS] eventoPrefix:', eventoPrefix);
-                
+
                 let endpoint;
                 if (eventoPrefix === 'ev_') {
                     // Acceso público a evento confirmado (desde calendario público)
@@ -974,16 +1097,11 @@
 
                 console.log('[BANDAS] Después de normalización - nombre_banda:', evento.nombre_banda, 'id_banda:', evento.id_banda);
 
-                if (evento.invitadas_json && !evento.invitadas) {
-                    try { evento.invitadas = JSON.parse(evento.invitadas_json || '[]'); } catch (e) { evento.invitadas = []; }
-                }
-                // Asegurar que invitadas siempre es un array (por si viene como undefined o null)
-                if (!evento.invitadas || !Array.isArray(evento.invitadas)) {
-                    if (evento.invitadas_json && typeof evento.invitadas_json === 'string') {
-                        try { evento.invitadas = JSON.parse(evento.invitadas_json); } catch (e) { evento.invitadas = []; }
-                    } else {
-                        evento.invitadas = [];
-                    }
+                // Usar bandas_json del backend (es un array de objetos con id_banda y nombre)
+                if (evento.bandas_json && Array.isArray(evento.bandas_json) && evento.bandas_json.length > 0) {
+                    console.log('[BANDAS] ✓ bandas_json cargado correctamente:', evento.bandas_json);
+                } else {
+                    console.warn('[BANDAS] ⚠ bandas_json vacío o no es array');
                 }
 
                 // Llenar formulario usando el objeto 'evento' retornado por la API
@@ -999,33 +1117,23 @@
                     // Continuar sin fallar
                 }
 
-                // Inicializar selección de bandas con la banda del evento + invitadas
+                // Inicializar selección de bandas con bandas_json del backend
                 bandasSeleccionadas = [];
 
-                // 1. Agregar banda principal
-                if (evento.nombre_banda) {
-                    const match = bandasDisponibles.find(b => (b.nombre || '').toLowerCase() === (evento.nombre_banda || '').toLowerCase());
-                    if (match) {
-                        bandasSeleccionadas.push({ id: match.id, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' });
-                    } else {
-                        bandasSeleccionadas.push({ id: evento.id_banda || null, nombre: evento.nombre_banda, genero: evento.genero_musical || '', logoUrl: evento.logo_url || '' });
-                    }
-                }
-
-                // 2. Agregar bandas invitadas (si existen)
-                if (evento.invitadas && Array.isArray(evento.invitadas) && evento.invitadas.length > 0) {
-                    console.log('[BANDAS] Bandas invitadas encontradas en evento:', evento.invitadas);
-                    evento.invitadas.forEach(invitada => {
-                        // Buscar en bandasDisponibles si existe o crear objeto placeholder
-                        const match = bandasDisponibles.find(b => b.id === invitada.id_banda);
+                // Procesar bandas_json del backend (cada banda es {id_banda, nombre, orden_show, es_principal})
+                if (evento.bandas_json && Array.isArray(evento.bandas_json) && evento.bandas_json.length > 0) {
+                    console.log('[BANDAS] Procesando bandas_json:', evento.bandas_json);
+                    evento.bandas_json.forEach(banda => {
+                        // Buscar en bandasDisponibles para obtener detalles completos
+                        const match = bandasDisponibles.find(b => b.id_banda === banda.id_banda);
                         if (match) {
-                            bandasSeleccionadas.push({ id: match.id, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' });
+                            bandasSeleccionadas.push({ id_banda: match.id_banda, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' });
                         } else {
-                            // Si no existe en bandasDisponibles, usar datos de invitada
-                            bandasSeleccionadas.push({ id: invitada.id_banda, nombre: invitada.nombre, genero: '', logoUrl: '' });
+                            // Si no existe en bandasDisponibles, usar datos del backend
+                            bandasSeleccionadas.push({ id_banda: banda.id_banda, nombre: banda.nombre, genero: '', logoUrl: '' });
                         }
                     });
-                    console.log('[BANDAS] bandasSeleccionadas poblado con principal + invitadas (total ' + bandasSeleccionadas.length + ')');
+                    console.log('[BANDAS] ✓ bandasSeleccionadas poblado (total ' + bandasSeleccionadas.length + ' bandas)');
                 }
 
                 renderBandasLista();
@@ -1058,22 +1166,63 @@
                 }
 
                 if (evento.hora_inicio) {
-                    document.getElementById('horaInicio').value = evento.hora_inicio.substring(0, 5);
+                    document.getElementById('horaInicio').value = formatTime24(evento.hora_inicio);
                 }
+
+                // Guardar duración en el DOM para cálculo de hora fin
+                if (evento.duracion) {
+                    document.querySelector('[data-duracion]') ? document.querySelector('[data-duracion]').dataset.duracion = evento.duracion : null;
+                    // Si no existe elemento con data-duracion, guardar en un div invisible o usar window
+                    if (!document.querySelector('[data-duracion]')) {
+                        window.duracionEvento = evento.duracion;
+                        window.duracionCalculada = evento.duracion;  // También guardar en duracionCalculada
+                        console.log('[HORARIOS] Duración guardada en window:', evento.duracion);
+                    }
+                }
+
+                // Calcular hora de fin después de cargar horaInicio y duracion
+                calcularHoraFin();
                 if (evento.hora_fin) {
-                    document.getElementById('horaFin').value = evento.hora_fin ? evento.hora_fin.substring(0, 5) : '';
+                    document.getElementById('horaFin').value = evento.hora_fin ? formatTime24(evento.hora_fin) : '';
                 }
 
                 document.getElementById('aforoMaximo').value = evento.aforo_maximo || 120;
                 document.getElementById('esPublico').value = evento.es_publico ? '1' : '0';
 
-                document.getElementById('precioBase').value = evento.precio_base || 0;
                 document.getElementById('precioAnticipada').value = evento.precio_anticipada || '';
                 document.getElementById('precioPuerta').value = evento.precio_puerta || '';
 
-                document.getElementById('nombreContacto').value = evento.contacto_nombre || '';
-                document.getElementById('emailContacto').value = evento.contacto_email || '';
-                document.getElementById('telefonoContacto').value = evento.contacto_telefono || '';
+                // Guardar cliente_id en campo oculto para permitir edición
+                if (document.getElementById('clienteId')) {
+                    document.getElementById('clienteId').value = evento.id_cliente || '';
+                }
+
+                // Cargar datos del cliente si existe (para llenar campos readonly en el formulario)
+                if (evento.id_cliente) {
+                    try {
+                        const token = localStorage.getItem('authToken');
+                        const clienteRes = await fetch(`/api/admin/clientes/${evento.id_cliente}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (clienteRes.ok) {
+                            const cliente = await clienteRes.json();
+                            console.log('[BANDAS] 📋 Datos del cliente en cargarEvento():', cliente);
+                            document.getElementById('nombreContacto').value = cliente.nombre || '';
+                            document.getElementById('emailContacto').value = cliente.email || '';
+                            document.getElementById('telefonoContacto').value = cliente.telefono || '';
+                        } else {
+                            console.warn('[BANDAS] No se pudieron cargar datos del cliente');
+                        }
+                    } catch (err) {
+                        console.error('[BANDAS] Error cargando cliente:', err);
+                    }
+                }
+
+                // Mostrar/ocultar botón editar cliente (siempre visible para buscar/crear cliente)
+                const btnEdit = document.getElementById('btnEditCliente');
+                if (btnEdit) {
+                    btnEdit.style.display = 'inline-block';
+                }
 
                 document.getElementById('estadoSelect').value = evento.estado || 'Solicitado';
 
@@ -1123,7 +1272,7 @@
             // Obtener datos de la banda a partir de la selección (si existe)
             const bandaSel = (bandasSeleccionadas && bandasSeleccionadas.length) ? bandasSeleccionadas[0] : null;
             const nombreBanda = bandaSel ? (bandaSel.nombre || '') : '';
-            const idBanda = bandaSel ? bandaSel.id : null;
+            const idBanda = bandaSel ? bandaSel.id_banda : null;
 
             console.log('[BANDAS] bandaSel:', bandaSel);
             console.log('[BANDAS] nombreBanda:', nombreBanda);
@@ -1144,15 +1293,23 @@
             showLoading(true);
 
             // Preparar datos para la API (mapear claves a lo que el backend espera)
+            const horaInicio = document.getElementById('horaInicio').value.trim() || '21:00';
+            const formatoHora = formatTime24(horaInicio);
+
+            if (!isValidTime(formatoHora)) {
+                showNotification('Formato de hora inválido. Use HH:MM (ej: 21:30)', 'error');
+                showLoading(false);
+                return;
+            }
+
             const datos = {
                 id_banda: idBanda,
                 fecha_evento: fecha || undefined,
                 descripcion: document.getElementById('descripcion').value.trim(),
-                hora_evento: document.getElementById('horaInicio').value || '21:00',                    // backend espera `hora_evento`
-                expectativa_publico: parseInt(document.getElementById('aforoMaximo').value, 10) || 120, // backend espera `expectativa_publico`
+                hora_evento: formatoHora,
+                expectativa_publico: parseInt(document.getElementById('aforoMaximo').value, 10) || 120,
                 es_publico: document.getElementById('esPublico').value === '1' ? 1 : 0,
-                precio_basico: parseFloat(document.getElementById('precioBase').value) || 0,            // backend espera `precio_basico`
-                precio_puerta_propuesto: document.getElementById('precioPuerta').value ? parseFloat(document.getElementById('precioPuerta').value) : null,
+                precio_puerta: document.getElementById('precioPuerta').value ? parseFloat(document.getElementById('precioPuerta').value) : null,
                 url_flyer: document.getElementById('urlFlyer').value.trim()
             };
 
@@ -1163,27 +1320,31 @@
                 return;
             }
 
-            // Incluir datos de contacto: enviar tanto en POST como en PUT (backend soporta persistir contacto_* en PUT)
-            datos.contacto_nombre = document.getElementById('nombreContacto').value.trim();
-            datos.contacto_email = document.getElementById('emailContacto').value.trim();
-            datos.contacto_telefono = document.getElementById('telefonoContacto').value.trim();
-
             // Nombre de la fecha / show -> persistir en la fila padre (solicitudes.descripcion_corta)
             if (nombreEventoVal) datos.descripcion_corta = nombreEventoVal;
 
-            // Precio Anticipada -> mapear a precio_basico (DB usa precio_basico para la anticipada en solicitudes)
+            // Precio Anticipada -> mapear a precio_anticipada
             const precioAnt = parseFloat(document.getElementById('precioAnticipada').value) || null;
             if (precioAnt && precioAnt > 0) {
-                datos.precio_basico = precioAnt;
-            } else {
-                // fallback al campo precioBase si anticipada no fue completada
-                datos.precio_basico = parseFloat(document.getElementById('precioBase').value) || 0;
+                datos.precio_anticipada = precioAnt;
+            }
+
+            // ID del cliente asociado
+            const clienteId = document.getElementById('clienteId').value;
+            if (clienteId) {
+                datos.id_cliente = clienteId;
+            }
+
+            // Duración calculada (si ha sido modificada por el usuario)
+            if (window.duracionCalculada) {
+                datos.duracion = window.duracionCalculada;
+                console.log('[BANDAS] Duración a enviar:', window.duracionCalculada);
             }
 
             // Bandas invitadas (si hay más de una seleccionada) -> enviar como invitadas_json
             if (bandasSeleccionadas && bandasSeleccionadas.length > 1) {
                 // omitimos la primera (principal) y enviamos el resto como invitadas
-                const invitadas = bandasSeleccionadas.slice(1).map(b => ({ id_banda: b.id || null, nombre: b.nombre || '' }));
+                const invitadas = bandasSeleccionadas.slice(1).map(b => ({ id_banda: b.id_banda || null, nombre: b.nombre || '' }));
                 datos.invitadas_json = invitadas;
                 console.log('[BANDAS] Bandas invitadas a enviar:', invitadas);
             } else {
@@ -1195,15 +1356,16 @@
 
             console.log('[BANDAS] ========== PAYLOAD COMPLETO A ENVIAR ==========');
             console.log('[BANDAS] ID Banda Principal:', datos.id_banda);
+            console.log('[BANDAS] ID Cliente:', datos.id_cliente);
             console.log('[BANDAS] Fecha Evento:', datos.fecha_evento);
             console.log('[BANDAS] Hora Evento:', datos.hora_evento);
+            console.log('[BANDAS] Duración:', datos.duracion);
             console.log('[BANDAS] Descripción:', datos.descripcion);
             console.log('[BANDAS] Descripción Corta (nombre evento):', datos.descripcion_corta);
             console.log('[BANDAS] Expectativa Público:', datos.expectativa_publico);
             console.log('[BANDAS] Es Público:', datos.es_publico);
-            console.log('[BANDAS] Precio Básico:', datos.precio_basico);
-            console.log('[BANDAS] Precio Anticipada:', document.getElementById('precioAnticipada').value);
-            console.log('[BANDAS] Precio Puerta:', datos.precio_puerta_propuesto);
+            console.log('[BANDAS] Precio Anticipada:', datos.precio_anticipada);
+            console.log('[BANDAS] Precio Puerta:', datos.precio_puerta);
             console.log('[BANDAS] URL Flyer:', datos.url_flyer);
             console.log('[BANDAS] Contacto Nombre:', datos.contacto_nombre);
             console.log('[BANDAS] Contacto Email:', datos.contacto_email);
@@ -1322,9 +1484,9 @@
                 // Reconciliar selecciones placeholder (si existen) con bandas cargadas por nombre
                 if (bandasSeleccionadas && bandasSeleccionadas.length) {
                     bandasSeleccionadas = bandasSeleccionadas.map(sel => {
-                        if (sel.id) return sel;
+                        if (sel.id_banda) return sel;
                         const match = bandasDisponibles.find(b => (b.nombre || '').toLowerCase() === (sel.nombre || '').toLowerCase());
-                        return match ? { id: match.id, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' } : sel;
+                        return match ? { id_banda: match.id_banda, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' } : sel;
                     });
                 }
 
@@ -1346,9 +1508,9 @@
             );
 
             container.innerHTML = filtered.map(banda => {
-                const isSelected = bandasSeleccionadas.some(b => b.id === banda.id);
+                const isSelected = bandasSeleccionadas.some(b => b.id_banda === banda.id_banda);
                 return `
-                    <div class="banda-grid-item ${isSelected ? 'selected' : ''}" onclick="toggleBanda(${banda.id}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero_musical || '')}', '${escapeHtml(banda.logo_url || '')}')">
+                    <div class="banda-grid-item ${isSelected ? 'selected' : ''}" onclick="toggleBanda(${banda.id_banda}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero_musical || '')}', '${escapeHtml(banda.logo_url || '')}')">>
                         <div class="banda-logo">
                             ${banda.logo_url && banda.logo_url.trim() ? `<img src="${banda.logo_url}" alt="${escapeHtml(banda.nombre)}" onerror="this.style.display='none'">` : ''}
                             ${!banda.logo_url || !banda.logo_url.trim() ? `<div class="banda-logo-placeholder"><i class="fas fa-music"></i></div>` : ''}
@@ -1365,8 +1527,8 @@
             if (filtered.length === 0) container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#9ca3af;">No hay bandas disponibles</div>';
         }
 
-        function toggleBanda(id, nombre, genero, logoUrl) {
-            const idx = bandasSeleccionadas.findIndex(b => b.id === id);
+        function toggleBanda(id_banda, nombre, genero, logoUrl) {
+            const idx = bandasSeleccionadas.findIndex(b => b.id_banda === id_banda);
             if (idx >= 0) {
                 bandasSeleccionadas.splice(idx, 1);
             } else {
@@ -1375,7 +1537,7 @@
                     showNotification('Máximo 5 bandas seleccionadas', 'warning');
                     return;
                 }
-                bandasSeleccionadas.push({ id, nombre, genero, logoUrl });
+                bandasSeleccionadas.push({ id_banda, nombre, genero, logoUrl });
             }
             renderBandasLista();
             renderBandasSeleccionadas();
@@ -1400,7 +1562,7 @@
                     <div class="banda-seleccionada-actions">
                         ${idx > 0 ? `<button type="button" class="btn-reorder" onclick="reorderBanda(${idx}, 'up')" title="Mover arriba"><i class="fas fa-arrow-up"></i></button>` : ''}
                         ${idx < bandasSeleccionadas.length - 1 ? `<button type="button" class="btn-reorder" onclick="reorderBanda(${idx}, 'down')" title="Mover abajo"><i class="fas fa-arrow-down"></i></button>` : ''}
-                        <button type="button" class="btn-remove" onclick="toggleBanda(${banda.id || 'null'}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero || '')}', '${escapeHtml(banda.logoUrl || '')}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        <button type="button" class="btn-remove" onclick="toggleBanda(${banda.id_banda || 'null'}, '${escapeHtml(banda.nombre)}', '${escapeHtml(banda.genero || '')}', '${escapeHtml(banda.logoUrl || '')}')" title="Eliminar"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
             `).join('');
@@ -1550,7 +1712,259 @@
         const btnLimpiarBusqueda = document.getElementById('btnLimpiarBusqueda');
         if (btnLimpiarBusqueda) btnLimpiarBusqueda.addEventListener('click', () => { if (bandaSearchEl) bandaSearchEl.value = ''; renderBandasLista(); });
 
-        /* -------------------------------------------------------------------------------- */
+        /* ================ MODAL DE EDICIÓN DE CLIENTE ================ */
+
+        // Helper para validar formato de email
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        async function openEditClienteModal() {
+            const modal = document.getElementById('clienteModal');
+            if (!modal) return;
+            const clienteId = document.getElementById('clienteId').value;
+
+            // Limpiar búsqueda
+            document.getElementById('modalBuscadorClienteInput').value = '';
+            document.getElementById('modalBuscadorResultados').innerHTML = '';
+
+            // Si hay cliente asociado, cargar sus datos
+            if (clienteId) {
+                try {
+                    const token = localStorage.getItem('authToken');
+                    const res = await fetch(`/api/admin/clientes/${clienteId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const cliente = await res.json();
+                        console.log('[CLIENTES] 📋 Datos del cliente cargados:', cliente);
+                        document.getElementById('modalClienteId').value = cliente.id_cliente || '';
+                        document.getElementById('modalClienteIdDisplay').textContent = cliente.id_cliente || '-';
+                        document.getElementById('modalClienteNombre').value = cliente.nombre || '';
+                        document.getElementById('modalClienteEmail').value = cliente.email || '';
+                        document.getElementById('modalClienteTelefono').value = cliente.telefono || '';
+                    } else {
+                        console.warn('[CLIENTES] No se encontró el cliente');
+                        // Mostrar modal vacío para buscar/crear nuevo cliente
+                        document.getElementById('modalClienteId').value = '';
+                        document.getElementById('modalClienteIdDisplay').textContent = '-';
+                        document.getElementById('modalClienteNombre').value = '';
+                        document.getElementById('modalClienteEmail').value = '';
+                        document.getElementById('modalClienteTelefono').value = '';
+                    }
+                } catch (err) {
+                    console.error('[CLIENTES] Error:', err);
+                    // Mostrar modal vacío para búsqueda
+                    document.getElementById('modalClienteId').value = '';
+                    document.getElementById('modalClienteIdDisplay').textContent = '-';
+                    document.getElementById('modalClienteNombre').value = '';
+                    document.getElementById('modalClienteEmail').value = '';
+                    document.getElementById('modalClienteTelefono').value = '';
+                }
+            } else {
+                // Sin cliente asociado - mostrar modal vacío para búsqueda/creación
+                document.getElementById('modalClienteId').value = '';
+                document.getElementById('modalClienteIdDisplay').textContent = '-';
+                document.getElementById('modalClienteNombre').value = '';
+                document.getElementById('modalClienteEmail').value = '';
+                document.getElementById('modalClienteTelefono').value = '';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        async function buscarClientes(searchTerm) {
+            if (!searchTerm || searchTerm.length < 2) {
+                document.getElementById('modalBuscadorResultados').innerHTML = '';
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const res = await fetch(`/api/admin/clientes/search?q=${encodeURIComponent(searchTerm)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const clientes = await res.json();
+                    const container = document.getElementById('modalBuscadorResultados');
+
+                    if (!clientes || clientes.length === 0) {
+                        container.innerHTML = '<div style="padding:8px;color:#9ca3af;">No se encontraron clientes</div>';
+                        return;
+                    }
+
+                    container.innerHTML = clientes.map(cliente => `
+                        <div style="padding:8px;border-bottom:1px solid #374151;cursor:pointer;transition:background 0.2s;" 
+                             onmouseover="this.style.background='#2a2a2a'" 
+                             onmouseout="this.style.background='transparent'"
+                             onclick="seleccionarClienteExistente(${cliente.id_cliente}, '${escapeHtml(cliente.nombre || '')}', '${escapeHtml(cliente.email || '')}', '${escapeHtml(cliente.telefono || '')}')">
+                            <div style="font-weight:bold;color:var(--color-secondary);">${escapeHtml(cliente.nombre || 'Sin nombre')}</div>
+                            ${cliente.email ? `<div style="font-size:0.85rem;color:#9ca3af;">${escapeHtml(cliente.email)}</div>` : ''}
+                            ${cliente.telefono ? `<div style="font-size:0.85rem;color:#9ca3af;">${escapeHtml(cliente.telefono)}</div>` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    console.error('Error searching clientes:', res.status);
+                }
+            } catch (err) {
+                console.error('[CLIENTES] Error en búsqueda:', err);
+            }
+        }
+
+        function seleccionarClienteExistente(idCliente, nombre, email, telefono) {
+            // Actualizar campos del modal
+            document.getElementById('modalClienteId').value = idCliente;
+            document.getElementById('modalClienteIdDisplay').textContent = idCliente;
+            document.getElementById('modalClienteNombre').value = nombre;
+            document.getElementById('modalClienteEmail').value = email;
+            document.getElementById('modalClienteTelefono').value = telefono;
+            // Actualizar el ID del cliente actual
+            document.getElementById('clienteId').value = idCliente;
+            // Limpiar búsqueda
+            document.getElementById('modalBuscadorClienteInput').value = '';
+            document.getElementById('modalBuscadorResultados').innerHTML = '';
+            showNotification(`Cliente seleccionado: ${nombre}`, 'success');
+        }
+
+        function closeEditClienteModal() {
+            const modal = document.getElementById('clienteModal');
+            if (modal) modal.style.display = 'none';
+            document.getElementById('modalBuscadorClienteInput').value = '';
+            document.getElementById('modalBuscadorResultados').innerHTML = '';
+        }
+
+        async function saveClienteModal() {
+            const id = document.getElementById('clienteId').value;
+            const nombre = document.getElementById('modalClienteNombre').value.trim();
+            const email = document.getElementById('modalClienteEmail').value.trim();
+            const telefono = document.getElementById('modalClienteTelefono').value.trim();
+
+            if (!nombre && !email && !telefono) {
+                showNotification('Debe completar al menos un campo.', 'warning');
+                return;
+            }
+
+            // Validar formato de email si se proporciona
+            if (email && !isValidEmail(email)) {
+                showNotification('Email inválido. Debe tener formato correcto (ej: ejemplo@dominio.com)', 'error');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('authToken');
+                console.log('[CLIENTES] 🔐 Token:', token ? token.substring(0, 20) + '...' : 'ninguno');
+
+                const res = await fetch(`/api/admin/clientes/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ nombre, email, telefono })
+                });
+
+                const data = await res.json();
+                console.log('[CLIENTES] Status:', res.status, '| Respuesta:', data);
+
+                if (!res.ok) {
+                    // Detectar si es error de email duplicado
+                    if (res.status === 400 && (data.error || data.message || '').includes('email')) {
+                        showNotification('Este email ya está registrado en otro cliente.', 'error');
+                    } else {
+                        showNotification(data.error || data.message || 'Error al actualizar cliente', 'error');
+                    }
+                    return;
+                }
+
+                // Éxito - actualizar campos visibles y guardar id_cliente en la solicitud
+                const clienteIdFromModal = document.getElementById('modalClienteId').value;
+                if (clienteIdFromModal) {
+                    document.getElementById('clienteId').value = clienteIdFromModal;
+                }
+                document.getElementById('nombreContacto').value = nombre;
+                document.getElementById('emailContacto').value = email;
+                document.getElementById('telefonoContacto').value = telefono;
+
+                // Ahora actualizar la solicitud con el id_cliente (si existe solicitud abierta)
+                if (eventoId) {
+                    console.log('[CLIENTES] 📝 Actualizando solicitud', eventoId, 'con id_cliente:', clienteIdFromModal);
+                    try {
+                        const resUpdate = await fetch(`/api/solicitudes-fechas-bandas/${eventoId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ id_cliente: clienteIdFromModal })
+                        });
+
+                        const dataUpdate = await resUpdate.json();
+                        console.log('[CLIENTES] 📝 Solicitud actualizada - Status:', resUpdate.status, '| Respuesta:', dataUpdate);
+
+                        if (!resUpdate.ok) {
+                            console.warn('[CLIENTES] ⚠ Advertencia al actualizar solicitud:', dataUpdate);
+                        } else {
+                            console.log('[CLIENTES] ✓ Solicitud actualizada correctamente con id_cliente:', clienteIdFromModal);
+                        }
+                    } catch (errUpdate) {
+                        console.error('[CLIENTES] Error actualizando solicitud:', errUpdate);
+                    }
+                }
+
+                showNotification('Cliente actualizado y solicitud guardada', 'success');
+                closeEditClienteModal();
+
+            } catch (err) {
+                console.error('[CLIENTES] Error:', err);
+                showNotification('Error al actualizar cliente: ' + (err.message || ''), 'error');
+            }
+        }
+
+        // Modal HTML (insertado dinámicamente al final del body)
+        document.body.insertAdjacentHTML('beforeend', `
+        <div id="clienteModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:10000;">
+            <div style="background:#1a1a1a;padding:20px;border-radius:8px;max-width:500px;width:90%;color:#d6d3d1;max-height:80vh;overflow-y:auto;">
+                <h3 style="margin-top:0;">Editar Cliente</h3>
+                
+                <!-- Sección de búsqueda de clientes existentes -->
+                <div style="margin-bottom:20px;padding:12px;background:#2a2a2a;border:1px solid #374151;border-radius:6px;">
+                    <label style="display:block;margin-bottom:8px;font-size:0.9rem;color:#f0abfc;">Buscar cliente existente (opcional):</label>
+                    <input type="text" id="modalBuscadorClienteInput" placeholder="Nombre, email o teléfono..." 
+                        style="width:100%;padding:8px;background:#1a1a1a;border:1px solid #444;color:#d6d3d1;border-radius:4px;margin-bottom:8px;"
+                        onkeyup='buscarClientes(this.value)'>
+                    <div id="modalBuscadorResultados" style="background:#0f172a;border:1px solid #374151;border-radius:4px;max-height:200px;overflow-y:auto;"></div>
+                </div>
+                
+                <hr style="border:none;border-top:1px solid #374151;margin:15px 0;">
+                
+                <!-- ID del cliente (oculto pero accesible) -->
+                <input type="hidden" id="modalClienteId" value="">
+                
+                <!-- Sección de edición manual -->
+                <div style="margin-bottom:10px;">
+                    <label style="font-size:0.85rem;color:#9ca3af;">ID Cliente: <span id="modalClienteIdDisplay">-</span></label>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label>Nombre</label>
+                    <input type="text" id="modalClienteNombre" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;">
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label>Email</label>
+                    <input type="email" id="modalClienteEmail" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;">
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label>Teléfono</label>
+                    <input type="tel" id="modalClienteTelefono" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;">
+                </div>
+                <div style="text-align:right;">
+                    <button class="btn btn-secondary" onclick="closeEditClienteModal()" style="margin-right:8px;">Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveClienteModal()">Guardar</button>
+                </div>
+            </div>
+        </div>
+        `);
+
+        /* ================ FIN MODAL DE CLIENTE ================ */
 
     </script>
 </body>

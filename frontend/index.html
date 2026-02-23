@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>El Templo de Claypole - Espacio Cultural y Salón de Eventos Únicos</title>
     <!-- Carga de Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="styles/request-forms.css">
     <style>
         /* Configuración de fuentes y colores personalizados para el tema */
@@ -495,7 +495,12 @@
                                 <span class="text-sm ${cat.textColor}">${cat.icon} ${cat.label}</span>
                             </div>
                             <h4 class="text-lg font-semibold text-white">${item.nombre || item.tipo}</h4>
-                            <p class="text-sm text-stone-400">${hora ? hora + ' hs' : ''} ${precio ? '• ' + precio : ''}</p>
+                            <p class="text-sm text-stone-400">
+                                ${hora ? hora + ' hs' : ''}
+                                ${cat.icon === '🎸' && (item.precio_anticipada || item.precio_puerta) ? '<br>' : ''}
+                                ${cat.icon === '🎸' && item.precio_anticipada ? 'Ant: $' + Number(item.precio_anticipada).toLocaleString('es-AR') : ''}
+                                ${cat.icon === '🎸' && item.precio_puerta ? (item.precio_anticipada ? ' • ' : '') + 'Puerta: $' + Number(item.precio_puerta).toLocaleString('es-AR') : ''}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -506,11 +511,14 @@
 
         async function fetchAgenda() {
             try {
+                console.debug('[AGENDA-INDEX] API base URL', API_BASE_URL);
+                console.debug('[AGENDA-INDEX] Fetching public solicitudes from', `${API_BASE_URL}/api/solicitudes/publicas`);
                 // Cargar todas las solicitudes públicas (bandas, talleres, servicios)
                 const resPublicas = await fetch(`${API_BASE_URL}/api/solicitudes/publicas`);
                 let items = [];
                 if (resPublicas.ok) {
                     const data = await resPublicas.json();
+                    console.debug('[AGENDA-INDEX] /api/solicitudes/publicas raw ->', data);
                     items = data.map(item => {
                         const fechaRaw = item.fechaEvento;
                         const horaRaw = item.horaEvento;
@@ -524,6 +532,9 @@
                             nombre: item.nombreEvento || item.nombreCompleto,
                             tipo: item.tipoEvento,
                             precio: item.precio,
+                            // precios específicos para bandas (anticipada, puerta)
+                            precio_anticipada: item.precio_anticipada || null,
+                            precio_puerta: item.precio_puerta || null,
                             descripcion: item.descripcion,
                             // Mapeo tolerante para posible campo de flyer/imagen en la API
                             flyer_url: item.flyer_url || item.flyerUrl || item.flyer || item.imagen || item.adjunto_url || null
@@ -535,6 +546,7 @@
                 const hoy = new Date();
                 hoy.setHours(0, 0, 0, 0);
 
+                console.debug('[AGENDA-INDEX] mapped items ->', items);
                 const proximosItems = items
                     .filter(item => item._fechaObj && item._fechaObj > hoy)
                     .sort((a, b) => a._fechaObj - b._fechaObj);
@@ -560,6 +572,7 @@
                     }
                 } catch (e) { /* noop */ }
 
+                console.debug('[AGENDA-INDEX] filtered future items ->', proximosItems);
                 renderAgenda(proximosItems, items.length);
 
             } catch (error) {

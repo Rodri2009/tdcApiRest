@@ -30,6 +30,7 @@ async function createEventoFromSolicitud(conn, idNum) {
             s.es_publico AS solicitud_es_publico,
             ba.nombre as banda_nombre,
             ba.genero_musical,
+            s.id_cliente as cliente_id,
             c.nombre as cliente_nombre,
             c.email as cliente_email,
             c.telefono as cliente_telefono
@@ -47,10 +48,10 @@ async function createEventoFromSolicitud(conn, idNum) {
     const sqlEventoConfirmado = `
         INSERT INTO eventos_confirmados (
             id_solicitud, tipo_evento, tabla_origen, nombre_evento, descripcion,
-            fecha_evento, hora_inicio, duracion_estimada, nombre_cliente, email_cliente,
-            telefono_cliente, precio_base, precio_final, genero_musical, cantidad_personas,
+            fecha_evento, hora_inicio, duracion_estimada, id_cliente,
+            genero_musical, cantidad_personas,
             es_publico, activo, confirmado_en
-        ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+        ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
     `;
 
     const precioFinalParaEvento = row.precio_basico || 0;
@@ -63,11 +64,7 @@ async function createEventoFromSolicitud(conn, idNum) {
         row.fecha_evento,
         row.hora_evento || '21:00',
         row.duracion || null,
-        row.cliente_nombre || '',
-        row.cliente_email || '',
-        row.cliente_telefono || '',
-        row.precio_basico || 0,
-        precioFinalParaEvento,
+        row.cliente_id || null,
         row.genero_musical || row.banda_nombre || '',
         row.cantidad_bandas || 120,
         esPublicoParaEvento
