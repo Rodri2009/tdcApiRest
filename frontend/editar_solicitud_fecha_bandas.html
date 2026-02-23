@@ -535,10 +535,10 @@
             background: #f59e0b;
         }
 
-        /* FLYER PREVIEW - Lado izquierdo */
+        /* FLYER PREVIEW - Similar a logo-preview */
         .flyer-form-container {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             align-items: flex-start;
         }
 
@@ -547,29 +547,32 @@
         }
 
         #flyerPreview {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            border: 2px dashed #581c87;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
-            border: 2px dashed rgba(240, 171, 252, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            width: 120px;
-            height: 160px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        #flyerPreview:hover {
+            border-color: var(--color-secondary);
         }
 
         #flyerPreview img {
             max-width: 100%;
             max-height: 100%;
-            border-radius: 6px;
-            box-shadow: 0 0 20px rgba(240, 171, 252, 0.3);
+            object-fit: contain;
         }
 
         #flyerPreview .preview-placeholder {
-            color: #9ca3af;
             text-align: center;
-            font-size: 0.8rem;
-            padding: 10px;
+            color: #6b7280;
+            font-size: 0.85rem;
         }
 
         .flyer-input-side {
@@ -658,19 +661,19 @@
             <!-- Flyer con preview a la izquierda -->
             <div class="flyer-form-container" style="margin-top:15px;">
                 <div class="flyer-preview-side">
-                    <div id="flyerPreview"></div>
+                    <div id="flyerPreview" onclick="document.getElementById('flyerFile').click()">
+                        <div class="preview-placeholder">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 5px;"></i>
+                            <div>Click para subir</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="flyer-input-side">
                     <div class="form-group">
-                        <label for="urlFlyer">Flyer (URL editable o subir)</label>
-                        <input type="text" id="urlFlyer" placeholder="https://..." onchange="updateFlyerPreview()"
-                            oninput="updateFlyerPreview()">
-                        <div style="margin-top:8px;">
-                            <input type="file" id="flyerFile" accept="image/png,image/jpeg"
-                                onchange="handleFlyerUpload()" />
-                            <small style="color:#999;margin-left:6px;display:block;margin-top:4px;">Subir imagen
-                                (JPEG/PNG, ≤ 3 MB)</small>
-                        </div>
+                        <label for="urlFlyer">Flyer (URL o subir)</label>
+                        <p class="hint">Pegá la URL del flyer o hacé click en la imagen para subir:</p>
+                        <input type="text" id="urlFlyer" placeholder="https://..." onchange="updateFlyerPreview()" oninput="updateFlyerPreview()" style="margin-top: 5px;">
+                        <input type="file" id="flyerFile" accept="image/png,image/jpeg" style="display: none;" onchange="handleFlyerUpload()" />
                     </div>
                 </div>
             </div>
