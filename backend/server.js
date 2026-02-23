@@ -7,6 +7,7 @@ const path = require('path');
 const pool = require('./db');
 const { logRequest, logVerbose, logError, logWarning, logSuccess } = require('./lib/debugFlags');
 const logResponseMiddleware = require('./middleware/logResponseMiddleware');
+const { performSyncLogos, performSyncFlyers } = require('./controllers/bandaController');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -167,6 +168,21 @@ async function startServer() {
             conn.release(); // Liberamos inmediatamente si tuvo éxito
             logSuccess("Conexión exitosa a MariaDB");
             connected = true;
+
+            // Ejecutar sincronizaciones al inicizar el servidor (esperare a que terminen)
+            try {
+                const logoResult = await performSyncLogos();
+                logSuccess(`[INIT-SYNC] ✓ Logos: ${logoResult.actualizadas}/${logoResult.total} bandas actualizadas`);
+            } catch (err) {
+                logWarning('[INIT-SYNC] ⚠ Fallo al sincronizar logos:', err.message);
+            }
+
+            try {
+                const flyerResult = await performSyncFlyers();
+                logSuccess(`[INIT-SYNC] ✓ Flyers: ${flyerResult.actualizadas}/${flyerResult.total} registros actualizados`);
+            } catch (err) {
+                logWarning('[INIT-SYNC] ⚠ Fallo al sincronizar flyers:', err.message);
+            }
         } catch (err) {
             logWarning(`Intento #${attempts} falló`, { error: err.message });
 

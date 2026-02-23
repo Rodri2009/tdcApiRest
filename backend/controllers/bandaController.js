@@ -717,11 +717,10 @@ const buscarBandas = async (req, res) => {
 };
 
 /**
- * GET /api/bandas/sync-logos
- * Busca logos en filesystem para bandas sin logo_url y actualiza la BD
- * Ejecutado automáticamente al cargar la página
+ * Función auxiliar: Sincronizar logos de bandas (sin req/res)
+ * Busca logos en filesystem y actualiza BD
  */
-const syncLogos = async (req, res) => {
+const performSyncLogos = async () => {
     const fs = require('fs');
     const path = require('path');
     const uploadsDir = path.join(__dirname, '..', 'uploads', 'bandas');
@@ -735,7 +734,7 @@ const syncLogos = async (req, res) => {
             `SELECT id_banda, nombre FROM bandas_artistas WHERE logo_url IS NULL OR logo_url = ''`
         );
 
-        logVerbose(`[BANDA-SYNC] Buscando logos para ${bandas.length} bandas sin logo_url`);
+        logVerbose(`[BANDA-SYNC-LOGOS] Buscando logos para ${bandas.length} bandas sin logo_url`);
 
         let actualizadas = 0;
 
@@ -761,11 +760,11 @@ const syncLogos = async (req, res) => {
 
                     if (logoMatch) {
                         logoEncontrado = `/uploads/bandas/${logoMatch}`;
-                        logVerbose(`[BANDA-SYNC] ✓ Logo encontrado para "${banda.nombre}": ${logoMatch}`);
+                        logVerbose(`[BANDA-SYNC-LOGOS] ✓ Logo encontrado para "${banda.nombre}": ${logoMatch}`);
                     }
                 }
             } catch (err) {
-                logWarning(`[BANDA-SYNC] Error al leer directorio para "${banda.nombre}":`, err.message);
+                logWarning(`[BANDA-SYNC-LOGOS] Error al leer directorio para "${banda.nombre}":`, err.message);
             }
 
             // Actualizar BD si se encontró logo
@@ -775,23 +774,143 @@ const syncLogos = async (req, res) => {
                     [logoEncontrado, banda.id_banda]
                 );
                 actualizadas++;
-                logVerbose(`[BANDA-SYNC] BD actualizada: ${banda.nombre} → ${logoEncontrado}`);
+                logVerbose(`[BANDA-SYNC-LOGOS] BD actualizada: ${banda.nombre} → ${logoEncontrado}`);
             }
         }
 
-        logVerbose(`[BANDA-SYNC] ✓ Sincronización completada: ${actualizadas}/${bandas.length} logos actualizados`);
+        logVerbose(`[BANDA-SYNC-LOGOS] ✓ Completada: ${actualizadas}/${bandas.length} logos actualizados`);
 
-        return res.status(200).json({
+        return {
             message: `Sincronización de logos completada`,
             total: bandas.length,
             actualizadas: actualizadas
-        });
+        };
 
     } catch (err) {
-        logError('[BANDA-SYNC] Error en sincronización:', err.message);
-        return res.status(500).json({ error: 'Error al sincronizar logos' });
+        logError('[BANDA-SYNC-LOGOS] Error:', err.message);
+        throw err;
     } finally {
         if (conn) conn.release();
+    }
+};
+
+/**
+ * Función auxiliar: Sincronizar flyers (url_flyer en solicitudes y eventos)
+ */
+const performSyncFlyers = async () => {
+    const fs = require('fs');
+    const path = require('path');
+    const uploadsDir = path.join(__dirname, '..', 'uploads', 'flyers');
+
+    let conn;
+    try {
+        // Crear directorio si no existe
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+            logVerbose(`[FLYER-SYNC] Directorio creado: ${uploadsDir}`);
+        }
+
+        conn = await pool.getConnection();
+
+        // Obtener solicitudes y eventos sin url_flyer
+        const solicitudes = await conn.query(
+            `SELECT id FROM solicitudes WHERE url_flyer IS NULL OR url_flyer = ''`
+        );
+        const eventos = await conn.query(
+            `SELECT id FROM eventos_confirmados WHERE url_flyer IS NULL OR url_flyer = ''`
+        );
+
+        logVerbose(`[FLYER-SYNC] Buscando flyers para ${solicitudes.length} solicitudes y ${eventos.length} eventos`);
+
+        let actualizadas = 0;
+
+        // Procesar solicitudes
+        for (const sol of solicitudes) {
+            let flyerEncontrado = null;
+            try {
+                if (fs.existsSync(uploadsDir)) {
+                    const archivos = fs.readdirSync(uploadsDir);
+                    const flyerMatch = archivos.find(f => 
+                        f.toLowerCase().startsWith(`flyer_solicitud_${sol.id}`) &&
+                        (f.endsWith('.jpg') || f.endsWith('.jpeg') || f.endsWith('.png') || f.endsWith('.pdf'))
+                    );
+
+                    if (flyerMatch) {
+                        flyerEncontrado = `/uploads/flyers/${flyerMatch}`;
+                        logVerbose(`[FLYER-SYNC] ✓ Flyer encontrado para solicitud ${sol.id}: ${flyerMatch}`);
+                    }
+                }
+            } catch (err) {
+                logWarning(`[FLYER-SYNC] Error al leer directorio para solicitud ${sol.id}:`, err.message);
+            }
+
+            if (flyerEncontrado) {
+                await conn.query(
+                    `UPDATE solicitudes SET url_flyer = ? WHERE id = ?`,
+                    [flyerEncontrado, sol.id]
+                );
+                actualizadas++;
+                logVerbose(`[FLYER-SYNC] Solicitud ${sol.id} actualizada → ${flyerEncontrado}`);
+            }
+        }
+
+        // Procesar eventos
+        for (const evt of eventos) {
+            let flyerEncontrado = null;
+            try {
+                if (fs.existsSync(uploadsDir)) {
+                    const archivos = fs.readdirSync(uploadsDir);
+                    const flyerMatch = archivos.find(f => 
+                        f.toLowerCase().startsWith(`flyer_evento_${evt.id}`) &&
+                        (f.endsWith('.jpg') || f.endsWith('.jpeg') || f.endsWith('.png') || f.endsWith('.pdf'))
+                    );
+
+                    if (flyerMatch) {
+                        flyerEncontrado = `/uploads/flyers/${flyerMatch}`;
+                        logVerbose(`[FLYER-SYNC] ✓ Flyer encontrado para evento ${evt.id}: ${flyerMatch}`);
+                    }
+                }
+            } catch (err) {
+                logWarning(`[FLYER-SYNC] Error al leer directorio para evento ${evt.id}:`, err.message);
+            }
+
+            if (flyerEncontrado) {
+                await conn.query(
+                    `UPDATE eventos_confirmados SET url_flyer = ? WHERE id = ?`,
+                    [flyerEncontrado, evt.id]
+                );
+                actualizadas++;
+                logVerbose(`[FLYER-SYNC] Evento ${evt.id} actualizado → ${flyerEncontrado}`);
+            }
+        }
+
+        logVerbose(`[FLYER-SYNC] ✓ Completada: ${actualizadas}/${solicitudes.length + eventos.length} flyers actualizados`);
+
+        return {
+            message: `Sincronización de flyers completada`,
+            total: solicitudes.length + eventos.length,
+            actualizadas: actualizadas
+        };
+
+    } catch (err) {
+        logError('[FLYER-SYNC] Error:', err.message);
+        throw err;
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+/**
+ * GET /api/bandas/sync-logos
+ * Ruta HTTP para sincronizar logos (llama performSyncLogos)
+ */
+const syncLogos = async (req, res) => {
+    try {
+        const result = await performSyncLogos();
+        return res.status(200).json(result);
+    } catch (err) {
+        logError('[BANDA-SYNC-LOGOS] Error en ruta HTTP:', err.message);
+        return res.status(500).json({ error: 'Error al sincronizar logos' });
     }
 };
 
@@ -845,5 +964,7 @@ module.exports = {
     obtenerInstrumentos,
     buscarBandas,
     syncLogos,
-    uploadLogo
+    uploadLogo,
+    performSyncLogos,
+    performSyncFlyers
 };

@@ -1501,13 +1501,6 @@
             // Cargar instrumentos (fechas ocupadas no son necesarias en esta página)
             await loadInstrumentos();
 
-            // Sincronizar logos del filesystem con BD
-            try {
-                await fetch('/api/bandas/sync-logos').catch(() => {});
-            } catch (e) {
-                console.debug('[SYNC-LOGOS] No critical:', e.message);
-            }
-
             // Setup
             setupCalendars();
             setupLogoUpload();

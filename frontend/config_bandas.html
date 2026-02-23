@@ -1524,9 +1524,6 @@
             loadBandas();
             loadEventos();
             loadInstrumentos();
-
-            // Sincronizar logos del filesystem con BD
-            fetch('/api/bandas/sync-logos').catch(() => {});
         });
     </script>
 </body>
