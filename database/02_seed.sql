@@ -33,9 +33,9 @@ LOCK TABLES `configuracion` WRITE;
 /*!40000 ALTER TABLE `configuracion` DISABLE KEYS */;
 INSERT INTO `configuracion` (`Clave`, `Valor`) VALUES 
   ('NOMBRE_NEGOCIO', 'El Templo de Claypole'),
-  ('TELEFONO', '1155551234'),
+  ('TELEFONO', '1155630357'),
   ('EMAIL_CONTACTO', 'contacto@eltemplodeclaypole.com'),
-  ('DIRECCION', 'Claypole, Buenos Aires'),
+  ('DIRECCION', 'Liniers 465, Claypole, Buenos Aires'),
   ('HORARIO_ATENCION', 'Lunes a Sábado 10:00 - 22:00'),
   ('ANTICIPACION_MINIMA_DIAS', '3'),
   ('ANTICIPACION_MAXIMA_DIAS', '90');
@@ -303,74 +303,6 @@ VALUES
 UNLOCK TABLES;
 
 -- =====================================================================
--- CATÁLOGO DE INSTRUMENTOS MUSICALES
--- =====================================================================
-LOCK TABLES `catalogo_instrumentos` WRITE;
-/*!40000 ALTER TABLE `catalogo_instrumentos` DISABLE KEYS */;
-INSERT INTO `catalogo_instrumentos` 
-  (`id`, `nombre`, `categoria`, `icono`) 
-VALUES 
-  -- Cuerdas (1-7)
-  (1, 'Guitarra eléctrica', 'Cuerdas', 'fa-guitar'),
-  (2, 'Guitarra acústica', 'Cuerdas', 'fa-guitar'),
-  (3, 'Guitarra criolla', 'Cuerdas', 'fa-guitar'),
-  (4, 'Bajo eléctrico', 'Cuerdas', 'fa-guitar'),
-  (5, 'Bajo acústico', 'Cuerdas', 'fa-guitar'),
-  (6, 'Violín', 'Cuerdas', 'fa-violin'),
-  (7, 'Ukelele', 'Cuerdas', 'fa-guitar'),
-  
-  -- Percusión (8-13)
-  (8, 'Batería', 'Percusión', 'fa-drum'),
-  (9, 'Cajón peruano', 'Percusión', 'fa-drum'),
-  (10, 'Congas', 'Percusión', 'fa-drum'),
-  (11, 'Bongó', 'Percusión', 'fa-drum'),
-  (12, 'Timbales', 'Percusión', 'fa-drum'),
-  (13, 'Percusión menor', 'Percusión', 'fa-drum'),
-  
-  -- Teclados (14-17)
-  (14, 'Teclado', 'Teclados', 'fa-keyboard'),
-  (15, 'Piano', 'Teclados', 'fa-keyboard'),
-  (16, 'Sintetizador', 'Teclados', 'fa-keyboard'),
-  (17, 'Acordeón', 'Teclados', 'fa-keyboard'),
-  
-  -- Vientos (18-23)
-  (18, 'Saxofón', 'Vientos', 'fa-wind'),
-  (19, 'Trompeta', 'Vientos', 'fa-wind'),
-  (20, 'Trombón', 'Vientos', 'fa-wind'),
-  (21, 'Flauta traversa', 'Vientos', 'fa-wind'),
-  (22, 'Clarinete', 'Vientos', 'fa-wind'),
-  (23, 'Armónica', 'Vientos', 'fa-wind'),
-  
-  -- Voz (24-26)
-  (24, 'Voz principal', 'Voz', 'fa-microphone'),
-  (25, 'Coros', 'Voz', 'fa-microphone'),
-  (26, 'Segunda voz', 'Voz', 'fa-microphone'),
-  
-  -- Electrónico (27-28)
-  (27, 'DJ / Controlador', 'Electrónico', 'fa-compact-disc'),
-  (28, 'Sampler', 'Electrónico', 'fa-sliders');
-/*!40000 ALTER TABLE `catalogo_instrumentos` ENABLE KEYS */;
-UNLOCK TABLES;
-
--- =====================================================================
--- PERSONAL DISPONIBLE
--- =====================================================================
-LOCK TABLES `personal_disponible` WRITE;
-/*!40000 ALTER TABLE `personal_disponible` DISABLE KEYS */;
-INSERT INTO `personal_disponible` 
-  (`id_personal`, `nombre_completo`, `rol`, `celular`, `activo`, `cvu_alias`) 
-VALUES 
-  ('P001', 'Chony', 'Encargada,Puerta', '11 5959-7348', 1, NULL),
-  ('P002', 'Leila', 'Limpieza,Puerta,Cocinera,Mesera', '11 3199-6780', 1, NULL),
-  ('P003', 'Anita', 'Limpieza,Puerta', '11 5313-4502', 1, NULL),
-  ('P004', 'Belen', 'Ayudante de cocina,Mesera', '11 2672-0497', 1, NULL),
-  ('P005', 'Amelia', 'Mesera', '11 5064-1123', 1, NULL),
-  ('P006', 'Giselle', 'Depiladora', NULL, 0, NULL),
-  ('P007', 'Rodrigo', 'Bartender,Puerta,Cocinera,Mesera,Sonido', NULL, 0, NULL);
-/*!40000 ALTER TABLE `personal_disponible` ENABLE KEYS */;
-UNLOCK TABLES;
-
--- =====================================================================
 -- COSTOS DE PERSONAL POR VIGENCIA
 -- =====================================================================
 LOCK TABLES `costos_personal_vigencia` WRITE;
@@ -475,25 +407,6 @@ VALUES
 UNLOCK TABLES;
 
 -- =====================================================================
--- PROFESIONALES DE SERVICIOS TERCEROS
--- =====================================================================
-LOCK TABLES `profesionales_servicios` WRITE;
-/*!40000 ALTER TABLE `profesionales_servicios` DISABLE KEYS */;
-INSERT INTO `profesionales_servicios` 
-  (`id`, `nombre`, `especialidad`, `telefono`, `email`, `id_cliente`, `dias_trabaja`, `hora_inicio`, `hora_fin`, `activo`, `creado_en`, `actualizado_en`) 
-VALUES 
-  (1, 'Lucía Martínez', 'Masajes', '1150012345', 'lucia.m@example.com', NULL, 
-   'Lunes,Miércoles,Viernes', '09:00:00', '17:00:00', 1, '2026-02-22 16:16:33', '2026-02-22 16:16:33'),
-
-  (2, 'Mariana Gómez', 'Depilación', '1150023456', 'mariana.g@example.com', NULL,
-   'Martes,Jueves', '10:00:00', '18:00:00', 1, '2026-02-22 16:16:33', '2026-02-22 16:16:33'),
-
-  (3, 'Carolina Ruiz', 'Estética', '1150034567', 'carolina.r@example.com', NULL,
-   'Lunes a Viernes', '09:00:00', '17:30:00', 1, '2026-02-22 16:16:33', '2026-02-22 16:16:33');
-/*!40000 ALTER TABLE `profesionales_servicios` ENABLE KEYS */;
-UNLOCK TABLES;
-
--- =====================================================================
 -- ROLES REQUERIDOS POR TIPO DE EVENTO
 -- =====================================================================
 LOCK TABLES `roles_por_evento` WRITE;
@@ -545,105 +458,57 @@ VALUES
 /*!40000 ALTER TABLE `roles_por_evento` ENABLE KEYS */;
 UNLOCK TABLES;
 
+
 -- =====================================================================
--- SERVICIOS DISPONIBLES EN CATÁLOGO
+-- CATÁLOGO DE INSTRUMENTOS MUSICALES
 -- =====================================================================
-LOCK TABLES `servicios_catalogo` WRITE;
-/*!40000 ALTER TABLE `servicios_catalogo` DISABLE KEYS */;
-INSERT INTO `servicios_catalogo` 
-  (`id`, `tipo_servicio_id`, `nombre`, `descripcion`, `duracion_minutos`, `activo`, `orden`, `creado_en`, `actualizado_en`) 
+LOCK TABLES `catalogo_instrumentos` WRITE;
+/*!40000 ALTER TABLE `catalogo_instrumentos` DISABLE KEYS */;
+INSERT INTO `catalogo_instrumentos` 
+  (`id`, `nombre`, `categoria`, `icono`) 
 VALUES 
-  (1, 'MASAJES', 'Masaje Descontracturante', 'Masaje descontracturante de 60 minutos', 60, 1, 1, '2026-02-22 16:16:33', '2026-02-22 16:16:33'),
-  (2, 'MASAJES', 'Masaje Relajante', 'Masaje relajante de 45 minutos', 45, 1, 2, '2026-02-22 16:16:33', '2026-02-22 16:16:33'),
-  (3, 'DEPILACION', 'Depilación Piernas', 'Depilación con cera - piernas completas', 30, 1, 1, '2026-02-22 16:16:33', '2026-02-22 16:16:33'),
-  (4, 'DEPILACION', 'Depilación Bozo', 'Depilación facial - bozo', 15, 1, 2, '2026-02-22 16:16:33', '2026-02-22 16:16:33'),
-  (5, 'ESTETICA', 'Limpieza Facial', 'Limpieza facial profunda de 60 minutos', 60, 1, 1, '2026-02-22 16:16:33', '2026-02-22 16:16:33'),
-  (6, 'ESTETICA', 'Hidratación Facial', 'Tratamiento hidratante de 45 minutos', 45, 1, 2, '2026-02-22 16:16:33', '2026-02-22 16:16:33');
-/*!40000 ALTER TABLE `servicios_catalogo` ENABLE KEYS */;
-UNLOCK TABLES;
-
--- =====================================================================
--- CATÁLOGO DE BANDAS ARTISTAS
--- =====================================================================
-LOCK TABLES `bandas_artistas` WRITE;
-/*!40000 ALTER TABLE `bandas_artistas` DISABLE KEYS */;
-INSERT INTO `bandas_artistas` 
-  (`id_banda`, `nombre`, `genero_musical`, `bio`, `instagram`, `facebook`, `twitter`, `tiktok`, `web_oficial`, `youtube`, `spotify`, `otras_redes`, `logo_url`, `foto_prensa_url`, `contacto_nombre`, `contacto_email`, `contacto_telefono`, `contacto_rol`, `verificada`, `activa`, `creado_en`, `actualizado_en`) 
-VALUES 
-  (1, 'Reite', 'Rock / Tributo La Renga', 
-   'Tributo a La Renga con más de 10 años de trayectoria en la zona sur.',
-   '@reite.tributo', 'ReiteOficial', NULL, NULL, NULL, 
-   'https://youtube.com/@reitetributo', 'https://open.spotify.com/artist/reite', NULL, NULL, NULL,
-   'Carlos Pérez', 'reite.tributo@gmail.com', '1155001122', 'Manager', 1, 1, '2026-02-22 16:16:33', '2026-02-22 16:16:33'),
-
-  (2, 'Pateando Bares', 'Rock Nacional',
-   'Rock nacional con temas propios y algunos covers.',
-   '@pateando.bares', 'PateandobaresOk', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-   'Martín Gómez', 'pateando.bares@gmail.com', '1155003344', 'Líder', 1, 1, '2026-02-22 16:16:33', '2026-02-22 16:16:33'),
-
-  (3, 'Las Mentas', 'Rock Alternativo',
-   'Banda femenina de rock alternativo.',
-   '@lasmentas.rock', NULL, NULL, NULL, NULL, 'https://youtube.com/@lasmentas', 
-   'https://open.spotify.com/artist/lasmentas', NULL, NULL, NULL,
-   'Laura Fernández', 'lasmentas@gmail.com', '1155005566', 'Cantante', 1, 1, '2026-02-22 16:16:33', '2026-02-22 16:16:33'),
-
-  (4, 'Cumbia Sudaka', 'Cumbia',
-   'Cumbia villera con letras sociales.',
-   '@cumbiasudaka', 'CumbiaSudakaOficial', NULL, NULL, NULL, 'https://youtube.com/@cumbiasudaka', NULL, NULL, NULL, NULL,
-   'Diego Ramírez', 'cumbiasudaka@gmail.com', '1155009900', 'Manager', 1, 1, '2026-02-22 16:16:33', '2026-02-22 16:16:33');
-/*!40000 ALTER TABLE `bandas_artistas` ENABLE KEYS */;
-UNLOCK TABLES;
-
--- =====================================================================
--- FORMACIÓN DE BANDAS (INTEGRANTES E INSTRUMENTOS)
--- =====================================================================
-LOCK TABLES `bandas_formacion` WRITE;
-/*!40000 ALTER TABLE `bandas_formacion` DISABLE KEYS */;
-INSERT INTO `bandas_formacion` 
-  (`id`, `id_banda`, `nombre_integrante`, `instrumento`, `es_lider`, `notas`) 
-VALUES 
-  -- REITE (banda 1)
-  (1, 1, 'Carlos', 'Guitarra eléctrica', 1, 'Guitarra líder'),
-  (2, 1, 'Pablo', 'Guitarra eléctrica', 0, 'Guitarra rítmica'),
-  (3, 1, 'Gustavo', 'Bajo eléctrico', 0, NULL),
-  (4, 1, 'Chicha', 'Batería', 0, NULL),
-  (5, 1, 'El Tano', 'Voz principal', 0, NULL),
+  -- Cuerdas (1-7)
+  (1, 'Guitarra eléctrica', 'Cuerdas', 'fa-guitar'),
+  (2, 'Guitarra acústica', 'Cuerdas', 'fa-guitar'),
+  (3, 'Guitarra criolla', 'Cuerdas', 'fa-guitar'),
+  (4, 'Bajo eléctrico', 'Cuerdas', 'fa-guitar'),
+  (5, 'Bajo acústico', 'Cuerdas', 'fa-guitar'),
+  (6, 'Violín', 'Cuerdas', 'fa-violin'),
+  (7, 'Ukelele', 'Cuerdas', 'fa-guitar'),
   
-  -- PATEANDO BARES (banda 2)
-  (6, 2, 'Martín', 'Guitarra eléctrica', 1, 'Guitarra y voz'),
-  (7, 2, 'Martín', 'Voz principal', 0, NULL),
-  (8, 2, 'Fede', 'Bajo eléctrico', 0, NULL),
-  (9, 2, 'Nico', 'Batería', 0, NULL),
+  -- Percusión (8-13)
+  (8, 'Batería', 'Percusión', 'fa-drum'),
+  (9, 'Cajón peruano', 'Percusión', 'fa-drum'),
+  (10, 'Congas', 'Percusión', 'fa-drum'),
+  (11, 'Bongó', 'Percusión', 'fa-drum'),
+  (12, 'Timbales', 'Percusión', 'fa-drum'),
+  (13, 'Percusión menor', 'Percusión', 'fa-drum'),
   
-  -- LAS MENTAS (banda 3)
-  (10, 3, 'Laura', 'Voz principal', 1, NULL),
-  (11, 3, 'Camila', 'Guitarra eléctrica', 0, NULL),
-  (12, 3, 'Sol', 'Bajo eléctrico', 0, NULL),
-  (13, 3, 'Maia', 'Batería', 0, NULL),
-  (14, 3, 'Vale', 'Teclado', 0, 'Sintetizadores'),
+  -- Teclados (14-17)
+  (14, 'Teclado', 'Teclados', 'fa-keyboard'),
+  (15, 'Piano', 'Teclados', 'fa-keyboard'),
+  (16, 'Sintetizador', 'Teclados', 'fa-keyboard'),
+  (17, 'Acordeón', 'Teclados', 'fa-keyboard'),
   
-  -- CUMBIA SUDAKA (banda 4)
-  (15, 4, 'Diego', 'Voz principal', 1, NULL),
-  (16, 4, NULL, 'Teclado', 0, NULL),
-  (17, 4, NULL, 'Guitarra eléctrica', 0, NULL),
-  (18, 4, NULL, 'Bajo eléctrico', 0, NULL),
-  (19, 4, NULL, 'Batería', 0, NULL);
-/*!40000 ALTER TABLE `bandas_formacion` ENABLE KEYS */;
+  -- Vientos (18-23)
+  (18, 'Saxofón', 'Vientos', 'fa-wind'),
+  (19, 'Trompeta', 'Vientos', 'fa-wind'),
+  (20, 'Trombón', 'Vientos', 'fa-wind'),
+  (21, 'Flauta traversa', 'Vientos', 'fa-wind'),
+  (22, 'Clarinete', 'Vientos', 'fa-wind'),
+  (23, 'Armónica', 'Vientos', 'fa-wind'),
+  
+  -- Voz (24-26)
+  (24, 'Voz principal', 'Voz', 'fa-microphone'),
+  (25, 'Coros', 'Voz', 'fa-microphone'),
+  (26, 'Segunda voz', 'Voz', 'fa-microphone'),
+  
+  -- Electrónico (27-28)
+  (27, 'DJ / Controlador', 'Electrónico', 'fa-compact-disc'),
+  (28, 'Sampler', 'Electrónico', 'fa-sliders');
+/*!40000 ALTER TABLE `catalogo_instrumentos` ENABLE KEYS */;
 UNLOCK TABLES;
 
--- =====================================================================
--- CUPONES DE DESCUENTO
--- =====================================================================
-LOCK TABLES `cupones` WRITE;
-/*!40000 ALTER TABLE `cupones` DISABLE KEYS */;
-INSERT INTO `cupones` 
-  (`id`, `codigo`, `tipo_descuento`, `valor_fijo`, `porcentaje_descuento`, `usos_maximos`, `usos_actuales`, `fecha_expiracion`, `activo`, `aplica_a`, `fecha_creacion`) 
-VALUES 
-  (1, 'ROCK20', 'PORCENTAJE', NULL, 20.00, 50, 0, '2025-12-31', 1, 'TODAS', '2026-02-22 16:16:33'),
-  (2, 'DESCUENTO10K', 'MONTO_FIJO', 10000.00, NULL, NULL, 0, NULL, 1, 'ANTICIPADA', '2026-02-22 16:16:33'),
-  (3, 'PUERTA25', 'PORCENTAJE', NULL, 25.00, 100, 0, '2025-12-31', 1, 'PUERTA', '2026-02-22 16:16:33');
-/*!40000 ALTER TABLE `cupones` ENABLE KEYS */;
-UNLOCK TABLES;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
