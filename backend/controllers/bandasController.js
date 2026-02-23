@@ -472,7 +472,7 @@ const getInstrumentos = async (req, res) => {
     try {
         const { categoria } = req.query;
 
-        let query = 'SELECT * FROM catalogo_instrumentos';
+        let query = 'SELECT id_instrumento as id, nombre, categoria, icono FROM catalogo_instrumentos';
         const params = [];
 
         if (categoria) {
@@ -552,7 +552,7 @@ const updateInstrumento = async (req, res) => {
         params.push(id);
 
         const result = await pool.query(
-            `UPDATE catalogo_instrumentos SET ${setClauses.join(', ')} WHERE id = ?`,
+            `UPDATE catalogo_instrumentos SET ${setClauses.join(', ')} WHERE id_instrumento = ?`,
             params
         );
 
@@ -576,7 +576,7 @@ const deleteInstrumento = async (req, res) => {
         const { id } = req.params;
 
         const result = await pool.query(
-            'DELETE FROM catalogo_instrumentos WHERE id = ?',
+            'DELETE FROM catalogo_instrumentos WHERE id_instrumento = ?',
             [id]
         );
 

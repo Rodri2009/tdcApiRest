@@ -363,24 +363,26 @@ CREATE TABLE IF NOT EXISTS bandas_artistas (
     INDEX idx_activa (activa)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Catálogo de instrumentos disponibles (para autocompletado)
+CREATE TABLE IF NOT EXISTS catalogo_instrumentos (
+    id_instrumento INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    categoria VARCHAR(50) DEFAULT NULL COMMENT 'Cuerdas, Percusión, Vientos, Electrónico, Voz',
+    icono VARCHAR(50) DEFAULT NULL COMMENT 'Nombre del icono (fa-guitar, etc.)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- Formación/Integrantes de una banda (instrumentos y roles)
 CREATE TABLE IF NOT EXISTS bandas_formacion (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_banda INT NOT NULL,
     nombre_integrante VARCHAR(255) DEFAULT NULL COMMENT 'Nombre del músico (opcional)',
-    instrumento VARCHAR(100) NOT NULL COMMENT 'Guitarra, Bajo, Batería, Voz, Teclado, etc.',
+    id_instrumento INT NOT NULL COMMENT 'FK a catalogo_instrumentos',
     es_lider TINYINT(1) DEFAULT 0 COMMENT '1=Es el líder/frontman',
     notas VARCHAR(255) DEFAULT NULL COMMENT 'Ej: Guitarra rítmica, Segunda voz',
     INDEX idx_banda (id_banda),
-    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Catálogo de instrumentos disponibles (para autocompletado)
-CREATE TABLE IF NOT EXISTS catalogo_instrumentos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL UNIQUE,
-    categoria VARCHAR(50) DEFAULT NULL COMMENT 'Cuerdas, Percusión, Vientos, Electrónico, Voz',
-    icono VARCHAR(50) DEFAULT NULL COMMENT 'Nombre del icono (fa-guitar, etc.)'
+    INDEX idx_instrumento (id_instrumento),
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE CASCADE,
+    FOREIGN KEY (id_instrumento) REFERENCES catalogo_instrumentos(id_instrumento) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================

@@ -465,7 +465,7 @@ UNLOCK TABLES;
 LOCK TABLES `catalogo_instrumentos` WRITE;
 /*!40000 ALTER TABLE `catalogo_instrumentos` DISABLE KEYS */;
 INSERT INTO `catalogo_instrumentos` 
-  (`id`, `nombre`, `categoria`, `icono`) 
+  (`id_instrumento`, `nombre`, `categoria`, `icono`) 
 VALUES 
   -- Cuerdas (1-7)
   (1, 'Guitarra eléctrica', 'Cuerdas', 'fa-guitar'),

@@ -133,14 +133,16 @@ const obtenerBandaPorId = async (req, res) => {
         // Obtener formación (integrantes)
         const sqlFormacion = `
             SELECT
-                id,
-                nombre_integrante,
-                instrumento,
-                es_lider,
-                notas
-            FROM bandas_formacion
-            WHERE id_banda = ?
-            ORDER BY es_lider DESC, id ASC
+                bf.id,
+                bf.nombre_integrante,
+                ci.nombre as instrumento,
+                ci.id_instrumento,
+                bf.es_lider,
+                bf.notas
+            FROM bandas_formacion bf
+            LEFT JOIN catalogo_instrumentos ci ON bf.id_instrumento = ci.id_instrumento
+            WHERE bf.id_banda = ?
+            ORDER BY bf.es_lider DESC, bf.id ASC
         `;
 
         const integrantes = await conn.query(sqlFormacion, [idNum]);
@@ -255,17 +257,27 @@ const crearBanda = async (req, res) => {
                 INSERT INTO bandas_formacion (
                     id_banda,
                     nombre_integrante,
-                    instrumento,
+                    id_instrumento,
                     es_lider,
                     notas
                 ) VALUES (?, ?, ?, ?, ?)
             `;
 
             for (const integrante of integrantes) {
+                // Buscar el id_instrumento basado en el nombre
+                let id_instrumento = null;
+                if (integrante.instrumento) {
+                    const [instResult] = await conn.query(
+                        'SELECT id_instrumento FROM catalogo_instrumentos WHERE nombre = ? LIMIT 1',
+                        [integrante.instrumento]
+                    );
+                    id_instrumento = instResult?.id_instrumento || null;
+                }
+
                 const paramsIntegrante = [
                     bandaId,
                     integrante.nombre_integrante || null,
-                    integrante.instrumento || '',
+                    id_instrumento,
                     integrante.es_lider ? 1 : 0,
                     integrante.notas || null
                 ];
@@ -445,14 +457,22 @@ const actualizarBanda = async (req, res) => {
             const { action, data } = integrantes_operacion;
 
             if (action === 'add' && data.instrumento) {
+                // Buscar el id_instrumento basado en el nombre
+                let id_instrumento = null;
+                const [instResult] = await conn.query(
+                    'SELECT id_instrumento FROM catalogo_instrumentos WHERE nombre = ? LIMIT 1',
+                    [data.instrumento]
+                );
+                id_instrumento = instResult?.id_instrumento || null;
+
                 const sqlAdd = `
-                    INSERT INTO bandas_formacion (id_banda, nombre_integrante, instrumento, es_lider, notas)
+                    INSERT INTO bandas_formacion (id_banda, nombre_integrante, id_instrumento, es_lider, notas)
                     VALUES (?, ?, ?, ?, ?)
                 `;
                 await conn.query(sqlAdd, [
                     idNum,
                     data.nombre_integrante || null,
-                    data.instrumento,
+                    id_instrumento,
                     data.es_lider ? 1 : 0,
                     data.notas || null
                 ]);
@@ -472,15 +492,25 @@ const actualizarBanda = async (req, res) => {
             // Insertar la nueva formación si hay datos
             if (Array.isArray(req.body.formacion) && req.body.formacion.length > 0) {
                 const sqlInsertFormacion = `
-                    INSERT INTO bandas_formacion (id_banda, nombre_integrante, instrumento, es_lider, notas)
+                    INSERT INTO bandas_formacion (id_banda, nombre_integrante, id_instrumento, es_lider, notas)
                     VALUES (?, ?, ?, ?, ?)
                 `;
 
                 for (const integrante of req.body.formacion) {
+                    // Buscar el id_instrumento basado en el nombre
+                    let id_instrumento = null;
+                    if (integrante.instrumento) {
+                        const [instResult] = await conn.query(
+                            'SELECT id_instrumento FROM catalogo_instrumentos WHERE nombre = ? LIMIT 1',
+                            [integrante.instrumento]
+                        );
+                        id_instrumento = instResult?.id_instrumento || null;
+                    }
+
                     await conn.query(sqlInsertFormacion, [
                         idNum,
                         integrante.nombre_integrante || null,
-                        integrante.instrumento || '',
+                        id_instrumento,
                         integrante.es_lider ? 1 : 0,
                         integrante.notas || null
                     ]);
@@ -601,7 +631,7 @@ const obtenerInstrumentos = async (req, res) => {
 
         const instrumentos = await conn.query(
             `SELECT 
-                id,
+                id_instrumento as id,
                 nombre,
                 categoria,
                 icono

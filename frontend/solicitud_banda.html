@@ -1005,7 +1005,7 @@
 
                     if (resp.ok) {
                         full = await resp.json();
-                        console.log(`[SELECT-BANDA] ✓ Full data loaded | Logo:`, full.logo_url ? 'yes' : 'no', '| Formación:', (full.formacion && full.formacion.length) || 0, 'integrantes');
+                        console.log(`[SELECT-BANDA] ✓ Full data loaded | Logo:`, full.logo_url ? 'yes' : 'no', '| Formación:', (full.integrantes && full.integrantes.length) || (full.formacion && full.formacion.length) || 0, 'integrantes');
                     } else {
                         console.warn('[SELECT-BANDA] ✗ Could not fetch full banda, status:', resp.status);
                     }
@@ -1046,7 +1046,9 @@
                 // Formación: mapear y renderizar
                 try {
                     let formData = [];
-                    if (Array.isArray(full.formacion)) formData = full.formacion;
+                    // Buscar en integrantes (que es lo que devuelve el backend) o formacion (legacy)
+                    if (Array.isArray(full.integrantes)) formData = full.integrantes;
+                    else if (Array.isArray(full.formacion)) formData = full.formacion;
                     else if (full.formacion_json) {
                         try { formData = JSON.parse(full.formacion_json); } catch (e) { formData = []; }
                     }
