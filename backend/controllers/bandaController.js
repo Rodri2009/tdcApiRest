@@ -624,9 +624,11 @@ const obtenerInstrumentos = async (req, res) => {
  */
 const buscarBandas = async (req, res) => {
     const { q } = req.query;
-    logVerbose('[BANDA] GET - Buscar bandas:', q);
+    logVerbose(`[BANDA-BUSCAR] req.query: ${JSON.stringify(req.query)}`);
+    logVerbose(`[BANDA-BUSCAR] Parámetro "q" recibido: "${q}" | Type: ${typeof q}`);
 
-    if (!q || q.trim().length < 2) {
+    if (!q || String(q).trim().length < 2) {
+        logWarning(`[BANDA-BUSCAR] ⚠️ Query inválida (< 2 chars): "${q}"`);
         return res.status(400).json({ error: 'Query debe tener al menos 2 caracteres' });
     }
 
@@ -634,6 +636,18 @@ const buscarBandas = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
+        const searchTerm = `%${String(q).trim()}%`;
+        logVerbose(`[BANDA-BUSCAR] 🔍 SQL searchTerm: "${searchTerm}"`);
+
+        // Debug: Contar total de bandas
+        const [countResult] = await conn.query(`SELECT COUNT(*) as total FROM bandas_artistas`);
+        logVerbose(`[BANDA-BUSCAR] 📊 Total bandas en DB: ${countResult?.total || 0}`);
+
+        // Debug: Obtener primeras 5 bandas para ver qué hay
+        const sampleBandas = await conn.query(`SELECT id_banda, nombre FROM bandas_artistas LIMIT 5`);
+        logVerbose(`[BANDA-BUSCAR] 📋 Sample (primeras 5): ${JSON.stringify(sampleBandas)}`);
+
+        // Búsqueda principal (case-insensitive + LOWER)
         const bandas = await conn.query(
             `SELECT 
                 id_banda as id,
@@ -645,16 +659,27 @@ const buscarBandas = async (req, res) => {
                 verificada,
                 activa
             FROM bandas_artistas
-            WHERE (nombre LIKE ? OR genero_musical LIKE ?)
-            AND activa = 1
+            WHERE (LOWER(nombre) LIKE LOWER(?) OR LOWER(genero_musical) LIKE LOWER(?))
             ORDER BY nombre ASC
             LIMIT 10`,
-            [`%${q}%`, `%${q}%`]
+            [searchTerm, searchTerm]
         );
 
-        res.json(bandas);
+        logVerbose(`[BANDA-BUSCAR] ✓ Query ejecutada, resultados: ${bandas ? bandas.length : 'NULL'} bandas`);
+
+        if (bandas && bandas.length > 0) {
+            bandas.forEach((b, i) => {
+                logVerbose(`[BANDA-BUSCAR] Banda ${i + 1}: "${b.nombre}" (id: ${b.id}, activa: ${b.activa})`);
+            });
+        } else {
+            logWarning(`[BANDA-BUSCAR] ⚠️ No se encontraron bandas para query: "${q}"`);
+        }
+
+        res.json(bandas || []);
+
     } catch (err) {
-        logError('[BANDA] Error al buscar bandas:', err.message);
+        logError(`[BANDA-BUSCAR] Error al buscar bandas: ${err.message}`);
+        logError(`[BANDA-BUSCAR] Stack: ${err.stack}`);
         return res.status(500).json({ error: err.message || 'Error al buscar bandas.' });
     } finally {
         if (conn) conn.release();

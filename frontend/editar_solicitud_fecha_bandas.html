@@ -1310,7 +1310,8 @@
                 expectativa_publico: parseInt(document.getElementById('aforoMaximo').value, 10) || 120,
                 es_publico: document.getElementById('esPublico').value === '1' ? 1 : 0,
                 precio_puerta: document.getElementById('precioPuerta').value ? parseFloat(document.getElementById('precioPuerta').value) : null,
-                url_flyer: document.getElementById('urlFlyer').value.trim()
+                url_flyer: document.getElementById('urlFlyer').value.trim(),
+                estado: document.getElementById('estadoSelect').value
             };
 
             // Evitar enviar data:URI dentro del JSON (usar /api/uploads/flyers)

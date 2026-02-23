@@ -1,12 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-# restart_backend.sh
-# Script para reiniciar el backend con soporte para flags de depuración
-#
+###############################################################################
+# restart_backend.sh - Reinicia el backend con soporte para flags de depuración
+###############################################################################
 # FLAGS DE DOCKER:
-#   --rebuild         : reconstruye la imagen del backend antes de levantarla
-#   --down            : hace docker compose down antes de rebuild/up
+#   --rebuild         : reconstruye la imagen del backend
+#   --down            : hace docker compose down antes de rebuild
 #   --no-logs         : no muestra logs en foreground
 #
 # FLAGS DE DEPURACIÓN (se pasan a node server.js):
@@ -18,7 +18,16 @@ set -euo pipefail
 # EJEMPLOS:
 #   ./restart_backend.sh -v                    # Levanta con verbose
 #   ./restart_backend.sh --down --rebuild -d   # Rebuild + down + debug
-#   ./restart_backend.sh --no-logs -e          # Sin logs de docker, solo errores en app
+#   ./restart_backend.sh --no-logs -e          # Sin logs de docker, solo errores
+###############################################################################
+
+# Colores
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$ROOT_DIR/.env"
@@ -57,71 +66,99 @@ else
   echo "❌ No se encontró 'docker compose' ni 'docker-compose'. Instala Docker Compose."; exit 1
 fi
 
-echo "[restart_backend] Usando comando: $COMPOSE_CMD"
+echo -e "${BLUE}======================================================${NC}"
+echo -e "${BLUE}  TDC App - Reinicio del Backend${NC}"
+echo -e "${BLUE}======================================================${NC}"
+echo ""
+
+echo -e "${CYAN}[*] Usando comando: $COMPOSE_CMD${NC}"
+echo ""
 
 if [ $DO_DOWN -eq 1 ]; then
-  echo "[restart_backend] Ejecutando down..."
+  echo -e "${YELLOW}[*]${NC} Ejecutando docker compose down..."
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down
 fi
 
 if [ $REBUILD -eq 1 ]; then
-  echo "[restart_backend] Reconstruyendo imagen backend..."
+  echo -e "${YELLOW}[*]${NC} Reconstruyendo imagen backend..."
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build --no-cache backend
 fi
 
-echo "[restart_backend] Levantando backend..."
+echo ""
+echo -e "${YELLOW}[*]${NC} Controlando contenedores Docker..."
 
-# ⚠️ PRIMERO: Limpiar todos los contenedores viejos de backend para evitar duplicados
-echo "[restart_backend] 🧹 Limpiando contenedores backend antiguos..."
+# ⚠️ Limpiar contenedores viejos de backend
+echo -ne "  → Limpiando contenedores backend antiguos... "
 docker ps -a --filter "ancestor=$(docker images --filter 'reference=docker-backend' -q 2>/dev/null)" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
 docker ps -a --filter "name=docker-backend" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
 docker ps -a --filter "name=docker-backend-run-" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
+echo -e "${GREEN}✓${NC}"
 
 if [ -n "$DEBUG_FLAGS" ]; then
   # Si hay flags, hacer down completo para liberar puertos
-  echo "[restart_backend] Haciendo down para limpiar..."
+  echo -ne "  → Ejecutando docker compose down... "
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down
+  echo -e "${GREEN}✓${NC}"
   
   # Exportar DEBUG_FLAGS para que docker-compose lo recoja
   export DEBUG_FLAGS
-  echo "[restart_backend] Debug flags detectados:$DEBUG_FLAGS"
+  echo -e "  → Debug flags detectados:$DEBUG_FLAGS"
   
-  # Levantar SOLO mariadb (sin nginx para evitar que auto-inicie backend sin flags)
-  echo "[restart_backend] Levantando solo MariaDB..."
+  # Levantar SOLO mariadb
+  echo -ne "  → Levantando MariaDB... "
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d mariadb
+  echo -e "${GREEN}✓${NC}"
   
   # Esperar a que mariadb esté listo
-  echo "[restart_backend] Esperando que MariaDB esté listo..."
+  echo -ne "  → Esperando que MariaDB esté listo... "
   sleep 5
+  echo -e "${GREEN}✓${NC}"
   
-  echo "[restart_backend] Levantando backend con flags:$DEBUG_FLAGS"
+  echo -e "${CYAN}[*] Levantando backend con flags:$DEBUG_FLAGS${NC}"
   # Usar up -d para levantar el backend con los variables de entorno exportadas
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d backend
   
   sleep 2
   
   # Ahora levantar nginx
-  echo "[restart_backend] Levantando nginx..."
+  echo -ne "  → Levantando nginx... "
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps nginx
+  echo -e "${GREEN}✓${NC}"
   
   sleep 1
   
   # Mostrar logs en foreground
-  echo "[restart_backend] Mostrando logs (Ctrl+C solo detiene los logs, el backend sigue ejecutándose)..."
+  echo ""
+  echo -e "${BLUE}======================================================${NC}"
+  echo -e "${BLUE}  Logs del Backend en Tiempo Real${NC}"
+  echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
+  echo -e "${BLUE}======================================================${NC}"
+  echo ""
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" logs -f backend
 else
+  echo -ne "  → Levantando backend... "
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps backend
+  echo -e "${GREEN}✓${NC}"
   
   # Esperar a que el contenedor esté listo
-  echo "[restart_backend] Esperando a que el contenedor esté listo..."
+  echo -ne "  → Esperando a que el contenedor esté listo... "
   sleep 2
+  echo -e "${GREEN}✓${NC}"
   
   if [ $SHOW_LOGS -eq 1 ]; then
-    echo "[restart_backend] Mostrando logs del backend (Ctrl+C para salir)..."
+    echo ""
+    echo -e "${BLUE}======================================================${NC}"
+    echo -e "${BLUE}  Logs del Backend en Tiempo Real${NC}"
+    echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
+    echo -e "${BLUE}======================================================${NC}"
+    echo ""
     $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE" logs -f backend
   else
-    echo "[restart_backend] Backend levantado en background."
+    echo -e "${GREEN}✓${NC} Backend levantado en background"
   fi
 fi
 
-echo "[restart_backend] Hecho."
+echo ""
+echo -e "${GREEN}================================================${NC}"
+echo -e "${GREEN}  ✓ Operación completada${NC}"
+echo -e "${GREEN}================================================${NC}"

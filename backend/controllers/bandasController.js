@@ -1238,23 +1238,41 @@ const getBandaDetalle = async (req, res) => {
 const buscarBandas = async (req, res) => {
     try {
         const { q } = req.query;
+        logVerbose(`[BANDAS-BUSCAR] req.query: ${JSON.stringify(req.query)}`);
+        logVerbose(`[BANDAS-BUSCAR] Parámetro "q" recibido: "${q}" | Type: ${typeof q}`);
 
-        if (!q || q.length < 2) {
+        if (!q || String(q).trim().length < 2) {
+            logWarning(`[BANDAS-BUSCAR] ⚠️ Query inválida (< 2 chars): "${q}"`);
             return res.json([]);
         }
+
+        const searchTerm = `%${String(q).trim()}%`;
+        logVerbose(`[BANDAS-BUSCAR] 🔍 SQL searchTerm: "${searchTerm}"`);
+        logVerbose(`[BANDAS-BUSCAR] Ejecutando query...`);
 
         const bandas = await pool.query(`
             SELECT id_banda, nombre, genero_musical, logo_url, verificada
             FROM bandas_artistas
-            WHERE activa = 1 AND nombre LIKE ?
+            WHERE nombre LIKE ?
             ORDER BY verificada DESC, nombre ASC
             LIMIT 10
-        `, [`%${q}%`]);
+        `, [searchTerm]);
+
+        logVerbose(`[BANDAS-BUSCAR] ✓ Query ejecutada, resultados: ${bandas ? bandas.length : 'NULL'} bandas`);
+
+        if (bandas && bandas.length > 0) {
+            bandas.forEach((b, i) => {
+                logVerbose(`[BANDAS-BUSCAR] Banda ${i + 1}: "${b.nombre}" (id: ${b.id_banda}, verificada: ${b.verificada})`);
+            });
+        } else {
+            logWarning(`[BANDAS-BUSCAR] ⚠️ No se encontraron bandas para query: "${q}"`);
+        }
 
         res.json(serializeBigInt(bandas));
     } catch (err) {
-        logError('Error en búsqueda:', err);
-        res.status(500).json({ error: 'Error en búsqueda' });
+        logError(`[BANDAS-BUSCAR] ❌ Error en búsqueda: ${err.message}`);
+        logError(`[BANDAS-BUSCAR] Stack: ${err.stack}`);
+        res.status(500).json({ error: 'Error en búsqueda', debug: err.message });
     }
 };
 

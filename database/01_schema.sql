@@ -1,5 +1,5 @@
 -- =============================================================================
--- TDC App - Schema Principal Refactorizado
+-- TDC App - Schema Principal
 -- =============================================================================
 -- LÓGICA DE NEGOCIO:
 -- 4 categorías principales de eventos/servicios:
@@ -321,18 +321,7 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
     UNIQUE KEY uk_solicitud_tipo (id_solicitud, tipo_evento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Eventos confirmados unificados de todas las solicitudes';
 
--- Fechas de bandas confirmadas (DEPRECATED)
--- La tabla original `fechas_bandas_confirmadas` fue migrada a `eventos_confirmados`.
--- No crear la tabla legacy por defecto; si necesitas recuperar datos migrados,
--- revisa `database/migrations/20260204_migrate_fechas_to_eventos.sql` y las tablas
--- `backup_fechas_bandas_confirmadas` / `fechas_bandas_confirmadas_deprecated`.
---
--- Nota: Antes de volver a habilitar la creación de `fechas_bandas_confirmadas`,
--- actualiza las FK y dependencias para que no colisionen con `eventos_confirmados`.
--- (La presencia de la definición legacy puede causar inconsistencias en instalaciones nuevas.)
-
-
--- =============================================================================
+-- ===============================================================================
 -- CATÁLOGO DE BANDAS/ARTISTAS
 -- =============================================================================
 
@@ -440,22 +429,12 @@ CREATE TABLE IF NOT EXISTS eventos_bandas_invitadas (
     FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Eliminar tabla vieja si existe (migración)
 DROP TABLE IF EXISTS bandas_invitadas;
 
 -- =============================================================================
 -- SOLICITUDES DE FECHAS PARA BANDAS
 -- =============================================================================
 
--- LEGACY: `solicitudes_bandas` removed (refactored to 3NF).
--- Use `solicitudes_fechas_bandas` and `solicitudes_bandas_view` for compatibility.
--- Backup of legacy data: `database/backups/solicitudes_bandas_backup_20260214.sql` and
--- database table `solicitudes_bandas_backup_20260212`.
--- NOTE: The migration that implements the refactor is `20260212_refactor_bandas_3nf.sql`.
-
--- (Legacy table definition intentionally removed to avoid confusion with `bandas_artistas`)
-
--- Nueva tabla normalizada para fechas/shows de bandas (reemplaza la legacy `solicitudes_bandas`)
 CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
     id_solicitud INT PRIMARY KEY COMMENT 'FK a solicitudes.id',
     id_banda INT DEFAULT NULL COMMENT 'FK a bandas_artistas.id (la banda solicitante)',
@@ -626,18 +605,6 @@ CREATE TABLE IF NOT EXISTS cupones (
 -- FIN DEL SCHEMA
 -- =============================================================================
 
--- Bloque de migración antiguo comentado para evitar conflictos
--- INSERT IGNORE INTO solicitudes (id, categoria, fecha_creacion, estado, descripcion, nombre_solicitante, telefono_solicitante, email_solicitante)
--- SELECT id_solicitud, 'ALQUILER', fecha_hora, estado, descripcion, nombre_completo, telefono, email
--- FROM solicitudes_alquiler;
-
--- INSERT IGNORE INTO solicitudes_alquiler (id, tipo_servicio, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, precio_final, es_publico)
--- SELECT id_solicitud, tipo_servicio, fecha_evento, hora_evento, duracion, cantidad_de_personas, precio_basico, precio_final, es_publico
--- FROM solicitudes_alquiler;
-
--- NOTA: La tabla opciones_tipos y precios_vigencia están relacionadas con "alquileres" y no con servicios.
--- Esto debe tenerse en cuenta al realizar consultas o modificaciones.
-
 -- Tabla para almacenar el catálogo de servicios
 CREATE TABLE IF NOT EXISTS servicios_catalogo (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -725,11 +692,9 @@ ADD COLUMN IF NOT EXISTS precio_puerta DECIMAL(10,2) NULL DEFAULT NULL AFTER pre
 -- Modificaciones a eventos_confirmados
 ALTER TABLE eventos_confirmados DROP COLUMN IF EXISTS precio_base;
 ALTER TABLE eventos_confirmados DROP COLUMN IF EXISTS precio_final;
--- remover campos de contacto que ahora se normalizan
 ALTER TABLE eventos_confirmados DROP COLUMN IF EXISTS nombre_cliente;
 ALTER TABLE eventos_confirmados DROP COLUMN IF EXISTS email_cliente;
 ALTER TABLE eventos_confirmados DROP COLUMN IF EXISTS telefono_cliente;
--- agregar referencia a tabla clientes
 ALTER TABLE eventos_confirmados ADD COLUMN IF NOT EXISTS id_cliente INT DEFAULT NULL;
 ALTER TABLE eventos_confirmados ADD CONSTRAINT fk_eventos_clientes FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE SET NULL;
 ALTER TABLE eventos_confirmados ADD COLUMN IF NOT EXISTS tabla_origen VARCHAR(100) DEFAULT 'solicitudes_fechas_bandas';

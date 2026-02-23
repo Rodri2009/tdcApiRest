@@ -134,6 +134,48 @@ VALUES
 UNLOCK TABLES;
 
 -- =====================================================================
+-- BANDAS ARTISTAS - CATÁLOGO DE BANDAS
+-- =====================================================================
+LOCK TABLES `bandas_artistas` WRITE;
+/*!40000 ALTER TABLE `bandas_artistas` DISABLE KEYS */;
+INSERT INTO `bandas_artistas` 
+  (`id_banda`, `nombre`, `genero_musical`, `bio`, `instagram`, `facebook`, `twitter`, `tiktok`, `web_oficial`, `youtube`, `spotify`, `otras_redes`, `logo_url`, `foto_prensa_url`, `contacto_nombre`, `contacto_email`, `contacto_telefono`, `contacto_rol`, `verificada`, `activa`, `creado_en`) 
+VALUES 
+  -- Banda 1: Reite (Tributo a La Renga)
+  (1, 'Reite', 'Rock / Tributo', 
+   'Reite es el tributo oficial a La Renga. Covers fidedignos de los grandes éxitos de la banda de El Abasto Salvaje. Formación profesional con años de experiencia.',
+   '@reitebanda', 'https://www.facebook.com/reitebanda', '@reitebanda', NULL, 'https://www.reitebanda.com',
+   'https://www.youtube.com/c/ReiteBanda', 'https://open.spotify.com/artist/reite',
+   NULL, NULL, NULL,
+   'Juan Reite', 'reite.tributo@gmail.com', '1155001122', 'Manager', 1, 1, '2026-02-19 13:00:00'),
+
+  -- Banda 2: Pateando Bares
+  (2, 'Pateando Bares', 'Rock Nacional', 
+   'Pateando Bares es una banda de rock nacional con trayectoria. Temas propios y covers de clásicos del rock argentino. Sonido potente y energético.',
+   '@pateando.bares', 'https://www.facebook.com/pateandobaresoficial', '@pateandooficial', '@pateandooficial', 'https://www.pateandobares.com.ar',
+   'https://www.youtube.com/pateandobaresoficial', 'https://open.spotify.com/artist/pateandooficial',
+   NULL, NULL, NULL,
+   'Marco Sández', 'pateando.bares@gmail.com', '1155003344', 'Productor',  1, 1, '2026-02-20 14:20:00'),
+
+  -- Banda 3: Las Mentas
+  (3, 'Las Mentas', 'Rock Alternativo / Indie', 
+   'Las Mentas es una banda femenina de rock alternativo con identidad propia. Sonido fresco e innovador. Temas originales que fusionan rock con influencias electrónicas.',
+   '@lasmentasbanda', 'https://www.facebook.com/lasmentasbanda', '@lasmentas_rock', '@lasmentasbanda', 'https://www.lasmentas.com.ar',
+   'https://www.youtube.com/lasmentasbanda', 'https://open.spotify.com/artist/lasmentas',
+   '{"twitch":"https://www.twitch.tv/lasmentasbanda"}', NULL, NULL,
+   'Sol Rodríguez', 'lasmentas@gmail.com', '1155005566', 'Vocalista/Manager', 1, 1, '2026-02-19 10:30:00'),
+
+  -- Banda 4: Cumbia Sudaka (Banda Telonera)
+  (4, 'Cumbia Sudaka', 'Cumbia / Tropical', 
+   'Cumbia Sudaka es la banda telonera perfecta. Buen groove, festiva y energética. Especializada en temas de cumbia tropical con influencias folclóricas.',
+   '@cumbiasudaka', 'https://www.facebook.com/cumbiasudaka', '@cumbiasudaka', NULL, NULL,
+   'https://www.youtube.com/cumbiasudaka', 'https://open.spotify.com/artist/cumbiasudaka',
+   NULL, NULL, NULL,
+   'Carlos Mendoza', 'cumbia.sudaka@gmail.com', '1144445566', 'Líder', 1, 1, '2026-02-18 08:00:00');
+/*!40000 ALTER TABLE `bandas_artistas` ENABLE KEYS */;
+UNLOCK TABLES;
+
+-- =====================================================================
 -- SOLICITUDES DE ALQUILER - TABLA HIJA 1
 -- =====================================================================
 LOCK TABLES `solicitudes_alquiler` WRITE;

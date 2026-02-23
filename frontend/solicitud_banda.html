@@ -883,24 +883,51 @@
             const query = input.value.trim();
             const resultsContainer = document.getElementById('banda-autocomplete');
 
+            console.log('[BANDA-AUTOCOMPLETE] 🔍 Input value:', query, '| Length:', query.length);
+
             if (query.length < 2) {
+                console.log('[BANDA-AUTOCOMPLETE] ⚠️ Query too short, hiding results');
                 resultsContainer.classList.remove('show');
                 return;
             }
 
             try {
-                const res = await fetch(`/api/bandas/buscar?q=${encodeURIComponent(query)}`);
-                if (!res.ok) return;
+                const apiUrl = `/api/bandas/buscar?q=${encodeURIComponent(query)}`;
+                console.log('[BANDA-AUTOCOMPLETE] 📡 Fetching:', apiUrl);
+
+                const res = await fetch(apiUrl);
+                console.log('[BANDA-AUTOCOMPLETE] 📨 Response status:', res.status, res.statusText);
+
+                if (!res.ok) {
+                    console.error('[BANDA-AUTOCOMPLETE] ✗ API Error:', res.status, res.statusText);
+                    const errorText = await res.text();
+                    console.error('[BANDA-AUTOCOMPLETE] Error response body:', errorText);
+                    return;
+                }
 
                 const bandas = await res.json();
+                console.log('[BANDA-AUTOCOMPLETE] ✓ Data received:', bandas);
+                console.log('[BANDA-AUTOCOMPLETE] 📊 Total results:', bandas.length);
+
+                // Debug: log cada banda
+                if (Array.isArray(bandas) && bandas.length > 0) {
+                    bandas.forEach((b, i) => {
+                        console.log(`[BANDA-AUTOCOMPLETE] Banda ${i}: {id: "${b.id}", nombre: "${b.nombre}", genero: "${b.genero_musical}", activa: ${b.activa}, verificada: ${b.verificada}}`);
+                    });
+                } else {
+                    console.log('[BANDA-AUTOCOMPLETE] ⚠️ Response is not an array or is empty');
+                    console.log('[BANDA-AUTOCOMPLETE] Response type:', typeof bandas, '| isArray:', Array.isArray(bandas));
+                }
 
                 if (bandas.length === 0) {
+                    console.log('[BANDA-AUTOCOMPLETE] ℹ️ No results found, hiding dropdown');
                     resultsContainer.classList.remove('show');
                     return;
                 }
 
                 resultsContainer.innerHTML = '';
-                bandas.forEach(banda => {
+                bandas.forEach((banda, idx) => {
+                    console.log(`[BANDA-AUTOCOMPLETE] 🎵 Item ${idx + 1}:`, banda.nombre, '|', banda.id);
                     const div = document.createElement('div');
                     div.className = 'autocomplete-item';
                     div.innerHTML = `
@@ -911,7 +938,10 @@
                             <div style="margin-top:6px;color:var(--color-secondary);font-weight:600;">Usar "${banda.nombre}"</div>
                         </div>
                     `;
-                    div.onclick = () => selectBanda(banda);
+                    div.onclick = () => {
+                        console.log('[BANDA-AUTOCOMPLETE] ✅ Selected banda:', banda.nombre, banda.id);
+                        selectBanda(banda);
+                    };
                     resultsContainer.appendChild(div);
                 });
 
@@ -926,6 +956,7 @@
                     </div>
                 `;
                 newDiv.onclick = () => {
+                    console.log('[BANDA-AUTOCOMPLETE] ➕ Creating new banda:', query);
                     // Usar el texto de búsqueda como nuevo nombre y cerrar la lista
                     document.getElementById('nombre_banda').value = query;
                     resultsContainer.classList.remove('show');
@@ -939,23 +970,25 @@
                 };
                 resultsContainer.appendChild(newDiv);
 
+                console.log('[BANDA-AUTOCOMPLETE] 👁️ Showing results dropdown');
                 resultsContainer.classList.add('show');
             } catch (err) {
-                console.error('Error en autocomplete:', err);
+                console.error('[BANDA-AUTOCOMPLETE] ❌ Error en autocomplete:', err);
+                console.log('[BANDA-AUTOCOMPLETE] Stack:', err.stack);
             }
         }
 
         async function selectBanda(banda) {
             try {
-                console.debug('[selectBanda] id:', banda.id);
+                console.log('[SELECT-BANDA] 🎵 Banda seleccionada:', banda.nombre, '| ID:', banda.id);
 
                 // Nombre
                 const nombreEl = document.getElementById('nombre_banda');
-                if (nombreEl) { nombreEl.value = banda.nombre || ''; } else console.warn('[selectBanda] nombre_banda element missing');
+                if (nombreEl) { nombreEl.value = banda.nombre || ''; } else console.warn('[SELECT-BANDA] nombre_banda element missing');
 
                 // ID
                 const idEl = document.getElementById('id_banda');
-                if (idEl) { idEl.value = banda.id || ''; } else console.warn('[selectBanda] id_banda element missing');
+                if (idEl) { idEl.value = banda.id || ''; } else console.warn('[SELECT-BANDA] id_banda element missing');
 
                 // Género (preliminar)
                 const generoEl = document.getElementById('genero_musical');
@@ -968,14 +1001,16 @@
                 try {
                     // Fetch full details from the main endpoint
                     const resp = await fetch(`/api/bandas/${encodeURIComponent(banda.id)}`);
+                    console.log('[SELECT-BANDA] 📡 Fetching full details for ID:', banda.id, '| Status:', resp.status);
+
                     if (resp.ok) {
                         full = await resp.json();
-                        console.debug(`[selectBanda] fetched full id:${banda.id} logo:${full.logo_url || 'none'} formacion:${(full.formacion && full.formacion.length) || 0}`);
+                        console.log(`[SELECT-BANDA] ✓ Full data loaded | Logo:`, full.logo_url ? 'yes' : 'no', '| Formación:', (full.formacion && full.formacion.length) || 0, 'integrantes');
                     } else {
-                        console.warn('[selectBanda] could not fetch full banda, status:', resp.status, 'endpoint:', usedEndpoint);
+                        console.warn('[SELECT-BANDA] ✗ Could not fetch full banda, status:', resp.status);
                     }
                 } catch (e) {
-                    console.warn('[selectBanda] fetch error:', e);
+                    console.warn('[SELECT-BANDA] ⚠️ Fetch error:', e.message);
                 }
 
                 // Fill full data
@@ -1000,12 +1035,13 @@
                         if (preview) {
                             preview.innerHTML = `<img src="${full.logo_url}" alt="Logo" style="max-width:120px;max-height:120px;object-fit:cover;border-radius:6px;">`;
                         }
+                        console.log('[SELECT-BANDA] 🖼️ Logo preview loaded');
                     } else {
                         if (logoHidden) logoHidden.value = '';
                         if (logoManual) logoManual.value = '';
                         if (preview) preview.innerHTML = '';
                     }
-                } catch (e) { console.warn('[selectBanda] preview error', e); }
+                } catch (e) { console.warn('[SELECT-BANDA] 🖼️ Preview error', e); }
 
                 // Formación: mapear y renderizar
                 try {
@@ -1021,15 +1057,14 @@
                     if (Array.isArray(formData) && formData.length > 0) {
                         formacion = formData.map(f => ({ instrumento: f.instrumento || f.nombre_integrante || f.nombre || '', cantidad: f.cantidad || f.cantidad_integrantes || 1 }));
                         renderFormacion();
-                        console.debug(`[selectBanda] formacion count: ${formacion.length}`);
-                        console.debug(`[selectBanda] formacionCompleta count: ${formacionCompleta.length}`);
+                        console.log(`[SELECT-BANDA] 🎸 Formación cargada:`, formacion.length, 'integrantes');
                     } else {
                         formacion = [];
                         formacionCompleta = [];
                         renderFormacion();
-                        console.debug('[selectBanda] formacion count: 0');
+                        console.log('[SELECT-BANDA] ℹ️ No formación data available');
                     }
-                } catch (e) { console.warn('[selectBanda] formacion parse error', e); }
+                } catch (e) { console.warn('[SELECT-BANDA] 🎸 Formación parse error', e); }
 
                 // Indicar modo edición: proponer cambios (no se actualiza directamente sin contacto)
                 const note = document.getElementById('band-mode-note');
@@ -1212,6 +1247,8 @@
 
             if (!validateForm()) return;
 
+            console.log('[BANDA-SUBMIT] 📝 Form validation passed');
+
             // Anti-bot checks: honeypot and timing/cooldown are enforced in validateForm()
             // Proceed with submission (band registration does not require contacto fields).
             // Además, aseguramos que exista fingerprintId (si no, intentamos generarlo ahora)
@@ -1220,9 +1257,9 @@
                     const fp = await FingerprintJS.load();
                     const resFp = await fp.get();
                     fingerprintId = resFp.visitorId;
+                    console.log('[BANDA-SUBMIT] 🔐 Fingerprint ID generated:', fingerprintId);
                 } catch (err) {
-                    console.warn('Fingerprint still unavailable at submit:', err);
-                    // No bloqueamos por fingerprint, el backend puede manejarlo
+                    console.warn('[BANDA-SUBMIT] ⚠️ Fingerprint unavailable:', err.message);
                 }
             }
 
@@ -1233,20 +1270,24 @@
             document.getElementById('submitBtn').disabled = true;
 
             // Recopilar invitadas actualizadas desde el DOM
+            let invitadasCount = 0;
             document.querySelectorAll('.invitada-nombre').forEach((input, i) => {
                 const idx = parseInt(input.dataset.idx);
                 if (invitadas[idx]) {
                     invitadas[idx].nombre = input.value.trim();
                     const idInput = document.querySelector(`.invitada-id[data-idx="${idx}"]`);
                     if (idInput) invitadas[idx].id_banda = idInput.value || null;
+                    invitadasCount++;
                 }
             });
+            console.log('[BANDA-SUBMIT] 💿 Invitadas collected:', invitadasCount);
 
             const logoHiddenVal = document.getElementById('logo_url').value;
             const logoManualVal = document.getElementById('logo_url_manual').value.trim();
-            // Key debug: show only presence and lengths, avoid noisy logs
-            console.debug('[handleSubmit] Logo present:', !!(logoHiddenVal || logoManualVal));
+            console.log('[BANDA-SUBMIT] 🖼️ Logo present:', !!(logoHiddenVal || logoManualVal));
+
             const existingId = document.getElementById('id_banda').value || null;
+            console.log('[BANDA-SUBMIT] 🔍 Mode:', existingId ? 'UPDATE (PUT)' : 'CREATE (POST)', '| Band ID:', existingId || 'NEW');
 
             const payload = {
                 // Datos para crear/actualizar banda
@@ -1265,62 +1306,93 @@
                 fingerprintId: fingerprintId || null
             };
 
+            console.log('[BANDA-SUBMIT] 📤 Payload to send:', {
+                nombre: payload.nombre,
+                genero_musical: payload.genero_musical,
+                logo: payload.logo_url ? 'yes' : 'no',
+                redes: [payload.instagram ? 'instagram' : null, payload.facebook ? 'facebook' : null, payload.youtube ? 'youtube' : null, payload.spotify ? 'spotify' : null].filter(Boolean)
+            });
+
             // Añadir formación solo si corresponde (evitar enviar array vacío que borre datos)
             // Si el usuario editó la formacion en la UI (formacion - simplificada), la usamos para construir
             // la estructura completa que el backend espera, preservando nombre/notas si coinciden por instrumento.
-                if (existingId) {
-                    // Actualizar banda existente (PUT) - ID va en el body
-                    // Usar la formación actual de la UI (formacion), que representa el estado deseado
-                    if (formacion && formacion.length > 0) {
-                        // Convertir la formación simplificada de UI a estructura completa para el backend
-                        payload.formacion = formacion.map(f => ({ 
-                            nombre_integrante: null, 
-                            instrumento: f.instrumento, 
-                            es_lider: 0, 
-                            notas: null 
-                        }));
-                        console.debug('[handleSubmit] Usando formación de UI, longitud:', payload.formacion.length);
-                    } else {
-                        // Si no hay formación en UI, mantener la formación existente (no enviar cambios)
-                        payload.formacion = [];
-                        console.debug('[handleSubmit] No hay formación en UI, enviando array vacío para mantener estado actual');
-                    }
-                    console.debug('[handleSubmit] Sending PUT id:' + existingId + ' logo:' + (payload.logo_url ? 'yes' : 'no') + ' formacion:' + (payload.formacion ? payload.formacion.length : 0));
-                    try { console.debug('[handleSubmit] payload.formacion details:', JSON.stringify(payload.formacion || [])); } catch (e) { console.debug('[handleSubmit] payload.formacion details (non-serializable)'); }
-                    const token = localStorage.getItem('authToken');
-                    res = await fetch(`/api/bandas/${encodeURIComponent(existingId)}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                        },
-                        body: JSON.stringify(payload)
-                    });
+            if (existingId) {
+                // Actualizar banda existente (PUT) - ID va en el body
+                // Usar la formación actual de la UI (formacion), que representa el estado deseado
+                if (formacion && formacion.length > 0) {
+                    // Convertir la formación simplificada de UI a estructura completa para el backend
+                    payload.formacion = formacion.map(f => ({
+                        nombre_integrante: null,
+                        instrumento: f.instrumento,
+                        es_lider: 0,
+                        notas: null
+                    }));
+                    console.log('[BANDA-SUBMIT] 🎸 Formación de UI:', payload.formacion.length, 'integrantes -', payload.formacion.map(f => f.instrumento).join(', '));
                 } else {
-                    // Crear nueva banda (POST)
-                    console.debug('[handleSubmit] Sending POST logo:' + (payload.logo_url ? 'yes' : 'no') + ' formacion:' + (payload.formacion ? payload.formacion.length : 0));
-                    const token = localStorage.getItem('authToken');
-                    res = await fetch('/api/bandas', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                        },
-                        body: JSON.stringify(payload)
-                    });
+                    // Si no hay formación en UI, mantener la formación existente (no enviar cambios)
+                    payload.formacion = [];
+                    console.log('[BANDA-SUBMIT] ℹ️ No formación changes (keeping existing)');
                 }
 
-                try {
-                    const data = await res.json();
+                const token = localStorage.getItem('authToken');
+                const url = `/api/bandas/${encodeURIComponent(existingId)}`;
+                console.log('[BANDA-SUBMIT] 🚀 Sending PUT to:', url);
+
+                res = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify(payload)
+                });
+                console.log('[BANDA-SUBMIT] 📨 PUT Response status:', res.status, res.statusText);
+            } else {
+                // Crear nueva banda (POST)
+                if (formacion && formacion.length > 0) {
+                    payload.formacion = formacion.map(f => ({
+                        nombre_integrante: null,
+                        instrumento: f.instrumento,
+                        es_lider: 0,
+                        notas: null
+                    }));
+                    console.log('[BANDA-SUBMIT] 🎸 Formación de UI:', payload.formacion.length, 'integrantes -', payload.formacion.map(f => f.instrumento).join(', '));
+                } else {
+                    payload.formacion = [];
+                    console.log('[BANDA-SUBMIT] ℹ️ No formación provided');
+                }
+
+                const token = localStorage.getItem('authToken');
+                const url = '/api/bandas';
+                console.log('[BANDA-SUBMIT] 🚀 Sending POST to:', url);
+
+                res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify(payload)
+                });
+                console.log('[BANDA-SUBMIT] 📨 POST Response status:', res.status, res.statusText);
+            }
+
+            try {
+                const data = await res.json();
+                console.log('[BANDA-SUBMIT] 📥 Parse response - Data received:', data);
 
                 if (!res.ok) {
                     // Manejo especial para conflicto por banda existente (solo en POST)
                     if (res.status === 409 && data && data.id) {
+                        console.warn('[BANDA-SUBMIT] ❌ Conflict: Band already exists with ID:', data.id);
                         showNotification('Ya existe una banda con ese nombre en nuestro catálogo. ID: ' + data.id, 'warning');
                         return;
                     }
+                    console.error('[BANDA-SUBMIT] ❌ API Error:', data);
                     throw new Error(data.error || 'Error al procesar la banda');
                 }
+
+                console.log('[BANDA-SUBMIT] ✅ API Success');
 
                 const isUpdate = !!existingId;
                 showNotification(
@@ -1332,6 +1404,7 @@
                 );
 
                 if (isUpdate) {
+                    console.log('[BANDA-SUBMIT] 🔄 UPDATE mode - Reloading band data');
                     // En modo actualización: usamos la respuesta del PUT (banda actualizada) para refrescar la UI
                     try {
                         if (data && data.id) {
@@ -1344,17 +1417,18 @@
                                 const updated = await resp.json();
                                 selectBanda(updated);
                             } else {
-                                console.warn('No se pudo recargar banda actualizada:', resp.status);
+                                console.warn('[BANDA-SUBMIT] ⚠️ Could not reload updated band:', resp.status);
                             }
                         }
                     } catch (e) {
-                        console.warn('Error recargando banda actualizada', e);
+                        console.warn('[BANDA-SUBMIT] ⚠️ Error reloading band', e.message);
                     }
 
                     // Asegurar que el botón vuelva a estar habilitado y texto correcto
                     document.getElementById('submitBtn').disabled = false;
                     document.getElementById('submitBtn').textContent = 'Actualizar Datos de Banda';
                 } else {
+                    console.log('[BANDA-SUBMIT] 🆕 CREATE mode - Clearing form');
                     // Limpiar formulario para nuevo registro
                     document.getElementById('bandaSolicitudForm').reset();
                     formacion = [];
@@ -1370,7 +1444,8 @@
                     try { await loadBandas(); } catch (e) { /* noop */ }
                 }
             } catch (err) {
-                console.error('Error:', err);
+                console.error('[BANDA-SUBMIT] ❌ Error:', err.message);
+                console.log('[BANDA-SUBMIT] Stack:', err.stack);
                 showNotification(err.message || 'Error al enviar. Intentá de nuevo.', 'error');
                 document.getElementById('submitBtn').disabled = false;
             } finally {
@@ -1421,9 +1496,8 @@
                 console.warn('Fingerprint error:', e);
             }
 
-            // Cargar instrumentos y fechas ocupadas
+            // Cargar instrumentos (fechas ocupadas no son necesarias en esta página)
             await loadInstrumentos();
-            await loadFechasOcupadas();
 
             // Setup
             setupCalendars();

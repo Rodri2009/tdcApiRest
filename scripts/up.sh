@@ -1,17 +1,30 @@
 #!/bin/bash
 
-# ==============================================================================
-# Script robusto para levantar el entorno Docker completo de la App TDC.
+###############################################################################
+# up.sh - Levanta el entorno Docker completo de la App TDC
+###############################################################################
+# Uso: ./up.sh [opciones]
 #
-# Uso: ./up.sh
+# FLAGS DE DEPURACIÓN (se pasan a node server.js):
+#   -v, --verbose     : muestra logs detallados de procesamiento
+#   -e, --error       : muestra solo errores
+#   -d, --debug       : combina verbose + error (máximo detalle)
+#   -h, --help        : muestra ayuda de node server.js
+#   --migrate         : aplica migraciones SQL después de levantar
 #
-# Este script realiza las siguientes acciones:
-#   1. Valida que el archivo de configuración `.env` exista en la raíz.
-#   2. Valida que todas las variables de entorno críticas estén definidas en `.env`.
-#   3. Levanta todos los servicios (nginx, backend, mariadb) usando Docker Compose.
-#   4. Muestra el estado final de los contenedores y los logs del backend.
-# ==============================================================================
+# EJEMPLOS:
+#   ./up.sh              # Levanta todo con logs en vivo
+#   ./up.sh -d           # Levanta con debug detallado
+#   ./up.sh --migrate -d # Levanta, aplica migraciones y muestra debug
+###############################################################################
 
+# Colores
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
 # --- Sección de Configuración ---
 
@@ -55,42 +68,46 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-echo "--- Verificando requisitos locales (Docker, Docker Compose, .env) ---"
+echo -e "${BLUE}======================================================${NC}"
+echo -e "${BLUE}  TDC App - Levantamiento del Entorno${NC}"
+echo -e "${BLUE}======================================================${NC}"
+echo ""
+echo -e "${YELLOW}[*]${NC} Verificando requisitos locales..."
+echo ""
 
 # 1) Docker instalado
 if ! command_exists docker; then
-    echo "❌ ERROR: 'docker' no está instalado o no está en PATH. Instala Docker: https://docs.docker.com/engine/install/"
+    echo -e "${RED}[✗] ERROR: 'docker' no está instalado o no está en PATH.${NC}"
+    echo "   Instala Docker: https://docs.docker.com/engine/install/"
     exit 1
 fi
 
 # 2) Docker daemon corriendo
 if ! docker info >/dev/null 2>&1; then
-    echo "❌ ERROR: El daemon de Docker no parece estar corriendo o el usuario no tiene permisos para comunicarse con Docker."
-    echo "   En Linux intenta: sudo systemctl start docker  (o revisa que el servicio docker esté activo)."
+    echo -e "${RED}[✗] ERROR: El daemon de Docker no parece estar corriendo.${NC}"
+    echo "   En Linux intenta: sudo systemctl start docker"
     exit 1
 fi
 
-# 3) Detectar comando de Compose: preferir 'docker compose' (plugin) y fallback a 'docker-compose' binario
+# 3) Detectar comando de Compose
 COMPOSE_CMD=""
 if docker compose version >/dev/null 2>&1; then
     COMPOSE_CMD="docker compose"
 elif command_exists docker-compose; then
     COMPOSE_CMD="docker-compose"
 else
-    echo "❌ ERROR: No se encontró Docker Compose ni el subcomando 'docker compose'."
-    echo "   Instala Docker Compose o actualiza Docker para incluir el plugin 'compose'."
-    echo "   Instrucciones: https://docs.docker.com/compose/install/"
+    echo -e "${RED}[✗] ERROR: No se encontró Docker Compose.${NC}"
+    echo "   Instala Docker Compose: https://docs.docker.com/compose/install/"
     exit 1
 fi
 
 # 4) Comprobar que el archivo de compose existe
 if [ ! -f "$COMPOSE_FILE" ]; then
-    echo "❌ ERROR: No se encontró el archivo de Compose en '$COMPOSE_FILE'."
-    echo "   Asegúrate de ejecutar este script desde la raíz del repo o de que el archivo exista en la ruta esperada."
+    echo -e "${RED}[✗] ERROR: No se encontró $COMPOSE_FILE${NC}"
     exit 1
 fi
 
-echo "✅ Requisitos locales verificados: docker + compose disponibles, daemon activo, archivos presentes."
+echo -e "${GREEN}  ✓ Docker y Docker Compose detectados${NC}"
 
 # --- Comprobación de Node.js y npm ---
 min_version_or_fail() {
@@ -108,11 +125,12 @@ NODE_MIN_VERSION="14.0.0"
 NPM_MIN_VERSION="6.0.0"
 
 if ! command_exists node; then
-    echo "❌ ERROR: 'node' no está instalado o no está en PATH. Instala Node.js (https://nodejs.org/)"
+    echo -e "${RED}[✗] ERROR: 'node' no está instalado.${NC}"
+    echo "   Instala Node.js: https://nodejs.org/"
     exit 1
 fi
 if ! command_exists npm; then
-    echo "❌ ERROR: 'npm' no está instalado o no está en PATH. Instala Node.js (npm viene incluido) https://nodejs.org/"
+    echo -e "${RED}[✗] ERROR: 'npm' no está instalado.${NC}"
     exit 1
 fi
 
@@ -120,17 +138,15 @@ NODE_VERSION="$(node --version | sed 's/^v//')"
 NPM_VERSION="$(npm --version)"
 
 if ! min_version_or_fail "$NODE_VERSION" "$NODE_MIN_VERSION"; then
-    echo "❌ ERROR: Tu versión de Node es '$NODE_VERSION'. Se requiere al menos $NODE_MIN_VERSION."
-    echo "   Actualiza Node.js: https://nodejs.org/"
+    echo -e "${RED}[✗] ERROR: Node $NODE_VERSION encontrado, se requiere $NODE_MIN_VERSION+${NC}"
     exit 1
 fi
 if ! min_version_or_fail "$NPM_VERSION" "$NPM_MIN_VERSION"; then
-    echo "❌ ERROR: Tu versión de npm es '$NPM_VERSION'. Se requiere al menos $NPM_MIN_VERSION."
-    echo "   Actualiza npm: 'npm install -g npm' o reinstala Node.js."
+    echo -e "${RED}[✗] ERROR: npm $NPM_VERSION encontrado, se requiere $NPM_MIN_VERSION+${NC}"
     exit 1
 fi
 
-echo "✅ Node.js y npm detectados: node $NODE_VERSION, npm $NPM_VERSION"
+echo -e "${GREEN}  ✓ Node.js $NODE_VERSION y npm $NPM_VERSION detectados${NC}"
 
 # --- Lista de Variables de Entorno Requeridas ---
 # Aquí se listan todas las variables que DEBEN existir en el archivo .env
@@ -156,17 +172,16 @@ REQUIRED_VARS=(
 
 # --- Inicio de la Lógica del Script ---
 
-echo "--- Iniciando el arranque del entorno TDC ---"
+echo ""
+echo -e "${YELLOW}[*]${NC} Validando configuración del entorno..."
+echo ""
 
-# --- Fase 1: Validación del Entorno ---
-
-# 1.1. Comprobar si el archivo .env existe.
+# 1.1. Comprobar si el archivo .env existe
 if [ ! -f "$ENV_FILE" ]; then
-    echo "❌ ERROR CRÍTICO: El archivo de configuración '$ENV_FILE' no fue encontrado."
-    echo "   Por favor, crea el archivo '$ENV_FILE' en la raíz del proyecto antes de continuar."
-    exit 1 # Termina el script con un código de error.
+    echo -e "${RED}[✗] ERROR: No se encontró $ENV_FILE${NC}"
+    exit 1
 fi
-echo "✅ Archivo de configuración '$ENV_FILE' encontrado."
+echo -e "${GREEN}  ✓ Archivo .env encontrado${NC}"
 
 # 1.2. Cargar las variables del .env en el shell actual para poder validarlas.
 # El comando 'source' ejecuta el contenido del archivo, definiendo las variables.
@@ -174,76 +189,71 @@ set -a # Exporta automáticamente las variables que se definan
 source "$ENV_FILE"
 set +a # Desactiva la exportación automática
 
-# 1.3. Iterar sobre la lista de variables requeridas y comprobar que cada una tiene un valor.
+# 1.3. Iterar sobre la lista de variables requeridas
 for VAR_NAME in "${REQUIRED_VARS[@]}"; do
-    # La sintaxis `${!VAR_NAME}` es una forma de "indirección": obtiene el valor de la variable
-    # cuyo nombre está almacenado en VAR_NAME.
-    # [ -z "..." ] comprueba si la cadena está vacía.
     if [ -z "${!VAR_NAME}" ]; then
-        echo "❌ ERROR CRÍTICO: La variable requerida '$VAR_NAME' no está definida o está vacía en tu archivo '$ENV_FILE'."
-        echo "   Por favor, añade esta variable y su valor a '$ENV_FILE' para continuar."
-        exit 1 # Termina el script con un código de error.
+        echo -e "${RED}[✗] ERROR: Variable '$VAR_NAME' no está definida en $ENV_FILE${NC}"
+        exit 1
     fi
 done
-echo "✅ Todas las variables de entorno requeridas están presentes y tienen valor."
+echo -e "${GREEN}  ✓ Todas las variables de entorno están configuradas${NC}"
 
 
 # --- Fase 2: Limpieza y Arranque de Docker ---
 
-echo "--- Deteniendo contenedores existentes y eliminando volumen de base de datos... ---"
-# Detenemos los contenedores primero para poder eliminar el volumen de MariaDB
+echo ""
+echo -e "${YELLOW}[*]${NC} Limpiando y levantando contenedores Docker..."
+echo -ne "  → Deteniendo contenedores... "
 eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE down" 2>/dev/null
+echo -e "${GREEN}✓${NC}"
 
-# Eliminamos el volumen de MariaDB para forzar la recreación de la BD desde los SQLs
-# Esto asegura que 01_schema.sql y 02_seed.sql se ejecuten siempre
+# Eliminar volumen de MariaDB
+echo -ne "  → Eliminando volumen de BD... "
 MARIADB_VOLUME="docker_mariadb_data"
 if docker volume ls -q | grep -q "^${MARIADB_VOLUME}$"; then
-    echo "🗑️  Eliminando volumen '$MARIADB_VOLUME' para recrear la base de datos..."
     docker volume rm "$MARIADB_VOLUME" 2>/dev/null || true
 fi
+echo -e "${GREEN}✓${NC}"
 
-echo "--- Levantando los contenedores de Docker (la BD se creará desde los SQLs)... ---"
-# Se ejecuta docker-compose pasando explícitamente tanto el archivo de compose como el de entorno.
-# --build: Reconstruye las imágenes si hay cambios en los Dockerfiles.
-# -d: Modo "detached", ejecuta los contenedores en segundo plano.
+echo -ne "  → Levantando contenedores... "
 if [ -n "$DEBUG_FLAGS" ]; then
-    # Con flags de debug, solo levantamos mariadb aquí para evitar que nginx auto-inicie backend sin flags
+    echo ""
     eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d mariadb"
 else
     eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d"
 fi
 
-# Comprobar el código de salida del comando anterior. Si es diferente de 0, algo falló.
 if [ $? -ne 0 ]; then
-    echo "❌ ERROR: Docker Compose falló al intentar levantar los contenedores."
-    echo "   Revisa los mensajes de error de arriba para más detalles."
+    echo -e "${RED}[✗] ERROR: Docker Compose falló${NC}"
     exit 1
 fi
+echo -e "${GREEN}✓${NC}"
 
 echo ""
-echo "--- 🚀 Entorno levantado con éxito ---"
+echo -e "${GREEN}================================================${NC}"
+echo -e "${GREEN}  ✓ Entorno levantado exitosamente${NC}"
+echo -e "${GREEN}================================================${NC}"
 
 
 # --- Fase 3: Información y Monitoreo ---
 
-echo "--- Mostrando estado de los contenedores... ---"
-# Damos una pequeña pausa para que los servicios terminen de estabilizarse.
+echo ""
+echo -e "${CYAN}[*] Status de contenedores:${NC}"
 sleep 3
 eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE ps"
+echo ""
 
-# -- Opcional: aplicar migraciones si se solicitó (CLI o env var)
-# Soporta: `./scripts/up.sh --migrate` o `APPLY_MIGRATIONS=true ./scripts/up.sh`
+# Aplicar migraciones si se solicitó
 if [ "${APPLY_MIGRATIONS_CLI:-0}" = "1" ] || [ "${APPLY_MIGRATIONS,,}" = "true" ] || [ "${APPLY_MIGRATIONS:-0}" = "1" ]; then
-    echo "--- ⤴️ Aplicando migraciones SQL desde database/migrations (solicitado) ---"
+    echo -e "${YELLOW}[*]${NC} Aplicando migraciones SQL..."
     MIG_DIR="database/migrations"
     if [ -d "$MIG_DIR" ] && ls $MIG_DIR/*.sql >/dev/null 2>&1; then
-        # Esperar a que MariaDB esté lista
         TRIES=0
         MAX_TRIES=30
         until $COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mariadb mysql -u root -p"$MARIADB_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; do
             TRIES=$((TRIES+1))
             if [ $TRIES -ge $MAX_TRIES ]; then
-                echo "❌ ERROR: MariaDB no respondió después de $MAX_TRIES intentos. No se pueden aplicar migraciones."
+                echo -e "${RED}[✗] ERROR: MariaDB no está listo${NC}"
                 exit 1
             fi
             sleep 2
@@ -251,18 +261,16 @@ if [ "${APPLY_MIGRATIONS_CLI:-0}" = "1" ] || [ "${APPLY_MIGRATIONS,,}" = "true" 
 
         for sqlfile in $(ls $MIG_DIR/*.sql | sort); do
             if grep -q '^-- ARCHIVED:' "$sqlfile" 2>/dev/null; then
-                echo "Saltando migración archivada: $sqlfile"
                 continue
             fi
-            echo "Aplicando: $sqlfile"
+            echo -e "  → $(basename $sqlfile)... "
             if ! cat "$sqlfile" | $COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""; then
-                echo "❌ ERROR: Falló la migración $sqlfile."
+                echo -e "${RED}[✗] ERROR en migración${NC}"
                 exit 1
             fi
+            echo -e "${GREEN}✓${NC}"
         done
-        echo "--- ✅ Migraciones aplicadas correctamente ---"
-    else
-        echo "--- ℹ️ No se encontraron migraciones en $MIG_DIR (o no hay archivos .sql) ---"
+        echo -e "${GREEN}  ✓ Migraciones completadas${NC}"
     fi
 fi
 
@@ -274,32 +282,43 @@ echo ""
 # (originalmente se ejecutaba `verify_and_fix_inconsistencies.sql` aquí).
 
 if [ -n "$DEBUG_FLAGS" ]; then
+    echo -e "${BLUE}======================================================${NC}"
+    echo -e "${BLUE}  🐛 Ejecutando Backend con Debug Flags${NC}"
+    echo -e "${BLUE}======================================================${NC}"
     echo ""
-    echo "--- 🐛 Esperando que MariaDB esté listo... ---"
+    echo -e "${CYAN}[*] Esperando que MariaDB esté listo...${NC}"
     sleep 5
     
-    echo "--- 🐛 Ejecutando backend en background con flags:$DEBUG_FLAGS ---"
+    echo -e "${CYAN}[*] Ejecutando backend en background con flags:$DEBUG_FLAGS${NC}"
     BACKEND_RUN_ID=$(eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE run -d --rm backend $DEBUG_FLAGS")
     
-    # Conectar el contenedor a la red docker con alias "backend" para que nginx pueda encontrarlo
     NETWORK_NAME="docker_default"
-    echo "--- 🐛 Configurando aliases de red para que nginx y backend se comuniquen... ---"
-    # Primero desconectar (para limpiar el alias automático)
+    echo -ne "${CYAN}[*] Configurando red... ${NC}"
     docker network disconnect "$NETWORK_NAME" "$BACKEND_RUN_ID" 2>/dev/null || true
-    # Luego reconectar con los aliases correctos
     docker network connect --alias backend "$NETWORK_NAME" "$BACKEND_RUN_ID" 2>/dev/null || true
+    echo -e "${GREEN}✓${NC}"
     
-    # Dar tiempo para que se inicialice
     sleep 2
     
-    echo "--- 🐛 Levantando nginx ahora que backend está en ejecución... ---"
+    echo -ne "${CYAN}[*] Levantando nginx... ${NC}"
     eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up -d --no-deps nginx"
+    echo -e "${GREEN}✓${NC}"
     
     sleep 1
     
-    echo "--- 🐛 Mostrando logs en tiempo real (Ctrl+C solo detiene los logs, el backend sigue ejecutándose)... ---"
+    echo ""
+    echo -e "${BLUE}======================================================${NC}"
+    echo -e "${BLUE}  Logs del Backend en Tiempo Real${NC}"
+    echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
+    echo -e "${BLUE}======================================================${NC}"
+    echo ""
     docker logs -f "$BACKEND_RUN_ID" 2>/dev/null || eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
 else
-    echo "--- Mostrando logs del backend en tiempo real (Presiona Ctrl+C para salir) ---"
+    echo ""
+    echo -e "${BLUE}======================================================${NC}"
+    echo -e "${BLUE}  Logs del Backend en Tiempo Real${NC}"
+    echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
+    echo -e "${BLUE}======================================================${NC}"
+    echo ""
     eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
 fi

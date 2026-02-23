@@ -148,7 +148,7 @@ const App = {
                 const file = ev.target.files && ev.target.files[0];
                 if (!file) return;
                 // Validación cliente (tipo y tamaño)
-                if (!['image/png','image/jpeg'].includes(file.type)) {
+                if (!['image/png', 'image/jpeg'].includes(file.type)) {
                     alert('Formato no permitido. Solo PNG/JPEG.');
                     ev.target.value = '';
                     return;
@@ -194,6 +194,7 @@ const App = {
     // 2. LÓGICA DE CARGA DE DATOS
     // =================================================================
     cargarOpcionesIniciales: function () {
+        console.log('[FORM-INIT] 🚀 Iniciando carga de opciones...');
         this.toggleLoadingOverlay(true, 'Cargando opciones...');
 
         // --- ¡LÓGICA CONDICIONAL DE ENDPOINTS! ---
@@ -212,10 +213,14 @@ const App = {
             config: '/api/opciones/config'
         };
 
+        console.log('[FORM-INIT] 📡 Endpoints a cargar:', Object.keys(endpoints));
+        console.log('[FORM-INIT] Mode:', this.config.mode);
 
         Promise.all(
-            Object.values(endpoints).map(url =>
-                fetch(url).then(res => {
+            Object.entries(endpoints).map(([key, url]) => {
+                console.log(`[FORM-INIT] 📥 Fetching ${key}: ${url}`);
+                return fetch(url).then(res => {
+                    console.log(`[FORM-INIT] 📨 ${key} status: ${res.status}`);
                     // Añadimos un chequeo de 401 para el caso del admin
                     if (res.status === 401) {
                         window.location.href = '/login.html';
@@ -223,12 +228,15 @@ const App = {
                     }
                     if (!res.ok) throw new Error(`Error al cargar ${url}: ${res.statusText}`);
                     return res.json();
-                })
-            )
+                });
+            })
         )
 
             .then(results => {
                 const [tipos, tarifas, duraciones, horas, cantidades, fechasOcupadas, config] = results;
+
+                console.log('[FORM-INIT] ✅ All data loaded successfully');
+                console.log('[FORM-INIT] 📊 tipos:', tipos?.length, '| tarifas:', tarifas?.length, '| duraciones:', Object.keys(duraciones || {}).length);
 
                 this.tarifas = tarifas || [];
                 this.tiposDeEvento = tipos || [];
@@ -256,13 +264,15 @@ const App = {
                     });
             })
             .catch(error => {
-                console.error("[FORM][ERROR] Fallo crítico:", error.message);
+                console.error("[FORM-INIT] ❌ Fallo crítico:", error.message);
+                console.log('[FORM-INIT] Stack:', error.stack);
                 this.showNotification('Error de conexión con el servidor: ' + error.message, 'error');
                 this.toggleLoadingOverlay(false);
             });
     },
 
     cargarFeriados: function () {
+        console.log('[FORM-INIT] 🗓️ Cargando feriados...');
         const anioActual = new Date().getFullYear();
         const feriadosUrl1 = `https://api.argentinadatos.com/v1/feriados/${anioActual}`;
         const feriadosUrl2 = `https://api.argentinadatos.com/v1/feriados/${anioActual + 1}`;
@@ -270,6 +280,11 @@ const App = {
         return Promise.all([fetch(feriadosUrl1).then(res => res.json()), fetch(feriadosUrl2).then(res => res.json())])
             .then(([feriados1, feriados2]) => {
                 this.feriadosGlobal = [...feriados1, ...feriados2].map(f => f.fecha.replace(/\//g, '-'));
+                console.log('[FORM-INIT] ✅ Feriados cargados:', this.feriadosGlobal.length, 'total');
+            })
+            .catch(err => {
+                console.warn('[FORM-INIT] ⚠️ Error cargando feriados:', err.message);
+                this.feriadosGlobal = [];
             });
     },
 
@@ -897,6 +912,7 @@ const App = {
 
 
     validarYEnviar: async function (destino) {
+        console.log('[FORM-ALQUILER] 📝 Iniciando validación y envío...');
         this.resetearCamposInvalidos();
         const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
         let hayErrores = false;
@@ -908,10 +924,12 @@ const App = {
         if (!this.elements.fechaEventoInput.value) { if (this.calendario && this.calendario.altInput) { this.calendario.altInput.classList.add('campo-invalido'); } hayErrores = true; }
 
         if (hayErrores) {
-            console.warn("[FORM][SUBMIT] Validación fallida - campos obligatorios incompletos");
+            console.warn("[FORM-ALQUILER] ✗ Validación fallida - campos obligatorios incompletos");
             this.showNotification('Por favor, completa todos los campos obligatorios.', 'warning');
             return;
         }
+
+        console.log('[FORM-ALQUILER] ✓ Validación exitosa');
 
         // --- ¡CORRECCIÓN! DESHABILITAMOS LOS BOTONES INMEDIATAMENTE ---
         this.toggleLoadingOverlay(true, 'Guardando solicitud...');
@@ -929,33 +947,53 @@ const App = {
             fingerprintId: this.visitorId
         };
 
+        console.log('[FORM-ALQUILER] 📤 Payload a enviar:', {
+            tipoEvento: bodyData.tipoEvento,
+            cantidadPersonas: bodyData.cantidadPersonas,
+            duracionEvento: bodyData.duracionEvento,
+            fechaEvento: bodyData.fechaEvento,
+            horaInicio: bodyData.horaInicio,
+            precioBase: bodyData.precioBase,
+            url_flyer: bodyData.url_flyer ? 'yes' : 'no'
+        });
 
         try {
             let response;
+            const method = this.solicitudId ? 'PUT' : 'POST';
+            const url = this.solicitudId ? `/api/solicitudes/${this.solicitudId}` : '/api/solicitudes';
+
+            console.log(`[FORM-ALQUILER] 🚀 Sending ${method} to ${url}`);
+
             if (this.solicitudId) {
-                response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
+                response = await fetch(url, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(bodyData)
                 });
             } else {
-                response = await fetch('/api/solicitudes', {
+                response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(bodyData)
                 });
             }
 
+            console.log(`[FORM-ALQUILER] 📨 Response status: ${response.status} ${response.statusText}`);
+
             if (!response.ok) {
                 const err = await response.json();
+                console.error('[FORM-ALQUILER] ❌ API Error:', err);
                 throw new Error(err.error || 'Error del servidor');
             }
 
             const data = await response.json();
+            console.log('[FORM-ALQUILER] ✅ Response parsed successfully:', data);
+
             const id = data.solicitudId;
             if (!id) throw new Error("Respuesta inválida del servidor.");
 
             this.solicitudId = id;
+            console.log('[FORM-ALQUILER] 📌 Solicitud ID:', id);
 
             const nextPage = (destino === 'adicionales') ? 'adicionales.html' : 'contacto.html';
             const fromParam = (destino === 'contacto') ? '&from=page' : '';
@@ -976,6 +1014,7 @@ const App = {
                 const draftParam = `&draftKey=${encodeURIComponent(key)}`;
 
                 const urlFinal = `${nextPage}?solicitudId=${id}${fromParam}${draftParam}`;
+                console.log('[FORM-ALQUILER] 🔄 Redirigiendo a:', urlFinal);
 
                 // Redirección ligera para evitar bloqueos.
                 setTimeout(() => {
@@ -983,8 +1022,9 @@ const App = {
                 }, 50);
             } catch (e) {
                 // Si no se puede acceder a localStorage, redirigir igual pero sin draftKey
-                console.warn('No se pudo guardar borrador local:', e);
+                console.warn('[FORM-ALQUILER] ⚠️ No se pudo guardar borrador local:', e);
                 const urlFinal = `${nextPage}?solicitudId=${id}${fromParam}`;
+                console.log('[FORM-ALQUILER] 🔄 Redirigiendo a (sin draft):', urlFinal);
                 setTimeout(() => {
                     window.location.href = urlFinal;
                 }, 50);
@@ -992,7 +1032,8 @@ const App = {
 
 
         } catch (error) {
-            console.error(`[FORM][ERROR] Error en envío: ${error.message}`);
+            console.error(`[FORM-ALQUILER] ❌ Error en envío: ${error.message}`);
+            console.log('[FORM-ALQUILER] Stack:', error.stack);
             this.showNotification(`Error: ${error.message}`, 'error');
             // Si algo falla, volvemos a habilitar todo.
             this.toggleLoadingOverlay(false);
@@ -1501,35 +1542,35 @@ const App = {
         if (this.elements.urlFlyerInput) bodyData.url_flyer = this.elements.urlFlyerInput.value.trim();
 
         try:
-            // Usamos el endpoint PUT /api/solicitudes/:id, que llama a 'actualizarSolicitud'
-            const response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(bodyData)
-            });
+        // Usamos el endpoint PUT /api/solicitudes/:id, que llama a 'actualizarSolicitud'
+        const response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyData)
+        });
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || 'Error del servidor al guardar.');
-            }
-
-            this.showNotification("Cambios guardados con éxito", 'success');
-
-            // Deshabilitamos el formulario y cambiamos los botones
-            if (this.elements.editFieldset) this.elements.editFieldset.disabled = true;
-            if (this.elements.saveButton) this.elements.saveButton.style.display = 'none';
-            if (this.elements.cancelButton) {
-                this.elements.cancelButton.textContent = 'Volver al Panel';
-                this.elements.cancelButton.style.width = '100%';
-            }
-
-        } catch (error) {
-            this.showNotification(`Error: ${error.message}`, 'error');
-            if (this.elements.saveButton) this.elements.saveButton.disabled = false;
-        } finally {
-            this.toggleLoadingOverlay(false);
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Error del servidor al guardar.');
         }
-    },
+
+        this.showNotification("Cambios guardados con éxito", 'success');
+
+        // Deshabilitamos el formulario y cambiamos los botones
+        if (this.elements.editFieldset) this.elements.editFieldset.disabled = true;
+        if (this.elements.saveButton) this.elements.saveButton.style.display = 'none';
+        if (this.elements.cancelButton) {
+            this.elements.cancelButton.textContent = 'Volver al Panel';
+            this.elements.cancelButton.style.width = '100%';
+        }
+
+    } catch(error) {
+        this.showNotification(`Error: ${error.message}`, 'error');
+        if (this.elements.saveButton) this.elements.saveButton.disabled = false;
+    } finally {
+        this.toggleLoadingOverlay(false);
+    }
+},
 
 
 };
