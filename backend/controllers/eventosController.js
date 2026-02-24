@@ -9,7 +9,7 @@ const serializeBigInt = (obj) => JSON.parse(JSON.stringify(obj, (key, value) => 
 const getPublicEvents = async (req, res) => {
     try {
         const query = `
-            SELECT e.id, e.id_solicitud, e.tipo_evento, e.tabla_origen, e.nombre_evento, e.descripcion, e.url_flyer as url_flyer, e.fecha_evento, e.hora_inicio, e.duracion_estimada,
+            SELECT e.id, e.id_solicitud, e.tipo_evento, e.tabla_origen, e.nombre_evento, e.descripcion, COALESCE(e.url_flyer, sol.url_flyer) as url_flyer, e.fecha_evento, e.hora_inicio, e.duracion_estimada,
                    COALESCE(c.nombre, '') as nombre_cliente,
                    COALESCE(c.email, '') as email_cliente,
                    COALESCE(c.telefono, '') as telefono_cliente,
@@ -19,6 +19,7 @@ const getPublicEvents = async (req, res) => {
                    sfb.precio_puerta as precio_puerta,
                    e.es_publico
             FROM eventos_confirmados e
+            LEFT JOIN solicitudes sol ON e.id_solicitud = sol.id
             LEFT JOIN clientes c ON e.id_cliente = c.id_cliente
             LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
             WHERE e.es_publico = 1 AND e.activo = 1
