@@ -163,7 +163,11 @@ const App = {
                     ev.target.disabled = true;
                     const fd = new FormData();
                     fd.append('flyer', file);
-                    const resp = await fetch('/api/uploads/flyers', { method: 'POST', body: fd });
+                    // Pasar solicitudId como query param para guardar con nombre consistente
+                    const uploadUrl = this.solicitudId 
+                        ? `/api/uploads/flyers?solicitudId=${this.solicitudId}` 
+                        : '/api/uploads/flyers';
+                    const resp = await fetch(uploadUrl, { method: 'POST', body: fd });
                     if (!resp.ok) throw new Error('Error en la subida: ' + resp.statusText);
                     const body = await resp.json();
                     if (body && body.url) {
