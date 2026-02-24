@@ -835,7 +835,7 @@ const performSyncFlyers = async () => {
                         f.toLowerCase().startsWith(`solicitud_${sol.id}.`) &&
                         (f.endsWith('.jpg') || f.endsWith('.jpeg') || f.endsWith('.png') || f.endsWith('.pdf'))
                     );
-                    
+
                     // Fallback al patrón antiguo: flyer_solicitud_{id}
                     if (!flyerMatch) {
                         flyerMatch = archivos.find(f =>
@@ -871,11 +871,11 @@ const performSyncFlyers = async () => {
                     const archivos = fs.readdirSync(uploadsDir);
                     // Buscar primero con patrón nuevo: evento_{id}.{ext} o solicitud_{id}
                     let flyerMatch = archivos.find(f =>
-                        (f.toLowerCase().startsWith(`evento_${evt.id}.`) || 
-                         f.toLowerCase().startsWith(`solicitud_${evt.id}.`)) &&
+                        (f.toLowerCase().startsWith(`evento_${evt.id}.`) ||
+                            f.toLowerCase().startsWith(`solicitud_${evt.id}.`)) &&
                         (f.endsWith('.jpg') || f.endsWith('.jpeg') || f.endsWith('.png') || f.endsWith('.pdf'))
                     );
-                    
+
                     // Fallback al patrón antiguo: flyer_evento_{id}
                     if (!flyerMatch) {
                         flyerMatch = archivos.find(f =>

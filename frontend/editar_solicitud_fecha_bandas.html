@@ -1679,8 +1679,8 @@
             form.append('flyer', file);
 
             // Pasar solicitudId como query param para que se guarde con nombre consistente
-            const uploadUrl = eventoId 
-                ? `/api/uploads/flyers?solicitudId=${eventoId}` 
+            const uploadUrl = eventoId
+                ? `/api/uploads/flyers?solicitudId=${eventoId}`
                 : '/api/uploads/flyers';
 
             fetch(uploadUrl, {

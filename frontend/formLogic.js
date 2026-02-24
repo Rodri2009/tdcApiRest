@@ -105,9 +105,8 @@ const App = {
             if (this.elements.resetTipoEventoBtn) {
                 this.elements.resetTipoEventoBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const selected = document.querySelector('input[name="tipoEvento"]:checked');
-                    if (selected) selected.checked = false;
-                    document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
+                    const select = document.querySelector('#tipoEventoSelect');
+                    if (select) select.value = '';
                     try { this.elements.resetTipoEventoBtn.style.display = 'none'; } catch (err) { }
                     try { this.actualizarTodo(); } catch (err) { console.warn('actualizarTodo fallo tras reset:', err); }
                     try { this.elements.tipoEventoContainer && this.elements.tipoEventoContainer.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { }
@@ -121,7 +120,8 @@ const App = {
             if (this.elements.resetTipoEventoBtn) {
                 this.elements.resetTipoEventoBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    document.querySelectorAll('.radio-option').forEach(opt => opt.style.display = '');
+                    const select = document.querySelector('#tipoEventoSelect');
+                    if (select) select.value = '';
                     this.elements.resetTipoEventoBtn.style.display = 'none';
                 });
             }
@@ -300,18 +300,21 @@ const App = {
             tiposParaMostrar = this.tiposDeEvento.filter(t => t.categoria === this.config.categoriaFiltro);
         }
 
-        this.llenarRadioButtons(this.elements.tipoEventoContainer, 'tipoEvento', tiposParaMostrar);
-        this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]').forEach(radio => radio.addEventListener('change', () => {
-            // Remover la clase de error del contenedor principal
-            this.elements.tipoEventoContainer.classList.remove('campo-invalido');
-            // Actualizar visibilidad de campos según el tipo
-            this.actualizarCamposCondicionales();
-            // No filtrar en modo creación - permitir seleccionar cualquier tipo
-            // if (this.config.mode === 'create') {
-            //     this.filtrarTiposPorCategoria(radio.value);
-            // }
-            this.actualizarTodo();
-        }));
+        this.llenarSelectDropdown(this.elements.tipoEventoContainer, 'tipoEvento', tiposParaMostrar);
+        const selectElement = this.elements.tipoEventoContainer.querySelector('select');
+        if (selectElement) {
+            selectElement.addEventListener('change', () => {
+                // Remover la clase de error del contenedor principal
+                this.elements.tipoEventoContainer.classList.remove('campo-invalido');
+                // Actualizar visibilidad de campos según el tipo
+                this.actualizarCamposCondicionales();
+                // No filtrar en modo creación - permitir seleccionar cualquier tipo
+                // if (this.config.mode === 'create') {
+                //     this.filtrarTiposPorCategoria(radio.value);
+                // }
+                this.actualizarTodo();
+            });
+        }
 
         this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
         this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
@@ -320,90 +323,11 @@ const App = {
     },
 
     filtrarTiposPorCategoria: function (tipoId) {
-
-        // Si se selecciona un tipo, mostrar solo los sub-tipos de su categoría
-        if (!tipoId) {
-            // Si se deselecciona, mostrar todos
-            document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('radio-hidden'));
-            return;
-        }
-
-        // Buscar el tipo seleccionado
-        // Puede ser por ID directo (ej: FECHA_BANDAS) o por tipo_evento (ej: BANDA, ALQUILER)
-        let tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
-
-        // Si no se encuentra por ID directo, buscar por categoría
-        // (para eventos que devuelven tipo_evento en lugar de id específico)
-        if (!tipoSeleccionado) {
-            tipoSeleccionado = this.tiposDeEvento.find(t => t.categoria === tipoId);
-        }
-
-        if (!tipoSeleccionado || !tipoSeleccionado.categoria) {
-            document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('radio-hidden'));
-            return;
-        }
-
-        const categoriaSeleccionada = tipoSeleccionado.categoria;
-
-        // Mostrar solo los tipos de la misma categoría
-        const radioButtons = this.elements.tipoEventoContainer.querySelectorAll('input[name="tipoEvento"]');
-
-        let visiblesCount = 0;
-        let ocultosCount = 0;
-
-        radioButtons.forEach((radio, idx) => {
-            const radioOption = radio.closest('.radio-option');
-
-            if (!radioOption) {
-                console.warn(`⚠️  Radio ${radio.value} no está en un .radio-option`);
-                return;
-            }
-
-            // Obtener categoría de dos fuentes: 1) this.tiposDeEvento, 2) atributo data
-            let tipoCategoria = null;
-            const tipo = this.tiposDeEvento.find(t => t.id === radio.value);
-            if (tipo) {
-                tipoCategoria = tipo.categoria;
-            } else {
-                // Fallback: usar data-categoria del elemento
-                tipoCategoria = radioOption.getAttribute('data-categoria');
-            }
-
-            const perteneceLaCategoria = tipoCategoria === categoriaSeleccionada;
-            const tieneLaClase = radioOption.classList.contains('radio-hidden');
-            const labelText = radioOption.querySelector('label')?.textContent || 'sin-label';
-
-            if (perteneceLaCategoria) {
-                // DEBE estar visible
-                if (tieneLaClase) {
-                    radioOption.classList.remove('radio-hidden');
-                } else {
-                }
-                visiblesCount++;
-            } else {
-                // DEBE estar oculto
-                if (!tieneLaClase) {
-                    radioOption.classList.add('radio-hidden');
-                } else {
-                }
-                ocultosCount++;
-            }
-        });
-
-
-        // Verificación exhaustiva
-        setTimeout(() => {
-            const radios = this.elements.tipoEventoContainer.querySelectorAll('.radio-option');
-            let verificacionVisibles = 0;
-            let verificacionOcultos = 0;
-
-            Array.from(radios).forEach((r, idx) => {
-                const tieneClase = r.classList.contains('radio-hidden');
-                const inputValue = r.querySelector('input')?.value;
-                const esVisible = !tieneClase;
-
-                if (esVisible) verificacionVisibles++;
-                else verificacionOcultos++;
+        // Con select dropdown, no necesitamos filtrar por categoría visualmente
+        // El select muestra todas las opciones disponibles
+        // Esta función se mantiene por compatibilidad pero no hace nada con select
+        console.debug('[filtrarTiposPorCategoria] Mantenida para compatibilidad con select dropdown');
+        return;
 
                 const esperado = tipoSeleccionado && this.tiposDeEvento.find(t => t.id === inputValue)?.categoria === categoriaSeleccionada;
                 const match = esVisible === esperado;
@@ -415,8 +339,8 @@ const App = {
     },
 
     actualizarCamposCondicionales: function () {
-        const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
-        if (!selectedRadio) {
+        const selectedSelect = document.querySelector('#tipoEventoSelect');
+        if (!selectedSelect || !selectedSelect.value) {
             // Si no hay tipo seleccionado, ocultar campos de banda
             const bandFieldsContainer = document.getElementById('band-fields');
             if (bandFieldsContainer) {
@@ -425,7 +349,7 @@ const App = {
             return;
         }
 
-        const tipoId = selectedRadio.value;
+        const tipoId = selectedSelect.value;
         const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
 
         // Determinar si mostrar campos de banda según CATEGORÍA
@@ -648,50 +572,53 @@ const App = {
             }
         }
 
-        // Preferir seleccionar un radio que coincida con la clave que usaremos para poblar opciones
+        // Preferir seleccionar un option que coincida con la clave que usaremos para poblar opciones
         const resolvedTipoForOptions = this.resolveTipoKey(uiTipoId || tipo) || uiTipoId || tipo;
-        let radio = null;
+        const selectElement = document.querySelector('#tipoEventoSelect');
+        let selectedValue = null;
+        
         // 1) intentar con resolvedTipoForOptions
         if (resolvedTipoForOptions) {
-            radio = document.querySelector(`input[name="tipoEvento"][value="${resolvedTipoForOptions}"]`);
+            const opt = selectElement?.querySelector(`option[value="${resolvedTipoForOptions}"]`);
+            if (opt) selectedValue = resolvedTipoForOptions;
         }
         // 2) intentar con el id mapeado (uiTipoId)
-        if (!radio && uiTipoId) {
-            radio = document.querySelector(`input[name="tipoEvento"][value="${uiTipoId}"]`);
+        if (!selectedValue && uiTipoId) {
+            const opt = selectElement?.querySelector(`option[value="${uiTipoId}"]`);
+            if (opt) selectedValue = uiTipoId;
         }
         // 3) intentar con el tipo original
-        if (!radio && tipo) radio = document.querySelector(`input[name="tipoEvento"][value="${tipo}"]`);
-        if (!radio && solicitud.nombreParaMostrar) {
-            // Intentar emparejar por texto de label (nombreParaMostrar)
+        if (!selectedValue && tipo) {
+            const opt = selectElement?.querySelector(`option[value="${tipo}"]`);
+            if (opt) selectedValue = tipo;
+        }
+        
+        // 4) Intentar emparejar por texto (nombreParaMostrar)
+        if (!selectedValue && solicitud.nombreParaMostrar && selectElement) {
             const labelText = String(solicitud.nombreParaMostrar).trim().toLowerCase();
-            const options = Array.from(document.querySelectorAll('.radio-option'));
-            for (const opt of options) {
-                const label = opt.querySelector('label');
-                const input = opt.querySelector('input[name="tipoEvento"]');
-                if (label && input && label.textContent.trim().toLowerCase().includes(labelText)) {
-                    radio = input; break;
-                }
-            }
+            const options = Array.from(selectElement.options);
+            const matchingOpt = options.find(opt => 
+                opt.textContent && opt.textContent.trim().toLowerCase().includes(labelText)
+            );
+            if (matchingOpt) selectedValue = matchingOpt.value;
         }
-        if (!radio && tipo) {
-            // Buscar por inclusión de tipo en la etiqueta (por si tipo es una clave simbólica)
-            const options = Array.from(document.querySelectorAll('.radio-option'));
-            for (const opt of options) {
-                const label = opt.querySelector('label');
-                const input = opt.querySelector('input[name="tipoEvento"]');
-                if (label && input && label.textContent && tipo && label.textContent.toLowerCase().includes(tipo.toLowerCase())) {
-                    radio = input; break;
-                }
-            }
+        
+        // 5) Buscar por inclusión de tipo en el label
+        if (!selectedValue && tipo && selectElement) {
+            const options = Array.from(selectElement.options);
+            const matchingOpt = options.find(opt => 
+                opt.textContent && opt.textContent.toLowerCase().includes(tipo.toLowerCase())
+            );
+            if (matchingOpt) selectedValue = matchingOpt.value;
         }
-        if (radio) {
-            radio.checked = true;
-            // Filtrar tipos por categoría SOLO en modo edit
-            if (this.config.mode === 'edit') {
-                this.filtrarTiposPorCategoria(radio.value);
-            }
+        
+        if (selectedValue && selectElement) {
+            selectElement.value = selectedValue;
+            // Disparar evento change para actualizar campos condicionales
+            const event = new Event('change', { bubbles: true });
+            selectElement.dispatchEvent(event);
         } else {
-            console.warn('populate: no se encontró un radio coincidente para tipo:', tipo, 'uiTipoId:', uiTipoId);
+            console.warn('populate: no se encontró opción coincidente para tipo:', tipo, 'uiTipoId:', uiTipoId);
         }
 
         // 2. Sincronizar el calendario (solo visual)
@@ -918,10 +845,10 @@ const App = {
     validarYEnviar: async function (destino) {
         console.log('[FORM-ALQUILER] 📝 Iniciando validación y envío...');
         this.resetearCamposInvalidos();
-        const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
+        const selectedSelect = document.querySelector('#tipoEventoSelect');
         let hayErrores = false;
 
-        if (!selectedRadio) { this.elements.tipoEventoContainer.classList.add('campo-invalido'); hayErrores = true; }
+        if (!selectedSelect || !selectedSelect.value) { this.elements.tipoEventoContainer.classList.add('campo-invalido'); hayErrores = true; }
         if (!this.elements.cantidadPersonasSelect.value) { this.elements.cantidadPersonasSelect.classList.add('campo-invalido'); hayErrores = true; }
         if (!this.elements.duracionEventoSelect.value) { this.elements.duracionEventoSelect.classList.add('campo-invalido'); hayErrores = true; }
         if (!this.elements.horaInicioSelect.value) { this.elements.horaInicioSelect.classList.add('campo-invalido'); hayErrores = true; }
@@ -941,7 +868,7 @@ const App = {
         this.elements.btnContacto.disabled = true;
 
         const bodyData = {
-            tipoEvento: selectedRadio.value,
+            tipoEvento: selectedSelect.value,
             cantidadPersonas: this.elements.cantidadPersonasSelect.value,
             duracionEvento: this.elements.duracionEventoSelect.value,
             fechaEvento: this.elements.fechaEventoInput.value,
@@ -1197,7 +1124,7 @@ const App = {
     },
 
     actualizarTodo: async function (caller = 'user-interaction', overrides = {}) {
-        const tipoId = overrides.overrideTipo || document.querySelector('input[name="tipoEvento"]:checked')?.value || '';
+        const tipoId = overrides.overrideTipo || document.querySelector('#tipoEventoSelect')?.value || '';
         const fechaStr = overrides.overrideFechaStr || this.elements.fechaEventoInput.value;
         const cantidad = overrides.overrideCantidad || this.elements.cantidadPersonasSelect.value;
         const duracion = overrides.overrideDuracion || this.elements.duracionEventoSelect.value;
@@ -1452,6 +1379,50 @@ const App = {
         });
     },
 
+    llenarSelectDropdown: function (container, name, options) {
+        if (!container) return;
+        container.innerHTML = '';
+        if (!options || options.length === 0) return;
+
+        // Crear el select
+        const select = document.createElement('select');
+        select.id = 'tipoEventoSelect';
+        select.name = name;
+        select.setAttribute('required', 'required');
+        
+        // Opción por defecto (placeholder)
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Seleccione un tipo de evento';
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        select.appendChild(defaultOption);
+
+        // Agregar opciones
+        options.forEach(opt => {
+            const rawId = opt.id || opt.id_evento;
+            const optionId = (typeof rawId === 'number' || typeof rawId === 'string') ? String(rawId) : null;
+            const optionName = opt.nombreParaMostrar || opt.nombreparamostrar;
+
+            if (optionId) {
+                const option = document.createElement('option');
+                option.value = optionId;
+                option.textContent = optionName || optionId;
+                option.setAttribute('data-categoria', opt.categoria || '');
+                select.appendChild(option);
+            } else {
+                console.warn("Se encontró un objeto inválido sin ID en el array de opciones:", opt);
+            }
+        });
+
+        // Agregar estilos al select
+        select.style.width = '100%';
+        select.style.padding = '8px 12px';
+        select.style.fontSize = '1rem';
+        
+        container.appendChild(select);
+    },
+
     showNotification: function (message, type = 'warning', duration = 4000) {
         clearTimeout(this.notificationTimer);
         this.elements.notificationBanner.textContent = message;
@@ -1468,29 +1439,30 @@ const App = {
         const params = new URLSearchParams(window.location.search);
         const tipoParam = params.get('tipo');
         if (!tipoParam) return;
-        // Intentamos varios métodos para seleccionar el radio: por value exacto, por value uppercase,
-        // o buscando la etiqueta que coincida con el texto (ej: 'BANDA'). Esto hace la URL más tolerante
-        // frente a IDs numéricos o cambios en la API.
-        let radio = document.querySelector(`input[name="tipoEvento"][value="${tipoParam}"]`)
-            || document.querySelector(`input[name="tipoEvento"][value="${tipoParam.toUpperCase()}"]`);
-
-        if (!radio) {
-            // Buscar por etiqueta textual dentro de .radio-option
-            const opciones = Array.from(document.querySelectorAll('.radio-option'));
-            for (const opt of opciones) {
-                const label = opt.querySelector('label');
-                if (label && label.textContent && label.textContent.trim().toLowerCase().includes(tipoParam.toLowerCase())) {
-                    radio = opt.querySelector('input[name="tipoEvento"]');
-                    break;
-                }
-            }
+        
+        const selectElement = document.querySelector('#tipoEventoSelect');
+        if (!selectElement) return;
+        
+        // Intentar encontrar la opción por value exacto, value uppercase, o textContent
+        const options = Array.from(selectElement.options);
+        let foundOption = options.find(opt => opt.value === tipoParam);
+        
+        if (!foundOption) {
+            foundOption = options.find(opt => opt.value === tipoParam.toUpperCase());
         }
-
-        if (!radio) return;
-        radio.checked = true;
-        document.querySelectorAll('.radio-option').forEach(optionDiv => {
-            if (optionDiv.querySelector('input') !== radio) { optionDiv.style.display = 'none'; }
-        });
+        
+        if (!foundOption) {
+            foundOption = options.find(opt => 
+                opt.textContent && opt.textContent.trim().toLowerCase().includes(tipoParam.toLowerCase())
+            );
+        }
+        
+        if (!foundOption) return;
+        
+        selectElement.value = foundOption.value;
+        // Disparar evento change para actualizar campos condicionales
+        const event = new Event('change', { bubbles: true });
+        selectElement.dispatchEvent(event);
         if (this.elements.resetTipoEventoBtn) {
             if (tipoParam && typeof tipoParam === 'string' && tipoParam.trim().length > 0) {
                 // Mostrar el botón solo si hay un tipoParam
@@ -1523,9 +1495,9 @@ const App = {
 
         // --- ¡LÓGICA DE RECOLECCIÓN DE DATOS COMPLETA! ---
         // Leemos los valores ACTUALES del formulario en el momento de guardar.
-        const selectedRadio = document.querySelector('input[name="tipoEvento"]:checked');
+        const selectedSelect = document.querySelector('#tipoEventoSelect');
         const bodyData = {
-            tipoEvento: selectedRadio ? selectedRadio.value : '',
+            tipoEvento: selectedSelect ? selectedSelect.value : '',
             cantidadPersonas: this.elements.cantidadPersonasSelect.value,
             duracionEvento: this.elements.duracionEventoSelect.value,
             fechaEvento: this.elements.fechaEventoInput.value,
