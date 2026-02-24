@@ -200,7 +200,13 @@
          * @returns {{day: string, month: string, time: string}}
          */
         function formatDateTime(dateTimeString) {
-            const date = new Date(dateTimeString);
+            let date = new Date(dateTimeString);
+            // Si viene como ISO string UTC (termina en Z), extraer la fecha local sin conversión de zona horaria
+            if (typeof dateTimeString === 'string' && dateTimeString.includes('T')) {
+                const dateOnly = dateTimeString.split('T')[0]; // Ej: "2026-03-08"
+                const parts = dateOnly.split('-');
+                date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            }
 
             // Opciones de formato
             const dayOptions = { day: '2-digit' };
@@ -215,6 +221,17 @@
             const time = date.toLocaleTimeString('es-AR', timeOptions);
 
             return { day, month, year, time };
+        }
+
+        // Función para formatear números al estilo argentino (1.234,56)
+        function formatPrecioAR(val) {
+            if (!val && val !== 0) return '';
+            const num = Number(val);
+            if (isNaN(num)) return '';
+            // Convertir a string con 2 decimales y luego formatear
+            const partes = num.toFixed(2).split('.');
+            const enteros = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return enteros + ',' + partes[1];
         }
 
         function getCategoria(item) {
@@ -248,7 +265,7 @@
             const esGratis = precio === 0 || precio === null;
             let priceText = '';
             if (precio > 0) {
-                priceText = `$ ${precio.toLocaleString('es-AR')} ARS`;
+                priceText = `$ ${formatPrecioAR(precio)} ARS`;
             }
 
             let buttonText = 'Más Info';
@@ -270,27 +287,29 @@
 
             return `
                 <!-- Evento - ${nombre} -->
-                <div class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 ${borderClass}">
-                    <div class="agenda-flyer">
-                        ${flyerUrl ? `<img src="${flyerUrl}" alt="${nombre}" onerror="this.src='https://placehold.co/100x140/581c87/f0abfc?text=No+Flyer'">` : `<div class="helper-text">No Flyer</div>`}
-                    </div>
-                    <div class="agenda-meta">
-                        <div class="text-center p-3 rounded-lg ${dateBgClass} flex-shrink-0 min-w-[88px] flex flex-col justify-center items-center">
-                            <p class="text-2xl font-extrabold leading-none">${day}</p>
-                            <p class="text-sm uppercase tracking-wide mt-1">${month}</p>
-                            <p class="text-sm mt-1 font-medium">${year}</p>
+                <div class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-l-4 ${borderClass}">
+                    <div class="flex items-start gap-4 flex-1">
+                        <div class="agenda-flyer flex-shrink-0">
+                            ${flyerUrl ? `<img src="${flyerUrl}" alt="${nombre}" onerror="this.src='https://placehold.co/100x140/581c87/f0abfc?text=No+Flyer'">` : `<div class="helper-text">No Flyer</div>`}
                         </div>
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-sm ${cat.textColor}">${cat.icon} ${cat.label}</span>
+                        <div class="agenda-meta">
+                            <div class="text-center p-3 rounded-lg ${dateBgClass} flex-shrink-0 min-w-[88px] flex flex-col justify-center items-center">
+                                <p class="text-2xl font-extrabold leading-none">${day}</p>
+                                <p class="text-sm uppercase tracking-wide mt-1">${month}</p>
+                                <p class="text-sm mt-1 font-medium">${year}</p>
                             </div>
-                            <h4 class="text-2xl font-semibold text-white">${nombre}</h4>
-                            <p class="text-sm text-stone-400">${hora ? hora + ' hs' : ''} | ${event.descripcion ? event.descripcion.substring(0, 50) + '...' : ''}</p>
-                            <p class="text-xl font-bold ${priceTextColor} mt-1">${priceText}</p>
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-sm ${cat.textColor}">${cat.icon} ${cat.label}</span>
+                                </div>
+                                <h4 class="text-2xl font-semibold text-white">${nombre}</h4>
+                                <p class="text-sm text-stone-400">${hora ? hora + ' hs' : ''} | ${event.descripcion ? event.descripcion.substring(0, 50) + '...' : ''}</p>
+                                <p class="text-xl font-bold ${priceTextColor} mt-1">${priceText}</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex flex-col sm:flex-row gap-3 items-center">
-                        <a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-4 rounded-full text-md transition shadow-lg text-center whitespace-nowrap">
+                    <div class="flex-shrink-0">
+                        <a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-6 rounded-full text-md transition shadow-lg text-center whitespace-nowrap">
                             ${buttonText}
                         </a>
                     </div>

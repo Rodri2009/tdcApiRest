@@ -753,7 +753,7 @@ const performSyncLogos = async () => {
             try {
                 if (fs.existsSync(uploadsDir)) {
                     const archivos = fs.readdirSync(uploadsDir);
-                    const logoMatch = archivos.find(f => 
+                    const logoMatch = archivos.find(f =>
                         f.toLowerCase().startsWith(`logo_${sanitized}`) &&
                         (f.endsWith('.jpg') || f.endsWith('.jpeg') || f.endsWith('.png'))
                     );
@@ -830,7 +830,7 @@ const performSyncFlyers = async () => {
             try {
                 if (fs.existsSync(uploadsDir)) {
                     const archivos = fs.readdirSync(uploadsDir);
-                    const flyerMatch = archivos.find(f => 
+                    const flyerMatch = archivos.find(f =>
                         f.toLowerCase().startsWith(`flyer_solicitud_${sol.id}`) &&
                         (f.endsWith('.jpg') || f.endsWith('.jpeg') || f.endsWith('.png') || f.endsWith('.pdf'))
                     );
@@ -860,7 +860,7 @@ const performSyncFlyers = async () => {
             try {
                 if (fs.existsSync(uploadsDir)) {
                     const archivos = fs.readdirSync(uploadsDir);
-                    const flyerMatch = archivos.find(f => 
+                    const flyerMatch = archivos.find(f =>
                         f.toLowerCase().startsWith(`flyer_evento_${evt.id}`) &&
                         (f.endsWith('.jpg') || f.endsWith('.jpeg') || f.endsWith('.png') || f.endsWith('.pdf'))
                     );

@@ -992,7 +992,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 COALESCE(c.nombre, '') as nombreCompleto,
                 sb.descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
-                e.url_flyer as flyer_url
+                COALESCE(e.url_flyer, sol.url_flyer) as flyer_url
             FROM solicitudes_fechas_bandas sb
             JOIN solicitudes sol ON sb.id_solicitud = sol.id
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
@@ -1018,7 +1018,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 COALESCE(e.nombre_evento, st.nombre_taller, COALESCE(c.nombre, '')) AS nombreEvento,
                 NULL as descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
-                e.url_flyer as flyer_url
+                COALESCE(e.url_flyer, sol.url_flyer) as flyer_url
             FROM solicitudes_talleres st
             JOIN solicitudes sol ON st.id_solicitud = sol.id
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
@@ -1043,7 +1043,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 COALESCE(e.nombre_evento, ss.tipo_servicio, COALESCE(c.nombre, '')) AS nombreEvento,
                 NULL as descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
-                e.url_flyer as flyer_url
+                COALESCE(e.url_flyer, sol.url_flyer) as flyer_url
             FROM solicitudes_servicios ss
             JOIN solicitudes sol ON ss.id_solicitud = sol.id
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente

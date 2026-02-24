@@ -410,6 +410,17 @@
 
         const agendaListContainer = document.getElementById('agenda-list');
 
+        // Función para formatear números al estilo argentino (1.234,56)
+        function formatPrecioAR(val) {
+            if (!val && val !== 0) return '';
+            const num = Number(val);
+            if (isNaN(num)) return '';
+            // Convertir a string con 2 decimales y luego formatear
+            const partes = num.toFixed(2).split('.');
+            const enteros = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return enteros + ',' + partes[1];
+        }
+
         // Categorías y sus estilos
         const CATEGORIAS = {
             'BANDA': { icon: '🎸', label: 'Banda en Vivo', color: 'border-orange-500', bgDate: 'bg-orange-900', textColor: 'text-orange-400' },
@@ -419,7 +430,13 @@
         };
 
         function formatDate(dateString) {
-            const date = new Date(dateString);
+            let date = new Date(dateString);
+            // Si viene como ISO string UTC (termina en Z), extraer la fecha local sin conversión de zona horaria
+            if (typeof dateString === 'string' && dateString.includes('T')) {
+                const dateOnly = dateString.split('T')[0]; // Ej: "2026-03-08"
+                const parts = dateOnly.split('-');
+                date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            }
             return {
                 day: date.toLocaleDateString('es-AR', { day: '2-digit' }),
                 month: date.toLocaleDateString('es-AR', { month: 'short' }).toUpperCase().replace('.', ''),
@@ -429,9 +446,19 @@
         }
 
         // Parseo robusto de fechas: admite "YYYY-MM-DD", "YYYY-MM-DD HH:mm", "YYYY-MM-DDTHH:mm" y combina hora por separado
+        // IMPORTANTE: No usar new Date() directamente con ISO strings porque convierte a UTC
         function parseDateString(s, hora) {
             if (!s) return null;
             let str = String(s).trim();
+            
+            // Si viene con Z (UTC), extraer solo la fecha
+            if (str.includes('T') && str.includes('Z')) {
+                const dateOnly = str.split('T')[0]; // Ej: "2026-03-08"
+                const parts = dateOnly.split('-');
+                const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                return isNaN(d.getTime()) ? null : d;
+            }
+            
             if (hora && !str.includes('T')) {
                 const horaPart = String(hora).trim().split(':').slice(0, 2).join(':');
                 str = `${str}T${horaPart}`;
@@ -464,23 +491,23 @@
             const fechaObj = item._fechaObj ? item._fechaObj : (item.fecha ? new Date(item.fecha) : null);
             const { day, month, year } = fechaObj ? formatDate(fechaObj) : { day: '--', month: '--', year: '--' };
             const hora = item.hora || '';
-            const precio = item.precio ? `$${Number(item.precio).toLocaleString('es-AR')}` : '';
+            const precio = item.precio ? `$${formatPrecioAR(item.precio)}` : '';
 
             // Acción según categoría
             let actionHtml = '';
             if (categoria === 'BANDA') {
                 const link = item.id ? `checkout_form.html?event_id=${item.id}` : 'seccion_bandas.html';
-                actionHtml = `<a href="${link}" class="w-full sm:w-auto bg-fuchsia-500 hover:bg-fuchsia-400 text-gray-900 font-bold py-3 px-6 rounded-full transition shadow-lg text-center whitespace-normal flex items-center justify-center h-16">Sacar entrada</a>`;
+                actionHtml = `<a href="${link}" class="w-full sm:w-auto bg-fuchsia-500 hover:bg-fuchsia-400 text-gray-900 font-bold py-2 px-6 rounded-full transition shadow-lg text-center whitespace-nowrap">Sacar entrada</a>`;
             } else if (categoria === 'TALLER' || categoria === 'SERVICIO') {
                 const link = categoria === 'TALLER' ? 'seccion_talleres.html' : 'seccion_servicios.html';
-                actionHtml = `<a href="${link}" class="w-full sm:w-auto bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-6 rounded-full transition shadow-lg text-center whitespace-normal flex items-center justify-center h-16">Más información</a>`;
+                actionHtml = `<a href="${link}" class="w-full sm:w-auto bg-stone-800/60 border-2 border-neon text-neon font-bold py-2 px-6 rounded-full transition shadow-lg text-center whitespace-nowrap">Más información</a>`;
             } else {
-                actionHtml = `<a href="solicitud_alquiler.html" class="w-full sm:w-auto bg-stone-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg flex items-center justify-center h-16">Ver detalles</a>`;
+                actionHtml = `<a href="solicitud_alquiler.html" class="w-full sm:w-auto bg-stone-700 text-white font-bold py-2 px-6 rounded-full transition shadow-lg text-center whitespace-nowrap">Ver detalles</a>`;
             }
 
             return `
-            <div class="p-4 bg-stone-800 rounded-xl flex items-center justify-between border-l-4 ${cat.color} hover:bg-stone-700/50 transition">
-                <div class="flex items-center space-x-4 agenda-card">
+            <div class="p-4 bg-stone-800 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-l-4 ${cat.color} hover:bg-stone-700/50 transition">
+                <div class="flex items-center space-x-4 agenda-card flex-1">
                     <div class="agenda-flyer">
                         ${item.flyer_url ? `<img src="${item.flyer_url}" alt="${item.nombre || item.tipo}">` : `<div class="helper-text">No Flyer</div>`}
                     </div>
@@ -498,13 +525,13 @@
                             <p class="text-sm text-stone-400">
                                 ${hora ? hora + ' hs' : ''}
                                 ${cat.icon === '🎸' && (item.precio_anticipada || item.precio_puerta) ? '<br>' : ''}
-                                ${cat.icon === '🎸' && item.precio_anticipada ? 'Ant: $' + Number(item.precio_anticipada).toLocaleString('es-AR') : ''}
-                                ${cat.icon === '🎸' && item.precio_puerta ? (item.precio_anticipada ? ' • ' : '') + 'Puerta: $' + Number(item.precio_puerta).toLocaleString('es-AR') : ''}
+                                ${cat.icon === '🎸' && item.precio_anticipada ? 'Ant: $' + formatPrecioAR(item.precio_anticipada) : ''}
+                                ${cat.icon === '🎸' && item.precio_puerta ? (item.precio_anticipada ? ' • ' : '') + 'Puerta: $' + formatPrecioAR(item.precio_puerta) : ''}
                             </p>
                         </div>
                     </div>
                 </div>
-                <div class="flex-shrink-0 ml-4">${actionHtml}</div>
+                <div class="flex-shrink-0">${actionHtml}</div>
             </div>
             `;
         }
