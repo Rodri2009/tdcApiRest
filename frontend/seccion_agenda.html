@@ -369,7 +369,7 @@
                         tipo: e.tipo_evento || e.genero_musical || 'Banda',
                         precio_base: e.precio_anticipada || e.precio_base || e.precio_final || null,
                         descripcion: e.descripcion,
-                        flyer_url: e.url_flyer || e.flyer_url || null
+                        flyer_url: e.flyer_url || e.url_flyer || null
                     }));
                 } else {
                     console.warn('[AGENDA] /api/eventos/publicos response status', resEventos.status);
