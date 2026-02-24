@@ -172,17 +172,17 @@ class NavbarManager {
             const rolEmoji = this.getRolEmoji(rolPrincipal);
 
             authButtonsHTML = `
-                <div class="relative group">
+                <div class="relative" id="admin-dropdown-container">
                     <!-- Botón Admin -->
-                    <button class="px-4 py-2 rounded-full font-semibold ${btnColor} text-gray-900 transition duration-150 flex items-center gap-2">
+                    <button id="admin-dropdown-btn" class="px-4 py-2 rounded-full font-semibold ${btnColor} text-gray-900 transition duration-150 flex items-center gap-2">
                         <span>${rolEmoji} ${this.formatRolName(rolPrincipal)}</span>
-                        <svg class="w-4 h-4 transition group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg id="admin-dropdown-arrow" class="w-4 h-4 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transform: rotate(0deg);">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
                         </svg>
                     </button>
 
                     <!-- Dropdown Menu -->
-                    <div class="absolute right-0 mt-0 w-56 bg-stone-800 rounded-lg shadow-xl border border-emerald-500 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div id="admin-dropdown-menu" class="absolute right-0 mt-0 w-56 bg-stone-800 rounded-lg shadow-xl border border-emerald-500 transition-all duration-200 z-50" style="display: none; opacity: 0; visibility: hidden;">
                         <div class="p-4 border-b border-stone-700">
                             <p class="text-xs text-stone-400">Sesión activa como:</p>
                             <p class="text-sm font-semibold text-white truncate">${this.userEmail}</p>
@@ -321,6 +321,79 @@ class NavbarManager {
         const navbarHTML = this.generateNavbarHTML();
         container.insertAdjacentHTML('afterbegin', navbarHTML);
 
+        // Configurar dropdown menu si está autenticado
+        if (this.isAuthenticated) {
+            this.setupDropdownMenu();
+        }
+    }
+
+    /**
+     * Configura el dropdown menu del admin con event listeners
+     */
+    setupDropdownMenu() {
+        const dropdownBtn = document.getElementById('admin-dropdown-btn');
+        const dropdownMenu = document.getElementById('admin-dropdown-menu');
+        const dropdownArrow = document.getElementById('admin-dropdown-arrow');
+
+        if (!dropdownBtn || !dropdownMenu) {
+            console.warn('Elementos del dropdown no encontrados');
+            return;
+        }
+
+        // Toggle del dropdown al hacer click
+        dropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isVisible = dropdownMenu.style.display !== 'none';
+            if (isVisible) {
+                this.closeDropdown(dropdownMenu, dropdownArrow);
+            } else {
+                this.openDropdown(dropdownMenu, dropdownArrow);
+            }
+        });
+
+        // Cerrar dropdown al hacer click fuera
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('admin-dropdown-container');
+            if (container && !container.contains(e.target)) {
+                this.closeDropdown(dropdownMenu, dropdownArrow);
+            }
+        });
+
+        // Cerrar dropdown al hacer click en algún item del menú
+        const menuItems = dropdownMenu.querySelectorAll('a');
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                this.closeDropdown(dropdownMenu, dropdownArrow);
+            });
+        });
+    }
+
+    /**
+     * Abre el dropdown menu
+     */
+    openDropdown(dropdownMenu, dropdownArrow) {
+        dropdownMenu.style.display = 'block';
+        setTimeout(() => {
+            dropdownMenu.style.opacity = '1';
+            dropdownMenu.style.visibility = 'visible';
+            if (dropdownArrow) {
+                dropdownArrow.style.transform = 'rotate(180deg)';
+            }
+        }, 10);
+    }
+
+    /**
+     * Cierra el dropdown menu
+     */
+    closeDropdown(dropdownMenu, dropdownArrow) {
+        dropdownMenu.style.opacity = '0';
+        dropdownMenu.style.visibility = 'hidden';
+        if (dropdownArrow) {
+            dropdownArrow.style.transform = 'rotate(0deg)';
+        }
+        setTimeout(() => {
+            dropdownMenu.style.display = 'none';
+        }, 200);
     }
 
     /**
