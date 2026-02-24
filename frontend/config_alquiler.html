@@ -6,108 +6,32 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Configuración - Alquiler del Salón</title>
     <link rel="stylesheet" href="/css/tailwind.min.css">
-    <link rel="stylesheet" href="/css/fontawesome.min.css">
     <link rel="stylesheet" href="/styles/admin.css">
-    <style>
-        /* Theme variables y ajustes para que esta página coincida con config_bandas */
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-            --color-dark: #0c0a09;
-            --color-card: #1c1917;
-        }
-
-        body {
-            background: var(--color-dark);
-            color: #d6d3d1;
-            padding-bottom: 80px;
-        }
-
-        h1 {
-            color: var(--color-secondary);
-            text-align: center;
-            font-size: 1.8rem;
-        }
-    </style>
-    <style>
-        /* Estilos específicos de esta página */
-        .modal-overlay.show {
-            display: flex;
-        }
-
-        textarea {
-            min-height: 150px;
-            line-height: 1.5;
-        }
-
-        h1 {
-            text-align: center;
-            font-size: 1.8rem;
-        }
-
-        /* Banner de notificación */
-        .notification-banner {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            z-index: 9999;
-            animation: slideIn 0.3s ease;
-            max-width: 400px;
-        }
-
-        .notification-banner.success {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-
-        .notification-banner.error {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-
-        .notification-banner.info {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/css/config-pages.css">
 </head>
 
 <body>
     <main class="wrap">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-            <a href="/admin.html" class="btn btn-secondary" style="text-decoration:none;">
-                <i class="fas fa-arrow-left"></i> Volver al Panel
+        <div class="config-header">
+            <a href="/admin.html">
+                ← Volver al Panel
             </a>
-            <h1 style="margin:0;flex:1;"><i class="fas fa-building"></i> Configuración de Alquiler</h1>
-            <div style="width:150px;"></div>
+            <h1>🏢 Configuración de Alquiler</h1>
+            <div class="config-spacer"></div>
         </div>
 
         <div class="tabs">
             <button class="tab active" data-section="tipos">
-                <i class="fas fa-list"></i> Tipos de Alquiler
+                📋 Tipos de Alquiler
             </button>
             <button class="tab" data-section="precios">
-                <i class="fas fa-dollar-sign"></i> Precios y Vigencia
+                💰 Precios y Vigencia
             </button>
             <button class="tab" data-section="adicionales">
-                <i class="fas fa-plus-circle"></i> Adicionales
+                ➕ Adicionales
             </button>
             <button class="tab" data-section="alquileres">
-                <i class="fas fa-calendar-check"></i> Alquileres Confirmados
+                📅 Alquileres Confirmados
             </button>
         </div>
 
@@ -115,14 +39,14 @@
         <div id="section-tipos" class="section active">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-list"></i> Tipos de Evento / Alquiler</h3>
+                    <h3 class="card-title">📋 Tipos de Evento / Alquiler</h3>
                     <button class="btn btn-primary btn-crear" data-requiere-edicion="alquiler"
                         onclick="openTipoModal()">
-                        <i class="fas fa-plus"></i> Nuevo Tipo
+                        ➕ Nuevo Tipo
                     </button>
                 </div>
                 <div class="info-box">
-                    <i class="fas fa-info-circle"></i>
+                    ℹ️
                     Estos son los tipos de eventos que pueden reservar el salón. Cada tipo tiene duraciones y precios
                     asociados.
                 </div>
@@ -149,10 +73,10 @@
             <!-- Duraciones -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-clock"></i> Duraciones Disponibles</h3>
+                    <h3 class="card-title">⏱️ Duraciones Disponibles</h3>
                     <button class="btn btn-primary btn-crear" data-requiere-edicion="alquiler"
                         onclick="openDuracionModal()">
-                        <i class="fas fa-plus"></i> Nueva Duración
+                        ➕ Nueva Duración
                     </button>
                 </div>
                 <!-- Filtros de Duraciones -->
@@ -197,10 +121,10 @@
         <div id="section-precios" class="section">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-dollar-sign"></i> Precios por Vigencia</h3>
+                    <h3 class="card-title">💰 Precios por Vigencia</h3>
                     <button class="btn btn-primary btn-crear" data-requiere-edicion="alquiler"
                         onclick="openPrecioModal()">
-                        <i class="fas fa-plus"></i> Nuevo Precio
+                        ➕ Nuevo Precio
                     </button>
                 </div>
                 <div class="info-box">
@@ -252,10 +176,10 @@
         <div id="section-adicionales" class="section">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-plus-circle"></i> Servicios Adicionales</h3>
+                    <h3 class="card-title">➕ Servicios Adicionales</h3>
                     <button class="btn btn-primary btn-crear" data-requiere-edicion="alquiler"
                         onclick="openAdicionalModal()">
-                        <i class="fas fa-plus"></i> Nuevo Adicional
+                        ➕ Nuevo Adicional
                     </button>
                 </div>
                 <div class="table-container">
@@ -284,7 +208,7 @@
         <div id="section-alquileres" class="section">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-calendar-check"></i> Alquileres Confirmados</h3>
+                    <h3 class="card-title">📅 Alquileres Confirmados</h3>
                 </div>
                 <div class="info-box">
                     <i class="fas fa-info-circle"></i>
