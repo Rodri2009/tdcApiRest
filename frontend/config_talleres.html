@@ -417,7 +417,7 @@
     <main class="wrap">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
             <a href="/admin.html" class="btn btn-secondary" style="text-decoration:none;">
-                <i class="fas fa-arrow-left"></i> Volver al Panel
+                ← Volver al Panel
             </a>
             <h1 style="margin:0;flex:1;"><i class="fas fa-chalkboard-teacher"></i> Configuración de Talleres</h1>
             <div style="width:150px;"></div>
@@ -444,7 +444,7 @@
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-list"></i> Tipos de Taller</h3>
                     <button class="btn btn-primary" onclick="openModal('tipo')">
-                        <i class="fas fa-plus"></i> Nuevo Tipo
+                        ➕ Nuevo Tipo
                     </button>
                 </div>
                 <div class="info-box">
@@ -488,7 +488,7 @@
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-book"></i> Talleres / Actividades</h3>
                     <button class="btn btn-primary" onclick="openModal('taller')">
-                        <i class="fas fa-plus"></i> Nuevo Taller
+                        ➕ Nuevo Taller
                     </button>
                 </div>
                 <div class="info-box">
@@ -536,7 +536,7 @@
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-user-tie"></i> Talleristas / Profesores</h3>
                     <button class="btn btn-primary" onclick="openModal('tallerista')">
-                        <i class="fas fa-plus"></i> Nuevo Tallerista
+                        ➕ Nuevo Tallerista
                     </button>
                 </div>
                 <div class="filters">
@@ -578,7 +578,7 @@
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-dollar-sign"></i> Precios y Vigencia</h3>
                     <button class="btn btn-primary" onclick="openModal('precio')">
-                        <i class="fas fa-plus"></i> Nuevo Precio
+                        ➕ Nuevo Precio
                     </button>
                 </div>
                 <div class="info-box">
@@ -634,7 +634,7 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                 <button class="btn btn-primary" id="modal-save-btn" onclick="saveModal()">
-                    <i class="fas fa-save"></i> Guardar
+                    💾 Guardar
                 </button>
             </div>
         </div>
@@ -755,8 +755,8 @@
                     <td>${t.esPublico ? '<span class="badge badge-success">Público</span>' : '<span class="badge badge-gray">Oculto</span>'}</td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editTipo('${t.id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-icon btn-sm" onclick="deleteTipo('${t.id}')" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="editTipo('${t.id}')">✏️</button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteTipo('${t.id}')" style="color:#f87171;">🗑️</button>
                         </div>
                     </td>
                 </tr>
@@ -933,8 +933,8 @@
                     <td>${t.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editTallerista(${t.id})"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-icon btn-sm" onclick="deleteTallerista(${t.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="editTallerista(${t.id})">✏️</button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteTallerista(${t.id})" style="color:#f87171;">🗑️</button>
                         </div>
                     </td>
                 </tr>
@@ -984,8 +984,8 @@
                     <td>${t.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editTaller(${t.id})"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-icon btn-sm" onclick="deleteTaller(${t.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="editTaller(${t.id})">✏️</button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteTaller(${t.id})" style="color:#f87171;">🗑️</button>
                         </div>
                     </td>
                 </tr>
@@ -1038,8 +1038,8 @@
                     <td>${p.vigente ? '<span class="badge badge-success">Vigente</span>' : '<span class="badge badge-gray">Vencido</span>'}</td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editPrecio(${p.id})"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-icon btn-sm" onclick="deletePrecio(${p.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="editPrecio(${p.id})">✏️</button>
+                            <button class="btn btn-icon btn-sm" onclick="deletePrecio(${p.id})" style="color:#f87171;">🗑️</button>
                         </div>
                     </td>
                 </tr>

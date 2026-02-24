@@ -410,7 +410,7 @@
     <main class="wrap">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
             <a href="/admin.html" class="btn btn-secondary" style="text-decoration:none;">
-                <i class="fas fa-arrow-left"></i> Volver al Panel
+                ← Volver al Panel
             </a>
             <h1 style="margin:0;flex:1;"><i class="fas fa-spa"></i> Configuración de Servicios</h1>
             <div style="width:150px;"></div>
@@ -437,7 +437,7 @@
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-list"></i> Tipos de Servicio</h3>
                     <button class="btn btn-primary" onclick="openModal('tipo')">
-                        <i class="fas fa-plus"></i> Nuevo Tipo
+                        ➕ Nuevo Tipo
                     </button>
                 </div>
                 <div class="info-box">
@@ -481,7 +481,7 @@
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-user-md"></i> Profesionales</h3>
                     <button class="btn btn-primary" onclick="openModal('profesional')">
-                        <i class="fas fa-plus"></i> Nuevo Profesional
+                        ➕ Nuevo Profesional
                     </button>
                 </div>
                 <div class="filters">
@@ -564,7 +564,7 @@
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-dollar-sign"></i> Precios y Vigencia</h3>
                     <button class="btn btn-primary" onclick="openModal('precio')">
-                        <i class="fas fa-plus"></i> Nuevo Precio
+                        ➕ Nuevo Precio
                     </button>
                 </div>
                 <div class="info-box">
@@ -620,7 +620,7 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                 <button class="btn btn-primary" id="modal-save-btn" onclick="saveModal()">
-                    <i class="fas fa-save"></i> Guardar
+                    💾 Guardar
                 </button>
             </div>
         </div>
@@ -749,8 +749,8 @@
                     <td>${t.esPublico ? '<span class="badge badge-success">Público</span>' : '<span class="badge badge-gray">Oculto</span>'}</td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editTipo('${t.id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-icon btn-sm" onclick="deleteTipo('${t.id}')" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="editTipo('${t.id}')">✏️</button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteTipo('${t.id}')" style="color:#f87171;">🗑️</button>
                         </div>
                     </td>
                 </tr>
@@ -796,8 +796,8 @@
                     <td>${p.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>'}</td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editProfesional(${p.id})"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-icon btn-sm" onclick="deleteProfesional(${p.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="editProfesional(${p.id})">✏️</button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteProfesional(${p.id})" style="color:#f87171;">🗑️</button>
                         </div>
                     </td>
                 </tr>
@@ -926,8 +926,8 @@
                     <td>${p.vigente ? '<span class="badge badge-success">Vigente</span>' : '<span class="badge badge-gray">Vencido</span>'}</td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editPrecio(${p.id})"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-icon btn-sm" onclick="deletePrecio(${p.id})" style="color:#f87171;"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-icon btn-sm" onclick="editPrecio(${p.id})">✏️</button>
+                            <button class="btn btn-icon btn-sm" onclick="deletePrecio(${p.id})" style="color:#f87171;">🗑️</button>
                         </div>
                     </td>
                 </tr>

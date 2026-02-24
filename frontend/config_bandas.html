@@ -434,7 +434,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
             <a href="admin.html" class="btn"
                 style="background: var(--color-rustic); padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-                <i class="fas fa-arrow-left"></i> Volver al Panel
+                ← Volver al Panel
             </a>
             <h1 style="margin: 0;"><i class="fas fa-guitar"></i> Configuración de Bandas</h1>
             <div style="width: 140px;"></div>
@@ -459,7 +459,7 @@
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-users"></i> Bandas Registradas</h3>
                     <button class="btn btn-primary" onclick="openBandaModal()">
-                        <i class="fas fa-plus"></i> Nueva Banda
+                        ➕ Nueva Banda
                     </button>
                 </div>
                 <div class="filters">
@@ -499,7 +499,7 @@
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-calendar-star"></i> Fechas Programadas</h3>
                     <button class="btn btn-primary" onclick="openEventoModal()">
-                        <i class="fas fa-plus"></i> Nueva Fecha
+                        ➕ Nueva Fecha
                     </button>
                 </div>
                 <div class="filters">
@@ -557,7 +557,7 @@
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-music"></i> Catálogo de Instrumentos</h3>
                     <button class="btn btn-primary" onclick="openInstrumentoModal()">
-                        <i class="fas fa-plus"></i> Nuevo Instrumento
+                        ➕ Nuevo Instrumento
                     </button>
                 </div>
                 <div class="table-container">
@@ -671,7 +671,7 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('modal-banda')">Cancelar</button>
                 <button class="btn btn-primary" onclick="saveBanda()">
-                    <i class="fas fa-save"></i> Guardar
+                    💾 Guardar
                 </button>
             </div>
         </div>
@@ -714,7 +714,7 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('modal-instrumento')">Cancelar</button>
                 <button class="btn btn-primary" onclick="saveInstrumento()">
-                    <i class="fas fa-save"></i> Guardar
+                    💾 Guardar
                 </button>
             </div>
         </div>
@@ -838,7 +838,7 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('modal-evento')">Cancelar</button>
                 <button class="btn btn-primary" onclick="saveEvento()">
-                    <i class="fas fa-save"></i> Guardar
+                    💾 Guardar
                 </button>
             </div>
         </div>
@@ -1048,7 +1048,7 @@
                     <td>
                         <div class="row-actions">
                             <button class="btn btn-icon btn-sm" onclick="editBanda(${b.id})" title="Editar">
-                                <i class="fas fa-edit"></i>
+                                ✏️
                             </button>
                         </div>
                     </td>
@@ -1114,10 +1114,10 @@
                         <td>
                             <div class="row-actions">
                                 <button class="btn btn-icon btn-sm" onclick="editEvento(${e.id})" title="Editar">
-                                    <i class="fas fa-edit"></i>
+                                    ✏️
                                 </button>
                                 <button class="btn btn-icon btn-sm" onclick="deleteEvento(${e.id})" title="Eliminar">
-                                    <i class="fas fa-trash"></i>
+                                    🗑️
                                 </button>
                             </div>
                         </td>
@@ -1324,10 +1324,10 @@
                             <td>
                                 <div class="row-actions">
                                     <button class="btn btn-icon btn-sm" onclick="editInstrumento(${i.id})" title="Editar">
-                                        <i class="fas fa-edit"></i>
+                                        ✏️
                                     </button>
                                     <button class="btn btn-icon btn-sm" onclick="deleteInstrumento(${i.id})" title="Eliminar" style="margin-left:6px">
-                                        <i class="fas fa-trash"></i>
+                                        🗑️
                                     </button>
                                 </div>
                             </td>
