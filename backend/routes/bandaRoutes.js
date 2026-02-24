@@ -43,6 +43,9 @@ router.get('/buscar', bandaController.buscarBandas);
 // GET /api/bandas/sync-logos - Sincronizar logos del filesystem con BD (público)
 router.get('/sync-logos', bandaController.syncLogos);
 
+// GET /api/bandas/sync-flyers - Sincronizar flyers del filesystem con BD (público)
+router.get('/sync-flyers', bandaController.syncFlyers);
+
 // POST /api/bandas/upload - Subir logo (público, sin autenticación)
 router.post('/upload', upload.single('logo'), bandaController.uploadLogo);
 

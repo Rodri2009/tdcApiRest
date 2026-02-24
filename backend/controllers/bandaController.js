@@ -934,6 +934,20 @@ const syncLogos = async (req, res) => {
 };
 
 /**
+ * GET /api/bandas/sync-flyers
+ * Ruta HTTP para sincronizar flyers (llama performSyncFlyers)
+ */
+const syncFlyers = async (req, res) => {
+    try {
+        const result = await performSyncFlyers();
+        return res.status(200).json(result);
+    } catch (err) {
+        logError('[FLYER-SYNC] Error en ruta HTTP:', err.message);
+        return res.status(500).json({ error: 'Error al sincronizar flyers' });
+    }
+};
+
+/**
  * POST /api/bandas/upload
  * Subir logo de banda (público, sin autenticación)
  */
@@ -983,6 +997,7 @@ module.exports = {
     obtenerInstrumentos,
     buscarBandas,
     syncLogos,
+    syncFlyers,
     uploadLogo,
     performSyncLogos,
     performSyncFlyers
