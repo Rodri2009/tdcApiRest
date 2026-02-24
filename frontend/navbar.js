@@ -172,7 +172,8 @@ class NavbarManager {
             const rolEmoji = this.getRolEmoji(rolPrincipal);
 
             authButtonsHTML = `
-                <div class="relative" id="admin-dropdown-container">
+                <!-- Botón Admin (Desktop) -->
+                <div class="hidden md:flex relative" id="admin-dropdown-container">
                     <!-- Botón Admin -->
                     <button id="admin-dropdown-btn" class="px-4 py-2 rounded-full font-semibold ${btnColor} text-gray-900 transition duration-150 flex items-center gap-2">
                         <span>${rolEmoji} ${this.formatRolName(rolPrincipal)}</span>
@@ -182,7 +183,7 @@ class NavbarManager {
                     </button>
 
                     <!-- Dropdown Menu -->
-                    <div id="admin-dropdown-menu" class="absolute right-0 mt-0 w-56 bg-stone-800 rounded-lg shadow-xl border border-emerald-500 transition-all duration-200 z-50" style="display: none; opacity: 0; visibility: hidden;">
+                    <div id="admin-dropdown-menu" class="absolute right-0 mt-8 w-56 bg-stone-800 rounded-lg shadow-xl border border-emerald-500 transition-all duration-200 z-50" style="display: none; opacity: 0; visibility: hidden;">
                         <div class="p-4 border-b border-stone-700">
                             <p class="text-xs text-stone-400">Sesión activa como:</p>
                             <p class="text-sm font-semibold text-white truncate">${this.userEmail}</p>
@@ -201,6 +202,14 @@ class NavbarManager {
                         </div>
                     </div>
                 </div>
+
+                <!-- Botón Hamburguesa (Móvil) -->
+                <button id="mobile-menu-button" 
+                        class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
             `;
         }
 
@@ -212,6 +221,18 @@ class NavbarManager {
                         ${authButtonsHTML}
                     </div>
                 </div>
+                <!-- Menú Móvil Desplegable -->
+                ${this.isAuthenticated ? `
+                <div id="mobile-menu" class="hidden md:hidden">
+                    <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                        ${this.generateMenuItems()}
+                        <button onclick="navbarManager.logout()" 
+                                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white transition">
+                            🚪 Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+                ` : ''}
             </header>
         `;
     }
@@ -272,10 +293,10 @@ class NavbarManager {
      * Genera HTML de un item de menú
      */
     menuItem(href, emoji, text, isSubitem = false) {
-        const padding = isSubitem ? 'pl-8' : 'px-4';
+        const padding = isSubitem ? 'pl-8' : 'px-3';
         return `
             <a href="${href}" 
-               class="block ${padding} py-2 text-sm text-stone-300 hover:bg-stone-700 hover:text-neon transition rounded">
+               class="block ${padding} py-2 rounded-md text-base font-medium text-stone-300 hover:bg-stone-700 hover:text-neon transition">
                 ${emoji} ${text}
             </a>
         `;
@@ -331,41 +352,65 @@ class NavbarManager {
      * Configura el dropdown menu del admin con event listeners
      */
     setupDropdownMenu() {
+        // Configurar dropdown desktop
         const dropdownBtn = document.getElementById('admin-dropdown-btn');
         const dropdownMenu = document.getElementById('admin-dropdown-menu');
         const dropdownArrow = document.getElementById('admin-dropdown-arrow');
 
-        if (!dropdownBtn || !dropdownMenu) {
-            console.warn('Elementos del dropdown no encontrados');
-            return;
+        if (dropdownBtn && dropdownMenu) {
+            // Toggle del dropdown al hacer click
+            dropdownBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = dropdownMenu.style.display !== 'none';
+                if (isVisible) {
+                    this.closeDropdown(dropdownMenu, dropdownArrow);
+                } else {
+                    this.openDropdown(dropdownMenu, dropdownArrow);
+                }
+            });
+
+            // Cerrar dropdown al hacer click fuera
+            document.addEventListener('click', (e) => {
+                const container = document.getElementById('admin-dropdown-container');
+                if (container && !container.contains(e.target)) {
+                    this.closeDropdown(dropdownMenu, dropdownArrow);
+                }
+            });
+
+            // Cerrar dropdown al hacer click en algún item del menú
+            const menuItems = dropdownMenu.querySelectorAll('a');
+            menuItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    this.closeDropdown(dropdownMenu, dropdownArrow);
+                });
+            });
         }
 
-        // Toggle del dropdown al hacer click
-        dropdownBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isVisible = dropdownMenu.style.display !== 'none';
-            if (isVisible) {
-                this.closeDropdown(dropdownMenu, dropdownArrow);
-            } else {
-                this.openDropdown(dropdownMenu, dropdownArrow);
-            }
-        });
+        // Configurar menú móvil (hamburguesa)
+        const mobileMenuBtn = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
 
-        // Cerrar dropdown al hacer click fuera
-        document.addEventListener('click', (e) => {
-            const container = document.getElementById('admin-dropdown-container');
-            if (container && !container.contains(e.target)) {
-                this.closeDropdown(dropdownMenu, dropdownArrow);
-            }
-        });
-
-        // Cerrar dropdown al hacer click en algún item del menú
-        const menuItems = dropdownMenu.querySelectorAll('a');
-        menuItems.forEach(item => {
-            item.addEventListener('click', () => {
-                this.closeDropdown(dropdownMenu, dropdownArrow);
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
             });
-        });
+
+            // Cerrar menú móvil al hacer click en un link
+            const mobileLinks = mobileMenu.querySelectorAll('a');
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+
+            // Cerrar menú móvil al hacer click en logout
+            const logoutBtn = mobileMenu.querySelector('button');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            }
+        }
     }
 
     /**
