@@ -9,7 +9,7 @@ const serializeBigInt = (obj) => JSON.parse(JSON.stringify(obj, (key, value) => 
 const getPublicEvents = async (req, res) => {
     try {
         const query = `
-            SELECT e.id, e.id_solicitud, e.tipo_evento, e.tabla_origen, e.nombre_evento, e.descripcion, e.url_flyer as flyer_url, e.fecha_evento, e.hora_inicio, e.duracion_estimada,
+            SELECT e.id, e.id_solicitud, e.tipo_evento, e.tabla_origen, e.nombre_evento, e.descripcion, e.url_flyer as url_flyer, e.fecha_evento, e.hora_inicio, e.duracion_estimada,
                    COALESCE(c.nombre, '') as nombre_cliente,
                    COALESCE(c.email, '') as email_cliente,
                    COALESCE(c.telefono, '') as telefono_cliente,

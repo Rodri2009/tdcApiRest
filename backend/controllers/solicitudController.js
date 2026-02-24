@@ -992,7 +992,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 COALESCE(c.nombre, '') as nombreCompleto,
                 sb.descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
-                COALESCE(e.url_flyer, sol.url_flyer) as flyer_url
+                COALESCE(e.url_flyer, sol.url_flyer) as url_flyer
             FROM solicitudes_fechas_bandas sb
             JOIN solicitudes sol ON sb.id_solicitud = sol.id
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
@@ -1018,7 +1018,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 COALESCE(e.nombre_evento, st.nombre_taller, COALESCE(c.nombre, '')) AS nombreEvento,
                 NULL as descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
-                COALESCE(e.url_flyer, sol.url_flyer) as flyer_url
+                COALESCE(e.url_flyer, sol.url_flyer) as url_flyer
             FROM solicitudes_talleres st
             JOIN solicitudes sol ON st.id_solicitud = sol.id
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
@@ -1043,7 +1043,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 COALESCE(e.nombre_evento, ss.tipo_servicio, COALESCE(c.nombre, '')) AS nombreEvento,
                 NULL as descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
-                COALESCE(e.url_flyer, sol.url_flyer) as flyer_url
+                COALESCE(e.url_flyer, sol.url_flyer) as url_flyer
             FROM solicitudes_servicios ss
             JOIN solicitudes sol ON ss.id_solicitud = sol.id
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
@@ -1060,11 +1060,11 @@ const getSolicitudesPublicas = async (req, res) => {
         // AUTO-RECUPERACIÓN: Si url_flyer es NULL, intentar recuperar del disco
         const { tryRecoverFlyerUrl } = require('./uploadsController');
         for (const item of resultados) {
-            if (!item.flyer_url) {
+            if (!item.url_flyer) {
                 const recoveredUrl = tryRecoverFlyerUrl(item.id);
                 if (recoveredUrl) {
-                    item.flyer_url = recoveredUrl;
-                    logVerbose(`[PUBLIC-SOLICITUDES] ℹ flyer_url auto-recuperada para solicitud ${item.id}`);
+                    item.url_flyer = recoveredUrl;
+                    logVerbose(`[PUBLIC-SOLICITUDES] ℹ url_flyer auto-recuperada para solicitud ${item.id}`);
                 }
             }
         }
@@ -1171,7 +1171,7 @@ const getSolicitudPublicById = async (req, res) => {
                         TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
                         e.precio_base as precioBase,
                         e.nombre_evento as nombreParaMostrar,
-                        e.url_flyer as flyer_url,
+                        e.url_flyer as url_flyer,
                         CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END as estado
                     FROM eventos_confirmados e
                     WHERE e.id = ?;

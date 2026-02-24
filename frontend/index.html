@@ -450,7 +450,7 @@
         function parseDateString(s, hora) {
             if (!s) return null;
             let str = String(s).trim();
-            
+
             // Si viene con Z (UTC), extraer solo la fecha
             if (str.includes('T') && str.includes('Z')) {
                 const dateOnly = str.split('T')[0]; // Ej: "2026-03-08"
@@ -458,7 +458,7 @@
                 const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
                 return isNaN(d.getTime()) ? null : d;
             }
-            
+
             if (hora && !str.includes('T')) {
                 const horaPart = String(hora).trim().split(':').slice(0, 2).join(':');
                 str = `${str}T${horaPart}`;
@@ -509,7 +509,7 @@
             <div class="p-4 bg-stone-800 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-l-4 ${cat.color} hover:bg-stone-700/50 transition">
                 <div class="flex items-center space-x-4 agenda-card flex-1">
                     <div class="agenda-flyer">
-                        ${item.flyer_url ? `<img src="${item.flyer_url}" alt="${item.nombre || item.tipo}">` : `<div class="helper-text">No Flyer</div>`}
+                        ${item.url_flyer ? `<img src="${item.url_flyer}" alt="${item.nombre || item.tipo}">` : `<div class="helper-text">No Flyer</div>`}
                     </div>
                     <div class="agenda-meta">
                         <div class="text-center p-3 rounded-lg ${cat.bgDate} text-white flex-shrink-0 min-w-[88px] flex flex-col justify-center items-center">
@@ -563,8 +563,8 @@
                             precio_anticipada: item.precio_anticipada || null,
                             precio_puerta: item.precio_puerta || null,
                             descripcion: item.descripcion,
-                            // Mapeo tolerante para posible campo de flyer/imagen en la API
-                            flyer_url: item.flyer_url || item.flyerUrl || item.flyer || item.imagen || item.adjunto_url || null
+                            // Mapeo del campo flyer/imagen
+                            url_flyer: item.url_flyer || item.flyer_url || item.flyerUrl || item.flyer || item.imagen || item.adjunto_url || null
                         };
                     });
                 }
@@ -592,8 +592,8 @@
                     if (params.get('demo_flyer') === '1') {
                         if (!isLocalDevHost()) {
                             console.warn('demo_flyer ignorado — solo permitido en localhost');
-                        } else if (proximosItems.length > 0 && !proximosItems.some(it => it.flyer_url)) {
-                            proximosItems[0].flyer_url = '/img/hero1.jpg';
+                        } else if (proximosItems.length > 0 && !proximosItems.some(it => it.url_flyer)) {
+                            proximosItems[0].url_flyer = '/img/hero1.jpg';
                             console.debug('DEV: injected demo flyer into first agenda item (localhost only)');
                         }
                     }
