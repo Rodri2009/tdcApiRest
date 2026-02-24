@@ -28,7 +28,7 @@ LOCK TABLES `usuarios` WRITE;
 INSERT INTO `usuarios` 
   (`id`, `email`, `password_hash`, `nombre`, `rol`, `activo`, `creado_en`) 
 VALUES 
-  (1, 'rodrigo@example.com', '$2a$10$tWjaMVI7Cny6fPhnkSJx1OtZB4.mpoGuTEEYzl00ULwpXFrL26JZq', 
+  (1, 'rodrigo@example.com', '$2a$10$xT4ERvVKWABJlrrYPsJXWOZHTVsZtYp1uCm52pM23iHbdmAUlHlyu', 
    'Rodrigo Admin', 'admin', 1, '2026-02-22 16:16:33');
 /*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
