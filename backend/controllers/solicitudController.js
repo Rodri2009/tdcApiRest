@@ -1057,6 +1057,18 @@ const getSolicitudesPublicas = async (req, res) => {
         // Combinar resultados
         const resultados = [...bandas, ...talleres, ...servicios];
 
+        // AUTO-RECUPERACIÓN: Si url_flyer es NULL, intentar recuperar del disco
+        const { tryRecoverFlyerUrl } = require('./uploadsController');
+        for (const item of resultados) {
+            if (!item.flyer_url) {
+                const recoveredUrl = tryRecoverFlyerUrl(item.id);
+                if (recoveredUrl) {
+                    item.flyer_url = recoveredUrl;
+                    logVerbose(`[PUBLIC-SOLICITUDES] ℹ flyer_url auto-recuperada para solicitud ${item.id}`);
+                }
+            }
+        }
+
         // Ordenar por fecha
         resultados.sort((a, b) => new Date(a.fechaEvento) - new Date(b.fechaEvento));
 
