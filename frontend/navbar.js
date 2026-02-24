@@ -275,7 +275,7 @@ class NavbarManager {
         const padding = isSubitem ? 'pl-8' : 'px-4';
         return `
             <a href="${href}" 
-               class="block ${padding} py-2 text-sm text-stone-300 hover:bg-emerald-600 hover:text-white transition">
+               class="block ${padding} py-2 text-sm text-stone-300 hover:bg-stone-700 hover:text-neon transition rounded">
                 ${emoji} ${text}
             </a>
         `;
