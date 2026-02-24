@@ -164,8 +164,8 @@ const App = {
                     const fd = new FormData();
                     fd.append('flyer', file);
                     // Pasar solicitudId como query param para guardar con nombre consistente
-                    const uploadUrl = this.solicitudId 
-                        ? `/api/uploads/flyers?solicitudId=${this.solicitudId}` 
+                    const uploadUrl = this.solicitudId
+                        ? `/api/uploads/flyers?solicitudId=${this.solicitudId}`
                         : '/api/uploads/flyers';
                     const resp = await fetch(uploadUrl, { method: 'POST', body: fd });
                     if (!resp.ok) throw new Error('Error en la subida: ' + resp.statusText);
@@ -1545,9 +1545,9 @@ const App = {
         if (this.elements.precioPuertaInput) bodyData.precio_puerta = this.elements.precioPuertaInput.value;
         if (this.elements.urlFlyerInput) bodyData.url_flyer = this.elements.urlFlyerInput.value.trim();
 
-        try:
-        // Usamos el endpoint PUT /api/solicitudes/:id, que llama a 'actualizarSolicitud'
-        const response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
+        try {
+            // Usamos el endpoint PUT /api/solicitudes/:id, que llama a 'actualizarSolicitud'
+            const response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(bodyData)

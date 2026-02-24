@@ -546,18 +546,34 @@
     <script src="/navbar.js"></script>
     <script src="/formLogic.js"></script>
     <script>
+        console.log('editar_solicitud_alquiler.html: Script iniciado');
+        console.log('editar_solicitud_alquiler.html: formLogic.js cargado, typeof initializeApp =', typeof window.initializeApp);
+        
         document.addEventListener('DOMContentLoaded', () => {
-            // Proteger esta página: redirigir a login si no está autenticado
-            navbarManager = new NavbarManager();
-            if (!navbarManager.protectAdminPage()) {
-                return; // Salir si no está autenticado
-            }
-            navbarManager.injectNavbar('body');
+            console.log('editar_solicitud_alquiler.html: DOMContentLoaded disparado');
+            try {
+                // Proteger esta página: redirigir a login si no está autenticado
+                console.log('editar_solicitud_alquiler.html: Creando NavbarManager');
+                navbarManager = new NavbarManager();
+                console.log('editar_solicitud_alquiler.html: NavbarManager creado, protegiendo página');
+                if (!navbarManager.protectAdminPage()) {
+                    console.log('editar_solicitud_alquiler.html: Página protegida, usuario no autenticado');
+                    return; // Salir si no está autenticado
+                }
+                console.log('editar_solicitud_alquiler.html: Usuario autenticado, inyectando navbar');
+                navbarManager.injectNavbar('body');
 
-            // Inicializar la app de edición
-            initializeApp({
-                mode: 'edit'
-            });
+                // Inicializar la app de edición
+                console.log('editar_solicitud_alquiler.html: Llamando a initializeApp con config:', {mode: 'edit'});
+                console.log('editar_solicitud_alquiler.html: typeof initializeApp =', typeof initializeApp);
+                initializeApp({
+                    mode: 'edit'
+                });
+                console.log('editar_solicitud_alquiler.html: initializeApp ejecutado correctamente');
+            } catch (err) {
+                console.error('editar_solicitud_alquiler.html: Error en DOMContentLoaded:', err);
+                throw err;
+            }
         });
     </script>
 </body>

@@ -467,11 +467,16 @@
 
     <script src="/formLogic.js"></script>
     <script>
+        console.log('solicitud_alquiler.html: Script iniciado');
+        console.log('solicitud_alquiler.html: formLogic.js cargado, typeof initializeApp =', typeof window.initializeApp);
+        
         // Cambiar el título de la página si se abre con ?tipo=BANDA (u otras variantes)
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('solicitud_alquiler.html: DOMContentLoaded disparado');
             try {
                 const params = new URLSearchParams(window.location.search);
                 const tipo = params.get('tipo');
+                console.log('solicitud_alquiler.html: tipo parameter =', tipo);
                 if (tipo && typeof tipo === 'string' && tipo.trim().toUpperCase() === 'BANDA') {
                     const titleEl = document.getElementById('pageTitle');
                     if (titleEl) titleEl.textContent = 'Solicitud para tocar en el templo';
@@ -481,10 +486,17 @@
             }
 
             // Iniciar la app en modo creación, solo mostrar tipos de ALQUILER_SALON
-            initializeApp({
-                mode: 'create',
-                categoriaFiltro: 'ALQUILER_SALON'
-            });
+            console.log('solicitud_alquiler.html: Llamando a initializeApp con config:', {mode: 'create', categoriaFiltro: 'ALQUILER_SALON'});
+            console.log('solicitud_alquiler.html: typeof initializeApp =', typeof initializeApp);
+            try {
+                initializeApp({
+                    mode: 'create',
+                    categoriaFiltro: 'ALQUILER_SALON'
+                });
+                console.log('solicitud_alquiler.html: initializeApp ejecutado correctamente');
+            } catch (err) {
+                console.error('solicitud_alquiler.html: Error al llamar initializeApp:', err);
+            }
         });
     </script>
 </body>
