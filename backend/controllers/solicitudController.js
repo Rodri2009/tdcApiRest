@@ -229,7 +229,7 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(sol.descripcion_corta, '') as descripcion_corta,
                     COALESCE(sol.descripcion_larga, '') as descripcion_larga
                 FROM solicitudes_alquiler sa
-                JOIN solicitudes sol ON sa.id_solicitud = sol.id
+                JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE sa.id_solicitud = ?
             `;
@@ -300,7 +300,7 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(sol.descripcion_corta, '') as descripcion_corta,
                     COALESCE(sol.descripcion_larga, '') as descripcion_larga
                 FROM solicitudes_fechas_bandas sfb
-                JOIN solicitudes sol ON sfb.id_solicitud = sol.id
+                JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
                 WHERE sfb.id_solicitud = ?
@@ -344,7 +344,7 @@ const getSolicitudPorId = async (req, res) => {
                     ss.tipo_servicio as tipoServicio,
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_servicios ss
-                JOIN solicitudes sol ON ss.id_solicitud = sol.id
+                JOIN solicitudes sol ON ss.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE ss.id_solicitud = ?
             `;
@@ -388,7 +388,7 @@ const getSolicitudPorId = async (req, res) => {
                     st.nombre_taller as nombreTaller,
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_talleres st
-                JOIN solicitudes sol ON st.id_solicitud = sol.id
+                JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE st.id_solicitud = ?
             `;
@@ -452,7 +452,7 @@ const finalizarSolicitud = async (req, res) => {
                 descripcion_larga = ?,
                 descripcion = ?, 
                 estado = 'Solicitado'
-            WHERE id = ?
+            WHERE id_solicitud = ?
         `;
         const paramsUpdateGeneral = [clienteId, descripcionCorta || (detallesAdicionales ? String(detallesAdicionales).substring(0, 200) : null), descripcionLarga || null, detallesAdicionales, id];
         const resultGeneral = await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
@@ -466,14 +466,14 @@ const finalizarSolicitud = async (req, res) => {
         const sqlUpdateAlquiler = `
             UPDATE solicitudes_alquiler SET 
                 descripcion = ?
-            WHERE id = ?
+            WHERE id_solicitud = ?
         `;
         const paramsUpdateAlquiler = [detallesAdicionales, id];
         await conn.query(sqlUpdateAlquiler, paramsUpdateAlquiler);
 
         // Obtener los datos completos para los emails
         const sqlSelect = `
-            SELECT s.*, sa.* FROM solicitudes s LEFT JOIN solicitudes_alquiler sa ON s.id = sa.id_solicitud WHERE s.id = ?
+            SELECT s.*, sa.* FROM solicitudes s LEFT JOIN solicitudes_alquiler sa ON s.id_solicitud = sa.id_solicitud WHERE s.id_solicitud = ?
         `;
         const [solicitudCompleta] = await conn.query(sqlSelect, [id]);
 
@@ -638,7 +638,7 @@ const actualizarSolicitud = async (req, res) => {
                 descripcion_larga = ?,
                 descripcion = ?,
                 id_cliente = ?
-            WHERE id = ?
+            WHERE id_solicitud = ?
         `;
         const paramsUpdateGeneral = [
             descripcionCorta || (descripcion || detallesAdicionales ? String((descripcion || detallesAdicionales)).substring(0, 200) : null),
@@ -647,7 +647,7 @@ const actualizarSolicitud = async (req, res) => {
             clienteId,
             idNumerico
         ];
-        logVerbose(`[SOLICITUD][EDIT] Ejecutando UPDATE en solicitudes (id=${idNumerico})`);
+        logVerbose(`[SOLICITUD][EDIT] Ejecutando UPDATE en solicitudes (id_solicitud=${idNumerico})`);
         await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
 
         // NUEVA LÓGICA: Determinar tabla según tipo de evento
@@ -656,7 +656,7 @@ const actualizarSolicitud = async (req, res) => {
         let tipoEventoReal = null;
 
         // PASO 0: Consultar el tipo real según prefijo
-        logVerbose(`[SOLICITUD][EDIT] PASO 0: Consultando tipo de evento (prefijo="${prefijo}") para id=${idNumerico}`);
+        logVerbose(`[SOLICITUD][EDIT] PASO 0: Consultando tipo de evento (prefijo="${prefijo}") para id_solicitud=${idNumerico}`);
 
         // Si es evento confirmado (ev_*), consultar eventos_confirmados.tipo_evento
         if (prefijo === 'ev_') {
@@ -670,13 +670,13 @@ const actualizarSolicitud = async (req, res) => {
             }
         } else {
             // Para solicitudes normales (bnd_, alq_, etc.), consultar solicitudes.categoria
-            const sqlSelectSolicitud = `SELECT categoria FROM solicitudes WHERE id = ? LIMIT 1`;
+            const sqlSelectSolicitud = `SELECT categoria FROM solicitudes WHERE id_solicitud = ? LIMIT 1`;
             const rowsSolicitud = await conn.query(sqlSelectSolicitud, [idNumerico]);
             if (rowsSolicitud.length > 0) {
                 tipoEventoReal = rowsSolicitud[0].categoria;
                 logVerbose(`[SOLICITUD][EDIT] ✓ Solicitud encontrada: categoria=${tipoEventoReal}`);
             } else {
-                logWarning(`[SOLICITUD][EDIT] ⚠️ Solicitud no encontrada en tabla solicitudes (id=${idNumerico})`);
+                logWarning(`[SOLICITUD][EDIT] ⚠️ Solicitud no encontrada en tabla solicitudes (id_solicitud=${idNumerico})`);
             }
         }
 
@@ -957,7 +957,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 COALESCE(sol.es_publico, 0) as esPublico,
                 COALESCE(e.url_flyer, sol.url_flyer) as url_flyer
             FROM solicitudes_fechas_bandas sb
-            JOIN solicitudes sol ON sb.id_solicitud = sol.id
+            JOIN solicitudes sol ON sb.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN bandas_artistas b ON sb.id_banda = b.id_banda
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = sb.id_solicitud AND e.tipo_evento = 'BANDA' AND e.activo = 1
@@ -983,7 +983,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 COALESCE(sol.es_publico, 0) as esPublico,
                 COALESCE(e.url_flyer, sol.url_flyer) as url_flyer
             FROM solicitudes_talleres st
-            JOIN solicitudes sol ON st.id_solicitud = sol.id
+            JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = st.id_solicitud AND e.tipo_evento = 'TALLER' AND e.activo = 1
             WHERE sol.es_publico = 1
@@ -1008,7 +1008,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 COALESCE(sol.es_publico, 0) as esPublico,
                 COALESCE(e.url_flyer, sol.url_flyer) as url_flyer
             FROM solicitudes_servicios ss
-            JOIN solicitudes sol ON ss.id_solicitud = sol.id
+            JOIN solicitudes sol ON ss.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = ss.id_solicitud AND e.tipo_evento = 'SERVICIO' AND e.activo = 1
             WHERE sol.es_publico = 1
@@ -1084,7 +1084,7 @@ const updateVisibilidad = async (req, res) => {
             return res.status(400).json({ message: 'ID inválido' });
         }
 
-        const resultParent = await conn.query(`UPDATE solicitudes SET es_publico = ? WHERE id = ?`, [es_publico ? 1 : 0, idValue]);
+        const resultParent = await conn.query(`UPDATE solicitudes SET es_publico = ? WHERE id_solicitud = ?`, [es_publico ? 1 : 0, idValue]);
         if (resultParent.affectedRows === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada' });
         }
@@ -1160,7 +1160,7 @@ const getSolicitudPublicById = async (req, res) => {
                         sa.tipo_de_evento as tipoEvento,
                         COALESCE(sol.es_publico, 0) as esPublico
                     FROM solicitudes_alquiler sa
-                    JOIN solicitudes sol ON sa.id_solicitud = sol.id
+                    JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud
                     LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                     WHERE sa.id_solicitud = ?
                 `;
@@ -1215,7 +1215,7 @@ const getSolicitudPublicById = async (req, res) => {
                         COALESCE(sol.descripcion_corta, '') as descripcion_corta,
                         COALESCE(sol.descripcion_larga, '') as descripcion_larga
                     FROM solicitudes_fechas_bandas sfb
-                    JOIN solicitudes sol ON sfb.id_solicitud = sol.id
+                    JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud
                     LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                     LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
                     WHERE sfb.id_solicitud = ?
@@ -1240,7 +1240,7 @@ const getSolicitudPublicById = async (req, res) => {
                         COALESCE(c.nombre, '') as nombreParaMostrar,
                         sol.estado
                     FROM solicitudes_servicios ss
-                    JOIN solicitudes sol ON ss.id_solicitud = sol.id
+                    JOIN solicitudes sol ON ss.id_solicitud = sol.id_solicitud
                     LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                     WHERE ss.id_solicitud = ?
                 `;
@@ -1264,7 +1264,7 @@ const getSolicitudPublicById = async (req, res) => {
                         COALESCE(c.nombre, '') as nombreParaMostrar,
                         sol.estado
                     FROM solicitudes_talleres st
-                    JOIN solicitudes sol ON st.id_solicitud = sol.id
+                    JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
                     LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                     WHERE st.id_solicitud = ?
                 `;
@@ -1293,7 +1293,7 @@ const getSolicitudPublicById = async (req, res) => {
                     sa.tipo_de_evento as tipoEvento,
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_alquiler sa
-                JOIN solicitudes sol ON sa.id_solicitud = sol.id
+                JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE sa.id_solicitud = ?
             `;
@@ -1319,7 +1319,7 @@ const getSolicitudPublicById = async (req, res) => {
                     COALESCE(c.nombre, '') as nombreParaMostrar,
                     sfb.estado
                 FROM solicitudes_fechas_bandas sfb
-                JOIN solicitudes sol ON sfb.id_solicitud = sol.id
+                JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE sfb.id_solicitud = ?
             `;
@@ -1338,7 +1338,7 @@ const getSolicitudPublicById = async (req, res) => {
                     COALESCE(c.nombre, '') as nombreParaMostrar,
                     sol.estado
                 FROM solicitudes_servicios ss
-                JOIN solicitudes sol ON ss.id_solicitud = sol.id
+                JOIN solicitudes sol ON ss.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE ss.id_solicitud = ?
             `;
@@ -1357,7 +1357,7 @@ const getSolicitudPublicById = async (req, res) => {
                     COALESCE(c.nombre, '') as nombreParaMostrar,
                     sol.estado
                 FROM solicitudes_talleres st
-                JOIN solicitudes sol ON st.id_solicitud = sol.id
+                JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
                 WHERE st.id_solicitud = ?
             `;

@@ -83,6 +83,7 @@ try {
     const solicitudesRoutes = require('./routes/solicitudRoutes');
     const testRoutes = require('./routes/testRoutes');
     const authRoutes = require('./routes/authRoutes');
+    const oauthRoutes = require('./routes/oauthRoutes'); // NUEVO: OAuth routes
     const adminRoutes = require('./routes/adminRoutes');
     const bandaRoutes = require('./routes/bandaRoutes'); // NUEVO: Bandas refactorizado (3NF)
     const solicitudFechaBandaRoutes = require('./routes/solicitudFechaBandaRoutes'); // NUEVO: Solicitudes de fechas/shows
@@ -105,6 +106,7 @@ try {
     app.use('/api/solicitudes', solicitudesRoutes);
     app.use('/api/test', testRoutes);
     app.use('/api/auth', authRoutes);
+    app.use('/api/auth/oauth', oauthRoutes); // NUEVO: OAuth endpoint
     app.use('/api/admin', adminRoutes);
 
     // NUEVAS RUTAS (refactored 3NF)

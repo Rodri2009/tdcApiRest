@@ -23,6 +23,7 @@ class NavbarManager {
             localStorage.setItem('userRoles', JSON.stringify(this.userRoles));
             localStorage.setItem('userRole', this.userRole);
             localStorage.setItem('userEmail', this.userEmail);
+            localStorage.setItem('userName', this.userName);
             localStorage.setItem('userNivel', this.userNivel);
         }
     }
@@ -42,6 +43,7 @@ class NavbarManager {
             );
             const payload = JSON.parse(jsonPayload);
             this.userEmail = payload.email || payload.id || 'Usuario';
+            this.userName = payload.nombre || payload.email || 'Usuario';
             this.userRole = payload.role || 'user';
             this.userRoles = payload.roles || [];
             this.userPermisos = payload.permisos || [];
@@ -89,6 +91,7 @@ class NavbarManager {
     clearAuth() {
         this.isAuthenticated = false;
         this.userEmail = null;
+        this.userName = null;
         this.userRole = null;
         this.userRoles = [];
         this.userPermisos = [];
@@ -98,6 +101,7 @@ class NavbarManager {
         localStorage.removeItem('userRoles');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userEmail');
+        localStorage.removeItem('userName');
         localStorage.removeItem('userNivel');
     }
 
@@ -133,12 +137,96 @@ class NavbarManager {
                 .bg-rustic {
                     background-color: var(--color-rustic);
                 }
+
+                /* Avatar styles */
+                .user-avatar {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    font-weight: bold;
+                    font-size: 16px;
+                    color: #0c0a09;
+                    text-transform: uppercase;
+                    box-shadow: 0 2px 8px rgba(240, 171, 252, 0.3);
+                    border: 2px solid var(--color-secondary);
+                }
+
+                .user-avatar.admin {
+                    background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+                }
+
+                .user-avatar.operador {
+                    background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%);
+                }
+
+                .user-avatar.viewer {
+                    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+                }
+
+                .user-avatar.default {
+                    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+                }
+
+                .navbar-btn-user {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 8px 16px;
+                    border-radius: 50px;
+                    background: rgba(240, 171, 252, 0.05);
+                    border: 1.5px solid var(--color-secondary);
+                    color: var(--color-secondary);
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 200ms ease;
+                    font-size: 14px;
+                }
+
+                .navbar-btn-user:hover {
+                    background: rgba(240, 171, 252, 0.15);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 15px rgba(240, 171, 252, 0.25);
+                }
+
+                .admin-panel-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 8px 16px;
+                    background: linear-gradient(135deg, #f0abfc 0%, #ec4899 100%);
+                    color: #0c0a09;
+                    border-radius: 50px;
+                    font-weight: 700;
+                    font-size: 13px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    box-shadow: 0 4px 15px rgba(240, 171, 252, 0.3);
+                }
             `;
             document.head.appendChild(styleElement);
         }
 
-        const logoHTML = `
-            <a href="/index.html" class="flex items-center space-x-3">
+        // Determinar si estamos en admin.html
+        const isAdminPage = window.location.pathname.includes('admin.html');
+        const adminPageBadge = isAdminPage ? `
+            <div class="flex items-center gap-3">
+                <div class="admin-panel-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L15.09 8.26H22L17.55 12.79L19.64 19.04L12 14.77L4.36 19.04L6.45 12.79L2 8.26H8.91L12 2Z"></path>
+                    </svg>
+                    Panel Admin
+                </div>
+                <a href="/index.html" class="hover:opacity-80 transition" title="Ir a inicio">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole" class="h-10 w-auto">
+                </a>
+            </div>
+        ` : '';
+
+        const logoHTML = isAdminPage ? adminPageBadge : `
+            <a href="/index.html" class="flex items-center space-x-3 hover:opacity-80 transition">
                 <img src="./img/logo_transparente.png" alt="El Templo de Claypole" class="h-10 w-auto">
                 <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">
                     El Templo de Claypole
@@ -160,34 +248,50 @@ class NavbarManager {
             // Generar menú dinámico según permisos
             const menuItems = this.generateMenuItems();
 
-            // Determinar color del botón según nivel
-            let btnColor = 'bg-gray-500 hover:bg-gray-400';
-            if (this.userNivel >= 100) btnColor = 'bg-purple-600 hover:bg-purple-500';
-            else if (this.userNivel >= 75) btnColor = 'bg-emerald-500 hover:bg-emerald-400';
-            else if (this.userNivel >= 50) btnColor = 'bg-cyan-500 hover:bg-cyan-400';
-            else if (this.userNivel >= 25) btnColor = 'bg-gray-500 hover:bg-gray-400';
-
             // Obtener rol principal para mostrar
             const rolPrincipal = this.userRoles[0] || 'Usuario';
-            const rolEmoji = this.getRolEmoji(rolPrincipal);
+            
+            // Obtener iniciales del usuario
+            const iniciales = this.userName
+                .split(' ')
+                .slice(0, 2)
+                .map(n => n.charAt(0))
+                .join('')
+                .toUpperCase();
+
+            // Determinar clase de avatar según rol
+            let avatarClass = 'default';
+            if (rolPrincipal === 'SUPER_ADMIN' || rolPrincipal === 'ADMIN' || rolPrincipal === 'admin') avatarClass = 'admin';
+            else if (rolPrincipal === 'OPERADOR') avatarClass = 'operador';
+            else if (rolPrincipal === 'VIEWER') avatarClass = 'viewer';
 
             authButtonsHTML = `
                 <!-- Botón Admin (Desktop) -->
                 <div class="hidden md:flex relative" id="admin-dropdown-container">
-                    <!-- Botón Admin -->
-                    <button id="admin-dropdown-btn" class="px-4 py-2 rounded-full font-semibold ${btnColor} text-gray-900 transition duration-150 flex items-center gap-2">
-                        <span>${rolEmoji} ${this.formatRolName(rolPrincipal)}</span>
-                        <svg id="admin-dropdown-arrow" class="w-4 h-4 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transform: rotate(0deg);">
+                    <!-- Botón Usuario con Avatar -->
+                    <button id="admin-dropdown-btn" class="navbar-btn-user">
+                        <div class="user-avatar ${avatarClass}">${iniciales}</div>
+                        <div class="flex flex-col items-start">
+                            <span class="text-sm font-bold">${this.userName}</span>
+                        </div>
+                        <svg id="admin-dropdown-arrow" class="w-4 h-4 transition ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transform: rotate(0deg);">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
                         </svg>
                     </button>
 
                     <!-- Dropdown Menu -->
-                    <div id="admin-dropdown-menu" class="absolute right-0 mt-8 w-56 bg-stone-800 rounded-lg shadow-xl border border-emerald-500 transition-all duration-200 z-50" style="display: none; opacity: 0; visibility: hidden;">
-                        <div class="p-4 border-b border-stone-700">
-                            <p class="text-xs text-stone-400">Sesión activa como:</p>
-                            <p class="text-sm font-semibold text-white truncate">${this.userEmail}</p>
-                            <p class="text-xs text-stone-500 mt-1">${this.userRoles.join(', ') || 'Sin rol'}</p>
+                    <div id="admin-dropdown-menu" class="absolute right-0 mt-8 w-64 bg-stone-800 rounded-lg shadow-xl border border-stone-700 transition-all duration-200 z-50" style="display: none; opacity: 0; visibility: hidden;">
+                        <div class="p-4 border-b border-stone-700 bg-stone-900 rounded-t-lg">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="user-avatar ${avatarClass}">${iniciales}</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-white truncate">${this.userName}</p>
+                                    <p class="text-xs text-stone-400 truncate">${this.userEmail}</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                ${this.userRoles.map(rol => `<span class="inline-block px-2 py-1 text-xs font-semibold bg-fuchsia-600 text-white rounded">${this.formatRolName(rol)}</span>`).join('')}
+                            </div>
                         </div>
 
                         <nav class="py-2">

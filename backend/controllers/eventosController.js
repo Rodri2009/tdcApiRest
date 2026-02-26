@@ -19,7 +19,7 @@ const getPublicEvents = async (req, res) => {
                    sfb.precio_puerta as precio_puerta,
                    e.es_publico
             FROM eventos_confirmados e
-            LEFT JOIN solicitudes sol ON e.id_solicitud = sol.id
+            LEFT JOIN solicitudes sol ON e.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON e.id_cliente = c.id_cliente
             LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
             WHERE e.es_publico = 1 AND e.activo = 1
@@ -82,7 +82,7 @@ const getEventoDetallePublico = async (req, res) => {
                        ba.id_banda as banda_id, ba.nombre as banda_nombre, ba.genero_musical, 
                        ba.logo_url, ba.facebook, ba.instagram, ba.youtube, ba.spotify
                 FROM solicitudes_fechas_bandas sfb
-                JOIN solicitudes s ON sfb.id_solicitud = s.id
+                JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
                 LEFT JOIN clientes c ON s.id_cliente = c.id_cliente
                 LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id_banda
                 WHERE sfb.id_solicitud = ?

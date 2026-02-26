@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDC - Registro / Login</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* ------------------------------------- */
+        /* DEFINICIÓN DE VARIABLES Y ESTILOS BASE */
+        /* ------------------------------------- */
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+            --color-bg-dark: #0c0a09;
+            --color-card-dark: #1e293b;
+            --color-text-light: #d6d3d1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--color-bg-dark);
+            color: var(--color-text-light);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            padding-bottom: 70px;
+        }
+
+        .container-main {
+            max-width: 500px;
+            width: 100%;
+            background-color: var(--color-card-dark);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--color-rustic);
+        }
+
+        .card {
+            border: none;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .card-header {
+            background: transparent;
+            padding: 0 0 25px 0;
+            text-align: center;
+            border: none;
+        }
+
+        .card-header h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 2.25rem;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .card-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+            color: var(--color-text-light);
+        }
+
+        .card-body {
+            padding: 0;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--color-primary);
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .tab-btn.active {
+            color: var(--color-secondary);
+            border-bottom-color: var(--color-secondary);
+        }
+
+        .oauth-section {
+            margin-bottom: 25px;
+        }
+
+        .oauth-section h5 {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--color-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .oauth-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .oauth-btn {
+            padding: 12px 10px;
+            border: 2px solid var(--color-secondary);
+            border-radius: 8px;
+            background: transparent;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            color: var(--color-secondary);
+            text-decoration: none;
+            min-height: 70px;
+        }
+
+        .oauth-btn i {
+            font-size: 18px;
+        }
+
+        .oauth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px var(--color-secondary);
+            background: rgba(240, 171, 252, 0.1);
+        }
+
+        .oauth-btn.google {
+            border-color: #4285f4;
+            color: #4285f4;
+        }
+
+        .oauth-btn.google:hover {
+            background: rgba(66, 133, 244, 0.15);
+            box-shadow: 0 0 10px #4285f4;
+        }
+
+        .oauth-btn.facebook {
+            border-color: #1877F2;
+            color: #1877F2;
+        }
+
+        .oauth-btn.facebook:hover {
+            background: rgba(24, 119, 242, 0.15);
+            box-shadow: 0 0 10px #1877F2;
+        }
+
+        .oauth-btn.instagram {
+            border-color: #E1306C;
+            color: #E1306C;
+        }
+
+        .oauth-btn.instagram:hover {
+            background: rgba(225, 48, 108, 0.15);
+            box-shadow: 0 0 10px #E1306C;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 1px;
+            background: var(--color-rustic);
+        }
+
+        .divider span {
+            background: var(--color-card-dark);
+            padding: 0 12px;
+            position: relative;
+            color: var(--color-text-light);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--color-text-light);
+            margin-bottom: 7px;
+            font-size: 13px;
+        }
+
+        .form-control {
+            border: 1px solid var(--color-primary);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            width: 100%;
+            background-color: #0f172a;
+            color: var(--color-text-light);
+        }
+
+        .form-control:focus {
+            border-color: var(--color-secondary);
+            outline: none;
+            box-shadow: 0 0 5px var(--color-secondary);
+        }
+
+        .form-control.error {
+            border-color: #ef4444;
+            box-shadow: 0 0 5px #ef4444;
+        }
+
+        .error-text {
+            display: none;
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .error-text.show {
+            display: block;
+        }
+
+        .row {
+            margin-left: -8px;
+            margin-right: -8px;
+        }
+
+        .col {
+            padding: 0 8px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            background: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px var(--color-secondary);
+            background: rgba(240, 171, 252, 0.1);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            color: var(--color-text-light);
+        }
+
+        .footer-text a {
+            color: var(--color-secondary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-text a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .alert-info {
+            background: rgba(88, 28, 135, 0.2);
+            color: var(--color-secondary);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            cursor: pointer;
+            accent-color: var(--color-secondary);
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--color-text-light);
+        }
+
+        .checkbox-group a {
+            color: var(--color-secondary);
+            text-decoration: none;
+        }
+
+        .checkbox-group a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px 0;
+        }
+
+        .spinner {
+            border: 3px solid var(--color-rustic);
+            border-top: 3px solid var(--color-secondary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.5s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.success {
+            background-color: #10b981;
+        }
+
+        #notification-banner.error {
+            background-color: #ef4444;
+        }
+
+        #notification-banner.warning {
+            background-color: #fbbf24;
+            color: #1e293b;
+        }
+
+        @media (max-width: 576px) {
+            .card-body {
+                padding: 0;
+            }
+
+            .card-header {
+                padding: 0 0 25px 0;
+            }
+
+            .card-header h1 {
+                font-size: 1.75rem;
+            }
+
+            .oauth-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                gap: 5px;
+            }
+
+            .tab-btn {
+                padding: 10px 15px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-main">
+        <div class="card">
+            <div class="card-header">
+                <h1>🎭 El Templo</h1>
+                <p>Crea tu cuenta para acceder</p>
+            </div>
+            
+            <div class="card-body">
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="registro" onclick="switchTab('registro')">
+                        <i class="fas fa-user-plus"></i> Nuevo
+                    </button>
+                    <button class="tab-btn" data-tab="login" onclick="switchTab('login')">
+                        <i class="fas fa-sign-in-alt"></i> Ingresar
+                    </button>
+                </div>
+                
+                <!-- SECCIÓN REGISTRO -->
+                <div class="form-section active" id="section-registro">
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>¡Rápido y fácil!</strong> Usa tus redes sociales para registrarte en segundos.
+                    </div>
+                    
+                    <div class="oauth-section">
+                        <h5><i class="fas fa-link"></i> Registro Social</h5>
+                        <div class="oauth-buttons">
+                            <button type="button" class="oauth-btn google" onclick="handleGoogleSignup()">
+                                <i class="fab fa-google"></i>
+                                <span>Google</span>
+                            </button>
+                            <button type="button" class="oauth-btn facebook" onclick="initiateFacebookSignup()">
+                                <i class="fab fa-facebook"></i>
+                                <span>Facebook</span>
+                            </button>
+                            <button type="button" class="oauth-btn instagram" onclick="handleInstagramSignup()">
+                                <i class="fab fa-instagram"></i>
+                                <span>Instagram</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="divider"><span>O completa manualmente</span></div>
+                    
+                    <form id="formRegistro" novalidate>
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label class="form-label">Nombre *</label>
+                                    <input type="text" class="form-control" id="nombre" placeholder="Tu nombre" required>
+                                    <div class="error-text"></div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label class="form-label">Apellido *</label>
+                                    <input type="text" class="form-control" id="apellido" placeholder="Tu apellido" required>
+                                    <div class="error-text"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" placeholder="tu@email.com" required>
+                            <div class="error-text"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Teléfono *</label>
+                            <input type="tel" class="form-control" id="telefono" placeholder="+54 9 XXX XXX XXXX" required>
+                            <div class="error-text"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Contraseña *</label>
+                            <input type="password" class="form-control" id="password" placeholder="Mínimo 6 caracteres" required>
+                            <div class="error-text"></div>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="terminosRegistro" required>
+                            <label for="terminosRegistro">Acepto los <a href="#" target="_blank">términos y condiciones</a></label>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-user-check"></i> Registrarse
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- SECCIÓN LOGIN -->
+                <div class="form-section" id="section-login">
+                    <div class="alert alert-info">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <strong>Bienvenido de vuelta.</strong> Accede con tu cuenta.
+                    </div>
+                    
+                    <form id="formLogin" novalidate>
+                        <div class="form-group">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="emailLogin" placeholder="tu@email.com" required>
+                            <div class="error-text"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Contraseña *</label>
+                            <input type="password" class="form-control" id="passwordLogin" placeholder="Tu contraseña" required>
+                            <div class="error-text"></div>
+                        </div>
+                        
+                        <div class="checkbox-group" style="justify-content: space-between;">
+                            <div>
+                                <input type="checkbox" id="recordarme">
+                                <label for="recordarme">Recuérdame</label>
+                            </div>
+                            <a href="#" style="font-size: 12px;">¿Olvidó contraseña?</a>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Ingresar
+                        </button>
+                    </form>
+                    
+                    <div class="divider" style="margin: 25px 0;"><span>O usa redes sociales</span></div>
+                    
+                    <div class="oauth-buttons" style="margin-top: 15px;">
+                        <button type="button" class="oauth-btn google" onclick="handleGoogleLogin()">
+                            <i class="fab fa-google"></i>
+                            <span>Google</span>
+                        </button>
+                        <button type="button" class="oauth-btn facebook" onclick="initiateFacebookLogin()">
+                            <i class="fab fa-facebook"></i>
+                            <span>Facebook</span>
+                        </button>
+                        <button type="button" class="oauth-btn instagram" onclick="handleInstagramLogin()">
+                            <i class="fab fa-instagram"></i>
+                            <span>Instagram</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; color: white; font-size: 12px;">
+            <p>🔒 Tus datos están protegidos. No compartimos información sin tu consentimiento.</p>
+        </div>
+    </div>
+
+    <!-- Google SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- Facebook SDK -->
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/es_LA/sdk.js#xfbml=1&version=v18.0"></script>
+    
+    <!-- Configuración de la app -->
+    <script src="config.js"></script>
+    
+    <!-- Banner de notificación -->
+    <div id="notification-banner"></div>
+
+    <script>
+        // Variables globales
+        let currentTab = 'registro';
+        let oauthData = {};
+        let notificationTimer = null;
+        let googleInitialized = false;
+
+        // ============================================
+        // INICIALIZACIÓN GOOGLE GLOBAL
+        // ============================================
+        function initializeGoogleSDK() {
+            if (googleInitialized) {
+                console.log('[OAUTH] [GOOGLE] SDK ya inicializado');
+                return;
+            }
+            
+            // Verificar que google está disponible
+            if (typeof google === 'undefined') {
+                console.log('[OAUTH] [GOOGLE] Objeto google no disponible aún, reintentando...');
+                setTimeout(initializeGoogleSDK, 100);
+                return;
+            }
+            
+            console.log('[OAUTH] [GOOGLE] Inicializando Google SDK globalmente');
+            google.accounts.id.initialize({
+                client_id: CONFIG.GOOGLE_CLIENT_ID,
+                callback: handleGoogleCallback
+            });
+            googleInitialized = true;
+            console.log('[OAUTH] [GOOGLE] SDK inicializado correctamente');
+        }
+
+        // Ejecutar cuando el script de Google esté listo
+        // Google proporciona un callback cuando está listo
+        window.onload = function() {
+            console.log('[OAUTH] [GOOGLE] Window loaded, inicializando Google SDK');
+            initializeGoogleSDK();
+        };
+
+        // ============================================
+        // NOTIFICACIONES
+        // ============================================
+        function showNotification(message, type = 'warning', duration = 4000) {
+            clearTimeout(notificationTimer);
+            const banner = document.getElementById('notification-banner');
+            banner.textContent = message;
+            banner.className = 'show ' + type;
+            notificationTimer = setTimeout(() => { banner.className = ''; }, duration);
+        }
+
+        // ============================================
+        // GESTIÓN DE TABS
+        // ============================================
+        function switchTab(tab) {
+            currentTab = tab;
+            console.log('[UI] Cambiando a pestaña:', tab);
+            document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('section-' + tab).classList.add('active');
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+        }
+
+        // ============================================
+        // GOOGLE SIGN UP
+        // ============================================
+        function handleGoogleSignup() {
+            console.log('[OAUTH] [GOOGLE] Mostrando Google Sign-In prompt');
+            google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                    console.log('[OAUTH] [GOOGLE] Prompt no mostrado:', notification.getNotDisplayedReason());
+                }
+            });
+        }
+
+        function handleGoogleSignupCallback(response) {
+            handleGoogleCallback(response);
+        }
+
+        // ============================================
+        // GOOGLE CALLBACK UNIFICADO
+        // ============================================
+        function handleGoogleCallback(response) {
+            console.log('[OAUTH] [GOOGLE] Callback ejecutado');
+            console.log('[OAUTH] [GOOGLE] Response recibido:', {hasCredential: !!response.credential, credentialLength: response.credential?.length});
+            
+            const decoded = parseJwt(response.credential);
+            console.log('[OAUTH] [GOOGLE] Token decodificado:', {
+                sub: decoded.sub,
+                email: decoded.email,
+                given_name: decoded.given_name,
+                family_name: decoded.family_name,
+                picture: '(foto URL)'
+            });
+            
+            const payload = {
+                proveedor_oauth: 'google',
+                id_oauth: decoded.sub,
+                email: decoded.email,
+                nombre: decoded.given_name || '',
+                apellido: decoded.family_name || '',
+                foto_url: decoded.picture || ''
+            };
+            console.log('[OAUTH] [GOOGLE] Enviando al backend:', payload);
+            
+            // Enviar a backend para que cree/encuentre usuario
+            fetch('/api/auth/oauth-callback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(r => {
+                console.log('[API] Response status:', r.status, r.statusText);
+                return r.json();
+            })
+            .then(result => {
+                console.log('[API] Response data:', result);
+                if (result.user) {
+                    console.log('[AUTH] Usuario recibido del servidor:', {
+                        id_usuario: result.user.id_usuario,
+                        email: result.user.email,
+                        nombre: result.user.nombre
+                    });
+                    // Guardar token y datos del usuario en localStorage
+                    localStorage.setItem('authToken', result.token);
+                    localStorage.setItem('user_data', JSON.stringify(result.user));
+                    console.log('[AUTH] Datos guardados en localStorage (token + user_data)');
+                    showNotification('¡Bienvenido ' + result.user.nombre + '!', 'success', 2000);
+                    setTimeout(() => { window.location.href = '/index.html'; }, 2000);
+                }
+            })
+            .catch(err => {
+                console.error('[ERROR] OAuth error:', err);
+                showNotification('Error en Google OAuth', 'error');
+            });
+        }
+
+        // ============================================
+        // GOOGLE LOGIN
+        // ============================================
+        function handleGoogleLogin() {
+            console.log('[OAUTH] [GOOGLE] Mostrando Google Sign-In prompt');
+            google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                    console.log('[OAUTH] [GOOGLE] Prompt no mostrado:', notification.getNotDisplayedReason());
+                }
+            });
+        }
+
+        function handleGoogleLoginCallback(response) {
+            handleGoogleCallback(response);
+        }
+
+        // ============================================
+        // FACEBOOK SIGN UP
+        // ============================================
+        function initiateFacebookSignup() {
+            console.log('[OAUTH] [FACEBOOK] Inicializando Facebook Signup');
+            FB.login(function(response) {
+                console.log('[OAUTH] [FACEBOOK] Login response:', {status: response.status, hasAuthResponse: !!response.authResponse});
+                if (response.authResponse) {
+                    console.log('[OAUTH] [FACEBOOK] Auth response recibido, obteniendo datos del usuario');
+                    FB.api('/me?fields=id,first_name,last_name,email,picture', 
+                        function(userInfo) {
+                            console.log('[OAUTH] [FACEBOOK] User info recibido:', {
+                                id: userInfo.id,
+                                email: userInfo.email,
+                                first_name: userInfo.first_name,
+                                last_name: userInfo.last_name,
+                                picture: '(foto URL)'
+                            });
+                            
+                            const payload = {
+                                proveedor_oauth: 'facebook',
+                                id_oauth: userInfo.id,
+                                email: userInfo.email,
+                                nombre: userInfo.first_name || '',
+                                apellido: userInfo.last_name || '',
+                                foto_url: userInfo.picture?.data?.url || ''
+                            };
+                            console.log('[OAUTH] [FACEBOOK] Enviando al backend:', payload);
+                            
+                            fetch('/api/auth/oauth-callback', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            })
+                            .then(r => {
+                                console.log('[API] Response status:', r.status, r.statusText);
+                                return r.json();
+                            })
+                            .then(result => {
+                                console.log('[API] Response data:', result);
+                                if (result.user) {
+                                    console.log('[AUTH] Usuario recibido:', {id_usuario: result.user.id_usuario, email: result.user.email});
+                                    localStorage.setItem('authToken', result.token);
+                                    localStorage.setItem('user_data', JSON.stringify(result.user));
+                                    console.log('[AUTH] Datos guardados en localStorage (token + user_data)');
+                                    showNotification('¡Bienvenido ' + result.user.nombre + '!', 'success', 2000);
+                                    setTimeout(() => { window.location.href = '/index.html'; }, 2000);
+                                }
+                            })
+                            .catch(err => {
+                                console.error('[ERROR] OAuth error:', err);
+                                showNotification('Error en registro con Facebook', 'error');
+                            });
+                        }
+                    );
+                } else {
+                    console.log('[OAUTH] [FACEBOOK] Usuario canceló el login');
+                }
+            }, {scope: 'public_profile,email'});
+        }
+
+        // ============================================
+        // FACEBOOK LOGIN
+        // ============================================
+        function initiateFacebookLogin() {
+            console.log('[OAUTH] [FACEBOOK] Inicializando Facebook Login');
+            FB.login(function(response) {
+                console.log('[OAUTH] [FACEBOOK] Login response:', {status: response.status, hasAuthResponse: !!response.authResponse});
+                if (response.authResponse) {
+                    console.log('[OAUTH] [FACEBOOK] Auth response recibido, obteniendo datos del usuario');
+                    FB.api('/me?fields=id,first_name,last_name,email,picture', 
+                        function(userInfo) {
+                            console.log('[OAUTH] [FACEBOOK] User info recibido:', {
+                                id: userInfo.id,
+                                email: userInfo.email,
+                                first_name: userInfo.first_name,
+                                last_name: userInfo.last_name
+                            });
+                            
+                            const payload = {
+                                proveedor_oauth: 'facebook',
+                                id_oauth: userInfo.id,
+                                email: userInfo.email,
+                                nombre: userInfo.first_name || '',
+                                apellido: userInfo.last_name || ''
+                            };
+                            console.log('[OAUTH] [FACEBOOK] Enviando al backend:', payload);
+                            
+                            fetch('/api/auth/oauth-callback', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            })
+                            .then(r => {
+                                console.log('[API] Response status:', r.status, r.statusText);
+                                return r.json();
+                            })
+                            .then(result => {
+                                console.log('[API] Response data:', result);
+                                if (result.user) {
+                                    console.log('[AUTH] Usuario recibido:', {id_usuario: result.user.id_usuario, email: result.user.email});
+                                    localStorage.setItem('authToken', result.token);
+                                    localStorage.setItem('user_data', JSON.stringify(result.user));
+                                    console.log('[AUTH] Datos guardados en localStorage (token + user_data)');
+                                    showNotification('¡Bienvenido ' + result.user.nombre + '!', 'success', 2000);
+                                    setTimeout(() => { window.location.href = '/index.html'; }, 2000);
+                                }
+                            })
+                            .catch(err => {
+                                console.error('[ERROR] OAuth error:', err);
+                                showNotification('Error en login con Facebook', 'error');
+                            });
+                        }
+                    );
+                } else {
+                    console.log('[OAUTH] [FACEBOOK] Usuario canceló el login');
+                }
+            }, {scope: 'public_profile,email'});
+        }
+
+        // ============================================
+        // INSTAGRAM
+        // ============================================
+        function handleInstagramSignup() {
+            window.location.href = '/api/auth/instagram';
+        }
+
+        function handleInstagramLogin() {
+            window.location.href = '/api/auth/instagram';
+        }
+
+        // ============================================
+        // LLENAR FORMULARIO DE REGISTRO
+        // ============================================
+        function populateRegistroForm() {
+            document.getElementById('nombre').value = oauthData.nombre || '';
+            document.getElementById('apellido').value = oauthData.apellido || '';
+            document.getElementById('email').value = oauthData.email || '';
+            
+            // Marcar campos como rellenados
+            ['nombre', 'apellido', 'email'].forEach(field => {
+                const input = document.getElementById(field);
+                if (input.value) {
+                    input.style.backgroundColor = '#f8f9fa';
+                    input.style.color = '#6c757d';
+                }
+            });
+        }
+
+        // ============================================
+        // SUBMIT FORMULARIOS
+        // ============================================
+        document.getElementById('formRegistro').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('[AUTH] Formulario registro enviado');
+            if (!validateRegistro()) {
+                console.log('[AUTH] Validación de registro fallida');
+                return;
+            }
+            
+            const data = {
+                nombre: document.getElementById('nombre').value,
+                apellido: document.getElementById('apellido').value,
+                email: document.getElementById('email').value,
+                telefono: document.getElementById('telefono').value,
+                password: document.getElementById('password').value
+            };
+            console.log('[AUTH] Datos del registro:', {
+                email: data.email,
+                nombre: data.nombre,
+                apellido: data.apellido,
+                telefono: data.telefono
+            });
+            
+            try {
+                console.log('[API] Enviando POST a /api/auth/register');
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                console.log('[API] Response status:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    console.error('[ERROR] Respuesta no OK:', error);
+                    showNotification('Error: ' + (error.message || 'No se pudo completar el registro'), 'error');
+                    return;
+                }
+                
+                const result = await response.json();
+                console.log('[API] Response data:', {user: result.user});
+                // El servidor setea la cookie 'token' automáticamente
+                localStorage.setItem('authToken', result.token);
+                localStorage.setItem('user_data', JSON.stringify(result.user));
+                console.log('[AUTH] Datos guardados en localStorage (token + user_data), redirigiendo');
+                showNotification('¡Registro exitoso! Bienvenido ' + result.user.nombre, 'success', 2000);
+                setTimeout(() => { window.location.href = '/index.html'; }, 2000);
+                
+            } catch (err) {
+                console.error('[ERROR] Error en registro:', err);
+                showNotification('Error de conexión. Intenta de nuevo.', 'error');
+            }
+        });
+
+        document.getElementById('formLogin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('[AUTH] Formulario login enviado');
+            if (!validateLogin()) {
+                console.log('[AUTH] Validación de login fallida');
+                return;
+            }
+            
+            const data = {
+                email: document.getElementById('emailLogin').value,
+                password: document.getElementById('passwordLogin').value
+            };
+            console.log('[AUTH] Datos del login:', {email: data.email});
+            
+            performLogin(data);
+        });
+
+        // ============================================
+        // LOGIN HELPER
+        // ============================================
+        function performLogin(data) {
+            console.log('[API] Enviando POST a /api/auth/login');
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                console.log('[API] Response status:', response.status, response.statusText);
+                if (!response.ok) {
+                    return response.json().then(err => { 
+                        console.error('[ERROR] Respuesta no OK:', err);
+                        throw err; 
+                    });
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('[API] Response data:', {user: result.user});
+                localStorage.setItem('authToken', result.token);
+                localStorage.setItem('user_data', JSON.stringify(result.user));
+                console.log('[AUTH] Datos guardados en localStorage (token + user_data), redirigiendo');
+                showNotification('¡Bienvenido ' + result.user.nombre + '!', 'success', 2000);
+                setTimeout(() => { window.location.href = '/index.html'; }, 2000);
+            })
+            .catch(err => {
+                console.error('[ERROR] Error en login:', err);
+                showNotification('Error: ' + (err.message || 'No se pudo iniciar sesión'), 'error');
+            });
+        }
+
+        // ============================================
+        // VALIDACIÓN
+        // ============================================
+        function validateRegistro() {
+            clearErrors();
+            let valid = true;
+            
+            const nombre = document.getElementById('nombre').value.trim();
+            const apellido = document.getElementById('apellido').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const telefono = document.getElementById('telefono').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (!nombre) {
+                showError('nombre', 'El nombre es requerido');
+                valid = false;
+            }
+            if (!apellido) {
+                showError('apellido', 'El apellido es requerido');
+                valid = false;
+            }
+            if (!email || !isValidEmail(email)) {
+                showError('email', 'Email válido es requerido');
+                valid = false;
+            }
+            if (!telefono) {
+                showError('telefono', 'El teléfono es requerido');
+                valid = false;
+            }
+            if (!password || password.length < 6) {
+                showError('password', 'Contraseña de mínimo 6 caracteres');
+                valid = false;
+            }
+            if (!document.getElementById('terminosRegistro').checked) {
+                valid = false;
+            }
+            
+            return valid;
+        }
+
+        function validateLogin() {
+            clearErrors();
+            let valid = true;
+            
+            const email = document.getElementById('emailLogin').value.trim();
+            const password = document.getElementById('passwordLogin').value;
+            
+            if (!email || !isValidEmail(email)) {
+                showError('emailLogin', 'Email válido es requerido');
+                valid = false;
+            }
+            if (!password) {
+                showError('passwordLogin', 'La contraseña es requerida');
+                valid = false;
+            }
+            
+            return valid;
+        }
+
+        function showError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            field.classList.add('error');
+            const errorText = field.nextElementSibling;
+            if (errorText) {
+                errorText.textContent = message;
+                errorText.classList.add('show');
+            }
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.form-control').forEach(el => {
+                el.classList.remove('error');
+            });
+            document.querySelectorAll('.error-text').forEach(el => {
+                el.classList.remove('show');
+                el.textContent = '';
+            });
+        }
+
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        // ============================================
+        // UTILIDADES
+        // ============================================
+        function parseJwt(token) {
+            console.log('[OAUTH] Decodificando JWT token');
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+                atob(base64).split('').map((c) => {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join('')
+            );
+            const parsed = JSON.parse(jsonPayload);
+            console.log('[OAUTH] JWT decodificado correctamente');
+            return parsed;
+        }
+
+        // Initializa Facebook SDK
+        window.fbAsyncInit = function() {
+            console.log('[OAUTH] [FACEBOOK] Inicializando Facebook SDK');
+            FB.init({
+                appId: 'YOUR_FACEBOOK_APP_ID',
+                xfbml: true,
+                version: 'v18.0'
+            });
+            console.log('[OAUTH] [FACEBOOK] Facebook SDK inicializado');
+        };
+    </script>
+</body>
+</html>

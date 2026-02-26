@@ -7,6 +7,9 @@ backend/node_modules/
 backend/.env
 SENSIBLE.md
 
+# Archivos de configuración con credenciales (¡NO COMITEAR!)
+frontend/config.js
+
 # Backups y archivos de migración (no subirlos al repositorio)
 _backups/
 

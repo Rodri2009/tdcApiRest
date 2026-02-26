@@ -451,7 +451,7 @@ const deleteBanda = async (req, res) => {
         const { id } = req.params;
 
         // Soft delete: marcar como inactiva
-        await pool.query('UPDATE bandas_artistas SET activa = 0 WHERE id = ?', [id]);
+        await pool.query('UPDATE bandas_artistas SET activa = 0 WHERE id_banda = ?', [id]);
 
         res.json({ message: 'Banda desactivada exitosamente' });
     } catch (err) {
@@ -743,7 +743,7 @@ const updateSolicitud = async (req, res) => {
             await conn.beginTransaction();
 
             if (Object.keys(contactoUpdates).length > 0) {
-                const [row] = await conn.query('SELECT sol.id_cliente FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id WHERE sfb.id_solicitud = ?', [id]);
+                const [row] = await conn.query('SELECT sol.id_cliente FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud WHERE sfb.id_solicitud = ?', [id]);
                 if (row && row.id_cliente) {
                     await updateClient(conn, row.id_cliente, contactoUpdates);
                 }
@@ -812,7 +812,7 @@ const updateSolicitud = async (req, res) => {
             if (typeof updates.descripcion_corta !== 'undefined' || typeof updates.descripcion_larga !== 'undefined') {
                 const descC = typeof updates.descripcion_corta !== 'undefined' ? updates.descripcion_corta : null;
                 const descL = typeof updates.descripcion_larga !== 'undefined' ? updates.descripcion_larga : null;
-                await conn.query(`UPDATE solicitudes SET descripcion_corta = ?, descripcion_larga = ? WHERE id = ?`, [descC, descL, id]);
+                await conn.query(`UPDATE solicitudes SET descripcion_corta = ?, descripcion_larga = ? WHERE id_solicitud = ?`, [descC, descL, id]);
             }
 
             await conn.commit();
@@ -869,7 +869,7 @@ const aprobarSolicitud = async (req, res) => {
 
         // Si se reciben descripciones para el padre, actualizarlas
         if (typeof descripcion_corta !== 'undefined' || typeof descripcion_larga !== 'undefined') {
-            await pool.query(`UPDATE solicitudes SET descripcion_corta = ?, descripcion_larga = ? WHERE id = ?`, [descripcion_corta || null, descripcion_larga || null, id]);
+            await pool.query(`UPDATE solicitudes SET descripcion_corta = ?, descripcion_larga = ? WHERE id_solicitud = ?`, [descripcion_corta || null, descripcion_larga || null, id]);
         }
 
         // Obtener contacto desde clientes si existe
@@ -942,7 +942,7 @@ const aprobarSolicitud = async (req, res) => {
 
         // Actualizar solicitud hijo y padre
         await pool.query(`UPDATE solicitudes_fechas_bandas SET estado = 'Confirmado', id_evento_generado = ? WHERE id_solicitud = ?`, [eventoId, id]);
-        await pool.query(`UPDATE solicitudes SET estado = 'Confirmado', es_publico = ? WHERE id = ?`, [1, id]);
+        await pool.query(`UPDATE solicitudes SET estado = 'Confirmado', es_publico = ? WHERE id_solicitud = ?`, [1, id]);
 
         res.json({ message: 'Solicitud aprobada y evento creado', evento_id: eventoId, banda_id: bandaId });
         res.json({

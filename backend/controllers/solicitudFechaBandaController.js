@@ -513,14 +513,14 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
         // Si viene nombre/descripcion corta del evento, guardarla en la fila padre `solicitudes` (titulo visible)
         if (typeof req.body.descripcion_corta !== 'undefined' || typeof req.body.nombre_evento !== 'undefined') {
             const nuevoNombre = req.body.descripcion_corta || req.body.nombre_evento || null;
-            await conn.query('UPDATE solicitudes SET descripcion_corta = ? WHERE id = ?', [nuevoNombre, idNum]);
+            await conn.query('UPDATE solicitudes SET descripcion_corta = ? WHERE id_solicitud = ?', [nuevoNombre, idNum]);
             logVerbose(`[FECHA_BANDA] solicitudes.descripcion_corta actualizado para id=${idNum} -> "${nuevoNombre}"`);
         }
 
         // Si vienen campos de contacto, actualizarlos en `clientes` (o crearlos) y propagar a eventos_confirmados
         if (typeof contacto_nombre !== 'undefined' || typeof contacto_email !== 'undefined' || typeof contacto_telefono !== 'undefined') {
             // Obtener id_cliente desde la tabla padre `solicitudes`
-            const [parentRow] = await conn.query('SELECT id_cliente FROM solicitudes WHERE id = ?', [idNum]);
+            const [parentRow] = await conn.query('SELECT id_cliente FROM solicitudes WHERE id_solicitud = ?', [idNum]);
             const clienteId = parentRow && parentRow.id_cliente ? parentRow.id_cliente : null;
 
             if (clienteId) {
@@ -533,14 +533,14 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                 if (clientUpdates.length) {
                     clientParams.push(clienteId);
                     try {
-                        await conn.query(`UPDATE clientes SET ${clientUpdates.join(', ')} WHERE id = ?`, clientParams);
+                        await conn.query(`UPDATE clientes SET ${clientUpdates.join(', ')} WHERE id_cliente = ?`, clientParams);
                         logVerbose(`[FECHA_BANDA] Cliente id=${clienteId} actualizado desde PUT solicitud ${idNum}`);
                     } catch (err) {
                         // Si el UPDATE falla por email duplicado, intentar ligar la solicitud al cliente existente con ese email
                         if (err && err.errno === 1062 && contacto_email) {
                             const [existing] = await conn.query('SELECT id_cliente FROM clientes WHERE email = ?', [contacto_email]);
                             if (existing && existing.id_cliente && existing.id_cliente !== clienteId) {
-                                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id = ?', [existing.id_cliente, idNum]);
+                                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id_solicitud = ?', [existing.id_cliente, idNum]);
                                 logVerbose(`[FECHA_BANDA] Cliente conflict (email existente). Solicitud ${idNum} ligada a cliente id=${existing.id_cliente}`);
                             } else {
                                 // No podemos resolver el conflicto automáticamente
@@ -558,7 +558,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                     telefono: contacto_telefono || null,
                     email: contacto_email || null
                 });
-                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id = ?', [newClienteId, idNum]);
+                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id_solicitud = ?', [newClienteId, idNum]);
                 logVerbose(`[FECHA_BANDA] Nuevo cliente id=${newClienteId} ligado a solicitud ${idNum}`);
             }
 
@@ -822,7 +822,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
 
         // Si se pidió actualizar es_publico en el PUT, persistirlo en la tabla padre `solicitudes`
         if (parentEsPublico !== null) {
-            await conn.query('UPDATE solicitudes SET es_publico = ? WHERE id = ?', [parentEsPublico, idNum]);
+            await conn.query('UPDATE solicitudes SET es_publico = ? WHERE id_solicitud = ?', [parentEsPublico, idNum]);
             logVerbose(`[FECHA_BANDA] ✓ es_publico guardado en tabla 'solicitudes' (id=${idNum} -> es_publico=${parentEsPublico})`);
 
             // Sincronizar valor en eventos_confirmados (si existe)
@@ -834,7 +834,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
         if (id_cliente !== undefined && id_cliente !== null) {
             const idClienteNum = parseInt(id_cliente, 10);
             if (!isNaN(idClienteNum)) {
-                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id = ?', [idClienteNum, idNum]);
+                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id_solicitud = ?', [idClienteNum, idNum]);
                 logVerbose(`[FECHA_BANDA] ✓ id_cliente guardado en tabla 'solicitudes' (id=${idNum} -> id_cliente=${idClienteNum})`);
             } else {
                 logWarning(`[FECHA_BANDA] ⚠ id_cliente inválido recibido: ${id_cliente}`);
@@ -946,7 +946,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
         // Guardar url_flyer en la tabla padre 'solicitudes' si está pendiente
         if (urlFlyerPendiente !== null) {
             await conn.query(
-                'UPDATE solicitudes SET url_flyer = ? WHERE id = ?',
+                'UPDATE solicitudes SET url_flyer = ? WHERE id_solicitud = ?',
                 [urlFlyerPendiente, idNum]
             );
             logVerbose(`[FECHA_BANDA] ✓ url_flyer guardado en tabla 'solicitudes'`);
@@ -1213,7 +1213,7 @@ const eliminarSolicitudFechaBanda = async (req, res) => {
         await conn.query('DELETE FROM solicitudes_fechas_bandas WHERE id_solicitud = ?', [idNum]);
 
         // Eliminar solicitud padre (esto elimina en cascada)
-        await conn.query('DELETE FROM solicitudes WHERE id = ?', [idNum]);
+        await conn.query('DELETE FROM solicitudes WHERE id_solicitud = ?', [idNum]);
 
         await conn.commit();
 

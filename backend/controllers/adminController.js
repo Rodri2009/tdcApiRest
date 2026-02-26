@@ -31,7 +31,7 @@ const getSolicitudes = async (req, res) => {
                 COALESCE(sol.descripcion_corta, '') as descripcionCorta,
                 COALESCE(ec_alq.url_flyer, sol.url_flyer) as url_flyer
             FROM solicitudes_alquiler s
-            LEFT JOIN solicitudes sol ON sol.id = s.id_solicitud
+            LEFT JOIN solicitudes sol ON sol.id_solicitud = s.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN opciones_tipos ot ON (s.tipo_de_evento = ot.id_tipo_evento OR s.tipo_servicio = ot.id_tipo_evento)
             LEFT JOIN eventos_confirmados ec_alq ON ec_alq.id_solicitud = s.id_solicitud AND ec_alq.tipo_evento = 'ALQUILER_SALON'
@@ -54,7 +54,7 @@ const getSolicitudes = async (req, res) => {
                 COALESCE(sol2.descripcion_corta, '') as descripcionCorta,
                 COALESCE(ec_bnd.url_flyer, sol2.url_flyer) as url_flyer
             FROM solicitudes_fechas_bandas s
-            LEFT JOIN solicitudes sol2 ON sol2.id = s.id_solicitud
+            LEFT JOIN solicitudes sol2 ON sol2.id_solicitud = s.id_solicitud
             LEFT JOIN clientes c2 ON sol2.id_cliente = c2.id_cliente
             /* solicitudes_fechas_bandas no tiene columna tipo_de_evento — evitar JOIN que referencia columnas inexistentes */
             LEFT JOIN opciones_tipos ot2 ON 1 = 0
@@ -211,7 +211,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
         if (String(id).startsWith('alq_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_alquiler';
-            [solicitud] = await conn.query("SELECT sa.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_alquiler sa JOIN solicitudes sol ON sa.id_solicitud = sol.id LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE sa.id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT sa.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_alquiler sa JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE sa.id_solicitud = ?", [realId]);
             tipoEvento = 'ALQUILER_SALON';
         } else if (String(id).startsWith('bnd_')) {
             realId = id.substring(4);
@@ -221,12 +221,12 @@ const actualizarEstadoSolicitud = async (req, res) => {
         } else if (String(id).startsWith('srv_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_servicios';
-            [solicitud] = await conn.query("SELECT ss.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id_solicitud = sol.id LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE ss.id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT ss.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE ss.id_solicitud = ?", [realId]);
             tipoEvento = 'SERVICIO';
         } else if (String(id).startsWith('tll_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_talleres';
-            [solicitud] = await conn.query("SELECT st.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_talleres st JOIN solicitudes sol ON st.id_solicitud = sol.id LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE st.id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT st.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_talleres st JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE st.id_solicitud = ?", [realId]);
             tipoEvento = 'TALLER';
         } else {
             // Fallback para IDs antiguos sin prefijo
@@ -236,7 +236,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                 tablaOrigen = 'solicitudes_alquiler';
                 tipoEvento = 'ALQUILER_SALON';
             } else {
-                [solicitud] = await conn.query("SELECT sb.*, COALESCE(c.nombre,'') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_fechas_bandas sb JOIN solicitudes sol ON sb.id_solicitud = sol.id LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE sb.id_solicitud = ?", [id]);
+                [solicitud] = await conn.query("SELECT sb.*, COALESCE(c.nombre,'') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_fechas_bandas sb JOIN solicitudes sol ON sb.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE sb.id_solicitud = ?", [id]);
                 if (solicitud) {
                     tablaOrigen = 'solicitudes_fechas_bandas';
                     tipoEvento = 'BANDA';
