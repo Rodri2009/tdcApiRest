@@ -49,6 +49,27 @@
             color: var(--color-secondary);
             margin-bottom: 16px;
         }
+
+        /* Menú responsivo */
+        @media (min-width: 768px) {
+            nav.hidden.md\:flex {
+                display: flex !important;
+            }
+
+            #mobile-menu-button.md\:hidden {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            #mobile-menu-button.md\:hidden {
+                display: block;
+            }
+
+            nav.hidden.md\:flex {
+                display: none;
+            }
+        }
     </style>
 </head>
 
@@ -60,8 +81,7 @@
             <div class="flex justify-between items-center h-16">
                 <a href="index.html" class="flex items-center space-x-3">
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
-                        Inicio</span>
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver a inicio</span>
                 </a>
 
                 <nav class="hidden md:flex space-x-8 items-center">
@@ -74,7 +94,7 @@
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
                         Salón</a>
                     <a href="solicitud_servicio.html"
-                        class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition">
+                        class="px-4 py-2 text-sm rounded-lg font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-200 ease-in-out">
                         <i class="fas fa-calendar-plus mr-1"></i> Reservar Turno
                     </a>
                     <div id="auth-menu-desktop"></div>
@@ -97,7 +117,7 @@
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
                     en Vivo</a>
                 <a href="solicitud_servicio.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">
+                    class="block px-4 py-2 rounded-lg text-base font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-200 ease-in-out">
                     <i class="fas fa-calendar-plus mr-1"></i> Reservar Turno
                 </a>
                 <div id="auth-menu-mobile"></div>
@@ -165,7 +185,7 @@
         <section class="py-16 bg-stone-950">
             <div class="max-w-5xl mx-auto px-4">
                 <h2 class="text-3xl font-bold text-center text-neon mb-10">
-                    <i class="fas fa-calendar-alt mr-2"></i> Disponibilidad
+                    <i class="fas fa-calendar-days mr-2"></i> Disponibilidad
                 </h2>
                 <div class="bg-stone-900 p-8 rounded-xl border border-stone-700 text-center">
                     <i class="fas fa-clock text-5xl text-fuchsia-400 mb-4"></i>

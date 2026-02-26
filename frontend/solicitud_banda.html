@@ -541,6 +541,27 @@
                 font-size: 16px;
             }
         }
+
+        /* Menú responsivo */
+        @media (min-width: 768px) {
+            nav.flex {
+                display: flex !important;
+            }
+
+            #mobile-menu-button {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            #mobile-menu-button {
+                display: block !important;
+            }
+
+            nav.flex {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 
@@ -553,13 +574,13 @@
                     <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
                         Inicio</span>
                 </a>
-                <nav class="hidden md:flex space-x-8 items-center">
+                <nav class="flex space-x-8 items-center">
                     <a href="agenda_de_bandas.html" class="text-sm font-medium hover:text-neon transition">Ver
                         Agenda</a>
                     <a href="seccion_talleres.html" class="text-sm font-medium hover:text-neon transition">Talleres</a>
                     <div id="auth-menu-desktop"></div>
                 </nav>
-                <button id="mobile-menu-button" class="md:hidden p-2 rounded-md hover:bg-stone-700">
+                <button id="mobile-menu-button" class="hidden p-2 rounded-md hover:bg-stone-700">
                     <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 6h16M4 12h16M4 18h16" />
@@ -567,7 +588,7 @@
                 </button>
             </div>
         </div>
-        <div id="mobile-menu" class="hidden md:hidden">
+        <div id="mobile-menu" class="hidden">
             <div class="px-2 pt-2 pb-3 space-y-1 bg-rustic">
                 <a href="agenda_de_bandas.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Ver
@@ -580,7 +601,7 @@
     </header>
 
     <div class="container">
-        <h2><i class="fas fa-guitar"></i> Registrar Nueva Banda o Artista</h2>
+        <h2><i class="fas fa-music"></i> Registrar Nueva Banda o Artista</h2>
         <h3 class="subtitle">Completa este formulario para registrar tu banda. Te responderemos por email.</h3>
 
         <!-- Stepper -->
@@ -637,7 +658,7 @@
 
                 <!-- Redes sociales -->
                 <div class="form-group">
-                    <label><i class="fas fa-share-alt"></i> Redes sociales y links</label>
+                    <label><i class="fas fa-share"></i> Redes sociales y links</label>
                     <p class="hint">Compartí tus redes para que podamos conocer tu trabajo y difundir el evento.</p>
                 </div>
 
@@ -677,7 +698,7 @@
                         <div class="logo-preview" id="logo-preview"
                             onclick="document.getElementById('logo_file').click()">
                             <div class="placeholder">
-                                <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 5px;"></i>
+                                <i class="fas fa-cloud-arrow-up" style="font-size: 2rem; margin-bottom: 5px;"></i>
                                 <div>Click para subir</div>
                             </div>
                         </div>
@@ -1133,7 +1154,7 @@
                     console.error('Upload error:', err);
                     showNotification('No se pudo subir el logo: ' + (err.message || ''), 'error');
                     // revert preview if error
-                    preview.innerHTML = `<div class="placeholder"><i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 5px;"></i><div>Click para subir</div></div>`;
+                    preview.innerHTML = `<div class="placeholder"><i class="fas fa-cloud-arrow-up" style="font-size: 2rem; margin-bottom: 5px;"></i><div>Click para subir</div></div>`;
                 }
             });
 

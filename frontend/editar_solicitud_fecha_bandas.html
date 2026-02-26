@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
-    <link rel="stylesheet" href="styles/request-forms.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <style>
@@ -19,20 +18,11 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: calc(16px + 4rem);
-            background: #0c0a09;
-            min-height: 100vh;
+            /*padding: calc(16px + 4rem) 20px 20px 20px;*/
+            background-color: #0c0a09;
             color: #d6d3d1;
-        }
-
-        header.bg-rustic {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 9999;
         }
 
         .text-neon {
@@ -40,14 +30,24 @@
             text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
         }
 
-        .container {
-            max-width: 900px;
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        .wrap {
+            max-width: 1600px;
             margin: 0 auto;
-            background-color: #1a1a1a;
+            padding: 20px 16px;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 20px auto;
+            background-color: #1e293b;
             padding: 25px;
-            border-radius: 12px;
-            border: 1px solid rgba(240, 171, 252, 0.1);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            border: 1px solid var(--color-rustic);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
         h2 {
@@ -66,8 +66,8 @@
         }
 
         .form-section {
-            background: #111827;
-            border: 1px solid #374151;
+            background: #0f172a;
+            border: 1px solid #581c87;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
@@ -78,7 +78,7 @@
             font-size: 1.1rem;
             margin-bottom: 15px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #374151;
+            border-bottom: 1px solid #581c87;
         }
 
         /* Copiado de solicitud_fecha_bandas.html: estilos para bandas, info-banner y date-slot */
@@ -137,13 +137,13 @@
             overflow-y: auto;
             padding: 10px;
             background-color: #0f172a;
-            border: 1px solid #374151;
+            border: 1px solid #581c87;
             border-radius: 8px;
             margin-top: 8px;
         }
 
         .banda-grid-item {
-            background-color: #1f2937;
+            background-color: #0f172a;
             border: 2px solid #581c87;
             border-radius: 8px;
             padding: 12px;
@@ -254,7 +254,7 @@
         }
 
         .banda-seleccionada-item {
-            background-color: #1f2937;
+            background-color: #0f172a;
             border: 1px solid rgba(240, 171, 252, 0.2);
             border-radius: 8px;
             padding: 12px;
@@ -374,11 +374,11 @@
         select,
         textarea {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #4b5563;
+            padding: 12px 8px !important;
+            border: 1.5px solid #581c87;
             border-radius: 6px;
-            background-color: #1f2937;
-            color: #d6d3d1;
+            background-color: #0f172a;
+            color: #f8fafc;
             font-size: 14px;
             transition: border-color 0.2s;
         }
@@ -388,6 +388,7 @@
         textarea:focus {
             outline: none;
             border-color: var(--color-secondary);
+            box-shadow: 0 0 5px var(--color-secondary);
         }
 
         textarea {
@@ -441,12 +442,14 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #7c3aed, #581c87);
-            color: white;
+            background: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            background: rgba(132, 63, 172, 0.2);
+            transform: scale(1.05);
         }
 
         .btn-secondary {
@@ -619,182 +622,185 @@
 </head>
 
 <body>
-    <div class="container">
-        <div class="header-row">
-            <a href="admin_solicitudes.html" class="back-btn">
-                <i class="fas fa-arrow-left"></i> Volver
-            </a>
-            <h2><i class="fas fa-guitar"></i> Editar Solicitud Banda / Fecha</h2>
-            <div style="width: 100px;"></div>
-        </div>
 
-        <div class="info-row">
-            <div>
-                <span style="color: #9ca3af;">ID:</span>
-                <span id="eventoId" style="font-weight: bold;">-</span>
+    <main class="wrap">
+        <div class="container">
+            <div class="header-row">
+                <a href="admin_solicitudes.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+                <h2><i class="fas fa-music"></i> Editar Solicitud Banda / Fecha</h2>
+                <div style="width: 100px;"></div>
             </div>
-            <div>
-                <span style="color: #9ca3af;">Estado:</span>
-                <select id="estadoSelect" class="estado-badge" style="width: auto; padding: 4px 12px;">
-                    <option value="Solicitado">Solicitado</option>
-                    <option value="Contactado">Contactado</option>
-                    <option value="Confirmado">Confirmado</option>
-                    <option value="Cancelado">Cancelado</option>
-                </select>
-            </div>
-        </div>
 
-        <!-- NUEVA SECCIÓN: Nombre de la fecha / show + Flyer -->
-        <div class="form-section" style="margin-top: 14px;">
-            <h3><i class="fas fa-tag"></i> Nombre de la fecha / show & Flyer</h3>
-            <div class="form-grid form-grid-1">
-                <div class="form-group">
-                    <label for="nombreEvento">Nombre de la fecha / show</label>
-                    <input type="text" id="nombreEvento" placeholder="Ej: Rock Legends — Presentación Oficial">
+            <div class="info-row">
+                <div>
+                    <span style="color: #9ca3af;">ID:</span>
+                    <span id="eventoId" style="font-weight: bold;">-</span>
                 </div>
-                <div class="form-group">
-                    <label for="descripcion">Descripción (opcional)</label>
-                    <textarea id="descripcion"
-                        placeholder="Descripción corta del show (se mostrará en la agenda)"></textarea>
-                </div>
-            </div>
-            <!-- Flyer con preview a la izquierda -->
-            <div class="flyer-form-container" style="margin-top:15px;">
-                <div class="flyer-preview-side">
-                    <div id="flyerPreview" onclick="document.getElementById('flyerFile').click()">
-                        <div class="preview-placeholder">
-                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 5px;"></i>
-                            <div>Click para subir</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="flyer-input-side">
-                    <div class="form-group">
-                        <label for="urlFlyer">Flyer (URL o subir)</label>
-                        <p class="hint">Pegá la URL del flyer o hacé click en la imagen para subir:</p>
-                        <input type="text" id="urlFlyer" placeholder="https://..." onchange="updateFlyerPreview()"
-                            oninput="updateFlyerPreview()" style="margin-top: 5px;">
-                        <input type="file" id="flyerFile" accept="image/png,image/jpeg" style="display: none;"
-                            onchange="handleFlyerUpload()" />
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN BANDAS (modo admin) -->
-        <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:18px;">
-            <h3 style="color:var(--color-secondary);"><i class="fas fa-music"></i> Bandas</h3>
-            <button type="button" id="btnCrearBanda" class="btn btn-primary"
-                style="height:36px;padding:6px 10px;font-size:0.9rem;">
-                <i class="fas fa-plus"></i> Crear banda
-            </button>
-        </div>
-
-        <div class="form-group" style="margin-top:8px;">
-            <label for="bandaSearch">Buscar y seleccionar bandas:</label>
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                <input type="text" id="bandaSearch" placeholder="Buscar por nombre o género..." style="flex:1;">
-                <button type="button" id="btnLimpiarBusqueda" class="btn btn-secondary"
-                    style="height:36px;padding:6px 10px;">Limpiar</button>
-            </div>
-            <div id="bandasList" class="band-list-grid"></div>
-        </div>
-
-        <!-- BANDAS SELECCIONADAS CON NUMERACIÓN Y REORDEN -->
-        <div class="bandas-seleccionadas-container">
-            <div class="bandas-seleccionadas-titulo">
-                <i class="fas fa-star"></i> Bandas Seleccionadas
-            </div>
-            <div id="listaBandasSeleccionadas"></div>
-        </div>
-
-        <!-- Fecha y Horarios -->
-        <div class="form-section">
-            <h3><i class="fas fa-calendar-alt"></i> Fecha y Horarios</h3>
-            <div class="form-grid form-grid-3">
-                <div class="form-group">
-                    <label for="fechaEvento">Fecha del Evento *</label>
-                    <input type="text" id="fechaEvento" placeholder="Seleccionar fecha...">
-                </div>
-                <div class="form-group">
-                    <label for="horaInicio">Hora de Inicio</label>
-                    <input type="time" id="horaInicio" value="21:00">
-                </div>
-                <div class="form-group">
-                    <label for="horaFin">Hora de Fin</label>
-                    <input type="time" id="horaFin" value="02:00">
-                </div>
-            </div>
-            <div class="form-grid form-grid-2" style="margin-top: 15px;">
-                <div class="form-group">
-                    <label for="aforoMaximo">Aforo Máximo</label>
-                    <input type="number" id="aforoMaximo" value="120" min="1">
-                </div>
-                <div class="form-group">
-                    <label for="esPublico">Visibilidad</label>
-                    <select id="esPublico">
-                        <option value="1">Público (visible en agenda)</option>
-                        <option value="0">Privado (solo admin)</option>
+                <div>
+                    <span style="color: #9ca3af;">Estado:</span>
+                    <select id="estadoSelect" class="estado-badge" style="width: auto; padding: 4px 12px;">
+                        <option value="Solicitado">Solicitado</option>
+                        <option value="Contactado">Contactado</option>
+                        <option value="Confirmado">Confirmado</option>
+                        <option value="Cancelado">Cancelado</option>
                     </select>
                 </div>
             </div>
-        </div>
 
-        <!-- Precios -->
-        <div class="form-section">
-            <h3><i class="fas fa-ticket-alt"></i> Precios de Entrada</h3>
-            <div class="form-grid form-grid-2">
-                <div class="form-group">
-                    <label for="precioAnticipada">Precio Anticipada</label>
-                    <input type="number" id="precioAnticipada" min="0" step="100" placeholder="Ej: 3000">
+            <!-- NUEVA SECCIÓN: Nombre de la fecha / show + Flyer -->
+            <div class="form-section" style="margin-top: 14px;">
+                <h3><i class="fas fa-tag"></i> Nombre de la fecha / show & Flyer</h3>
+                <div class="form-grid form-grid-1">
+                    <div class="form-group">
+                        <label for="nombreEvento">Nombre de la fecha / show</label>
+                        <input type="text" id="nombreEvento" placeholder="Ej: Rock Legends — Presentación Oficial">
+                    </div>
+                    <div class="form-group">
+                        <label for="descripcion">Descripción (opcional)</label>
+                        <textarea id="descripcion"
+                            placeholder="Descripción corta del show (se mostrará en la agenda)"></textarea>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="precioPuerta">Precio en Puerta</label>
-                    <input type="number" id="precioPuerta" min="0" step="100" placeholder="Ej: 4000">
+                <!-- Flyer con preview a la izquierda -->
+                <div class="flyer-form-container" style="margin-top:15px;">
+                    <div class="flyer-preview-side">
+                        <div id="flyerPreview" onclick="document.getElementById('flyerFile').click()">
+                            <div class="preview-placeholder">
+                                <i class="fas fa-cloud-arrow-up" style="font-size: 2rem; margin-bottom: 5px;"></i>
+                                <div>Click para subir</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flyer-input-side">
+                        <div class="form-group">
+                            <label for="urlFlyer">Flyer (URL o subir)</label>
+                            <p class="hint">Pegá la URL del flyer o hacé click en la imagen para subir:</p>
+                            <input type="text" id="urlFlyer" placeholder="https://..." onchange="updateFlyerPreview()"
+                                oninput="updateFlyerPreview()" style="margin-top: 5px;">
+                            <input type="file" id="flyerFile" accept="image/png,image/jpeg" style="display: none;"
+                                onchange="handleFlyerUpload()" />
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Contacto -->
-        <div class="form-section">
-            <h3><i class="fas fa-address-book"></i> Datos de Contacto</h3>
-            <!-- Campo oculto: id del cliente asociado -->
-            <input type="hidden" id="clienteId" value="" />
-            <div class="btn-group" style="margin-bottom:8px;">
-                <button type="button" class="btn btn-secondary" id="btnEditCliente" onclick="openEditClienteModal()"
-                    style="flex:0.3; padding:6px 10px; font-size:0.9rem;">
-                    <i class="fas fa-edit"></i> Editar Cliente
+            <!-- SECCIÓN BANDAS (modo admin) -->
+            <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:18px;">
+                <h3 style="color:var(--color-secondary);"><i class="fas fa-music"></i> Bandas</h3>
+                <button type="button" id="btnCrearBanda" class="btn btn-primary"
+                    style="height:36px;padding:6px 10px;font-size:0.9rem;">
+                    <i class="fas fa-plus"></i> Crear banda
                 </button>
             </div>
-            <div class="form-grid form-grid-3">
-                <div class="form-group">
-                    <label for="nombreContacto">Nombre del Contacto</label>
-                    <input type="text" id="nombreContacto" placeholder="Responsable/Manager" readonly>
+
+            <div class="form-group" style="margin-top:8px;">
+                <label for="bandaSearch">Buscar y seleccionar bandas:</label>
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                    <input type="text" id="bandaSearch" placeholder="Buscar por nombre o género..." style="flex:1;">
+                    <button type="button" id="btnLimpiarBusqueda" class="btn btn-secondary"
+                        style="height:36px;padding:6px 10px;">Limpiar</button>
                 </div>
-                <div class="form-group">
-                    <label for="emailContacto">Email</label>
-                    <input type="email" id="emailContacto" placeholder="email@ejemplo.com" readonly>
+                <div id="bandasList" class="band-list-grid"></div>
+            </div>
+
+            <!-- BANDAS SELECCIONADAS CON NUMERACIÓN Y REORDEN -->
+            <div class="bandas-seleccionadas-container">
+                <div class="bandas-seleccionadas-titulo">
+                    <i class="fas fa-star"></i> Bandas Seleccionadas
                 </div>
-                <div class="form-group">
-                    <label for="telefonoContacto">Teléfono</label>
-                    <input type="tel" id="telefonoContacto" placeholder="11-1234-5678" readonly>
+                <div id="listaBandasSeleccionadas"></div>
+            </div>
+
+            <!-- Fecha y Horarios -->
+            <div class="form-section">
+                <h3><i class="fas fa-calendar-days"></i> Fecha y Horarios</h3>
+                <div class="form-grid form-grid-3">
+                    <div class="form-group">
+                        <label for="fechaEvento">Fecha del Evento *</label>
+                        <input type="text" id="fechaEvento" placeholder="Seleccionar fecha...">
+                    </div>
+                    <div class="form-group">
+                        <label for="horaInicio">Hora de Inicio</label>
+                        <input type="time" id="horaInicio" value="21:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="horaFin">Hora de Fin</label>
+                        <input type="time" id="horaFin" value="02:00">
+                    </div>
+                </div>
+                <div class="form-grid form-grid-2" style="margin-top: 15px;">
+                    <div class="form-group">
+                        <label for="aforoMaximo">Aforo Máximo</label>
+                        <input type="number" id="aforoMaximo" value="120" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="esPublico">Visibilidad</label>
+                        <select id="esPublico">
+                            <option value="1">Público (visible en agenda)</option>
+                            <option value="0">Privado (solo admin)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Botones -->
-        <div class="btn-group">
-            <button class="btn btn-secondary" onclick="window.location.href='admin_solicitudes.html'">
-                <i class="fas fa-times"></i> Cancelar
-            </button>
-            <button class="btn btn-danger" id="btnEliminar" style="flex: 0.5;">
-                <i class="fas fa-trash"></i>
-            </button>
-            <button class="btn btn-primary" id="btnGuardar">
-                <i class="fas fa-save"></i> Guardar Cambios
-            </button>
+            <!-- Precios -->
+            <div class="form-section">
+                <h3><i class="fas fa-ticket"></i> Precios de Entrada</h3>
+                <div class="form-grid form-grid-2">
+                    <div class="form-group">
+                        <label for="precioAnticipada">Precio Anticipada</label>
+                        <input type="number" id="precioAnticipada" min="0" step="100" placeholder="Ej: 3000">
+                    </div>
+                    <div class="form-group">
+                        <label for="precioPuerta">Precio en Puerta</label>
+                        <input type="number" id="precioPuerta" min="0" step="100" placeholder="Ej: 4000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contacto -->
+            <div class="form-section">
+                <h3><i class="fas fa-address-book"></i> Datos de Contacto</h3>
+                <!-- Campo oculto: id del cliente asociado -->
+                <input type="hidden" id="clienteId" value="" />
+                <div class="btn-group" style="margin-bottom:8px;">
+                    <button type="button" class="btn btn-secondary" id="btnEditCliente" onclick="openEditClienteModal()"
+                        style="flex:0.3; padding:6px 10px; font-size:0.9rem;">
+                        <i class="fas fa-edit"></i> Editar Cliente
+                    </button>
+                </div>
+                <div class="form-grid form-grid-3">
+                    <div class="form-group">
+                        <label for="nombreContacto">Nombre del Contacto</label>
+                        <input type="text" id="nombreContacto" placeholder="Responsable/Manager" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailContacto">Email</label>
+                        <input type="email" id="emailContacto" placeholder="email@ejemplo.com" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="telefonoContacto">Teléfono</label>
+                        <input type="tel" id="telefonoContacto" placeholder="11-1234-5678" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="window.location.href='admin_solicitudes.html'">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="btn btn-danger" id="btnEliminar" style="flex: 0.5;">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="btn btn-primary" id="btnGuardar">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
         </div>
-    </div>
+    </main>
 
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="spinner"></div>
@@ -1977,6 +1983,9 @@
 
         /* ================ FIN MODAL DE CLIENTE ================ */
 
+    </script>
+
+    <script>
     </script>
 </body>
 

@@ -12,7 +12,7 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
     <link rel="stylesheet" href="/css/fontawesome.min.css">
-    <link rel="stylesheet" href="styles/request-forms.css">
+
 
     <style>
         :root {
@@ -303,32 +303,35 @@
         }
 
         #top-nav {
-            background-color: #1e293b;
-            border-bottom: 2px solid var(--color-primary);
-            padding: 15px 25px;
+            background-color: var(--color-rustic);
+            padding: 0;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 50;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         #top-nav .logo {
-            font-size: 1.5rem;
+            font-size: 1rem;
             font-weight: bold;
+            padding: 1rem;
         }
 
         #top-nav .nav-links {
             display: flex;
-            gap: 20px;
+            gap: 2rem;
+            margin-left: auto;
+            padding-right: 1rem;
         }
 
         #top-nav .nav-item {
             color: #d6d3d1;
             text-decoration: none;
             font-weight: 500;
-            padding: 5px 10px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            align-self: center;
         }
 
         #top-nav .nav-item:hover {
@@ -337,23 +340,117 @@
 
         #top-nav .active-nav {
             color: var(--color-secondary);
-            border-bottom: 2px solid var(--color-secondary);
+        }
+
+        /* Menú responsivo */
+        @media (min-width: 768px) {
+            .nav-links {
+                display: flex !important;
+            }
+
+            #mobile-menu-band {
+                display: none !important;
+            }
+
+            #mobile-menu-button {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .nav-links {
+                display: none !important;
+            }
+
+            #mobile-menu-band {
+                display: block !important;
+            }
+
+            #mobile-menu-button {
+                display: block !important;
+            }
+        }
+
+        /* Estilos para banda-thumb */
+        .banda-thumb {
+            width: 32px !important;
+            height: 32px !important;
+            max-width: 32px !important;
+            max-height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
+            border-radius: 4px;
+            object-fit: cover;
+            margin-right: 10px;
+            flex-shrink: 0;
+            display: block !important;
+        }
+
+        .banda-placeholder {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            background-color: #1a1f3a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+            color: var(--color-secondary);
         }
     </style>
 </head>
 
 <body>
-    <nav id="top-nav">
-        <div class="logo">
-            <a href="index.html" class="flex items-center space-x-3">
-                <img src="./img/logo_transparente.png" alt="El Templo de Claypole" class="h-10 w-auto">
-                <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Show en Vivo</span>
-            </a>
-        </div>
-        <div class="nav-links">
-            <a href="#" class="nav-item active-nav">Solicitar Fecha</a>
+    <nav id="top-nav" class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="flex justify-between items-center h-16">
+                <div class="logo">
+                    <a href="index.html" class="flex items-center space-x-3">
+                        <img src="./img/logo_transparente.png" alt="El Templo de Claypole" class="h-10 w-auto">
+                        <span class="text-base font-semibold text-neon tracking-wide block">Volver a Inicio</span>
+                    </a>
+                </div>
+                <div class="nav-links" id="nav-links-desktop">
+                    <a href="#"
+                        class="nav-item active-nav text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Solicitar
+                        Fecha</a>
+                    <a href="seccion_bandas.html"
+                        class="nav-item text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Ver
+                        Bandas</a>
+                    <a href="solicitud_alquiler.html"
+                        class="nav-item text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquilar
+                        Salón</a>
+                    <div id="auth-menu-nav"></div>
+                </div>
+                <!-- Botón de Menú Móvil -->
+                <button id="mobile-menu-button"
+                    class="hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </nav>
+
+    <!-- Menú Móvil Desplegable -->
+    <div id="mobile-menu-band" class="hidden bg-rustic">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <a href="#"
+                class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Solicitar
+                Fecha</a>
+            <a href="seccion_bandas.html"
+                class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Ver
+                Bandas</a>
+            <a href="solicitud_alquiler.html"
+                class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquilar
+                Salón</a>
+            <div id="auth-menu-mobile-band"></div>
+        </div>
+    </div>
 
     <div id="notification-banner" class="notification-banner"></div>
     <div id="loading-overlay" class="loading-overlay">
@@ -599,7 +696,7 @@
                             ${banda.genero ? `<div class="helper-text">${banda.genero}</div>` : ''}
                         </div>
                         <div style="color: #9ca3af; font-size: 0.85rem;">
-                            <i class="fas fa-arrows-alt"></i>
+                            <i class="fas fa-arrows"></i>
                         </div>
                     </div>
                 `).join('');
@@ -729,10 +826,87 @@
         });
 
         // Inicializar
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-nav');
+            const mobileMenu = document.getElementById('auth-menu-mobile-band');
+
+            if (token) {
+                // Usuario autenticado
+                const desktopHTML = `
+                    <a href="/admin.html" 
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150"
+                       style="display: inline-block;">
+                        🔐 Admin
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="/admin.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
+                        🔐 Admin Panel
+                    </a>
+                    <button onclick="logout()" 
+                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
+                        🚪 Cerrar Sesión
+                    </button>
+                `;
+                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
+                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+            } else {
+                // Usuario no autenticado
+                const desktopHTML = `
+                    <a href="login.html"
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150"
+                       style="display: inline-block;">
+                        Login
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="login.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
+                        Login
+                    </a>
+                `;
+                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
+                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/index.html';
+        }
+
+        // Escuchar cambios en localStorage (sesión iniciada en otra pestaña)
+        window.addEventListener('storage', updateAuthMenu);
+
         document.addEventListener('DOMContentLoaded', () => {
+            updateAuthMenu();
             initFingerprint();
             loadBandas();
             initCalendarios();
+
+            // Manejador del menú móvil responsivo
+            const menuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu-band');
+
+            if (menuButton && mobileMenu) {
+                function toggleMenu() {
+                    mobileMenu.classList.toggle('hidden');
+                }
+
+                menuButton.addEventListener('click', toggleMenu);
+
+                // Ocultar el menú móvil al hacer clic en un enlace
+                const navLinks = mobileMenu.querySelectorAll('a');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (!mobileMenu.classList.contains('hidden')) {
+                            mobileMenu.classList.add('hidden');
+                        }
+                    });
+                });
+            }
         });
     </script>
 </body>

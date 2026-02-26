@@ -502,7 +502,10 @@ const eliminarEvento = async (req, res) => {
 
 const getDatosAsignacion = async (req, res) => {
     const { solicitudId, tipoEventoId } = req.query;
+    logVerbose('[getDatosAsignacion ENTRADA] solicitudId:', solicitudId, 'tipoEventoId:', tipoEventoId);
+
     if (!solicitudId || !tipoEventoId) {
+        logWarning('[getDatosAsignacion] Parámetros faltantes');
         return res.status(400).json({ message: 'solicitudId y tipoEventoId son requeridos.' });
     }
 
@@ -511,29 +514,43 @@ const getDatosAsignacion = async (req, res) => {
         conn = await pool.getConnection();
 
         // roles y personal disponible son comunes
+        // IMPORTANTE: tipoEventoId es un tipo (ej: 'BANDA', 'ALQUILER_SALON'), no un id numérico
+        // Necesitamos buscar en la tabla roles_por_evento basándose en tipo_evento, NO en id_evento
+        logVerbose('[getDatosAsignacion] Buscando roles para tipo_evento:', tipoEventoId);
+
         const [rolesRequeridos, personalDisponible] = await Promise.all([
-            conn.query("SELECT rol_requerido as rol, cantidad FROM roles_por_evento WHERE id_evento = ?", [tipoEventoId]),
+            conn.query("SELECT rol_requerido as rol, cantidad FROM roles_por_evento WHERE tipo_evento = ?", [tipoEventoId]),
             conn.query("SELECT id_personal as id, nombre_completo as nombre, rol FROM personal_disponible WHERE activo = 1")
         ]);
+
+        logVerbose('[getDatosAsignacion] Roles encontrados:', rolesRequeridos.length);
+        logVerbose('[getDatosAsignacion] Personal disponible:', personalDisponible.length);
 
         // Determinar si la solicitudId se refiere a un evento (prefijo 'ev_')
         let asignacionesGuardadas = [];
         if (String(solicitudId).startsWith('ev_')) {
             const eventId = parseInt(String(solicitudId).replace('ev_', ''), 10);
-            if (isNaN(eventId)) return res.status(400).json({ message: 'ID de evento inválido.' });
+            if (isNaN(eventId)) {
+                logWarning('[getDatosAsignacion] ID de evento inválido:', solicitudId);
+                return res.status(400).json({ message: 'ID de evento inválido.' });
+            }
 
+            logVerbose('[getDatosAsignacion] Buscando asignaciones para evento:', eventId);
             // eventos_personal usa: rol, id_personal
             asignacionesGuardadas = await conn.query(
                 "SELECT rol, id_personal as personalId FROM eventos_personal WHERE id_evento = ?",
                 [eventId]
             );
         } else {
+            logVerbose('[getDatosAsignacion] Buscando asignaciones para solicitud:', solicitudId);
             // solicitudes_personal usa: rol_requerido, id_personal
             asignacionesGuardadas = await conn.query(
                 "SELECT rol_requerido as rol, id_personal as personalId FROM solicitudes_personal WHERE id_solicitud = ?",
                 [solicitudId]
             );
         }
+
+        logVerbose('[getDatosAsignacion] Asignaciones guardadas:', asignacionesGuardadas.length);
 
         // Reorganizamos el personal por rol para que sea fácil de usar en el frontend
         const personalPorRol = personalDisponible.reduce((acc, persona) => {
@@ -545,6 +562,9 @@ const getDatosAsignacion = async (req, res) => {
             return acc;
         }, {});
 
+        logVerbose('[getDatosAsignacion] Respuesta:', { rolesCount: rolesRequeridos.length, personalPorRolCount: Object.keys(personalPorRol).length });
+        logSuccess('[getDatosAsignacion SALIDA] Éxito');
+
         res.status(200).json({
             rolesRequeridos,
             personalDisponible: personalPorRol,
@@ -552,7 +572,8 @@ const getDatosAsignacion = async (req, res) => {
         });
 
     } catch (err) {
-        logError('Error en getDatosAsignacion', err);
+        logError('[getDatosAsignacion ERROR]', err);
+        logError('[getDatosAsignacion STACK]', err.stack);
         res.status(500).json({ message: 'Error del servidor al obtener datos de asignación.' });
     } finally {
         if (conn) conn.release();

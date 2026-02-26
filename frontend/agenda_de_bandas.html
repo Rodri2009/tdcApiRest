@@ -50,6 +50,27 @@
         main {
             padding-top: 4rem;
         }
+
+        /* Menú responsivo */
+        @media (min-width: 768px) {
+            nav.hidden.md:flex {
+                display: flex !important;
+            }
+
+            #mobile-menu-button.md:hidden {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            #mobile-menu-button.md:hidden {
+                display: block;
+            }
+
+            nav.hidden.md:flex {
+                display: none;
+            }
+        }
     </style>
 </head>
 

@@ -37,6 +37,27 @@
         .neon-glow-img:hover {
             transform: scale(1.05);
         }
+
+        /* Menú responsivo */
+        @media (min-width: 768px) {
+            nav.hidden.md\:flex {
+                display: flex !important;
+            }
+
+            #mobile-menu-button.md\:hidden {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            #mobile-menu-button.md\:hidden {
+                display: block;
+            }
+
+            nav.hidden.md\:flex {
+                display: none;
+            }
+        }
     </style>
 </head>
 
@@ -49,8 +70,7 @@
                 <!-- Logo/Título -->
                 <a href="index.html" class="flex items-center space-x-3">
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
-                        Inicio</span>
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver a inicio</span>
                 </a>
 
                 <!-- Menú Desktop -->
@@ -64,7 +84,7 @@
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
                         Salón</a>
                     <a href="solicitud_taller_actividad.html"
-                        class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-150 ease-in-out">Quiero
+                        class="px-4 py-2 text-sm rounded-lg font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-200 ease-in-out">Quiero
                         dar un Taller</a>
                     <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
                     <div id="auth-menu-desktop"></div>
@@ -89,7 +109,7 @@
                 <a href="index.html#fotos"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Fotos</a>
                 <a href="solicitud_taller_actividad.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">Quiero
+                    class="block px-4 py-2 rounded-lg text-base font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-200 ease-in-out">Quiero
                     dar un Taller</a>
                 <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
                 <div id="auth-menu-mobile"></div>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Font Awesome Icons</title>
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0c0a09;
+            color: #d6d3d1;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #f0abfc;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .icon-item {
+            background: #1e1917;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #44403c;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .icon-item:hover {
+            border-color: #f0abfc;
+            box-shadow: 0 0 10px rgba(240, 171, 252, 0.3);
+        }
+
+        .icon-item i {
+            font-size: 2rem;
+            color: #f0abfc;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .icon-item .name {
+            font-size: 0.85rem;
+            word-break: break-word;
+            color: #9ca3af;
+        }
+
+        .broken {
+            background: #3f1f1f;
+        }
+
+        .broken i {
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Font Awesome Icons Test</h1>
+    <p style="text-align: center;">Verificando 48 iconos utilizados en el proyecto</p>
+
+    <div class="icon-grid" id="iconGrid"></div>
+
+    <script>
+        const icons = [
+            'fa-address-book',
+            'fa-arrow-down',
+            'fa-arrow-left',
+            'fa-arrows-alt',
+            'fa-arrow-up',
+            'fa-book',
+            'fa-book-open',
+            'fa-calendar',
+            'fa-calendar-check',
+            'fa-calendar-day',
+            'fa-calendar-days',
+            'fa-calendar-star',
+            'fa-chair',
+            'fa-check',
+            'fa-check-circle',
+            'fa-clock',
+            'fa-cloud-upload-alt',
+            'fa-comment',
+            'fa-concierge-bell',
+            'fa-couch',
+            'fa-dollar-sign',
+            'fa-edit',
+            'fa-envelope',
+            'fa-exclamation-circle',
+            'fa-eye',
+            'fa-flag',
+            'fa-globe',
+            'fa-hands',
+            'fa-hand-sparkles',
+            'fa-id-badge',
+            'fa-image',
+            'fa-info-circle',
+            'fa-list',
+            'fa-list-ol',
+            'fa-lock',
+            'fa-microphone',
+            'fa-money-bill-wave',
+            'fa-moon',
+            'fa-music',
+            'fa-parking',
+            'fa-plus',
+            'fa-plus-circle',
+            'fa-restroom',
+            'fa-save',
+            'fa-share-alt',
+            'fa-spa',
+            'fa-spinner',
+            'fa-star',
+            'fa-sticky-note',
+            'fa-tag',
+            'fa-ticket-alt',
+            'fa-times',
+            'fa-tools',
+            'fa-trash',
+            'fa-tree',
+            'fa-user',
+            'fa-user-check',
+            'fa-user-friends',
+            'fa-user-graduate',
+            'fa-user-md',
+            'fa-user-plus',
+            'fa-users',
+            'fa-user-slash',
+            'fa-user-tie',
+            'fa-utensils',
+            'fa-wifi'
+        ];
+
+        const grid = document.getElementById('iconGrid');
+
+        icons.forEach(icon => {
+            const item = document.createElement('div');
+            item.className = 'icon-item';
+
+            const iconName = icon.replace('fa-', '');
+            item.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <div class="name">${iconName}</div>
+            `;
+
+            // Verificar si el ícono Se carga (comprobar si existe)
+            const iElement = item.querySelector('i');
+
+            // Marcar icono como probablemente roto si es uno conocido como problemático
+            const problematicIcons = ['fa-calendar-star', 'fa-cloud-upload-alt', 'fa-ticket-alt', 'fa-user-slash'];
+            if (problematicIcons.includes(icon)) {
+                item.classList.add('broken');
+                const note = document.createElement('span');
+                note.style.color = '#ff6b6b';
+                note.style.fontSize = '0.7rem';
+                note.textContent = '⚠️ Posible problema';
+                item.appendChild(document.createElement('br'));
+                item.appendChild(note);
+            }
+
+            grid.appendChild(item);
+        });
+    </script>
+</body>
+
+</html>

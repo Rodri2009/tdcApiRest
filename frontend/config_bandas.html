@@ -429,15 +429,9 @@
 </head>
 
 <body>
+
     <main class="wrap">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <a href="admin.html" class="btn"
-                style="background: var(--color-rustic); padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-                ← Volver al Panel
-            </a>
-            <h1 style="margin: 0;"><i class="fas fa-guitar"></i> Configuración de Bandas</h1>
-            <div style="width: 140px;"></div>
-        </div>
+        <h1 style="margin: 1rem 0;"><i class="fas fa-music"></i> Configuración de Bandas</h1>
 
         <!-- Tabs de navegación -->
         <div class="tabs right">
@@ -448,7 +442,7 @@
                 <i class="fas fa-music"></i> Instrumentos
             </button>
             <button class="tab" data-section="eventos">
-                <i class="fas fa-calendar-star"></i> Shows Confirmados <span class="counter" id="eventos-count">0</span>
+                <i class="fas fa-star"></i> Shows Confirmados <span class="counter" id="eventos-count">0</span>
             </button>
         </div>
 
@@ -496,7 +490,7 @@
         <div id="section-eventos" class="section">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-calendar-star"></i> Fechas Programadas</h3>
+                    <h3 class="card-title"><i class="fas fa-star"></i> Fechas Programadas</h3>
                     <button class="btn btn-primary" onclick="openEventoModal()">
                         ➕ Nueva Fecha
                     </button>
@@ -755,7 +749,7 @@
                             <input type="text" id="evento-banda" required placeholder="Nombre de la banda">
                         </div>
                         <div class="form-group">
-                            <label><i class="fas fa-guitar"></i> Género Musical</label>
+                            <label><i class="fas fa-music"></i> Género Musical</label>
                             <input type="text" id="evento-genero" placeholder="Ej: Rock, Metal, Pop">
                         </div>
                     </div>
@@ -777,12 +771,12 @@
                     <!-- Precios -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
                         <div class="form-group">
-                            <label><i class="fas fa-ticket-alt"></i> Precio Anticipada ($)</label>
+                            <label><i class="fas fa-ticket"></i> Precio Anticipada ($)</label>
                             <input type="number" id="evento-precio-anticipada" min="0" step="100"
                                 placeholder="Ej: 5000">
                         </div>
                         <div class="form-group">
-                            <label><i class="fas fa-ticket-alt"></i> Precio Puerta ($)</label>
+                            <label><i class="fas fa-ticket"></i> Precio Puerta ($)</label>
                             <input type="number" id="evento-precio-puerta" min="0" step="100" placeholder="Ej: 7000">
                         </div>
                         <div class="form-group">
@@ -1497,6 +1491,7 @@
             }
         }
 
+        // ============================================================
         // ============================================================
         // INICIALIZACIÓN
         // ============================================================

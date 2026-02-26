@@ -94,9 +94,25 @@
             z-index: 9999;
         }
 
-        /* Empujar el contenido para que no quede oculto bajo el header (h-16 = 4rem) */
-        main {
-            padding-top: 4rem;
+        /* Menú responsivo */
+        @media (min-width: 768px) {
+            nav.hidden.md\:flex {
+                display: flex !important;
+            }
+
+            #mobile-menu-button.md\:hidden {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            #mobile-menu-button.md\:hidden {
+                display: block;
+            }
+
+            nav.hidden.md\:flex {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -109,8 +125,7 @@
             <div class="flex justify-between items-center h-16">
                 <a href="index.html" class="flex items-center space-x-3">
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
-                        Inicio</span>
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver a inicio</span>
                 </a>
 
                 <nav class="hidden md:flex space-x-8 items-center">
@@ -122,8 +137,8 @@
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
                         Salón</a>
                     <a href="solicitud_banda.html"
-                        class="px-3 py-1 text-sm rounded-full font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition">
-                        <i class="fas fa-guitar mr-1"></i> Quiero tocar acá
+                        class="px-4 py-2 text-sm rounded-lg font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-200 ease-in-out">
+                        <i class="fas fa-music mr-1"></i> Quiero tocar acá
                     </a>
                     <div id="auth-menu-desktop"></div>
                 </nav>
@@ -144,8 +159,8 @@
                 <a href="seccion_servicios.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
                 <a href="solicitud_banda.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400">
-                    <i class="fas fa-guitar mr-1"></i> Quiero tocar acá
+                    class="block px-4 py-2 rounded-lg text-base font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-200 ease-in-out">
+                    <i class="fas fa-music mr-1"></i> Quiero tocar acá
                 </a>
                 <div id="auth-menu-mobile"></div>
             </div>
@@ -168,7 +183,7 @@
                 <div class="mt-8">
                     <a href="solicitud_fecha_bandas.html"
                         class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
-                        <i class="fas fa-guitar mr-2"></i> Solicitar nueva fecha da banda o artistas en vivo
+                        <i class="fas fa-music mr-2"></i> Solicitar nueva fecha da banda o artistas en vivo
                     </a>
                 </div> 
             </div>
@@ -178,7 +193,7 @@
         <section class="py-16 bg-stone-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h2 class="text-3xl font-bold text-center text-neon mb-4">
-                    <i class="fas fa-info-circle mr-2"></i> Próximos Shows
+                    <i class="fas fa-music mr-2"></i> Próximos Shows
                 </h2>
                 <p class="text-center text-stone-400 mb-10">Mirá la agenda y conseguí tus entradas anticipadas</p>
 
@@ -241,7 +256,7 @@
                 <div class="mt-8">
                     <a href="solicitud_fecha_bandas.html"
                         class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
-                        <i class="fas fa-guitar mr-2"></i> Solicitar nueva fecha da banda o artistas en vivo
+                        <i class="fas fa-music mr-2"></i> Solicitar nueva fecha da banda o artistas en vivo
                     </a>
                 </div>
             </div>
@@ -468,15 +483,18 @@
         function showFullAgenda(allEvents) {
             const list = document.getElementById('agenda-list');
             const wrapper = document.getElementById('agenda-completa');
+            const eventosContainer = document.getElementById('eventos-container');
             // ordenar por fecha asc
             const sorted = allEvents.sort((a, b) => (a._fechaObj ? a._fechaObj.getTime() : 0) - (b._fechaObj ? b._fechaObj.getTime() : 0));
             list.innerHTML = sorted.map(e => generateEventCard(e, { allowPurchase: true, compact: false })).join('');
             wrapper.classList.remove('hidden');
+            eventosContainer.classList.add('hidden');
             document.getElementById('toggle-full-agenda').classList.add('hidden');
         }
 
         function hideFullAgenda() {
             document.getElementById('agenda-completa').classList.add('hidden');
+            document.getElementById('eventos-container').classList.remove('hidden');
             document.getElementById('toggle-full-agenda').classList.remove('hidden');
         }
 

@@ -413,14 +413,9 @@
 </head>
 
 <body>
+
     <main class="wrap">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-            <a href="/admin.html" class="btn btn-secondary" style="text-decoration:none;">
-                ← Volver al Panel
-            </a>
-            <h1 style="margin:0;flex:1;"><i class="fas fa-chalkboard-teacher"></i> Configuración de Talleres</h1>
-            <div style="width:150px;"></div>
-        </div>
+        <h1 style="margin: 1rem 0;"><i class="fas fa-book-open"></i> Configuración de Talleres</h1>
 
         <div class="tabs right">
             <button class="tab active" data-section="tipos">
@@ -1399,6 +1394,15 @@
                 showBanner('Precio eliminado', 'success');
             } catch (err) { showBanner('Error de conexión', 'error'); }
         }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            navbarManager = new NavbarManager();
+            if (!navbarManager.protectAdminPage()) return;
+            navbarManager.injectNavbar('body');
+        });
     </script>
 </body>
 

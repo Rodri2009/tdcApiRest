@@ -7,11 +7,33 @@
     <title>Admin - Eventos Confirmados</title>
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        .wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
         body {
             font-family: Inter, sans-serif;
             background: #0c0a09;
             color: #d6d3d1;
-            padding: calc(16px + 4rem) 16px 16px 16px;
+            padding: 0;
+            margin: 0;
         }
 
         .table-container {
@@ -59,7 +81,7 @@
             height: 56px;
             object-fit: cover;
             border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.04);
+            border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
         .btn {
@@ -79,13 +101,8 @@
 </head>
 
 <body>
-    <header class="bg-rustic"
-        style="position:fixed;top:0;left:0;right:0;z-index:999;padding:12px;background:#121212;border-bottom:1px solid rgba(255,255,255,0.03)">
-        <div style="max-width:1200px;margin:0 auto;color:#f0abfc;font-weight:700">Panel Admin — Eventos Confirmados
-        </div>
-    </header>
 
-    <main style="max-width:1200px;margin:100px auto 40px auto">
+    <main class="wrap">
         <div class="table-container">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
                 <h2 style="color:#f0abfc;margin:0">Eventos Confirmados</h2>
@@ -230,7 +247,7 @@
             <td>${r.tipo_evento || ''}</td>
             <td>${r.nombre_cliente || ''}</td>
             <td>${r.nombre_evento || ''} ${estadoBadge}</td>
-            <td>${r.url_flyer ? '<img src="'+r.url_flyer+'" class="flyer-thumb" alt="flyer">' : ''}</td>
+            <td>${r.url_flyer ? '<img src="' + r.url_flyer + '" class="flyer-thumb" alt="flyer">' : ''}</td>
             <td>${detalles}</td>
             <td class="description">${r.descripcion_corta || ''}</td>
             <td class="actions-cell">
@@ -251,26 +268,109 @@
             }
         }
 
-        // Pagination and controls
-        let currentPage = 0;
-        const pageInfo = document.getElementById('pageInfo');
-        const prevPageBtn = document.getElementById('prevPage');
-        const nextPageBtn = document.getElementById('nextPage');
-
-        function updatePageInfo() {
-            pageInfo.textContent = `Página ${currentPage + 1}`;
+        // ============================================================
+        // AUTENTICACIÓN Y MENÚ MÓVIL
+        // ============================================================
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu) mobileMenu.classList.toggle('hidden');
         }
 
-        prevPageBtn.addEventListener('click', () => {
-            if (currentPage > 0) { currentPage -= 1; fetchEventos(); }
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                // Usuario autenticado - mostrar Admin Panel y Logout
+                if (desktopMenu) {
+                    desktopMenu.innerHTML = `
+                        <a href="/admin.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">🔐 Admin Panel</a>
+                        <button onclick="logout()" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out bg-transparent border-none cursor-pointer">Logout</button>
+                    `;
+                }
+                if (mobileMenu) {
+                    mobileMenu.innerHTML = `
+                        <a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">🔐 Admin Panel</a>
+                        <button onclick="logout()" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon bg-transparent border-none cursor-pointer">Logout</button>
+                    `;
+                }
+            } else {
+                // No autenticado - mostrar Login
+                if (desktopMenu) {
+                    desktopMenu.innerHTML = `<a href="login.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Login</a>`;
+                }
+                if (mobileMenu) {
+                    mobileMenu.innerHTML = `<a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Login</a>`;
+                }
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/index.html';
+        }
+
+        // Sincronizar menú de autenticación entre pestañas
+        window.addEventListener('storage', updateAuthMenu);
+
+        // Pagination and controls
+        let currentPage = 0;
+
+        function updatePageInfo() {
+            const pageInfo = document.getElementById('pageInfo');
+            if (pageInfo) pageInfo.textContent = `Página ${currentPage + 1}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar menú de autenticación
+            updateAuthMenu();
+
+            // Setup mobile menu button
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', toggleMobileMenu);
+            }
+
+            // Close mobile menu when clicking links
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu) {
+                mobileMenu.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', () => {
+                        mobileMenu.classList.add('hidden');
+                    });
+                });
+            }
+
+            // Setup pagination buttons
+            const prevPageBtn = document.getElementById('prevPage');
+            const nextPageBtn = document.getElementById('nextPage');
+
+            if (prevPageBtn) {
+                prevPageBtn.addEventListener('click', () => {
+                    if (currentPage > 0) { currentPage -= 1; fetchEventos(); }
+                });
+            }
+
+            if (nextPageBtn) {
+                nextPageBtn.addEventListener('click', () => { currentPage += 1; fetchEventos(); });
+            }
+
+            // Setup filter and refresh buttons
+            const filtrarBtn = document.getElementById('filtrarBtn');
+            const refreshBtn = document.getElementById('refreshBtn');
+
+            if (filtrarBtn) {
+                filtrarBtn.addEventListener('click', () => { currentPage = 0; fetchEventos(); });
+            }
+
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', fetchEventos);
+            }
+
+            // Auto load
+            fetchEventos();
         });
-        nextPageBtn.addEventListener('click', () => { currentPage += 1; fetchEventos(); });
-
-        document.getElementById('filtrarBtn').addEventListener('click', () => { currentPage = 0; fetchEventos(); });
-        document.getElementById('refreshBtn').addEventListener('click', fetchEventos);
-
-        // Auto load
-        fetchEventos();
     </script>
 </body>
 

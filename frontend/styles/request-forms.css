@@ -89,7 +89,10 @@
     border-radius: 6px;
     cursor: pointer;
     border: 0;
-    font-weight: 600
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px
 }
 
 .btn-primary {
@@ -195,17 +198,22 @@ select {
 }
 
 .banda-thumb {
-    width: 40px;
-    height: 40px;
+    width: 32px !important;
+    height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
     border-radius: 4px;
     object-fit: cover;
     margin-right: 10px;
-    flex-shrink: 0
+    flex-shrink: 0;
+    display: block !important
 }
 
 .banda-placeholder {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 4px;
     background-color: #1a1f3a;
     display: flex;
@@ -318,6 +326,13 @@ select {
     gap: 12px
 }
 
+.agenda-meta>div:last-child {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1
+}
+
 .agenda-flyer {
     width: 120px;
     height: 80px;
@@ -342,7 +357,7 @@ select {
     height: 56px;
     object-fit: cover;
     border-radius: 6px;
-    border: 1px solid rgba(255,255,255,0.04);
+    border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 /* Utilities */

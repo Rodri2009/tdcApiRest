@@ -7,25 +7,45 @@
   <title>Administración - Configuración Eventos</title>
   <link rel="stylesheet" href="/css/tailwind.min.css">
   <style>
+    :root {
+      --color-secondary: #f0abfc;
+      --color-rustic: #44403c;
+    }
+
+    .text-neon {
+      color: var(--color-secondary);
+      text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+    }
+
     body {
       background: #0c0a09;
       color: #d6d3d1;
       font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 16px;
+    }
+
+    .wrap {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px 16px;
     }
   </style>
 </head>
 
 <body>
-  <h1 class="text-4xl font-bold mt-8 text-center">Configuración de Eventos</h1>
-  <p class="text-center mt-4">Aquí puedes ajustar tipos de eventos, tarifas y duraciones.</p>
-  <p class="text-center mt-4"><a href="/admin.html" class="text-pink-400 hover:underline">← Volver al panel</a></p>
+
+  <main class="wrap">
+    <h1 class="text-4xl font-bold mt-8 text-center">Configuración de Eventos</h1>
+    <p class="text-center mt-4">Aquí puedes ajustar tipos de eventos, tarifas y duraciones.</p>
+  </main>
 
   <script src="/navbar.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       navbarManager = new NavbarManager();
       if (!navbarManager.protectAdminPage()) {
-        return; // Salir si no está autenticado
+        return;
       }
       navbarManager.injectNavbar('body');
     });

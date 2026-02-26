@@ -329,7 +329,7 @@
     <div class="logo">
       <a href="index.html" class="flex items-center space-x-3">
         <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-        <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al Inicio</span>
+        <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver a inicio</span>
       </a>
     </div>
     <div class="nav-links">
@@ -742,7 +742,7 @@
                 // Detectar si es solicitud de bandas y usar endpoint específico
                 const esBanda = (payload.tipoEvento === 'FECHA_BANDAS' || fromPage === 'banda');
                 const endpoint = esBanda ? '/api/solicitudes-fechas-bandas' : '/api/solicitudes';
-                
+
                 // Para bandas, mapear campos correctos
                 if (esBanda) {
                   // Mapear campos del borrador de solicitud_fecha_bandas al formato de la API
@@ -756,7 +756,7 @@
                     es_publico: 1,
                     fingerprintId: payload.fingerprintId
                   };
-                  
+
                   const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

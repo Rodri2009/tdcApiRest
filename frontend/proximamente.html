@@ -198,62 +198,8 @@
     </div>
 
     <script>
-        function updateAuthMenu() {
-            const token = localStorage.getItem('authToken');
-            const desktopMenu = document.getElementById('auth-menu-desktop');
-            const mobileMenu = document.getElementById('auth-menu-mobile');
-
-            if (token) {
-                // Usuario autenticado
-                const desktopHTML = `
-                    <a href="/admin.html" 
-                       class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">
-                        🔐 Admin
-                    </a>
-                `;
-                const mobileHTML = `
-                    <a href="/admin.html"
-                       class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
-                        🔐 Admin Panel
-                    </a>
-                    <button onclick="logout()" 
-                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
-                        🚪 Cerrar Sesión
-                    </button>
-                `;
-                desktopMenu.innerHTML = desktopHTML;
-                mobileMenu.innerHTML = mobileHTML;
-            } else {
-                // Usuario no autenticado
-                const desktopHTML = `
-                    <a href="login.html"
-                       class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">
-                        Login
-                    </a>
-                `;
-                const mobileHTML = `
-                    <a href="login.html"
-                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
-                        Login
-                    </a>
-                `;
-                desktopMenu.innerHTML = desktopHTML;
-                mobileMenu.innerHTML = mobileHTML;
-            }
-        }
-
-        function logout() {
-            localStorage.removeItem('authToken');
-            window.location.href = '/index.html';
-        }
-
-        // Escuchar cambios en localStorage (sesión iniciada en otra pestaña)
-        window.addEventListener('storage', updateAuthMenu);
-
         // Manejador del menú móvil responsivo
         document.addEventListener('DOMContentLoaded', function () {
-            updateAuthMenu();
-
             const menuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
 

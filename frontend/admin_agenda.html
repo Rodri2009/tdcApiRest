@@ -14,17 +14,24 @@
             --color-rustic: #44403c;
         }
 
-        /* Mantener navbar fija y dejar espacio superior */
-        header.bg-rustic {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 9999;
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
         }
 
-        body {
-            padding: calc(16px + 4rem);
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+    </style>
+</head>
+
+<body>
+
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
         }
 
         * {
@@ -35,7 +42,7 @@
             font-family: 'Inter', sans-serif;
             margin: 0;
             /* Mantener el offset superior para la navbar fija (h-16 = 4rem) */
-            padding: calc(16px + 4rem) 16px 16px 16px;
+            padding: 16px;
             background: #0c0a09;
             min-height: 100vh;
             color: #d6d3d1;
@@ -50,6 +57,11 @@
             text-shadow: 0 0 5px var(--color-secondary);
         }
 
+        .wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
         .header-row {
             display: flex;
             justify-content: space-between;
@@ -57,7 +69,7 @@
             flex-wrap: wrap;
             gap: 12px;
             max-width: 1600px;
-            margin: 0 auto 20px;
+            margin: 0;
         }
 
         .btn {
@@ -339,446 +351,450 @@
             }
         }
     </style>
-</head>
 
-<body>
-    <div class="header-row"
-        style="max-width:1600px; margin:0 auto; margin-top:1rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
-        <a href="/admin.html" class="btn btn-secondary"
-            style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
-            <i class="fas fa-arrow-left"></i> Volver al Panel
-        </a>
-        <h1 class="text-4xl font-bold text-neon" style="margin:0; text-align:center;"><i
-                class="fas fa-calendar-alt"></i> Agenda General</h1>
-        <div style="width:150px;"></div>
-    </div>
+    <body>
+        <main class="wrap">
+            <div class="header-row"
+                style="max-width:1600px; margin:0 auto; margin-top:1rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
+                <a href="/admin.html" class="btn btn-secondary"
+                    style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+                    <i class="fas fa-arrow-left"></i> Volver al Panel
+                </a>
+                <h1 class="text-4xl font-bold text-neon" style="margin:0; text-align:center;"><i
+                        class="fas fa-calendar-days"></i> Agenda General</h1>
+                <div style="width:150px;"></div>
+            </div>
 
-    <div class="tabs">
-        <button class="tab active" data-section="proximos">
-            <i class="fas fa-calendar-day"></i> Próximos Eventos
-        </button>
-        <button class="tab" data-section="pendientes">
-            <i class="fas fa-clock"></i> Pendientes de Confirmar
-        </button>
-        <button class="tab" data-section="todos">
-            <i class="fas fa-list"></i> Todos los Eventos
-        </button>
-    </div>
+            <div class="tabs">
+                <button class="tab active" data-section="proximos">
+                    <i class="fas fa-calendar-day"></i> Próximos Eventos
+                </button>
+                <button class="tab" data-section="pendientes">
+                    <i class="fas fa-clock"></i> Pendientes de Confirmar
+                </button>
+                <button class="tab" data-section="todos">
+                    <i class="fas fa-list"></i> Todos los Eventos
+                </button>
+            </div>
 
-    <!-- SECCIÓN: Próximos Eventos -->
-    <div id="section-proximos" class="section active">
-        <div class="agenda-container">
-            <div class="summary-cards" id="summary-cards">
-                <div class="summary-card">
-                    <div class="number" id="count-hoy">0</div>
-                    <div class="label">Hoy</div>
-                </div>
-                <div class="summary-card">
-                    <div class="number" id="count-semana">0</div>
-                    <div class="label">Esta Semana</div>
-                </div>
-                <div class="summary-card">
-                    <div class="number" id="count-mes">0</div>
-                    <div class="label">Este Mes</div>
-                </div>
-                <div class="summary-card">
-                    <div class="number" id="count-total">0</div>
-                    <div class="label">Total Confirmados</div>
+            <!-- SECCIÓN: Próximos Eventos -->
+            <div id="section-proximos" class="section active">
+                <div class="agenda-container">
+                    <div class="summary-cards" id="summary-cards">
+                        <div class="summary-card">
+                            <div class="number" id="count-hoy">0</div>
+                            <div class="label">Hoy</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="number" id="count-semana">0</div>
+                            <div class="label">Esta Semana</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="number" id="count-mes">0</div>
+                            <div class="label">Este Mes</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="number" id="count-total">0</div>
+                            <div class="label">Total Confirmados</div>
+                        </div>
+                    </div>
+
+                    <div class="filters">
+                        <div>
+                            <label>Categoría:</label>
+                            <select id="filtro-categoria" onchange="filterProximos()">
+                                <option value="">Todas</option>
+                                <option value="ALQUILER">Alquileres</option>
+                                <option value="TALLER">Talleres</option>
+                                <option value="SERVICIO">Servicios</option>
+                                <option value="BANDA">Bandas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Desde:</label>
+                            <input type="date" id="filtro-desde" onchange="filterProximos()">
+                        </div>
+                        <div>
+                            <label>Hasta:</label>
+                            <input type="date" id="filtro-hasta" onchange="filterProximos()">
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Categoría</th>
+                                <th>Tipo</th>
+                                <th>Cliente/Banda</th>
+                                <th>Detalle</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-proximos">
+                            <tr>
+                                <td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <div class="filters">
-                <div>
-                    <label>Categoría:</label>
-                    <select id="filtro-categoria" onchange="filterProximos()">
-                        <option value="">Todas</option>
-                        <option value="ALQUILER">Alquileres</option>
-                        <option value="TALLER">Talleres</option>
-                        <option value="SERVICIO">Servicios</option>
-                        <option value="BANDA">Bandas</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Desde:</label>
-                    <input type="date" id="filtro-desde" onchange="filterProximos()">
-                </div>
-                <div>
-                    <label>Hasta:</label>
-                    <input type="date" id="filtro-hasta" onchange="filterProximos()">
-                </div>
-            </div>
+            <!-- SECCIÓN: Pendientes -->
+            <div id="section-pendientes" class="section">
+                <div class="agenda-container">
+                    <div class="filters">
+                        <div>
+                            <label>Categoría:</label>
+                            <select id="filtro-pendiente-categoria" onchange="filterPendientes()">
+                                <option value="">Todas</option>
+                                <option value="ALQUILER">Alquileres</option>
+                                <option value="TALLER">Talleres</option>
+                                <option value="SERVICIO">Servicios</option>
+                                <option value="BANDA">Bandas</option>
+                            </select>
+                        </div>
+                    </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Hora</th>
-                        <th>Categoría</th>
-                        <th>Tipo</th>
-                        <th>Cliente/Banda</th>
-                        <th>Detalle</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tbody-proximos">
-                    <tr>
-                        <td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- SECCIÓN: Pendientes -->
-    <div id="section-pendientes" class="section">
-        <div class="agenda-container">
-            <div class="filters">
-                <div>
-                    <label>Categoría:</label>
-                    <select id="filtro-pendiente-categoria" onchange="filterPendientes()">
-                        <option value="">Todas</option>
-                        <option value="ALQUILER">Alquileres</option>
-                        <option value="TALLER">Talleres</option>
-                        <option value="SERVICIO">Servicios</option>
-                        <option value="BANDA">Bandas</option>
-                    </select>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha Solicitada</th>
+                                <th>Categoría</th>
+                                <th>Tipo</th>
+                                <th>Cliente</th>
+                                <th>Contacto</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-pendientes">
+                            <tr>
+                                <td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha Solicitada</th>
-                        <th>Categoría</th>
-                        <th>Tipo</th>
-                        <th>Cliente</th>
-                        <th>Contacto</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tbody-pendientes">
-                    <tr>
-                        <td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+            <!-- SECCIÓN: Todos -->
+            <div id="section-todos" class="section">
+                <div class="agenda-container">
+                    <div class="filters">
+                        <div>
+                            <label>Categoría:</label>
+                            <select id="filtro-todos-categoria" onchange="filterTodos()">
+                                <option value="">Todas</option>
+                                <option value="ALQUILER">Alquileres</option>
+                                <option value="TALLER">Talleres</option>
+                                <option value="SERVICIO">Servicios</option>
+                                <option value="BANDA">Bandas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Estado:</label>
+                            <select id="filtro-todos-estado" onchange="filterTodos()">
+                                <option value="">Todos</option>
+                                <option value="Confirmado">Confirmados</option>
+                                <option value="Solicitado">Solicitados</option>
+                                <option value="Cancelado">Cancelados</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Desde:</label>
+                            <input type="date" id="filtro-todos-desde" onchange="filterTodos()">
+                        </div>
+                        <div>
+                            <label>Hasta:</label>
+                            <input type="date" id="filtro-todos-hasta" onchange="filterTodos()">
+                        </div>
+                    </div>
 
-    <!-- SECCIÓN: Todos -->
-    <div id="section-todos" class="section">
-        <div class="agenda-container">
-            <div class="filters">
-                <div>
-                    <label>Categoría:</label>
-                    <select id="filtro-todos-categoria" onchange="filterTodos()">
-                        <option value="">Todas</option>
-                        <option value="ALQUILER">Alquileres</option>
-                        <option value="TALLER">Talleres</option>
-                        <option value="SERVICIO">Servicios</option>
-                        <option value="BANDA">Bandas</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Estado:</label>
-                    <select id="filtro-todos-estado" onchange="filterTodos()">
-                        <option value="">Todos</option>
-                        <option value="Confirmado">Confirmados</option>
-                        <option value="Solicitado">Solicitados</option>
-                        <option value="Cancelado">Cancelados</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Desde:</label>
-                    <input type="date" id="filtro-todos-desde" onchange="filterTodos()">
-                </div>
-                <div>
-                    <label>Hasta:</label>
-                    <input type="date" id="filtro-todos-hasta" onchange="filterTodos()">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Categoría</th>
+                                <th>Tipo</th>
+                                <th>Cliente/Banda</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-todos">
+                            <tr>
+                                <td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Hora</th>
-                        <th>Categoría</th>
-                        <th>Tipo</th>
-                        <th>Cliente/Banda</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tbody-todos">
-                    <tr>
-                        <td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+        </main>
+        <script src="/navbar.js"></script>
+        <script>
+            // Activar logs detallados añadiendo ?debug=1 a la URL
+            const debug = new URLSearchParams(window.location.search).get('debug') === '1';
+            if (debug) console.info('DEBUG MODE ON: se mostrarán logs detallados de la agenda');
 
-    <script src="/navbar.js"></script>
-    <script>
-        // Activar logs detallados añadiendo ?debug=1 a la URL
-        const debug = new URLSearchParams(window.location.search).get('debug') === '1';
-        if (debug) console.info('DEBUG MODE ON: se mostrarán logs detallados de la agenda');
+            // ============================================================
+            // ESTADO
+            // ============================================================
+            let solicitudes = [];
+            let eventos = [];
+            let allItems = [];
 
-        // ============================================================
-        // ESTADO
-        // ============================================================
-        let solicitudes = [];
-        let eventos = [];
-        let allItems = [];
-
-        const API_BASE = '/api/admin';
-        const getToken = () => localStorage.getItem('authToken');
-        const authHeaders = () => ({
-            'Authorization': `Bearer ${getToken()}`,
-            'Content-Type': 'application/json'
-        });
-
-        // ============================================================
-        // BANNERS
-        // ============================================================
-        function showBanner(message, type = 'info', duration = 4000) {
-            document.querySelectorAll('.notification-banner').forEach(n => n.remove());
-            const banner = document.createElement('div');
-            banner.className = `notification-banner ${type}`;
-            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
-            banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
-            document.body.appendChild(banner);
-            setTimeout(() => {
-                banner.style.animation = 'slideIn 0.3s ease reverse';
-                setTimeout(() => banner.remove(), 300);
-            }, duration);
-        }
-
-        // ============================================================
-        // NAVEGACIÓN
-        // ============================================================
-        function initTabs() {
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const section = tab.dataset.section;
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-                    document.getElementById(`section-${section}`).classList.add('active');
-                    history.replaceState(null, '', `#${section}`);
-                });
+            const API_BASE = '/api/admin';
+            const getToken = () => localStorage.getItem('authToken');
+            const authHeaders = () => ({
+                'Authorization': `Bearer ${getToken()}`,
+                'Content-Type': 'application/json'
             });
 
-            const hash = window.location.hash.replace('#', '');
-            if (hash && ['proximos', 'pendientes', 'todos'].includes(hash)) {
-                document.querySelector(`.tab[data-section="${hash}"]`).click();
+            // ============================================================
+            // BANNERS
+            // ============================================================
+            function showBanner(message, type = 'info', duration = 4000) {
+                document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+                const banner = document.createElement('div');
+                banner.className = `notification-banner ${type}`;
+                const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+                banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+                document.body.appendChild(banner);
+                setTimeout(() => {
+                    banner.style.animation = 'slideIn 0.3s ease reverse';
+                    setTimeout(() => banner.remove(), 300);
+                }, duration);
             }
-        }
 
-        // ============================================================
-        // CARGA DE DATOS
-        // ============================================================
-        async function loadAllData() {
-            try {
-                // Cargar todos los datos (solicitudes + eventos) desde el endpoint unificado
-                const url = `${API_BASE}/solicitudes`;
+            // ============================================================
+            // NAVEGACIÓN
+            // ============================================================
+            function initTabs() {
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const section = tab.dataset.section;
+                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                        document.getElementById(`section-${section}`).classList.add('active');
+                        history.replaceState(null, '', `#${section}`);
+                    });
+                });
 
-                const resSol = await fetch(url, { headers: authHeaders() });
-                if (resSol.ok) {
-                    solicitudes = await resSol.json();
-                    eventos = [];
-                } else {
-                    const errorText = await resSol.text();
-                    console.error('Error al cargar solicitudes:', resSol.status, errorText);
-                    throw new Error(`Error al cargar solicitudes: ${resSol.status} - ${errorText}`);
+                const hash = window.location.hash.replace('#', '');
+                if (hash && ['proximos', 'pendientes', 'todos'].includes(hash)) {
+                    document.querySelector(`.tab[data-section="${hash}"]`).click();
+                }
+            }
+
+            // ============================================================
+            // CARGA DE DATOS
+            // ============================================================
+            async function loadAllData() {
+                try {
+                    // Cargar todos los datos (solicitudes + eventos) desde el endpoint unificado
+                    const url = `${API_BASE}/solicitudes`;
+
+                    const resSol = await fetch(url, { headers: authHeaders() });
+                    if (resSol.ok) {
+                        solicitudes = await resSol.json();
+                        eventos = [];
+                    } else {
+                        const errorText = await resSol.text();
+                        console.error('Error al cargar solicitudes:', resSol.status, errorText);
+                        throw new Error(`Error al cargar solicitudes: ${resSol.status} - ${errorText}`);
+                    }
+
+                    // Combinar y normalizar
+                    combineItems();
+                    renderAll();
+                } catch (err) {
+                    console.error('❌ ERROR CRÍTICO:', err);
+                    console.error('Stack:', err.stack);
+                    showBanner('Error al cargar datos: ' + err.message, 'error');
+                }
+            }
+
+            function getCategoria(item) {
+                // Si viene directamente como evento, es Banda
+                if (item.source === 'evento') {
+
+                    return 'BANDA';
                 }
 
-                // Combinar y normalizar
-                combineItems();
-                renderAll();
-            } catch (err) {
-                console.error('❌ ERROR CRÍTICO:', err);
-                console.error('Stack:', err.stack);
-                showBanner('Error al cargar datos: ' + err.message, 'error');
-            }
-        }
-
-        function getCategoria(item) {
-            // Si viene directamente como evento, es Banda
-            if (item.source === 'evento') {
-
-                return 'BANDA';
-            }
-
-            const tipo = (item.tipo || '').toString().toUpperCase();
+                const tipo = (item.tipo || '').toString().toUpperCase();
 
 
-            // Detectar explícitamente por tipo
-            if (tipo === 'BANDA') {
-                return 'BANDA';
-            }
-            if (tipo === 'TALLER') {
-                return 'TALLER';
-            }
-            if (tipo === 'SERVICIO') {
-                return 'SERVICIO';
-            }
-            if (tipo === 'ALQUILER_SALON') {
+                // Detectar explícitamente por tipo
+                if (tipo === 'BANDA') {
+                    return 'BANDA';
+                }
+                if (tipo === 'TALLER') {
+                    return 'TALLER';
+                }
+                if (tipo === 'SERVICIO') {
+                    return 'SERVICIO';
+                }
+                if (tipo === 'ALQUILER_SALON') {
+                    return 'ALQUILER';
+                }
+
+                // Fallbacks para detección por palabras clave
+                if (tipo.includes('BANDA')) {
+                    return 'BANDA';
+                }
+                if (tipo.includes('TALLER')) {
+                    return 'TALLER';
+                }
+                if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) {
+                    return 'SERVICIO';
+                }
+
                 return 'ALQUILER';
             }
 
-            // Fallbacks para detección por palabras clave
-            if (tipo.includes('BANDA')) {
-                return 'BANDA';
-            }
-            if (tipo.includes('TALLER')) {
-                return 'TALLER';
-            }
-            if (['DEPILACION', 'MASAJES', 'ESTETICA', 'TAROT', 'REIKI'].some(s => tipo.includes(s))) {
-                return 'SERVICIO';
-            }
+            function combineItems() {
+                // Normalizar solicitudes (ahora incluye tanto solicitudes como eventos)
+                const normalizedSolicitudes = solicitudes.map((s, idx) => {
 
-            return 'ALQUILER';
-        }
+                    // Mapeo de campos para compatibilidad
+                    const esBanda = s.origen === 'evento' || (s.tipoEvento && s.tipoEvento.toUpperCase() === 'BANDA');
+                    const esServicio = s.tipoEvento && s.tipoEvento.toUpperCase() === 'SERVICIO';
+                    const esTaller = s.tipoEvento && s.tipoEvento.toUpperCase() === 'TALLER';
 
-        function combineItems() {
-            // Normalizar solicitudes (ahora incluye tanto solicitudes como eventos)
-            const normalizedSolicitudes = solicitudes.map((s, idx) => {
+                    const normalized = {
+                        id: s.id,
+                        source: s.origen || 'solicitud',
+                        fecha: s.fechaEvento || s.fecha_evento,
+                        hora: s.horaInicio || s.hora_evento,
+                        tipo: s.tipoEvento || 'Otro',
+                        // Nombre: para eventos/bandas usar tipoNombre o descripcionCorta, sino nombreCliente
+                        nombre: (esBanda) ? (s.nombreEvento || s.tipoNombre || s.descripcionCorta || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda || 'Evento') : (s.nombreEvento || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda || s.tipoNombre || s.descripcionCorta || '-'),
+                        telefono: s.telefono || '',
+                        email: s.email || '',
+                        descripcion: s.descripcion || '',
+                        estado: s.estado,
+                        precio: s.precio || s.precio_anticipada || null
+                    };
+                    return normalized;
+                });
 
-                // Mapeo de campos para compatibilidad
-                const esBanda = s.origen === 'evento' || (s.tipoEvento && s.tipoEvento.toUpperCase() === 'BANDA');
-                const esServicio = s.tipoEvento && s.tipoEvento.toUpperCase() === 'SERVICIO';
-                const esTaller = s.tipoEvento && s.tipoEvento.toUpperCase() === 'TALLER';
+                allItems = normalizedSolicitudes;
 
-                const normalized = {
-                    id: s.id,
-                    source: s.origen || 'solicitud',
-                    fecha: s.fechaEvento || s.fecha_evento,
-                    hora: s.horaInicio || s.hora_evento,
-                    tipo: s.tipoEvento || 'Otro',
-                    // Nombre: para eventos/bandas usar tipoNombre o descripcionCorta, sino nombreCliente
-                    nombre: (esBanda) ? (s.nombreEvento || s.tipoNombre || s.descripcionCorta || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda || 'Evento') : (s.nombreEvento || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda || s.tipoNombre || s.descripcionCorta || '-'),
-                    telefono: s.telefono || '',
-                    email: s.email || '',
-                    descripcion: s.descripcion || '',
-                    estado: s.estado,
-                    precio: s.precio || s.precio_anticipada || null
-                };
-                return normalized;
-            });
+                // Agregar categoría
+                allItems.forEach((item) => {
+                    item.categoria = getCategoria(item);
+                });
 
-            allItems = normalizedSolicitudes;
-
-            // Agregar categoría
-            allItems.forEach((item) => {
-                item.categoria = getCategoria(item);
-            });
-
-            // Resumen por categoría (útil para debug ocasional)
-            // const summary = allItems.reduce((acc, it) => { acc[it.categoria] = (acc[it.categoria] || 0) + 1; return acc; }, {});
-            // console.info('Resumen categorías (allItems):', summary);
-        }
-
-        // ============================================================
-        // RENDERIZADO
-        // ============================================================
-        function renderAll() {
-            renderProximos();
-            renderPendientes();
-            renderTodos();
-            updateSummary();
-        }
-
-        function updateSummary() {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-
-            const finSemana = new Date(hoy);
-            finSemana.setDate(hoy.getDate() + 7);
-
-            const finMes = new Date(hoy);
-            finMes.setMonth(finMes.getMonth() + 1);
-
-            const confirmados = allItems.filter(i => i.estado === 'Confirmado');
-
-            const countHoy = confirmados.filter(i => {
-                const fecha = new Date(i.fecha);
-                return fecha.toDateString() === hoy.toDateString();
-            }).length;
-
-            const countSemana = confirmados.filter(i => {
-                const fecha = new Date(i.fecha);
-                return fecha >= hoy && fecha < finSemana;
-            }).length;
-
-            const countMes = confirmados.filter(i => {
-                const fecha = new Date(i.fecha);
-                return fecha >= hoy && fecha < finMes;
-            }).length;
-
-            document.getElementById('count-hoy').textContent = countHoy;
-            document.getElementById('count-semana').textContent = countSemana;
-            document.getElementById('count-mes').textContent = countMes;
-            document.getElementById('count-total').textContent = confirmados.length;
-        }
-
-        function renderProximos() {
-            const categoriaFiltro = document.getElementById('filtro-categoria')?.value || '';
-            const desdeFiltro = document.getElementById('filtro-desde')?.value || '';
-            const hastaFiltro = document.getElementById('filtro-hasta')?.value || '';
-
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-
-            let filtered = allItems.filter(i => {
-                const esConfirmado = i.estado === 'Confirmado';
-                const fechaObj = new Date(i.fecha + 'T00:00:00');
-                const esFuturo = fechaObj >= hoy;
-                return esConfirmado && esFuturo;
-            });
-
-            if (categoriaFiltro) {
-                filtered = filtered.filter(i => i.categoria === categoriaFiltro);
-            }
-            if (desdeFiltro) {
-                filtered = filtered.filter(i => new Date(i.fecha) >= new Date(desdeFiltro));
-            }
-            if (hastaFiltro) {
-                filtered = filtered.filter(i => new Date(i.fecha) <= new Date(hastaFiltro));
+                // Resumen por categoría (útil para debug ocasional)
+                // const summary = allItems.reduce((acc, it) => { acc[it.categoria] = (acc[it.categoria] || 0) + 1; return acc; }, {});
+                // console.info('Resumen categorías (allItems):', summary);
             }
 
-            // Ordenar por fecha
-            filtered.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-
-            const tbody = document.getElementById('tbody-proximos');
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay eventos próximos</td></tr>';
-                return;
+            // ============================================================
+            // RENDERIZADO
+            // ============================================================
+            function renderAll() {
+                renderProximos();
+                renderPendientes();
+                renderTodos();
+                updateSummary();
             }
 
-            tbody.innerHTML = filtered.map(item => renderRow(item, true)).join('');
-        }
+            function updateSummary() {
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
 
-        function renderPendientes() {
-            const categoriaFiltro = document.getElementById('filtro-pendiente-categoria')?.value || '';
+                const finSemana = new Date(hoy);
+                finSemana.setDate(hoy.getDate() + 7);
 
-            let filtered = allItems.filter(i => i.estado === 'Solicitado' || i.estado === 'pendiente');
+                const finMes = new Date(hoy);
+                finMes.setMonth(finMes.getMonth() + 1);
 
-            if (categoriaFiltro) filtered = filtered.filter(i => i.categoria === categoriaFiltro);
+                const confirmados = allItems.filter(i => i.estado === 'Confirmado');
 
-            // Ordenar por fecha
-            filtered.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+                const countHoy = confirmados.filter(i => {
+                    const fecha = new Date(i.fecha);
+                    return fecha.toDateString() === hoy.toDateString();
+                }).length;
 
-            const tbody = document.getElementById('tbody-pendientes');
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay solicitudes pendientes</td></tr>';
-                return;
+                const countSemana = confirmados.filter(i => {
+                    const fecha = new Date(i.fecha);
+                    return fecha >= hoy && fecha < finSemana;
+                }).length;
+
+                const countMes = confirmados.filter(i => {
+                    const fecha = new Date(i.fecha);
+                    return fecha >= hoy && fecha < finMes;
+                }).length;
+
+                document.getElementById('count-hoy').textContent = countHoy;
+                document.getElementById('count-semana').textContent = countSemana;
+                document.getElementById('count-mes').textContent = countMes;
+                document.getElementById('count-total').textContent = confirmados.length;
             }
 
-            tbody.innerHTML = filtered.map(item => `
+            function renderProximos() {
+                const categoriaFiltro = document.getElementById('filtro-categoria')?.value || '';
+                const desdeFiltro = document.getElementById('filtro-desde')?.value || '';
+                const hastaFiltro = document.getElementById('filtro-hasta')?.value || '';
+
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+
+                let filtered = allItems.filter(i => {
+                    const esConfirmado = i.estado === 'Confirmado';
+                    const fechaObj = new Date(i.fecha + 'T00:00:00');
+                    const esFuturo = fechaObj >= hoy;
+                    return esConfirmado && esFuturo;
+                });
+
+                if (categoriaFiltro) {
+                    filtered = filtered.filter(i => i.categoria === categoriaFiltro);
+                }
+                if (desdeFiltro) {
+                    filtered = filtered.filter(i => new Date(i.fecha) >= new Date(desdeFiltro));
+                }
+                if (hastaFiltro) {
+                    filtered = filtered.filter(i => new Date(i.fecha) <= new Date(hastaFiltro));
+                }
+
+                // Ordenar por fecha
+                filtered.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+                const tbody = document.getElementById('tbody-proximos');
+
+                if (filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay eventos próximos</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = filtered.map(item => renderRow(item, true)).join('');
+            }
+
+            function renderPendientes() {
+                const categoriaFiltro = document.getElementById('filtro-pendiente-categoria')?.value || '';
+
+                let filtered = allItems.filter(i => i.estado === 'Solicitado' || i.estado === 'pendiente');
+
+                if (categoriaFiltro) filtered = filtered.filter(i => i.categoria === categoriaFiltro);
+
+                // Ordenar por fecha
+                filtered.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+                const tbody = document.getElementById('tbody-pendientes');
+                if (filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay solicitudes pendientes</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = filtered.map(item => `
                 <tr>
                     <td><strong>${item.fecha ? new Date(item.fecha).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-'}</strong></td>
                     <td><span class="badge badge-${item.categoria.toLowerCase()}">${item.categoria}</span></td>
@@ -795,54 +811,54 @@
                     </td>
                 </tr>
             `).join('');
-        }
-
-        function renderTodos() {
-            const categoriaFiltro = document.getElementById('filtro-todos-categoria')?.value || '';
-            const estadoFiltro = document.getElementById('filtro-todos-estado')?.value || '';
-            const desdeFiltro = document.getElementById('filtro-todos-desde')?.value || '';
-            const hastaFiltro = document.getElementById('filtro-todos-hasta')?.value || '';
-
-            let filtered = [...allItems];
-
-            if (categoriaFiltro) filtered = filtered.filter(i => i.categoria === categoriaFiltro);
-            if (estadoFiltro) filtered = filtered.filter(i => i.estado === estadoFiltro);
-            if (desdeFiltro) filtered = filtered.filter(i => new Date(i.fecha) >= new Date(desdeFiltro));
-            if (hastaFiltro) filtered = filtered.filter(i => new Date(i.fecha) <= new Date(hastaFiltro));
-
-            // Ordenar por fecha
-            filtered.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-
-            const tbody = document.getElementById('tbody-todos');
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay eventos</td></tr>';
-                return;
             }
 
-            tbody.innerHTML = filtered.map(item => renderRow(item, false)).join('');
-        }
+            function renderTodos() {
+                const categoriaFiltro = document.getElementById('filtro-todos-categoria')?.value || '';
+                const estadoFiltro = document.getElementById('filtro-todos-estado')?.value || '';
+                const desdeFiltro = document.getElementById('filtro-todos-desde')?.value || '';
+                const hastaFiltro = document.getElementById('filtro-todos-hasta')?.value || '';
 
-        function renderRow(item, showDetail = true) {
-            const fecha = item.fecha ? new Date(item.fecha).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-';
-            const estadoBadge = {
-                'Confirmado': 'badge-success',
-                'Solicitado': 'badge-warning',
-                'pendiente': 'badge-warning',
-                'Cancelado': 'badge-danger'
-            }[item.estado] || 'badge-gray';
+                let filtered = [...allItems];
 
-            // URL de edición adecuada según tipo/origen
-            const editUrl = item.source === 'evento'
-                ? `editar_solicitud_fecha_bandas.html?id=${item.id}`
-                : (item.categoria === 'ALQUILER_SALON'
-                    ? `editar_solicitud_alquiler.html?solicitudId=${item.id}`
-                    : (item.categoria && item.categoria.startsWith('TALLER')
-                        ? `editar_solicitud_talleres.html?solicitudId=${item.id}`
-                        : (item.categoria === 'SERVICIO'
-                            ? `editar_solicitud_servicios.html?solicitudId=${item.id}`
-                            : `editar_solicitud_alquiler.html?solicitudId=${item.id}`)));
+                if (categoriaFiltro) filtered = filtered.filter(i => i.categoria === categoriaFiltro);
+                if (estadoFiltro) filtered = filtered.filter(i => i.estado === estadoFiltro);
+                if (desdeFiltro) filtered = filtered.filter(i => new Date(i.fecha) >= new Date(desdeFiltro));
+                if (hastaFiltro) filtered = filtered.filter(i => new Date(i.fecha) <= new Date(hastaFiltro));
 
-            return `
+                // Ordenar por fecha
+                filtered.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+                const tbody = document.getElementById('tbody-todos');
+                if (filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay eventos</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = filtered.map(item => renderRow(item, false)).join('');
+            }
+
+            function renderRow(item, showDetail = true) {
+                const fecha = item.fecha ? new Date(item.fecha).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-';
+                const estadoBadge = {
+                    'Confirmado': 'badge-success',
+                    'Solicitado': 'badge-warning',
+                    'pendiente': 'badge-warning',
+                    'Cancelado': 'badge-danger'
+                }[item.estado] || 'badge-gray';
+
+                // URL de edición adecuada según tipo/origen
+                const editUrl = item.source === 'evento'
+                    ? `editar_solicitud_fecha_bandas.html?id=${item.id}`
+                    : (item.categoria === 'ALQUILER_SALON'
+                        ? `editar_solicitud_alquiler.html?solicitudId=${item.id}`
+                        : (item.categoria && item.categoria.startsWith('TALLER')
+                            ? `editar_solicitud_talleres.html?solicitudId=${item.id}`
+                            : (item.categoria === 'SERVICIO'
+                                ? `editar_solicitud_servicios.html?solicitudId=${item.id}`
+                                : `editar_solicitud_alquiler.html?solicitudId=${item.id}`)));
+
+                return `
                 <tr>
                     <td><strong>${fecha}</strong></td>
                     <td>${item.hora || '-'}</td>
@@ -859,28 +875,93 @@
                     </td>
                 </tr>
             `;
-        }
+            }
 
-        function filterProximos() { renderProximos(); }
-        function filterPendientes() { renderPendientes(); }
-        function filterTodos() { renderTodos(); }
+            function filterProximos() { renderProximos(); }
+            function filterPendientes() { renderPendientes(); }
+            function filterTodos() { renderTodos(); }
 
-        // ============================================================
-        // INICIALIZACIÓN
-        // ============================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            navbarManager = new NavbarManager();
-            if (!navbarManager.protectAdminPage()) return;
-            navbarManager.injectNavbar('body');
+            // ============================================================
+            // AUTENTICACIÓN Y MENÚ MÓVIL
+            // ============================================================
+            function toggleMobileMenu() {
+                const mobileMenu = document.getElementById('mobile-menu');
+                if (mobileMenu) mobileMenu.classList.toggle('hidden');
+            }
 
-            // Establecer fecha "desde" a hoy por defecto
-            const hoy = new Date().toISOString().split('T')[0];
-            document.getElementById('filtro-desde').value = hoy;
+            function updateAuthMenu() {
+                const token = localStorage.getItem('authToken');
+                const desktopMenu = document.getElementById('auth-menu-desktop');
+                const mobileMenu = document.getElementById('auth-menu-mobile');
 
-            initTabs();
-            loadAllData();
-        });
-    </script>
-</body>
+                if (token) {
+                    // Usuario autenticado - mostrar Admin Panel y Logout
+                    if (desktopMenu) {
+                        desktopMenu.innerHTML = `
+                        <a href="/admin.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">🔐 Admin Panel</a>
+                        <button onclick="logout()" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out bg-transparent border-none cursor-pointer">Logout</button>
+                    `;
+                    }
+                    if (mobileMenu) {
+                        mobileMenu.innerHTML = `
+                        <a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">🔐 Admin Panel</a>
+                        <button onclick="logout()" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon bg-transparent border-none cursor-pointer">Logout</button>
+                    `;
+                    }
+                } else {
+                    // No autenticado - mostrar Login
+                    if (desktopMenu) {
+                        desktopMenu.innerHTML = `<a href="login.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Login</a>`;
+                    }
+                    if (mobileMenu) {
+                        mobileMenu.innerHTML = `<a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Login</a>`;
+                    }
+                }
+            }
+
+            function logout() {
+                localStorage.removeItem('authToken');
+                window.location.href = '/index.html';
+            }
+
+            // Sincronizar menú de autenticación entre pestañas
+            window.addEventListener('storage', updateAuthMenu);
+
+            // ============================================================
+            // INICIALIZACIÓN
+            // ============================================================
+            document.addEventListener('DOMContentLoaded', () => {
+                navbarManager = new NavbarManager();
+                if (!navbarManager.protectAdminPage()) return;
+                navbarManager.injectNavbar('body');
+
+                // Inicializar menú de autenticación
+                updateAuthMenu();
+
+                // Setup mobile menu button
+                const mobileMenuButton = document.getElementById('mobile-menu-button');
+                if (mobileMenuButton) {
+                    mobileMenuButton.addEventListener('click', toggleMobileMenu);
+                }
+
+                // Close mobile menu when clicking links
+                const mobileMenu = document.getElementById('mobile-menu');
+                if (mobileMenu) {
+                    mobileMenu.querySelectorAll('a').forEach(link => {
+                        link.addEventListener('click', () => {
+                            mobileMenu.classList.add('hidden');
+                        });
+                    });
+                }
+
+                // Establecer fecha "desde" a hoy por defecto
+                const hoy = new Date().toISOString().split('T')[0];
+                document.getElementById('filtro-desde').value = hoy;
+
+                initTabs();
+                loadAllData();
+            });
+        </script>
+    </body>
 
 </html>

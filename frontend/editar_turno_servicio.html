@@ -18,11 +18,10 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 16px;
-            background: #0c0a09;
-            min-height: 100vh;
+            padding: 20px;
+            background-color: #0c0a09;
             color: #d6d3d1;
         }
 
@@ -31,14 +30,20 @@
             text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
         }
 
-        .container {
-            max-width: 900px;
+        .wrap {
+            max-width: 1600px;
             margin: 0 auto;
-            background-color: #1a1a1a;
+            padding: 20px 16px;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 20px auto;
+            background-color: #1e293b;
             padding: 25px;
-            border-radius: 12px;
-            border: 1px solid rgba(240, 171, 252, 0.1);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            border: 1px solid var(--color-rustic);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
         h2 {
@@ -51,8 +56,8 @@
         }
 
         .form-section {
-            background: #111827;
-            border: 1px solid #374151;
+            background: #0f172a;
+            border: 1px solid #581c87;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
@@ -63,7 +68,7 @@
             font-size: 1.1rem;
             margin-bottom: 15px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #374151;
+            border-bottom: 1px solid #581c87;
         }
 
         .form-grid {
@@ -102,11 +107,11 @@
         select,
         textarea {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #4b5563;
+            padding: 12px 8px !important;
+            border: 1.5px solid #581c87;
             border-radius: 6px;
-            background-color: #1f2937;
-            color: #d6d3d1;
+            background-color: #0f172a;
+            color: #f8fafc;
             font-size: 14px;
             transition: border-color 0.2s;
         }
@@ -116,6 +121,7 @@
         textarea:focus {
             outline: none;
             border-color: var(--color-secondary);
+            box-shadow: 0 0 5px var(--color-secondary);
         }
 
         textarea {
@@ -183,12 +189,14 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #7c3aed, #581c87);
-            color: white;
+            background: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            background: rgba(132, 63, 172, 0.2);
+            transform: scale(1.05);
         }
 
         .btn-secondary {
@@ -407,165 +415,169 @@
 </head>
 
 <body>
-    <div class="container">
-        <div class="header-row">
-            <a href="admin_solicitudes.html" class="back-btn">
-                <i class="fas fa-arrow-left"></i> Volver
-            </a>
-            <h2><i class="fas fa-spa"></i> Turno de Servicio</h2>
-            <div style="width: 100px;"></div>
-        </div>
 
-        <div class="info-row">
-            <div>
-                <span style="color: #9ca3af;">ID Turno:</span>
-                <span id="turnoId" style="font-weight: bold;">-</span>
-            </div>
-            <div>
-                <span style="color: #9ca3af;">Estado:</span>
-                <select id="estadoSelect" style="width: auto; padding: 4px 12px;">
-                    <option value="disponible">Disponible</option>
-                    <option value="reservado">Reservado</option>
-                    <option value="confirmado">Confirmado</option>
-                    <option value="en_curso">En Curso</option>
-                    <option value="completado">Completado</option>
-                    <option value="cancelado">Cancelado</option>
-                    <option value="no_asistio">No Asistió</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Servicio y Profesional -->
-        <div class="form-section">
-            <h3><i class="fas fa-concierge-bell"></i> Servicio</h3>
-            <div class="form-grid form-grid-2">
-                <div class="form-group">
-                    <label for="servicioSelect">Servicio *</label>
-                    <select id="servicioSelect">
-                        <option value="">-- Seleccionar --</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="profesionalSelect">Profesional *</label>
-                    <select id="profesionalSelect">
-                        <option value="">-- Seleccionar servicio primero --</option>
-                    </select>
-                </div>
+    <main class="wrap">
+        <div class="container">
+            <div class="header-row">
+                <a href="admin_solicitudes.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+                <h2><i class="fas fa-spa"></i> Turno de Servicio</h2>
+                <div style="width: 100px;"></div>
             </div>
 
-            <div id="profesionalInfo" class="prof-info" style="display: none;">
-                <div class="prof-avatar" id="profAvatar">-</div>
+            <div class="info-row">
                 <div>
-                    <strong id="profNombre">-</strong>
-                    <p style="margin: 0; font-size: 0.85rem; color: #9ca3af;" id="profEspecialidad">-</p>
+                    <span style="color: #9ca3af;">ID Turno:</span>
+                    <span id="turnoId" style="font-weight: bold;">-</span>
                 </div>
-            </div>
-
-            <div id="servicioInfo" class="service-card" style="display: none;">
-                <h4 id="servicioNombre">-</h4>
-                <p id="servicioDescripcion">-</p>
-                <p style="margin-top: 8px;"><i class="fas fa-clock"></i> Duración: <span id="servicioDuracion">-</span>
-                    min</p>
-            </div>
-        </div>
-
-        <!-- Fecha y Horario -->
-        <div class="form-section">
-            <h3><i class="fas fa-calendar-alt"></i> Fecha y Horario</h3>
-            <div class="form-grid form-grid-3">
-                <div class="form-group">
-                    <label for="fechaTurno">Fecha *</label>
-                    <input type="text" id="fechaTurno" placeholder="Seleccionar fecha...">
-                </div>
-                <div class="form-group">
-                    <label for="horaInicio">Hora Inicio *</label>
-                    <input type="time" id="horaInicio" value="10:00">
-                </div>
-                <div class="form-group">
-                    <label for="horaFin">Hora Fin *</label>
-                    <input type="time" id="horaFin" value="11:00">
-                </div>
-            </div>
-        </div>
-
-        <!-- Datos del Cliente -->
-        <div class="form-section">
-            <h3><i class="fas fa-user"></i> Datos del Cliente</h3>
-            <div class="form-grid form-grid-3">
-                <div class="form-group">
-                    <label for="clienteNombre">Nombre</label>
-                    <input type="text" id="clienteNombre" placeholder="Nombre del cliente">
-                </div>
-                <div class="form-group">
-                    <label for="clienteTelefono">Teléfono</label>
-                    <input type="tel" id="clienteTelefono" placeholder="11-1234-5678">
-                </div>
-                <div class="form-group">
-                    <label for="clienteEmail">Email</label>
-                    <input type="email" id="clienteEmail" placeholder="email@ejemplo.com">
-                </div>
-            </div>
-        </div>
-
-        <!-- Pago -->
-        <div class="form-section">
-            <h3><i class="fas fa-money-bill-wave"></i> Pago</h3>
-            <div class="form-grid form-grid-4">
-                <div class="form-group">
-                    <label for="precioSelect">Tarifa</label>
-                    <select id="precioSelect">
-                        <option value="">-- Seleccionar --</option>
+                <div>
+                    <span style="color: #9ca3af;">Estado:</span>
+                    <select id="estadoSelect" style="width: auto; padding: 4px 12px;">
+                        <option value="disponible">Disponible</option>
+                        <option value="reservado">Reservado</option>
+                        <option value="confirmado">Confirmado</option>
+                        <option value="en_curso">En Curso</option>
+                        <option value="completado">Completado</option>
+                        <option value="cancelado">Cancelado</option>
+                        <option value="no_asistio">No Asistió</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="montoInput">Monto ($)</label>
-                    <input type="number" id="montoInput" value="0" min="0" step="100">
+            </div>
+
+            <!-- Servicio y Profesional -->
+            <div class="form-section">
+                <h3><i class="fas fa-concierge-bell"></i> Servicio</h3>
+                <div class="form-grid form-grid-2">
+                    <div class="form-group">
+                        <label for="servicioSelect">Servicio *</label>
+                        <select id="servicioSelect">
+                            <option value="">-- Seleccionar --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="profesionalSelect">Profesional *</label>
+                        <select id="profesionalSelect">
+                            <option value="">-- Seleccionar servicio primero --</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="metodoPago">Método de Pago</label>
-                    <select id="metodoPago">
-                        <option value="">Sin especificar</option>
-                        <option value="efectivo">Efectivo</option>
-                        <option value="transferencia">Transferencia</option>
-                        <option value="debito">Débito</option>
-                        <option value="credito">Crédito</option>
-                        <option value="mercadopago">MercadoPago</option>
-                    </select>
+
+                <div id="profesionalInfo" class="prof-info" style="display: none;">
+                    <div class="prof-avatar" id="profAvatar">-</div>
+                    <div>
+                        <strong id="profNombre">-</strong>
+                        <p style="margin: 0; font-size: 0.85rem; color: #9ca3af;" id="profEspecialidad">-</p>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>¿Pagado?</label>
-                    <div class="payment-toggle" style="margin-top: 5px;">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="pagadoCheck">
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span id="pagadoLabel">No</span>
+
+                <div id="servicioInfo" class="service-card" style="display: none;">
+                    <h4 id="servicioNombre">-</h4>
+                    <p id="servicioDescripcion">-</p>
+                    <p style="margin-top: 8px;"><i class="fas fa-clock"></i> Duración: <span
+                            id="servicioDuracion">-</span>
+                        min</p>
+                </div>
+            </div>
+
+            <!-- Fecha y Horario -->
+            <div class="form-section">
+                <h3><i class="fas fa-calendar-days"></i> Fecha y Horario</h3>
+                <div class="form-grid form-grid-3">
+                    <div class="form-group">
+                        <label for="fechaTurno">Fecha *</label>
+                        <input type="text" id="fechaTurno" placeholder="Seleccionar fecha...">
+                    </div>
+                    <div class="form-group">
+                        <label for="horaInicio">Hora Inicio *</label>
+                        <input type="time" id="horaInicio" value="10:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="horaFin">Hora Fin *</label>
+                        <input type="time" id="horaFin" value="11:00">
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Notas -->
-        <div class="form-section">
-            <h3><i class="fas fa-sticky-note"></i> Notas</h3>
-            <div class="form-group">
-                <textarea id="notasTextarea" placeholder="Notas adicionales sobre el turno..."></textarea>
+            <!-- Datos del Cliente -->
+            <div class="form-section">
+                <h3><i class="fas fa-user"></i> Datos del Cliente</h3>
+                <div class="form-grid form-grid-3">
+                    <div class="form-group">
+                        <label for="clienteNombre">Nombre</label>
+                        <input type="text" id="clienteNombre" placeholder="Nombre del cliente">
+                    </div>
+                    <div class="form-group">
+                        <label for="clienteTelefono">Teléfono</label>
+                        <input type="tel" id="clienteTelefono" placeholder="11-1234-5678">
+                    </div>
+                    <div class="form-group">
+                        <label for="clienteEmail">Email</label>
+                        <input type="email" id="clienteEmail" placeholder="email@ejemplo.com">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pago -->
+            <div class="form-section">
+                <h3><i class="fas fa-money-bill-wave"></i> Pago</h3>
+                <div class="form-grid form-grid-4">
+                    <div class="form-group">
+                        <label for="precioSelect">Tarifa</label>
+                        <select id="precioSelect">
+                            <option value="">-- Seleccionar --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="montoInput">Monto ($)</label>
+                        <input type="number" id="montoInput" value="0" min="0" step="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="metodoPago">Método de Pago</label>
+                        <select id="metodoPago">
+                            <option value="">Sin especificar</option>
+                            <option value="efectivo">Efectivo</option>
+                            <option value="transferencia">Transferencia</option>
+                            <option value="debito">Débito</option>
+                            <option value="credito">Crédito</option>
+                            <option value="mercadopago">MercadoPago</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>¿Pagado?</label>
+                        <div class="payment-toggle" style="margin-top: 5px;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="pagadoCheck">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span id="pagadoLabel">No</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notas -->
+            <div class="form-section">
+                <h3><i class="fas fa-sticky-note"></i> Notas</h3>
+                <div class="form-group">
+                    <textarea id="notasTextarea" placeholder="Notas adicionales sobre el turno..."></textarea>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="window.location.href='admin_solicitudes.html'">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="btn btn-danger" id="btnEliminar" style="flex: 0.5;">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="btn btn-primary" id="btnGuardar">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
             </div>
         </div>
-
-        <!-- Botones -->
-        <div class="btn-group">
-            <button class="btn btn-secondary" onclick="window.location.href='admin_solicitudes.html'">
-                <i class="fas fa-times"></i> Cancelar
-            </button>
-            <button class="btn btn-danger" id="btnEliminar" style="flex: 0.5;">
-                <i class="fas fa-trash"></i>
-            </button>
-            <button class="btn btn-primary" id="btnGuardar">
-                <i class="fas fa-save"></i> Guardar
-            </button>
-        </div>
-    </div>
+    </main>
 
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="spinner"></div>
@@ -892,6 +904,9 @@
             banner.className = `${type} show`;
             setTimeout(() => banner.classList.remove('show'), 3000);
         }
+    </script>
+
+    <script>
     </script>
 </body>
 

@@ -328,14 +328,6 @@ const App = {
         // Esta función se mantiene por compatibilidad pero no hace nada con select
         console.debug('[filtrarTiposPorCategoria] Mantenida para compatibilidad con select dropdown');
         return;
-
-                const esperado = tipoSeleccionado && this.tiposDeEvento.find(t => t.id === inputValue)?.categoria === categoriaSeleccionada;
-                const match = esVisible === esperado;
-                const icon = match ? '✅' : '❌';
-
-            });
-
-        }, 10);
     },
 
     actualizarCamposCondicionales: function () {
@@ -444,16 +436,22 @@ const App = {
 
     buscarSesionExistente: function () {
         fetch(`/api/solicitudes/sesion?fingerprintId=${this.visitorId}`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    // 404 o cualquier error: no hay sesión guardada, continuar normalmente
+                    console.log("[FORM] No hay sesión existente (status: " + res.status + ")");
+                    return null;
+                }
+                return res.json();
+            })
             .then(sessionData => {
                 if (sessionData && sessionData.solicitudId) {
                     this.solicitudId = sessionData.solicitudId;
                     this.populateForm(sessionData);
                     this.showNotification("Se cargaron los datos de tu sesión anterior.", "success");
-                } else {
                 }
             })
-            .catch(err => console.error("[FORM][ERROR] Error al buscar sesión:", err.message))
+            .catch(err => console.warn("[FORM] Error al buscar sesión (ignorado):", err.message))
             .finally(() => {
                 this.toggleLoadingOverlay(false);
                 this.habilitarBotones();
@@ -469,6 +467,9 @@ const App = {
             console.warn('[FORM][POPULATE] Solicitud vacía, abortando.');
             return;
         }
+
+        // Guardar solicitud en window para acceso global
+        window.currentSolicitud = solicitud;
 
         // CORRECCIÓN: tipoServicio es el subtipo (INFANTILES), tipoEvento es la categoría (ALQUILER_SALON)
         // Para el formulario necesitamos el subtipo (tipoServicio)
@@ -508,15 +509,15 @@ const App = {
             return cantidadNum; // Devolver original si no encontramos match
         };
 
-        // Helper: Normalizar hora a formato HH:MM:SS
+        // Helper: Normalizar hora a formato HH:MM (sin segundos)
         const normalizarHora = (hora) => {
             if (!hora) return hora;
-            // Si ya tiene el formato completo HH:MM:SS
-            if (/^\d{2}:\d{2}:\d{2}$/.test(hora)) return hora;
-            // Si tiene formato HH:MM, agregar :00
-            if (/^\d{2}:\d{2}$/.test(hora)) return hora + ':00';
-            // Si tiene formato H:MM, agregar 0 al inicio y :00
-            if (/^\d{1}:\d{2}$/.test(hora)) return '0' + hora + ':00';
+            // Si tiene formato HH:MM:SS, devolver solo HH:MM
+            if (/^\d{2}:\d{2}:\d{2}$/.test(hora)) return hora.substring(0, 5);
+            // Si tiene formato HH:MM, devolver tal cual
+            if (/^\d{2}:\d{2}$/.test(hora)) return hora;
+            // Si tiene formato H:MM, agregar 0 al inicio
+            if (/^\d{1}:\d{2}$/.test(hora)) return '0' + hora;
             return hora;
         };
 
@@ -576,7 +577,7 @@ const App = {
         const resolvedTipoForOptions = this.resolveTipoKey(uiTipoId || tipo) || uiTipoId || tipo;
         const selectElement = document.querySelector('#tipoEventoSelect');
         let selectedValue = null;
-        
+
         // 1) intentar con resolvedTipoForOptions
         if (resolvedTipoForOptions) {
             const opt = selectElement?.querySelector(`option[value="${resolvedTipoForOptions}"]`);
@@ -592,26 +593,26 @@ const App = {
             const opt = selectElement?.querySelector(`option[value="${tipo}"]`);
             if (opt) selectedValue = tipo;
         }
-        
+
         // 4) Intentar emparejar por texto (nombreParaMostrar)
         if (!selectedValue && solicitud.nombreParaMostrar && selectElement) {
             const labelText = String(solicitud.nombreParaMostrar).trim().toLowerCase();
             const options = Array.from(selectElement.options);
-            const matchingOpt = options.find(opt => 
+            const matchingOpt = options.find(opt =>
                 opt.textContent && opt.textContent.trim().toLowerCase().includes(labelText)
             );
             if (matchingOpt) selectedValue = matchingOpt.value;
         }
-        
+
         // 5) Buscar por inclusión de tipo en el label
         if (!selectedValue && tipo && selectElement) {
             const options = Array.from(selectElement.options);
-            const matchingOpt = options.find(opt => 
+            const matchingOpt = options.find(opt =>
                 opt.textContent && opt.textContent.toLowerCase().includes(tipo.toLowerCase())
             );
             if (matchingOpt) selectedValue = matchingOpt.value;
         }
-        
+
         if (selectedValue && selectElement) {
             selectElement.value = selectedValue;
             // Disparar evento change para actualizar campos condicionales
@@ -736,6 +737,7 @@ const App = {
         const cantidad = convertirCantidadALabel(cantidadRaw, resolvedTipoForOptions || tipo);
         console.log('[populate] cantidad raw:', cantidadRaw, '-> label:', cantidad, 'para tipo:', resolvedTipoForOptions || tipo);
         console.log('[populate] hora raw:', horaRaw, '-> normalizada:', hora);
+        console.log('[populate] duracion raw:', duracion, 'tipo resuelto:', resolvedTipoForOptions || tipo);
 
         // 3. Llamar a actualizarTodo pasándole TODOS los datos que conocemos.
         // Esto llenará los selects y calculará el precio inicial.
@@ -817,6 +819,20 @@ const App = {
             if (this.elements.urlFlyerInput) this.elements.urlFlyerInput.value = flyerVal;
             if (this.elements.flyerPreviewDiv) this.updateFlyerPreview();
         } catch (err) { console.warn('populateForm: fallo al setear campos de banda:', err); }
+
+        // 7. Rellenar el estado de la solicitud si existe el dropdown
+        try {
+            const estadoSelect = document.getElementById('estadoSolicitud');
+            if (estadoSelect && solicitud.estado) {
+                estadoSelect.value = solicitud.estado;
+                console.log('[populateForm] Estado actual asignado al dropdown:', solicitud.estado);
+            } else if (!estadoSelect) {
+                console.log('[populateForm] Dropdown de estado no encontrado aún');
+            } else if (!solicitud.estado) {
+                console.log('[populateForm] Estado no disponible en solicitud');
+            }
+        } catch (err) { console.warn('populateForm: fallo al setear estado:', err); }
+
         // 6. Actualizar visibilidad de campos según el tipo
         this.actualizarCamposCondicionales();
     },
@@ -1158,7 +1174,34 @@ const App = {
         }
         // Establecemos el valor (ya sea del override o del propio DOM)
         this.elements.cantidadPersonasSelect.value = cantidad;
-        this.elements.duracionEventoSelect.value = duracion;
+
+        // Para duración, intentar hacer match si es un string para encontrar la opción correcta
+        if (duracion && typeof duracion === 'string') {
+            const duracionTrimmed = duracion.trim();
+            const opciones = Array.from(this.elements.duracionEventoSelect.options);
+
+            // 1. Intentar match exacto
+            let encontrada = opciones.find(opt => opt.value === duracionTrimmed);
+
+            // 2. Si no, intentar match por número de horas (ej: "5 horas" -> "5 horas")
+            if (!encontrada) {
+                const numMatch = duracionTrimmed.match(/(\d+)\s*h/i);
+                if (numMatch) {
+                    const numHoras = numMatch[1];
+                    encontrada = opciones.find(opt => opt.value.match(new RegExp(`^${numHoras}\\s*h`, 'i')));
+                }
+            }
+
+            if (encontrada) {
+                this.elements.duracionEventoSelect.value = encontrada.value;
+                console.log('[actualizarTodo] Duración asignada:', encontrada.value);
+            } else {
+                console.warn('[actualizarTodo] No se encontró opción de duración para:', duracionTrimmed, 'opciones disponibles:', opciones.map(o => o.value));
+                this.elements.duracionEventoSelect.value = '';
+            }
+        } else {
+            this.elements.duracionEventoSelect.value = duracion || '';
+        }
 
         // 3. Poblar/Actualizar select de Hora
         if (tipoId && fechaSeleccionada) {
@@ -1389,7 +1432,7 @@ const App = {
         select.id = 'tipoEventoSelect';
         select.name = name;
         select.setAttribute('required', 'required');
-        
+
         // Opción por defecto (placeholder)
         const defaultOption = document.createElement('option');
         defaultOption.value = '';
@@ -1419,7 +1462,7 @@ const App = {
         select.style.width = '100%';
         select.style.padding = '8px 12px';
         select.style.fontSize = '1rem';
-        
+
         container.appendChild(select);
     },
 
@@ -1439,26 +1482,26 @@ const App = {
         const params = new URLSearchParams(window.location.search);
         const tipoParam = params.get('tipo');
         if (!tipoParam) return;
-        
+
         const selectElement = document.querySelector('#tipoEventoSelect');
         if (!selectElement) return;
-        
+
         // Intentar encontrar la opción por value exacto, value uppercase, o textContent
         const options = Array.from(selectElement.options);
         let foundOption = options.find(opt => opt.value === tipoParam);
-        
+
         if (!foundOption) {
             foundOption = options.find(opt => opt.value === tipoParam.toUpperCase());
         }
-        
+
         if (!foundOption) {
-            foundOption = options.find(opt => 
+            foundOption = options.find(opt =>
                 opt.textContent && opt.textContent.trim().toLowerCase().includes(tipoParam.toLowerCase())
             );
         }
-        
+
         if (!foundOption) return;
-        
+
         selectElement.value = foundOption.value;
         // Disparar evento change para actualizar campos condicionales
         const event = new Event('change', { bubbles: true });
@@ -1520,33 +1563,33 @@ const App = {
         try {
             // Usamos el endpoint PUT /api/solicitudes/:id, que llama a 'actualizarSolicitud'
             const response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(bodyData)
-        });
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+            });
 
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error || 'Error del servidor al guardar.');
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Error del servidor al guardar.');
+            }
+
+            this.showNotification("Cambios guardados con éxito", 'success');
+
+            // Deshabilitamos el formulario y cambiamos los botones
+            if (this.elements.editFieldset) this.elements.editFieldset.disabled = true;
+            if (this.elements.saveButton) this.elements.saveButton.style.display = 'none';
+            if (this.elements.cancelButton) {
+                this.elements.cancelButton.textContent = 'Volver al Panel';
+                this.elements.cancelButton.style.width = '100%';
+            }
+
+        } catch (error) {
+            this.showNotification(`Error: ${error.message}`, 'error');
+            if (this.elements.saveButton) this.elements.saveButton.disabled = false;
+        } finally {
+            this.toggleLoadingOverlay(false);
         }
-
-        this.showNotification("Cambios guardados con éxito", 'success');
-
-        // Deshabilitamos el formulario y cambiamos los botones
-        if (this.elements.editFieldset) this.elements.editFieldset.disabled = true;
-        if (this.elements.saveButton) this.elements.saveButton.style.display = 'none';
-        if (this.elements.cancelButton) {
-            this.elements.cancelButton.textContent = 'Volver al Panel';
-            this.elements.cancelButton.style.width = '100%';
-        }
-
-    } catch(error) {
-        this.showNotification(`Error: ${error.message}`, 'error');
-        if (this.elements.saveButton) this.elements.saveButton.disabled = false;
-    } finally {
-        this.toggleLoadingOverlay(false);
-    }
-},
+    },
 
 
 };

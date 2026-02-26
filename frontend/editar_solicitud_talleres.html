@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
-    <link rel="stylesheet" href="styles/request-forms.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
@@ -27,7 +26,6 @@
             padding: 20px;
             background-color: #0c0a09;
             color: #d6d3d1;
-            padding-bottom: 70px;
         }
 
         .text-neon {
@@ -39,14 +37,20 @@
             background-color: var(--color-rustic);
         }
 
+        .wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
         .container {
             max-width: 98%;
-            margin: 0 auto;
-            background-color: #111827;
+            margin: 20px auto;
+            background-color: #1e293b;
             padding: 25px;
             border-radius: 8px;
-            border: 1px solid #374151;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--color-rustic);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             position: relative;
         }
 
@@ -74,9 +78,9 @@
 
         .radio-group {
             padding: 10px;
-            border: 1px solid #4b5563;
+            border: 1px solid #581c87;
             border-radius: 4px;
-            background-color: #1f2937;
+            background-color: #0f172a;
         }
 
         .radio-option {
@@ -138,9 +142,9 @@
 
         #tipoEventoDescripcion {
             padding: 10px;
-            border: 1px solid #4b5563;
+            border: 1px solid #581c87;
             border-radius: 4px;
-            background-color: #1f2937;
+            background-color: #0f172a;
             font-size: 0.9em;
             color: #d6d3d1;
             min-height: 120px;
@@ -158,12 +162,12 @@
             width: 100%;
             padding: 12px 8px !important;
             /* Altura forzada */
-            border: 1.5px solid #4b5563;
+            border: 1.5px solid #581c87;
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 16px;
-            background-color: #1f2937;
-            color: #d6d3d1;
+            background-color: #0f172a;
+            color: #f8fafc;
             /* Texto blanco */
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -173,8 +177,8 @@
 
 
         select option {
-            background-color: #1f2937;
-            color: #d6d3d1;
+            background-color: #0f172a;
+            color: #f8fafc;
         }
 
         .campo-invalido {
@@ -203,9 +207,9 @@
         #presupuestoDetalle {
             margin-top: 25px;
             padding: 15px;
-            border: 1px solid #4b5563;
+            border: 1px solid #581c87;
             border-radius: 5px;
-            background-color: #1f2937;
+            background-color: #0f172a;
         }
 
         #presupuestoDetalle ul {
@@ -224,9 +228,9 @@
         #detallePrecios {
             margin-top: 5px;
             padding: 15px;
-            border: 1px solid #4b5563;
+            border: 1px solid #581c87;
             border-radius: 5px;
-            background-color: #1f2937;
+            background-color: #0f172a;
         }
 
         #detallePrecios ul {
@@ -341,15 +345,15 @@
         }
 
         .button-group button {
-            background-color: #7c3aed;
-            color: white;
+            background-color: transparent;
+            color: var(--color-secondary);
             border: 2px solid var(--color-secondary);
             padding: 15px 20px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 18px;
             font-weight: bold;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease-in-out;
             text-decoration: none;
             box-sizing: border-box;
             display: inline-flex;
@@ -357,13 +361,17 @@
             align-items: center;
         }
 
-        button:hover {
-            background-color: #6d28d9;
+        .button-group button:hover {
+            background-color: rgba(132, 63, 172, 0.2);
+            transform: scale(1.05);
         }
 
-        button:disabled {
+        .button-group button:disabled {
             background-color: #6b7280;
+            color: #d1d5db;
+            border-color: #6b7280;
             cursor: not-allowed;
+            transform: scale(1.0);
         }
 
         @media (min-width: 768px) {
@@ -391,107 +399,114 @@
 </head>
 
 <body>
-    <div class="container" id="mainContainer">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <a href="admin_solicitudes.html"
-                style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
-                <i class="fas fa-arrow-left"></i> Volver a Solicitudes
-            </a>
-            <h2 style="margin: 0;">Editor de Solicitud de Taller</h2>
-            <div style="width: 180px;"></div>
-        </div>
 
-        <fieldset id="edit-fieldset">
-            <input type="hidden" id="precioBase" name="precioBase">
-
-            <div class="column-layout">
-                <div class="form-group" id="tipoEventoGroup">
-                    <div>
-                        <label>Tipo de Taller:</label>
-                        <button id="resetTipoEventoBtn">Cambiar tipo de taller</button>
-                    </div>
-                    <div id="tipoEventoContainer" class="radio-group"></div>
-                </div>
-                <div class="form-group" id="descripcionGroup">
-                    <label>Descripción:</label>
-                    <div id="tipoEventoDescripcion">Seleccione un tipo de taller.</div>
-                </div>
+    <main class="wrap">
+        <div class="container" id="mainContainer">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <a href="admin_solicitudes.html"
+                    style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
+                    <i class="fas fa-arrow-left"></i> Volver a Solicitudes
+                </a>
+                <h2 style="margin: 0;">Editor de Solicitud de Taller</h2>
+                <div style="width: 180px;"></div>
             </div>
-            <div class="column-layout">
-                <div class="form-group" style="margin-top: 8px;">
-                    <label for="urlFlyer">URL del Flyer (promocional)</label>
-                    <input type="text" id="urlFlyer" placeholder="https://..." />
-                    <div style="margin-top:6px;">
-                        <input type="file" id="flyerFile" accept="image/png,image/jpeg" />
-                        <small style="color:#999;margin-left:6px;">Subir imagen (JPEG/PNG, ≤ 3 MB)</small>
+
+            <fieldset id="edit-fieldset">
+                <input type="hidden" id="precioBase" name="precioBase">
+
+                <div class="column-layout">
+                    <div class="form-group" id="tipoEventoGroup">
+                        <div>
+                            <label>Tipo de Taller:</label>
+                            <button id="resetTipoEventoBtn">Cambiar tipo de taller</button>
+                        </div>
+                        <div id="tipoEventoContainer" class="radio-group"></div>
                     </div>
-                    <div id="flyerPreview" style="margin-top:8px;"></div>
+                    <div class="form-group" id="descripcionGroup">
+                        <label>Descripción:</label>
+                        <div id="tipoEventoDescripcion">Seleccione un tipo de taller.</div>
+                    </div>
                 </div>
+                <div class="column-layout">
+                    <div class="form-group" style="margin-top: 8px;">
+                        <label for="urlFlyer">URL del Flyer (promocional)</label>
+                        <input type="text" id="urlFlyer" placeholder="https://..." />
+                        <div style="margin-top:6px;">
+                            <input type="file" id="flyerFile" accept="image/png,image/jpeg" />
+                            <small style="color:#999;margin-left:6px;">Subir imagen (JPEG/PNG, ≤ 3 MB)</small>
+                        </div>
+                        <div id="flyerPreview" style="margin-top:8px;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fechaEvento">Fecha del Taller (inicio):</label>
+                        <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
+                    </div>
+                    <div class="form-group" id="horaInicioGroup">
+                        <label for="horaInicio">Hora de Inicio (si aplica):</label>
+                        <select id="horaInicio">
+                            <option value="">--</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Nuevo: resumen del schedule (para talleres con repetición semanal) -->
                 <div class="form-group">
-                    <label for="fechaEvento">Fecha del Taller (inicio):</label>
-                    <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
+                    <label>Horario semanal (si aplica)</label>
+                    <div id="tallerScheduleSummary" class="small muted">Si la solicitud incluye horarios recurrentes, se
+                        mostrarán aquí.</div>
                 </div>
-                <div class="form-group" id="horaInicioGroup">
-                    <label for="horaInicio">Hora de Inicio (si aplica):</label>
-                    <select id="horaInicio">
-                        <option value="">--</option>
-                    </select>
+
+                <div class="column-layout">
+                    <div class="form-group" id="cantidadPersonasGroup">
+                        <label for="cantidadPersonas">Cupo máximo / Cantidad de Personas:</label>
+                        <select id="cantidadPersonas">
+                            <option value="">--</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="duracionEventoGroup">
+                        <label for="duracionEvento">Duración por clase (horas):</label>
+                        <select id="duracionEvento">
+                            <option value="">--</option>
+                        </select>
+                    </div>
                 </div>
+
+                <div class="form-group">
+                    <label for="detallesAdicionales">Detalles Adicionales (opcional):</label>
+                    <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
+                </div>
+            </fieldset>
+
+            <hr>
+
+            <h3>Resumen de Presupuesto Básico:</h3>
+            <div id="presupuestoDetalle">
+                <p>Cargando datos...</p>
+            </div>
+            <div id="detallePrecios"></div>
+            <div id="presupuestoTotal"><span>Total: </span> $0</div>
+
+            <div class="button-group">
+                <button id="cancel-button" style="background-color: #6c757d;">Cancelar</button>
+                <button id="save-button">Guardar Cambios</button>
             </div>
 
-            <!-- Nuevo: resumen del schedule (para talleres con repetición semanal) -->
-            <div class="form-group">
-                <label>Horario semanal (si aplica)</label>
-                <div id="tallerScheduleSummary" class="small muted">Si la solicitud incluye horarios recurrentes, se
-                    mostrarán aquí.</div>
+            <div class="loading-overlay" id="loadingOverlay" style="display: flex;">
+                <p>Cargando datos...</p>
+                <div class="spinner"></div>
             </div>
-
-            <div class="column-layout">
-                <div class="form-group" id="cantidadPersonasGroup">
-                    <label for="cantidadPersonas">Cupo máximo / Cantidad de Personas:</label>
-                    <select id="cantidadPersonas">
-                        <option value="">--</option>
-                    </select>
-                </div>
-                <div class="form-group" id="duracionEventoGroup">
-                    <label for="duracionEvento">Duración por clase (horas):</label>
-                    <select id="duracionEvento">
-                        <option value="">--</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="detallesAdicionales">Detalles Adicionales (opcional):</label>
-                <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
-            </div>
-        </fieldset>
-
-        <hr>
-
-        <h3>Resumen de Presupuesto Básico:</h3>
-        <div id="presupuestoDetalle">
-            <p>Cargando datos...</p>
         </div>
-        <div id="detallePrecios"></div>
-        <div id="presupuestoTotal"><span>Total: </span> $0</div>
-
-        <div class="button-group">
-            <button id="cancel-button" style="background-color: #6c757d;">Cancelar</button>
-            <button id="save-button">Guardar Cambios</button>
-        </div>
-
-        <div class="loading-overlay" id="loadingOverlay" style="display: flex;">
-            <p>Cargando datos...</p>
-            <div class="spinner"></div>
-        </div>
-    </div>
+    </main>
     <div id="notification-banner"></div>
 
     <script src="/navbar.js"></script>
     <script src="/formLogic.js"></script>
     <script>
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
         document.addEventListener('DOMContentLoaded', () => {
+
             // Proteger esta página: redirigir a login si no está autenticado
             navbarManager = new NavbarManager();
             if (!navbarManager.protectAdminPage()) {

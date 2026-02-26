@@ -18,11 +18,10 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 16px;
-            background: #0c0a09;
-            min-height: 100vh;
+            padding: 20px;
+            background-color: #0c0a09;
             color: #d6d3d1;
         }
 
@@ -31,14 +30,20 @@
             text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
         }
 
-        .container {
-            max-width: 900px;
+        .wrap {
+            max-width: 1600px;
             margin: 0 auto;
-            background-color: #1a1a1a;
+            padding: 20px 16px;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 20px auto;
+            background-color: #1e293b;
             padding: 25px;
-            border-radius: 12px;
-            border: 1px solid rgba(240, 171, 252, 0.1);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            border: 1px solid var(--color-rustic);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
         h2 {
@@ -51,8 +56,8 @@
         }
 
         .form-section {
-            background: #111827;
-            border: 1px solid #374151;
+            background: #0f172a;
+            border: 1px solid #581c87;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
@@ -63,7 +68,7 @@
             font-size: 1.1rem;
             margin-bottom: 15px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #374151;
+            border-bottom: 1px solid #581c87;
         }
 
         .form-grid {
@@ -98,11 +103,11 @@
         select,
         textarea {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #4b5563;
+            padding: 12px 8px !important;
+            border: 1.5px solid #581c87;
             border-radius: 6px;
-            background-color: #1f2937;
-            color: #d6d3d1;
+            background-color: #0f172a;
+            color: #f8fafc;
             font-size: 14px;
             transition: border-color 0.2s;
         }
@@ -112,6 +117,7 @@
         textarea:focus {
             outline: none;
             border-color: var(--color-secondary);
+            box-shadow: 0 0 5px var(--color-secondary);
         }
 
         .estado-badge {
@@ -160,12 +166,14 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #7c3aed, #581c87);
-            color: white;
+            background: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            background: rgba(132, 63, 172, 0.2);
+            transform: scale(1.05);
         }
 
         .btn-secondary {
@@ -343,136 +351,139 @@
 </head>
 
 <body>
-    <div class="container">
-        <div class="header-row">
-            <a href="admin_solicitudes.html" class="back-btn">
-                <i class="fas fa-arrow-left"></i> Volver
-            </a>
-            <h2><i class="fas fa-chalkboard-teacher"></i> Inscripción a Taller</h2>
-            <div style="width: 100px;"></div>
-        </div>
 
-        <div class="info-row">
-            <div>
-                <span style="color: #9ca3af;">ID Inscripción:</span>
-                <span id="inscripcionId" style="font-weight: bold;">-</span>
+    <main class="wrap">
+        <div class="container">
+            <div class="header-row">
+                <a href="admin_solicitudes.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+                <h2><i class="fas fa-book-open"></i> Inscripción a Taller</h2>
+                <div style="width: 100px;"></div>
             </div>
-            <div>
-                <span style="color: #9ca3af;">Estado:</span>
-                <select id="estadoSelect" style="width: auto; padding: 4px 12px;">
-                    <option value="activa">Activa</option>
-                    <option value="pausada">Pausada</option>
-                    <option value="vencida">Vencida</option>
-                    <option value="cancelada">Cancelada</option>
-                </select>
-            </div>
-        </div>
 
-        <!-- Selección de Taller -->
-        <div class="form-section">
-            <h3><i class="fas fa-book"></i> Taller</h3>
-            <div class="form-grid form-grid-2">
-                <div class="form-group">
-                    <label for="tallerSelect">Seleccionar Taller *</label>
-                    <select id="tallerSelect">
-                        <option value="">-- Seleccionar --</option>
-                    </select>
+            <div class="info-row">
+                <div>
+                    <span style="color: #9ca3af;">ID Inscripción:</span>
+                    <span id="inscripcionId" style="font-weight: bold;">-</span>
                 </div>
-                <div class="form-group">
-                    <label for="precioSelect">Plan / Precio</label>
-                    <select id="precioSelect">
-                        <option value="">-- Seleccionar taller primero --</option>
+                <div>
+                    <span style="color: #9ca3af;">Estado:</span>
+                    <select id="estadoSelect" style="width: auto; padding: 4px 12px;">
+                        <option value="activa">Activa</option>
+                        <option value="pausada">Pausada</option>
+                        <option value="vencida">Vencida</option>
+                        <option value="cancelada">Cancelada</option>
                     </select>
                 </div>
             </div>
-            <div id="tallerInfo" class="taller-card" style="display: none;">
-                <h4 id="tallerNombre">-</h4>
-                <p id="tallerDescripcion">-</p>
-                <p style="margin-top: 10px;"><strong>Tallerista:</strong> <span id="talleristaNombre">-</span></p>
-            </div>
-        </div>
 
-        <!-- Datos del Alumno -->
-        <div class="form-section">
-            <h3><i class="fas fa-user-graduate"></i> Datos del Alumno</h3>
-            <div class="form-grid form-grid-3">
-                <div class="form-group">
-                    <label for="alumnoNombre">Nombre Completo *</label>
-                    <input type="text" id="alumnoNombre" placeholder="Nombre del alumno">
+            <!-- Selección de Taller -->
+            <div class="form-section">
+                <h3><i class="fas fa-book"></i> Taller</h3>
+                <div class="form-grid form-grid-2">
+                    <div class="form-group">
+                        <label for="tallerSelect">Seleccionar Taller *</label>
+                        <select id="tallerSelect">
+                            <option value="">-- Seleccionar --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="precioSelect">Plan / Precio</label>
+                        <select id="precioSelect">
+                            <option value="">-- Seleccionar taller primero --</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="alumnoTelefono">Teléfono</label>
-                    <input type="tel" id="alumnoTelefono" placeholder="11-1234-5678">
-                </div>
-                <div class="form-group">
-                    <label for="alumnoEmail">Email</label>
-                    <input type="email" id="alumnoEmail" placeholder="email@ejemplo.com">
+                <div id="tallerInfo" class="taller-card" style="display: none;">
+                    <h4 id="tallerNombre">-</h4>
+                    <p id="tallerDescripcion">-</p>
+                    <p style="margin-top: 10px;"><strong>Tallerista:</strong> <span id="talleristaNombre">-</span></p>
                 </div>
             </div>
-        </div>
 
-        <!-- Modalidad y Clases -->
-        <div class="form-section">
-            <h3><i class="fas fa-calendar-check"></i> Modalidad y Clases</h3>
-            <div class="form-grid form-grid-2">
-                <div class="form-group">
-                    <label for="modalidadSelect">Modalidad</label>
-                    <select id="modalidadSelect">
-                        <option value="clase_suelta">Clase Suelta</option>
-                        <option value="mensual">Mensual</option>
-                        <option value="cuatrimestral">Cuatrimestral</option>
-                        <option value="anual">Anual</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Clases Restantes</label>
-                    <div class="clases-counter">
-                        <button type="button" onclick="cambiarClases(-1)">-</button>
-                        <span id="clasesRestantes">4</span>
-                        <button type="button" onclick="cambiarClases(1)">+</button>
+            <!-- Datos del Alumno -->
+            <div class="form-section">
+                <h3><i class="fas fa-user-graduate"></i> Datos del Alumno</h3>
+                <div class="form-grid form-grid-3">
+                    <div class="form-group">
+                        <label for="alumnoNombre">Nombre Completo *</label>
+                        <input type="text" id="alumnoNombre" placeholder="Nombre del alumno">
+                    </div>
+                    <div class="form-group">
+                        <label for="alumnoTelefono">Teléfono</label>
+                        <input type="tel" id="alumnoTelefono" placeholder="11-1234-5678">
+                    </div>
+                    <div class="form-group">
+                        <label for="alumnoEmail">Email</label>
+                        <input type="email" id="alumnoEmail" placeholder="email@ejemplo.com">
                     </div>
                 </div>
             </div>
-            <div class="form-grid form-grid-2" style="margin-top: 15px;">
-                <div class="form-group">
-                    <label for="fechaInscripcion">Fecha de Inscripción</label>
-                    <input type="text" id="fechaInscripcion" placeholder="Fecha...">
+
+            <!-- Modalidad y Clases -->
+            <div class="form-section">
+                <h3><i class="fas fa-calendar-check"></i> Modalidad y Clases</h3>
+                <div class="form-grid form-grid-2">
+                    <div class="form-group">
+                        <label for="modalidadSelect">Modalidad</label>
+                        <select id="modalidadSelect">
+                            <option value="clase_suelta">Clase Suelta</option>
+                            <option value="mensual">Mensual</option>
+                            <option value="cuatrimestral">Cuatrimestral</option>
+                            <option value="anual">Anual</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Clases Restantes</label>
+                        <div class="clases-counter">
+                            <button type="button" onclick="cambiarClases(-1)">-</button>
+                            <span id="clasesRestantes">4</span>
+                            <button type="button" onclick="cambiarClases(1)">+</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="fechaVencimiento">Fecha de Vencimiento</label>
-                    <input type="text" id="fechaVencimiento" placeholder="Vencimiento...">
+                <div class="form-grid form-grid-2" style="margin-top: 15px;">
+                    <div class="form-group">
+                        <label for="fechaInscripcion">Fecha de Inscripción</label>
+                        <input type="text" id="fechaInscripcion" placeholder="Fecha...">
+                    </div>
+                    <div class="form-group">
+                        <label for="fechaVencimiento">Fecha de Vencimiento</label>
+                        <input type="text" id="fechaVencimiento" placeholder="Vencimiento...">
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Pago -->
-        <div class="form-section">
-            <h3><i class="fas fa-money-bill-wave"></i> Información de Pago</h3>
-            <div class="form-grid form-grid-2">
-                <div class="form-group">
-                    <label for="montoPagado">Monto Pagado ($)</label>
-                    <input type="number" id="montoPagado" value="0" min="0" step="100">
-                </div>
-                <div class="form-group">
-                    <label>Precio del Plan</label>
-                    <div class="price-display" id="precioPlan">$0</div>
+            <!-- Pago -->
+            <div class="form-section">
+                <h3><i class="fas fa-money-bill-wave"></i> Información de Pago</h3>
+                <div class="form-grid form-grid-2">
+                    <div class="form-group">
+                        <label for="montoPagado">Monto Pagado ($)</label>
+                        <input type="number" id="montoPagado" value="0" min="0" step="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio del Plan</label>
+                        <div class="price-display" id="precioPlan">$0</div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Botones -->
-        <div class="btn-group">
-            <button class="btn btn-secondary" onclick="window.location.href='admin_solicitudes.html'">
-                <i class="fas fa-times"></i> Cancelar
-            </button>
-            <button class="btn btn-danger" id="btnEliminar" style="flex: 0.5;">
-                <i class="fas fa-trash"></i>
-            </button>
-            <button class="btn btn-primary" id="btnGuardar">
-                <i class="fas fa-save"></i> Guardar
-            </button>
+            <!-- Botones -->
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="window.location.href='admin_solicitudes.html'">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="btn btn-danger" id="btnEliminar" style="flex: 0.5;">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="btn btn-primary" id="btnGuardar">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
         </div>
-    </div>
+    </main>
 
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="spinner"></div>
@@ -753,6 +764,9 @@
             banner.className = `${type} show`;
             setTimeout(() => banner.classList.remove('show'), 3000);
         }
+    </script>
+
+    <script>
     </script>
 </body>
 

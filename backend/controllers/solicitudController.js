@@ -889,45 +889,8 @@ const getSesionExistente = async (req, res) => {
     }
 
     logVerbose(`Buscando sesión para Fingerprint ID: ${fingerprintId}`);
-
-    let conn;
-    try {
-        conn = await pool.getConnection();
-
-        // Buscar sesión más reciente por fingerprint.
-        // Priorizar solicitudes de bandas (almacenan 'fingerprintid'), y devolver campos útiles para rellenar el formulario.
-        const sql = `
-            SELECT
-                sb.id_solicitud as solicitudId,
-                'BANDA' as tipoEvento,
-                NULL as tipoServicio,
-                sb.cantidad_bandas as cantidadPersonas,
-                sb.duracion as duracionEvento,
-                DATE_FORMAT(sb.fecha_evento, '%Y-%m-%d') as fechaEvento,
-                sb.hora_evento as horaInicio,
-                sb.descripcion as descripcion
-            FROM solicitudes_fechas_bandas sb
-            WHERE sb.fingerprintid = ?
-            ORDER BY sb.id_solicitud DESC
-            LIMIT 1
-        `;
-
-        const [sesion] = await conn.query(sql, [fingerprintId]);
-
-        if (sesion) {
-            logVerbose(`Sesión encontrada:`, sesion);
-            res.status(200).json(sesion);
-        } else {
-            logVerbose("No se encontró ninguna sesión reciente.");
-            // Es importante devolver null para que el frontend sepa que no hay nada que rellenar.
-            res.status(200).json(null);
-        }
-    } catch (err) {
-        logError("Error al buscar sesión existente:", err);
-        res.status(500).json({ error: 'Error interno del servidor.' });
-    } finally {
-        if (conn) conn.release();
-    }
+    logVerbose(`La funcionalidad de recuperación de sesión por fingerprint aún no está implementada en la BD`);
+    return res.status(404).json({ error: 'Sesión no encontrada', sesion: null });
 };
 
 // ============================================

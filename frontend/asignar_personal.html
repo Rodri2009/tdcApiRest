@@ -207,19 +207,33 @@
             solicitudTitle.textContent = `Para Solicitud ID: ${solicitudId} (Tipo: ${tipoEventoId})`;
             // --- SECCIÓN 2: LÓGICA DE CARGA DE DATOS ---
             async function cargarDatosDeAsignacion() {
+                console.log('[ENTRADA] cargarDatosDeAsignacion()');
+                console.log('[DEBUG] solicitudId:', solicitudId, 'tipoEventoId:', tipoEventoId);
                 try {
+                    const url = `/api/admin/asignacion-data?solicitudId=${solicitudId}&tipoEventoId=${tipoEventoId}`;
+                    console.log('[DEBUG] URL de petición:', url);
                     // Hacemos la llamada a nuestra nueva API para obtener todos los datos necesarios.
-                    const response = await fetch(
-                        `/api/admin/asignacion-data?solicitudId=${solicitudId}&tipoEventoId=${tipoEventoId}`
-                    );
+                    const response = await fetch(url);
+                    console.log('[DEBUG] Response status:', response.status);
+                    console.log('[DEBUG] Response ok:', response.ok);
+
                     if (response.status === 401) {
+                        console.log('[ERROR] Autenticación fallida (401)');
                         window.location.href = '/login.html';
                         return;
                     }
-                    if (!response.ok) throw new Error('No se pudieron cargar los datos del servidor.');
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('[ERROR] Response no OK. Status:', response.status, 'Body:', errorText);
+                        throw new Error(`Error ${response.status}: ${errorText}`);
+                    }
                     const data = await response.json();
+                    console.log('[DEBUG] Datos recibidos:', data);
+                    console.log('[SUCCESS] cargarDatosDeAsignacion completado');
+
                     loader.style.display = 'none';
                     if (!data.rolesRequeridos || data.rolesRequeridos.length === 0) {
+                        console.log('[WARN] No hay roles requeridos para este tipo de evento');
                         formContainer.innerHTML =
                             '<p>Este tipo de evento no tiene roles de personal requeridos.</p>';
                         saveButton.disabled = true;
@@ -228,10 +242,11 @@
                     renderizarFormulario(data.rolesRequeridos, data.personalDisponible, data
                         .asignacionesGuardadas);
                 } catch (error) {
-                    console.error("Error al cargar datos de asignación:", error);
+                    console.error("[ERROR] Error al cargar datos de asignación:", error);
+                    console.error("[STACK]", error.stack);
                     loader.style.display = 'none';
                     formContainer.innerHTML =
-                        `<p style="color:red; font-weight:bold;">${error.message}</p>`;
+                        `<p style="color:red; font-weight:bold;">Error: ${error.message}</p>`;
                 }
             }
             // --- SECCIÓN 3: LÓGICA DE RENDERIZADO Y UI ---

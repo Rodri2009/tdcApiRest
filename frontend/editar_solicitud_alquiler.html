@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
-    <link rel="stylesheet" href="styles/request-forms.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
@@ -27,7 +26,6 @@
             padding: 20px;
             background-color: #0c0a09;
             color: #d6d3d1;
-            padding-bottom: 70px;
         }
 
         .text-neon {
@@ -39,14 +37,20 @@
             background-color: var(--color-rustic);
         }
 
+        .wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
         .container {
             max-width: 98%;
-            margin: 0 auto;
-            background-color: #111827;
+            margin: 20px auto;
+            background-color: #1e293b;
             padding: 25px;
             border-radius: 8px;
-            border: 1px solid #374151;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--color-rustic);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             position: relative;
         }
 
@@ -74,9 +78,9 @@
 
         .radio-group {
             padding: 10px;
-            border: 1px solid #4b5563;
+            border: 1px solid #581c87;
             border-radius: 4px;
-            background-color: #1f2937;
+            background-color: #0f172a;
         }
 
         .radio-option {
@@ -138,9 +142,9 @@
 
         #tipoEventoDescripcion {
             padding: 10px;
-            border: 1px solid #4b5563;
+            border: 1px solid #581c87;
             border-radius: 4px;
-            background-color: #1f2937;
+            background-color: #0f172a;
             font-size: 0.9em;
             color: #d6d3d1;
             min-height: 120px;
@@ -158,12 +162,12 @@
             width: 100%;
             padding: 12px 8px !important;
             /* Altura forzada */
-            border: 1.5px solid #4b5563;
+            border: 1.5px solid #581c87;
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 16px;
-            background-color: #1f2937;
-            color: #d6d3d1;
+            background-color: #0f172a;
+            color: #f8fafc;
             /* Texto blanco */
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -173,8 +177,8 @@
 
 
         select option {
-            background-color: #1f2937;
-            color: #d6d3d1;
+            background-color: #0f172a;
+            color: #f8fafc;
         }
 
         .campo-invalido {
@@ -357,15 +361,15 @@
         }
 
         .button-group button {
-            background-color: #7c3aed;
-            color: white;
+            background-color: transparent;
+            color: var(--color-secondary);
             border: 2px solid var(--color-secondary);
             padding: 15px 20px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 18px;
             font-weight: bold;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease-in-out;
             text-decoration: none;
             box-sizing: border-box;
             display: inline-flex;
@@ -373,13 +377,17 @@
             align-items: center;
         }
 
-        button:hover {
-            background-color: #6d28d9;
+        .button-group button:hover {
+            background-color: rgba(132, 63, 172, 0.2);
+            transform: scale(1.05);
         }
 
-        button:disabled {
+        .button-group button:disabled {
             background-color: #6b7280;
+            color: #d1d5db;
+            border-color: #6b7280;
             cursor: not-allowed;
+            transform: scale(1.0);
         }
 
         @media (min-width: 768px) {
@@ -407,140 +415,183 @@
 </head>
 
 <body>
-    <div class="container" id="mainContainer">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <a href="admin_solicitudes.html"
-                style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
-                <i class="fas fa-arrow-left"></i> Volver a Solicitudes
-            </a>
-            <h2 style="margin: 0;">Editor de Solicitud de Alquiler</h2>
-            <div style="width: 180px;"></div>
-        </div>
 
-        <fieldset id="edit-fieldset">
-            <input type="hidden" id="precioBase" name="precioBase">
+    <main class="wrap">
+        <div class="container" id="mainContainer">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <a href="admin_solicitudes.html"
+                    style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
+                    <i class="fas fa-arrow-left"></i> Volver a Solicitudes
+                </a>
+                <h2 style="margin: 0;">Editor de Solicitud de Alquiler</h2>
+                <div style="width: 180px;"></div>
+            </div>
 
-            <div class="column-layout">
-                <div class="form-group" id="tipoEventoGroup">
-                    <div>
-                        <label>Tipo de Evento:</label>
-                        <button id="resetTipoEventoBtn">Cambiar tipo de evento</button>
+            <fieldset id="edit-fieldset">
+                <input type="hidden" id="precioBase" name="precioBase">
+
+                <div class="column-layout">
+                    <div class="form-group" id="tipoEventoGroup">
+                        <div>
+                            <label>Tipo de Evento:</label>
+                            <button id="resetTipoEventoBtn">Cambiar tipo de evento</button>
+                        </div>
+                        <div id="tipoEventoContainer" class="radio-group"></div>
                     </div>
-                    <div id="tipoEventoContainer" class="radio-group"></div>
-                </div>
-                <div class="form-group" id="descripcionGroup">
-                    <label>Descripción:</label>
-                    <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
-                </div>
-            </div>
-            <div class="column-layout">
-                <div class="form-group">
-                    <label for="fechaEvento">Fecha del Evento (Sáb, Dom y Feriados):</label>
-                    <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
-                </div>
-                <div class="form-group" id="horaInicioGroup">
-                    <label for="horaInicio">Hora de Inicio:</label>
-                    <select id="horaInicio">
-                        <option value="">--</option>
-                    </select>
-                </div>
-            </div>
-            <div class="column-layout">
-                <div class="form-group" id="cantidadPersonasGroup">
-                    <label for="cantidadPersonas">Cantidad de Personas:</label>
-                    <select id="cantidadPersonas">
-                        <option value="">--</option>
-                    </select>
-                </div>
-                <div class="form-group" id="duracionEventoGroup">
-                    <label for="duracionEvento">Duración del Evento:</label>
-                    <select id="duracionEvento">
-                        <option value="">--</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="detallesAdicionales">Detalles Adicionales (opcional):</label>
-                <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
-            </div>
-
-            <!-- INFO DE CLIENTE -->
-            <div class="form-section" style="margin-top: 12px;">
-                <h3>Datos del Cliente</h3>
-                <div style="display:flex;gap:12px;flex-wrap:wrap;color:#d6d3d1;">
-                    <div><strong>Nombre:</strong> <span id="clientName">-</span></div>
-                    <div><strong>Teléfono:</strong> <span id="clientPhone">-</span></div>
-                    <div><strong>Email:</strong> <span id="clientEmail">-</span></div>
-                </div>
-            </div>
-
-            <!-- ADICIONALES SELECCIONADOS -->
-            <div class="form-section" style="margin-top: 12px;">
-                <h3>Adicionales seleccionados</h3>
-                <div id="adicionalesSeleccionados" style="color:#d6d3d1;">No hay adicionales seleccionados.</div>
-            </div>
-
-            <!-- Campos específicos para solicitudes de banda -->
-            <div id="band-fields">
-                <h4>Datos de Banda / Proyecto</h4>
-                <div class="form-group">
-                    <label for="nombreBandaInput">Nombre de la Banda / Proyecto:</label>
-                    <input type="text" id="nombreBandaInput" name="nombreBanda">
-                </div>
-                <div class="form-group">
-                    <label for="contactoEmailInput">Email de Contacto (banda):</label>
-                    <input type="email" id="contactoEmailInput" name="contactoEmail">
-                </div>
-                <div class="form-group">
-                    <label for="linkMusicaInput">Link de Música (Spotify/YouTube/Bandcamp):</label>
-                    <input type="text" id="linkMusicaInput" name="linkMusica" placeholder="https://">
-                </div>
-                <div class="form-group">
-                    <label for="propuestaInput">Propuesta y Requerimientos Técnicos:</label>
-                    <textarea id="propuestaInput" name="propuesta" rows="4"></textarea>
-                </div>
-                <div class="form-group" style="margin-top:8px;">
-                    <label for="urlFlyer">URL del Flyer (promocional)</label>
-                    <input type="text" id="urlFlyer" placeholder="https://..." />
-                    <div style="margin-top:6px;">
-                        <input type="file" id="flyerFile" accept="image/png,image/jpeg" />
-                        <small style="color:#999;margin-left:6px;">Subir imagen (JPEG/PNG, ≤ 3 MB) — se guardará en /uploads/flyers</small>
+                    <div class="form-group" id="descripcionGroup">
+                        <label>Descripción:</label>
+                        <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
                     </div>
-                    <div id="flyerPreview" style="margin-top:8px;"></div>
                 </div>
                 <div class="column-layout">
                     <div class="form-group">
-                        <label for="precioAnticipadaInput">Precio Anticipada (ARS):</label>
-                        <input type="text" id="precioAnticipadaInput" name="precioAnticipada" placeholder="Ej: 3000">
+                        <label for="fechaEvento">Fecha del Evento (Sáb, Dom y Feriados):</label>
+                        <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
                     </div>
-                    <div class="form-group">
-                        <label for="precioPuertaInput">Precio en Puerta (ARS):</label>
-                        <input type="text" id="precioPuertaInput" name="precioPuerta" placeholder="Ej: 4000">
+                    <div class="form-group" id="horaInicioGroup">
+                        <label for="horaInicio">Hora de Inicio:</label>
+                        <select id="horaInicio">
+                            <option value="">--</option>
+                        </select>
                     </div>
                 </div>
+                <div class="column-layout">
+                    <div class="form-group" id="cantidadPersonasGroup">
+                        <label for="cantidadPersonas">Cantidad de Personas:</label>
+                        <select id="cantidadPersonas">
+                            <option value="">--</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="duracionEventoGroup">
+                        <label for="duracionEvento">Duración del Evento:</label>
+                        <select id="duracionEvento">
+                            <option value="">--</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="detallesAdicionales">Detalles Adicionales (opcional):</label>
+                    <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
+                </div>
+
+                <!-- INFO DE CLIENTE - READ ONLY -->
+                <div class="form-section"
+                    style="margin-top: 12px; background-color: #1a2332; border-left: 4px solid #f0abfc; padding: 12px; border-radius: 4px;">
+                    <h3 style="margin-top: 0; color: #f0abfc;">📋 Datos del Cliente (Información de Solo Lectura)</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; font-size: 0.95rem;">
+                        <div
+                            style="background-color: #0f1419; padding: 8px; border-radius: 4px; border: 1px solid #2d3748;">
+                            <label
+                                style="color: #9ca3af; font-size: 0.85rem; display: block; margin-bottom: 4px; font-weight: 500; text-transform: uppercase;">Nombre</label>
+                            <span id="clientName"
+                                style="color: #d6d3d1; font-weight: 500; word-break: break-word;">-</span>
+                        </div>
+                        <div
+                            style="background-color: #0f1419; padding: 8px; border-radius: 4px; border: 1px solid #2d3748;">
+                            <label
+                                style="color: #9ca3af; font-size: 0.85rem; display: block; margin-bottom: 4px; font-weight: 500; text-transform: uppercase;">Teléfono</label>
+                            <span id="clientPhone"
+                                style="color: #d6d3d1; font-weight: 500; word-break: break-word;">-</span>
+                        </div>
+                        <div
+                            style="background-color: #0f1419; padding: 8px; border-radius: 4px; border: 1px solid #2d3748;">
+                            <label
+                                style="color: #9ca3af; font-size: 0.85rem; display: block; margin-bottom: 4px; font-weight: 500; text-transform: uppercase;">Email</label>
+                            <span id="clientEmail"
+                                style="color: #d6d3d1; font-weight: 500; word-break: break-word;">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADICIONALES SELECCIONADOS -->
+                <div class="form-section" style="margin-top: 12px;">
+                    <h3>Adicionales seleccionados</h3>
+                    <div id="adicionalesSeleccionados" style="color:#d6d3d1;">No hay adicionales seleccionados.</div>
+                </div>
+
+                <!-- Campos específicos para solicitudes de banda -->
+                <div id="band-fields">
+                    <h4>Datos de Banda / Proyecto</h4>
+                    <div class="form-group">
+                        <label for="nombreBandaInput">Nombre de la Banda / Proyecto:</label>
+                        <input type="text" id="nombreBandaInput" name="nombreBanda">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactoEmailInput">Email de Contacto (banda):</label>
+                        <input type="email" id="contactoEmailInput" name="contactoEmail">
+                    </div>
+                    <div class="form-group">
+                        <label for="linkMusicaInput">Link de Música (Spotify/YouTube/Bandcamp):</label>
+                        <input type="text" id="linkMusicaInput" name="linkMusica" placeholder="https://">
+                    </div>
+                    <div class="form-group">
+                        <label for="propuestaInput">Propuesta y Requerimientos Técnicos:</label>
+                        <textarea id="propuestaInput" name="propuesta" rows="4"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-top:8px;">
+                        <label for="urlFlyer">URL del Flyer (promocional)</label>
+                        <input type="text" id="urlFlyer" placeholder="https://..." />
+                        <div style="margin-top:6px;">
+                            <input type="file" id="flyerFile" accept="image/png,image/jpeg" />
+                            <small style="color:#999;margin-left:6px;">Subir imagen (JPEG/PNG, ≤ 3 MB) — se guardará en
+                                /uploads/flyers</small>
+                        </div>
+                        <div id="flyerPreview" style="margin-top:8px;"></div>
+                    </div>
+                    <div class="column-layout">
+                        <div class="form-group">
+                            <label for="precioAnticipadaInput">Precio Anticipada (ARS):</label>
+                            <input type="text" id="precioAnticipadaInput" name="precioAnticipada"
+                                placeholder="Ej: 3000">
+                        </div>
+                        <div class="form-group">
+                            <label for="precioPuertaInput">Precio en Puerta (ARS):</label>
+                            <input type="text" id="precioPuertaInput" name="precioPuerta" placeholder="Ej: 4000">
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <hr>
+
+            <h3>Resumen de Presupuesto Básico:</h3>
+            <div id="presupuestoDetalle">
+                <p>Cargando datos...</p>
             </div>
-        </fieldset>
+            <div id="detallePrecios"></div>
+            <div id="presupuestoTotal"><span>Total: </span> $0</div>
 
-        <hr>
+            <hr>
 
-        <h3>Resumen de Presupuesto Básico:</h3>
-        <div id="presupuestoDetalle">
-            <p>Cargando datos...</p>
+            <h3>Estado de la Solicitud:</h3>
+            <div class="form-group" style="max-width: 300px;">
+                <label for="estadoSolicitud"
+                    style="display: block; margin-bottom: 6px; font-weight: bold; font-size: 0.95rem;">Cambiar
+                    Estado</label>
+                <select id="estadoSolicitud"
+                    style="padding: 6px 8px; border-radius: 4px; border: 1px solid #4b5563; background-color: #1f2937; color: #d6d3d1; cursor: pointer; width: 100%; font-size: 0.9rem;">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="Solicitado">📋 Solicitado</option>
+                    <option value="Contactado">📞 Contactado</option>
+                    <option value="Confirmado">✅ Confirmado</option>
+                    <option value="Cancelado">❌ Cancelado</option>
+                </select>
+                <small style="color: #9ca3af; display: block; margin-top: 3px; font-size: 0.85rem;">El estado actual
+                    aparecerá seleccionado</small>
+            </div>
+
+            <div class="button-group">
+                <button id="cancel-button" style="background-color: #6c757d;">Cancelar</button>
+                <button id="save-button">Guardar Cambios</button>
+            </div>
+
+            <div class="loading-overlay" id="loadingOverlay" style="display: flex;">
+                <p>Cargando datos...</p>
+                <div class="spinner"></div>
+            </div>
         </div>
-        <div id="detallePrecios"></div>
-        <div id="presupuestoTotal"><span>Total: </span> $0</div>
-
-        <div class="button-group">
-            <button id="cancel-button" style="background-color: #6c757d;">Cancelar</button>
-            <button id="save-button">Guardar Cambios</button>
-        </div>
-
-        <div class="loading-overlay" id="loadingOverlay" style="display: flex;">
-            <p>Cargando datos...</p>
-            <div class="spinner"></div>
-        </div>
-    </div>
+    </main>
     <div id="notification-banner"></div>
 
     <script src="/navbar.js"></script>
@@ -548,7 +599,7 @@
     <script>
         console.log('editar_solicitud_alquiler.html: Script iniciado');
         console.log('editar_solicitud_alquiler.html: formLogic.js cargado, typeof initializeApp =', typeof window.initializeApp);
-        
+
         document.addEventListener('DOMContentLoaded', () => {
             console.log('editar_solicitud_alquiler.html: DOMContentLoaded disparado');
             try {
@@ -564,17 +615,128 @@
                 navbarManager.injectNavbar('body');
 
                 // Inicializar la app de edición
-                console.log('editar_solicitud_alquiler.html: Llamando a initializeApp con config:', {mode: 'edit'});
+                console.log('editar_solicitud_alquiler.html: Llamando a initializeApp con config:', { mode: 'edit', categoriaFiltro: 'ALQUILER_SALON' });
                 console.log('editar_solicitud_alquiler.html: typeof initializeApp =', typeof initializeApp);
                 initializeApp({
-                    mode: 'edit'
+                    mode: 'edit',
+                    categoriaFiltro: 'ALQUILER_SALON'
                 });
                 console.log('editar_solicitud_alquiler.html: initializeApp ejecutado correctamente');
+
+                // Configurar cambio de estado con delay para asegurar que el DOM se haya cargado
+                setTimeout(() => {
+                    const estadoSelect = document.getElementById('estadoSolicitud');
+                    if (estadoSelect) {
+                        // Si aún no está seleccionado, intentar nuevamente
+                        if (!estadoSelect.value && window.currentSolicitud && window.currentSolicitud.estado) {
+                            estadoSelect.value = window.currentSolicitud.estado;
+                            console.log('[ESTADO] Pre-seleccionado estado actual:', window.currentSolicitud.estado);
+                        }
+
+                        estadoSelect.addEventListener('change', () => {
+                            const nuevoEstado = estadoSelect.value;
+                            if (nuevoEstado) {
+                                cambiarEstadoSolicitud(nuevoEstado, estadoSelect);
+                            }
+                        });
+                    }
+                }, 500);
             } catch (err) {
                 console.error('editar_solicitud_alquiler.html: Error en DOMContentLoaded:', err);
                 throw err;
             }
         });
+
+        // Función para cambiar el estado de la solicitud
+        async function cambiarEstadoSolicitud(nuevoEstado, selectElement) {
+            try {
+                // Obtener el ID de la solicitud desde el formulario o parámetros
+                const params = new URLSearchParams(window.location.search);
+                const solicitudId = params.get('solicitudId');
+
+                if (!solicitudId) {
+                    showNotification('No se pudo identificar la solicitud', 'error');
+                    return;
+                }
+
+                // Mostrar notificación de carga
+                showNotification('Actualizando estado...', 'info');
+
+                // Realizar la petición PUT
+                const res = await fetch(`/api/admin/solicitudes/${solicitudId}/estado`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado: nuevoEstado })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.message || 'Error al cambiar el estado');
+                }
+
+                showNotification(`Estado actualizado a: ${nuevoEstado}`, 'success');
+                console.log('[ESTADO] Solicitud actualizada:', data);
+
+                // Opcionalmente, recargar la página después de 2 segundos para refrescar los datos
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+
+            } catch (error) {
+                console.error('[ESTADO] Error al cambiar estado:', error);
+                showNotification(error.message || 'Error al cambiar el estado', 'error');
+                // Revertir el cambio visual
+                selectElement.value = '';
+            }
+        }
+
+        // Función para mostrar notificaciones (compatible con formLogic)
+        function showNotification(message, type = 'info', duration = 3000) {
+            const banner = document.getElementById('notification-banner');
+            if (!banner) return;
+
+            const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
+            const textColor = '#ffffff';
+
+            banner.innerHTML = `
+                <div style="
+                    background-color: ${bgColor};
+                    color: ${textColor};
+                    padding: 12px 16px;
+                    border-radius: 4px;
+                    margin-bottom: 16px;
+                    animation: slideIn 0.3s ease-in-out;
+                ">
+                    ${message}
+                </div>
+            `;
+
+            if (duration > 0) {
+                setTimeout(() => {
+                    banner.innerHTML = '';
+                }, duration);
+            }
+        }
+
+        // CSS para animación
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateY(-20px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+
+    <script>
     </script>
 </body>
 

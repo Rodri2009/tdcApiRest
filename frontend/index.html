@@ -7,6 +7,7 @@
     <title>El Templo de Claypole - Espacio Cultural y Salón de Eventos Únicos</title>
     <!-- Carga de Tailwind CSS -->
     <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
     <link rel="stylesheet" href="styles/request-forms.css">
     <style>
         /* Configuración de fuentes y colores personalizados para el tema */
@@ -73,6 +74,26 @@
                 white-space: normal;
                 text-align: center;
             }
+
+            /* Menú responsivo */
+            nav.flex {
+                display: flex !important;
+            }
+
+            #mobile-menu-button {
+                display: none !important;
+            }
+        }
+
+        /* En pantallas menores a 768px */
+        @media (max-width: 767px) {
+            #mobile-menu-button {
+                display: block !important;
+            }
+
+            nav.flex {
+                display: none !important;
+            }
         }
     </style>
 </head>
@@ -86,12 +107,12 @@
                 <!-- Logo/Título --><a href="#inicio" class="flex items-center space-x-3">
                     <!-- RUTA ACTUALIZADA según tu confirmación -->
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">El Templo de
+                    <span class="text-base font-semibold text-neon tracking-wide block">El Templo de
                         Claypole</span>
                 </a>
 
                 <!-- Menú Desktop -->
-                <nav class="hidden md:flex space-x-8 items-center">
+                <nav class="flex space-x-8 items-center">
                     <a href="seccion_talleres.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
                     <a href="seccion_bandas.html"
@@ -106,8 +127,9 @@
                     <div id="auth-menu-desktop"></div>
                 </nav>
 
-                <!-- Botón de Menú Móvil --><button id="mobile-menu-button"
-                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                <!-- Botón de Menú Móvil -->
+                <button id="mobile-menu-button"
+                    class="hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
                     <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 6h16M4 12h16M4 18h16" />
@@ -116,7 +138,7 @@
             </div>
         </div>
         <!-- Menú Móvil Desplegable -->
-        <div id="mobile-menu" class="hidden md:hidden">
+        <div id="mobile-menu" class="hidden">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
                 <a href="seccion_talleres.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
@@ -168,17 +190,13 @@
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Ver Bandas en Vivo
                     </a>
-                    <a href="solicitud_banda.html"
+                    <a href="solicitud_fecha_bandas.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
                         Tocar en El templo
                     </a>
                     <a href="solicitud_taller_actividad.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Dar un taller
-                    </a>
-                    <a href="solicitud_taller.html"
-                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Dar clases
+                        Dar un taller o clase
                     </a>
                     <a href="seccion_servicios.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
@@ -200,7 +218,7 @@
                 </div>
 
                 <!-- Lista de Eventos -->
-                <div id="agenda-list" class="space-y-4 max-w-3xl mx-auto">
+                <div id="agenda-list" class="space-y-4 max-w-5xl mx-auto">
                     <p class="text-center text-lg text-stone-500">Cargando agenda...</p>
                 </div>
                 <div class="text-center mt-8">
@@ -340,7 +358,7 @@
                     </a>
                     <a href="solicitu_taller_actividad.html"
                         class="inline-flex items-center justify-center bg-stone-800/60 border-2 border-neon text-neon font-bold py-4 px-8 rounded-xl text-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        <i class="fas fa-chalkboard-teacher mr-2"></i> Dar un Taller
+                        <i class="fas fa-book-open mr-2"></i> Dar un Taller
                     </a>
                     <a href="solicitud_servicio.html"
                         class="inline-flex items-center justify-center bg-stone-800/60 border-2 border-neon text-neon font-bold py-4 px-8 rounded-xl text-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
@@ -365,7 +383,7 @@
         </div>
     </footer>
     <footer>
-        <p>Versión 0.1</p>
+        <p>Versión 25/02/2026 Casa</p>
     </footer>
 
     <script>

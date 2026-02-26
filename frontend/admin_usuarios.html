@@ -24,7 +24,13 @@
     }
 
     body {
-      padding: calc(20px + 4rem);
+      padding: 16px;
+    }
+
+    .wrap {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px 16px;
     }
 
     /* Estilos específicos de esta página */
@@ -83,7 +89,8 @@
 </head>
 
 <body>
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+
+  <main class="wrap">
     <!-- Header (estilo unificado) -->
     <div
       style="max-width:1600px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; margin-top:1rem;">
@@ -129,6 +136,71 @@
         <!-- Se llena dinámicamente -->
       </div>
     </div>
+    // Inicializar la página solamente si el usuario está autenticado en el cliente
+    async function initPage() {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+    // Si no existe token, mostrar login
+    window.location.href = '/login.html';
+    return;
+    }
+
+    // Cargar la interfaz aquí
+
+    // actualizar menú si es necesario
+    updateAuthMenu();
+    }
+
+    function toggleMobileMenu() {
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileMenu.classList.toggle('hidden');
+    }
+
+    function updateAuthMenu() {
+    const token = localStorage.getItem('authToken');
+    const desktopMenu = document.getElementById('auth-menu-desktop');
+    const mobileMenu = document.getElementById('auth-menu-mobile');
+
+    if (token && desktopMenu) {
+    desktopMenu.innerHTML = `<a href="/admin.html"
+      class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">🔐
+      Admin Panel</a>`;
+    } else if (desktopMenu) {
+    desktopMenu.innerHTML = `<a href="login.html"
+      class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">Login</a>`;
+    }
+    if (token && mobileMenu) {
+    mobileMenu.innerHTML = `<a href="/admin.html"
+      class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐
+      Admin Panel</a><button onclick="logout()"
+      class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">🚪
+      Cerrar Sesión</button>`;
+    } else if (mobileMenu) {
+    mobileMenu.innerHTML = `<a href="login.html"
+      class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">Login</a>`;
+    }
+    }
+
+    function logout() {
+    localStorage.removeItem('authToken');
+    window.location.href = '/index.html';
+    }
+
+    window.addEventListener('storage', updateAuthMenu);
+
+    document.addEventListener('DOMContentLoaded', () => {
+    updateAuthMenu();
+    const btn = document.getElementById('mobile-menu-button');
+    if (btn) btn.addEventListener('click', toggleMobileMenu);
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileMenu) {
+    mobileMenu.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+    mobileMenu.classList.add('hidden');
+    });
+    });
+    }
+    });
   </main>
 
   <!-- Modal Crear/Editar Usuario -->
@@ -199,6 +271,7 @@
     </div>
   </div>
 
+  </main>
   <script src="/navbar.js"></script>
   <script>
     // Variables globales

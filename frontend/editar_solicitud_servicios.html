@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
-    <link rel="stylesheet" href="styles/request-forms.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
@@ -27,7 +26,6 @@
             padding: 20px;
             background-color: #0c0a09;
             color: #d6d3d1;
-            padding-bottom: 70px;
         }
 
         .text-neon {
@@ -39,14 +37,20 @@
             background-color: var(--color-rustic);
         }
 
+        .wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
         .container {
             max-width: 98%;
-            margin: 0 auto;
-            background-color: #111827;
+            margin: 20px auto;
+            background-color: #1e293b;
             padding: 25px;
             border-radius: 8px;
-            border: 1px solid #374151;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--color-rustic);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             position: relative;
         }
 
@@ -74,9 +78,9 @@
 
         .radio-group {
             padding: 10px;
-            border: 1px solid #4b5563;
+            border: 1px solid #581c87;
             border-radius: 4px;
-            background-color: #1f2937;
+            background-color: #0f172a;
         }
 
         .radio-option {
@@ -138,9 +142,9 @@
 
         #tipoEventoDescripcion {
             padding: 10px;
-            border: 1px solid #4b5563;
+            border: 1px solid #581c87;
             border-radius: 4px;
-            background-color: #1f2937;
+            background-color: #0f172a;
             font-size: 0.9em;
             color: #d6d3d1;
             min-height: 120px;
@@ -158,12 +162,12 @@
             width: 100%;
             padding: 12px 8px !important;
             /* Altura forzada */
-            border: 1.5px solid #4b5563;
+            border: 1.5px solid #581c87;
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 16px;
-            background-color: #1f2937;
-            color: #d6d3d1;
+            background-color: #0f172a;
+            color: #f8fafc;
             /* Texto blanco */
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -173,8 +177,8 @@
 
 
         select option {
-            background-color: #1f2937;
-            color: #d6d3d1;
+            background-color: #0f172a;
+            color: #f8fafc;
         }
 
         .campo-invalido {
@@ -203,9 +207,9 @@
         #presupuestoDetalle {
             margin-top: 25px;
             padding: 15px;
-            border: 1px solid #4b5563;
+            border: 1px solid #581c87;
             border-radius: 5px;
-            background-color: #1f2937;
+            background-color: #0f172a;
         }
 
         #presupuestoDetalle ul {
@@ -224,9 +228,9 @@
         #detallePrecios {
             margin-top: 5px;
             padding: 15px;
-            border: 1px solid #4b5563;
+            border: 1px solid #581c87;
             border-radius: 5px;
-            background-color: #1f2937;
+            background-color: #0f172a;
         }
 
         #detallePrecios ul {
@@ -281,7 +285,7 @@
         }
 
         .spinner {
-            border: 4px solid #4b5563;
+            border: 4px solid #581c87;
             border-top: 4px solid var(--color-secondary);
             border-radius: 50%;
             width: 30px;
@@ -341,15 +345,15 @@
         }
 
         .button-group button {
-            background-color: #7c3aed;
-            color: white;
+            background-color: transparent;
+            color: var(--color-secondary);
             border: 2px solid var(--color-secondary);
             padding: 15px 20px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 18px;
             font-weight: bold;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease-in-out;
             text-decoration: none;
             box-sizing: border-box;
             display: inline-flex;
@@ -357,13 +361,17 @@
             align-items: center;
         }
 
-        button:hover {
-            background-color: #6d28d9;
+        .button-group button:hover {
+            background-color: rgba(132, 63, 172, 0.2);
+            transform: scale(1.05);
         }
 
-        button:disabled {
+        .button-group button:disabled {
             background-color: #6b7280;
+            color: #d1d5db;
+            border-color: #6b7280;
             cursor: not-allowed;
+            transform: scale(1.0);
         }
 
         @media (min-width: 768px) {
@@ -391,94 +399,143 @@
 </head>
 
 <body>
-    <div class="container" id="mainContainer">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <a href="admin_solicitudes.html"
-                style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
-                <i class="fas fa-arrow-left"></i> Volver a Solicitudes
-            </a>
-            <h2 style="margin: 0;">Editor de Solicitud de Servicio</h2>
-            <div style="width: 180px;"></div>
-        </div>
 
-        <fieldset id="edit-fieldset">
-            <input type="hidden" id="precioBase" name="precioBase">
-
-            <div class="column-layout">
-                <div class="form-group" id="tipoEventoGroup">
-                    <div>
-                        <label>Tipo de Servicio:</label>
-                        <button id="resetTipoEventoBtn">Cambiar tipo de servicio</button>
-                    </div>
-                    <div id="tipoEventoContainer" class="radio-group"></div>
-                </div>
-                <div class="form-group" id="descripcionGroup">
-                    <label>Descripción:</label>
-                    <div id="tipoEventoDescripcion">Seleccione un tipo de servicio.</div>
-                </div>
-                <div class="form-group" style="margin-top: 8px;">
-                    <label for="urlFlyer">URL del Flyer (promocional)</label>
-                    <input type="text" id="urlFlyer" placeholder="https://..." />
-                    <div style="margin-top:6px;">
-                        <input type="file" id="flyerFile" accept="image/png,image/jpeg" />
-                        <small style="color:#999;margin-left:6px;">Subir imagen (JPEG/PNG, ≤ 3 MB)</small>
-                    </div>
-                    <div id="flyerPreview" style="margin-top:8px;"></div>
-                </div>
+    <main class="wrap">
+        <div class="container" id="mainContainer">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <a href="admin_solicitudes.html"
+                    style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
+                    <i class="fas fa-arrow-left"></i> Volver a Solicitudes
+                </a>
+                <h2 style="margin: 0;">Editor de Solicitud de Servicio</h2>
+                <div style="width: 180px;"></div>
             </div>
-            <div class="column-layout">
+
+            <fieldset id="edit-fieldset">
+                <input type="hidden" id="precioBase" name="precioBase">
+
+                <div class="column-layout">
+                    <div class="form-group" id="tipoEventoGroup">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <div style="flex: 1;">
+                                <label>Tipo de Servicio:</label>
+                                <button id="resetTipoEventoBtn"
+                                    style="margin-top: 4px; width: 100%; padding: 8px; background: #5c4a7f; border: 1px solid #7c3aed; color: #d6d3d1; border-radius: 4px; cursor: pointer;">Cambiar
+                                    tipo de servicio</button>
+                            </div>
+                            <button id="nuevoServicioBtn"
+                                style="margin-top: 20px; padding: 8px 12px; background: #10b981; border: 1px solid #059669; color: white; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap;"
+                                onclick="openModal('tipo')">➕ Nuevo Servicio</button>
+                        </div>
+                        <div id="tipoEventoContainer" class="radio-group"></div>
+                    </div>
+                    <div class="form-group" id="descripcionGroup">
+                        <label>Descripción:</label>
+                        <div id="tipoEventoDescripcion">Seleccione un tipo de servicio.</div>
+                    </div>
+                    <div class="form-group" style="margin-top: 8px;">
+                        <label for="urlFlyer">URL del Flyer (promocional)</label>
+                        <input type="text" id="urlFlyer" placeholder="https://..." />
+                        <div style="margin-top:6px;">
+                            <input type="file" id="flyerFile" accept="image/png,image/jpeg" />
+                            <small style="color:#999;margin-left:6px;">Subir imagen (JPEG/PNG, ≤ 3 MB)</small>
+                        </div>
+                        <div id="flyerPreview" style="margin-top:8px;"></div>
+                    </div>
+                </div>
+                <div class="column-layout">
+                    <div class="form-group">
+                        <label for="fechaEvento">Fecha del Servicio:</label>
+                        <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
+                    </div>
+                    <div class="form-group" id="horaInicioGroup">
+                        <label for="horaInicio">Hora de Inicio:</label>
+                        <select id="horaInicio">
+                            <option value="">--</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="column-layout">
+                    <div class="form-group" id="cantidadPersonasGroup">
+                        <label for="cantidadPersonas">Cantidad de Personas:</label>
+                        <select id="cantidadPersonas">
+                            <option value="">--</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="duracionEventoGroup">
+                        <label for="duracionEvento">Duración del Servicio:</label>
+                        <select id="duracionEvento">
+                            <option value="">--</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label for="fechaEvento">Fecha del Servicio:</label>
-                    <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
+                    <label for="detallesAdicionales">Detalles Adicionales (opcional):</label>
+                    <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
                 </div>
-                <div class="form-group" id="horaInicioGroup">
-                    <label for="horaInicio">Hora de Inicio:</label>
-                    <select id="horaInicio">
-                        <option value="">--</option>
-                    </select>
-                </div>
+            </fieldset>
+
+            <hr>
+
+            <h3>Resumen de Presupuesto Básico:</h3>
+            <div id="presupuestoDetalle">
+                <p>Cargando datos...</p>
             </div>
-            <div class="column-layout">
-                <div class="form-group" id="cantidadPersonasGroup">
-                    <label for="cantidadPersonas">Cantidad de Personas:</label>
-                    <select id="cantidadPersonas">
-                        <option value="">--</option>
-                    </select>
-                </div>
-                <div class="form-group" id="duracionEventoGroup">
-                    <label for="duracionEvento">Duración del Servicio:</label>
-                    <select id="duracionEvento">
-                        <option value="">--</option>
-                    </select>
-                </div>
+            <div id="detallePrecios"></div>
+            <div id="presupuestoTotal"><span>Total: </span> $0</div>
+
+            <div class="button-group">
+                <button id="cancel-button" style="background-color: #6c757d;">Cancelar</button>
+                <button id="save-button">Guardar Cambios</button>
             </div>
 
-            <div class="form-group">
-                <label for="detallesAdicionales">Detalles Adicionales (opcional):</label>
-                <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
+            <div class="loading-overlay" id="loadingOverlay" style="display: flex;">
+                <p>Cargando datos...</p>
+                <div class="spinner"></div>
             </div>
-        </fieldset>
-
-        <hr>
-
-        <h3>Resumen de Presupuesto Básico:</h3>
-        <div id="presupuestoDetalle">
-            <p>Cargando datos...</p>
         </div>
-        <div id="detallePrecios"></div>
-        <div id="presupuestoTotal"><span>Total: </span> $0</div>
+    </main>
+    <div id="notification-banner"></div>
 
-        <div class="button-group">
-            <button id="cancel-button" style="background-color: #6c757d;">Cancelar</button>
-            <button id="save-button">Guardar Cambios</button>
-        </div>
-
-        <div class="loading-overlay" id="loadingOverlay" style="display: flex;">
-            <p>Cargando datos...</p>
-            <div class="spinner"></div>
+    <!-- Modal para Nuevo Tipo de Servicio -->
+    <div id="modal-new-service" class="modal-overlay"
+        style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: flex-start; padding: 40px 16px; z-index: 1000; overflow-y: auto;">
+        <div
+            style="background: #111827; border-radius: 12px; border: 1px solid #374151; max-width: 600px; width: 100%;">
+            <div
+                style="padding: 16px 20px; border-bottom: 1px solid #374151; display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="modal-title" style="color: #f0abfc; margin: 0; font-size: 1.2rem;">Nuevo Tipo de Servicio</h3>
+                <button class="btn btn-icon" onclick="closeModal()"
+                    style="background: transparent; border: none; color: #d6d3d1; cursor: pointer; font-size: 1.5rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="modal-body" style="padding: 20px;">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label
+                        style="display: block; color: #f0abfc; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">Nombre
+                        del Servicio</label>
+                    <input type="text" id="modal-nombre" placeholder="Ej: Depilación Definitiva, Masaje Relajante"
+                        style="width: 100%; padding: 8px 12px; background: #1f2937; border: 1px solid #4b5563; color: #d6d3d1; border-radius: 4px; box-sizing: border-box;">
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label
+                        style="display: block; color: #f0abfc; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">Descripción</label>
+                    <textarea id="modal-descripcion" rows="3" placeholder="Describe el servicio..."
+                        style="width: 100%; padding: 8px 12px; background: #1f2937; border: 1px solid #4b5563; color: #d6d3d1; border-radius: 4px; box-sizing: border-box; font-family: inherit;"></textarea>
+                </div>
+            </div>
+            <div
+                style="padding: 16px 20px; border-top: 1px solid #374151; display: flex; justify-content: flex-end; gap: 12px;">
+                <button class="btn btn-secondary" onclick="closeModal()"
+                    style="background: #6b7280; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                <button class="btn btn-primary" id="modal-save-btn" onclick="saveModal()"
+                    style="background: #7c3aed; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;">💾
+                    Guardar</button>
+            </div>
         </div>
     </div>
-    <div id="notification-banner"></div>
 
     <script src="/navbar.js"></script>
     <script src="/formLogic.js"></script>
@@ -493,9 +550,70 @@
 
             // Inicializar la app de edición
             initializeApp({
-                mode: 'edit'
+                mode: 'edit',
+                categoriaFiltro: 'SERVICIOS'
             });
         });
+
+        // Funciones para el modal de nuevo tipo de servicio
+        function openModal(type) {
+            if (type === 'tipo') {
+                const modal = document.getElementById('modal-new-service');
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal-new-service');
+            modal.style.display = 'none';
+            document.getElementById('modal-nombre').value = '';
+            document.getElementById('modal-descripcion').value = '';
+        }
+
+        function saveModal() {
+            const nombre = document.getElementById('modal-nombre').value.trim();
+            const descripcion = document.getElementById('modal-descripcion').value.trim();
+
+            if (!nombre) {
+                alert('Por favor ingresa un nombre para el servicio');
+                return;
+            }
+
+            // Crear el nuevo tipo de servicio
+            const nuevoTipo = {
+                id_tipo_evento: nombre.toUpperCase().replace(/\s+/g, '_'),
+                nombre_para_mostrar: nombre,
+                descripcion: descripcion,
+                categoria: 'SERVICIOS',
+                es_publico: 1
+            };
+
+            // Aquí se enviaría al servidor, pero por ahora simplemente cerramos el modal
+            // y mostramos un mensaje de éxito
+            console.log('Nuevo tipo de servicio:', nuevoTipo);
+            alert(`Tipo de servicio "${nombre}" creado. Necesita ser guardado en el servidor.`);
+            closeModal();
+
+            // En una implementación real, aquí llamaríamos a un API endpoint:
+            // fetch('/api/opciones-tipos', {
+            //     method: 'POST',
+            //     headers: {'Content-Type': 'application/json'},
+            //     body: JSON.stringify(nuevoTipo)
+            // }).then(res => res.json()).then(data => {
+            //     alert('Tipo de servicio creado exitosamente');
+            //     location.reload();
+            // });
+        }
+
+        // Cerrar el modal si se hace click en el overlay
+        document.getElementById('modal-new-service').addEventListener('click', (e) => {
+            if (e.target.id === 'modal-new-service') {
+                closeModal();
+            }
+        });
+    </script>
+
+    <script>
     </script>
 </body>
 
