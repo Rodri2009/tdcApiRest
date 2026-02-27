@@ -138,6 +138,15 @@ class NavbarManager {
                     background-color: var(--color-rustic);
                 }
 
+                /* Navbar positioning - override any conflicting styles */
+                header.bg-rustic {
+                    position: sticky !important;
+                    top: 0;
+                    z-index: 1280; /* Tailwind z-50 = z-index: 1280 */
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
                 /* Avatar styles */
                 .user-avatar {
                     display: flex;
@@ -158,6 +167,17 @@ class NavbarManager {
                     background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
                 }
 
+                .user-avatar.staff {
+                    background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+                }
+
+                .user-avatar.staff-readonly {
+                    background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
+                    opacity: 0.9;
+                    border-width: 3px;
+                    border-style: dashed;
+                }
+
                 .user-avatar.operador {
                     background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%);
                 }
@@ -174,7 +194,7 @@ class NavbarManager {
                     display: flex;
                     align-items: center;
                     gap: 12px;
-                    padding: 8px 16px;
+                    padding: 0px 16px;
                     border-radius: 50px;
                     background: rgba(240, 171, 252, 0.05);
                     border: 1.5px solid var(--color-secondary);
@@ -194,8 +214,8 @@ class NavbarManager {
                 .admin-panel-badge {
                     display: inline-flex;
                     align-items: center;
-                    gap: 8px;
-                    padding: 8px 16px;
+                    /*gap: 8px;*/
+                    padding: 0px 16px;
                     background: linear-gradient(135deg, #f0abfc 0%, #ec4899 100%);
                     color: #0c0a09;
                     border-radius: 50px;
@@ -211,17 +231,20 @@ class NavbarManager {
 
         // Determinar si estamos en admin.html
         const isAdminPage = window.location.pathname.includes('admin.html');
+
+        // Detectar si es página de staff (admin.html, admin_, editar_, config_)
+        const isStaffPage = /\/(admin\.html|admin_|editar_|config_)/.test(window.location.pathname);
         const adminPageBadge = isAdminPage ? `
             <div class="flex items-center gap-3">
+                <a href="/index.html" class="hover:opacity-80 transition" title="Ir a inicio">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole" class="h-10 w-auto">
+                </a>
                 <div class="admin-panel-badge">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 2L15.09 8.26H22L17.55 12.79L19.64 19.04L12 14.77L4.36 19.04L6.45 12.79L2 8.26H8.91L12 2Z"></path>
                     </svg>
                     Panel Admin
                 </div>
-                <a href="/index.html" class="hover:opacity-80 transition" title="Ir a inicio">
-                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole" class="h-10 w-auto">
-                </a>
             </div>
         ` : '';
 
@@ -244,13 +267,13 @@ class NavbarManager {
                     Login
                 </a>
             `;
-        } else {
-            // Generar menú dinámico según permisos
+        } else if (isStaffPage) {
+            // Menú completo SOLO para páginas de staff (admin_, editar_, config_)
             const menuItems = this.generateMenuItems();
 
             // Obtener rol principal para mostrar
             const rolPrincipal = this.userRoles[0] || 'Usuario';
-            
+
             // Obtener iniciales del usuario
             const iniciales = this.userName
                 .split(' ')
@@ -262,6 +285,8 @@ class NavbarManager {
             // Determinar clase de avatar según rol
             let avatarClass = 'default';
             if (rolPrincipal === 'SUPER_ADMIN' || rolPrincipal === 'ADMIN' || rolPrincipal === 'admin') avatarClass = 'admin';
+            else if (rolPrincipal === 'STAFF' || rolPrincipal === 'staff') avatarClass = 'staff';
+            else if (rolPrincipal === 'STAFF_READONLY' || rolPrincipal === 'staff_readonly') avatarClass = 'staff-readonly';
             else if (rolPrincipal === 'OPERADOR') avatarClass = 'operador';
             else if (rolPrincipal === 'VIEWER') avatarClass = 'viewer';
 
@@ -274,13 +299,13 @@ class NavbarManager {
                         <div class="flex flex-col items-start">
                             <span class="text-sm font-bold">${this.userName}</span>
                         </div>
-                        <svg id="admin-dropdown-arrow" class="w-4 h-4 transition ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transform: rotate(0deg);">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                        </svg>
+                        <!-- <svg id="admin-dropdown-arrow" class="w-4 h-4 transition ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transform: rotate(0deg) scaleY(0.7);">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                        </svg> -->
                     </button>
 
                     <!-- Dropdown Menu -->
-                    <div id="admin-dropdown-menu" class="absolute right-0 mt-8 w-64 bg-stone-800 rounded-lg shadow-xl border border-stone-700 transition-all duration-200 z-50" style="display: none; opacity: 0; visibility: hidden;">
+                    <div id="admin-dropdown-menu" class="absolute right-0 w-64 bg-stone-800 rounded-lg shadow-xl border border-stone-700 transition-all duration-200 z-50" style="top: 100%; padding-top: 8px; display: none; opacity: 0; visibility: hidden;">
                         <div class="p-4 border-b border-stone-700 bg-stone-900 rounded-t-lg">
                             <div class="flex items-center gap-3 mb-3">
                                 <div class="user-avatar ${avatarClass}">${iniciales}</div>
@@ -309,11 +334,33 @@ class NavbarManager {
 
                 <!-- Botón Hamburguesa (Móvil) -->
                 <button id="mobile-menu-button" 
-                        class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                        class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon transform transition">
                     <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
+                
+            `;
+        } else {
+            // Para páginas de CLIENTE: solo mostrar usuario y botón salir (sin menú de administración)
+            const iniciales = this.userName
+                .split(' ')
+                .slice(0, 2)
+                .map(n => n.charAt(0))
+                .join('')
+                .toUpperCase();
+
+            authButtonsHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <div class="user-avatar">${iniciales}</div>
+                        <span class="hidden sm:inline text-sm font-semibold text-neon">${this.userName}</span>
+                    </div>
+                    <button onclick="navbarManager.logout()" 
+                            class="px-3 py-2 text-sm font-semibold text-red-400 hover:bg-red-900 hover:text-white transition rounded">
+                        Salir
+                    </button>
+                </div>
             `;
         }
 
@@ -325,9 +372,9 @@ class NavbarManager {
                         ${authButtonsHTML}
                     </div>
                 </div>
-                <!-- Menú Móvil Desplegable -->
-                ${this.isAuthenticated ? `
-                <div id="mobile-menu" class="hidden md:hidden">
+                <!-- Menú Móvil Desplegable (solo para staff) -->
+                ${this.isAuthenticated && isStaffPage ? `
+                <div id="mobile-menu" class="hidden">
                     <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
                         ${this.generateMenuItems()}
                         <button onclick="navbarManager.logout()" 
@@ -351,31 +398,20 @@ class NavbarManager {
         items.push(this.menuItem('/admin.html', '📋', 'Panel Principal'));
 
         // Solicitudes
-        if (this.tienePermiso('solicitudes.ver')) {
-            items.push(this.menuItem('/admin_solicitudes.html', '📝', 'Solicitudes'));
-            // Eventos confirmados (vista unificada)
-            items.push(this.menuItem('/admin_eventos_confirmados.html', '📆', 'Eventos Confirmados'));
-        }
+        items.push(this.menuItem('/admin_solicitudes.html', '📝', 'Solicitudes'));
+
+        // Agenda
+        items.push(this.menuItem('/admin_agenda.html', '📅', 'Agenda'));
 
         // Personal
-        if (this.tieneAlgunPermiso(['personal.ver', 'personal.gestionar'])) {
-            items.push(this.menuItem('/admin_personal.html', '👥', 'Personal'));
-        }
+        items.push(this.menuItem('/admin_personal.html', '👥', 'Personal'));
 
         // Configuración (submenú)
         const configItems = [];
-        if (this.tienePermiso('config.alquiler')) {
-            configItems.push(this.menuItem('/config_alquiler.html', '🏠', 'Alquiler de Salón', true));
-        }
-        if (this.tienePermiso('config.talleres')) {
-            configItems.push(this.menuItem('/config_talleres.html', '🎨', 'Talleres', true));
-        }
-        if (this.tienePermiso('config.servicios')) {
-            configItems.push(this.menuItem('/config_servicios.html', '✨', 'Servicios', true));
-        }
-        if (this.tienePermiso('config.bandas')) {
-            configItems.push(this.menuItem('/config_bandas.html', '🎸', 'Bandas', true));
-        }
+        configItems.push(this.menuItem('/config_alquiler.html', '🏠', 'Alquiler de Salón', true));
+        configItems.push(this.menuItem('/config_talleres.html', '🎨', 'Talleres', true));
+        configItems.push(this.menuItem('/config_servicios.html', '✨', 'Servicios', true));
+        configItems.push(this.menuItem('/config_bandas.html', '🎸', 'Bandas', true));
 
         if (configItems.length > 0) {
             items.push(`
@@ -384,11 +420,9 @@ class NavbarManager {
             `);
         }
 
-        // Usuarios - solo SUPER_ADMIN o con permiso usuarios.ver
-        if (this.tienePermiso('usuarios.ver')) {
-            items.push(`<div class="border-t border-stone-700 my-1"></div>`);
-            items.push(this.menuItem('/admin_usuarios.html', '🔑', 'Usuarios'));
-        }
+        // Usuarios
+        items.push(`<div class="border-t border-stone-700 my-1"></div>`);
+        items.push(this.menuItem('/admin_usuarios.html', '🔑', 'Usuarios'));
 
         return items.join('');
     }
@@ -526,7 +560,7 @@ class NavbarManager {
             dropdownMenu.style.opacity = '1';
             dropdownMenu.style.visibility = 'visible';
             if (dropdownArrow) {
-                dropdownArrow.style.transform = 'rotate(180deg)';
+                dropdownArrow.style.transform = 'rotate(180deg) scaleY(0.7)';
             }
         }, 10);
     }
@@ -538,7 +572,7 @@ class NavbarManager {
         dropdownMenu.style.opacity = '0';
         dropdownMenu.style.visibility = 'hidden';
         if (dropdownArrow) {
-            dropdownArrow.style.transform = 'rotate(0deg)';
+            dropdownArrow.style.transform = 'rotate(0deg) scaleY(0.7)';
         }
         setTimeout(() => {
             dropdownMenu.style.display = 'none';
@@ -704,3 +738,109 @@ function aplicarPermisosUI() {
         }
     });
 }
+
+/**
+ * Lista de rutas que requieren autenticación
+ * Las rutas se protegen automáticamente durante la inicialización
+ */
+const PROTECTED_ROUTES = [
+    '/solicitud_banda.html',
+    '/solicitud_servicio.html',
+    '/solicitud_taller_actividad.html',
+    '/solicitud_fecha_bandas.html'
+];
+
+// Rutas que requieren rol de staff (nivel >= 50)
+const STAFF_ROUTES = [
+    '/admin_',
+    '/editar_',
+    '/config_',
+    '/admin.html'
+];
+
+/**
+ * Verifica si la ruta actual requiere autenticación
+ * @returns {boolean}
+ */
+function isProtectedRoute() {
+    const currentPath = window.location.pathname;
+    return PROTECTED_ROUTES.some(route => currentPath.includes(route));
+}
+
+/**
+ * Verifica si la ruta actual requiere rol de staff
+ * @returns {boolean}
+ */
+function isStaffRoute() {
+    const currentPath = window.location.pathname;
+    return STAFF_ROUTES.some(route => currentPath.includes(route));
+}
+
+/**
+ * Protege las rutas que requieren autenticación y nivel de staff
+ * Se ejecuta automáticamente durante la inicialización
+ */
+function protectRoutesAutomatically() {
+    // Proteger rutas de staff (admin_, editar_, config_)
+    if (isStaffRoute()) {
+        if (!navbarManager || !navbarManager.isAuthenticated) {
+            // Guardar la página solicitada para redirigir después del login
+            sessionStorage.setItem('returnTo', window.location.pathname + window.location.search);
+            // Redirigir al registro/login
+            window.location.href = '/registro.html';
+            return;
+        }
+
+        // Verificar que el usuario tenga nivel >= 50 (staff o superior)
+        if ((navbarManager.userNivel || 0) < 50) {
+            console.warn(`Acceso denegado: Usuario nivel ${navbarManager.userNivel} intenta acceder a ${window.location.pathname}`);
+            // Redirigir a página de inicio
+            window.location.href = '/index.html';
+            return;
+        }
+    }
+
+    // Proteger rutas de solicitud (requieren autenticación)
+    if (isProtectedRoute()) {
+        if (!navbarManager || !navbarManager.isAuthenticated) {
+            // Guardar la página solicitada para redirigir después del login
+            sessionStorage.setItem('returnTo', window.location.pathname + window.location.search);
+            // Redirigir al registro/login
+            window.location.href = '/registro.html';
+            return;
+        }
+
+        // Verificar que el token no esté expirado
+        if (navbarManager.isTokenExpired && navbarManager.isTokenExpired()) {
+            navbarManager.clearAuth();
+            sessionStorage.setItem('returnTo', window.location.pathname + window.location.search);
+            window.location.href = '/registro.html';
+        }
+    }
+}
+
+// ============================================================
+// INICIALIZACIÓN AUTOMÁTICA
+// ============================================================
+
+/**
+ * Inicializa NavbarManager automáticamente cuando el DOM está listo
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    // Instanciar NavbarManager globalmente
+    if (!navbarManager) {
+        navbarManager = new NavbarManager();
+        window.navbarManager = navbarManager;
+    }
+
+    // Inyectar navbar en la página SOLO si no existe ya una navbar
+    if (!document.querySelector('header.bg-rustic')) {
+        navbarManager.injectNavbar('body');
+    }
+
+    // Aplicar restricciones de permisos UI
+    aplicarPermisosUI();
+
+    // Proteger rutas que requieren autenticación
+    protectRoutesAutomatically();
+});

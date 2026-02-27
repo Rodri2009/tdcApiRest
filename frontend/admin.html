@@ -16,6 +16,7 @@
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
+            padding: 0;
             background: #0c0a09;
             color: #d6d3d1;
         }
@@ -260,18 +261,12 @@
 
     <script src="/navbar.js"></script>
     <script>
-        // Esperar a que DOM esté listo
+        // navbar.js ya crea la instancia de NavbarManager y protege la página automáticamente
+        // Solo necesitamos esperar a que se inyecte la navbar
         document.addEventListener('DOMContentLoaded', () => {
-            // Crear instancia global del navbar (necesario para logout)
-            navbarManager = new NavbarManager();
-
-            // Proteger la página: redirige a login si no está autenticado
-            if (!navbarManager.protectAdminPage()) {
-                return; // Salir si no está autenticado (protectAdminPage ya redirige)
+            if (navbarManager && typeof navbarManager.protectAdminPage === 'function') {
+                navbarManager.protectAdminPage();
             }
-
-            // Inyectar navbar en el body
-            navbarManager.injectNavbar('body');
         });
     </script>
 </body>

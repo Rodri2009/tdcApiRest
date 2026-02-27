@@ -11,7 +11,7 @@
             color: #333;
             background-color: #f4f7f6;
             margin: 0;
-            padding: 20px;
+            padding: 0;
         }
 
         .container {
@@ -211,9 +211,9 @@
             }
             // Llamamos al mismo endpoint que usamos en la página de Contacto
             Promise.all([
-                    fetch(`/api/solicitudes/${solicitudId}`).then(res => res.json()),
-                    fetch('/api/opciones/tipos-evento').then(res => res.json())
-                ])
+                fetch(`/api/solicitudes/${solicitudId}`).then(res => res.json()),
+                fetch('/api/opciones/tipos-evento').then(res => res.json())
+            ])
                 .then(([solicitudData, todosLosTipos]) => {
                     // 'solicitudData' tiene los detalles de la solicitud actual
                     // 'todosLosTipos' es el array completo de tipos de evento

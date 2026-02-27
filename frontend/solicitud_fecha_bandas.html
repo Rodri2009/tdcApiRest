@@ -30,7 +30,7 @@
             font-family: Arial, sans-serif;
             background-color: #0c0a09;
             color: #d6d3d1;
-            padding-bottom: 70px;
+            padding: 0;
         }
 
         .container {
@@ -403,55 +403,6 @@
 </head>
 
 <body>
-    <nav id="top-nav" class="bg-rustic sticky top-0 z-50 shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div class="flex justify-between items-center h-16">
-                <div class="logo">
-                    <a href="index.html" class="flex items-center space-x-3">
-                        <img src="./img/logo_transparente.png" alt="El Templo de Claypole" class="h-10 w-auto">
-                        <span class="text-base font-semibold text-neon tracking-wide block">Volver a Inicio</span>
-                    </a>
-                </div>
-                <div class="nav-links" id="nav-links-desktop">
-                    <a href="#"
-                        class="nav-item active-nav text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Solicitar
-                        Fecha</a>
-                    <a href="seccion_bandas.html"
-                        class="nav-item text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Ver
-                        Bandas</a>
-                    <a href="solicitud_alquiler.html"
-                        class="nav-item text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquilar
-                        Salón</a>
-                    <div id="auth-menu-nav"></div>
-                </div>
-                <!-- Botón de Menú Móvil -->
-                <button id="mobile-menu-button"
-                    class="hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
-                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Menú Móvil Desplegable -->
-    <div id="mobile-menu-band" class="hidden bg-rustic">
-        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <a href="#"
-                class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Solicitar
-                Fecha</a>
-            <a href="seccion_bandas.html"
-                class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Ver
-                Bandas</a>
-            <a href="solicitud_alquiler.html"
-                class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquilar
-                Salón</a>
-            <div id="auth-menu-mobile-band"></div>
-        </div>
-    </div>
-
     <div id="notification-banner" class="notification-banner"></div>
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-spinner"></div>

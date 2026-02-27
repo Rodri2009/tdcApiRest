@@ -253,7 +253,7 @@
             <td class="actions-cell">
               <a class="btn" href="/editar_solicitud?id=${r.id_solicitud}">Ver solicitud</a>
               <a class="btn" href="/editar_evento?id=${r.id}" style="background:#4caf50; margin-left:6px">Editar</a>
-              <a class="btn" href="/asignar_personal.html?solicitudId=ev_${r.id}&tipoEventoId=${r.tipo_evento}" style="background:#4f46e5;margin-left:6px">Asignar Personal</a>
+              <a class="btn" href="/admin_asignar_personal.html?solicitudId=ev_${r.id}&tipoEventoId=${r.tipo_evento}" style="background:#4f46e5;margin-left:6px">Asignar Personal</a>
               <button class="btn btn-cancel" style="background:#f97316;margin-left:6px" onclick="cancelEventoClient(${r.id})">Cancelar</button>
               <button class="btn btn-delete" style="background:#f43f5e;margin-left:6px" onclick="deleteEvento(${r.id})">Eliminar</button>
             </td>

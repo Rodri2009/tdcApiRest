@@ -22,7 +22,7 @@
             margin: 0;
             background: var(--color-dark);
             color: #d6d3d1;
-            padding-bottom: 80px;
+            padding: 0;
         }
 
         .wrap {
@@ -634,9 +634,8 @@
         let editingId = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            navbarManager = new NavbarManager();
-            if (!navbarManager.protectAdminPage()) return;
-            navbarManager.injectNavbar('body');
+            // navbarManager ya fue instanciado y navbar inyectada por navbar.js
+            if (!navbarManager || !navbarManager.protectAdminPage()) return;
 
             initTabs();
             loadAllData();

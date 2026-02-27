@@ -488,4 +488,13 @@ INSERT INTO `catalogo_instrumentos` (
     ('Arpa', 'Cuerdas', NULL);
 
 
-
+-- ============================================
+-- ADICIONALES (items opcionales para solicitudes)
+-- ============================================
+INSERT INTO `solicitudes_adicionales` (
+    `id_solicitud`, `adicional_nombre`, `adicional_precio`
+) VALUES 
+    (2, 'Mesa extra', 5000.00),
+    (2, 'Sillas extras (4)', 1200.00),
+    (2, 'Servicio de fotografía', 8000.00),
+    (1, 'Manteles personalizados', 30000.00);

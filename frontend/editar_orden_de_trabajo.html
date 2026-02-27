@@ -16,6 +16,7 @@
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
+            padding: 0;
             background-color: #0c0a09;
             color: #d6d3d1;
         }
@@ -248,7 +249,7 @@
             <div class="button-group">
                 <button onclick="window.location.href='/admin_solicitudes.html'">Volver al Panel</button>
                 <button class="btn-work-order" 
-                        onclick="window.location.href='/asignar_personal.html?solicitudId=${data.solicitudId}&tipoEventoId=${data.tipoEventoIdForNav}'">
+                        onclick="window.location.href='/admin_asignar_personal.html?solicitudId=${data.solicitudId}&tipoEventoId=${data.tipoEventoIdForNav}'">
                   Volver a Asignar
                 </button>
             </div>
@@ -256,11 +257,10 @@
                     container.innerHTML = html;
 
                     // Proteger esta página: redirigir a login si no está autenticado
-                    navbarManager = new NavbarManager();
-                    if (!navbarManager.protectAdminPage()) {
+                    // navbarManager ya fue instanciado por navbar.js
+                    if (!navbarManager || !navbarManager.protectAdminPage()) {
                         return; // Salir si no está autenticado
                     }
-                    navbarManager.injectNavbar('body');
                 }
             </script>
         </body>

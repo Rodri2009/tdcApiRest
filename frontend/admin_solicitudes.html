@@ -24,8 +24,6 @@
     </style>
 </head>
 
-
-
 <style>
     :root {
         --color-primary: #581c87;
@@ -40,8 +38,7 @@
     body {
         font-family: 'Inter', sans-serif;
         margin: 0;
-        /* conservar el padding base y añadir el offset del header (4rem) */
-        padding: 16px;
+        padding: 0;
         background: #0c0a09;
         min-height: 100vh;
         color: #d6d3d1;
@@ -108,7 +105,6 @@
         width: 100%;
         border-collapse: collapse;
         table-layout: fixed;
-        min-width: 1000px;
     }
 
     th,
@@ -223,6 +219,8 @@
         color: #333;
         cursor: pointer;
         transition: border-color 0.3s ease;
+        box-sizing: border-box;
+        max-width: 100%;
     }
 
     select.estado-select:hover {
@@ -244,7 +242,7 @@
         }
 
         table {
-            min-width: 900px;
+            width: 100%;
         }
 
         th,
@@ -268,7 +266,7 @@
         }
 
         table {
-            min-width: 850px;
+            width: 100%;
         }
 
         th,
@@ -336,10 +334,6 @@
 
     /* Responsive: stack cells on small screens */
     @media (max-width: 768px) {
-        body {
-            padding: 12px;
-        }
-
         h1 {
             font-size: 1.5em;
             margin-bottom: 20px;
@@ -349,6 +343,7 @@
             padding: 12px;
             background: #1a1a1a;
             border: 1px solid rgba(240, 171, 252, 0.1);
+            overflow-x: auto;
         }
 
         table,
@@ -371,6 +366,8 @@
             border-radius: 8px;
             background: #2a2a2a;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            box-sizing: border-box;
         }
 
         tr:hover {
@@ -381,12 +378,14 @@
 
         td {
             display: grid;
-            grid-template-columns: 120px 1fr;
+            grid-template-columns: 90px 1fr;
             gap: 8px;
             padding: 10px 8px;
             border: none;
             align-items: center;
             color: #d6d3d1;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         td::before {
@@ -428,6 +427,7 @@
             border-radius: 6px;
             background-color: #2a2a2a;
             color: #d6d3d1;
+            box-sizing: border-box;
         }
     }
 
@@ -443,6 +443,7 @@
 
         .table-container {
             padding: 8px;
+            overflow-x: auto;
         }
 
         td {
@@ -739,12 +740,12 @@
                         showNotification('Faltan datos', 'error');
                         return;
                     }
-                    window.location.href = `/asignar_personal.html?solicitudId=${id}&tipoEventoId=${tipo}`;
+                    window.location.href = `/admin_asignar_personal.html?solicitudId=${id}&tipoEventoId=${tipo}`;
                 }
 
                 function verOrdenDeTrabajo(id) {
                     if (!id) return;
-                    window.location.href = `/orden_de_trabajo.html?solicitudId=${id}`;
+                    window.location.href = `/editar_orden_de_trabajo.html?solicitudId=${id}`;
                 }
 
                 function modificarSolicitud(id, categoria, origen) {
@@ -878,6 +879,12 @@
                         const puedeEliminarSolicitudes = tienePermiso('solicitudes.eliminar');
                         const puedeCambiarEstado = tienePermiso('solicitudes.cambiar_estado');
                         const puedeGestionarPersonal = tienePermiso('personal.gestionar');
+
+                        console.log(`%c📋 Solicitud ${solicitud.id}`, 'color: #00aaff; font-weight: bold');
+                        console.log('  Editar:', puedeEditarSolicitudes);
+                        console.log('  Eliminar:', puedeEliminarSolicitudes);
+                        console.log('  Cambiar Estado:', puedeCambiarEstado);
+                        console.log('  Gestionar Personal:', puedeGestionarPersonal);
 
                         // Botones base (solo si tiene permisos)
                         if (puedeEditarSolicitudes) {
@@ -1165,56 +1172,37 @@
                 }
 
                 // Proteger esta página: redirigir a login si no está autenticado
-                navbarManager = new NavbarManager();
+                // navbarManager ya fue instanciado automáticamente por navbar.js
                 if (!navbarManager.protectAdminPage()) {
                     return; // Salir si no está autenticado
                 }
-                navbarManager.injectNavbar('body');
+                // navbarManager.injectNavbar() ya fue inyectado automáticamente por navbar.js
+
+                // ============================================================
+                // FUNCIONES DE PERMISOS - delegadas a navbarManager
+                // ============================================================
+                const tienePermiso = (permiso) => navbarManager.tienePermiso(permiso);
+                const tieneAlgunPermiso = (permisos) => navbarManager.tieneAlgunPermiso(permisos);
+                const tieneRol = (rol) => navbarManager.tieneRol(rol);
+                const puedeEditar = (recurso) => {
+                    // Permisos de edición para cada recurso
+                    const permisosEdicion = {
+                        'solicitudes': 'solicitudes.editar',
+                        'eventos': 'eventos.editar',
+                        'personal': 'personal.gestionar',
+                        'usuarios': 'usuarios.editar'
+                    };
+                    return tienePermiso(permisosEdicion[recurso] || `${recurso}.editar`);
+                };
+
+                console.log('%c✅ Sistema de Permisos Iniciado', 'color: #00cc00; font-weight: bold; font-size: 13px');
+                console.log('Usuario:', navbarManager.userName || 'Anónimo');
+                console.log('Rol:', navbarManager.userRole || 'Sin rol');
+                console.log('Roles:', navbarManager.userRoles || []);
+                console.log('Permisos:', navbarManager.userPermisos || []);
 
                 // Load solicitudes on page load
                 cargarSolicitudes();
-
-                // ============================================================
-                // AUTENTICACIÓN Y MENÚ MÓVIL
-                // ============================================================
-                function toggleMobileMenu() {
-                    const mobileMenu = document.getElementById('mobile-menu');
-                    if (mobileMenu) mobileMenu.classList.toggle('hidden');
-                }
-
-                function updateAuthMenu() {
-                    const token = localStorage.getItem('authToken');
-                    const desktopMenu = document.getElementById('auth-menu-desktop');
-                    const mobileMenu = document.getElementById('auth-menu-mobile');
-
-                    if (token) {
-                        if (desktopMenu) desktopMenu.innerHTML = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">🔐 Admin Panel</a>`;
-                        if (mobileMenu) mobileMenu.innerHTML = `<a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐 Admin Panel</a><button onclick="logout()" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">🚪 Cerrar Sesión</button>`;
-                    } else {
-                        if (desktopMenu) desktopMenu.innerHTML = `<a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">Login</a>`;
-                        if (mobileMenu) mobileMenu.innerHTML = `<a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">Login</a>`;
-                    }
-                }
-
-                function logout() {
-                    localStorage.removeItem('authToken');
-                    window.location.href = '/index.html';
-                }
-
-                window.addEventListener('storage', updateAuthMenu);
-
-                // Inicializar menú
-                updateAuthMenu();
-                const btn = document.getElementById('mobile-menu-button');
-                if (btn) btn.addEventListener('click', toggleMobileMenu);
-                const mobileMenu = document.getElementById('mobile-menu');
-                if (mobileMenu) {
-                    mobileMenu.querySelectorAll('a').forEach(link => {
-                        link.addEventListener('click', () => {
-                            mobileMenu.classList.add('hidden');
-                        });
-                    });
-                }
             });
         </script>
 </body>

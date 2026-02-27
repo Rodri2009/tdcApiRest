@@ -11,21 +11,21 @@ const obtenerRolYPermisos = (rol) => {
     // Definir permisos por rol (formato: recurso.accion)
     const permisosPorRol = {
         admin: [
-            // Usuarios
             'usuarios.ver', 'usuarios.crear', 'usuarios.editar', 'usuarios.eliminar', 'usuarios.asignar_roles',
-            // Solicitudes
-            'solicitudes.ver', 'solicitudes.crear', 'solicitudes.editar', 'solicitudes.eliminar',
-            // Configuración general
+            'solicitudes.ver', 'solicitudes.crear', 'solicitudes.editar', 'solicitudes.eliminar', 'solicitudes.cambiar_estado',
             'configuracion.ver', 'configuracion.editar',
-            // Configuración específica por módulo
             'config.alquiler', 'config.talleres', 'config.servicios', 'config.bandas',
-            // Personal
             'personal.ver', 'personal.gestionar',
-            // Reportes
             'reportes.ver'
         ],
         staff: [
-            'solicitudes.ver', 'solicitudes.editar',
+            'solicitudes.ver', 'solicitudes.editar', 'solicitudes.cambiar_estado',
+            'configuracion.ver',
+            'personal.ver',
+            'reportes.ver'
+        ],
+        staff_readonly: [
+            'solicitudes.ver',
             'configuracion.ver',
             'personal.ver',
             'reportes.ver'
@@ -38,6 +38,7 @@ const obtenerRolYPermisos = (rol) => {
     const nivelesPorRol = {
         admin: 100,
         staff: 50,
+        staff_readonly: 50,
         cliente: 10
     };
 
@@ -53,12 +54,15 @@ const obtenerRolYPermisos = (rol) => {
  */
 const generarToken = (usuario) => {
     const { roles, permisos, nivel } = obtenerRolYPermisos(usuario.rol);
-    
+
     const payload = {
         id_usuario: usuario.id_usuario,
         nombre: usuario.nombre || '',
         email: usuario.email,
-        role: usuario.rol
+        role: usuario.rol,
+        roles: roles,
+        permisos: permisos,
+        nivel: nivel
     };
 
     return {
@@ -85,21 +89,21 @@ const register = async (req, res) => {
 
     // Validar campos
     if (!nombre || !email || !telefono || !password) {
-        return res.status(400).json({ 
-            message: 'Todos los campos son requeridos (nombre, email, telefono, password).' 
+        return res.status(400).json({
+            message: 'Todos los campos son requeridos (nombre, email, telefono, password).'
         });
     }
 
     if (password.length < 6) {
-        return res.status(400).json({ 
-            message: 'La contraseña debe tener al menos 6 caracteres.' 
+        return res.status(400).json({
+            message: 'La contraseña debe tener al menos 6 caracteres.'
         });
     }
 
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
         // Verificar que email no exista
         const [existingUser] = await conn.query(
             "SELECT id_usuario FROM usuarios WHERE email = ?",
@@ -237,16 +241,21 @@ const login = async (req, res) => {
 const oauthCallback = async (req, res) => {
     const { proveedor_oauth, id_oauth, email, nombre, apellido, foto_url, telefono } = req.body;
 
+    console.log('[OAUTH-CALLBACK] Iniciando...');
+    console.log('[OAUTH-CALLBACK] Datos recibidos:', { proveedor_oauth, id_oauth, email, nombre });
+
     // Validar campos
     if (!proveedor_oauth || !id_oauth || !email) {
-        return res.status(400).json({ 
-            message: 'Campos requeridos faltantes: proveedor_oauth, id_oauth, email.' 
+        console.error('[OAUTH-CALLBACK] ERROR: Campos faltantes');
+        return res.status(400).json({
+            message: 'Campos requeridos faltantes: proveedor_oauth, id_oauth, email.'
         });
     }
 
     if (!['google', 'facebook', 'instagram'].includes(proveedor_oauth)) {
-        return res.status(400).json({ 
-            message: 'Proveedor OAuth inválido. Use: google, facebook, instagram.' 
+        console.error('[OAUTH-CALLBACK] ERROR: Proveedor inválido:', proveedor_oauth);
+        return res.status(400).json({
+            message: 'Proveedor OAuth inválido. Use: google, facebook, instagram.'
         });
     }
 
@@ -254,18 +263,20 @@ const oauthCallback = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // 1. Buscar usuario existente por (proveedor_oauth, id_oauth)
-        const [existingUser] = await conn.query(
+        // 1. Buscar usuario existente por (proveedor_oauth, id_oauth) - LOGIN OAUTH CONOCIDO
+        console.log('[OAUTH-CALLBACK] Buscando por proveedor_oauth + id_oauth...');
+        const [existingOAuthUser] = await conn.query(
             "SELECT id_usuario, email, nombre, rol FROM usuarios " +
             "WHERE proveedor_oauth = ? AND id_oauth = ?",
             [proveedor_oauth, id_oauth]
         );
 
-        if (existingUser) {
+        if (existingOAuthUser) {
+            console.log('[OAUTH-CALLBACK] ✓ Usuario OAuth encontrado:', existingOAuthUser.email);
             logVerbose(`OAuth login existente: ${proveedor_oauth} / ${id_oauth}`);
-            
+
             // Generar token para usuario existente
-            const { token, user: userResponse } = generarToken(existingUser);
+            const { token, user: userResponse } = generarToken(existingOAuthUser);
 
             // Setear cookie
             res.cookie('token', token, {
@@ -274,6 +285,7 @@ const oauthCallback = async (req, res) => {
                 maxAge: 8 * 60 * 60 * 1000 // 8 horas
             });
 
+            console.log('[OAUTH-CALLBACK] ✓ Login exitoso (OAuth conocido)');
             return res.status(200).json({
                 message: 'Login exitoso (OAuth).',
                 token: token,
@@ -281,7 +293,49 @@ const oauthCallback = async (req, res) => {
             });
         }
 
-        // 2. Crear nuevo usuario + cliente
+        console.log('[OAUTH-CALLBACK] No encontrado por OAuth. Buscando por email...');
+
+        // 2. Buscar usuario existente por EMAIL - LINKEAR OAUTH A CUENTA EXISTENTE
+        const [existingEmailUser] = await conn.query(
+            "SELECT id_usuario, email, nombre, rol FROM usuarios WHERE email = ?",
+            [email]
+        );
+
+        if (existingEmailUser) {
+            console.log('[OAUTH-CALLBACK] ✓ Usuario por email encontrado:', existingEmailUser.email);
+            console.log('[OAUTH-CALLBACK] Linkeando OAuth a cuenta existente...');
+            logVerbose(`Usuario existente encontrado por email: ${email}. Linkeando OAuth...`);
+
+            // Actualizar el usuario para linkear la credencial OAuth
+            await conn.query(
+                "UPDATE usuarios SET proveedor_oauth = ?, id_oauth = ?, foto_url = ? WHERE id_usuario = ?",
+                [proveedor_oauth, id_oauth, foto_url || null, existingEmailUser.id_usuario]
+            );
+
+            console.log('[OAUTH-CALLBACK] ✓ OAuth linkeado exitosamente');
+            logSuccess(`OAuth linkeado a usuario existente: ${email}`);
+
+            // Generar token para usuario existente
+            const { token, user: userResponse } = generarToken(existingEmailUser);
+
+            // Setear cookie
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                maxAge: 8 * 60 * 60 * 1000 // 8 horas
+            });
+
+            console.log('[OAUTH-CALLBACK] ✓ Login exitoso (OAuth linkeado a cuenta)');
+            return res.status(200).json({
+                message: 'Login exitoso (OAuth linkeado a cuenta existente).',
+                token: token,
+                user: userResponse
+            });
+        }
+
+        console.log('[OAUTH-CALLBACK] Usuario no existe. Creando nuevo usuario + cliente...');
+
+        // 3. Crear nuevo usuario + cliente (NO EXISTE POR EMAIL NI OAUTH)
         await conn.beginTransaction();
 
         try {
@@ -293,6 +347,7 @@ const oauthCallback = async (req, res) => {
             );
 
             const id_usuario = insertUsuarioResult.insertId;
+            console.log('[OAUTH-CALLBACK] ✓ Usuario creado con ID:', id_usuario);
 
             // Crear cliente
             await conn.query(
@@ -301,6 +356,7 @@ const oauthCallback = async (req, res) => {
                 [id_usuario, nombre || '', telefono || '', email, id_usuario]
             );
 
+            console.log('[OAUTH-CALLBACK] ✓ Cliente creado');
             await conn.commit();
             logSuccess(`Usuario OAuth creado: ${email} (${proveedor_oauth})`);
 
@@ -320,6 +376,7 @@ const oauthCallback = async (req, res) => {
                 maxAge: 8 * 60 * 60 * 1000 // 8 horas
             });
 
+            console.log('[OAUTH-CALLBACK] ✓ Registro OAuth exitoso');
             res.status(201).json({
                 message: 'Registro OAuth exitoso.',
                 token: token,
@@ -327,18 +384,21 @@ const oauthCallback = async (req, res) => {
             });
 
         } catch (transactionErr) {
+            console.error('[OAUTH-CALLBACK] ERROR en transacción:', transactionErr.message);
             await conn.rollback();
             throw transactionErr;
         }
 
     } catch (err) {
+        console.error('[OAUTH-CALLBACK] ERROR general:', err.code, err.message);
         logError('Error en oauthCallback:', err);
-        
+
         // Manejo específico de violación de constraint único
         if (err.code === 'ER_DUP_ENTRY') {
+            console.error('[OAUTH-CALLBACK] ERROR: Email duplicado o constraint violado');
             return res.status(409).json({ message: 'Email ya registrado con otro proveedor.' });
         }
-        
+
         res.status(500).json({ message: 'Error del servidor.' });
     } finally {
         if (conn) conn.release();

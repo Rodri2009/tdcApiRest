@@ -11,7 +11,8 @@
   <!-- Google SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <!-- Facebook SDK -->
-  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/es_ES/sdk.js#xfbml=1&version=v18.0" nonce="ABC123"></script>
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/es_ES/sdk.js#xfbml=1&version=v18.0"
+    nonce="ABC123"></script>
 
   <style>
     /* ------------------------------------- */
@@ -35,7 +36,7 @@
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0 0 70px 0;
+      padding: 0;
       /* Ajuste para el sticky navbar */
       background-color: var(--color-bg-dark);
       color: var(--color-text-light);
@@ -360,14 +361,32 @@
     }
 
     /* Estilos específicos por red social */
-    .google-btn { border-color: #4285f4; color: #4285f4; }
-    .google-btn:hover { background: rgba(66, 133, 244, 0.1); }
+    .google-btn {
+      border-color: #4285f4;
+      color: #4285f4;
+    }
 
-    .facebook-btn { border-color: #1877f2; color: #1877f2; }
-    .facebook-btn:hover { background: rgba(24, 119, 242, 0.1); }
+    .google-btn:hover {
+      background: rgba(66, 133, 244, 0.1);
+    }
 
-    .instagram-btn { border-color: #e1306c; color: #e1306c; }
-    .instagram-btn:hover { background: rgba(225, 48, 108, 0.1); }
+    .facebook-btn {
+      border-color: #1877f2;
+      color: #1877f2;
+    }
+
+    .facebook-btn:hover {
+      background: rgba(24, 119, 242, 0.1);
+    }
+
+    .instagram-btn {
+      border-color: #e1306c;
+      color: #e1306c;
+    }
+
+    .instagram-btn:hover {
+      background: rgba(225, 48, 108, 0.1);
+    }
 
     .social-loading {
       position: relative;

@@ -12,6 +12,41 @@ const { performSyncLogos, performSyncFlyers } = require('./controllers/bandaCont
 const app = express();
 const port = process.env.PORT || 3000;
 
+/**
+ * Crea la tabla solicitudes_personal si no existe
+ * Se ejecuta automáticamente durante la inicialización del servidor
+ */
+const createTable = async () => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const sql = `
+            CREATE TABLE IF NOT EXISTS solicitudes_personal (
+                id_solicitud_personal INT AUTO_INCREMENT PRIMARY KEY,
+                id_solicitud INT NOT NULL,
+                id_personal VARCHAR(50) DEFAULT NULL,
+                rol_requerido VARCHAR(100) NOT NULL,
+                estado VARCHAR(50) DEFAULT 'asignado' COMMENT 'asignado, confirmado, cancelado',
+                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_solicitud (id_solicitud),
+                INDEX idx_personal (id_personal),
+                FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Asignaciones de personal a solicitudes antes de confirmarse como eventos'
+        `;
+
+        await conn.query(sql);
+        logSuccess('✓ Tabla solicitudes_personal verificada/creada exitosamente');
+
+    } catch (err) {
+        logWarning('⚠ Error al crear tabla solicitudes_personal:', err.message);
+        // No fallar el servidor si la tabla ya existe o hay un error menor
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 // --- Middlewares ---
 // Aumento límite para aceptar payloads con imágenes en base64 (ej. url_flyer)
 app.use(express.json({ limit: '2mb' }));
@@ -170,6 +205,13 @@ async function startServer() {
             conn.release(); // Liberamos inmediatamente si tuvo éxito
             logSuccess("Conexión exitosa a MariaDB");
             connected = true;
+
+            // Crear tablas requeridas si no existen
+            try {
+                await createTable();
+            } catch (err) {
+                logWarning('[INIT-TABLES] ⚠ Fallo al crear tablas requeridas:', err.message);
+            }
 
             // Ejecutar sincronizaciones al inicizar el servidor (esperare a que terminen)
             try {

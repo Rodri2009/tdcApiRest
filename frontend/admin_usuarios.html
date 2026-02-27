@@ -24,7 +24,8 @@
     }
 
     body {
-      padding: 16px;
+      margin: 0;
+      padding: 0;
     }
 
     .wrap {
@@ -623,11 +624,10 @@
 
     // Inicialización
     document.addEventListener('DOMContentLoaded', () => {
-      navbarManager = new NavbarManager();
-      if (!navbarManager.protectAdminPage()) {
+      // navbarManager ya fue instanciado y navbar inyectada por navbar.js
+      if (!navbarManager || !navbarManager.protectAdminPage()) {
         return;
       }
-      navbarManager.injectNavbar('body');
 
       // Establecer permisos de edición
       puedeEditarUsuarios = puedeEditar('usuarios');

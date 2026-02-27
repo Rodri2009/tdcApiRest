@@ -21,7 +21,7 @@ const getProfesionales = async (req, res) => {
                    p.id_cliente as id_cliente,
                    c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.email as cliente_email
             FROM profesionales_servicios p
-            LEFT JOIN clientes c ON p.id_cliente = c.id
+            LEFT JOIN clientes c ON p.id_cliente = c.id_cliente
         `;
         if (soloActivos) sql += ` WHERE activo = 1`;
         sql += ` ORDER BY nombre`;

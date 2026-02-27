@@ -31,7 +31,7 @@ body {
     background: var(--color-dark);
     color: var(--color-text);
     margin: 0;
-    padding-bottom: 80px;
+    padding: 0;
 }
 
 /* =============================================================================

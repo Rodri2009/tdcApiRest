@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Protección de Rutas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+        }
+
+        .pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔐 Test de Protección de Rutas</h1>
+
+    <div class="test-section">
+        <h2>1. Test localStorage.authToken</h2>
+        <div id="result1" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test NavbarManager Instantiation</h2>
+        <div id="result2" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Protected Routes Detection</h2>
+        <div id="result3" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test returnTo Handler</h2>
+        <div id="result4" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Instrucciones de Prueba Manual</h2>
+        <ol>
+            <li>Abre DevTools (F12) y ve a la pestaña "Storage" o "Application"</li>
+            <li>Elimina <code>localStorage.authToken</code> si existe</li>
+            <li>Cierra todas las pestañas de la aplicación</li>
+            <li>Abre: <code>http://localhost/solicitud_banda.html</code></li>
+            <li>Verifica que redirija automáticamente a <code>http://localhost/registro.html</code></li>
+            <li>El <code>sessionStorage.returnTo</code> debe contener <code>/solicitud_banda.html</code></li>
+            <li>Completa el registro/login</li>
+            <li>Verifica que redirija de vuelta a <code>/solicitud_banda.html</code></li>
+        </ol>
+    </div>
+
+    <script src="/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('=== TESTING ROUTE PROTECTION ===');
+
+            // Test 1: Check authToken
+            const authToken = localStorage.getItem('authToken');
+            const result1 = document.getElementById('result1');
+            if (authToken) {
+                result1.className = 'test-result pass';
+                result1.innerHTML = `✓ authToken encontrado<br><small>${authToken.substring(0, 50)}...</small>`;
+            } else {
+                result1.className = 'test-result info';
+                result1.innerHTML = 'ℹ Sin token (esperado para test de usuarios no autenticados)';
+            }
+
+            // Test 2: NavbarManager
+            const result2 = document.getElementById('result2');
+            if (typeof navbarManager !== 'undefined' && navbarManager) {
+                result2.className = 'test-result pass';
+                result2.innerHTML = `✓ NavbarManager instanciado<br>
+                    Autenticado: ${navbarManager.isAuthenticated}<br>
+                    Usuario: ${navbarManager.userEmail || 'N/A'}<br>
+                    Nivel: ${navbarManager.userNivel}`;
+            } else {
+                result2.className = 'test-result fail';
+                result2.innerHTML = '✗ NavbarManager no está disponible';
+            }
+
+            // Test 3: Protected Routes
+            const result3 = document.getElementById('result3');
+            const protectedRoutes = [
+                '/solicitud_banda.html',
+                '/solicitud_servicio.html',
+                '/solicitud_taller_actividad.html',
+                '/solicitud_fecha_bandas.html'
+            ];
+            result3.className = 'test-result info';
+            result3.innerHTML = 'Rutas protegidas definidas:<br>';
+            protectedRoutes.forEach(route => {
+                result3.innerHTML += `• ${route}<br>`;
+            });
+
+            // Test 4: returnTo Handler
+            const result4 = document.getElementById('result4');
+            const returnTo = sessionStorage.getItem('returnTo');
+            if (returnTo) {
+                result4.className = 'test-result pass';
+                result4.innerHTML = `✓ sessionStorage.returnTo establecido<br><code>${returnTo}</code>`;
+            } else {
+                result4.className = 'test-result info';
+                result4.innerHTML = 'ℹ sessionStorage.returnTo no establecido (normal si se acababa de limpiar)';
+            }
+
+            console.log('NavbarManager:', navbarManager);
+            console.log('Protected Routes:', protectedRoutes);
+            console.log('Current Path:', window.location.pathname);
+            console.log('Return To:', returnTo);
+        });
+    </script>
+</body>
+
+</html>

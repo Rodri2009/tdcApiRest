@@ -25,12 +25,12 @@
         }
 
         body {
-            /* conservar el padding base y añadir el offset del header (4rem) */
-            padding: calc(20px + 4rem) 20px 20px 20px;
+            /* conservar el padding base y añadir el offset del header (72px) */
+            margin: 0;
+            padding: 0;
             background-color: #0c0a09;
             color: #d6d3d1;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0;
         }
 
         h1 {
@@ -115,7 +115,6 @@
 </head>
 
 <body>
-
     <!-- Navegación -->
     <header class="bg-rustic sticky top-0 z-50 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -510,7 +509,7 @@
                 return;
             }
             tbody.innerHTML = personal.map(function (p) {
-                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editPersonal(\'\' + p.id + '\'\')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deletePersonal(\'\' + p.id + '\'\')" title="Desactivar" style="color:#f87171;"><i class="fas fa-user-xmark"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
+                var acciones = puedeEditarPersonal ? '<div class="row-actions"><button class="btn btn-icon btn-sm" onclick="editPersonal(' + p.id + ')" title="Editar"><i class="fas fa-edit"></i></button><button class="btn btn-icon btn-sm" onclick="deletePersonal(' + p.id + ')" title="Desactivar" style="color:#f87171;"><i class="fas fa-user-xmark"></i></button></div>' : '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
                 var estado = p.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-gray">Inactivo</span>';
                 return '<tr><td><strong>' + p.nombre + '</strong></td><td>' + (p.roles || '-') + '</td><td>' + (p.telefono || '-') + '</td><td>' + estado + '</td><td>' + acciones + '</td></tr>';
             }).join('');
@@ -907,15 +906,13 @@
             console.log('Iniciando aplicación de administración de personal');
 
             try {
-                // Inicializar NavbarManager como en config_alquiler
-                navbarManager = new NavbarManager();
-                if (!navbarManager.protectAdminPage()) {
+                // navbarManager ya fue instanciado y navbar inyectada por navbar.js
+                if (!navbarManager || !navbarManager.protectAdminPage()) {
                     console.log('Acceso denegado por protectAdminPage');
                     return;
                 }
                 console.log('Acceso permitido');
-                navbarManager.injectNavbar('body');
-                console.log('Navbar inyectado');
+                console.log('Navbar ya fue inyectado por navbar.js');
 
                 // Establecer permisos de edición
                 console.log('Debugging permisos...');

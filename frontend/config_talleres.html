@@ -409,6 +409,11 @@
                 opacity: 1;
             }
         }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
     </style>
 </head>
 
@@ -646,9 +651,8 @@
         let editingId = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            navbarManager = new NavbarManager();
-            if (!navbarManager.protectAdminPage()) return;
-            navbarManager.injectNavbar('body');
+            // navbarManager ya fue instanciado y navbar inyectada por navbar.js
+            if (!navbarManager || !navbarManager.protectAdminPage()) return;
 
             initTabs();
             loadAllData();
@@ -1398,11 +1402,11 @@
         // ============================================================
         // INICIALIZACIÓN
         // ============================================================
-        document.addEventListener('DOMContentLoaded', () => {
+        /*document.addEventListener('DOMContentLoaded', () => {
             navbarManager = new NavbarManager();
             if (!navbarManager.protectAdminPage()) return;
             navbarManager.injectNavbar('body');
-        });
+        });*/
     </script>
 </body>
 

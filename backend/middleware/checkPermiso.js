@@ -9,6 +9,8 @@
  *   router.post('/config', protect, checkAnyPermiso(['config.alquiler', 'config.talleres']), updateConfig);
  */
 
+const { logWarning } = require('../lib/debugFlags');
+
 /**
  * Verifica que el usuario tenga un permiso específico
  * @param {string} permisoRequerido - Código del permiso (ej: 'usuarios.ver')

@@ -257,9 +257,9 @@ const asignarRoles = async (req, res) => {
     const { id } = req.params;
     const { rol } = req.body;
 
-    const rolesValidos = ['admin', 'staff', 'cliente'];
+    const rolesValidos = ['admin', 'staff', 'staff_readonly', 'cliente'];
     if (!rol || !rolesValidos.includes(rol)) {
-        return res.status(400).json({ message: 'Rol inválido. Use: admin, staff o cliente' });
+        return res.status(400).json({ message: 'Rol inválido. Use: admin, staff, staff_readonly o cliente' });
     }
 
     let conn;

@@ -13,11 +13,16 @@
             --color-rustic: #44403c;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
             background-color: #0c0a09;
             color: #d6d3d1;
+            box-sizing: border-box;
         }
 
         .text-neon {
@@ -30,107 +35,173 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background-color: #1a1a1a;
-            padding: 25px;
+            padding: 32px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(240, 171, 252, 0.1);
-            margin-top: 2rem;
         }
 
         h1 {
             color: var(--color-secondary);
             text-align: center;
-            margin-top: 2rem;
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            font-weight: 700;
+            text-shadow: 0 0 8px rgba(240, 171, 252, 0.3);
         }
 
         h2 {
             color: var(--color-secondary);
-            border-bottom: 1px solid rgba(240, 171, 252, 0.2);
-            padding-bottom: 10px;
-            margin-top: 30px;
+            border-bottom: 2px solid rgba(240, 171, 252, 0.3);
+            padding-bottom: 12px;
+            margin: 24px 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
         }
 
         .loader {
             text-align: center;
-            padding: 50px;
+            padding: 60px 20px;
             color: #9ca3af;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .loader::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-left: 8px;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            border: 3px solid rgba(240, 171, 252, 0.2);
+            border-top-color: #f0abfc;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .rol-group {
             margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(240, 171, 252, 0.03);
+            border: 1px solid rgba(240, 171, 252, 0.1);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .rol-group:hover {
+            background: rgba(240, 171, 252, 0.06);
+            border-color: rgba(240, 171, 252, 0.2);
         }
 
         .rol-group label {
             display: block;
             font-weight: 600;
             margin-bottom: 8px;
-            color: #d1d5db;
+            color: #f0abfc;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .rol-group select {
             width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 4px;
-            border: 1px solid rgba(240, 171, 252, 0.2);
+            padding: 10px 12px;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 2px solid rgba(240, 171, 252, 0.2);
             background: #0f0f0f;
-            color: #fff;
+            color: #d6d3d1;
             margin-bottom: 5px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .rol-group select:focus {
+            outline: none;
+            border-color: #f0abfc;
+            background: #1a1a1a;
+            box-shadow: 0 0 0 3px rgba(240, 171, 252, 0.1);
         }
 
         .button-group {
-            margin-top: 30px;
+            margin-top: 32px;
             display: flex;
             justify-content: space-between;
-            gap: 12px;
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
         button {
-            padding: 12px 20px;
-            font-size: 16px;
-            border-radius: 4px;
+            padding: 12px 24px;
+            font-size: 14px;
+            border-radius: 6px;
             border: none;
             cursor: pointer;
             color: white;
             font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:active {
+            transform: scale(0.98);
         }
 
         .btn-save {
-            background-color: #10b981;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             flex: 1;
+            min-width: 140px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
 
         .btn-save:hover {
-            background-color: #059669;
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
         }
 
         .btn-save:disabled {
-            background-color: #6b7280;
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
             cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.6;
         }
 
         .btn-back {
-            background-color: #6c757d;
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            min-width: 140px;
+            flex: 1;
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
         }
 
         .btn-back:hover {
-            background-color: #5a6268;
+            background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+            box-shadow: 0 6px 16px rgba(107, 114, 128, 0.4);
         }
 
         .btn-work-order {
-            background-color: #17a2b8;
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
         }
 
         .btn-work-order:hover {
-            background-color: #138496;
+            background: linear-gradient(135deg, #138496 0%, #0c5a6e 100%);
+            box-shadow: 0 6px 16px rgba(23, 162, 184, 0.4);
         }
 
         option:disabled {
             color: #9ca3af;
             background-color: #1f2937;
+            font-style: italic;
         }
 
         #notification-banner {
@@ -138,16 +209,17 @@
             bottom: 20px;
             left: 50%;
             transform: translate(-50%, 150%);
-            padding: 12px 25px;
+            padding: 16px 28px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
             color: white;
-            font-size: 16px;
-            font-weight: 500;
+            font-size: 14px;
+            font-weight: 600;
             z-index: 1000;
             transition: transform 0.5s ease-in-out;
             max-width: 90%;
             text-align: center;
+            letter-spacing: 0.5px;
         }
 
         #notification-banner.show {
@@ -155,15 +227,18 @@
         }
 
         #notification-banner.success {
-            background-color: #10b981;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
         }
 
         #notification-banner.error {
-            background-color: #ef4444;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
         }
 
         #notification-banner.info {
-            background-color: #3b82f6;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
         }
     </style>
     <script src="/navbar.js"></script>
@@ -259,7 +334,7 @@
                     saveButton.textContent = 'Ver orden de trabajo';
                     saveButton.className = 'btn-work-order';
                     saveButton.onclick = () => {
-                        window.location.href = `/orden_de_trabajo.html?solicitudId=${solicitudId}`;
+                        window.location.href = `/editar_orden_de_trabajo.html?solicitudId=${solicitudId}`;
                     };
                 } else {
                     saveButton.textContent = 'Guardar Asignaciones';
@@ -371,7 +446,7 @@
                     showNotification(data.message, 'success');
                     // Redirigir a orden de trabajo después de un pequeño delay
                     setTimeout(() => {
-                        window.location.href = `/orden_de_trabajo.html?solicitudId=${solicitudId}`;
+                        window.location.href = `/editar_orden_de_trabajo.html?solicitudId=${solicitudId}`;
                     }, 1000);
                 } catch (error) {
                     console.error("Error:", error);
@@ -386,11 +461,10 @@
             cargarDatosDeAsignacion();
 
             // Proteger esta página: redirigir a login si no está autenticado
-            navbarManager = new NavbarManager();
-            if (!navbarManager.protectAdminPage()) {
+            // navbarManager ya fue instanciado por navbar.js
+            if (!navbarManager || !navbarManager.protectAdminPage()) {
                 return; // Salir si no está autenticado
             }
-            navbarManager.injectNavbar('body');
         });
     </script>
 </body>

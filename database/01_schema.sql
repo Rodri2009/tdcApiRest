@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) DEFAULT NULL COMMENT 'NULL si se registró vía OAuth',
     nombre VARCHAR(255),
-    rol ENUM('admin', 'staff', 'cliente') DEFAULT 'cliente',
+    rol ENUM('admin', 'staff', 'staff_readonly', 'cliente') DEFAULT 'cliente',
     activo TINYINT(1) NOT NULL DEFAULT 1,
     
     -- Datos de OAuth
@@ -509,6 +509,20 @@ CREATE TABLE IF NOT EXISTS eventos_personal (
     INDEX idx_evento (id_evento),
     FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Personal asignado a solicitudes (antes de ser confirmadas como eventos)
+CREATE TABLE IF NOT EXISTS solicitudes_personal (
+    id_solicitud_personal INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT NOT NULL,
+    id_personal VARCHAR(50) DEFAULT NULL,
+    rol_requerido VARCHAR(100) NOT NULL,
+    estado VARCHAR(50) DEFAULT 'asignado' COMMENT 'asignado, confirmado, cancelado',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_solicitud (id_solicitud),
+    INDEX idx_personal (id_personal),
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Asignaciones de personal a solicitudes antes de confirmarse como eventos';
 
 -- =============================================================================
 -- TABLAS DE TALLERES

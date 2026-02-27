@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="/styles/admin.css">
     <link rel="stylesheet" href="/css/config-pages.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
 </head>
 
 <body>
@@ -951,12 +957,8 @@
         // INICIALIZACIÓN
         // ============================================================
         document.addEventListener('DOMContentLoaded', () => {
-            navbarManager = new NavbarManager();
-            if (!navbarManager.protectAdminPage()) return;
-            navbarManager.injectNavbar('body');
-
-            // Establecer permisos de edición
-            puedeEditarAlquiler = puedeEditar('alquiler');
+            // navbarManager ya fue instanciado y navbar inyectada por navbar.js
+            if (!navbarManager || !navbarManager.protectAdminPage()) return;
 
             // Ocultar botones de crear si no tiene permisos
             aplicarPermisosUI();

@@ -21,9 +21,9 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            font-family: Arial, sans-serif;
             background-color: #0c0a09;
             color: #d6d3d1;
         }
@@ -604,15 +604,13 @@
             console.log('editar_solicitud_alquiler.html: DOMContentLoaded disparado');
             try {
                 // Proteger esta página: redirigir a login si no está autenticado
-                console.log('editar_solicitud_alquiler.html: Creando NavbarManager');
-                navbarManager = new NavbarManager();
-                console.log('editar_solicitud_alquiler.html: NavbarManager creado, protegiendo página');
-                if (!navbarManager.protectAdminPage()) {
+                console.log('editar_solicitud_alquiler.html: navbarManager ya creado por navbar.js');
+                // navbarManager ya fue instanciado por navbar.js
+                if (!navbarManager || !navbarManager.protectAdminPage()) {
                     console.log('editar_solicitud_alquiler.html: Página protegida, usuario no autenticado');
                     return; // Salir si no está autenticado
                 }
-                console.log('editar_solicitud_alquiler.html: Usuario autenticado, inyectando navbar');
-                navbarManager.injectNavbar('body');
+                console.log('editar_solicitud_alquiler.html: Usuario autenticado, navbar ya inyectado');
 
                 // Inicializar la app de edición
                 console.log('editar_solicitud_alquiler.html: Llamando a initializeApp con config:', { mode: 'edit', categoriaFiltro: 'ALQUILER_SALON' });

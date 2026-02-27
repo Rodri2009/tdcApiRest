@@ -162,7 +162,7 @@ const getTalleres = async (req, res) => {
                 ot.nombre_para_mostrar as tipoNombre
             FROM talleres t
             LEFT JOIN talleristas tal ON t.tallerista_id = tal.id
-            LEFT JOIN clientes c ON tal.id_cliente = c.id
+            LEFT JOIN clientes c ON tal.id_cliente = c.id_cliente
             LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_tipo_evento
             WHERE 1=1
         `;

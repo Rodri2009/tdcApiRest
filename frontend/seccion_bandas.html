@@ -313,14 +313,17 @@
 
         // Auth menu
         function updateAuthMenu() {
+            console.log('[🎵 BANDAS] Actualizando auth menu');
             const token = localStorage.getItem('authToken');
             const desktopMenu = document.getElementById('auth-menu-desktop');
             const mobileMenu = document.getElementById('auth-menu-mobile');
 
             if (token) {
+                console.log('👤 Usuario autenticado');
                 if (desktopMenu) desktopMenu.innerHTML = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition">🔐 Admin</a>`;
                 if (mobileMenu) mobileMenu.innerHTML = `<a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐 Admin</a>`;
             } else {
+                console.log('👤 Usuario sin autenticar');
                 if (desktopMenu) desktopMenu.innerHTML = `<a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition">Login</a>`;
                 if (mobileMenu) mobileMenu.innerHTML = `<a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon text-neon">Login</a>`;
             }
@@ -331,17 +334,46 @@
         function parseFecha(fechaStr, horaStr = null) {
             if (!fechaStr) return null;
             let s = String(fechaStr).trim();
+
+            // Extraer la parte de fecha (YYYY-MM-DD)
+            const dateMatch = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (!dateMatch) return null;
+            const [, year, month, day] = dateMatch.map(Number);
+
+            // Extraer la parte de hora (puede venir en horaStr o en la cadena)
+            let hour = 0, minute = 0, second = 0;
+
             if (horaStr && !s.includes('T')) {
-                // combinar fecha + hora si se da por separado
-                const horaPart = String(horaStr).trim().split(':').slice(0, 3).join(':');
-                s = `${s}T${horaPart}`;
-            } else if (s.includes(' ') && !s.includes('T')) {
-                s = s.replace(' ', 'T');
-            } else if (!s.includes('T') && s.length === 10) {
-                s = s + 'T00:00:00';
+                // Hora en parámetro separado
+                const timeMatch = String(horaStr).trim().match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+                if (timeMatch) {
+                    hour = parseInt(timeMatch[1]);
+                    minute = parseInt(timeMatch[2]);
+                    second = timeMatch[3] ? parseInt(timeMatch[3]) : 0;
+                }
+            } else if (s.includes('T')) {
+                // Hora en la cadena
+                const timeMatch = s.match(/T(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+                if (timeMatch) {
+                    hour = parseInt(timeMatch[1]);
+                    minute = parseInt(timeMatch[2]);
+                    second = timeMatch[3] ? parseInt(timeMatch[3]) : 0;
+                }
             }
-            const d = new Date(s);
-            return isNaN(d.getTime()) ? null : d;
+
+            // Crear fecha en zona horaria LOCAL (no UTC)
+            // Esto hace que 2026-04-10 00:00:00.000Z se interprete como 10 de abril 00:00 local
+            const localDate = new Date(year, month - 1, day, hour, minute, second);
+
+            // Si la entrada tenía 'Z' o timezone, no es fecha local sino UTC
+            // Ajustar agregando el offset de Argentina (UTC-3 = +3 horas)
+            if (s.includes('Z') || s.includes('+') || s.match(/-\d{2}:\d{2}$/)) {
+                // Está en UTC, ajustar para mostrar la fecha "como si fuera local"
+                // Argentina UTC-3: agregar 3 horas para compensar
+                localDate.setHours(localDate.getHours() + 3);
+            }
+
+            return isNaN(localDate.getTime()) ? null : localDate;
         }
 
         function formatDateTime(fechaObj) {
@@ -354,10 +386,15 @@
         }
 
         function generateEventCard(e, opts = { allowPurchase: true, compact: false }) {
+            console.group(`🎭 generateEventCard para evento ${e.id}`);
             const fechaObj = e._fechaObj || parseFecha(e.fecha_hora || e.fecha, e.hora_inicio);
             const now = new Date();
             const isPast = fechaObj ? fechaObj < now : false;
             const { day, month, year, time } = formatDateTime(fechaObj);
+            console.log('Fecha parseada:', fechaObj?.toLocaleString('es-AR') || 'NULL');
+            console.log('Formateada:', { day, month, year, time });
+            console.log('¿Pasado?:', isPast);
+            console.groupEnd();
 
             const precioAnt = (e.precio_anticipada !== undefined && e.precio_anticipada !== null) ? parseFloat(e.precio_anticipada) : null;
             const precioPta = (e.precio_puerta !== undefined && e.precio_puerta !== null) ? parseFloat(e.precio_puerta) : null;
@@ -420,27 +457,38 @@
 
         // Cargar eventos y renderizar próximos 4
         async function loadEventos() {
+            console.group('🎵 [BANDAS] Carga de eventos - ENTRADA');
+            console.log('📍 Página:', window.location.href);
+            console.log('⏰ Hora:', new Date().toLocaleString('es-AR'));
+            console.log('🕐 Zona horaria navegador:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+
             const container = document.getElementById('eventos-container');
             try {
                 // Usar el endpoint público de eventos confirmados (API unificada)
+                console.log('📤 Enviando solicitud a /api/eventos/publicos');
                 const res = await fetch('/api/eventos/publicos');
+                console.log('📥 Respuesta recibida, status:', res.status);
                 if (!res.ok) throw new Error('Error al cargar eventos, status:' + res.status);
 
                 const eventosRaw = await res.json();
-                console.log('Eventos públicos (eventos_confirmados):', eventosRaw);
-
-                if (!Array.isArray(eventosRaw) || eventosRaw.length === 0) {
-                    container.innerHTML = `<div class="text-center py-10"><i class="fas fa-calendar-times text-4xl text-stone-500 mb-4"></i><p class="text-stone-400">No hay shows de bandas programados por el momento</p><p class="text-fuchsia-400 mt-2">¡Pero podés proponer tu fecha!</p></div>`;
-                    document.getElementById('toggle-full-agenda').style.display = 'none';
-                    return;
-                }
+                console.group('📊 Eventos crudos recibidos del API');
+                console.log('Total:', eventosRaw.length);
+                console.table(eventosRaw.slice(0, 3).map(e => ({
+                    id: e.id,
+                    nombre: e.nombre_evento || e.banda_nombre,
+                    fecha_evento: e.fecha_evento,
+                    fecha_hora: e.fecha_hora,
+                    hora_inicio: e.hora_inicio
+                })));
+                console.groupEnd();
 
                 // Mapear al formato esperado por generateEventCard (normalizar campos)
+                console.group('🔄 Procesamiento y mapeo de eventos');
                 const mapped = eventosRaw.map(e => {
                     const fechaHoraRaw = e.fecha_evento || e.fecha_hora || e.fecha;
                     const horaRaw = e.hora_inicio || e.hora || null;
                     let _fechaObj = parseFecha(fechaHoraRaw, horaRaw);
-                    return {
+                    const resultado = {
                         ...e,
                         _fechaObj,
                         nombre_banda: e.nombre_evento || e.nombre_banda || e.banda_nombre,
@@ -450,15 +498,38 @@
                         hora_inicio: horaRaw,
                         es_publico: typeof e.es_publico !== 'undefined' ? e.es_publico : 1
                     };
+                    if (e.id <= 6) {
+                        console.log(`📅 Evento ${e.id}:`, {
+                            nombre: resultado.nombre_banda,
+                            fechaStr: fechaHoraRaw,
+                            horaStr: horaRaw,
+                            parsed: _fechaObj ? _fechaObj.toLocaleString('es-AR') : 'NULL',
+                            formated: _fechaObj ? formatDateTime(_fechaObj) : 'N/A'
+                        });
+                    }
+                    return resultado;
                 }).filter(e => e._fechaObj && e.es_publico === 1); // quitar los inválidos y privados
+
+                console.log('✅ Eventos válidos después de filtrar:', mapped.length);
+                console.groupEnd();
 
                 // próximos futuros (>= today)
                 const todayStart = new Date();
                 todayStart.setHours(0, 0, 0, 0);
+                console.group('📅 Filtrado de eventos futuros');
+                console.log('Hoy (UTC local):', todayStart.toLocaleString('es-AR'));
                 const futuros = mapped.filter(e => e._fechaObj >= todayStart).sort((a, b) => a._fechaObj - b._fechaObj);
+                console.log('Eventos futuros:', futuros.length);
+                console.log('Próximos 4:', futuros.slice(0, 4).map(e => ({
+                    nombre: e.nombre_banda,
+                    fecha: e._fechaObj.toLocaleString('es-AR')
+                })));
+                console.groupEnd();
 
                 // render
+                console.log('🎨 Renderizando próximos 4 eventos');
                 container.innerHTML = futuros.slice(0, 4).map(e => generateEventCard(e, { allowPurchase: true, compact: true })).join('');
+                console.log('✅ Renderizado completado');
 
                 // preparar botón de mostrar agenda completa
                 if (mapped.length > 0) {
@@ -469,36 +540,53 @@
                 }
 
                 if (futuros.length === 0) {
+                    console.warn('⚠️ No hay eventos futuros');
                     container.innerHTML = `<div class="text-center py-10"><i class="fas fa-calendar-times text-4xl text-stone-500 mb-4"></i><p class="text-stone-400">No hay próximos shows de bandas programados.</p><p class="text-stone-300 mt-2">Revisa la agenda completa para ver eventos pasados.</p></div>`;
                 }
 
+                console.groupEnd();
+                console.group('🎵 [BANDAS] Carga de eventos - SALIDA');
+                console.log('✅ Carga completada exitosamente');
+                console.log('📊 Resumen: Públicos totales:', eventosRaw.length, '| Válidos:', mapped.length, '| Futuros:', futuros.length);
+                console.groupEnd();
 
             } catch (err) {
-                console.error('Error cargando eventos:', err);
+                console.group('❌ [BANDAS] ERROR en carga de eventos');
+                console.error('Error:', err);
+                console.log('Stack:', err.stack);
+                console.groupEnd();
                 container.innerHTML = `<div class="text-center py-10"><i class="fas fa-exclamation-circle text-4xl text-red-400 mb-4"></i><p class="text-stone-400">No se pudieron cargar los eventos</p><p>${err}</p></div>`;
             }
         }
 
         // Mostrar agenda completa (todos los eventos, incluidos pasados)
         function showFullAgenda(allEvents) {
+            console.log('📖 Mostrando agenda completa con', allEvents.length, 'eventos');
             const list = document.getElementById('agenda-list');
             const wrapper = document.getElementById('agenda-completa');
             const eventosContainer = document.getElementById('eventos-container');
             // ordenar por fecha asc
             const sorted = allEvents.sort((a, b) => (a._fechaObj ? a._fechaObj.getTime() : 0) - (b._fechaObj ? b._fechaObj.getTime() : 0));
+            console.log('Eventos ordenados:');
+            sorted.forEach(e => console.log('  -', e.nombre_banda, e._fechaObj?.toLocaleDateString('es-AR')));
             list.innerHTML = sorted.map(e => generateEventCard(e, { allowPurchase: true, compact: false })).join('');
             wrapper.classList.remove('hidden');
             eventosContainer.classList.add('hidden');
             document.getElementById('toggle-full-agenda').classList.add('hidden');
+            console.log('✅ Agenda completa renderizada');
         }
 
         function hideFullAgenda() {
+            console.log('📖 Ocultando agenda completa');
             document.getElementById('agenda-completa').classList.add('hidden');
             document.getElementById('eventos-container').classList.remove('hidden');
             document.getElementById('toggle-full-agenda').classList.remove('hidden');
         }
 
-        document.addEventListener('DOMContentLoaded', loadEventos);
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 [BANDAS] DOMContentLoaded - iniciando carga de eventos');
+            loadEventos();
+        });
     </script>
     <script src="/navbar.js"></script>
 </body>

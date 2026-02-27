@@ -1,11 +1,6 @@
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
-// Función para generar ID único para asignaciones
-function generateAssignmentId() {
-    return `ASG_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
 const getSolicitudes = async (req, res) => {
     let conn;
     try {
@@ -112,7 +107,7 @@ const getSolicitudes = async (req, res) => {
                 COALESCE(sol3.descripcion_corta, '') as descripcionCorta,
                 COALESCE(ec_srv.url_flyer, sol3.url_flyer) as url_flyer
             FROM solicitudes_servicios ss
-            JOIN solicitudes sol3 ON ss.id_solicitud = sol3.id
+            JOIN solicitudes sol3 ON ss.id_solicitud = sol3.id_solicitud
             LEFT JOIN clientes c3 ON sol3.id_cliente = c3.id_cliente
             LEFT JOIN opciones_tipos ot3 ON ss.tipo_servicio = ot3.id_tipo_evento
             LEFT JOIN eventos_confirmados ec_srv ON ec_srv.id_solicitud = ss.id_solicitud AND ec_srv.tipo_evento = 'SERVICIO'
@@ -135,7 +130,7 @@ const getSolicitudes = async (req, res) => {
                 COALESCE(sol4.descripcion_corta, '') as descripcionCorta,
                 COALESCE(ec_tll.url_flyer, sol4.url_flyer) as url_flyer
             FROM solicitudes_talleres st
-            JOIN solicitudes sol4 ON st.id_solicitud = sol4.id
+            JOIN solicitudes sol4 ON st.id_solicitud = sol4.id_solicitud
             LEFT JOIN clientes c4 ON sol4.id_cliente = c4.id_cliente
             LEFT JOIN opciones_tipos ot4 ON st.nombre_taller = ot4.nombre_para_mostrar
             LEFT JOIN eventos_confirmados ec_tll ON ec_tll.id_solicitud = st.id_solicitud AND ec_tll.tipo_evento = 'TALLER'
@@ -519,7 +514,7 @@ const getDatosAsignacion = async (req, res) => {
         logVerbose('[getDatosAsignacion] Buscando roles para tipo_evento:', tipoEventoId);
 
         const [rolesRequeridos, personalDisponible] = await Promise.all([
-            conn.query("SELECT rol_requerido as rol, cantidad FROM roles_por_evento WHERE tipo_evento = ?", [tipoEventoId]),
+            conn.query("SELECT rol_requerido as rol, cantidad FROM roles_por_evento WHERE id_tipo_evento = ?", [tipoEventoId]),
             conn.query("SELECT id_personal as id, nombre_completo as nombre, rol FROM personal_disponible WHERE activo = 1")
         ]);
 
@@ -641,11 +636,10 @@ const guardarAsignaciones = async (req, res) => {
                     if (!personalId || personalId === '') {
                         throw new Error(`ID de personal vacío o inválido: ${assignment.personalId}`);
                     }
-                    const idAsignacion = generateAssignmentId();
-                    // solicitudes_personal usa: id (PK), id_solicitud, id_personal, rol_requerido, estado
+                    // solicitudes_personal usa: id_solicitud_personal (auto-increment), id_solicitud, id_personal, rol_requerido, estado
                     await conn.query(
-                        "INSERT INTO solicitudes_personal (id, id_solicitud, id_personal, rol_requerido, estado) VALUES (?, ?, ?, ?, ?)",
-                        [idAsignacion, solicitudId, personalId, assignment.rol, 'asignado']
+                        "INSERT INTO solicitudes_personal (id_solicitud, id_personal, rol_requerido, estado) VALUES (?, ?, ?, ?)",
+                        [solicitudId, personalId, assignment.rol, 'asignado']
                     );
                 }
             }

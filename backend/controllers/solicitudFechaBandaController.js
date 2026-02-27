@@ -268,7 +268,7 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
                 sfb.precio_puerta,
                 sfb.bandas_json
             FROM solicitudes_fechas_bandas sfb
-            JOIN solicitudes s ON sfb.id_solicitud = s.id
+            JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
             LEFT JOIN eventos_confirmados ec ON ec.id_solicitud = sfb.id_solicitud AND ec.tipo_evento = 'BANDA'
             WHERE sfb.id_solicitud = ?
         `;
@@ -347,7 +347,7 @@ const listarSolicitudesFechasBandas = async (req, res) => {
                 s.id_cliente,
                 sfb.creado_en
             FROM solicitudes_fechas_bandas sfb
-            JOIN solicitudes s ON sfb.id_solicitud = s.id
+            JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
             WHERE 1=1
         `;
 
@@ -873,7 +873,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                         c.email as cliente_email,
                         c.telefono as cliente_telefono
                     FROM solicitudes_fechas_bandas sfb
-                    JOIN solicitudes s ON sfb.id_solicitud = s.id
+                    JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
                     LEFT JOIN eventos_confirmados ec ON ec.id_solicitud = sfb.id_solicitud AND ec.tipo_evento = 'BANDA'
                     LEFT JOIN eventos_lineup el_principal ON el_principal.id_evento_confirmado = ec.id AND (el_principal.es_principal = 1 OR el_principal.es_solicitante = 1)
                     LEFT JOIN bandas_artistas ba ON ba.id_banda = el_principal.id_banda
@@ -1005,7 +1005,7 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
                 c.email as cliente_email,
                 c.telefono as cliente_telefono
             FROM solicitudes_fechas_bandas sfb
-            JOIN solicitudes s ON sfb.id_solicitud = s.id
+            JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
             LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id_banda
             LEFT JOIN clientes c ON s.id_cliente = c.id_cliente
             WHERE sfb.id_solicitud = ?
