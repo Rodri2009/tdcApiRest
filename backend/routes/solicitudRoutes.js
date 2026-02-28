@@ -46,6 +46,7 @@ router.put('/:id', actualizarSolicitud);
 router.post('/:id/adicionales', guardarAdicionales);
 
 // PUT /api/solicitudes/:id/finalizar -> Confirmar y finalizar la solicitud
-router.put('/:id/finalizar', finalizarSolicitud);
+// CAMBIO: Agregar middleware protect para que req.user sea poblado desde JWT
+router.put('/:id/finalizar', protect, finalizarSolicitud);
 
 module.exports = router;

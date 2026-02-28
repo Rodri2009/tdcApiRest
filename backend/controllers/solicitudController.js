@@ -730,7 +730,7 @@ const finalizarSolicitud = async (req, res) => {
 
     // CAMBIO: Si usuario está autenticado y faltan datos, obtenerlos del JWT
     if (req.user && (!nombreCompleto || !celular || !email)) {
-        console.log('[FINALIZAR] Usuario autenticado, obteniendo datos del JWT...');
+        console.log('[FINALIZAR] Usuario autenticado (id=' + req.user.id_usuario + '), obteniendo datos del JWT');
         
         // Obtener datos del usuario autenticado desde la BD
         let conn;
@@ -738,13 +738,14 @@ const finalizarSolicitud = async (req, res) => {
             conn = await pool.getConnection();
             const usuario = await conn.query(
                 'SELECT nombre, email FROM usuarios WHERE id_usuario = ? LIMIT 1',
-                [req.user.id]
+                [req.user.id_usuario]
             );
             if (usuario && usuario.length > 0) {
-                console.log('[FINALIZAR] Datos encontrados en BD:', usuario[0]);
-                nombreCompleto = nombreCompleto || usuario[0].nombre || '(Admin)';
+                // Usar datos del usuario autenticado
+                nombreCompleto = nombreCompleto || usuario[0].nombre || '(Usuario)';
                 email = email || usuario[0].email || '';
-                celular = celular || '(No especificado)'; // No hay teléfono en tabla usuarios
+                celular = celular || '(No especificado)'; // No está disponible en tabla usuarios
+                console.log('[FINALIZAR] Datos del usuario encontrados y aplicados');
             }
         } catch (err) {
             logWarning('[FINALIZAR] Error obteniendo datos del usuario:', err.message);
