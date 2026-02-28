@@ -99,6 +99,18 @@ VALUES
    'Arte y Manualidades',
    '🎨 **TALLERES DE ARTE**\n\nPintura, Dibujo, Cerámica, Manualidades, Tejido',
    'TALLERES_ACTIVIDADES', 1, 0, NULL, NULL);
+
+-- CORRECCIÓN: Sincronizar permite_adicionales basado en categoría
+-- Los tipos ALQUILER_SALON deben tener permite_adicionales = 1
+-- Otros tipos (FECHA_BANDAS, SERVICIOS, TALLERES_ACTIVIDADES) = 0
+UPDATE `opciones_tipos`
+SET permite_adicionales = 1
+WHERE categoria = 'ALQUILER_SALON';
+
+UPDATE `opciones_tipos`
+SET permite_adicionales = 0
+WHERE categoria != 'ALQUILER_SALON';
+
 /*!40000 ALTER TABLE `opciones_tipos` ENABLE KEYS */;
 UNLOCK TABLES;
 

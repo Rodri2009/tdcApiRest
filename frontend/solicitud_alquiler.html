@@ -398,9 +398,21 @@
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-5px); }
-            40%, 80% { transform: translateX(5px); }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+            }
         }
 
         .loading-overlay {
@@ -434,8 +446,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         #notification-banner {
@@ -558,23 +575,33 @@
                     <span class="text-base font-semibold text-neon tracking-wide block">Volver a Inicio</span>
                 </a>
                 <nav class="flex space-x-8 items-center">
-                    <a href="seccion_talleres.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
-                    <a href="seccion_bandas.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en Vivo</a>
-                    <a href="seccion_servicios.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <a href="seccion_bandas.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
+                        Vivo</a>
+                    <a href="seccion_servicios.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
                     <div id="auth-menu-desktop"></div>
                 </nav>
-                <button id="mobile-menu-button" class="hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                <button id="mobile-menu-button"
+                    class="hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
                     <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
             </div>
         </div>
         <div id="mobile-menu" class="hidden">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
-                <a href="seccion_talleres.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
-                <a href="seccion_bandas.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas en Vivo</a>
-                <a href="seccion_servicios.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <a href="seccion_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
+                    en Vivo</a>
+                <a href="seccion_servicios.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
                 <div id="auth-menu-mobile"></div>
             </div>
         </div>
@@ -598,6 +625,10 @@
                 <label>Descripción:</label>
                 <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
             </div>
+            <!-- Botón para Agregar Adicionales (pequeño, debajo de descripción) -->
+            <button id="btn-adicionales-small" class="btn-small" style="display: none;">
+                ➕ Agregar Adicionales
+            </button>
         </div>
 
         <div class="column-layout">
@@ -635,11 +666,6 @@
         </div>
         <div id="detallePrecios"></div>
         <div id="presupuestoTotal"><span>Total Básico: </span> $0</div>
-
-        <!-- Botón para Agregar Adicionales (pequeño, debajo de descripción) -->
-        <button id="btn-adicionales-small" class="btn-small" style="display: none;">
-            ➕ Agregar Adicionales
-        </button>
 
         <div class="button-group">
             <button id="btn-adicionales" style="display: none;"></button>
@@ -766,12 +792,12 @@
         // Cargar adicionales en el modal
         async function cargarAdicionales() {
             const container = document.getElementById('adicionales-container');
-            
+
             try {
                 // Cargar opciones disponibles
                 const adicionalesRes = await fetch('/api/opciones/adicionales');
                 if (!adicionalesRes.ok) throw new Error('Error cargando adicionales');
-                
+
                 const adicionalesData = await adicionalesRes.json();
                 todosLosAdicionales = adicionalesData || [];
 
@@ -834,7 +860,7 @@
         function actualizarTotalAdicionales() {
             let totalAdicionales = 0;
             const checkboxes = document.querySelectorAll('#modalAdicionales .adicional-check:checked');
-            
+
             adicionalesSeleccionados = [];
             checkboxes.forEach(checkbox => {
                 totalAdicionales += parseFloat(checkbox.value);
@@ -847,7 +873,7 @@
             const totalModalDiv = document.getElementById('total-modal');
             const totalSpan = totalModalDiv.querySelector('span');
             totalSpan.textContent = `$${convertirNumero(String(totalAdicionales))}`;
-            
+
             if (totalAdicionales > 0) {
                 totalModalDiv.style.display = 'block';
             }
@@ -875,7 +901,7 @@
 
                 showNotification('Adicionales guardados correctamente', 'success');
                 closeModalAdicionales();
-                
+
                 // Actualizar el resumen (opcional, si se quiere reflejar cambios)
                 // await cargarResumen();
 
@@ -956,36 +982,36 @@
         function actualizarVisibilidadBotonAdicionales() {
             const selectTipo = document.getElementById('tipoEventoSelect');
             const btnAdicionales = document.getElementById('btn-adicionales-small');
-            
+
             console.log('[DEBUG] actualizarVisibilidadBotonAdicionales - Inicio');
             console.log('[DEBUG] selectTipo:', selectTipo);
             console.log('[DEBUG] btnAdicionales:', btnAdicionales);
-            
+
             if (!selectTipo || !btnAdicionales) {
                 console.log('[DEBUG] selectTipo o btnAdicionales no existen, retornando');
                 return;
             }
-            
+
             const opcionSeleccionada = selectTipo.options[selectTipo.selectedIndex];
             console.log('[DEBUG] opcionSeleccionada:', opcionSeleccionada);
             console.log('[DEBUG] opcionSeleccionada.value:', opcionSeleccionada.value);
             console.log('[DEBUG] opcionSeleccionada.textContent:', opcionSeleccionada.textContent);
-            
+
             if (!opcionSeleccionada || opcionSeleccionada.value === '') {
                 console.log('[DEBUG] Opción vacía o no existe, ocultando botón');
                 btnAdicionales.style.display = 'none';
                 return;
             }
-            
+
             const atributo = opcionSeleccionada.getAttribute('data-permite-adicionales');
             console.log('[DEBUG] data-permite-adicionales (atributo):', atributo);
-            
+
             const permiteAdicionales = atributo === '1';
             console.log('[DEBUG] permiteAdicionales (boolean):', permiteAdicionales);
             console.log('[DEBUG] Setting display to:', permiteAdicionales ? 'block' : 'none');
-            
+
             btnAdicionales.style.display = permiteAdicionales ? 'block' : 'none';
-            
+
             console.log('[DEBUG] actualizarVisibilidadBotonAdicionales - Fin');
         }
 
@@ -1011,7 +1037,7 @@
                 console.log('[DEBUG] MutationObserver ejecutado');
                 const selectTipo = document.getElementById('tipoEventoSelect');
                 console.log('[DEBUG] selectTipo encontrado:', !!selectTipo);
-                
+
                 if (selectTipo && !selectTipo.hasAttribute('data-listener-attached')) {
                     console.log('[DEBUG] Agregando evento change al selectTipo');
                     selectTipo.addEventListener('change', actualizarVisibilidadBotonAdicionales);
@@ -1022,7 +1048,7 @@
                     console.log('[DEBUG] selectTipo ya tiene listener agregado');
                 }
             });
-            
+
             const tipoEventoContainer = document.getElementById('tipoEventoContainer');
             if (tipoEventoContainer) {
                 observer.observe(tipoEventoContainer, observerConfig);
