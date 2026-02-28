@@ -113,6 +113,12 @@ const crearSolicitud = async (req, res) => {
             return solicitudFechaBandaController.crearSolicitudFechaBanda(req, res);
         } else {
             // 2. Insertar en la tabla específica 'solicitudes_alquiler' (estructura normalizada)
+            // CAMBIOS REALIZADOS (28/02/2026):
+            // - Eliminados: tipo_servicio, cantidad_de_personas
+            // - Renombrados: tipo_de_evento → id_tipo_evento, descripcion → comentarios
+            // - Convertidos: hora_evento (VARCHAR→TIME), duracion (VARCHAR→INT minutos)
+            // - Nuevos: id_precio_vigencia (FK), total_adicionales, monto_sena, monto_deposito, auditoría
+            
             // Convertir duracionEvento a minutos si viene como "X horas"
             let duracionMinutos = 180; // default 3 horas
             if (typeof duracionEvento === 'string') {
@@ -125,7 +131,7 @@ const crearSolicitud = async (req, res) => {
                 duracionMinutos = duracionEvento > 50 ? duracionEvento : duracionEvento * 60; // Si > 50 asumir minutos, si no horas
             }
 
-            // Convertir horaInicio a formato TIME si es string
+            // Convertir horaInicio a formato TIME si es string (CAMBIO: hora_evento ahora es TIME)
             let horaEventoTime = '10:00:00';
             if (horaInicio && typeof horaInicio === 'string') {
                 const match = horaInicio.match(/(\d{1,2}):(\d{2})/);
@@ -134,7 +140,8 @@ const crearSolicitud = async (req, res) => {
                 }
             }
 
-            // Obtener id_precio_vigencia basado en tipo evento y cantidad de personas
+            // Obtener id_precio_vigencia basado en tipo evento y cantidad de personas (NUEVO campo)
+            // Esto reemplaza el campo eliminado cantidad_de_personas VAR CHAR
             const cantidadNum = parseInt(cantidadPersonas) || 0;
             const sqlPrecioVigencia = `
                 SELECT id FROM precios_vigencia 
@@ -146,7 +153,7 @@ const crearSolicitud = async (req, res) => {
             const [precioVigencia] = await conn.query(sqlPrecioVigencia, [tipoEvento, cantidadNum]);
             const idPrecioVigencia = precioVigencia ? precioVigencia.id : null;
 
-            // Insertar solicitud de alquiler
+            // Insertar solicitud de alquiler con estructura normalizada
             const sqlAlquiler = `
                 INSERT INTO solicitudes_alquiler (
                     id_solicitud, fecha_evento, hora_evento, duracion, id_tipo_evento,
@@ -157,15 +164,15 @@ const crearSolicitud = async (req, res) => {
             const paramsAlquiler = [
                 newId,                                      // id_solicitud
                 fechaEvento,                                // fecha_evento
-                horaEventoTime,                             // hora_evento (TIME)
-                duracionMinutos,                            // duracion (INT minutos)
-                tipoEvento,                                 // id_tipo_evento
-                idPrecioVigencia,                           // id_precio_vigencia (FK)
+                horaEventoTime,                             // hora_evento (CAMBIO: ahora TIME)
+                duracionMinutos,                            // duracion (CAMBIO: ahora INT minutos)
+                tipoEvento,                                 // id_tipo_evento (CAMBIO: FK a opciones_tipos)
+                idPrecioVigencia,                           // id_precio_vigencia (NUEVO: FK a precios_vigencia)
                 parseFloat(precioBase) || 0,               // precio_basico
-                0,                                          // total_adicionales (inicialmente 0)
-                0,                                          // monto_sena (inicialmente 0, se actualiza con opciones_tipos)
-                0,                                          // monto_deposito (inicialmente 0, se actualiza con opciones_tipos)
-                descripcion || '',                          // comentarios
+                0,                                          // total_adicionales (NUEVO: inicialmente 0, se actualiza con adicionales)
+                0,                                          // monto_sena (NUEVO: inicialmente 0, se actualiza con opciones_tipos)
+                0,                                          // monto_deposito (NUEVO: inicialmente 0, se actualiza con opciones_tipos)
+                descripcion || '',                          // comentarios (CAMBIO: renombrado de descripcion)
                 'Solicitado'                                // estado
             ];
             await conn.query(sqlAlquiler, paramsAlquiler);
@@ -196,6 +203,14 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
         [numericId]
     );
     if (alquiler) {
+        // CAMBIOS REALIZADOS (28/02/2026):
+        // - JOINs actualizados para estructura normalizada
+        // - Eliminados JOINs a opciones_alquiler, opciones_cantidad_personas, opciones_tipo_evento (no especializadas)
+        // - Agregado JOIN a opciones_tipos para obtener nombre_para_mostrar del tipo de evento
+        // - Agregado JOIN a precios_vigencia para obtener cantidad_min/max y precio_por_hora
+        // - Campos renombrados: tipo_de_evento → id_tipo_evento, descripcion → comentarios
+        // - Nuevos campos: total_adicionales, monto_sena, monto_deposito, precio_final (calculado)
+        
         const sql = `
             SELECT
                 CONCAT('alq_', sa.id_solicitud) as solicitudId,

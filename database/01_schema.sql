@@ -268,7 +268,32 @@ CREATE TABLE IF NOT EXISTS solicitudes (
 -- Tabla específica para solicitudes de alquiler de salones
 -- RELACIÓN 1:1 CON solicitudes (tabla padre)
 -- Integridad verificada: 5 registros en solicitudes (ALQUILER) = 5 en solicitudes_alquiler ✓
--- REFACTORIZACIÓN FASE 1: Normalización de campos según especificación 28/02/2026
+-- 
+-- CAMBIOS REALIZADOS (28/02/2026 - REFACTORIZACIÓN FASE 1):
+-- ============================================================
+-- ELIMINADOS:
+--   - tipo_servicio VARCHAR(255): No existía información real, no se utiliza
+--   - cantidad_de_personas VARCHAR(100): Ahora se obtiene de precios_vigencia.cantidad_min/max
+-- 
+-- RENOMBRADOS:
+--   - tipo_de_evento → id_tipo_evento: Ahora es FK a opciones_tipos.id_tipo_evento
+--   - descripcion → comentarios: Más descriptivo para campo de comentarios del cliente
+-- 
+-- CONVERTIDOS:
+--   - hora_evento: VARCHAR(20) → TIME: Tipo correcto para horarios (ej: 14:30:00)
+--   - duracion: VARCHAR(100) → INT: Almacena minutos (ej: 240 para 4 horas)
+-- 
+-- NUEVOS CAMPOS:
+--   - id_precio_vigencia INT: FK a precios_vigencia(id) para obtener rango de cantidad
+--   - total_adicionales DECIMAL(10,2): Suma de precios de adicionales seleccionados
+--   - monto_sena DECIMAL(10,2): Monto de seña/adelanto requerido
+--   - monto_deposito DECIMAL(10,2): Monto de depósito de garantía
+--   - precio_final DECIMAL(10,2) GENERATED: Calculado como precio_basico + total_adicionales + monto_sena + monto_deposito
+--   - creado_en TIMESTAMP: Auditoría - fecha de creación
+--   - actualizado_en TIMESTAMP: Auditoría - fecha de última actualización
+-- 
+-- DATOS MIGRADOS: 5/5 registros (100% exitoso)
+-- BACKUP: solicitudes_alquiler_backup_28feb2026 contiene datos anteriores
 CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     id_solicitud_alquiler INT AUTO_INCREMENT PRIMARY KEY COMMENT 'Identificador único del registro de alquiler',
     
@@ -277,37 +302,40 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     
     -- DATOS DEL EVENTO - INFORMACIÓN BÁSICA
     fecha_evento DATE NOT NULL COMMENT 'Fecha del evento (ej: 2026-03-15)',
-    hora_evento TIME NOT NULL COMMENT 'Hora de inicio del evento (ej: 14:30:00)',
-    duracion INT NOT NULL COMMENT 'Duración del evento en minutos (ej: 360 = 6 horas)',
+    hora_evento TIME NOT NULL COMMENT 'Hora de inicio del evento - CAMBIO: TEXT→TIME (ej: 14:30:00)',
+    duracion INT NOT NULL COMMENT 'Duración del evento en minutos - CAMBIO: VARCHAR→INT (ej: 240 = 4 horas)',
     
-    -- REFERENCIA A TIPO DE EVENTO
-    id_tipo_evento VARCHAR(255) NOT NULL COMMENT 'FK a opciones_tipos.id_tipo_evento (ej: INFANTILES, ADOLESCENTES)',
+    -- REFERENCIA A TIPO DE EVENTO (CAMBIO: tipo_de_evento → id_tipo_evento como FK)
+    id_tipo_evento VARCHAR(255) NOT NULL COMMENT 'FK a opciones_tipos.id_tipo_evento (ej: INFANTILES, ADOLESCENTES, CON_SERVICIO_DE_MESA, BABY_SHOWERS)',
     
-    -- REFERENCIA A RANGO DE CANTIDAD DE PERSONAS (desde precios_vigencia)
-    id_precio_vigencia INT COMMENT 'FK a precios_vigencia.id - Permite obtener cantidad_min, cantidad_max y precio_por_hora',
+    -- REFERENCIA A RANGO DE CANTIDAD DE PERSONAS (NUEVO: obtiene de precios_vigencia)
+    id_precio_vigencia INT COMMENT 'NUEVO FK: precios_vigencia.id - Permite obtener cantidad_min, cantidad_max y precio_por_hora. NULL si no se puede determinar el rango',
     
     -- PRECIOS Y MONTOS
     precio_basico DECIMAL(10,2) COMMENT 'Precio base = precio_por_hora × duracion_horas. Capturado en momento de solicitud',
-    total_adicionales DECIMAL(10,2) DEFAULT 0 COMMENT 'Suma total de precios de adicionales seleccionados',
-    monto_sena DECIMAL(10,2) DEFAULT 0 COMMENT 'Monto de seña (adelanto) requerido',
-    monto_deposito DECIMAL(10,2) DEFAULT 0 COMMENT 'Monto de depósito de garantía',
-    precio_final DECIMAL(10,2) GENERATED ALWAYS AS (precio_basico + COALESCE(total_adicionales, 0) + COALESCE(monto_sena, 0) + COALESCE(monto_deposito, 0)) STORED COMMENT 'CALCULADO: precio_basico + total_adicionales + monto_sena + monto_deposito',
+    total_adicionales DECIMAL(10,2) DEFAULT 0 COMMENT 'NUEVO: Suma total de precios de adicionales seleccionados. Se actualiza en guardarAdicionales()',
+    monto_sena DECIMAL(10,2) DEFAULT 0 COMMENT 'NUEVO: Monto de seña (adelanto) requerido según opciones_tipos',
+    monto_deposito DECIMAL(10,2) DEFAULT 0 COMMENT 'NUEVO: Monto de depósito de garantía según opciones_tipos',
+    precio_final DECIMAL(10,2) GENERATED ALWAYS AS (precio_basico + COALESCE(total_adicionales, 0) + COALESCE(monto_sena, 0) + COALESCE(monto_deposito, 0)) STORED COMMENT 'NUEVO GENERADO: precio_basico + total_adicionales + monto_sena + monto_deposito (calculado automáticamente)',
     
-    -- COMENTARIOS DEL CLIENTE
-    comentarios TEXT COMMENT 'Comentarios/detalles del cliente capturados en campo "¿Algo más?" durante solicitud o finalización',
+    -- COMENTARIOS DEL CLIENTE (CAMBIO: descripcion → comentarios para mayor claridad)
+    comentarios TEXT COMMENT 'CAMBIO: Renombrado de descripcion. Comentarios/detalles del cliente capturados en campo "¿Algo más?" durante solicitud o finalización',
     
-    -- AUDITORÍA
+    -- AUDITORÍA Y ESTADO
     estado VARCHAR(50) DEFAULT 'Solicitado' COMMENT 'Estado: Solicitado, Confirmado, Cancelado, Rechazado',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'NUEVO: Auditoría - Fecha/hora de creación del registro',
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'NUEVO: Auditoría - Fecha/hora de última actualización',
     
     -- ÍNDICES Y CONSTRAINTS
     INDEX idx_id_tipo_evento (id_tipo_evento),
     INDEX idx_id_precio_vigencia (id_precio_vigencia),
     INDEX idx_estado (estado),
-    CONSTRAINT fk_solicitudes_alquiler_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
-    CONSTRAINT fk_solicitudes_alquiler_tipo_evento FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT,
-    CONSTRAINT fk_solicitudes_alquiler_precio_vigencia FOREIGN KEY (id_precio_vigencia) REFERENCES precios_vigencia(id) ON DELETE SET NULL
+    INDEX idx_id_solicitud (id_solicitud),
+    CONSTRAINT fk_solicitudes_alquiler_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE COMMENT 'Si se elimina solicitud padre, se elimina el alquiler',
+    CONSTRAINT fk_solicitudes_alquiler_tipo_evento FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT COMMENT 'Restringe eliminación si hay alquileres que usen este tipo',
+    CONSTRAINT fk_solicitudes_alquiler_precio_vigencia FOREIGN KEY (id_precio_vigencia) REFERENCES precios_vigencia(id) ON DELETE SET NULL COMMENT 'Si se elimina precio_vigencia, se pone NULL pero no se elimina el alquiler'
     
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Detalles específicos de solicitudes de alquiler de salones. Normalizado con FKs a opciones_tipos y precios_vigencia'; 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Detalles específicos de solicitudes de alquiler de salones. Normalizado con FKs a opciones_tipos y precios_vigencia. Refactorización 28/02/2026'; 
 
 -- Tabla específica para solicitudes de bandas
 
