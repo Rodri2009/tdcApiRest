@@ -150,6 +150,221 @@ const crearSolicitud = async (req, res) => {
 
 
 /**
+ * Helper para obtener solicitud por ID numérico sin prefijo
+ * Detecta automáticamente el tipo y retorna los datos
+ */
+const getSolicitudWithAutoDetect = async (conn, numericId) => {
+    // Verificar si es alquiler
+    let [alquiler] = await conn.query(
+        "SELECT sa.id_solicitud FROM solicitudes_alquiler sa WHERE sa.id_solicitud = ? LIMIT 1",
+        [numericId]
+    );
+    if (alquiler) {
+        const sql = `
+            SELECT
+                CONCAT('alq_', sa.id_solicitud) as solicitudId,
+                sa.tipo_servicio as tipoServicio,
+                sa.fecha_evento as fechaEvento,
+                sa.hora_evento as horaInicio,
+                sa.duracion as duracionEvento,
+                sa.cantidad_de_personas as cantidadPersonas,
+                sa.precio_basico as precioBase,
+                sa.descripcion as descripcion_alquiler,
+                sa.estado,
+                COALESCE(c.nombre, '') as nombreCompleto,
+                c.telefono as telefono,
+                c.email as email,
+                sa.tipo_de_evento as tipoEvento,
+                COALESCE(sol.es_publico, 0) as esPublico,
+                COALESCE(sol.descripcion_corta, '') as descripcion_corta,
+                COALESCE(sol.descripcion_larga, '') as descripcion_larga
+            FROM solicitudes_alquiler sa
+            JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud
+            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+            WHERE sa.id_solicitud = ?
+        `;
+        const [result] = await conn.query(sql, [numericId]);
+        if (result) {
+            // Obtener adicionales
+            let adicionalesRows = [];
+            try {
+                const alquilerIdRow = await conn.query(
+                    "SELECT id_solicitud_alquiler FROM solicitudes_alquiler WHERE id_solicitud = ?",
+                    [numericId]
+                );
+                if (alquilerIdRow && alquilerIdRow.length > 0) {
+                    const idSolicitudAlquiler = alquilerIdRow[0].id_solicitud_alquiler;
+                    adicionalesRows = await conn.query(
+                        "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud_alquiler = ?",
+                        [idSolicitudAlquiler]
+                    );
+                }
+            } catch (e) {
+                logWarning('No se pudieron obtener adicionales:', e);
+            }
+            return { ...result, adicionales: adicionalesRows || [] };
+        }
+    }
+
+    // Verificar si es banda
+    let [banda] = await conn.query(
+        "SELECT id_solicitud FROM solicitudes_fechas_bandas WHERE id_solicitud = ? LIMIT 1",
+        [numericId]
+    );
+    if (banda) {
+        const sql = `
+            SELECT
+                CONCAT('bnd_', sfb.id_solicitud) as solicitudId,
+                'BANDA' as tipoEvento,
+                sfb.fecha_evento as fechaEvento,
+                sfb.hora_evento as horaInicio,
+                sfb.duracion as duracionEvento,
+                sfb.cantidad_bandas as cantidadPersonas,
+                sfb.precio_basico as precioBase,
+                COALESCE(c.nombre, '') as nombreCompleto,
+                c.telefono as telefono,
+                c.email as email,
+                COALESCE(sfb.descripcion, b.bio) as descripcion_banda,
+                sfb.estado,
+                COALESCE(b.genero_musical, sfb.genero_musical) as genero_musical,
+                COALESCE(b.instagram, NULL) as instagram,
+                COALESCE(b.facebook, NULL) as facebook,
+                COALESCE(b.youtube, NULL) as youtube,
+                COALESCE(b.spotify, NULL) as spotify,
+                COALESCE(b.otras_redes, NULL) as otras_redes,
+                COALESCE(b.logo_url, sfb.logo_url) as logo_url,
+                COALESCE(b.contacto_rol, sfb.contacto_rol) as contacto_rol,
+                sfb.fecha_alternativa,
+                sfb.bandas_json,
+                sfb.cantidad_bandas,
+                sfb.precio_puerta_propuesto,
+                sfb.expectativa_publico,
+                sfb.notas_admin,
+                COALESCE(sol.es_publico, 0) as esPublico,
+                COALESCE(sol.descripcion_corta, '') as descripcion_corta,
+                COALESCE(sol.descripcion_larga, '') as descripcion_larga
+            FROM solicitudes_fechas_bandas sfb
+            JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud
+            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+            LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
+            WHERE sfb.id_solicitud = ?
+        `;
+        const [result] = await conn.query(sql, [numericId]);
+        if (result) {
+            return { ...result, adicionales: [] };
+        }
+    }
+
+    // Verificar si es servicio
+    let [servicio] = await conn.query(
+        "SELECT id_solicitud FROM solicitudes_servicios WHERE id_solicitud = ? LIMIT 1",
+        [numericId]
+    );
+    if (servicio) {
+        const sql = `
+            SELECT
+                CONCAT('srv_', ss.id_solicitud) as solicitudId,
+                'SERVICIO' as tipoEvento,
+                ss.fecha_evento as fechaEvento,
+                ss.hora_evento as horaInicio,
+                ss.duracion as duracionEvento,
+                NULL as cantidadPersonas,
+                ss.precio as precioBase,
+                COALESCE(c.nombre, '') as nombreCompleto,
+                c.telefono as telefono,
+                c.email as email,
+                sol.descripcion,
+                sol.estado,
+                ss.tipo_servicio as tipoServicio,
+                COALESCE(sol.es_publico, 0) as esPublico
+            FROM solicitudes_servicios ss
+            JOIN solicitudes sol ON ss.id_solicitud = sol.id_solicitud
+            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+            WHERE ss.id_solicitud = ?
+        `;
+        const [result] = await conn.query(sql, [numericId]);
+        if (result) {
+            return { ...result, adicionales: [] };
+        }
+    }
+
+    // Verificar si es taller
+    let [taller] = await conn.query(
+        "SELECT id_solicitud FROM solicitudes_talleres WHERE id_solicitud = ? LIMIT 1",
+        [numericId]
+    );
+    if (taller) {
+        const sql = `
+            SELECT
+                CONCAT('tll_', st.id_solicitud) as solicitudId,
+                'TALLERES' as tipoEvento,
+                st.fecha_evento as fechaEvento,
+                st.hora_evento as horaInicio,
+                st.duracion as duracionEvento,
+                NULL as cantidadPersonas,
+                st.precio as precioBase,
+                COALESCE(c.nombre, '') as nombreCompleto,
+                c.telefono as telefono,
+                c.email as email,
+                sol.descripcion,
+                sol.estado,
+                st.nombre_taller as nombreTaller,
+                COALESCE(sol.es_publico, 0) as esPublico
+            FROM solicitudes_talleres st
+            JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
+            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+            WHERE st.id_solicitud = ?
+        `;
+        const [result] = await conn.query(sql, [numericId]);
+        if (result) {
+            return { ...result, adicionales: [] };
+        }
+    }
+
+    // Verificar si es evento
+    let [evento] = await conn.query(
+        "SELECT id FROM eventos_confirmados WHERE id = ? LIMIT 1",
+        [numericId]
+    );
+    if (evento) {
+        const sql = `
+            SELECT 
+                CONCAT('ev_', e.id) as solicitudId,
+                e.tipo_evento as tipoEvento,
+                NULL as cantidadPersonas,
+                NULL as duracionEvento,
+                DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                TIME_FORMAT(e.hora_inicio, '%H:%i') as horaInicio,
+                e.precio_base as precioBase,
+                e.nombre_evento as nombreCompleto,
+                NULL as telefono,
+                NULL as email,
+                e.descripcion as descripcion_larga,
+                SUBSTRING(e.descripcion,1,200) as descripcion_corta,
+                CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Solicitado' END as estado,
+                e.tipo_evento as nombreParaMostrar,
+                e.nombre_evento as nombreBanda,
+                NULL as bandaContactoEmail,
+                NULL as bandaLinkMusica,
+                NULL as bandaPropuesta,
+                NULL as bandaEventId,
+                NULL as bandaInvitados,
+                sfb.precio_anticipada as bandaPrecioAnticipada,
+                sfb.precio_puerta as bandaPrecioPuerta
+            FROM eventos_confirmados e
+            LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
+            WHERE e.id = ?
+        `;
+        const [result] = await conn.query(sql, [numericId]);
+        if (result) {
+            return result;
+        }
+    }
+
+    return null;
+};
+
+/**
  * Obtiene los detalles de una única solicitud por su ID.
  */
 const getSolicitudPorId = async (req, res) => {
@@ -417,9 +632,20 @@ const getSolicitudPorId = async (req, res) => {
             return res.status(200).json(respuesta);
         }
 
-        // Si no tiene prefijo conocido, devolver error
-        logWarning(`[SOLICITUD][GET] ID no reconocido: ${id}`);
-        return res.status(404).json({ error: 'Solicitud no encontrada.' });
+        // Si no tiene prefijo conocido, intentar auto-detectar el tipo
+        const numericId = parseInt(id);
+        if (!isNaN(numericId)) {
+            logVerbose(`[SOLICITUD][GET] ID sin prefijo (${id}): Intentando auto-detectar tipo...`);
+            const autoDetected = await getSolicitudWithAutoDetect(conn, numericId);
+            
+            if (autoDetected) {
+                logVerbose(`[SOLICITUD][GET] Auto-detectado exitosamente: ${autoDetected.solicitudId}`);
+                return res.status(200).json(autoDetected);
+            }
+        }
+
+        logWarning(`[SOLICITUD][GET] Solicitud no encontrada: ${id}`);
+        return res.status(404).json({ error: 'La solicitud solicitada no fue encontrada.' });
 
     } catch (err) {
         logError(`Error al obtener la solicitud ${id}:`, err);
