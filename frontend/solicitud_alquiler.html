@@ -520,6 +520,10 @@
                 gap: 15px;
             }
 
+            .column-layout > div {
+                flex: 1;
+            }
+
             .column-layout .form-group {
                 flex: 1;
                 margin-bottom: 20px;
@@ -625,21 +629,25 @@
         <input type="hidden" id="solicitudId" value="">
 
         <div class="column-layout">
-            <div class="form-group" id="tipoEventoGroup">
-                <div class="form-group-header">
-                    <label>Tipo de Evento:</label>
-                    <button id="resetTipoEventoBtn" style="display: none;">Cambiar tipo de evento</button>
+            <div>
+                <div class="form-group" id="tipoEventoGroup">
+                    <div class="form-group-header">
+                        <label>Tipo de Evento:</label>
+                        <button id="resetTipoEventoBtn" style="display: none;">Cambiar tipo de evento</button>
+                    </div>
+                    <div id="tipoEventoContainer" class="radio-group"></div>
                 </div>
-                <div id="tipoEventoContainer" class="radio-group"></div>
+                <div class="form-group" id="descripcionGroup">
+                    <label>Descripción:</label>
+                    <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
+                </div>
             </div>
-            <div class="form-group" id="descripcionGroup">
-                <label>Descripción:</label>
-                <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
+            <div>
+                <button id="btn-adicionales-small" class="btn-small" style="display: none;">
+                    ➕ Agregar Adicionales
+                </button>
+                <div id="adicionalesSeleccionados"></div>
             </div>
-            <button id="btn-adicionales-small" class="btn-small" style="display: none;">
-                ➕ Agregar Adicionales
-            </button>
-            <div id="adicionalesSeleccionados"></div>
         </div>
         <hr>
         <div class="column-layout">
@@ -829,7 +837,7 @@
             console.log('[STORAGE] Adicionales limpiados de localStorage:', key);
         }
 
-        // Mostrar adicionales seleccionados debajo del botón
+        // Mostrar adicionales seleccionados debajo del botón (sin subtotal)
         function renderAdicionalesSeleccionados() {
             const container = document.getElementById('adicionalesSeleccionados');
             if (!container) {
@@ -844,90 +852,114 @@
             }
 
             console.log('[RENDER-ADICIONALES] Mostrando:', adicionalesSeleccionados);
-            
+
             let html = '<div style="margin-top: 15px; padding: 12px; border: 1px solid #581c87; border-radius: 6px; background-color: #0f172a;">';
-            html += '<p style="margin: 0 0 10px 0; color: var(--color-secondary); font-weight: bold;">Adicionales seleccionados:</p>';
-            
+            html += '<p style="margin: 0 0 10px 0; color: var(--color-secondary); font-weight: bold;">✓ Adicionales seleccionados:</p>';
+
             adicionalesSeleccionados.forEach(ad => {
                 const precio = parseFloat(ad.precio).toLocaleString('es-AR');
                 html += `
-                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #581c87; color: #d6d3d1;">
+                    <div style="display: flex; justify-content: space-between; padding: 6px 0; color: #d6d3d1; font-size: 0.95em;">
                         <span>${ad.nombre}</span>
                         <span style="color: #34d399; font-weight: bold;">$${precio}</span>
                     </div>
                 `;
             });
 
-            let total = 0;
-            adicionalesSeleccionados.forEach(ad => {
-                total += parseFloat(ad.precio);
-            });
-            const totalPrecio = total.toLocaleString('es-AR');
-            html += `<div style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 2px solid #581c87; font-weight: bold; color: #34d399;">
-                <span>Subtotal Adicionales:</span>
-                <span>$${totalPrecio}</span>
-            </div>`;
             html += '</div>';
-
             container.innerHTML = html;
         }
 
         // Actualizar presupuesto total incluyendo adicionales
         function actualizarPresupuesto() {
             console.log('[PRESUPUESTO] Actualizando presupuesto con adicionales...');
-            
+
             // Cargar adicionales desde localStorage
             cargarAdicionalesDelLocalStorage();
-            
-            // Calcular total de adicionales
-            let totalAdicionales = 0;
-            adicionalesSeleccionados.forEach(ad => {
-                totalAdicionales += parseFloat(ad.precio);
-            });
-            
-            console.log('[PRESUPUESTO] Total adicionales:', totalAdicionales);
-            
-            // Obtener el total básico actual
-            const precioBaseInput = document.getElementById('precioBase');
-            const precioBase = precioBaseInput ? parseFloat(precioBaseInput.value) || 0 : 0;
-            
+
             // Obtener elementos de presupuesto
             const detallePreciosDiv = document.getElementById('detallePrecios');
             const presupuestoTotalDiv = document.getElementById('presupuestoTotal');
-            
+            const presupuestoDetalleDiv = document.getElementById('presupuestoDetalle');
+
             if (!detallePreciosDiv || !presupuestoTotalDiv) {
                 console.warn('[PRESUPUESTO] No se encontraron elementos de presupuesto');
                 return;
             }
-            
-            // Actualizar detalle de precios
-            let detalleHtml = detallePreciosDiv.innerHTML;
-            
-            // Si hay adicionales, agregar la línea en el detalle
-            if (totalAdicionales > 0) {
-                // Encontrar el cierre de </ul> y insertar antes
-                const precioAdicionales = convertirNumero(totalAdicionales.toString());
-                const lineaAdicionales = `<li style="color: #34d399;"><strong>Adicionales:</strong> $${precioAdicionales}</li>`;
-                
-                if (detalleHtml.includes('</ul>')) {
-                    detalleHtml = detalleHtml.replace('</ul>', lineaAdicionales + '</ul>');
-                }
-                detallePreciosDiv.innerHTML = detalleHtml;
+
+            // Obtener el total básico actual
+            const precioBaseInput = document.getElementById('precioBase');
+            const precioBase = precioBaseInput ? parseFloat(precioBaseInput.value) || 0 : 0;
+
+            // Calcular total de adicionales
+            let totalAdicionales = 0;
+            let htmlAdicionales = '';
+            if (adicionalesSeleccionados && adicionalesSeleccionados.length > 0) {
+                adicionalesSeleccionados.forEach(ad => {
+                    totalAdicionales += parseFloat(ad.precio);
+                    const precioAd = parseFloat(ad.precio).toLocaleString('es-AR');
+                    htmlAdicionales += `<li style="color: #d6d3d1;"><strong>${ad.nombre}:</strong> $${precioAd}</li>`;
+                });
             }
+
+            console.log('[PRESUPUESTO] Total adicionales:', totalAdicionales);
+
+            // Actualizar presupuestoDetalle con adicionales
+            if (presupuestoDetalleDiv && presupuestoDetalleDiv.innerHTML && presupuestoDetalleDiv.innerHTML.includes('<ul>')) {
+                let detalleHtml = presupuestoDetalleDiv.innerHTML;
+                
+                // Si hay adicionales y aún no están en el detalle, agregarlos
+                if (htmlAdicionales && !detalleHtml.includes('Adicionales:')) {
+                    // Encontrar el </ul> y insertar antes
+                    detalleHtml = detalleHtml.replace('</ul>', htmlAdicionales + '</ul>');
+                    presupuestoDetalleDiv.innerHTML = detalleHtml;
+                } else if (htmlAdicionales && detalleHtml.includes('Adicionales:')) {
+                    // Reemplazar los adicionales existentes
+                    const regexAdicionales = /<li style="color: #d6d3d1;"><strong>[^<]+:[^<]*<\/li>/g;
+                    detalleHtml = detalleHtml.replace(regexAdicionales, '');
+                    detalleHtml = detalleHtml.replace('</ul>', htmlAdicionales + '</ul>');
+                    presupuestoDetalleDiv.innerHTML = detalleHtml;
+                }
+            }
+
+            // Actualizar detallePrecios con subtotal de adicionales
+            let detallePreciosHtml = detallePreciosDiv.innerHTML;
             
+            if (totalAdicionales > 0) {
+                const precioAdicionales = convertirNumero(totalAdicionales.toString());
+                const lineaAdicionales = `<li style="color: #34d399;"><strong>Subtotal Adicionales:</strong> $${precioAdicionales}</li>`;
+                
+                // Si no existe subtotal de adicionales, agregarlo
+                if (!detallePreciosHtml.includes('Subtotal Adicionales')) {
+                    if (detallePreciosHtml.includes('</ul>')) {
+                        detallePreciosHtml = detallePreciosHtml.replace('</ul>', lineaAdicionales + '</ul>');
+                    }
+                } else {
+                    // Reemplazar el subtotal existente
+                    const regexSubtotal = /<li style="color: #34d399;"><strong>Subtotal Adicionales:[^<]*<\/li>/;
+                    detallePreciosHtml = detallePreciosHtml.replace(regexSubtotal, lineaAdicionales);
+                }
+                detallePreciosDiv.innerHTML = detallePreciosHtml;
+            } else if (detallePreciosHtml.includes('Subtotal Adicionales')) {
+                // Si no hay adicionales pero estaban antes, remover la línea
+                const regexSubtotal = /<li style="color: #34d399;"><strong>Subtotal Adicionales:[^<]*<\/li>/;
+                detallePreciosHtml = detallePreciosHtml.replace(regexSubtotal, '');
+                detallePreciosDiv.innerHTML = detallePreciosHtml;
+            }
+
             // Actualizar total final
             const totalFinal = precioBase + totalAdicionales;
             const totalFormato = convertirNumero(totalFinal.toString());
-            
+
             console.log('[PRESUPUESTO] Precio base:', precioBase, '| Adicionales:', totalAdicionales, '| Total:', totalFinal);
-            
+
             // Reemplazar solo la línea de total (mantener depósito si existe)
             let htmlTotal = presupuestoTotalDiv.innerHTML;
             const regexTotal = /<span>Total[^:]*:<\/span>\s*\$[^<]*/;
             const nuevoTotal = `<span>Total: </span> $${totalFormato}`;
             htmlTotal = htmlTotal.replace(regexTotal, nuevoTotal);
             presupuestoTotalDiv.innerHTML = htmlTotal;
-            
+
             console.log('[PRESUPUESTO] Presupuesto actualizado');
         }
 
@@ -1114,7 +1146,7 @@
 
                 // Renderizar lista de adicionales seleccionados
                 renderAdicionalesSeleccionados();
-                
+
                 // Actualizar presupuesto para incluir adicionales
                 actualizarPresupuesto();
 

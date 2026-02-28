@@ -1338,8 +1338,12 @@ const App = {
                     this.elements.presupuestoTotalDiv.innerHTML += `<div style="font-size: 0.6em; color: red; margin-top: 5px;"> A reintegrar: $${this.convertirNumero(depositoGarantia)}</div>`;
                 }
 
-
                 this.elements.precioBaseInput.value = precioCalculado;
+                
+                // Actualizar presupuesto con adicionales (si estamos en solicitud_alquiler.html)
+                if (typeof actualizarPresupuesto === 'function') {
+                    actualizarPresupuesto();
+                }
             } else {
                 this.elements.presupuestoDetalleDiv.insertAdjacentHTML('beforeend', '<p style="color:red;">No se encontró tarifa.</p>');
                 this.elements.presupuestoTotalDiv.innerHTML = `<span>Total: </span> $ -`; this.elements.precioBaseInput.value = 0;
@@ -1473,7 +1477,7 @@ const App = {
                 option.textContent = optionName || optionId;
                 option.setAttribute('data-categoria', opt.categoria || '');
                 option.setAttribute('data-permite-adicionales', opt.permiteAdicionales ? '1' : '0');
-                
+
                 console.log('[DEBUG] Opción creada:', {
                     id: optionId,
                     nombre: optionName,
@@ -1481,7 +1485,7 @@ const App = {
                     permiteAdicionales: opt.permiteAdicionales,
                     atributo_asignado: option.getAttribute('data-permite-adicionales')
                 });
-                
+
                 select.appendChild(option);
             } else {
                 console.warn("Se encontró un objeto inválido sin ID en el array de opciones:", opt);
