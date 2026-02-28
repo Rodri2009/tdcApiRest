@@ -753,6 +753,7 @@
         let notificationBanner = null;
         let notificationTimer = null;
         let solicitudId = null;
+        let visitorId = null;  // Obtenido de formLogic.js (App.visitorId)
         let precioBase = 0;
         let todosLosAdicionales = [];
         let adicionalesSeleccionados = [];
@@ -780,94 +781,58 @@
             return parteDecimal ? `${parteEntera},${parteDecimal}` : parteEntera;
         }
 
-        // Control de modales
-        async function openModalAdicionales() {
-            // Si no hay solicitudId, crear la solicitud primero
-            if (!solicitudId) {
-                console.log('[AGREGAR ADICIONALES] Sin solicitudId, creando solicitud primero...');
-                try {
-                    const solicitudCreada = await crearSolicitudMinimal();
-                    if (!solicitudCreada) {
-                        showNotification('Error: No se pudo crear la solicitud. Completa el formulario primero.', 'error');
-                        return;
-                    }
-                    console.log('[AGREGAR ADICIONALES] Solicitud creada con ID:', solicitudId);
-                } catch (error) {
-                    console.error('[AGREGAR ADICIONALES] Error creando solicitud:', error);
-                    showNotification('Error: ' + error.message, 'error');
-                    return;
-                }
+        // ===== FUNCIONES DE LOCALSTORAGE PARA ADICIONALES =====
+        function getAdicionalesStorageKey() {
+            if (!visitorId) {
+                console.warn('[STORAGE] visitorId no disponible, usando "default"');
+                return 'adicionales_default';
             }
-            
-            modalAdicionales.classList.add('active');
-            cargarAdicionales();
+            return `adicionales_${visitorId}`;
         }
 
-        // Crear solicitud con datos mínimos del formulario para poder agregar adicionales
-        async function crearSolicitudMinimal() {
-            console.log('[CREAR SOLICITUD MINIMAL] Iniciando...');
-            
-            // Obtener datos del formulario
-            const tipoEventoSelect = document.getElementById('tipoEventoSelect');
-            const fechaEventoInput = document.getElementById('fechaEvento');
-            const horaInicioSelect = document.getElementById('horaInicio');
-            const duracionSelect = document.getElementById('duracionEvento');
-            const cantidadSelect = document.getElementById('cantidadPersonas');
-            
-            const tipoEvento = tipoEventoSelect?.value;
-            const fechaEvento = fechaEventoInput?.value;
-            const horaInicio = horaInicioSelect?.value;
-            const duracionEvento = duracionSelect?.value;
-            const cantidadPersonas = cantidadSelect?.value;
-            
-            console.log('[CREAR SOLICITUD MINIMAL] Datos:', { tipoEvento, fechaEvento, horaInicio, duracionEvento, cantidadPersonas });
-            
-            // Validar datos mínimos
-            if (!tipoEvento || !fechaEvento) {
-                throw new Error('Por favor completa al menos el tipo de evento y la fecha.');
+        function cargarAdicionalesDelLocalStorage() {
+            const key = getAdicionalesStorageKey();
+            const stored = localStorage.getItem(key);
+            console.log('[STORAGE] Cargando de localStorage:', key);
+            if (stored) {
+                try {
+                    adicionalesSeleccionados = JSON.parse(stored);
+                    console.log('[STORAGE] Adicionales cargados del localStorage:', adicionalesSeleccionados);
+                    return true;
+                } catch (e) {
+                    console.error('[STORAGE] Error parseando localStorage:', e);
+                    adicionalesSeleccionados = [];
+                    return false;
+                }
             }
-            
+            console.log('[STORAGE] Sin adicionales guardados en localStorage');
+            adicionalesSeleccionados = [];
+            return false;
+        }
+
+        function guardarAdicionalesEnLocalStorage() {
+            const key = getAdicionalesStorageKey();
             try {
-                const payload = {
-                    tipoEvento,
-                    fechaEvento,
-                    horaInicio: horaInicio || null,
-                    duracionEvento: duracionEvento || null,
-                    cantidadPersonas: cantidadPersonas || null,
-                    descripcion: document.getElementById('descripcion')?.value || ''
-                };
-                
-                console.log('[CREAR SOLICITUD MINIMAL] Enviando payload:', payload);
-                
-                const response = await fetch('/api/solicitudes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                console.log('[CREAR SOLICITUD MINIMAL] Status:', response.status);
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Error al crear la solicitud');
-                }
-                
-                const data = await response.json();
-                console.log('[CREAR SOLICITUD MINIMAL] Respuesta:', data);
-                
-                // Guardar el ID de solicitud
-                solicitudId = data.solicitudId;
-                const solicitudIdInput = document.getElementById('solicitudId');
-                if (solicitudIdInput) {
-                    solicitudIdInput.value = solicitudId;
-                }
-                
-                console.log('[CREAR SOLICITUD MINIMAL] Solicitud creada con ID:', solicitudId);
+                localStorage.setItem(key, JSON.stringify(adicionalesSeleccionados));
+                console.log('[STORAGE] Adicionales guardados en localStorage:', key, adicionalesSeleccionados);
                 return true;
-            } catch (error) {
-                console.error('[CREAR SOLICITUD MINIMAL] Error:', error);
-                throw error;
+            } catch (e) {
+                console.error('[STORAGE] Error guardando en localStorage:', e);
+                return false;
             }
+        }
+
+        function limpiarAdicionalesDelLocalStorage() {
+            const key = getAdicionalesStorageKey();
+            localStorage.removeItem(key);
+            console.log('[STORAGE] Adicionales limpiados de localStorage:', key);
+        }
+
+        // Control de modales
+        function openModalAdicionales() {
+            console.log('[ABRIR MODAL ADICIONALES] visitorId:', visitorId);
+            modalAdicionales.classList.add('active');
+            cargarAdicionales();
         }
 
         function closeModalAdicionales() {
@@ -885,11 +850,59 @@
             modalContacto.classList.remove('active');
         }
 
+        // Funciones de localStorage para adicionales
+        function getAdicionalesStorageKey() {
+            if (!visitorId) {
+                console.warn('[STORAGE] visitorId no disponible, usando "default"');
+                return 'adicionales_default';
+            }
+            return `adicionales_${visitorId}`;
+        }
+
+        function cargarAdicionalesDelLocalStorage() {
+            const key = getAdicionalesStorageKey();
+            const stored = localStorage.getItem(key);
+            console.log('[STORAGE] Cargando de localStorage:', key);
+            if (stored) {
+                try {
+                    adicionalesSeleccionados = JSON.parse(stored);
+                    console.log('[STORAGE] Adicionales cargados del localStorage:', adicionalesSeleccionados);
+                    return true;
+                } catch (e) {
+                    console.error('[STORAGE] Error parseando localStorage:', e);
+                    adicionalesSeleccionados = [];
+                    return false;
+                }
+            }
+            console.log('[STORAGE] Sin adicionales guardados en localStorage');
+            adicionalesSeleccionados = [];
+            return false;
+        }
+
+        function guardarAdicionalesEnLocalStorage() {
+            const key = getAdicionalesStorageKey();
+            try {
+                localStorage.setItem(key, JSON.stringify(adicionalesSeleccionados));
+                console.log('[STORAGE] Adicionales guardados en localStorage:', key, adicionalesSeleccionados);
+                return true;
+            } catch (e) {
+                console.error('[STORAGE] Error guardando en localStorage:', e);
+                return false;
+            }
+        }
+
+        function limpiarAdicionalesDelLocalStorage() {
+            const key = getAdicionalesStorageKey();
+            localStorage.removeItem(key);
+            console.log('[STORAGE] Adicionales limpiados de localStorage:', key);
+        }
+
         // Cargar adicionales en el modal
         async function cargarAdicionales() {
             const container = document.getElementById('adicionales-container');
             
             console.log('[CARGAR ADICIONALES] Iniciando carga de adicionales...');
+            console.log('[CARGAR ADICIONALES] visitorId:', visitorId);
 
             try {
                 // Cargar opciones disponibles
@@ -902,19 +915,9 @@
                 console.log('[CARGAR ADICIONALES] Datos recibidos:', adicionalesData);
                 todosLosAdicionales = adicionalesData || [];
 
-                // Cargar selección previa si existe
-                let seleccionadosPrevios = [];
-                if (solicitudId) {
-                    try {
-                        const prevRes = await fetch(`/api/solicitudes/${solicitudId}/adicionales`);
-                        if (prevRes.ok) {
-                            const prevData = await prevRes.json();
-                            seleccionadosPrevios = prevData.seleccionados || [];
-                        }
-                    } catch (err) {
-                        console.warn('No se pudo cargar adicionales previos:', err);
-                    }
-                }
+                // Cargar selección previa desde localStorage (no desde BD)
+                cargarAdicionalesDelLocalStorage();
+                console.log('[CARGAR ADICIONALES] Seleccionados previos desde localStorage:', adicionalesSeleccionados);
 
                 if (todosLosAdicionales.length === 0) {
                     container.innerHTML = '<p style="color:#a1a1aa; text-align:center;">No hay adicionales disponibles en este momento.</p>';
@@ -925,7 +928,7 @@
                 container.innerHTML = '';
                 todosLosAdicionales.forEach(ad => {
                     const itemId = `ad_${ad.nombre.replace(/\s/g, '_')}`;
-                    const isSelected = seleccionadosPrevios.some(sel => sel.nombre === ad.nombre);
+                    const isSelected = adicionalesSeleccionados.some(sel => sel.nombre === ad.nombre);
                     
                     // Incluir imagen si existe
                     const imagenHtml = ad.imageUrl ? `<img src="${ad.imageUrl}" alt="${ad.nombre}" class="adicional-imagen">` : '';
@@ -939,6 +942,28 @@
                             <label for="${itemId}">${ad.nombre}</label>
                             <p>${ad.descripcion || ''}</p>
                         </div>
+                        <div class="adicional-precio">$${parseFloat(ad.precio).toLocaleString('es-AR')}</div>
+                    `;
+
+                    container.appendChild(itemDiv);
+
+                    const checkbox = itemDiv.querySelector('.adicional-check');
+                    checkbox.addEventListener('change', actualizarTotalAdicionales);
+                    itemDiv.addEventListener('click', (e) => {
+                        if (e.target.tagName !== 'INPUT') {
+                            checkbox.checked = !checkbox.checked;
+                            actualizarTotalAdicionales();
+                        }
+                    });
+                });
+
+                actualizarTotalAdicionales();
+
+            } catch (error) {
+                console.error('[CARGAR ADICIONALES] Error:', error);
+                container.innerHTML = `<p style="color: red;">Error al cargar los adicionales: ${error.message}</p>`;
+            }
+        }
                         <div class="adicional-precio">$${parseFloat(ad.precio).toLocaleString('es-AR')}</div>
                     `;
 
@@ -985,45 +1010,25 @@
         }
 
         // Guardar adicionales y cerrar modal
+        // Guardar adicionales en localStorage (Opción D) y cerrar modal
         async function guardarAdicionales() {
-            if (!solicitudId) {
-                console.error('[GUARDAR ADICIONALES] ERROR: No se encontró solicitudId');
-                showNotification('Error: No se encontró el ID de solicitud', 'error');
-                return;
-            }
-
             const btnGuardar = document.getElementById('btn-guardar-adicionales');
             btnGuardar.disabled = true;
             btnGuardar.textContent = 'Guardando...';
             
-            console.log('[GUARDAR ADICIONALES] Iniciando guardado con solicitudId:', solicitudId);
-            console.log('[GUARDAR ADICIONALES] Adicionales a guardar:', adicionalesSeleccionados);
-            console.log('[GUARDAR ADICIONALES] Cantidad de adicionales:', adicionalesSeleccionados.length);
+            console.log('[GUARDAR ADICIONALES] Guardando en localStorage...');
+            console.log('[GUARDAR ADICIONALES] visitorId:', visitorId);
+            console.log('[GUARDAR ADICIONALES] Adicionales:', adicionalesSeleccionados);
 
             try {
-                const endpoint = `/api/solicitudes/${solicitudId}/adicionales`;
-                console.log('[GUARDAR ADICIONALES] Endpoint:', endpoint);
+                // Guardar en localStorage
+                const guardado = guardarAdicionalesEnLocalStorage();
                 
-                const payload = JSON.stringify(adicionalesSeleccionados);
-                console.log('[GUARDAR ADICIONALES] Payload JSON:', payload);
-                
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: payload
-                });
-
-                console.log('[GUARDAR ADICIONALES] Status respuesta:', response.status);
-                console.log('[GUARDAR ADICIONALES] OK?:', response.ok);
-                
-                const responseData = await response.json();
-                console.log('[GUARDAR ADICIONALES] Response data:', responseData);
-                
-                if (!response.ok) {
-                    throw new Error(responseData.error || 'Error al guardar los adicionales');
+                if (!guardado) {
+                    throw new Error('No se pudo guardar en localStorage');
                 }
 
-                console.log('[GUARDAR ADICIONALES] ¡Éxito! Cerrando modal...');
+                console.log('[GUARDAR ADICIONALES] ✓ Guardados en localStorage correctamente');
                 showNotification('Adicionales guardados correctamente', 'success');
                 
                 // Esperar un poco para que se vea el mensaje de éxito
@@ -1033,12 +1038,9 @@
                 }, 500);
 
             } catch (error) {
-                console.error('[GUARDAR ADICIONALES] ERROR CAPTURADO:', error);
-                console.error('[GUARDAR ADICIONALES] Error name:', error.name);
+                console.error('[GUARDAR ADICIONALES] ERROR:', error);
                 console.error('[GUARDAR ADICIONALES] Error message:', error.message);
-                console.error('[GUARDAR ADICIONALES] Error completo:', JSON.stringify(error, null, 2));
                 showNotification('Error al guardar los adicionales: ' + error.message, 'error');
-                // NO cerrar el modal en caso de error, para que el usuario pueda reintentar
             } finally {
                 btnGuardar.disabled = false;
                 btnGuardar.textContent = 'Guardar Adicionales';
@@ -1151,6 +1153,21 @@
             modalAdicionales = document.getElementById('modalAdicionales');
             modalContacto = document.getElementById('modalContacto');
             notificationBanner = document.getElementById('notification-banner');
+
+            // Obtener visitorId desde formLogic.js (App.visitorId)
+            if (typeof App !== 'undefined' && App.visitorId) {
+                visitorId = App.visitorId;
+                console.log('[INIT] visitorId obtenido de App:', visitorId);
+            } else {
+                console.warn('[INIT] App.visitorId no disponible aún');
+                // Intentar nuevamente después de un momento
+                setTimeout(() => {
+                    if (typeof App !== 'undefined' && App.visitorId) {
+                        visitorId = App.visitorId;
+                        console.log('[INIT] visitorId obtenido de App (retry):', visitorId);
+                    }
+                }, 500);
+            }
 
             // Obtener solicitudId de la URL
             const params = new URLSearchParams(window.location.search);
