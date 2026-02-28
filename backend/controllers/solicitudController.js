@@ -112,24 +112,60 @@ const crearSolicitud = async (req, res) => {
             if (conn) { conn.release(); conn = null; }
             return solicitudFechaBandaController.crearSolicitudFechaBanda(req, res);
         } else {
-            // 2. Insertar en la tabla específica 'solicitudes_alquiler'
+            // 2. Insertar en la tabla específica 'solicitudes_alquiler' (estructura normalizada)
+            // Convertir duracionEvento a minutos si viene como "X horas"
+            let duracionMinutos = 180; // default 3 horas
+            if (typeof duracionEvento === 'string') {
+                if (duracionEvento.includes('4')) duracionMinutos = 240;
+                else if (duracionEvento.includes('6')) duracionMinutos = 360;
+                else if (duracionEvento.includes('5')) duracionMinutos = 300;
+                else if (duracionEvento.includes('7')) duracionMinutos = 420;
+                else duracionMinutos = 180;
+            } else if (typeof duracionEvento === 'number') {
+                duracionMinutos = duracionEvento > 50 ? duracionEvento : duracionEvento * 60; // Si > 50 asumir minutos, si no horas
+            }
+
+            // Convertir horaInicio a formato TIME si es string
+            let horaEventoTime = '10:00:00';
+            if (horaInicio && typeof horaInicio === 'string') {
+                const match = horaInicio.match(/(\d{1,2}):(\d{2})/);
+                if (match) {
+                    horaEventoTime = `${String(match[1]).padStart(2, '0')}:${match[2]}:00`;
+                }
+            }
+
+            // Obtener id_precio_vigencia basado en tipo evento y cantidad de personas
+            const cantidadNum = parseInt(cantidadPersonas) || 0;
+            const sqlPrecioVigencia = `
+                SELECT id FROM precios_vigencia 
+                WHERE id_tipo_evento = ? 
+                  AND ? BETWEEN cantidad_min AND cantidad_max
+                  AND vigente_hasta IS NULL
+                LIMIT 1
+            `;
+            const [precioVigencia] = await conn.query(sqlPrecioVigencia, [tipoEvento, cantidadNum]);
+            const idPrecioVigencia = precioVigencia ? precioVigencia.id : null;
+
+            // Insertar solicitud de alquiler
             const sqlAlquiler = `
                 INSERT INTO solicitudes_alquiler (
-                    id_solicitud, tipo_servicio, fecha_evento, hora_evento, duracion,
-                    cantidad_de_personas, precio_basico, precio_final, tipo_de_evento, descripcion, estado
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    id_solicitud, fecha_evento, hora_evento, duracion, id_tipo_evento,
+                    id_precio_vigencia, precio_basico, total_adicionales, monto_sena, monto_deposito, 
+                    comentarios, estado
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const paramsAlquiler = [
                 newId,                                      // id_solicitud
-                tipoEvento,                                 // tipo_servicio
                 fechaEvento,                                // fecha_evento
-                horaInicio,                                 // hora_evento
-                duracionEvento,                             // duracion
-                cantidadPersonas,                           // cantidad_de_personas
+                horaEventoTime,                             // hora_evento (TIME)
+                duracionMinutos,                            // duracion (INT minutos)
+                tipoEvento,                                 // id_tipo_evento
+                idPrecioVigencia,                           // id_precio_vigencia (FK)
                 parseFloat(precioBase) || 0,               // precio_basico
-                null,                                       // precio_final
-                tipoEvento,                                 // tipo_de_evento
-                descripcion || '',                          // descripcion
+                0,                                          // total_adicionales (inicialmente 0)
+                0,                                          // monto_sena (inicialmente 0, se actualiza con opciones_tipos)
+                0,                                          // monto_deposito (inicialmente 0, se actualiza con opciones_tipos)
+                descripcion || '',                          // comentarios
                 'Solicitado'                                // estado
             ];
             await conn.query(sqlAlquiler, paramsAlquiler);
@@ -164,21 +200,25 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
             SELECT
                 CONCAT('alq_', sa.id_solicitud) as solicitudId,
                 sa.id_solicitud as idSolicitud,
-                sa.tipo_servicio as idTipoServicio,
-                ot.nombre as nombreTipoServicio,
+                sa.id_tipo_evento,
+                ot.nombre_para_mostrar as nombreTipoEvento,
                 sa.fecha_evento as fechaEvento,
                 sa.hora_evento as horaInicio,
                 sa.duracion as duracionEvento,
-                sa.cantidad_de_personas as idCantidadPersonas,
-                oc.nombre as nombreCantidadPersonas,
+                sa.id_precio_vigencia,
+                pv.cantidad_min,
+                pv.cantidad_max,
+                CONCAT(pv.cantidad_min, '-', pv.cantidad_max, ' personas') as nombreCantidadPersonas,
                 sa.precio_basico as precioBase,
+                sa.total_adicionales,
+                sa.monto_sena,
+                sa.monto_deposito,
+                sa.precio_final,
                 COALESCE(c.id_cliente, sol.id_cliente) as idCliente,
                 COALESCE(c.nombre, '') as nombreCliente,
                 COALESCE(c.telefono, '') as telefono,
                 COALESCE(c.email, '') as email,
-                sa.tipo_de_evento as idTipoEvento,
-                ote.nombre as nombreTipoEvento,
-                sa.descripcion as comentariosCliente,
+                sa.comentarios as comentariosCliente,
                 COALESCE(sol.descripcion_corta, '') as descripcion_corta,
                 COALESCE(sol.descripcion_larga, '') as descripcion_larga,
                 COALESCE(sol.es_publico, 0) as esPublico,
@@ -186,9 +226,8 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
             FROM solicitudes_alquiler sa
             JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
-            LEFT JOIN opciones_alquiler ot ON sa.tipo_servicio = ot.id
-            LEFT JOIN opciones_cantidad_personas oc ON sa.cantidad_de_personas = oc.id
-            LEFT JOIN opciones_tipo_evento ote ON sa.tipo_de_evento = ote.id
+            LEFT JOIN opciones_tipos ot ON sa.id_tipo_evento = ot.id_tipo_evento
+            LEFT JOIN precios_vigencia pv ON sa.id_precio_vigencia = pv.id
             WHERE sa.id_solicitud = ?
         `;
         const [result] = await conn.query(sql, [numericId]);
