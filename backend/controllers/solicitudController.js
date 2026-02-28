@@ -481,7 +481,12 @@ const finalizarSolicitud = async (req, res) => {
 
         // Obtener los datos completos para los emails
         const sqlSelect = `
-            SELECT s.*, sa.* FROM solicitudes s LEFT JOIN solicitudes_alquiler sa ON s.id_solicitud = sa.id_solicitud WHERE s.id_solicitud = ?
+            SELECT 
+                s.id_solicitud, s.categoria, s.fecha_creacion, s.estado, s.descripcion_corta, s.descripcion_larga, s.descripcion, s.id_cliente, s.url_flyer,
+                sa.tipo_servicio, sa.fecha_evento, sa.hora_evento, sa.duracion, sa.cantidad_de_personas, sa.precio_basico, sa.precio_final, sa.tipo_de_evento, sa.estado as estado_alquiler
+            FROM solicitudes s 
+            LEFT JOIN solicitudes_alquiler sa ON s.id_solicitud = sa.id_solicitud 
+            WHERE s.id_solicitud = ?
         `;
         const [solicitudCompleta] = await conn.query(sqlSelect, [id]);
 
