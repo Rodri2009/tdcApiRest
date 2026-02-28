@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud Reserva para Eventos - El Templo de Claypole</title>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
+
+    <style>
+        :root {
+            --color-primary: #581c87;
+            /* Morado oscuro de Talleres */
+            --color-secondary: #f0abfc;
+            /* Neon/Fucsia de Talleres */
+            --color-rustic: #44403c;
+            /* Gris/Marrón de Talleres */
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        /* Estilos del cuerpo del formulario */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0c0a09;
+            /* Fondo de Talleres */
+            color: #d6d3d1;
+            /* Texto claro */
+            padding: 0;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 20px auto;
+            background-color: #1e293b;
+            /* Un gris/azul oscuro para el contenedor */
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            border: 1px solid var(--color-rustic);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2.25rem !important;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        h3 {
+            color: var(--color-secondary);
+            font-size: 1.5rem;
+            margin-top: 25px;
+        }
+
+        h3.subtitle {
+            color: #ccc;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            font-weight: normal;
+        }
+
+        /* Campos de Formulario */
+        label {
+            font-weight: bold;
+            color: #f0abfc;
+            /* Color claro para las etiquetas */
+        }
+
+        /* AJUSTE DE ALTURA DE INPUTS/SELECTS */
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 8px !important;
+            /* Altura forzada */
+            border: 1.5px solid #581c87;
+            /* Borde morado */
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 18px;
+            background-color: #0f172a;
+            /* Fondo de campo oscuro */
+            color: #f8fafc;
+            /* Texto blanco */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            line-height: 1.2;
+        }
+
+        .radio-group {
+            padding: 10px;
+            border: 1px solid #581c87;
+            border-radius: 4px;
+            background-color: #0f172a;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 10px;
+            flex-shrink: 0;
+            accent-color: var(--color-secondary);
+        }
+
+        .radio-option label {
+            line-height: 1.4;
+            font-weight: normal;
+            cursor: pointer;
+            color: #d6d3d1;
+            /* Texto de opción */
+        }
+
+        #tipoEventoDescripcion {
+            padding: 10px;
+            border: 1px solid #581c87;
+            border-radius: 4px;
+            background-color: #0f172a;
+            font-size: 18px;
+            color: #f8fafc;
+            min-height: 120px;
+            text-align: left;
+            white-space: pre-wrap;
+            box-sizing: border-box;
+        }
+
+        /* Detalles de Presupuesto General */
+        #presupuestoDetalle,
+        #detallePrecios {
+            padding: 15px;
+            border: 1px solid var(--color-secondary);
+            border-radius: 5px;
+            background-color: #0f172a;
+        }
+
+        #presupuestoDetalle p,
+        #presupuestoDetalle ul li {
+            color: #f8fafc;
+            /* Texto en resumen */
+        }
+
+        /* ESTILO DE FACTURA PARA DETALLE DE PRECIOS */
+        #detallePrecios ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #detallePrecios ul li {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1.05em;
+            color: #f8fafc !important;
+            /* Mantenemos el !important para sobrescribir estilos en línea */
+        }
+
+        #detallePrecios ul li span:last-child {
+            font-weight: bold;
+            color: #34d399;
+        }
+
+
+        #presupuestoTotal {
+            text-align: right;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #34d399;
+            /* Verde neón/claro para el valor total */
+            margin-top: 15px;
+            border-top: 2px solid #581c87;
+            padding-top: 10px;
+        }
+
+        #presupuestoTotal span {
+            font-size: 0.7em;
+            color: var(--color-secondary);
+            /* Fucsia neón para la etiqueta 'Total Básico:' */
+        }
+
+        /* ------------------------------------------- */
+        /* NUEVO ESTILO DE BOTÓN NEON (TRANSPARENTE) */
+        /* ------------------------------------------- */
+        .button-group button {
+            /* Estilo Base: Transparente con borde neon */
+            background-color: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            /* Simula rounded-lg */
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            /* Añadido para simular la transición de Tailwind */
+            transition: all 0.3s ease-in-out;
+            text-decoration: none;
+            box-sizing: border-box;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .button-group button:hover {
+            /* Simular hover:bg-fuchsia-900 hover:bg-opacity-20 */
+            background-color: rgba(132, 63, 172, 0.2);
+            /* Simular transform: hover:scale-105 */
+            transform: scale(1.05);
+            color: var(--color-secondary);
+            border-color: var(--color-secondary);
+        }
+
+        .button-group button:disabled {
+            background-color: #6b7280;
+            color: #d1d5db;
+            border-color: #6b7280;
+            cursor: not-allowed;
+            transform: scale(1.0);
+            /* Desactivar la escala en disabled */
+        }
+
+        /* ------------------------------------------- */
+
+
+        /* Layout móvil (por defecto) */
+        .column-layout {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+
+        /* Media Query para Escritorio */
+        @media (min-width: 768px) {
+            .column-layout {
+                flex-direction: row;
+                gap: 15px;
+            }
+
+            .column-layout .form-group {
+                flex: 1;
+            }
+
+            /* Alineación de botones para escritorio (fix anterior) */
+            .button-group {
+                flex-direction: row;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .button-group button {
+                width: 49%;
+                font-size: 16px;
+                /* El padding y estilos de hover ya están definidos arriba */
+            }
+        }
+
+        /* Estilos menores */
+        hr {
+            border-color: var(--color-rustic);
+            margin-top: 25px;
+        }
+
+        .campo-invalido {
+            border-color: #e74c3c !important;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        /* Estilos del loader */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(12, 10, 9, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay p {
+            color: var(--color-secondary);
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #a855f7;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-top: 10px;
+        }
+
+
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.5s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.warning {
+            background-color: #fbbf24;
+            color: #1e293b;
+        }
+
+        #notification-banner.error {
+            background-color: #ef4444;
+        }
+
+        #notification-banner.success {
+            background-color: #10b981;
+        }
+
+        ::placeholder {
+            color: #9ca3af !important;
+            opacity: 1 !important;
+            font-style: italic;
+        }
+
+        /* Menú responsivo */
+        @media (min-width: 768px) {
+            nav.flex {
+                display: flex !important;
+            }
+
+            #mobile-menu-button {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            #mobile-menu-button {
+                display: block !important;
+            }
+
+            nav.flex {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide block">Volver a Inicio</span>
+                </a>
+                <nav class="flex space-x-8 items-center">
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <a href="seccion_bandas.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
+                        Vivo</a>
+                    <a href="seccion_servicios.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
+                    <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+                <!-- Botón de Menú Móvil -->
+                <button id="mobile-menu-button"
+                    class="hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <!-- Menú Móvil Desplegable -->
+        <div id="mobile-menu" class="hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <a href="seccion_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
+                    en Vivo</a>
+                <a href="seccion_servicios.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
+                <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container" id="mainContainer">
+        <h2 id="pageTitle">Generador de presupuesto</h2>
+
+        <input type="hidden" id="precioBase" name="precioBase">
+        <div class="column-layout">
+            <div class="form-group" id="tipoEventoGroup">
+                <div class="form-group-header">
+                    <label>Tipo de Evento:</label>
+                    <button id="resetTipoEventoBtn" style="display: none;">Cambiar tipo de evento</button>
+                </div>
+                <div id="tipoEventoContainer" class="radio-group"></div>
+            </div>
+            <div class="form-group" id="descripcionGroup">
+                <label>Descripción:</label>
+                <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
+            </div>
+        </div>
+        <div class="column-layout">
+            <div class="form-group">
+                <label for="fechaEvento">Fechas Disponibles (Sáb, Dom y Feriados):</label>
+                <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
+            </div>
+            <div class="form-group" id="horaInicioGroup">
+                <label for="horaInicio">Hora de Inicio:</label>
+                <select id="horaInicio">
+                    <option value="">--</option>
+                </select>
+            </div>
+        </div>
+        <div class="column-layout">
+            <div class="form-group" id="cantidadPersonasGroup">
+                <label for="cantidadPersonas">Cantidad de Personas:</label>
+                <select id="cantidadPersonas">
+                    <option value="">--</option>
+                </select>
+            </div>
+            <div class="form-group" id="duracionEventoGroup">
+                <label for="duracionEvento">Duración del Evento:</label>
+                <select id="duracionEvento">
+                    <option value="">--</option>
+                </select>
+            </div>
+        </div>
+        <hr style="margin-top: 25px; color: #34d399;
+            border-top: 2px solid #581c87;
+            padding-top: 10px;">
+        <h3>Resumen de Presupuesto Básico:</h3>
+        <div id="presupuestoDetalle">
+            <p>Complete las opciones para ver el precio.</p>
+        </div>
+        <div id="detallePrecios">
+        </div>
+        <div id="presupuestoTotal"><span>Total Básico: </span> $0</div>
+        <div class="button-group">
+            <button id="btn-adicionales" disabled>Inicializando...</button>
+            <button id="btn-contacto" disabled>Inicializando...</button>
+        </div>
+        <div class="loading-overlay" id="loadingOverlay">
+            <p>Cargando opciones...</p>
+            <div class="spinner"></div>
+        </div>
+    </div>
+    <div id="notification-banner"></div>
+
+    <script src="/formLogic.js"></script>
+    <script>
+        console.log('solicitud_alquiler.html: Script iniciado');
+        console.log('solicitud_alquiler.html: formLogic.js cargado, typeof initializeApp =', typeof window.initializeApp);
+
+        // Cambiar el título de la página si se abre con ?tipo=BANDA (u otras variantes)
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('solicitud_alquiler.html: DOMContentLoaded disparado');
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const tipo = params.get('tipo');
+                console.log('solicitud_alquiler.html: tipo parameter =', tipo);
+                if (tipo && typeof tipo === 'string' && tipo.trim().toUpperCase() === 'BANDA') {
+                    const titleEl = document.getElementById('pageTitle');
+                    if (titleEl) titleEl.textContent = 'Solicitud para tocar en el templo';
+                }
+            } catch (e) {
+                console.warn('No se pudo evaluar parámetro tipo para cambiar título:', e);
+            }
+
+            // Iniciar la app en modo creación, solo mostrar tipos de ALQUILER_SALON
+            console.log('solicitud_alquiler.html: Llamando a initializeApp con config:', { mode: 'create', categoriaFiltro: 'ALQUILER_SALON' });
+            console.log('solicitud_alquiler.html: typeof initializeApp =', typeof initializeApp);
+            try {
+                initializeApp({
+                    mode: 'create',
+                    categoriaFiltro: 'ALQUILER_SALON'
+                });
+                console.log('solicitud_alquiler.html: initializeApp ejecutado correctamente');
+            } catch (err) {
+                console.error('solicitud_alquiler.html: Error al llamar initializeApp:', err);
+            }
+        });
+    </script>
+
+    <script>
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                // Usuario autenticado
+                const desktopHTML = `
+                    <a href="/admin.html" 
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">
+                        🔐 Admin
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="/admin.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
+                        🔐 Admin Panel
+                    </a>
+                    <button onclick="logout()" 
+                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
+                        🚪 Cerrar Sesión
+                    </button>
+                `;
+                desktopMenu.innerHTML = desktopHTML;
+                mobileMenu.innerHTML = mobileHTML;
+            } else {
+                // Usuario no autenticado
+                const desktopHTML = `
+                    <a href="login.html"
+                       class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">
+                        Login
+                    </a>
+                `;
+                const mobileHTML = `
+                    <a href="login.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
+                        Login
+                    </a>
+                `;
+                desktopMenu.innerHTML = desktopHTML;
+                mobileMenu.innerHTML = mobileHTML;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/index.html';
+        }
+
+        // Escuchar cambios en localStorage (sesión iniciada en otra pestaña)
+        window.addEventListener('storage', updateAuthMenu);
+
+        // Manejador del menú móvil responsivo
+        document.addEventListener('DOMContentLoaded', function () {
+            updateAuthMenu();
+
+            const menuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            if (menuButton && mobileMenu) {
+                function toggleMenu() {
+                    mobileMenu.classList.toggle('hidden');
+                }
+
+                menuButton.addEventListener('click', toggleMenu);
+
+                // Ocultar el menú móvil al hacer clic en un enlace
+                const navLinks = mobileMenu.querySelectorAll('a');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (!mobileMenu.classList.contains('hidden')) {
+                            mobileMenu.classList.add('hidden');
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+    <script src="/navbar.js"></script>
+</body>
+
+</html>

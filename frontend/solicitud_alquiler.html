@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solicitud Reserva para Eventos - El Templo de Claypole</title>
     <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
@@ -15,11 +16,8 @@
     <style>
         :root {
             --color-primary: #581c87;
-            /* Morado oscuro de Talleres */
             --color-secondary: #f0abfc;
-            /* Neon/Fucsia de Talleres */
             --color-rustic: #44403c;
-            /* Gris/Marrón de Talleres */
         }
 
         .text-neon {
@@ -31,13 +29,10 @@
             background-color: var(--color-rustic);
         }
 
-        /* Estilos del cuerpo del formulario */
         body {
             font-family: Arial, sans-serif;
             background-color: #0c0a09;
-            /* Fondo de Talleres */
             color: #d6d3d1;
-            /* Texto claro */
             padding: 0;
         }
 
@@ -45,7 +40,6 @@
             max-width: 98%;
             margin: 20px auto;
             background-color: #1e293b;
-            /* Un gris/azul oscuro para el contenedor */
             padding: 25px;
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
@@ -77,32 +71,33 @@
             font-weight: normal;
         }
 
-        /* Campos de Formulario */
         label {
             font-weight: bold;
             color: #f0abfc;
-            /* Color claro para las etiquetas */
         }
 
-        /* AJUSTE DE ALTURA DE INPUTS/SELECTS */
         select,
-        input[type="text"] {
+        input[type="text"],
+        textarea,
+        input[type="email"] {
             width: 100%;
             padding: 12px 8px !important;
-            /* Altura forzada */
             border: 1.5px solid #581c87;
-            /* Borde morado */
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 18px;
             background-color: #0f172a;
-            /* Fondo de campo oscuro */
             color: #f8fafc;
-            /* Texto blanco */
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
             line-height: 1.2;
+        }
+
+        textarea {
+            font-size: 16px;
+            resize: vertical;
+            min-height: 100px;
         }
 
         .radio-group {
@@ -130,7 +125,6 @@
             font-weight: normal;
             cursor: pointer;
             color: #d6d3d1;
-            /* Texto de opción */
         }
 
         #tipoEventoDescripcion {
@@ -146,7 +140,6 @@
             box-sizing: border-box;
         }
 
-        /* Detalles de Presupuesto General */
         #presupuestoDetalle,
         #detallePrecios {
             padding: 15px;
@@ -158,10 +151,8 @@
         #presupuestoDetalle p,
         #presupuestoDetalle ul li {
             color: #f8fafc;
-            /* Texto en resumen */
         }
 
-        /* ESTILO DE FACTURA PARA DETALLE DE PRECIOS */
         #detallePrecios ul {
             list-style: none;
             padding: 0;
@@ -174,7 +165,6 @@
             margin-bottom: 8px;
             font-size: 1.05em;
             color: #f8fafc !important;
-            /* Mantenemos el !important para sobrescribir estilos en línea */
         }
 
         #detallePrecios ul li span:last-child {
@@ -182,13 +172,11 @@
             color: #34d399;
         }
 
-
         #presupuestoTotal {
             text-align: right;
             font-size: 1.8em;
             font-weight: bold;
             color: #34d399;
-            /* Verde neón/claro para el valor total */
             margin-top: 15px;
             border-top: 2px solid #581c87;
             padding-top: 10px;
@@ -197,54 +185,8 @@
         #presupuestoTotal span {
             font-size: 0.7em;
             color: var(--color-secondary);
-            /* Fucsia neón para la etiqueta 'Total Básico:' */
         }
 
-        /* ------------------------------------------- */
-        /* NUEVO ESTILO DE BOTÓN NEON (TRANSPARENTE) */
-        /* ------------------------------------------- */
-        .button-group button {
-            /* Estilo Base: Transparente con borde neon */
-            background-color: transparent;
-            color: var(--color-secondary);
-            border: 2px solid var(--color-secondary);
-            padding: 15px 20px;
-            border-radius: 8px;
-            /* Simula rounded-lg */
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-            /* Añadido para simular la transición de Tailwind */
-            transition: all 0.3s ease-in-out;
-            text-decoration: none;
-            box-sizing: border-box;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .button-group button:hover {
-            /* Simular hover:bg-fuchsia-900 hover:bg-opacity-20 */
-            background-color: rgba(132, 63, 172, 0.2);
-            /* Simular transform: hover:scale-105 */
-            transform: scale(1.05);
-            color: var(--color-secondary);
-            border-color: var(--color-secondary);
-        }
-
-        .button-group button:disabled {
-            background-color: #6b7280;
-            color: #d1d5db;
-            border-color: #6b7280;
-            cursor: not-allowed;
-            transform: scale(1.0);
-            /* Desactivar la escala en disabled */
-        }
-
-        /* ------------------------------------------- */
-
-
-        /* Layout móvil (por defecto) */
         .column-layout {
             margin-top: 10px;
             display: flex;
@@ -259,36 +201,195 @@
             margin-top: 30px;
         }
 
-
-        /* Media Query para Escritorio */
-        @media (min-width: 768px) {
-            .column-layout {
-                flex-direction: row;
-                gap: 15px;
-            }
-
-            .column-layout .form-group {
-                flex: 1;
-            }
-
-            /* Alineación de botones para escritorio (fix anterior) */
-            .button-group {
-                flex-direction: row;
-                justify-content: space-between;
-                gap: 10px;
-            }
-
-            .button-group button {
-                width: 49%;
-                font-size: 16px;
-                /* El padding y estilos de hover ya están definidos arriba */
-            }
+        .button-group button {
+            background-color: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s ease-in-out;
+            text-decoration: none;
+            box-sizing: border-box;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* Estilos menores */
-        hr {
-            border-color: var(--color-rustic);
-            margin-top: 25px;
+        .button-group button:hover {
+            background-color: rgba(132, 63, 172, 0.2);
+            transform: scale(1.05);
+            color: var(--color-secondary);
+            border-color: var(--color-secondary);
+        }
+
+        .button-group button:disabled {
+            background-color: #6b7280;
+            color: #d1d5db;
+            border-color: #6b7280;
+            cursor: not-allowed;
+            transform: scale(1.0);
+        }
+
+        /* Botón pequeño para Agregar Adicionales */
+        .btn-small {
+            font-size: 14px !important;
+            padding: 8px 12px !important;
+            border: 1px solid var(--color-secondary) !important;
+            margin-top: 10px;
+        }
+
+        /* MODALES */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 5000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #1e293b;
+            border: 1px solid var(--color-rustic);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--color-primary);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--color-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .modal-close:hover {
+            transform: scale(1.2);
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            border-top: 1px solid var(--color-rustic);
+            padding-top: 20px;
+        }
+
+        .modal-footer button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 6px;
+            border: 2px solid var(--color-secondary);
+            background-color: transparent;
+            color: var(--color-secondary);
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .modal-footer button:hover {
+            background-color: rgba(132, 63, 172, 0.2);
+            transform: scale(1.02);
+        }
+
+        .modal-footer button.secondary {
+            border-color: #6b7280;
+            color: #6b7280;
+        }
+
+        /* Estilos para listado de adicionales */
+        .adicional-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 15px;
+            border: 1px solid #581c87;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: #0f172a;
+        }
+
+        .adicional-item:hover {
+            background-color: rgba(88, 28, 135, 0.2);
+            border-color: var(--color-secondary);
+        }
+
+        .adicional-item input[type="checkbox"] {
+            accent-color: var(--color-secondary);
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        .adicional-info {
+            flex: 1;
+        }
+
+        .adicional-info label {
+            font-weight: bold;
+            color: var(--color-secondary);
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .adicional-info p {
+            color: #a1a1aa;
+            font-size: 0.9rem;
+            margin: 5px 0 0 0;
+        }
+
+        .adicional-precio {
+            text-align: right;
+            font-weight: bold;
+            color: #34d399;
+            font-size: 1.1rem;
+        }
+
+        #total-modal {
+            font-size: 1.3em;
+            font-weight: bold;
+            text-align: right;
+            color: var(--color-secondary);
+            padding-top: 10px;
+            border-top: 2px solid var(--color-primary);
+            margin-bottom: 15px;
         }
 
         .campo-invalido {
@@ -297,24 +398,11 @@
         }
 
         @keyframes shake {
-
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            20%,
-            60% {
-                transform: translateX(-5px);
-            }
-
-            40%,
-            80% {
-                transform: translateX(5px);
-            }
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
         }
 
-        /* Estilos del loader */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -345,6 +433,10 @@
             margin-top: 10px;
         }
 
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
         #notification-banner {
             position: fixed;
@@ -386,14 +478,42 @@
             font-style: italic;
         }
 
-        /* Menú responsivo */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        hr {
+            border-color: var(--color-rustic);
+            margin-top: 25px;
+        }
+
         @media (min-width: 768px) {
-            nav.flex {
-                display: flex !important;
+            .column-layout {
+                flex-direction: row;
+                gap: 15px;
             }
 
-            #mobile-menu-button {
-                display: none !important;
+            .column-layout .form-group {
+                flex: 1;
+            }
+
+            .button-group {
+                flex-direction: row;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .button-group button {
+                width: 49%;
+                font-size: 16px;
+            }
+
+            .modal-footer {
+                flex-direction: row;
+            }
+
+            .modal-footer button {
+                flex: 1;
             }
         }
 
@@ -403,6 +523,26 @@
             }
 
             nav.flex {
+                display: none !important;
+            }
+
+            .modal-content {
+                width: 95%;
+                max-height: 95vh;
+                padding: 20px;
+            }
+
+            .modal-header h2 {
+                font-size: 1.4rem;
+            }
+        }
+
+        @media (min-width: 768px) {
+            nav.flex {
+                display: flex !important;
+            }
+
+            #mobile-menu-button {
                 display: none !important;
             }
         }
@@ -418,37 +558,23 @@
                     <span class="text-base font-semibold text-neon tracking-wide block">Volver a Inicio</span>
                 </a>
                 <nav class="flex space-x-8 items-center">
-                    <a href="seccion_talleres.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
-                    <a href="seccion_bandas.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
-                        Vivo</a>
-                    <a href="seccion_servicios.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
-                    <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
+                    <a href="seccion_talleres.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <a href="seccion_bandas.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en Vivo</a>
+                    <a href="seccion_servicios.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
                     <div id="auth-menu-desktop"></div>
                 </nav>
-                <!-- Botón de Menú Móvil -->
-                <button id="mobile-menu-button"
-                    class="hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                <button id="mobile-menu-button" class="hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
                     <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
             </div>
         </div>
-        <!-- Menú Móvil Desplegable -->
         <div id="mobile-menu" class="hidden">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
-                <a href="seccion_talleres.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
-                <a href="seccion_bandas.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
-                    en Vivo</a>
-                <a href="seccion_servicios.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
-                <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
+                <a href="seccion_talleres.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <a href="seccion_bandas.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas en Vivo</a>
+                <a href="seccion_servicios.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
                 <div id="auth-menu-mobile"></div>
             </div>
         </div>
@@ -458,6 +584,8 @@
         <h2 id="pageTitle">Generador de presupuesto</h2>
 
         <input type="hidden" id="precioBase" name="precioBase">
+        <input type="hidden" id="solicitudId" value="">
+
         <div class="column-layout">
             <div class="form-group" id="tipoEventoGroup">
                 <div class="form-group-header">
@@ -471,6 +599,7 @@
                 <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
             </div>
         </div>
+
         <div class="column-layout">
             <div class="form-group">
                 <label for="fechaEvento">Fechas Disponibles (Sáb, Dom y Feriados):</label>
@@ -483,6 +612,7 @@
                 </select>
             </div>
         </div>
+
         <div class="column-layout">
             <div class="form-group" id="cantidadPersonasGroup">
                 <label for="cantidadPersonas">Cantidad de Personas:</label>
@@ -497,104 +627,393 @@
                 </select>
             </div>
         </div>
-        <hr style="margin-top: 25px; color: #34d399;
-            border-top: 2px solid #581c87;
-            padding-top: 10px;">
+
+        <hr>
         <h3>Resumen de Presupuesto Básico:</h3>
         <div id="presupuestoDetalle">
             <p>Complete las opciones para ver el precio.</p>
         </div>
-        <div id="detallePrecios">
-        </div>
+        <div id="detallePrecios"></div>
         <div id="presupuestoTotal"><span>Total Básico: </span> $0</div>
+
+        <!-- Botón para Agregar Adicionales (pequeño, debajo de descripción) -->
+        <button id="btn-adicionales-small" class="btn-small" style="display: none;">
+            ➕ Agregar Adicionales
+        </button>
+
         <div class="button-group">
-            <button id="btn-adicionales" disabled>Inicializando...</button>
-            <button id="btn-contacto" disabled>Inicializando...</button>
+            <button id="btn-adicionales" style="display: none;"></button>
+            <button id="btn-contacto" style="display: none;"></button>
+            <button id="btn-enviar-solicitud" disabled>Inicializando...</button>
         </div>
+
         <div class="loading-overlay" id="loadingOverlay">
             <p>Cargando opciones...</p>
             <div class="spinner"></div>
         </div>
     </div>
+
+    <!-- MODAL: Adicionales -->
+    <div class="modal" id="modalAdicionales">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="text-neon">Seleccionar Adicionales</h2>
+                <button class="modal-close" onclick="closeModalAdicionales()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="adicionales-container">
+                    <p>Cargando opciones adicionales...</p>
+                </div>
+                <div id="total-modal" style="display: none;">Total Adicional: <span>$0</span></div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary" onclick="closeModalAdicionales()">Cancelar</button>
+                <button id="btn-guardar-adicionales">Guardar Adicionales</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Contacto -->
+    <div class="modal" id="modalContacto">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="text-neon">Tus Datos de Contacto</h2>
+                <button class="modal-close" onclick="closeModalContacto()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="nombreCompleto">Nombre y Apellido:</label>
+                    <input type="text" id="nombreCompleto" placeholder="Tu nombre completo" required>
+                </div>
+                <div class="form-group">
+                    <label for="celular">Celular (con código de área):</label>
+                    <input type="text" id="celular" placeholder="Ej: 11 1234-5678" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" placeholder="tu@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="detallesAdicionales">¿Algo más que debamos saber? (Opcional)</label>
+                    <textarea id="detallesAdicionales" placeholder="Comentarios o detalles especiales..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary" onclick="closeModalContacto()">Cancelar</button>
+                <button id="btn-enviar-modal-contacto">Enviar Solicitud</button>
+            </div>
+        </div>
+    </div>
+
     <div id="notification-banner"></div>
 
     <script src="/formLogic.js"></script>
     <script>
-        console.log('solicitud_alquiler.html: Script iniciado');
-        console.log('solicitud_alquiler.html: formLogic.js cargado, typeof initializeApp =', typeof window.initializeApp);
+        console.log('solicitud_alquiler.html (NUEVA): Script iniciado');
 
-        // Cambiar el título de la página si se abre con ?tipo=BANDA (u otras variantes)
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('solicitud_alquiler.html: DOMContentLoaded disparado');
+        // Variables globales para manejo de modales
+        let modalAdicionales = null;
+        let modalContacto = null;
+        let notificationBanner = null;
+        let notificationTimer = null;
+        let solicitudId = null;
+        let precioBase = 0;
+        let todosLosAdicionales = [];
+        let adicionalesSeleccionados = [];
+
+        // Funciones de utilidad
+        function showNotification(message, type = 'error', duration = 4000) {
+            clearTimeout(notificationTimer);
+            notificationBanner.textContent = message;
+            notificationBanner.className = 'show ' + type;
+            notificationTimer = setTimeout(() => { notificationBanner.className = ''; }, duration);
+        }
+
+        function convertirNumero(numero) {
+            const num = typeof numero === 'number' ? numero.toString().trim() : numero.trim();
+            if (num === '') return '';
+            const esAmericano = /^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(num);
+            const esArgentino = /^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(num);
+            if (esArgentino) return num;
+            let numeroLimpio = num.replace(/[^\d.,-]/g, '');
+            numeroLimpio = esAmericano ? num.replace(/,/g, '') : numeroLimpio.replace('.', ',');
+            const partes = numeroLimpio.split(',');
+            let parteEntera = partes[0].replace(/\D/g, '');
+            const parteDecimal = partes[1] || '00';
+            parteEntera = parteEntera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return parteDecimal ? `${parteEntera},${parteDecimal}` : parteEntera;
+        }
+
+        // Control de modales
+        function openModalAdicionales() {
+            modalAdicionales.classList.add('active');
+            cargarAdicionales();
+        }
+
+        function closeModalAdicionales() {
+            modalAdicionales.classList.remove('active');
+        }
+
+        function openModalContacto() {
+            modalContacto.classList.add('active');
+            document.getElementById('nombreCompleto').focus();
+        }
+
+        function closeModalContacto() {
+            modalContacto.classList.remove('active');
+        }
+
+        // Cargar adicionales en el modal
+        async function cargarAdicionales() {
+            const container = document.getElementById('adicionales-container');
+            
             try {
-                const params = new URLSearchParams(window.location.search);
-                const tipo = params.get('tipo');
-                console.log('solicitud_alquiler.html: tipo parameter =', tipo);
-                if (tipo && typeof tipo === 'string' && tipo.trim().toUpperCase() === 'BANDA') {
-                    const titleEl = document.getElementById('pageTitle');
-                    if (titleEl) titleEl.textContent = 'Solicitud para tocar en el templo';
+                // Cargar opciones disponibles
+                const adicionalesRes = await fetch('/api/opciones/adicionales');
+                if (!adicionalesRes.ok) throw new Error('Error cargando adicionales');
+                
+                const adicionalesData = await adicionalesRes.json();
+                todosLosAdicionales = adicionalesData || [];
+
+                // Cargar selección previa si existe
+                let seleccionadosPrevios = [];
+                if (solicitudId) {
+                    try {
+                        const prevRes = await fetch(`/api/solicitudes/${solicitudId}/adicionales`);
+                        if (prevRes.ok) {
+                            const prevData = await prevRes.json();
+                            seleccionadosPrevios = prevData.seleccionados || [];
+                        }
+                    } catch (err) {
+                        console.warn('No se pudo cargar adicionales previos:', err);
+                    }
                 }
-            } catch (e) {
-                console.warn('No se pudo evaluar parámetro tipo para cambiar título:', e);
+
+                if (todosLosAdicionales.length === 0) {
+                    container.innerHTML = '<p style="color:#a1a1aa; text-align:center;">No hay adicionales disponibles en este momento.</p>';
+                    actualizarTotalAdicionales();
+                    return;
+                }
+
+                container.innerHTML = '';
+                todosLosAdicionales.forEach(ad => {
+                    const itemId = `ad_${ad.nombre.replace(/\s/g, '_')}`;
+                    const isSelected = seleccionadosPrevios.some(sel => sel.nombre === ad.nombre);
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'adicional-item';
+                    itemDiv.innerHTML = `
+                        <input type="checkbox" id="${itemId}" class="adicional-check" value="${ad.precio}" data-nombre="${ad.nombre}" ${isSelected ? 'checked' : ''}>
+                        <div class="adicional-info">
+                            <label for="${itemId}">${ad.nombre}</label>
+                            <p>${ad.descripcion || ''}</p>
+                        </div>
+                        <div class="adicional-precio">$${parseFloat(ad.precio).toLocaleString('es-AR')}</div>
+                    `;
+
+                    container.appendChild(itemDiv);
+
+                    const checkbox = itemDiv.querySelector('.adicional-check');
+                    checkbox.addEventListener('change', actualizarTotalAdicionales);
+                    itemDiv.addEventListener('click', (e) => {
+                        if (e.target.tagName !== 'INPUT') {
+                            checkbox.checked = !checkbox.checked;
+                            actualizarTotalAdicionales();
+                        }
+                    });
+                });
+
+                actualizarTotalAdicionales();
+
+            } catch (error) {
+                console.error('Error cargando adicionales:', error);
+                container.innerHTML = `<p style="color: red;">Error al cargar los adicionales: ${error.message}</p>`;
+            }
+        }
+
+        function actualizarTotalAdicionales() {
+            let totalAdicionales = 0;
+            const checkboxes = document.querySelectorAll('#modalAdicionales .adicional-check:checked');
+            
+            adicionalesSeleccionados = [];
+            checkboxes.forEach(checkbox => {
+                totalAdicionales += parseFloat(checkbox.value);
+                adicionalesSeleccionados.push({
+                    nombre: checkbox.dataset.nombre,
+                    precio: parseFloat(checkbox.value)
+                });
+            });
+
+            const totalModalDiv = document.getElementById('total-modal');
+            const totalSpan = totalModalDiv.querySelector('span');
+            totalSpan.textContent = `$${convertirNumero(String(totalAdicionales))}`;
+            
+            if (totalAdicionales > 0) {
+                totalModalDiv.style.display = 'block';
+            }
+        }
+
+        // Guardar adicionales y cerrar modal
+        async function guardarAdicionales() {
+            if (!solicitudId) {
+                showNotification('Error: No se encontró el ID de solicitud', 'error');
+                return;
             }
 
-            // Iniciar la app en modo creación, solo mostrar tipos de ALQUILER_SALON
-            console.log('solicitud_alquiler.html: Llamando a initializeApp con config:', { mode: 'create', categoriaFiltro: 'ALQUILER_SALON' });
-            console.log('solicitud_alquiler.html: typeof initializeApp =', typeof initializeApp);
+            const btnGuardar = document.getElementById('btn-guardar-adicionales');
+            btnGuardar.disabled = true;
+            btnGuardar.textContent = 'Guardando...';
+
             try {
+                const response = await fetch(`/api/solicitudes/${solicitudId}/adicionales`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(adicionalesSeleccionados)
+                });
+
+                if (!response.ok) throw new Error('Error al guardar los adicionales');
+
+                showNotification('Adicionales guardados correctamente', 'success');
+                closeModalAdicionales();
+                
+                // Actualizar el resumen (opcional, si se quiere reflejar cambios)
+                // await cargarResumen();
+
+            } catch (error) {
+                console.error('Error guardando adicionales:', error);
+                showNotification('Error al guardar los adicionales: ' + error.message, 'error');
+            } finally {
+                btnGuardar.disabled = false;
+                btnGuardar.textContent = 'Guardar Adicionales';
+            }
+        }
+
+        // Enviar solicitud (desde modal de contacto o directamente si está logueado)
+        async function enviarSolicitud() {
+            // Validar campos
+            const nombreCompleto = document.getElementById('nombreCompleto').value.trim();
+            const celular = document.getElementById('celular').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const detallesAdicionales = document.getElementById('detallesAdicionales').value.trim();
+
+            let hayErrores = false;
+            const campos = [
+                { id: 'nombreCompleto', valor: nombreCompleto },
+                { id: 'celular', valor: celular },
+                { id: 'email', valor: email }
+            ];
+
+            campos.forEach(campo => {
+                const element = document.getElementById(campo.id);
+                if (!campo.valor) {
+                    element.classList.add('campo-invalido');
+                    hayErrores = true;
+                } else {
+                    element.classList.remove('campo-invalido');
+                }
+            });
+
+            if (hayErrores) {
+                showNotification('Por favor, completa todos los campos obligatorios', 'warning');
+                return;
+            }
+
+            try {
+                const btn = document.getElementById('btn-enviar-modal-contacto');
+                btn.disabled = true;
+                btn.textContent = 'Enviando...';
+
+                const payload = {
+                    nombreCompleto,
+                    celular,
+                    email,
+                    detallesAdicionales
+                };
+
+                const response = await fetch(`/api/solicitudes/${solicitudId}/finalizar`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('Error al finalizar la solicitud');
+
+                showNotification('¡Solicitud enviada exitosamente!', 'success');
+                setTimeout(() => {
+                    window.location.href = `/comprobante.html?solicitudId=${solicitudId}`;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error enviando solicitud:', error);
+                showNotification('Error: ' + error.message, 'error');
+                document.getElementById('btn-enviar-modal-contacto').disabled = false;
+                document.getElementById('btn-enviar-modal-contacto').textContent = 'Enviar Solicitud';
+            }
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            modalAdicionales = document.getElementById('modalAdicionales');
+            modalContacto = document.getElementById('modalContacto');
+            notificationBanner = document.getElementById('notification-banner');
+
+            // Obtener solicitudId de la URL
+            const params = new URLSearchParams(window.location.search);
+            solicitudId = params.get('solicitudId');
+            document.getElementById('solicitudId').value = solicitudId || '';
+
+            // Botón para abrir modal de adicionales
+            document.getElementById('btn-adicionales-small').addEventListener('click', openModalAdicionales);
+
+            // Botón para guardar adicionales
+            document.getElementById('btn-guardar-adicionales').addEventListener('click', guardarAdicionales);
+
+            // Botón para enviar solicitud desde modal
+            document.getElementById('btn-enviar-modal-contacto').addEventListener('click', enviarSolicitud);
+
+            // Botón principal para enviar solicitud
+            document.getElementById('btn-enviar-solicitud').addEventListener('click', () => {
+                const token = localStorage.getItem('authToken');
+                if (token) {
+                    // Usuario autenticado, enviar directamente
+                    // Abrir modal de contacto para confirmar envío
+                    openModalContacto();
+                } else {
+                    // Usuario no autenticado, solicitar datos de contacto
+                    openModalContacto();
+                }
+            });
+
+            // Configurar menú de autenticación
+            updateAuthMenu();
+
+            // Inicializar con formLogic.js
+            console.log('Llamando a initializeApp...');
+            if (typeof initializeApp === 'function') {
                 initializeApp({
                     mode: 'create',
                     categoriaFiltro: 'ALQUILER_SALON'
                 });
-                console.log('solicitud_alquiler.html: initializeApp ejecutado correctamente');
-            } catch (err) {
-                console.error('solicitud_alquiler.html: Error al llamar initializeApp:', err);
+            } else {
+                console.error('initializeApp no está disponible');
             }
         });
-    </script>
 
-    <script>
+        // Manejo del menú de autenticación
         function updateAuthMenu() {
             const token = localStorage.getItem('authToken');
             const desktopMenu = document.getElementById('auth-menu-desktop');
             const mobileMenu = document.getElementById('auth-menu-mobile');
 
             if (token) {
-                // Usuario autenticado
-                const desktopHTML = `
-                    <a href="/admin.html" 
-                       class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">
-                        🔐 Admin
-                    </a>
+                desktopMenu.innerHTML = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">🔐 Admin</a>`;
+                mobileMenu.innerHTML = `
+                    <a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐 Admin Panel</a>
+                    <button onclick="logout()" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">🚪 Cerrar Sesión</button>
                 `;
-                const mobileHTML = `
-                    <a href="/admin.html"
-                       class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
-                        🔐 Admin Panel
-                    </a>
-                    <button onclick="logout()" 
-                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
-                        🚪 Cerrar Sesión
-                    </button>
-                `;
-                desktopMenu.innerHTML = desktopHTML;
-                mobileMenu.innerHTML = mobileHTML;
             } else {
-                // Usuario no autenticado
-                const desktopHTML = `
-                    <a href="login.html"
-                       class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">
-                        Login
-                    </a>
-                `;
-                const mobileHTML = `
-                    <a href="login.html"
-                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
-                        Login
-                    </a>
-                `;
-                desktopMenu.innerHTML = desktopHTML;
-                mobileMenu.innerHTML = mobileHTML;
+                desktopMenu.innerHTML = `<a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">Login</a>`;
+                mobileMenu.innerHTML = `<a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">Login</a>`;
             }
         }
 
@@ -603,26 +1022,19 @@
             window.location.href = '/index.html';
         }
 
-        // Escuchar cambios en localStorage (sesión iniciada en otra pestaña)
         window.addEventListener('storage', updateAuthMenu);
 
-        // Manejador del menú móvil responsivo
+        // Menú móvil
         document.addEventListener('DOMContentLoaded', function () {
-            updateAuthMenu();
-
             const menuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
 
             if (menuButton && mobileMenu) {
-                function toggleMenu() {
+                menuButton.addEventListener('click', () => {
                     mobileMenu.classList.toggle('hidden');
-                }
+                });
 
-                menuButton.addEventListener('click', toggleMenu);
-
-                // Ocultar el menú móvil al hacer clic en un enlace
-                const navLinks = mobileMenu.querySelectorAll('a');
-                navLinks.forEach(link => {
+                mobileMenu.querySelectorAll('a').forEach(link => {
                     link.addEventListener('click', () => {
                         if (!mobileMenu.classList.contains('hidden')) {
                             mobileMenu.classList.add('hidden');
@@ -631,7 +1043,16 @@
                 });
             }
         });
+
+        // Hook para mostrar botón de adicionales cuando se carga el presupuesto
+        window.addEventListener('formularioListo', () => {
+            const btnAdicionales = document.getElementById('btn-adicionales-small');
+            if (btnAdicionales) {
+                btnAdicionales.style.display = 'block';
+            }
+        });
     </script>
+
     <script src="/navbar.js"></script>
 </body>
 

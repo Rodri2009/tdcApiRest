@@ -538,13 +538,11 @@ const guardarAdicionales = async (req, res) => {
         await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
 
         if (adicionales.length > 0) {
-            // --- ¡CAMBIO A INSERCIONES INDIVIDUALES DENTRO DE UN BUCLE! ---
-            const sql = "INSERT INTO solicitudes_adicionales (id_solicitud, adicional_nombre, adicional_precio, timestamp) VALUES (?, ?, ?, ?)";
+            // Insertar cada adicional (creado_en se genera automáticamente con DEFAULT CURRENT_TIMESTAMP)
+            const sql = "INSERT INTO solicitudes_adicionales (id_solicitud, adicional_nombre, adicional_precio) VALUES (?, ?, ?)";
 
-            // Iteramos sobre cada adicional y ejecutamos una consulta por cada uno.
-            // Como todo está dentro de una transacción, sigue siendo atómico y seguro.
             for (const ad of adicionales) {
-                const values = [id, ad.nombre, ad.precio, new Date()];
+                const values = [id, ad.nombre, ad.precio];
                 await conn.query(sql, values);
             }
         }

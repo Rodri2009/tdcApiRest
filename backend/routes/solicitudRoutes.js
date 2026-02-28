@@ -33,8 +33,8 @@ router.get('/clientes/search', clientesController.searchClientes);
 
 // --- RUTAS QUE ACTÚAN SOBRE UN ID ESPECÍFICO ---
 
-// GET /api/solicitudes/:id -> Obtener detalles de una solicitud
-router.get('/:id', protect, getSolicitudPorId);
+// GET /api/solicitudes/:id -> Obtener detalles de una solicitud (sin protección para permitir flujo de presupuesto sin auth)
+router.get('/:id', getSolicitudPorId);
 
 // GET /api/solicitudes/:id/adicionales -> Obtener adicionales seleccionados previos
 router.get('/:id/adicionales', obtenerAdicionales);
