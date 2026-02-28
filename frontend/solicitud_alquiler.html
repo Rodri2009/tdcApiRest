@@ -1205,24 +1205,146 @@
                 btn.disabled = true;
                 btn.textContent = 'Enviando...';
 
-                const payload = {
-                    nombreCompleto,
-                    celular,
-                    email,
-                    detallesAdicionales
-                };
+                let currentSolicitudId = solicitudId;
 
-                const response = await fetch(`/api/solicitudes/${solicitudId}/finalizar`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                // Si no hay solicitudId (usuario no logueado), crear solicitud primero
+                if (!solicitudId || solicitudId === 'null') {
+                    console.log('[ENVIAR SOLICITUD] Usuario no autenticado, creando solicitud...');
 
-                if (!response.ok) throw new Error('Error al finalizar la solicitud');
+                    // Recolectar datos del formulario
+                    const selectTipo = document.getElementById('tipoEventoSelect');
+                    const tipoEvento = selectTipo ? selectTipo.value : '';
+                    const fechaEvento = document.getElementById('fechaEvento').value;
+                    const horaInicio = document.getElementById('horaInicio').value;
+                    const cantidadPersonas = document.getElementById('cantidadPersonas').value;
+                    const duracionEvento = document.getElementById('duracionEvento').value;
+                    const precioBaseInput = document.getElementById('precioBase');
+                    const precioBaseValue = precioBaseInput ? precioBaseInput.value : '0';
+
+                    // Validar datos del formulario
+                    if (!tipoEvento || !fechaEvento || !horaInicio || !cantidadPersonas || !duracionEvento) {
+                        showNotification('Por favor, completa todos los campos del presupuesto antes de enviar', 'warning');
+                        btn.disabled = false;
+                        btn.textContent = 'Enviar Solicitud';
+                        return;
+                    }
+
+                    // Payload para crear solicitud (solo datos presupuestarios)
+                    const crearSolicitudPayload = {
+                        tipoEvento,
+                        fechaEvento,
+                        horaInicio,
+                        cantidadPersonas: parseInt(cantidadPersonas),
+                        duracionEvento,
+                        precioBase: parseFloat(precioBaseValue),
+                        descripcion: detallesAdicionales
+                    };
+
+                    console.log('[ENVIAR SOLICITUD] Payload para crear solicitud:', crearSolicitudPayload);
+
+                    const createResponse = await fetch('/api/solicitudes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(crearSolicitudPayload)
+                    });
+
+                    console.log('[ENVIAR SOLICITUD] Status de POST:', createResponse.status);
+
+                    if (!createResponse.ok) {
+                        const errorData = await createResponse.json();
+                        throw new Error(errorData.error || 'Error al crear la solicitud');
+                    }
+
+                    const newSolicitud = await createResponse.json();
+                    currentSolicitudId = newSolicitud.solicitudId;
+                    console.log('[ENVIAR SOLICITUD] Solicitud creada con ID:', currentSolicitudId);
+
+                    // Guardar adicionales si existen
+                    if (adicionalesSeleccionados && adicionalesSeleccionados.length > 0) {
+                        console.log('[ENVIAR SOLICITUD] Guardando adicionales para ID:', currentSolicitudId);
+                        const adicionalesResponse = await fetch(`/api/solicitudes/${currentSolicitudId}/adicionales`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(adicionalesSeleccionados)
+                        });
+
+                        if (!adicionalesResponse.ok) {
+                            const errorData = await adicionalesResponse.json();
+                            console.warn('[ENVIAR SOLICITUD] Advertencia: No se pudieron guardar los adicionales:', errorData);
+                        } else {
+                            console.log('[ENVIAR SOLICITUD] ✓ Adicionales guardados correctamente');
+                        }
+                    }
+
+                    // Ahora finalizar la solicitud con datos de contacto
+                    console.log('[ENVIAR SOLICITUD] Finalizando solicitud con datos de contacto...');
+                    const finalizarPayload = {
+                        nombreCompleto,
+                        celular,
+                        email,
+                        detallesAdicionales
+                    };
+
+                    const finalizarResponse = await fetch(`/api/solicitudes/${currentSolicitudId}/finalizar`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(finalizarPayload)
+                    });
+
+                    if (!finalizarResponse.ok) {
+                        const errorData = await finalizarResponse.json();
+                        throw new Error(errorData.error || 'Error al finalizar la solicitud');
+                    }
+
+                    console.log('[ENVIAR SOLICITUD] ✓ Solicitud finalizada correctamente');
+                    limpiarAdicionalesDelLocalStorage();
+
+                } else {
+                    // Usuario autenticado, solo finalizar solicitud con datos de contacto
+                    console.log('[ENVIAR SOLICITUD] Usuario autenticado, finalizando solicitud:', currentSolicitudId);
+
+                    // Guardar adicionales si existen
+                    if (adicionalesSeleccionados && adicionalesSeleccionados.length > 0) {
+                        console.log('[ENVIAR SOLICITUD] Guardando adicionales para ID:', currentSolicitudId);
+                        const adicionalesResponse = await fetch(`/api/solicitudes/${currentSolicitudId}/adicionales`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(adicionalesSeleccionados)
+                        });
+
+                        if (!adicionalesResponse.ok) {
+                            const errorData = await adicionalesResponse.json();
+                            console.warn('[ENVIAR SOLICITUD] Advertencia: No se pudieron guardar los adicionales:', errorData);
+                        } else {
+                            console.log('[ENVIAR SOLICITUD] ✓ Adicionales guardados correctamente');
+                        }
+                    }
+
+                    const finalizarPayload = {
+                        nombreCompleto,
+                        celular,
+                        email,
+                        detallesAdicionales
+                    };
+
+                    const response = await fetch(`/api/solicitudes/${currentSolicitudId}/finalizar`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(finalizarPayload)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Error al finalizar la solicitud');
+                    }
+
+                    console.log('[ENVIAR SOLICITUD] ✓ Solicitud finalizada correctamente');
+                    limpiarAdicionalesDelLocalStorage();
+                }
 
                 showNotification('¡Solicitud enviada exitosamente!', 'success');
                 setTimeout(() => {
-                    window.location.href = `/comprobante.html?solicitudId=${solicitudId}`;
+                    window.location.href = `/comprobante.html?solicitudId=${currentSolicitudId}`;
                 }, 1500);
 
             } catch (error) {
