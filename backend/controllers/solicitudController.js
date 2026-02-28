@@ -724,10 +724,36 @@ const getSolicitudPorId = async (req, res) => {
  */
 const finalizarSolicitud = async (req, res) => {
     const { id } = req.params;
-    const { nombreCompleto, celular, email, detallesAdicionales, main_contact_email, invitados_emails, descripcionCorta, descripcionLarga } = req.body;
+    let { nombreCompleto, celular, email, detallesAdicionales, main_contact_email, invitados_emails, descripcionCorta, descripcionLarga } = req.body;
 
     logVerbose(`-> Finalizando solicitud con ID: ${id}`);
 
+    // CAMBIO: Si usuario está autenticado y faltan datos, obtenerlos del JWT
+    if (req.user && (!nombreCompleto || !celular || !email)) {
+        console.log('[FINALIZAR] Usuario autenticado, obteniendo datos del JWT...');
+        
+        // Obtener datos del usuario autenticado desde la BD
+        let conn;
+        try {
+            conn = await pool.getConnection();
+            const usuario = await conn.query(
+                'SELECT nombre, email FROM usuarios WHERE id_usuario = ? LIMIT 1',
+                [req.user.id]
+            );
+            if (usuario && usuario.length > 0) {
+                console.log('[FINALIZAR] Datos encontrados en BD:', usuario[0]);
+                nombreCompleto = nombreCompleto || usuario[0].nombre || '(Admin)';
+                email = email || usuario[0].email || '';
+                celular = celular || '(No especificado)'; // No hay teléfono en tabla usuarios
+            }
+        } catch (err) {
+            logWarning('[FINALIZAR] Error obteniendo datos del usuario:', err.message);
+        } finally {
+            if (conn) conn.release();
+        }
+    }
+
+    // Validar que haya datos (después de intentar obtener del JWT)
     if (!nombreCompleto || !celular || !email) {
         return res.status(400).json({ error: 'Nombre, celular y email son obligatorios.' });
     }
