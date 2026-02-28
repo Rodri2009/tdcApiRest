@@ -118,7 +118,7 @@ const crearSolicitud = async (req, res) => {
             // - Renombrados: tipo_de_evento → id_tipo_evento, descripcion → comentarios
             // - Convertidos: hora_evento (VARCHAR→TIME), duracion (VARCHAR→INT minutos)
             // - Nuevos: id_precio_vigencia (FK), total_adicionales, monto_sena, monto_deposito, auditoría
-            
+
             // Convertir duracionEvento a minutos si viene como "X horas"
             let duracionMinutos = 180; // default 3 horas
             if (typeof duracionEvento === 'string') {
@@ -210,7 +210,7 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
         // - Agregado JOIN a precios_vigencia para obtener cantidad_min/max y precio_por_hora
         // - Campos renombrados: tipo_de_evento → id_tipo_evento, descripcion → comentarios
         // - Nuevos campos: total_adicionales, monto_sena, monto_deposito, precio_final (calculado)
-        
+
         const sql = `
             SELECT
                 CONCAT('alq_', sa.id_solicitud) as solicitudId,
@@ -699,7 +699,7 @@ const getSolicitudPorId = async (req, res) => {
         if (!isNaN(numericId)) {
             logVerbose(`[SOLICITUD][GET] ID sin prefijo (${id}): Intentando auto-detectar tipo...`);
             const autoDetected = await getSolicitudWithAutoDetect(conn, numericId);
-            
+
             if (autoDetected) {
                 logVerbose(`[SOLICITUD][GET] Auto-detectado exitosamente: ${autoDetected.solicitudId}`);
                 return res.status(200).json(autoDetected);
@@ -839,7 +839,7 @@ const guardarAdicionales = async (req, res) => {
     try {
         conn = await pool.getConnection();
         logVerbose(`   ✓ Conexión obtenida`);
-        
+
         await conn.beginTransaction();
         logVerbose(`   ✓ Transacción iniciada`);
 
@@ -848,7 +848,7 @@ const guardarAdicionales = async (req, res) => {
             "SELECT id_solicitud_alquiler FROM solicitudes_alquiler WHERE id_solicitud = ?",
             [id]
         );
-        
+
         logVerbose(`   Query resultado rows: ${alquilerRow?.length || 0}`);
 
         if (!alquilerRow || alquilerRow.length === 0) {
@@ -1162,8 +1162,8 @@ const actualizarSolicitud = async (req, res) => {
             let horaEventoTime = null;
             if (horaInicio) {
                 // Convertir '12:00' → '12:00:00' si es necesario
-                horaEventoTime = horaInicio.includes(':') ? 
-                    (horaInicio.split(':').length === 2 ? `${horaInicio}:00` : horaInicio) : 
+                horaEventoTime = horaInicio.includes(':') ?
+                    (horaInicio.split(':').length === 2 ? `${horaInicio}:00` : horaInicio) :
                     horaInicio;
             }
 

@@ -222,8 +222,8 @@
                     }
                     console.log(solicitudData);
                     // Buscamos la descripción completa del tipo de evento
-                    const tipoEventoCompleto = todosLosTipos.find(tipo => tipo.id === solicitudData
-                        .tipoEvento);
+                    // CAMBIO: usar id_tipo_evento en lugar de tipoEvento (estructura normalizada)
+                    const tipoEventoCompleto = todosLosTipos.find(tipo => tipo.id === solicitudData.id_tipo_evento);
                     console.log(tipoEventoCompleto);
                     const descripcionEvento = tipoEventoCompleto ? tipoEventoCompleto.descripcion :
                         'No disponible.';
@@ -240,16 +240,17 @@
                     document.getElementById('nombre_cliente').textContent = solicitudData.nombreCliente || solicitudData.nombreCompleto || solicitudData.nombre_completo || '';
                     document.getElementById('email').textContent = solicitudData.email;
                     document.getElementById('telefono').textContent = solicitudData.telefono;
-                    document.getElementById('nombre_para_mostrar').textContent = tipoEventoCompleto
-                        .nombreParaMostrar;
-                    document.getElementById('fecha_evento').textContent = formatDate(solicitudData
-                        .fechaEvento);
+                    // CAMBIO: usar nombreTipoEvento devuelto del backend, con fallback a tipoEventoCompleto
+                    document.getElementById('nombre_para_mostrar').textContent = solicitudData.nombreTipoEvento || 
+                        (tipoEventoCompleto ? tipoEventoCompleto.nombreParaMostrar : 'No disponible');
+                    document.getElementById('fecha_evento').textContent = formatDate(solicitudData.fechaEvento);
                     document.getElementById('hora_evento').textContent = solicitudData.horaInicio;
-                    document.getElementById('duracion').textContent = solicitudData.duracionEvento;
-                    document.getElementById('cantidad_de_personas').textContent = solicitudData
-                        .cantidadPersonas;
-                    document.getElementById('precio_basico').textContent = formatCurrency(solicitudData
-                        .precioBase);
+                    // CAMBIO: duracionEvento ya está en minutos (INT), mostrar como horas
+                    const horas = solicitudData.duracionEvento ? Math.round(solicitudData.duracionEvento / 60) : 0;
+                    document.getElementById('duracion').textContent = `${horas} horas`;
+                    // CAMBIO: usar nombreCantidadPersonas en lugar de cantidadPersonas
+                    document.getElementById('cantidad_de_personas').textContent = solicitudData.nombreCantidadPersonas || solicitudData.cantidadPersonas || 'No especificado';
+                    document.getElementById('precio_basico').textContent = formatCurrency(solicitudData.precioBase);
                     let totalAdicionales = 0;
                     if (solicitudData.adicionales && solicitudData.adicionales.length > 0) {
                         const adicionalesList = document.getElementById('adicionales-list');
@@ -262,7 +263,10 @@
                         });
                         document.getElementById('adicionales-section').style.display = 'block';
                     }
-                    const precioFinal = parseFloat(solicitudData.precioBase) + totalAdicionales;
+                    // CAMBIO: usar precio_final del backend que ya incluye todos los montos calculados
+                    // Si hay discrepancia con adicionales locales, usar precio_final que es la realidad en BD
+                    const precioFinal = solicitudData.precio_final ? parseFloat(solicitudData.precio_final) : 
+                        (parseFloat(solicitudData.precioBase) + totalAdicionales);
                     document.getElementById('precio_final').textContent = formatCurrency(precioFinal);
                     loadingDiv.style.display = 'none';
                     contentDiv.style.display = 'block';
