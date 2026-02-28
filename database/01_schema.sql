@@ -327,13 +327,16 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'NUEVO: Auditoría - Fecha/hora de última actualización',
     
     -- ÍNDICES Y CONSTRAINTS
+    -- FK a solicitudes: CASCADE → si se elimina solicitud padre, se elimina el alquiler
+    -- FK a opciones_tipos: RESTRICT → no se puede eliminar tipo si hay alquileres
+    -- FK a precios_vigencia: SET NULL → si se elimina precio, conserva el registro
     INDEX idx_id_tipo_evento (id_tipo_evento),
     INDEX idx_id_precio_vigencia (id_precio_vigencia),
     INDEX idx_estado (estado),
     INDEX idx_id_solicitud (id_solicitud),
-    CONSTRAINT fk_solicitudes_alquiler_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE COMMENT 'Si se elimina solicitud padre, se elimina el alquiler',
-    CONSTRAINT fk_solicitudes_alquiler_tipo_evento FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT COMMENT 'Restringe eliminación si hay alquileres que usen este tipo',
-    CONSTRAINT fk_solicitudes_alquiler_precio_vigencia FOREIGN KEY (id_precio_vigencia) REFERENCES precios_vigencia(id) ON DELETE SET NULL COMMENT 'Si se elimina precio_vigencia, se pone NULL pero no se elimina el alquiler'
+    CONSTRAINT fk_solicitudes_alquiler_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
+    CONSTRAINT fk_solicitudes_alquiler_tipo_evento FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT,
+    CONSTRAINT fk_solicitudes_alquiler_precio_vigencia FOREIGN KEY (id_precio_vigencia) REFERENCES precios_vigencia(id) ON DELETE SET NULL
     
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Detalles específicos de solicitudes de alquiler de salones. Normalizado con FKs a opciones_tipos y precios_vigencia. Refactorización 28/02/2026'; 
 

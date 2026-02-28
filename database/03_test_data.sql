@@ -113,14 +113,14 @@ INSERT INTO `solicitudes` (
 -- ============================================
 -- DETALLES DE ALQUILER
 -- ============================================
+-- Solicitudes de alquiler (estructura normalizada - sin tipo_servicio ni cantidad_de_personas)
 INSERT INTO `solicitudes_alquiler` (
-    `id_solicitud`, `tipo_servicio`, `fecha_evento`, `hora_evento`, 
-    `duracion`, `cantidad_de_personas`, `precio_basico`, `precio_final`, 
-    `tipo_de_evento`, `descripcion`, `estado`
+    `id_solicitud`, `fecha_evento`, `hora_evento`, `duracion`, 
+    `id_tipo_evento`, `precio_basico`, `comentarios`, `estado`
 ) VALUES 
-    (1, 'Cumpleaños infantil', '2026-03-15', '14:00', '4 horas', '50', 55000.00, 220000.00, 'INFANTILES', 'Incluye inflable cocodrilo y cocinera', 'Solicitado'),
-    (2, 'Fiesta de 15 años', '2026-03-22', '16:00', '6 horas', '60', 80000.00, 480000.00, 'CON_SERVICIO_DE_MESA', 'Servicio completo: meseras, bartender, sonido', 'Confirmado'),
-    (3, 'Baby shower', '2026-03-28', '12:00', '3 horas', '40', 50000.00, 150000.00, 'BABY_SHOWERS', 'Inflable princesa y servicio básico', 'Solicitado');
+    (1, '2026-03-15', '14:00:00', 240, 'INFANTILES', 55000.00, 'Incluye inflable cocodrilo y cocinera', 'Solicitado'),
+    (2, '2026-03-22', '16:00:00', 360, 'CON_SERVICIO_DE_MESA', 80000.00, 'Servicio completo: meseras, bartender, sonido', 'Confirmado'),
+    (3, '2026-03-28', '12:00:00', 180, 'BABY_SHOWERS', 50000.00, 'Inflable princesa y servicio básico', 'Solicitado');
 
 -- ============================================
 -- DETALLES DE FECHAS PARA BANDAS
