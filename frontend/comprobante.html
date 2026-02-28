@@ -183,7 +183,7 @@
             </div>
 
             <div class="section" style="text-align: center; margin-top: 40px;">
-                <a href="/" class="button-link">Realizar una Nueva Consulta</a>
+                <a href="/" class="button-link">Ir a Inicio</a>
             </div>
 
         </div>
@@ -241,7 +241,7 @@
                     document.getElementById('email').textContent = solicitudData.email;
                     document.getElementById('telefono').textContent = solicitudData.telefono;
                     // CAMBIO: usar nombreTipoEvento devuelto del backend, con fallback a tipoEventoCompleto
-                    document.getElementById('nombre_para_mostrar').textContent = solicitudData.nombreTipoEvento || 
+                    document.getElementById('nombre_para_mostrar').textContent = solicitudData.nombreTipoEvento ||
                         (tipoEventoCompleto ? tipoEventoCompleto.nombreParaMostrar : 'No disponible');
                     document.getElementById('fecha_evento').textContent = formatDate(solicitudData.fechaEvento);
                     document.getElementById('hora_evento').textContent = solicitudData.horaInicio;
@@ -265,7 +265,7 @@
                     }
                     // CAMBIO: usar precio_final del backend que ya incluye todos los montos calculados
                     // Si hay discrepancia con adicionales locales, usar precio_final que es la realidad en BD
-                    const precioFinal = solicitudData.precio_final ? parseFloat(solicitudData.precio_final) : 
+                    const precioFinal = solicitudData.precio_final ? parseFloat(solicitudData.precio_final) :
                         (parseFloat(solicitudData.precioBase) + totalAdicionales);
                     document.getElementById('precio_final').textContent = formatCurrency(precioFinal);
                     loadingDiv.style.display = 'none';
