@@ -781,13 +781,99 @@
         }
 
         // Control de modales
-        function openModalAdicionales() {
+        async function openModalAdicionales() {
+            // Si no hay solicitudId, crear la solicitud primero
+            if (!solicitudId) {
+                console.log('[AGREGAR ADICIONALES] Sin solicitudId, creando solicitud primero...');
+                try {
+                    const solicitudCreada = await crearSolicitudMinimal();
+                    if (!solicitudCreada) {
+                        showNotification('Error: No se pudo crear la solicitud. Completa el formulario primero.', 'error');
+                        return;
+                    }
+                    console.log('[AGREGAR ADICIONALES] Solicitud creada con ID:', solicitudId);
+                } catch (error) {
+                    console.error('[AGREGAR ADICIONALES] Error creando solicitud:', error);
+                    showNotification('Error: ' + error.message, 'error');
+                    return;
+                }
+            }
+            
             modalAdicionales.classList.add('active');
             cargarAdicionales();
         }
 
+        // Crear solicitud con datos mínimos del formulario para poder agregar adicionales
+        async function crearSolicitudMinimal() {
+            console.log('[CREAR SOLICITUD MINIMAL] Iniciando...');
+            
+            // Obtener datos del formulario
+            const tipoEventoSelect = document.getElementById('tipoEventoSelect');
+            const fechaEventoInput = document.getElementById('fechaEvento');
+            const horaInicioSelect = document.getElementById('horaInicio');
+            const duracionSelect = document.getElementById('duracionEvento');
+            const cantidadSelect = document.getElementById('cantidadPersonas');
+            
+            const tipoEvento = tipoEventoSelect?.value;
+            const fechaEvento = fechaEventoInput?.value;
+            const horaInicio = horaInicioSelect?.value;
+            const duracionEvento = duracionSelect?.value;
+            const cantidadPersonas = cantidadSelect?.value;
+            
+            console.log('[CREAR SOLICITUD MINIMAL] Datos:', { tipoEvento, fechaEvento, horaInicio, duracionEvento, cantidadPersonas });
+            
+            // Validar datos mínimos
+            if (!tipoEvento || !fechaEvento) {
+                throw new Error('Por favor completa al menos el tipo de evento y la fecha.');
+            }
+            
+            try {
+                const payload = {
+                    tipoEvento,
+                    fechaEvento,
+                    horaInicio: horaInicio || null,
+                    duracionEvento: duracionEvento || null,
+                    cantidadPersonas: cantidadPersonas || null,
+                    descripcion: document.getElementById('descripcion')?.value || ''
+                };
+                
+                console.log('[CREAR SOLICITUD MINIMAL] Enviando payload:', payload);
+                
+                const response = await fetch('/api/solicitudes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log('[CREAR SOLICITUD MINIMAL] Status:', response.status);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Error al crear la solicitud');
+                }
+                
+                const data = await response.json();
+                console.log('[CREAR SOLICITUD MINIMAL] Respuesta:', data);
+                
+                // Guardar el ID de solicitud
+                solicitudId = data.solicitudId;
+                const solicitudIdInput = document.getElementById('solicitudId');
+                if (solicitudIdInput) {
+                    solicitudIdInput.value = solicitudId;
+                }
+                
+                console.log('[CREAR SOLICITUD MINIMAL] Solicitud creada con ID:', solicitudId);
+                return true;
+            } catch (error) {
+                console.error('[CREAR SOLICITUD MINIMAL] Error:', error);
+                throw error;
+            }
+        }
+
         function closeModalAdicionales() {
+            console.log('[CERRAR MODAL] Cerrando modalAdicionales');
             modalAdicionales.classList.remove('active');
+            console.log('[CERRAR MODAL] Clase removed, estado:', modalAdicionales.className);
         }
 
         function openModalContacto() {
@@ -912,15 +998,19 @@
             
             console.log('[GUARDAR ADICIONALES] Iniciando guardado con solicitudId:', solicitudId);
             console.log('[GUARDAR ADICIONALES] Adicionales a guardar:', adicionalesSeleccionados);
+            console.log('[GUARDAR ADICIONALES] Cantidad de adicionales:', adicionalesSeleccionados.length);
 
             try {
                 const endpoint = `/api/solicitudes/${solicitudId}/adicionales`;
                 console.log('[GUARDAR ADICIONALES] Endpoint:', endpoint);
                 
+                const payload = JSON.stringify(adicionalesSeleccionados);
+                console.log('[GUARDAR ADICIONALES] Payload JSON:', payload);
+                
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(adicionalesSeleccionados)
+                    body: payload
                 });
 
                 console.log('[GUARDAR ADICIONALES] Status respuesta:', response.status);
@@ -935,19 +1025,24 @@
 
                 console.log('[GUARDAR ADICIONALES] ¡Éxito! Cerrando modal...');
                 showNotification('Adicionales guardados correctamente', 'success');
-                closeModalAdicionales();
-
-                // Actualizar el resumen (opcional, si se quiere reflejar cambios)
-                // await cargarResumen();
+                
+                // Esperar un poco para que se vea el mensaje de éxito
+                setTimeout(() => {
+                    closeModalAdicionales();
+                    console.log('[GUARDAR ADICIONALES] Modal cerrado después de success');
+                }, 500);
 
             } catch (error) {
                 console.error('[GUARDAR ADICIONALES] ERROR CAPTURADO:', error);
+                console.error('[GUARDAR ADICIONALES] Error name:', error.name);
                 console.error('[GUARDAR ADICIONALES] Error message:', error.message);
                 console.error('[GUARDAR ADICIONALES] Error completo:', JSON.stringify(error, null, 2));
                 showNotification('Error al guardar los adicionales: ' + error.message, 'error');
+                // NO cerrar el modal en caso de error, para que el usuario pueda reintentar
             } finally {
                 btnGuardar.disabled = false;
                 btnGuardar.textContent = 'Guardar Adicionales';
+                console.log('[GUARDAR ADICIONALES] Fin del proceso (finally)');
             }
         }
 

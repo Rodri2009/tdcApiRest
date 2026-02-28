@@ -28,16 +28,16 @@ const crearSolicitud = async (req, res) => {
         descripcionLarga
     } = req.body;
 
-
-
     // Usar nombre_solicitante si nombreCompleto no existe
     const nombreFinal = nombreCompleto || nombre_solicitante || '';
     const telefonoFinal = telefono || telefono_solicitante || '';
     const emailFinal = email || email_solicitante || '';
 
     logVerbose("[DEBUG] nombreFinal:", nombreFinal, "telefonoFinal:", telefonoFinal, "emailFinal:", emailFinal);
+    logVerbose("[DEBUG] tipoEvento:", tipoEvento, "fechaEvento:", fechaEvento);
 
     if (!tipoEvento || !fechaEvento) {
+        logError(`Validación fallida: tipoEvento=${tipoEvento}, fechaEvento=${fechaEvento}`);
         return res.status(400).json({ error: 'Faltan datos obligatorios (tipoEvento, fechaEvento).' });
     }
 
