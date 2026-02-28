@@ -239,6 +239,7 @@
             padding: 8px 12px !important;
             border: 1px solid var(--color-secondary) !important;
             margin-top: 10px;
+            height: 40px;
         }
 
         /* MODALES */
@@ -635,10 +636,10 @@
                 <label>Descripción:</label>
                 <div id="tipoEventoDescripcion">Seleccione un tipo de evento.</div>
             </div>
-            <!-- Botón para Agregar Adicionales (pequeño, debajo de descripción) -->
             <button id="btn-adicionales-small" class="btn-small" style="display: none;">
                 ➕ Agregar Adicionales
             </button>
+            <!-- Agregar aquí la lista de adicionales elegidos en el modal -->
         </div>
         <hr>
         <div class="column-layout">
@@ -828,6 +829,108 @@
             console.log('[STORAGE] Adicionales limpiados de localStorage:', key);
         }
 
+        // Mostrar adicionales seleccionados debajo del botón
+        function renderAdicionalesSeleccionados() {
+            const container = document.getElementById('adicionalesSeleccionados');
+            if (!container) {
+                console.warn('[RENDER-ADICIONALES] No encontrado div #adicionalesSeleccionados');
+                return;
+            }
+
+            if (!adicionalesSeleccionados || adicionalesSeleccionados.length === 0) {
+                container.innerHTML = '';
+                console.log('[RENDER-ADICIONALES] Sin adicionales para mostrar');
+                return;
+            }
+
+            console.log('[RENDER-ADICIONALES] Mostrando:', adicionalesSeleccionados);
+            
+            let html = '<div style="margin-top: 15px; padding: 12px; border: 1px solid #581c87; border-radius: 6px; background-color: #0f172a;">';
+            html += '<p style="margin: 0 0 10px 0; color: var(--color-secondary); font-weight: bold;">Adicionales seleccionados:</p>';
+            
+            adicionalesSeleccionados.forEach(ad => {
+                const precio = parseFloat(ad.precio).toLocaleString('es-AR');
+                html += `
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #581c87; color: #d6d3d1;">
+                        <span>${ad.nombre}</span>
+                        <span style="color: #34d399; font-weight: bold;">$${precio}</span>
+                    </div>
+                `;
+            });
+
+            let total = 0;
+            adicionalesSeleccionados.forEach(ad => {
+                total += parseFloat(ad.precio);
+            });
+            const totalPrecio = total.toLocaleString('es-AR');
+            html += `<div style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 2px solid #581c87; font-weight: bold; color: #34d399;">
+                <span>Subtotal Adicionales:</span>
+                <span>$${totalPrecio}</span>
+            </div>`;
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        // Actualizar presupuesto total incluyendo adicionales
+        function actualizarPresupuesto() {
+            console.log('[PRESUPUESTO] Actualizando presupuesto con adicionales...');
+            
+            // Cargar adicionales desde localStorage
+            cargarAdicionalesDelLocalStorage();
+            
+            // Calcular total de adicionales
+            let totalAdicionales = 0;
+            adicionalesSeleccionados.forEach(ad => {
+                totalAdicionales += parseFloat(ad.precio);
+            });
+            
+            console.log('[PRESUPUESTO] Total adicionales:', totalAdicionales);
+            
+            // Obtener el total básico actual
+            const precioBaseInput = document.getElementById('precioBase');
+            const precioBase = precioBaseInput ? parseFloat(precioBaseInput.value) || 0 : 0;
+            
+            // Obtener elementos de presupuesto
+            const detallePreciosDiv = document.getElementById('detallePrecios');
+            const presupuestoTotalDiv = document.getElementById('presupuestoTotal');
+            
+            if (!detallePreciosDiv || !presupuestoTotalDiv) {
+                console.warn('[PRESUPUESTO] No se encontraron elementos de presupuesto');
+                return;
+            }
+            
+            // Actualizar detalle de precios
+            let detalleHtml = detallePreciosDiv.innerHTML;
+            
+            // Si hay adicionales, agregar la línea en el detalle
+            if (totalAdicionales > 0) {
+                // Encontrar el cierre de </ul> y insertar antes
+                const precioAdicionales = convertirNumero(totalAdicionales.toString());
+                const lineaAdicionales = `<li style="color: #34d399;"><strong>Adicionales:</strong> $${precioAdicionales}</li>`;
+                
+                if (detalleHtml.includes('</ul>')) {
+                    detalleHtml = detalleHtml.replace('</ul>', lineaAdicionales + '</ul>');
+                }
+                detallePreciosDiv.innerHTML = detalleHtml;
+            }
+            
+            // Actualizar total final
+            const totalFinal = precioBase + totalAdicionales;
+            const totalFormato = convertirNumero(totalFinal.toString());
+            
+            console.log('[PRESUPUESTO] Precio base:', precioBase, '| Adicionales:', totalAdicionales, '| Total:', totalFinal);
+            
+            // Reemplazar solo la línea de total (mantener depósito si existe)
+            let htmlTotal = presupuestoTotalDiv.innerHTML;
+            const regexTotal = /<span>Total[^:]*:<\/span>\s*\$[^<]*/;
+            const nuevoTotal = `<span>Total: </span> $${totalFormato}`;
+            htmlTotal = htmlTotal.replace(regexTotal, nuevoTotal);
+            presupuestoTotalDiv.innerHTML = htmlTotal;
+            
+            console.log('[PRESUPUESTO] Presupuesto actualizado');
+        }
+
         // Control de modales
         function openModalAdicionales() {
             console.log('[ABRIR MODAL ADICIONALES] visitorId:', visitorId);
@@ -900,7 +1003,7 @@
         // Cargar adicionales en el modal
         async function cargarAdicionales() {
             const container = document.getElementById('adicionales-container');
-            
+
             console.log('[CARGAR ADICIONALES] Iniciando carga de adicionales...');
             console.log('[CARGAR ADICIONALES] visitorId:', visitorId);
 
@@ -908,7 +1011,7 @@
                 // Cargar opciones disponibles
                 const adicionalesRes = await fetch('/api/opciones/adicionales');
                 console.log('[CARGAR ADICIONALES] Status fetch:', adicionalesRes.status);
-                
+
                 if (!adicionalesRes.ok) throw new Error('Error cargando adicionales');
 
                 const adicionalesData = await adicionalesRes.json();
@@ -929,7 +1032,7 @@
                 todosLosAdicionales.forEach(ad => {
                     const itemId = `ad_${ad.nombre.replace(/\s/g, '_')}`;
                     const isSelected = adicionalesSeleccionados.some(sel => sel.nombre === ad.nombre);
-                    
+
                     // Incluir imagen si existe
                     const imagenHtml = ad.imageUrl ? `<img src="${ad.imageUrl}" alt="${ad.nombre}" class="adicional-imagen">` : '';
 
@@ -993,7 +1096,7 @@
             const btnGuardar = document.getElementById('btn-guardar-adicionales');
             btnGuardar.disabled = true;
             btnGuardar.textContent = 'Guardando...';
-            
+
             console.log('[GUARDAR ADICIONALES] Guardando en localStorage...');
             console.log('[GUARDAR ADICIONALES] visitorId:', visitorId);
             console.log('[GUARDAR ADICIONALES] Adicionales:', adicionalesSeleccionados);
@@ -1001,14 +1104,20 @@
             try {
                 // Guardar en localStorage
                 const guardado = guardarAdicionalesEnLocalStorage();
-                
+
                 if (!guardado) {
                     throw new Error('No se pudo guardar en localStorage');
                 }
 
                 console.log('[GUARDAR ADICIONALES] ✓ Guardados en localStorage correctamente');
                 showNotification('Adicionales guardados correctamente', 'success');
+
+                // Renderizar lista de adicionales seleccionados
+                renderAdicionalesSeleccionados();
                 
+                // Actualizar presupuesto para incluir adicionales
+                actualizarPresupuesto();
+
                 // Esperar un poco para que se vea el mensaje de éxito
                 setTimeout(() => {
                     closeModalAdicionales();
@@ -1136,6 +1245,10 @@
             if (typeof App !== 'undefined' && App.visitorId) {
                 visitorId = App.visitorId;
                 console.log('[INIT] visitorId obtenido de App:', visitorId);
+                // Cargar adicionales guardados si existen
+                cargarAdicionalesDelLocalStorage();
+                renderAdicionalesSeleccionados();
+                actualizarPresupuesto();
             } else {
                 console.warn('[INIT] App.visitorId no disponible aún');
                 // Intentar nuevamente después de un momento
@@ -1143,6 +1256,10 @@
                     if (typeof App !== 'undefined' && App.visitorId) {
                         visitorId = App.visitorId;
                         console.log('[INIT] visitorId obtenido de App (retry):', visitorId);
+                        // Cargar adicionales guardados si existen
+                        cargarAdicionalesDelLocalStorage();
+                        renderAdicionalesSeleccionados();
+                        actualizarPresupuesto();
                     }
                 }, 500);
             }

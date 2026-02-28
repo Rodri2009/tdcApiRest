@@ -1366,6 +1366,13 @@ const App = {
                 this.elements.btnContacto.disabled = false;
                 this.elements.btnContacto.textContent = 'Continuar sin adicionales';
             }
+            // Habilitar botón enviar solicitud (para solicitud_alquiler.html)
+            const btnEnviarSolicitud = document.getElementById('btn-enviar-solicitud');
+            if (btnEnviarSolicitud) {
+                btnEnviarSolicitud.disabled = false;
+                btnEnviarSolicitud.textContent = 'Enviar Solicitud';
+                console.log('[INIT] btn-enviar-solicitud habilitado');
+            }
         } else { // modo 'edit'
             // En modo edición, los botones "Guardar" y "Cancelar" ya están habilitados por defecto.
             // Podríamos añadir lógica aquí si fuera necesario.
