@@ -1452,6 +1452,7 @@ const App = {
                 option.value = optionId;
                 option.textContent = optionName || optionId;
                 option.setAttribute('data-categoria', opt.categoria || '');
+                option.setAttribute('data-permite-adicionales', opt.permiteAdicionales ? '1' : '0');
                 select.appendChild(option);
             } else {
                 console.warn("Se encontró un objeto inválido sin ID en el array de opciones:", opt);

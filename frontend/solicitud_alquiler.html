@@ -952,6 +952,23 @@
         }
 
         // Inicialización
+        // Función para actualizar la visibilidad del botón de adicionales según el tipo seleccionado
+        function actualizarVisibilidadBotonAdicionales() {
+            const selectTipo = document.getElementById('tipoEventoSelect');
+            const btnAdicionales = document.getElementById('btn-adicionales-small');
+            
+            if (!selectTipo || !btnAdicionales) return;
+            
+            const opcionSeleccionada = selectTipo.options[selectTipo.selectedIndex];
+            if (!opcionSeleccionada || opcionSeleccionada.value === '') {
+                btnAdicionales.style.display = 'none';
+                return;
+            }
+            
+            const permiteAdicionales = opcionSeleccionada.getAttribute('data-permite-adicionales') === '1';
+            btnAdicionales.style.display = permiteAdicionales ? 'block' : 'none';
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             modalAdicionales = document.getElementById('modalAdicionales');
             modalContacto = document.getElementById('modalContacto');
@@ -968,6 +985,21 @@
             // Botón para guardar adicionales
             document.getElementById('btn-guardar-adicionales').addEventListener('click', guardarAdicionales);
 
+            // Listener para actualizar visibilidad del botón de adicionales cuando cambia el tipo
+            const observerConfig = { childList: true, subtree: true };
+            const observer = new MutationObserver(() => {
+                const selectTipo = document.getElementById('tipoEventoSelect');
+                if (selectTipo && !selectTipo.hasAttribute('data-listener-attached')) {
+                    selectTipo.addEventListener('change', actualizarVisibilidadBotonAdicionales);
+                    selectTipo.setAttribute('data-listener-attached', 'true');
+                    actualizarVisibilidadBotonAdicionales(); // Llamar una vez para inicializar
+                }
+            });
+            
+            const tipoEventoContainer = document.getElementById('tipoEventoContainer');
+            if (tipoEventoContainer) {
+                observer.observe(tipoEventoContainer, observerConfig);
+            }
             // Botón para enviar solicitud desde modal
             document.getElementById('btn-enviar-modal-contacto').addEventListener('click', enviarSolicitud);
 

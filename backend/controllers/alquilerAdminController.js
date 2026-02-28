@@ -30,7 +30,8 @@ const getTipos = async (req, res) => {
                 nombre_para_mostrar as nombre,
                 descripcion,
                 categoria,
-                es_publico as activo
+                es_publico as activo,
+                IFNULL(permite_adicionales, 1) as permiteAdicionales
             FROM opciones_tipos
         `;
         const params = [];
@@ -72,10 +73,13 @@ const createTipo = async (req, res) => {
             return res.status(409).json({ error: 'Ya existe un tipo con ese código' });
         }
 
+        // permite_adicionales = 1 solo para ALQUILER_SALON
+        const permiteAdicionales = categoria === 'ALQUILER_SALON' ? 1 : 0;
+
         await pool.query(`
-            INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico)
-            VALUES (?, ?, ?, ?, ?)
-        `, [codigo, nombre, descripcion || null, categoria, activo !== false ? 1 : 0]);
+            INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico, permite_adicionales)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [codigo, nombre, descripcion || null, categoria, activo !== false ? 1 : 0, permiteAdicionales]);
 
         res.status(201).json({ message: 'Tipo creado exitosamente', id: codigo });
     } catch (err) {

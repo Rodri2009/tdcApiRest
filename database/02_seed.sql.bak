@@ -28,77 +28,77 @@ UNLOCK TABLES;
 LOCK TABLES `opciones_tipos` WRITE;
 /*!40000 ALTER TABLE `opciones_tipos` DISABLE KEYS */;
 INSERT INTO `opciones_tipos` 
-  (`id_tipo_evento`, `nombre_para_mostrar`, `descripcion`, `categoria`, `es_publico`, `monto_sena`, `deposito`) 
+  (`id_tipo_evento`, `nombre_para_mostrar`, `descripcion`, `categoria`, `es_publico`, `permite_adicionales`, `monto_sena`, `deposito`) 
 VALUES 
   ('INFANTILES', 
    'INFANTILES: Cumpleaños hasta 12 años (SERVICIO COMPLETO)', 
    '🎈 **CUMPLEAÑOS INFANTILES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina completa con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool y Jenga gigante\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Baño equipado\n• Música y juego de luces\n• Cancha de fútbol (niños hasta 12 años)\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Bebidas, alimentos, animación, vajilla de cristal',
-   'ALQUILER_SALON', 1, 50000.00, NULL),
+   'ALQUILER_SALON', 1, 1, 50000.00, NULL),
 
   ('ADOLESCENTES',
    'ADOLESCENTES: Cumpleaños de 13 a 17 años',
    '🎧 **CUMPLEAÑOS ADOLESCENTES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina con cocinera\n• Metegoles, Ping Pong, Pool, Jenga\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Música y juego de luces\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Cancha de fútbol',
-   'ALQUILER_SALON', 1, 50000.00, 80000.00),
+   'ALQUILER_SALON', 1, 1, 50000.00, 80000.00),
 
   ('BABY_SHOWERS',
    'BABY SHOWERS / BAUTISMOS / COMUNIONES',
    '👶 **BABY SHOWERS / BAUTISMOS / COMUNIONES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Música y luces\n• Cancha (niños hasta 12)\n\n❌ **NO INCLUYE:** Meseras, animación, vajilla de metal',
-   'ALQUILER_SALON', 1, 50000.00, NULL),
+   'ALQUILER_SALON', 1, 1, 50000.00, NULL),
 
   ('CON_SERVICIO_DE_MESA',
    'FIESTAS de 15 / 18 / casamientos (SERVICIO COMPLETO)',
    '🌟 **SERVICIO COMPLETO**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Cocinera y uso completo de cocina\n• Meseras según cantidad\n• Mesas, sillas y mantelería\n• Vajilla de cristal y cubiertos de metal\n• Sonido profesional PA JBL\n• Backline para bandas\n• Baño equipado\n\n❌ **NO INCLUYE:** DJ, decoración, cancha de fútbol',
-   'ALQUILER_SALON', 1, 80000.00, NULL),
+   'ALQUILER_SALON', 1, 1, 80000.00, NULL),
 
   ('INFORMALES',
    'INFORMALES: Juntadas, parrilladas (SERVICIO ECONÓMICO)',
    '🎉 **SERVICIO ECONÓMICO**\n\n✅ **INCLUYE:**\n• Encargada/o general y control de puerta\n• Mesas y sillas\n• Uso de parrilla\n• Uso de bachas, mesadas, barra\n• Heladera y freezer\n• Baño equipado\n• Equipo de música\n• Metegoles, Ping Pong, Pool\n\n❌ **NO INCLUYE:** Horno, hornallas, cocinera, mantelería, vajilla',
-   'ALQUILER_SALON', 1, 50000.00, 80000.00),
+   'ALQUILER_SALON', 1, 1, 50000.00, 80000.00),
 
   ('FECHA_BANDAS',
    'Fecha para bandas en vivo',
    '🎸 **FECHA PARA BANDAS**\n\n✅ **INCLUYE:**\n• Coordinación de bandas\n• Flyers y publicaciones\n• Encargada de puerta\n• Uso de cocina\n• Sonido profesional\n• Backline completo',
-   'FECHA_BANDAS', 0, NULL, NULL),
+   'FECHA_BANDAS', 0, 0, NULL, NULL),
 
   ('MASAJES',
    'Masajes',
    '💆 **MASAJES PROFESIONALES**\n\nTipos: Descontracturante, Relajante, Reflexología, Piedras calientes\nDuración: 45 a 90 min',
-   'SERVICIOS', 1, NULL, NULL),
+   'SERVICIOS', 1, 0, NULL, NULL),
 
   ('DEPILACION',
    'Depilación',
    '🌸 **DEPILACIÓN**\n\nZonas: Piernas, Brazos, Cavado, Bozo, Axilas\nMétodo: Cera tibia descartable',
-   'SERVICIOS', 1, NULL, NULL),
+   'SERVICIOS', 1, 0, NULL, NULL),
 
   ('DEPILACION_DEFINITIVA',
    'Depilación Definitiva',
    '⚡ **DEPILACIÓN DEFINITIVA**',
-   'SERVICIOS', 0, NULL, NULL),
+   'SERVICIOS', 0, 0, NULL, NULL),
 
   ('ESTETICA',
    'Estética',
    '✨ **ESTÉTICA**\n\nTratamientos: Limpieza facial, Hidratación, Anti-age, Acné',
-   'SERVICIOS', 1, NULL, NULL),
+   'SERVICIOS', 1, 0, NULL, NULL),
 
   ('TALLER_MUSICA',
    'Música',
    '🎵 **MÚSICA**\n\nInstrumentos: Guitarra, Teclado, Batería, Canto, Vientos',
-   'TALLERES_ACTIVIDADES', 1, NULL, NULL),
+   'TALLERES_ACTIVIDADES', 1, 0, NULL, NULL),
 
   ('TALLER_DANZA',
    'Danza',
    '💃 **DANZA**\n\nEstilos: Folklore, Tango, Contemporánea, Salsa, Bachata',
-   'TALLERES_ACTIVIDADES', 1, NULL, NULL),
+   'TALLERES_ACTIVIDADES', 1, 0, NULL, NULL),
 
   ('TALLER_YOGA',
    'Yoga',
    '🧘 **YOGA**\n\nEstilos: Hatha, Vinyasa, Restaurativo, Embarazadas',
-   'TALLERES_ACTIVIDADES', 1, NULL, NULL),
+   'TALLERES_ACTIVIDADES', 1, 0, NULL, NULL),
 
   ('TALLER_ARTE',
    'Arte y Manualidades',
    '🎨 **TALLERES DE ARTE**\n\nPintura, Dibujo, Cerámica, Manualidades, Tejido',
-   'TALLERES_ACTIVIDADES', 1, NULL, NULL);
+   'TALLERES_ACTIVIDADES', 1, 0, NULL, NULL);
 /*!40000 ALTER TABLE `opciones_tipos` ENABLE KEYS */;
 UNLOCK TABLES;
 

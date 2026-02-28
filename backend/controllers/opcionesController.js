@@ -22,7 +22,8 @@ const getTiposDeEvento = async (req, res) => {
             es_publico as esPublico, 
             IFNULL(categoria, 'OTRO') as categoria,
             IFNULL(monto_sena, 0) as montoSena,
-            IFNULL(deposito, 0) as depositoGarantia
+            IFNULL(deposito, 0) as depositoGarantia,
+            IFNULL(permite_adicionales, 1) as permiteAdicionales
         FROM opciones_tipos`;
         let rows;
         if (categoria) {

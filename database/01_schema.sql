@@ -31,10 +31,12 @@ CREATE TABLE IF NOT EXISTS opciones_tipos (
     descripcion TEXT COMMENT 'Descripción detallada del tipo de evento',
     categoria VARCHAR(50) NOT NULL COMMENT 'ALQUILER_SALON, FECHA_BANDAS, TALLERES_ACTIVIDADES, SERVICIOS',
     es_publico TINYINT(1) DEFAULT 1 COMMENT '1=Visible para clientes, 0=Solo admin',
+    permite_adicionales TINYINT(1) DEFAULT 1 COMMENT '1=Permite agregar servicios/adicionales, 0=No permite',
     monto_sena DECIMAL(10,2) DEFAULT NULL COMMENT 'Monto de seña requerido',
     deposito DECIMAL(10,2) DEFAULT NULL COMMENT 'Depósito de garantía',
     INDEX idx_categoria (categoria),
-    INDEX idx_es_publico (es_publico)
+    INDEX idx_es_publico (es_publico),
+    INDEX idx_permite_adicionales (permite_adicionales)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Configuración general del sistema

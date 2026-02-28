@@ -653,7 +653,7 @@ const getTiposServicio = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query(`
-            SELECT id_tipo_evento as id, nombre_para_mostrar as nombre, descripcion, es_publico as esPublico
+            SELECT id_tipo_evento as id, nombre_para_mostrar as nombre, descripcion, es_publico as esPublico, IFNULL(permite_adicionales, 0) as permiteAdicionales
             FROM opciones_tipos 
             WHERE categoria = 'SERVICIOS'
             ORDER BY nombre_para_mostrar
@@ -684,8 +684,8 @@ const createTipoServicio = async (req, res) => {
         }
 
         await conn.query(
-            `INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico) 
-             VALUES (?, ?, ?, 'SERVICIOS', ?)`,
+            `INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico, permite_adicionales) 
+             VALUES (?, ?, ?, 'SERVICIOS', ?, 0)`,
             [id.toUpperCase(), nombre, descripcion || null, esPublico]
         );
 

@@ -872,7 +872,7 @@ const getAllTiposDeEvento = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query(
-            "SELECT id_tipo_evento as id, nombre_para_mostrar as nombreParaMostrar, descripcion, monto_sena as montoSena, deposito as depositoGarantia, es_publico as esPublico, categoria FROM opciones_tipos ORDER BY categoria, nombre_para_mostrar;"
+            "SELECT id_tipo_evento as id, nombre_para_mostrar as nombreParaMostrar, descripcion, monto_sena as montoSena, deposito as depositoGarantia, es_publico as esPublico, categoria, IFNULL(permite_adicionales, 1) as permiteAdicionales FROM opciones_tipos ORDER BY categoria, nombre_para_mostrar;"
         );
         res.status(200).json(rows);
     } catch (err) {
