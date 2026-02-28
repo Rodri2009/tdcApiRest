@@ -382,6 +382,15 @@
             font-size: 1.1rem;
         }
 
+        .adicional-imagen {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--color-secondary);
+            flex-shrink: 0;
+        }
+
         #total-modal {
             font-size: 1.3em;
             font-weight: bold;
@@ -512,6 +521,7 @@
 
             .column-layout .form-group {
                 flex: 1;
+                margin-bottom: 20px;
             }
 
             .button-group {
@@ -630,7 +640,7 @@
                 ➕ Agregar Adicionales
             </button>
         </div>
-
+        <hr>
         <div class="column-layout">
             <div class="form-group">
                 <label for="fechaEvento">Fechas Disponibles (Sáb, Dom y Feriados):</label>
@@ -792,13 +802,18 @@
         // Cargar adicionales en el modal
         async function cargarAdicionales() {
             const container = document.getElementById('adicionales-container');
+            
+            console.log('[CARGAR ADICIONALES] Iniciando carga de adicionales...');
 
             try {
                 // Cargar opciones disponibles
                 const adicionalesRes = await fetch('/api/opciones/adicionales');
+                console.log('[CARGAR ADICIONALES] Status fetch:', adicionalesRes.status);
+                
                 if (!adicionalesRes.ok) throw new Error('Error cargando adicionales');
 
                 const adicionalesData = await adicionalesRes.json();
+                console.log('[CARGAR ADICIONALES] Datos recibidos:', adicionalesData);
                 todosLosAdicionales = adicionalesData || [];
 
                 // Cargar selección previa si existe
@@ -825,11 +840,15 @@
                 todosLosAdicionales.forEach(ad => {
                     const itemId = `ad_${ad.nombre.replace(/\s/g, '_')}`;
                     const isSelected = seleccionadosPrevios.some(sel => sel.nombre === ad.nombre);
+                    
+                    // Incluir imagen si existe
+                    const imagenHtml = ad.imageUrl ? `<img src="${ad.imageUrl}" alt="${ad.nombre}" class="adicional-imagen">` : '';
 
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'adicional-item';
                     itemDiv.innerHTML = `
                         <input type="checkbox" id="${itemId}" class="adicional-check" value="${ad.precio}" data-nombre="${ad.nombre}" ${isSelected ? 'checked' : ''}>
+                        ${imagenHtml}
                         <div class="adicional-info">
                             <label for="${itemId}">${ad.nombre}</label>
                             <p>${ad.descripcion || ''}</p>
@@ -882,6 +901,7 @@
         // Guardar adicionales y cerrar modal
         async function guardarAdicionales() {
             if (!solicitudId) {
+                console.error('[GUARDAR ADICIONALES] ERROR: No se encontró solicitudId');
                 showNotification('Error: No se encontró el ID de solicitud', 'error');
                 return;
             }
@@ -889,16 +909,31 @@
             const btnGuardar = document.getElementById('btn-guardar-adicionales');
             btnGuardar.disabled = true;
             btnGuardar.textContent = 'Guardando...';
+            
+            console.log('[GUARDAR ADICIONALES] Iniciando guardado con solicitudId:', solicitudId);
+            console.log('[GUARDAR ADICIONALES] Adicionales a guardar:', adicionalesSeleccionados);
 
             try {
-                const response = await fetch(`/api/solicitudes/${solicitudId}/adicionales`, {
+                const endpoint = `/api/solicitudes/${solicitudId}/adicionales`;
+                console.log('[GUARDAR ADICIONALES] Endpoint:', endpoint);
+                
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(adicionalesSeleccionados)
                 });
 
-                if (!response.ok) throw new Error('Error al guardar los adicionales');
+                console.log('[GUARDAR ADICIONALES] Status respuesta:', response.status);
+                console.log('[GUARDAR ADICIONALES] OK?:', response.ok);
+                
+                const responseData = await response.json();
+                console.log('[GUARDAR ADICIONALES] Response data:', responseData);
+                
+                if (!response.ok) {
+                    throw new Error(responseData.error || 'Error al guardar los adicionales');
+                }
 
+                console.log('[GUARDAR ADICIONALES] ¡Éxito! Cerrando modal...');
                 showNotification('Adicionales guardados correctamente', 'success');
                 closeModalAdicionales();
 
@@ -906,7 +941,9 @@
                 // await cargarResumen();
 
             } catch (error) {
-                console.error('Error guardando adicionales:', error);
+                console.error('[GUARDAR ADICIONALES] ERROR CAPTURADO:', error);
+                console.error('[GUARDAR ADICIONALES] Error message:', error.message);
+                console.error('[GUARDAR ADICIONALES] Error completo:', JSON.stringify(error, null, 2));
                 showNotification('Error al guardar los adicionales: ' + error.message, 'error');
             } finally {
                 btnGuardar.disabled = false;

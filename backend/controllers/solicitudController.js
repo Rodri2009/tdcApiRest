@@ -530,54 +530,73 @@ const finalizarSolicitud = async (req, res) => {
 const guardarAdicionales = async (req, res) => {
     const { id } = req.params;
     const adicionales = req.body;
-    logVerbose("\n-> Controlador guardarAdicionales. Body recibido:", req.body);
+    logVerbose("\n-> Controlador guardarAdicionales iniciado");
+    logVerbose(`   ID recibido: ${id}`);
+    logVerbose(`   Body recibido:`, req.body);
 
     if (!id || !Array.isArray(adicionales)) {
+        logError(`Validación fallida. ID: ${id}, esArray: ${Array.isArray(adicionales)}`);
         return res.status(400).json({ error: 'Se requiere un ID de solicitud y un array de adicionales.' });
     }
 
-    logVerbose(`Guardando ${adicionales.length} adicionales para la solicitud ID: ${id}...`);
+    logVerbose(`   Preparado para guardar ${adicionales.length} adicionales...`);
 
     let conn;
     try {
         conn = await pool.getConnection();
+        logVerbose(`   ✓ Conexión obtenida`);
+        
         await conn.beginTransaction();
+        logVerbose(`   ✓ Transacción iniciada`);
 
         // Obtener id_solicitud_alquiler a partir de id_solicitud
         const alquilerRow = await conn.query(
             "SELECT id_solicitud_alquiler FROM solicitudes_alquiler WHERE id_solicitud = ?",
             [id]
         );
+        
+        logVerbose(`   Query resultado rows: ${alquilerRow?.length || 0}`);
 
         if (!alquilerRow || alquilerRow.length === 0) {
+            logError(`   ✗ Solicitud de alquiler NO encontrada para id_solicitud: ${id}`);
+            await conn.rollback();
             return res.status(404).json({ error: 'Solicitud de alquiler no encontrada.' });
         }
 
         const idSolicitudAlquiler = alquilerRow[0].id_solicitud_alquiler;
+        logVerbose(`   ✓ Encontrada solicitud alquiler ID: ${idSolicitudAlquiler}`);
 
+        // Limpiar adicionales previos
         await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud_alquiler = ?", [idSolicitudAlquiler]);
+        logVerbose(`   ✓ Adicionales previos eliminados`);
 
         if (adicionales.length > 0) {
-            // Insertar cada adicional (creado_en se genera automáticamente con DEFAULT CURRENT_TIMESTAMP)
+            // Insertar cada adicional
             const sql = "INSERT INTO solicitudes_adicionales (id_solicitud_alquiler, adicional_nombre, adicional_precio) VALUES (?, ?, ?)";
 
             for (const ad of adicionales) {
                 const values = [idSolicitudAlquiler, ad.nombre, ad.precio];
+                logVerbose(`   Insertando: ${ad.nombre} - $${ad.precio}`);
                 await conn.query(sql, values);
             }
+            logVerbose(`   ✓ ${adicionales.length} adicionales insertados correctamente`);
         }
 
         await conn.commit();
+        logVerbose(`   ✓ Transacción confirmada exitosamente`);
 
-        logVerbose(`Adicionales guardados correctamente, solicitud ID: ${id} .`);
         res.status(200).json({ message: 'Adicionales guardados exitosamente.' });
 
     } catch (err) {
         if (conn) await conn.rollback();
-        logError(`Error al guardar adicionales para la solicitud ID: ${id}:`, err);
-        res.status(500).json({ error: 'Error interno del servidor.' });
+        logError(`✗ Error en guardarAdicionales para ID: ${id}`);
+        logError(`   Error type: ${err.name}`);
+        logError(`   Error message: ${err.message}`);
+        logError(`   Stack:`, err.stack);
+        res.status(500).json({ error: 'Error interno del servidor.', details: err.message });
     } finally {
         if (conn) conn.release();
+        logVerbose(`   Conexión liberada\n`);
     }
 };
 

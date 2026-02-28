@@ -28,7 +28,9 @@ UNLOCK TABLES;
 LOCK TABLES `opciones_tipos` WRITE;
 /*!40000 ALTER TABLE `opciones_tipos` DISABLE KEYS */;
 INSERT INTO `opciones_tipos` 
-  (`id_tipo_evento`, `nombre_para_mostrar`, `descripcion`, `categoria`, `es_publico`, `permite_adicionales`, `monto_sena`, `deposito`) 
+  (`id_tipo_evento`, 
+  `nombre_para_mostrar`, `descripcion`, 
+  `categoria`, `es_publico`, `permite_adicionales`, `monto_sena`, `deposito`) 
 VALUES 
   ('INFANTILES', 
    'INFANTILES: Cumpleaños hasta 12 años (SERVICIO COMPLETO)', 
@@ -48,7 +50,7 @@ VALUES
   ('CON_SERVICIO_DE_MESA',
    'FIESTAS de 15 / 18 / casamientos (SERVICIO COMPLETO)',
    '🌟 **SERVICIO COMPLETO**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Cocinera y uso completo de cocina\n• Meseras según cantidad\n• Mesas, sillas y mantelería\n• Vajilla de cristal y cubiertos de metal\n• Sonido profesional PA JBL\n• Backline para bandas\n• Baño equipado\n\n❌ **NO INCLUYE:** DJ, decoración, cancha de fútbol',
-   'ALQUILER_SALON', 1, 1, 80000.00, NULL),
+   'ALQUILER_SALON', 1, 0, 80000.00, NULL),
 
   ('INFORMALES',
    'INFORMALES: Juntadas, parrilladas (SERVICIO ECONÓMICO)',
@@ -100,7 +102,7 @@ VALUES
    '🎨 **TALLERES DE ARTE**\n\nPintura, Dibujo, Cerámica, Manualidades, Tejido',
    'TALLERES_ACTIVIDADES', 1, 0, NULL, NULL);
 
--- CORRECCIÓN: Sincronizar permite_adicionales basado en categoría
+/*-- CORRECCIÓN: Sincronizar permite_adicionales basado en categoría
 -- Los tipos ALQUILER_SALON deben tener permite_adicionales = 1
 -- Otros tipos (FECHA_BANDAS, SERVICIOS, TALLERES_ACTIVIDADES) = 0
 UPDATE `opciones_tipos`
@@ -112,7 +114,7 @@ SET permite_adicionales = 0
 WHERE categoria != 'ALQUILER_SALON';
 
 /*!40000 ALTER TABLE `opciones_tipos` ENABLE KEYS */;
-UNLOCK TABLES;
+UNLOCK TABLES;*/
 
 -- =====================================================================
 -- DURACIONES DISPONIBLES POR TIPO DE EVENTO
