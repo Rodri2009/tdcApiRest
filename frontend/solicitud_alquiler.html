@@ -957,16 +957,36 @@
             const selectTipo = document.getElementById('tipoEventoSelect');
             const btnAdicionales = document.getElementById('btn-adicionales-small');
             
-            if (!selectTipo || !btnAdicionales) return;
+            console.log('[DEBUG] actualizarVisibilidadBotonAdicionales - Inicio');
+            console.log('[DEBUG] selectTipo:', selectTipo);
+            console.log('[DEBUG] btnAdicionales:', btnAdicionales);
+            
+            if (!selectTipo || !btnAdicionales) {
+                console.log('[DEBUG] selectTipo o btnAdicionales no existen, retornando');
+                return;
+            }
             
             const opcionSeleccionada = selectTipo.options[selectTipo.selectedIndex];
+            console.log('[DEBUG] opcionSeleccionada:', opcionSeleccionada);
+            console.log('[DEBUG] opcionSeleccionada.value:', opcionSeleccionada.value);
+            console.log('[DEBUG] opcionSeleccionada.textContent:', opcionSeleccionada.textContent);
+            
             if (!opcionSeleccionada || opcionSeleccionada.value === '') {
+                console.log('[DEBUG] Opción vacía o no existe, ocultando botón');
                 btnAdicionales.style.display = 'none';
                 return;
             }
             
-            const permiteAdicionales = opcionSeleccionada.getAttribute('data-permite-adicionales') === '1';
+            const atributo = opcionSeleccionada.getAttribute('data-permite-adicionales');
+            console.log('[DEBUG] data-permite-adicionales (atributo):', atributo);
+            
+            const permiteAdicionales = atributo === '1';
+            console.log('[DEBUG] permiteAdicionales (boolean):', permiteAdicionales);
+            console.log('[DEBUG] Setting display to:', permiteAdicionales ? 'block' : 'none');
+            
             btnAdicionales.style.display = permiteAdicionales ? 'block' : 'none';
+            
+            console.log('[DEBUG] actualizarVisibilidadBotonAdicionales - Fin');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -988,11 +1008,18 @@
             // Listener para actualizar visibilidad del botón de adicionales cuando cambia el tipo
             const observerConfig = { childList: true, subtree: true };
             const observer = new MutationObserver(() => {
+                console.log('[DEBUG] MutationObserver ejecutado');
                 const selectTipo = document.getElementById('tipoEventoSelect');
+                console.log('[DEBUG] selectTipo encontrado:', !!selectTipo);
+                
                 if (selectTipo && !selectTipo.hasAttribute('data-listener-attached')) {
+                    console.log('[DEBUG] Agregando evento change al selectTipo');
                     selectTipo.addEventListener('change', actualizarVisibilidadBotonAdicionales);
                     selectTipo.setAttribute('data-listener-attached', 'true');
+                    console.log('[DEBUG] Llamando actualizarVisibilidadBotonAdicionales() para inicializar');
                     actualizarVisibilidadBotonAdicionales(); // Llamar una vez para inicializar
+                } else if (selectTipo && selectTipo.hasAttribute('data-listener-attached')) {
+                    console.log('[DEBUG] selectTipo ya tiene listener agregado');
                 }
             });
             

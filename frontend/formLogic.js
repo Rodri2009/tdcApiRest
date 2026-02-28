@@ -304,6 +304,15 @@ const App = {
         const selectElement = this.elements.tipoEventoContainer.querySelector('select');
         if (selectElement) {
             selectElement.addEventListener('change', () => {
+                console.log('[DEBUG] ===== onChange tipoEvento =====');
+                console.log('[DEBUG] Select element:', selectElement);
+                console.log('[DEBUG] Selected value:', selectElement.value);
+
+                const opcionSeleccionada = selectElement.options[selectElement.selectedIndex];
+                console.log('[DEBUG] Selected option:', opcionSeleccionada);
+                console.log('[DEBUG] Option textContent:', opcionSeleccionada.textContent);
+                console.log('[DEBUG] Option data-permite-adicionales:', opcionSeleccionada.getAttribute('data-permite-adicionales'));
+
                 // Remover la clase de error del contenedor principal
                 this.elements.tipoEventoContainer.classList.remove('campo-invalido');
                 // Actualizar visibilidad de campos según el tipo
@@ -313,6 +322,8 @@ const App = {
                 //     this.filtrarTiposPorCategoria(radio.value);
                 // }
                 this.actualizarTodo();
+
+                console.log('[DEBUG] ===== onChange finalizó =====');
             });
         }
 
@@ -1427,6 +1438,8 @@ const App = {
         container.innerHTML = '';
         if (!options || options.length === 0) return;
 
+        console.log('[DEBUG] llenarSelectDropdown - Total opciones:', options.length);
+
         // Crear el select
         const select = document.createElement('select');
         select.id = 'tipoEventoSelect';
@@ -1453,6 +1466,15 @@ const App = {
                 option.textContent = optionName || optionId;
                 option.setAttribute('data-categoria', opt.categoria || '');
                 option.setAttribute('data-permite-adicionales', opt.permiteAdicionales ? '1' : '0');
+                
+                console.log('[DEBUG] Opción creada:', {
+                    id: optionId,
+                    nombre: optionName,
+                    categoria: opt.categoria,
+                    permiteAdicionales: opt.permiteAdicionales,
+                    atributo_asignado: option.getAttribute('data-permite-adicionales')
+                });
+                
                 select.appendChild(option);
             } else {
                 console.warn("Se encontró un objeto inválido sin ID en el array de opciones:", opt);
