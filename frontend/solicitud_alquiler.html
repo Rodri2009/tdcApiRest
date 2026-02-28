@@ -520,7 +520,7 @@
                 gap: 15px;
             }
 
-            .column-layout > div {
+            .column-layout>div {
                 flex: 1;
             }
 
@@ -643,10 +643,14 @@
                 </div>
             </div>
             <div>
-                <button id="btn-adicionales-small" class="btn-small" style="display: none;">
-                    ➕ Agregar Adicionales
-                </button>
-                <div id="adicionalesSeleccionados"></div>
+                <div class="form-group">
+                    <label>Adicionales Disponibles:</label>
+                    <button id="btn-adicionales-small" class="btn-small" style="display: none;">
+                        ➕ Seleccionar Adicionales
+                    </button>
+                </div>
+                <label>Adicionales seleccionados:</label>
+                <div id="adicionalesSeleccionados" class="form-group"></div>
             </div>
         </div>
         <hr>
@@ -679,12 +683,12 @@
         </div>
 
         <hr>
-        <h3>Resumen de Presupuesto Básico:</h3>
+        <h3>Resumen de Presupuesto</h3>
         <div id="presupuestoDetalle">
             <p>Complete las opciones para ver el precio.</p>
         </div>
-        <div id="detallePrecios"></div>
-        <div id="presupuestoTotal"><span>Total Básico: </span> $0</div>
+        <div id="detallePrecios">Subtotales:</div>
+        <div id="presupuestoTotal"><span>Total </span> $0</div>
 
         <div class="button-group">
             <button id="btn-adicionales" style="display: none;"></button>
@@ -846,15 +850,14 @@
             }
 
             if (!adicionalesSeleccionados || adicionalesSeleccionados.length === 0) {
-                container.innerHTML = '';
                 console.log('[RENDER-ADICIONALES] Sin adicionales para mostrar');
+                container.innerHTML = '<div style="padding: 12px; color: #a1a1aa; font-style: italic;">No se seleccionaron adicionales</div>';
                 return;
             }
 
             console.log('[RENDER-ADICIONALES] Mostrando:', adicionalesSeleccionados);
 
-            let html = '<div style="margin-top: 15px; padding: 12px; border: 1px solid #581c87; border-radius: 6px; background-color: #0f172a;">';
-            html += '<p style="margin: 0 0 10px 0; color: var(--color-secondary); font-weight: bold;">✓ Adicionales seleccionados:</p>';
+            let html = '<div style="margin-top: 0px; padding: 12px; border: 1px solid #581c87; border-radius: 6px; background-color: #0f172a;">';
 
             adicionalesSeleccionados.forEach(ad => {
                 const precio = parseFloat(ad.precio).toLocaleString('es-AR');
@@ -907,7 +910,7 @@
             // Actualizar presupuestoDetalle con adicionales
             if (presupuestoDetalleDiv && presupuestoDetalleDiv.innerHTML && presupuestoDetalleDiv.innerHTML.includes('<ul>')) {
                 let detalleHtml = presupuestoDetalleDiv.innerHTML;
-                
+
                 // Si hay adicionales y aún no están en el detalle, agregarlos
                 if (htmlAdicionales && !detalleHtml.includes('Adicionales:')) {
                     // Encontrar el </ul> y insertar antes
@@ -924,11 +927,11 @@
 
             // Actualizar detallePrecios con subtotal de adicionales
             let detallePreciosHtml = detallePreciosDiv.innerHTML;
-            
+
             if (totalAdicionales > 0) {
                 const precioAdicionales = convertirNumero(totalAdicionales.toString());
-                const lineaAdicionales = `<li style="color: #34d399;"><strong>Subtotal Adicionales:</strong> $${precioAdicionales}</li>`;
-                
+                const lineaAdicionales = `<li style="color: #34d399;"><strong>Adicionales:</strong> $${precioAdicionales}</li>`;
+
                 // Si no existe subtotal de adicionales, agregarlo
                 if (!detallePreciosHtml.includes('Subtotal Adicionales')) {
                     if (detallePreciosHtml.includes('</ul>')) {
@@ -936,13 +939,13 @@
                     }
                 } else {
                     // Reemplazar el subtotal existente
-                    const regexSubtotal = /<li style="color: #34d399;"><strong>Subtotal Adicionales:[^<]*<\/li>/;
+                    const regexSubtotal = /<li style="color: #34d399;"><strong>Adicionales:[^<]*<\/li>/;
                     detallePreciosHtml = detallePreciosHtml.replace(regexSubtotal, lineaAdicionales);
                 }
                 detallePreciosDiv.innerHTML = detallePreciosHtml;
             } else if (detallePreciosHtml.includes('Subtotal Adicionales')) {
                 // Si no hay adicionales pero estaban antes, remover la línea
-                const regexSubtotal = /<li style="color: #34d399;"><strong>Subtotal Adicionales:[^<]*<\/li>/;
+                const regexSubtotal = /<li style="color: #34d399;"><strong>Adicionales:[^<]*<\/li>/;
                 detallePreciosHtml = detallePreciosHtml.replace(regexSubtotal, '');
                 detallePreciosDiv.innerHTML = detallePreciosHtml;
             }
@@ -1251,8 +1254,13 @@
             console.log('[DEBUG] opcionSeleccionada.textContent:', opcionSeleccionada.textContent);
 
             if (!opcionSeleccionada || opcionSeleccionada.value === '') {
-                console.log('[DEBUG] Opción vacía o no existe, ocultando botón');
+                console.log('[DEBUG] Opción vacía o no existe, ocultando botón y limpiando adicionales');
                 btnAdicionales.style.display = 'none';
+                // Limpiar adicionales si se selecciona un tipo vacío
+                adicionalesSeleccionados = [];
+                limpiarAdicionalesDelLocalStorage();
+                renderAdicionalesSeleccionados();
+                actualizarPresupuesto();
                 return;
             }
 
@@ -1264,6 +1272,15 @@
             console.log('[DEBUG] Setting display to:', permiteAdicionales ? 'block' : 'none');
 
             btnAdicionales.style.display = permiteAdicionales ? 'block' : 'none';
+
+            // Si el nuevo tipo NO permite adicionales, limpiar los seleccionados
+            if (!permiteAdicionales && adicionalesSeleccionados.length > 0) {
+                console.log('[DEBUG] Tipo no permite adicionales, limpiando seleccionados');
+                adicionalesSeleccionados = [];
+                limpiarAdicionalesDelLocalStorage();
+                renderAdicionalesSeleccionados();
+                actualizarPresupuesto();
+            }
 
             console.log('[DEBUG] actualizarVisibilidadBotonAdicionales - Fin');
         }

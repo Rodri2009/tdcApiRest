@@ -1339,7 +1339,7 @@ const App = {
                 }
 
                 this.elements.precioBaseInput.value = precioCalculado;
-                
+
                 // Actualizar presupuesto con adicionales (si estamos en solicitud_alquiler.html)
                 if (typeof actualizarPresupuesto === 'function') {
                     actualizarPresupuesto();
