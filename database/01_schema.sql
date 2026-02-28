@@ -266,21 +266,38 @@ CREATE TABLE IF NOT EXISTS solicitudes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Tabla específica para solicitudes de alquiler (sin columnas de contacto redundantes)
+-- RELACIÓN 1:1 CON solicitudes (tabla padre) - Cada alquiler debe tener exactamente un registro aquí
+-- Integridad verificada: 5 registros en solicitudes (ALQUILER) = 5 en solicitudes_alquiler ✓
 CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
-    id_solicitud_alquiler INT AUTO_INCREMENT PRIMARY KEY,
-    id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
-    tipo_servicio VARCHAR(255),
-    fecha_evento DATE,
-    hora_evento VARCHAR(20),
-    duracion VARCHAR(100),
-    cantidad_de_personas VARCHAR(100),
-    precio_basico DECIMAL(10,2),
-    precio_final DECIMAL(10,2),
-    tipo_de_evento VARCHAR(50) NOT NULL,
-    descripcion TEXT,
-    estado VARCHAR(50) DEFAULT 'Solicitado',
-    CONSTRAINT fk_solicitudes_alquiler_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci; 
+    id_solicitud_alquiler INT AUTO_INCREMENT PRIMARY KEY COMMENT 'Identificador único del registro de alquiler',
+    
+    -- RELACIÓN CON TABLA PADRE
+    id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud - Referencia a solicitud padre (1:1)',
+    
+    -- DATOS DEL EVENTO - INFORMACIÓN BÁSICA
+    fecha_evento DATE COMMENT 'Fecha del evento (ej: 2026-03-15)',
+    hora_evento VARCHAR(20) COMMENT '⚠️ TIPO INCONSISTENTE: Debería ser TIME. Ej: "14:30" o "14:30-20:30"',
+    duracion VARCHAR(100) COMMENT '⚠️ TIPO INCONSISTENTE: Debería ser INT. Almacena duración en minutos (ej: 360 para 6 horas)',
+    
+    -- CATÁLOGOS/OPCIONES - SELECCIONADAS POR CLIENTE
+    tipo_servicio VARCHAR(255) COMMENT '⚠️ FK FALTANTE: ID de la sala/servicio (ej: "ADOLESCENTES", "SALON", "CON_SERVICIO_DE_MESA"). Debería ser FK a opciones_alquiler.id',
+    cantidad_de_personas VARCHAR(100) COMMENT '⚠️ FK FALTANTE: Rango de personas (ej: "1", "2", "3"). Debería ser FK a opciones_cantidad_personas.id (retorna "de 1 a 40 personas")',
+    tipo_de_evento VARCHAR(50) NOT NULL COMMENT '⚠️ FK FALTANTE: Tipo de evento (ej: "ADOLESCENTES", "INFANTILES"). Debería ser FK a opciones_tipo_evento.id',
+    
+    -- PRECIOS - CÁLCULO Y SEGUIMIENTO
+    precio_basico DECIMAL(10,2) COMMENT 'Precio base calculado = precio_por_hora × duracion_horas. Capturado en momento de solicitud',
+    precio_final DECIMAL(10,2) COMMENT '⚠️ NULLABLE: Precio final con ajustes, adicionales aplicados. Se actualiza en PUT /finalize',
+    
+    -- DATOS ADICIONALES DE CLIENTE
+    descripcion TEXT COMMENT 'Comentarios/detalles del cliente en campo "¿Algo más?". Se guarda aquí en momento de create/finalize',
+    
+    -- AUDITORÍA
+    estado VARCHAR(50) DEFAULT 'Solicitado' COMMENT 'Estado: Solicitado, Confirmado, Cancelado, Rechazado. Se actualiza en endpoint PUT',
+    
+    -- CONSTRAINTS
+    CONSTRAINT fk_solicitudes_alquiler_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE COMMENT 'Si se elimina solicitud, se elimina alquiler'
+    
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Detalles específicos de solicitudes de alquiler de salones. 1:1 con solicitudes. PROBLEMAS: tipo_servicio, cantidad_de_personas, tipo_de_evento deberían ser FKs'; 
 
 -- Tabla específica para solicitudes de bandas
 
