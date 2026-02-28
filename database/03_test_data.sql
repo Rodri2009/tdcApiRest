@@ -168,10 +168,10 @@ INSERT INTO `solicitudes_talleres` (
     (8, 'Masaje Descontracturante Grupal', '2026-03-08', '10:00', '90 minutos', 2500.00);
 
 -- ============================================
--- ADICIONALES (items opcionales para solicitudes)
+-- ADICIONALES (items opcionales para solicitudes de alquiler)
 -- ============================================
 INSERT INTO `solicitudes_adicionales` (
-    `id_solicitud`, `adicional_nombre`, `adicional_precio`
+    `id_solicitud_alquiler`, `adicional_nombre`, `adicional_precio`
 ) VALUES 
     (2, 'Mesa extra', 5000.00),
     (2, 'Sillas extras (4)', 1200.00),

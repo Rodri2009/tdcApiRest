@@ -243,13 +243,21 @@ const getSolicitudPorId = async (req, res) => {
 
             console.debug('[SOLICITUD][GET] alquiler row:', alquiler);
 
-            // Obtener adicionales seleccionados para este alquiler
+            // Obtener id_solicitud_alquiler para consultar adicionales
             let adicionalesRows = [];
             try {
-                adicionalesRows = await conn.query(
-                    "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?",
+                // Primero obtener id_solicitud_alquiler
+                const alquilerIdRow = await conn.query(
+                    "SELECT id_solicitud_alquiler FROM solicitudes_alquiler WHERE id_solicitud = ?",
                     [alquilerId]
                 );
+                if (alquilerIdRow && alquilerIdRow.length > 0) {
+                    const idSolicitudAlquiler = alquilerIdRow[0].id_solicitud_alquiler;
+                    adicionalesRows = await conn.query(
+                        "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud_alquiler = ?",
+                        [idSolicitudAlquiler]
+                    );
+                }
             } catch (e) {
                 logWarning('No se pudieron obtener adicionales para la solicitud', alquilerId, e);
             }
@@ -535,14 +543,26 @@ const guardarAdicionales = async (req, res) => {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
-        await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [id]);
+        // Obtener id_solicitud_alquiler a partir de id_solicitud
+        const alquilerRow = await conn.query(
+            "SELECT id_solicitud_alquiler FROM solicitudes_alquiler WHERE id_solicitud = ?",
+            [id]
+        );
+
+        if (!alquilerRow || alquilerRow.length === 0) {
+            return res.status(404).json({ error: 'Solicitud de alquiler no encontrada.' });
+        }
+
+        const idSolicitudAlquiler = alquilerRow[0].id_solicitud_alquiler;
+
+        await conn.query("DELETE FROM solicitudes_adicionales WHERE id_solicitud_alquiler = ?", [idSolicitudAlquiler]);
 
         if (adicionales.length > 0) {
             // Insertar cada adicional (creado_en se genera automáticamente con DEFAULT CURRENT_TIMESTAMP)
-            const sql = "INSERT INTO solicitudes_adicionales (id_solicitud, adicional_nombre, adicional_precio) VALUES (?, ?, ?)";
+            const sql = "INSERT INTO solicitudes_adicionales (id_solicitud_alquiler, adicional_nombre, adicional_precio) VALUES (?, ?, ?)";
 
             for (const ad of adicionales) {
-                const values = [id, ad.nombre, ad.precio];
+                const values = [idSolicitudAlquiler, ad.nombre, ad.precio];
                 await conn.query(sql, values);
             }
         }
@@ -908,10 +928,22 @@ const obtenerAdicionales = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // Obtener los adicionales guardados para esta solicitud (por id numérico)
-        const adicionales = await conn.query(
-            "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?",
+        // Obtener id_solicitud_alquiler a partir de id_solicitud
+        const alquilerRow = await conn.query(
+            "SELECT id_solicitud_alquiler FROM solicitudes_alquiler WHERE id_solicitud = ?",
             [numericId]
+        );
+
+        if (!alquilerRow || alquilerRow.length === 0) {
+            return res.status(200).json({ seleccionados: [] });
+        }
+
+        const idSolicitudAlquiler = alquilerRow[0].id_solicitud_alquiler;
+
+        // Obtener los adicionales guardados para esta solicitud de alquiler
+        const adicionales = await conn.query(
+            "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud_alquiler = ?",
+            [idSolicitudAlquiler]
         );
 
         return res.status(200).json({
@@ -1168,10 +1200,18 @@ const getSolicitudPublicById = async (req, res) => {
 
                 let adicionalesRows = [];
                 try {
-                    adicionalesRows = await conn.query(
-                        "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?",
+                    // Obtener id_solicitud_alquiler para consultar adicionales
+                    const alquilerIdRow = await conn.query(
+                        "SELECT id_solicitud_alquiler FROM solicitudes_alquiler WHERE id_solicitud = ?",
                         [alquilerId]
                     );
+                    if (alquilerIdRow && alquilerIdRow.length > 0) {
+                        const idSolicitudAlquiler = alquilerIdRow[0].id_solicitud_alquiler;
+                        adicionalesRows = await conn.query(
+                            "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud_alquiler = ?",
+                            [idSolicitudAlquiler]
+                        );
+                    }
                 } catch (e) { /* ignore adicionales */ }
 
                 const respuesta = { ...alquiler, adicionales: adicionalesRows || [] };
@@ -1300,7 +1340,20 @@ const getSolicitudPublicById = async (req, res) => {
             const alquiler = Array.isArray(resAlq) ? resAlq[0] : resAlq;
             if (alquiler) {
                 let adicionalesRows = [];
-                try { adicionalesRows = await conn.query("SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud = ?", [idNum]); } catch (e) { }
+                try {
+                    // Obtener id_solicitud_alquiler para consultar adicionales
+                    const alquilerIdRow = await conn.query(
+                        "SELECT id_solicitud_alquiler FROM solicitudes_alquiler WHERE id_solicitud = ?",
+                        [idNum]
+                    );
+                    if (alquilerIdRow && alquilerIdRow.length > 0) {
+                        const idSolicitudAlquiler = alquilerIdRow[0].id_solicitud_alquiler;
+                        adicionalesRows = await conn.query(
+                            "SELECT adicional_nombre as nombre, adicional_precio as precio FROM solicitudes_adicionales WHERE id_solicitud_alquiler = ?",
+                            [idSolicitudAlquiler]
+                        );
+                    }
+                } catch (e) { }
                 return res.status(200).json({ ...alquiler, adicionales: adicionalesRows || [] });
             }
 

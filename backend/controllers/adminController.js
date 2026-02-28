@@ -450,7 +450,20 @@ const eliminarSolicitud = async (req, res) => {
             }
         };
 
-        await safeDelete("DELETE FROM solicitudes_adicionales WHERE id_solicitud = ?", [realId]);
+        // Si es una solicitud de alquiler, obtener id_solicitud_alquiler para borrar adicionales
+        try {
+            const alquilerRow = await conn.query(
+                "SELECT id_solicitud_alquiler FROM solicitudes_alquiler WHERE id_solicitud = ?",
+                [realId]
+            );
+            if (alquilerRow && alquilerRow.length > 0) {
+                const idSolicitudAlquiler = alquilerRow[0].id_solicitud_alquiler;
+                await safeDelete("DELETE FROM solicitudes_adicionales WHERE id_solicitud_alquiler = ?", [idSolicitudAlquiler]);
+            }
+        } catch (e) {
+            logWarning('Error al borrar adicionales (ignorado)', e.message);
+        }
+
         await safeDelete("DELETE FROM solicitudes_personal WHERE id_solicitud = ?", [realId]);
         await safeDelete("DELETE FROM bandas_solicitudes WHERE id_solicitud = ?", [realId]);
 
