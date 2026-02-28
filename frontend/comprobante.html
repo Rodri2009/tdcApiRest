@@ -220,9 +220,11 @@
                     if (!solicitudData || !solicitudData.solicitudId) {
                         throw new Error('La solicitud solicitada no fue encontrada.');
                     }
+                    console.log(solicitudData);
                     // Buscamos la descripción completa del tipo de evento
                     const tipoEventoCompleto = todosLosTipos.find(tipo => tipo.id === solicitudData
                         .tipoEvento);
+                    console.log(tipoEventoCompleto);
                     const descripcionEvento = tipoEventoCompleto ? tipoEventoCompleto.descripcion :
                         'No disponible.';
                     document.getElementById('descripcion_tipo_evento').textContent = descripcionEvento;
@@ -238,7 +240,7 @@
                     document.getElementById('nombre_cliente').textContent = solicitudData.nombreCliente || solicitudData.nombreCompleto || solicitudData.nombre_completo || '';
                     document.getElementById('email').textContent = solicitudData.email;
                     document.getElementById('telefono').textContent = solicitudData.telefono;
-                    document.getElementById('nombre_para_mostrar').textContent = solicitudData
+                    document.getElementById('nombre_para_mostrar').textContent = tipoEventoCompleto
                         .nombreParaMostrar;
                     document.getElementById('fecha_evento').textContent = formatDate(solicitudData
                         .fechaEvento);

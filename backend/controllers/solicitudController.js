@@ -163,24 +163,32 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
         const sql = `
             SELECT
                 CONCAT('alq_', sa.id_solicitud) as solicitudId,
-                sa.tipo_servicio as tipoServicio,
+                sa.id_solicitud as idSolicitud,
+                sa.tipo_servicio as idTipoServicio,
+                ot.nombre as nombreTipoServicio,
                 sa.fecha_evento as fechaEvento,
                 sa.hora_evento as horaInicio,
                 sa.duracion as duracionEvento,
-                sa.cantidad_de_personas as cantidadPersonas,
+                sa.cantidad_de_personas as idCantidadPersonas,
+                oc.nombre as nombreCantidadPersonas,
                 sa.precio_basico as precioBase,
-                sa.descripcion as descripcion_alquiler,
-                sa.estado,
-                COALESCE(c.nombre, '') as nombreCompleto,
-                c.telefono as telefono,
-                c.email as email,
-                sa.tipo_de_evento as tipoEvento,
-                COALESCE(sol.es_publico, 0) as esPublico,
+                COALESCE(c.id_cliente, sol.id_cliente) as idCliente,
+                COALESCE(c.nombre, '') as nombreCliente,
+                COALESCE(c.telefono, '') as telefono,
+                COALESCE(c.email, '') as email,
+                sa.tipo_de_evento as idTipoEvento,
+                ote.nombre as nombreTipoEvento,
+                sa.descripcion as comentariosCliente,
                 COALESCE(sol.descripcion_corta, '') as descripcion_corta,
-                COALESCE(sol.descripcion_larga, '') as descripcion_larga
+                COALESCE(sol.descripcion_larga, '') as descripcion_larga,
+                COALESCE(sol.es_publico, 0) as esPublico,
+                sa.estado
             FROM solicitudes_alquiler sa
             JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+            LEFT JOIN opciones_alquiler ot ON sa.tipo_servicio = ot.id
+            LEFT JOIN opciones_cantidad_personas oc ON sa.cantidad_de_personas = oc.id
+            LEFT JOIN opciones_tipo_evento ote ON sa.tipo_de_evento = ote.id
             WHERE sa.id_solicitud = ?
         `;
         const [result] = await conn.query(sql, [numericId]);
