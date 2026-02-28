@@ -758,20 +758,21 @@ const finalizarSolicitud = async (req, res) => {
             return res.status(404).json({ error: 'La solicitud a actualizar no fue encontrada.' });
         }
 
-        // Actualizar datos en la tabla 'solicitudes_alquiler' (no actualizamos campos de contacto aquí)
+        // Actualizar datos en la tabla 'solicitudes_alquiler' (CAMBIO: descripcion → comentarios)
         const sqlUpdateAlquiler = `
             UPDATE solicitudes_alquiler SET 
-                descripcion = ?
+                comentarios = ?
             WHERE id_solicitud = ?
         `;
         const paramsUpdateAlquiler = [detallesAdicionales, id];
         await conn.query(sqlUpdateAlquiler, paramsUpdateAlquiler);
 
         // Obtener los datos completos para los emails
+        // CAMBIO: Se actualiza SELECT para usar estructura normalizada de solicitudes_alquiler
         const sqlSelect = `
             SELECT 
                 s.id_solicitud, s.categoria, s.fecha_creacion, s.estado, s.descripcion_corta, s.descripcion_larga, s.descripcion, s.id_cliente, s.url_flyer,
-                sa.tipo_servicio, sa.fecha_evento, sa.hora_evento, sa.duracion, sa.cantidad_de_personas, sa.precio_basico, sa.precio_final, sa.tipo_de_evento, sa.estado as estado_alquiler
+                sa.fecha_evento, sa.hora_evento, sa.duracion, sa.precio_basico, sa.precio_final, sa.id_tipo_evento, sa.estado as estado_alquiler
             FROM solicitudes s 
             LEFT JOIN solicitudes_alquiler sa ON s.id_solicitud = sa.id_solicitud 
             WHERE s.id_solicitud = ?
@@ -1144,25 +1145,45 @@ const actualizarSolicitud = async (req, res) => {
         } else if (tableTarget === 'solicitudes_alquiler') {
             logVerbose(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_alquiler (id=${idNumerico})`);
 
+            // CAMBIOS: Estructura normalizada - sin tipo_servicio ni cantidad_de_personas
+            // duracion se guarda en minutos, hora_evento en TIME format
+            let duracionMinutos = null;
+            if (duracionEvento) {
+                if (typeof duracionEvento === 'string') {
+                    // Convertir '3 horas' → 180, '4 horas' → 240, etc
+                    const match = duracionEvento.match(/(\d+)\s*hora/i);
+                    if (match) duracionMinutos = parseInt(match[1]) * 60;
+                    else duracionMinutos = parseInt(duracionEvento);
+                } else {
+                    duracionMinutos = duracionEvento;
+                }
+            }
+
+            let horaEventoTime = null;
+            if (horaInicio) {
+                // Convertir '12:00' → '12:00:00' si es necesario
+                horaEventoTime = horaInicio.includes(':') ? 
+                    (horaInicio.split(':').length === 2 ? `${horaInicio}:00` : horaInicio) : 
+                    horaInicio;
+            }
+
             const sqlUpdateAlquiler = `
                 UPDATE solicitudes_alquiler SET
-                    tipo_servicio = ?,
-                    cantidad_de_personas = ?,
-                    duracion = ?,
                     fecha_evento = ?,
                     hora_evento = ?,
+                    duracion = ?,
+                    id_tipo_evento = ?,
                     precio_basico = ?,
-                    descripcion = ?
+                    comentarios = ?
                 WHERE id_solicitud = ?
             `;
             const paramsAlquiler = [
-                tipoEvento || '',
-                cantidadPersonas || '',
-                duracionEvento || '',
                 fechaEvento || null,
-                horaInicio || '',
-                parseFloat(precioBase) || 0,
-                descripcion || detallesAdicionales || '',
+                horaEventoTime || null,
+                duracionMinutos || null,
+                tipoEvento || null,
+                parseFloat(precioBase) || null,
+                descripcion || detallesAdicionales || null,
                 idNumerico
             ];
             try {
