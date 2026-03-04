@@ -24,6 +24,53 @@ fi
 
 echo "[entrypoint] Iniciando la aplicación..."
 
+# ============================================================================
+# INICIAR XVFB Y VNC SI ESTÁN HABILITADOS
+# ============================================================================
+# Variables de entorno para controlar Xvfb/VNC:
+#   ENABLE_VNC=true     → Inicia Xvfb + x11vnc para debugging
+#   HEADLESS=true       → Solo headless (sin VNC)
+
+ENABLE_VNC="${ENABLE_VNC:-false}"
+
+if [ "$ENABLE_VNC" = "true" ]; then
+  echo "[entrypoint] 🖥️  Iniciando Xvfb en display :1 (1920x1080, 24-bit)..."
+  
+  # Iniciar Xvfb (servidor X virtual)
+  # :1 = display number
+  # -screen 0 1920x1080x24 = resolución y profundidad de color
+  # -nolisten tcp = no escucha conexiones TCP de X11 (seguridad)
+  Xvfb :1 -screen 0 1920x1080x24 -nolisten tcp &
+  XVFB_PID=$!
+  
+  echo "[entrypoint] ✓ Xvfb iniciado (PID: $XVFB_PID)"
+  
+  sleep 2  # Dar tiempo a Xvfb para inicializar
+  
+  echo "[entrypoint] 🔌 Iniciando x11vnc en puerto 5901..."
+  
+  # Iniciar x11vnc
+  # -display :1 = conectar a Xvfb
+  # -forever = mantener corriendo
+  # -nopw = sin contraseña
+  # -listen localhost = solo escuchar en localhost
+  # -noxkb = sin teclado X11 (simplifica)
+  # -noxdamage = sin damagea X11
+  x11vnc -display :1 -forever -nopw -listen localhost -rfbport 5901 -noxkb -noxdamage -bg -quiet
+  
+  echo "[entrypoint] ✓ VNC disponible en localhost:5901"
+  echo "[entrypoint] 📱 Conexión: VNC Viewer → 127.0.0.1:5901 (sin contraseña)"
+  
+  # Exportar DISPLAY para que Node.js sepa dónde está el servidor X
+  export DISPLAY=:1
+else
+  echo "[entrypoint] ℹ️  VNC deshabilitado (ENABLE_VNC!=true)"
+fi
+
+# ============================================================================
+# INICIAR APLICACIÓN NODE.JS
+# ============================================================================
+
 # Soportar DEBUG_FLAGS desde variable de entorno
 # Ejemplo: docker run -e DEBUG_FLAGS="-d" ...
 NODE_ARGS=""

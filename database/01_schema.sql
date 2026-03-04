@@ -84,11 +84,27 @@ CREATE TABLE IF NOT EXISTS configuracion_horarios (
 
 -- Servicios adicionales (inflables, manteles, etc.)
 CREATE TABLE IF NOT EXISTS opciones_adicionales (
-    nombre VARCHAR(255) PRIMARY KEY,
+    id_opciones_adicionales INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL UNIQUE COMMENT 'Nombre único del adicional',
     precio DECIMAL(10,2) NOT NULL,
     descripcion TEXT,
     url_imagen TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- CAMBIO: Relación N:N entre adicionales y tipos de eventos
+-- Permite que cada tipo de evento tenga su propio conjunto de adicionales
+CREATE TABLE IF NOT EXISTS opciones_adicionales_x_tipo_evento (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_opciones_adicionales INT NOT NULL COMMENT 'FK a opciones_adicionales.id_opciones_adicionales',
+    id_tipo_evento VARCHAR(255) NOT NULL COMMENT 'FK a opciones_tipos.id_tipo_evento',
+    precio_especifico DECIMAL(10,2) DEFAULT NULL COMMENT 'NULL = usar precio de opciones_adicionales',
+    activo TINYINT(1) DEFAULT 1,
+    UNIQUE KEY uk_adicional_tipo (id_opciones_adicionales, id_tipo_evento),
+    FOREIGN KEY (id_opciones_adicionales) REFERENCES opciones_adicionales(id_opciones_adicionales) ON DELETE CASCADE,
+    FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE CASCADE,
+    INDEX idx_tipo_evento (id_tipo_evento),
+    INDEX idx_adicional (id_opciones_adicionales)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Relación N:N entre adicionales y tipos de eventos';
 
 -- =============================================================================
 -- TABLAS DE USUARIOS Y AUTENTICACIÓN

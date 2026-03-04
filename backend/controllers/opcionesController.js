@@ -257,9 +257,48 @@ const getFechasOcupadas = async (req, res) => {
     }
 };
 
+
+const getAdicionalesPorTipo = async (req, res) => {
+    let conn;
+    try {
+        const tipoEvento = req.params.tipoEvento;
+
+        if (!tipoEvento) {
+            return res.status(400).json({ error: 'tipoEvento es requerido' });
+        }
+
+        conn = await pool.getConnection();
+
+        // JOIN entre opciones_adicionales y opciones_adicionales_x_tipo_evento
+        // Filtra por tipo de evento y solo retorna los adicionales activos
+        const rows = await conn.query(`
+            SELECT 
+                oa.id_opciones_adicionales as id,
+                oa.nombre, 
+                COALESCE(axt.precio_especifico, oa.precio) as precio,
+                oa.descripcion, 
+                oa.url_imagen as imageUrl
+            FROM opciones_adicionales oa
+            INNER JOIN opciones_adicionales_x_tipo_evento axt
+                ON oa.id_opciones_adicionales = axt.id_opciones_adicionales
+            WHERE axt.id_tipo_evento = ?
+              AND axt.activo = 1
+            ORDER BY oa.nombre
+        `, [tipoEvento]);
+
+        res.status(200).json(rows);
+    } catch (err) {
+        logError("Error al obtener adicionales por tipo:", err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 module.exports = {
     getTiposDeEvento,
     getAdicionales,
+    getAdicionalesPorTipo,
     getConfig,
     getTarifas,
     getOpcionesDuracion,

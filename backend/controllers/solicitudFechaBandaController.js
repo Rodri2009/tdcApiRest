@@ -5,6 +5,7 @@ const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const { getOrCreateClient } = require('../lib/clients');
 const { tryRecoverFlyerUrl } = require('./uploadsController');
+const { sendComprobanteEmail, sendAdminNotification } = require('../services/emailService');
 
 /**
  * POST /api/solicitudes-fechas-bandas
@@ -41,8 +42,12 @@ const crearSolicitudFechaBanda = async (req, res) => {
         return res.status(400).json({ error: 'La fecha del evento es obligatoria.' });
     }
 
-    if (!id_banda && !nombre_banda) {
-        return res.status(400).json({ error: 'Debe proporcionar id_banda o nombre_banda.' });
+    // ✅ NUEVA LÓGICA: Validar que HAYA bandas (ya sea desde bandas_json o desde id_banda/nombre_banda)
+    if (!bandas_json || bandas_json.length === 0) {
+        // Si no vienen bandas en bandas_json, requiere id_banda o nombre_banda (legado)
+        if (!id_banda && !nombre_banda) {
+            return res.status(400).json({ error: 'Debe proporcionar bandas o al menos una banda principal (id_banda/nombre_banda).' });
+        }
     }
 
     let conn;
@@ -81,65 +86,64 @@ const crearSolicitudFechaBanda = async (req, res) => {
 
         logVerbose(`[FECHA_BANDA] Solicitud creada: ${solicitudId}`);
 
-        // 3. Obtener o crear banda en bandas_artistas
-        let bandaId = id_banda ? parseInt(id_banda, 10) : null;
-
-        if (!bandaId && nombre_banda) {
-            // Verificar si ya existe una banda con ese nombre
-            const [bandaExistente] = await conn.query(
-                'SELECT id_banda FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?)',
-                [nombre_banda.trim()]
-            );
-
-            if (bandaExistente) {
-                bandaId = bandaExistente.id_banda;
-                logVerbose(`[FECHA_BANDA] Banda encontrada en catálogo: ${bandaId}`);
-            } else {
-                // Crear banda nueva en el catálogo
-                const sqlBandaNueva = `
-                    INSERT INTO bandas_artistas (
-                        nombre,
-                        genero_musical,
-                        contacto_nombre,
-                        contacto_email,
-                        contacto_telefono,
-                        verificada,
-                        activa,
-                        creado_en
-                    ) VALUES (?, ?, ?, ?, ?, 0, 1, NOW())
-                `;
-
-                const resultBandaNueva = await conn.query(sqlBandaNueva, [
-                    nombre_banda.trim(),
-                    genero_musical || null,
-                    contacto_nombre || null,
-                    contacto_email || null,
-                    contacto_telefono || null
-                ]);
-
-                bandaId = Number(resultBandaNueva.insertId);
-                logVerbose(`[FECHA_BANDA] Banda nueva creada: ${bandaId}`);
-            }
-        }
-
-        // 4. Construir bandas_json desde banda principal + invitadas
-        // ✅ NUEVA LÓGICA: bandas_json es la única fuente de verdad
-        // Estructura: [{id_banda, nombre, orden_show, es_principal}, ...]
+        // ✅ 3. NUEVA LÓGICA: Construir bandas_json directamente desde el que viene del frontend
+        // Si bandas_json viene completo desde el frontend, usarlo tal cual
+        // Si no, construir desde id_banda/nombre_banda (compatibilidad legada)
         let bandasArray = [];
 
-        // Si bandas_json viene COMPLETO (con principal), usarlo directamente
-        if (bandas_json && Array.isArray(bandas_json) && bandas_json.length > 0 && bandas_json.some(b => b.es_principal === true)) {
+        if (bandas_json && Array.isArray(bandas_json) && bandas_json.length > 0) {
+            // ✅ Las bandas ya vienen desde el frontend en bandas_json
             bandasArray = bandas_json.map((b, idx) => ({
                 id_banda: b.id_banda || b.id || null,
                 nombre: b.nombre || '',
                 orden_show: b.orden_show ?? idx,
                 es_principal: b.es_principal === true
             }));
-            logVerbose(`[FECHA_BANDA] POST: bandas_json COMPLETO recibido: ${bandasArray.length} bandas`);
+            logVerbose(`[FECHA_BANDA] POST: bandas_json COMPLETO recibido desde frontend: ${bandasArray.length} bandas`);
         } else {
-            // Si no viene bandas_json completo, construir desde id_banda + bandas_json parcial
+            // Compatibilidad legada: construir desde id_banda + invitadas
+            let bandaId = id_banda ? parseInt(id_banda, 10) : null;
+
+            if (!bandaId && nombre_banda) {
+                // Verificar si ya existe una banda con ese nombre
+                const [bandaExistente] = await conn.query(
+                    'SELECT id_banda FROM bandas_artistas WHERE LOWER(nombre) = LOWER(?)',
+                    [nombre_banda.trim()]
+                );
+
+                if (bandaExistente) {
+                    bandaId = bandaExistente.id_banda;
+                    logVerbose(`[FECHA_BANDA] Banda encontrada en catálogo: ${bandaId}`);
+                } else {
+                    // Crear banda nueva en el catálogo
+                    const sqlBandaNueva = `
+                        INSERT INTO bandas_artistas (
+                            nombre,
+                            genero_musical,
+                            contacto_nombre,
+                            contacto_email,
+                            contacto_telefono,
+                            verificada,
+                            activa,
+                            creado_en
+                        ) VALUES (?, ?, ?, ?, ?, 0, 1, NOW())
+                    `;
+
+                    const resultBandaNueva = await conn.query(sqlBandaNueva, [
+                        nombre_banda.trim(),
+                        genero_musical || null,
+                        contacto_nombre || null,
+                        contacto_email || null,
+                        contacto_telefono || null
+                    ]);
+
+                    bandaId = Number(resultBandaNueva.insertId);
+                    logVerbose(`[FECHA_BANDA] Banda nueva creada: ${bandaId}`);
+                }
+            }
+
+            // Construir bandasArray desde banda principal
             if (bandaId) {
-                // Obtener nombre de la banda desde bandas_artistas
                 const [bandaPrincipal] = await conn.query(
                     'SELECT id_banda, nombre FROM bandas_artistas WHERE id_banda = ?',
                     [bandaId]
@@ -155,8 +159,8 @@ const crearSolicitudFechaBanda = async (req, res) => {
                 }
             }
 
-            // Agregar bandas invitadas si existen (bandas_json parcial o gandasArrayParaGuardarEnPOST)
-            const invitadas = bandas_json || gandasArrayParaGuardarEnPOST;
+            // Agregar bandas invitadas si existen
+            const invitadas = gandasArrayParaGuardarEnPOST;
             if (invitadas && Array.isArray(invitadas)) {
                 invitadas.forEach((banda, idx) => {
                     bandasArray.push({
@@ -167,6 +171,8 @@ const crearSolicitudFechaBanda = async (req, res) => {
                     });
                 });
             }
+
+            logVerbose(`[FECHA_BANDA] POST (legado): Construido bandasArray con ${bandasArray.length} bandas`);
         }
 
         // 4. Crear registro en solicitudes_fechas_bandas
@@ -209,10 +215,81 @@ const crearSolicitudFechaBanda = async (req, res) => {
 
         logVerbose(`[FECHA_BANDA] ✓ Solicitud de fecha creada exitosamente`);
 
+        // ✅ OBTENER DATOS COMPLETOS PARA ENVIAR EMAILS (usando una nueva conexión después del commit)
+        let solicitudCompleta;
+        try {
+            const connParaComprobante = await pool.getConnection();
+            const [result] = await connParaComprobante.query(`
+                SELECT
+                    sfb.id_solicitud,
+                    sfb.fecha_evento,
+                    sfb.hora_evento,
+                    sfb.descripcion,
+                    sfb.bandas_json,
+                    c.nombre as nombre_cliente,
+                    c.email as email_cliente,
+                    c.telefono as telefono_cliente
+                FROM solicitudes_fechas_bandas sfb
+                JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
+                JOIN clientes c ON s.id_cliente = c.id_cliente
+                WHERE sfb.id_solicitud = ?
+            `, [solicitudId]);
+
+            solicitudCompleta = result;
+            connParaComprobante.release();
+        } catch (queryErr) {
+            logWarning('[FECHA_BANDA] Error obteniendo datos para emails:', queryErr.message);
+            solicitudCompleta = null;
+        }
+
+        // ✅ ENVIAR EMAIL AL ADMIN
+        if (solicitudCompleta) {
+            try {
+                await sendAdminNotification({
+                    id_solicitud: solicitudCompleta.id_solicitud,
+                    fecha_evento: solicitudCompleta.fecha_evento,
+                    hora_evento: solicitudCompleta.hora_evento,
+                    nombre_cliente: solicitudCompleta.nombre_cliente,
+                    email_cliente: solicitudCompleta.email_cliente,
+                    telefono_cliente: solicitudCompleta.telefono_cliente,
+                    descripcion: solicitudCompleta.descripcion,
+                    bandas_json: solicitudCompleta.bandas_json
+                });
+            } catch (emailErr) {
+                logWarning('[FECHA_BANDA] No se pudo enviar email al admin:', emailErr.message);
+                // No bloqueamos el flujo si falla el email
+            }
+
+            // ✅ ENVIAR EMAIL AL CLIENTE CON COMPROBANTE
+            if (solicitudCompleta.email_cliente) {
+                try {
+                    await sendComprobanteEmail(
+                        solicitudCompleta.email_cliente,
+                        '[TDC] Comprobante de Solicitud - Show en Vivo',
+                        {
+                            solicitudId: solicitudCompleta.id_solicitud,
+                            nombreCliente: solicitudCompleta.nombre_cliente,
+                            email: solicitudCompleta.email_cliente,
+                            telefono: solicitudCompleta.telefono_cliente,
+                            fechaEvento: solicitudCompleta.fecha_evento,
+                            horaInicio: solicitudCompleta.hora_evento,
+                            nombreParaMostrar: 'Show en Vivo',
+                            bandas_json: solicitudCompleta.bandas_json
+                        },
+                        {
+                            titulo: 'Solicitud de Show en Vivo',
+                            subtitulo: 'Te hemos recibido. Nos contactaremos pronto.'
+                        }
+                    );
+                } catch (emailErr) {
+                    logWarning('[FECHA_BANDA] No se pudo enviar email al cliente:', emailErr.message);
+                }
+            }
+        }
+
         return res.status(201).json({
             solicitudId,
-            bandaId,
-            message: 'Solicitud de fecha creada exitosamente.'
+            message: 'Solicitud de fecha creada exitosamente. Se ha enviado un comprobante a tu email.'
         });
 
     } catch (err) {
@@ -266,10 +343,14 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
                 COALESCE(ec.url_flyer, s.url_flyer) as url_flyer,
                 sfb.precio_anticipada,
                 sfb.precio_puerta,
-                sfb.bandas_json
+                sfb.bandas_json,
+                c.nombre as nombre_cliente,
+                c.email as email_cliente,
+                c.telefono as telefono_cliente
             FROM solicitudes_fechas_bandas sfb
             JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
             LEFT JOIN eventos_confirmados ec ON ec.id_solicitud = sfb.id_solicitud AND ec.tipo_evento = 'BANDA'
+            LEFT JOIN clientes c ON s.id_cliente = c.id_cliente
             WHERE sfb.id_solicitud = ?
         `;
 
@@ -820,14 +901,19 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             // No fallar el PUT por error en sincronización de invitadas
         }
 
+        // ✅ NUEVA LÓGICA: Si el estado cambia a 'Confirmado', automáticamente hacer es_publico = 1 (SOLO para bandas en vivo)
+        if (typeof estado !== 'undefined' && estado === 'Confirmado') {
+            logVerbose(`[FECHA_BANDA] ✅ Estado 'Confirmado' detectado - Automáticamente seteando es_publico = 1 (Opción A)`);
+            parentEsPublico = 1;  // Forzar a público automáticamente
+        }
+
         // Si se pidió actualizar es_publico en el PUT, persistirlo en la tabla padre `solicitudes`
         if (parentEsPublico !== null) {
             await conn.query('UPDATE solicitudes SET es_publico = ? WHERE id_solicitud = ?', [parentEsPublico, idNum]);
             logVerbose(`[FECHA_BANDA] ✓ es_publico guardado en tabla 'solicitudes' (id=${idNum} -> es_publico=${parentEsPublico})`);
 
-            // Sincronizar valor en eventos_confirmados (si existe)
-            await conn.query('UPDATE eventos_confirmados SET es_publico = ? WHERE id_solicitud = ?', [parentEsPublico, idNum]);
-            logVerbose(`[FECHA_BANDA] ✓ es_publico sincronizado en 'eventos_confirmados' para solicitud ${idNum}`);
+            // Ya no sincronizamos a eventos_confirmados - es_publico es solo en solicitudes
+            // Los datos se leen ON-THE-FLY mediante JOINs en endpoints públicos
         }
 
         // Si se pidió actualizar id_cliente en el PUT, persistirlo en la tabla padre `solicitudes`
@@ -851,7 +937,11 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
 
             const eventoExiste = existingEventoRow && existingEventoRow.id;
             if (eventoExiste) {
-                logVerbose(`[FECHA_BANDA] Ya existe evento_confirmado (id=${existingEventoRow.id}) para solicitud ${idNum} — no se crea otro.`);
+                logVerbose(`[FECHA_BANDA] Ya existe evento_confirmado (id=${existingEventoRow.id}) para solicitud ${idNum} — sincronizando es_publico.`);
+                // ✅ NUEVA LÓGICA: Sincronizar es_publico con eventos_confirmados (debe ser 1 porque estado=Confirmado para bandas)
+                const esPublicoFinal = (typeof es_publico !== 'undefined') ? (es_publico ? 1 : 0) : parentEsPublico;  // parentEsPublico ya fue seteado a 1 arriba
+                await conn.query(`UPDATE eventos_confirmados SET es_publico = ? WHERE id = ?`, [esPublicoFinal, existingEventoRow.id]);
+                logVerbose(`[FECHA_BANDA] ✅ evento_confirmado sincronizado: es_publico=${esPublicoFinal} para evento BANDA (id=${existingEventoRow.id})`);
             } else {
                 logVerbose(`[FECHA_BANDA] No existe evento_confirmado para solicitud ${idNum} — procediendo a crear.`);
 
@@ -898,7 +988,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                             es_publico,
                             activo,
                             confirmado_en
-                        ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NOW())
+                        ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
                     `;
 
                     // ✅ Opción B3: No insertar precios en eventos_confirmados

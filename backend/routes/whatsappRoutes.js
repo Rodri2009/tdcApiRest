@@ -8,6 +8,14 @@ const whatsappController = require('../controllers/whatsappController');
  * o http://wa-browser:9002 (Fase 2)
  */
 
+// ✅ Middleware para acompañar waPage (desde global si ENABLE_PUPPETEER_WA=true)
+router.use((req, res, next) => {
+    if (global.waPage) {
+        req.waPage = global.waPage;
+    }
+    next();
+});
+
 // POST /api/whatsapp/send-message - Envía un mensaje
 router.post('/send-message', whatsappController.sendMessage);
 

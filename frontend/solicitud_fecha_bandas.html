@@ -159,7 +159,6 @@
             border: 1px solid #581c87;
             border-radius: 6px;
             padding: 12px;
-            margin: 8px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -212,10 +211,12 @@
             border: 1px solid #581c87;
             border-radius: 6px;
             padding: 12px;
-            margin: 8px 0;
+            /*margin: 8px 0;*/
             display: flex;
-            gap: 10px;
-            align-items: center;
+            flex-direction: column;
+            gap: 8px;
+            align-items: stretch;
+            flex: 1;
         }
 
         .date-slot input {
@@ -224,12 +225,40 @@
             font-size: 16px !important;
         }
 
+        /* Contenedor de fechas - en fila en desktop */
+        #fechasContainer {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        #fechasContainer .date-slot {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        /* Mobile - fechas en columna */
+        @media (max-width: 768px) {
+            #fechasContainer {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            #fechasContainer .date-slot {
+                min-width: 100%;
+            }
+
+            .band-list {
+                max-height: 240px;
+            }
+        }
+
         .order-number {
             background-color: var(--color-primary);
             color: var(--color-secondary);
-            width: 30px;
+            width: 60px;
             height: 30px;
-            border-radius: 50%;
+            border-radius: 25%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -399,6 +428,175 @@
             font-size: 0.8rem;
             color: var(--color-secondary);
         }
+
+        /* Estilos mejorados para bandas seleccionadas */
+        .section-title {
+            color: var(--color-secondary);
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            margin-top: 10px;
+            text-shadow: 0 0 3px var(--color-secondary);
+        }
+
+        .mt-20 {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: rgba(88, 28, 135, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(240, 171, 252, 0.2);
+        }
+
+        .card {
+            background-color: #0f172a;
+            border: 1px solid #2d3748;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            background-color: #1a1f3a;
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 8px rgba(240, 171, 252, 0.2);
+        }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .band-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            max-height: 360px;
+            overflow-y: auto;
+            border: 1px solid #2d3748;
+            border-radius: 6px;
+        }
+
+        .band-list .card {
+            margin-bottom: 0;
+            border-bottom: 1px solid #2d3748;
+        }
+
+        .band-list .card:last-child {
+            border-bottom: none;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .band-list .card:first-child {
+            border-radius: 6px 6px 0 0;
+        }
+
+        .band-list .card:hover {
+            background-color: rgba(240, 171, 252, 0.08);
+        }
+
+        .btn-eliminar-banda {
+            padding: 8px 12px !important;
+            color: #ef4444;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-eliminar-banda:hover {
+            color: #fca5a5;
+            transform: scale(1.1);
+        }
+
+        .btn-ghost {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        .text-danger {
+            color: #ef4444;
+        }
+
+        .helper-text {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        #listaBandasSeleccionadas {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        #listaBandasSeleccionadas .card {
+            border-bottom: 1px solid #2d3748;
+            margin-bottom: 0;
+        }
+
+        #listaBandasSeleccionadas .card:last-child {
+            border-bottom: none;
+        }
+
+        .flex-row {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 8px !important;
+            border: 1.5px solid #581c87;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            padding: 0;
+            background: none;
+            border: none;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .accordion-header:hover {
+            color: var(--color-secondary);
+        }
+
+        .accordion-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .accordion-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .accordion-content {
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .accordion-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
     </style>
 </head>
 
@@ -412,19 +610,88 @@
         <h2>Solicitud para fecha de bandas en vivo</h2>
         <h3 class="subtitle">Organiza tu evento con bandas en vivo</h3>
 
+        <!-- SECCIÓN ESCENARIO -->
+        <button type="button" id="btnEscenarioToggle" class="accordion-header">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; flex: 1;">
+                <i class="fas fa-microphone"></i> Escenario - Backline y Sonido
+            </h3>
+            <span class="accordion-toggle collapsed" id="escenarioToggleIcon">
+                <i class="fas fa-chevron-down"></i>
+            </span>
+        </button>
+
+        <div id="escenarioContent" class="accordion-content collapsed">
+            <div class="form-group">
+                <label for="backlineInfo"><i class="fas fa-guitar"></i> Backline Disponible:</label>
+                <div
+                    style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
+                    <ul>
+                        <li><i class="fas fa-volume-low"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Amplificador de bajo (Nativo
+                            60W
+                            RMS).</li>
+                        <li><i class="fas fa-guitar"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Amplificador
+                            de guitarra (Wenstone GE-700, 70W RMS, parlante Selenium 150W).</li>
+                        <li><i class="fas fa-drum" style="margin-right:8px;color:var(--color-secondary);"></i>Batería
+                            base:
+                        </li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Cuerpo completo (bombo, 2
+                            toms,
+                            tambor).</li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Fierros para ride y crash.
+                        </li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Fierro de hi-hat con pedal.
+                        </li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Banqueta.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="sonidoInfo"><i class="fas fa-volume-up"></i> Sistema de Sonido:</label>
+                <div
+                    style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
+                    <ul>
+                        <li><i class="fas fa-volume-up" style="margin-right:8px;color:var(--color-secondary);"></i>PA
+                            JBL
+                            500wrms (MidsHighs) y 600wrms (Sublow) (potencia con procesador y crossover
+                            activo).</li>
+                        <li><i class="fas fa-arrow-turn-down"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>2
+                            retornos de escenario DBtecnology 300wrms</li>
+                        <li><i class="fas fa-arrow-turn-down"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>2
+                            retornos movibles de 250rms</li>
+                        <li><i class="fas fa-microphone" style="margin-right:8px;color:var(--color-secondary);"></i>6
+                            microfonos</li>
+                        <li><i class="fas fa-circle-dot" style="margin-right:8px;color:var(--color-secondary);"></i>1
+                            Caja
+                            directa para teclado / guitarra acústica / microfono de violin, etc..</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
         <!-- SECCIÓN BANDAS -->
         <h3><i class="fas fa-music"></i> Bandas (Máximo 5)</h3>
         <div class="info-banner">
-            Selecciona las bandas que deseas incluir. Si la banda que buscas no está registrada, puedes crear una nueva.
+            Selecciona las bandas / artistas que deseas incluir. Si no está registrada, puedes crear una nueva.
+            <button type="button" id="btnCrearBanda" class="btn btn-ghost"
+                style="color: var(--color-secondary); float: unset; margin-left: 20px;">
+                <i class="fas fa-plus"></i> Crear Banda
+            </button>
         </div>
 
         <div class="form-group">
-            <label for="bandaSearch">Buscar o Crear Banda:</label>
+            <label for="bandaSearch">Busca la banda o artista a incluir:</label>
             <div class="flex-row" style="margin-bottom:15px;">
                 <input type="text" id="bandaSearch" placeholder="Buscar por nombre..." class="search-input">
-                <button type="button" id="btnCrearBanda" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Crear Banda
-                </button>
             </div>
             <div id="bandasList" class="band-list"></div>
         </div>
@@ -457,66 +724,37 @@
             </div>
         </div>
 
-        <!-- SECCIÓN ORDEN DE BANDAS -->
-        <h3><i class="fas fa-list-ol"></i> Orden de Presentación</h3>
-        <div class="info-banner">
-            Define el orden en que tocarán las bandas. Arrastra para cambiar el orden (opcional).
-        </div>
-
-        <div id="ordenBandas" style="margin-top: 15px;">
-            <p style="color: #9ca3af; text-align: center;">Las bandas aparecerán aquí en el orden de selección</p>
-        </div>
-
-        <!-- SECCIÓN ESCENARIO -->
-        <h3><i class="fas fa-microphone"></i> Escenario - Backline y Sonido</h3>
-        <div class="info-banner">
-            <strong>ℹ️ Información Importante:</strong><br>
-            Es crucial que sepamos la formación de las bandas (instrumentos que tocan). Esto nos ayuda a preparar el
-            backline y sonido adecuadamente.
-            <br><br>
-            Si aún no has completado esta información, puedes hacerlo en tu perfil de banda. Haz clic <a
-                href="solicitud_banda.html" style="color: var(--color-secondary); text-decoration: underline;">aquí para
-                ir a Solicitud de Banda</a>.
-        </div>
-
-        <div class="form-group">
-            <label for="backlineInfo">Backline Disponible:</label>
-            <div
-                style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
-                <ul style="margin: 0; padding-left: 20px;">
-                    <li>Batería (equipo completo)</li>
-                    <li>Amplificadores para bajos y guitarras</li>
-                    <li>Micrófono principal y micrófonos de bajo nivel</li>
-                    <li>Monitores de escenario</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="sonidoInfo">Sistema de Sonido:</label>
-            <div
-                style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
-                <p>Contamos con sistema de sonido profesional para garantizar la mejor calidad de audio. Se realizará
-                    sonido previo de las bandas.</p>
-            </div>
-        </div>
-
         <div class="form-group">
             <label for="comentariosEspeciales">Comentarios o Requerimientos Especiales:</label>
             <textarea id="comentariosEspeciales" rows="4"
-                placeholder="Ej: necesitamos teclado, batería sin batería, etc."
+                placeholder="Ej: necesitamos sonido para teclado, violín, etc."
                 style="width: 100%; padding: 12px; border: 1.5px solid #581c87; border-radius: 4px; background-color: #0f172a; color: #f8fafc; box-sizing: border-box;"></textarea>
         </div>
 
         <!-- BOTONES -->
         <div class="button-group">
             <button id="btnVolver" class="secondary">Volver</button>
-            <button id="btnContacto">Continuar a Contacto</button>
+            <button id="btnEnviarSolicitud">Enviar Solicitud</button>
         </div>
     </div>
 
     <script src="/navbar.js"></script>
     <script>
+        // Función para decodificar JWT
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('Error decodificando JWT:', e);
+                return null;
+            }
+        }
+
         let solicitudId = null;
         let visitorsId = null;
         let bandasDisponibles = [];
@@ -552,13 +790,33 @@
             }
         }
 
+        // Flag para asignar listener una sola vez
+        let bandasListenerConfigurado = false;
+
         // Cargar bandas disponibles
         async function loadBandas() {
             try {
                 const res = await fetch('/api/bandas');
                 if (!res.ok) throw new Error('Error cargando bandas');
                 bandasDisponibles = await res.json();
+
+                // LIMPIAR bandas seleccionadas con IDs inválidos (NaN, undefined, etc)
+                bandasSeleccionadas = bandasSeleccionadas.filter(b => {
+                    const esValido = b.bandaId && !isNaN(b.bandaId) && b.bandaId > 0;
+                    const existeEnApi = bandasDisponibles.some(api => (api.id_banda || api.id) === b.bandaId);
+                    return esValido && existeEnApi;
+                });
+
+                console.log('[LOAD BANDAS] Bandas cargadas:', bandasDisponibles.length);
+                console.log('[LOAD BANDAS] Bandas seleccionadas válidas:', bandasSeleccionadas);
+
                 renderBandasLista();
+                // Asignar listener UNA SOLA VEZ en la carga inicial
+                if (!bandasListenerConfigurado) {
+                    setupBandaListeners();
+                    bandasListenerConfigurado = true;
+                }
+                renderBandasSeleccionadas();
             } catch (err) {
                 console.error('Error:', err);
                 showNotification('Error al cargar las bandas disponibles', 'error');
@@ -567,6 +825,7 @@
 
         // Renderizar lista de bandas
         function renderBandasLista() {
+            console.log('[RENDER BANDAS] Renderizando lista de bandas');
             const container = document.getElementById('bandasList');
             const searchTerm = document.getElementById('bandaSearch').value.toLowerCase();
 
@@ -575,10 +834,16 @@
                 (b.genero_musical && b.genero_musical.toLowerCase().includes(searchTerm))
             );
 
+            console.log('[RENDER BANDAS] Bandas disponibles:', bandasDisponibles.length, 'Filtradas:', filtered.length);
+            console.log('[RENDER BANDAS] Primeras bandas:', filtered.slice(0, 2));
+
             container.innerHTML = filtered.map(banda => {
-                const isSelected = bandasSeleccionadas.some(b => b.id === banda.id);
+                const bandaId = banda.id_banda || banda.id;
+                const isSelected = bandasSeleccionadas.some(b => b.bandaId === bandaId);
+                console.log('[RENDER BANDAS] Banda:', banda.nombre, 'ID:', bandaId, 'Seleccionada:', isSelected);
+
                 return `
-                    <div class="banda-item ${isSelected ? 'selected' : ''}" onclick="toggleBanda(${banda.id}, '${banda.nombre}', '${banda.genero_musical || ''}', '${banda.logo_url || ''}')">
+                    <div class="banda-item ${isSelected ? 'selected' : ''}" data-banda-id="${bandaId}" data-banda-nombre="${banda.nombre}" data-banda-genero="${banda.genero_musical || ''}" data-banda-logo="${banda.logo_url || ''}">
                         ${banda.logo_url ? `<img src="${banda.logo_url}" alt="${banda.nombre}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
                         <div class="banda-item-text">
                             <div class="banda-item-name">${banda.nombre}</div>
@@ -596,110 +861,137 @@
             }
         }
 
-        // Toggle selección de banda
-        function toggleBanda(id, nombre, genero, logoUrl) {
-            const idx = bandasSeleccionadas.findIndex(b => b.id === id);
+        // Manejar click en banda usando delegación de eventos
+        function setupBandaListeners() {
+            console.log('[SETUP LISTENERS] Configurando listeners en bandasList');
+            const container = document.getElementById('bandasList');
+            if (!container) {
+                console.log('[SETUP LISTENERS] ERROR: container bandasList no encontrado');
+                return;
+            }
+
+            container.addEventListener('click', (e) => {
+                console.log('[BANDA CLICK] Click detectado', e.target);
+                const bandaItem = e.target.closest('.banda-item');
+                console.log('[BANDA CLICK] bandaItem:', bandaItem);
+
+                if (bandaItem) {
+                    const bandaId = parseInt(bandaItem.dataset.bandaId);
+                    // Encontrar la banda completa en el array disponible
+                    const banda = bandasDisponibles.find(b => (b.id_banda || b.id) === bandaId);
+
+                    console.log('[BANDA CLICK] Banda encontrada:', banda);
+                    if (banda) {
+                        toggleBanda(banda);
+                    }
+                }
+            });
+        }
+
+        // Toggle selección de banda (recibe objeto banda completo)
+        function toggleBanda(banda) {
+            console.log('[TOGGLE BANDA] Iniciando toggle para banda:', banda);
+            console.log('[TOGGLE BANDA] Bandas seleccionadas antes:', bandasSeleccionadas);
+
+            const bandaId = banda.id_banda || banda.id;
+            const idx = bandasSeleccionadas.findIndex(b => b.bandaId === bandaId);
+
             if (idx >= 0) {
+                console.log('[TOGGLE BANDA] Removiendo banda (índice:', idx, ')');
                 bandasSeleccionadas.splice(idx, 1);
             } else {
+                console.log('[TOGGLE BANDA] Agregando banda');
                 if (bandasSeleccionadas.length >= 5) {
                     showNotification('Máximo 5 bandas seleccionadas', 'warning');
                     return;
                 }
-                bandasSeleccionadas.push({ id, nombre, genero, logoUrl });
+                // Guardar con bandaId para claridad
+                bandasSeleccionadas.push({
+                    bandaId: bandaId,
+                    id: bandaId,
+                    nombre: banda.nombre,
+                    genero: banda.genero_musical,
+                    logoUrl: banda.logo_url
+                });
             }
+
+            console.log('[TOGGLE BANDA] Bandas seleccionadas después:', bandasSeleccionadas);
             renderBandasLista();
+            // NO llamar setupBandaListeners() aquí - ya está configurado
             renderBandasSeleccionadas();
         }
 
         // Renderizar bandas seleccionadas
         function renderBandasSeleccionadas() {
+            console.log('[RENDER SELECCIONADAS] Renderizando bandas seleccionadas:', bandasSeleccionadas);
             const container = document.getElementById('listaBandasSeleccionadas');
-            const ordenContainer = document.getElementById('ordenBandas');
             const count = document.getElementById('countBandas');
             count.textContent = bandasSeleccionadas.length;
 
-            container.innerHTML = bandasSeleccionadas.map((banda, idx) => `
-                <div class="card card-row">
-                    <div style="display:flex;align-items:center;gap:10px;flex:1;">
-                        ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${banda.nombre}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
-                        <div>
-                            <div class="text-neon" style="font-weight:bold">${banda.nombre}</div>
-                            ${banda.genero ? `<div class="helper-text">${banda.genero}</div>` : ''}
-                        </div>
-                    </div>
-                    <button type="button" onclick="toggleBanda(${banda.id}, '${banda.nombre}', '${banda.genero}', '${banda.logoUrl || ''}')" class="btn btn-ghost text-danger" style="font-size:1.2rem">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            `).join('');
-
-            // Actualizar orden de bandas con drag-and-drop
             if (bandasSeleccionadas.length === 0) {
-                ordenContainer.innerHTML = '<p class="helper-text text-center">Las bandas aparecerán aquí en el orden de selección</p>';
+                container.innerHTML = '<div class="helper-text p-20" style="text-align:center; padding:30px 20px;">Selecciona bandas para verlas aquí</div>';
             } else {
-                ordenContainer.innerHTML = bandasSeleccionadas.map((banda, idx) => `
-                    <div class="banda-item-orden" draggable="true" data-idx="${idx}">
-                        <div class="order-number">${idx + 1}</div>
-                        ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${banda.nombre}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
-                        <div style="flex: 1;">
-                            <div class="text-neon" style="font-weight: bold">${banda.nombre}</div>
-                            ${banda.genero ? `<div class="helper-text">${banda.genero}</div>` : ''}
+                container.innerHTML = bandasSeleccionadas.map((banda, idx) => `
+                    <div class="card card-row">
+                        <div class="order-number" style="min-width:35px;text-align:center;">Toca ${idx + 1}º</div>
+                        <div style="display:flex;align-items:center;gap:10px;flex:1;"> 
+                            ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${banda.nombre}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
+                            <div style="flex:1;">
+                                <div class="text-neon" style="font-weight:bold;margin:0;">${banda.nombre}</div>
+                                ${banda.genero ? `<div class="helper-text" style="margin:2px 0 0 0;">${banda.genero}</div>` : ''}
+                            </div>
                         </div>
-                        <div style="color: #9ca3af; font-size: 0.85rem;">
-                            <i class="fas fa-arrows"></i>
+                        <div style="display:flex;gap:5px;align-items:center;">
+                            ${idx > 0 ? `<button type="button" class="btn-mover-arriba btn btn-ghost" data-banda-idx="${idx}" style="padding:6px 8px;cursor:pointer;border:none;background:none;color:var(--color-secondary);font-size:0.9rem;" title="Subir"><i class="fas fa-chevron-up"></i></button>` : '<div style="width:30px;"></div>'}
+                            ${idx < bandasSeleccionadas.length - 1 ? `<button type="button" class="btn-mover-abajo btn btn-ghost" data-banda-idx="${idx}" style="padding:6px 8px;cursor:pointer;border:none;background:none;color:var(--color-secondary);font-size:0.9rem;" title="Bajar"><i class="fas fa-chevron-down"></i></button>` : '<div style="width:30px;"></div>'}
+                            <button type="button" class="btn-eliminar-banda btn btn-ghost text-danger" data-banda-idx="${idx}" style="padding:8px 12px;cursor:pointer;border:none;background:none;font-size:1rem;">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </div>
                 `).join('');
-
-                // Configurar drag-and-drop
-                setupDragAndDrop();
             }
-        }
 
-        // Configurar drag-and-drop para reordenar bandas
-        function setupDragAndDrop() {
-            const items = document.querySelectorAll('.banda-item-orden');
-            let draggedItem = null;
-
-            items.forEach(item => {
-                item.addEventListener('dragstart', (e) => {
-                    draggedItem = item;
-                    item.style.opacity = '0.5';
-                    e.dataTransfer.effectAllowed = 'move';
-                });
-
-                item.addEventListener('dragend', () => {
-                    item.style.opacity = '1';
-                    draggedItem = null;
-                });
-
-                item.addEventListener('dragover', (e) => {
+            // Agregar event listeners a botones de eliminar
+            document.querySelectorAll('.btn-eliminar-banda').forEach(btn => {
+                btn.addEventListener('click', function (e) {
                     e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    if (item !== draggedItem) {
-                        item.style.borderTop = '2px solid var(--color-secondary)';
+                    const idx = parseInt(this.dataset.bandaIdx);
+                    const banda = bandasSeleccionadas[idx];
+                    console.log('[ELIMINAR BANDA] Eliminando banda en índice:', idx, banda);
+                    if (banda) {
+                        const bandaCompleta = bandasDisponibles.find(b => (b.id_banda || b.id) === banda.bandaId);
+                        if (bandaCompleta) {
+                            toggleBanda(bandaCompleta);
+                        }
                     }
                 });
+            });
 
-                item.addEventListener('dragleave', () => {
-                    item.style.borderTop = '';
-                });
-
-                item.addEventListener('drop', (e) => {
+            // Agregar event listeners a botones de mover
+            document.querySelectorAll('.btn-mover-arriba').forEach(btn => {
+                btn.addEventListener('click', function (e) {
                     e.preventDefault();
-                    if (item !== draggedItem) {
-                        const fromIdx = parseInt(draggedItem.dataset.idx);
-                        const toIdx = parseInt(item.dataset.idx);
-
-                        // Reordenar array
-                        const [movedBanda] = bandasSeleccionadas.splice(fromIdx, 1);
-                        bandasSeleccionadas.splice(toIdx, 0, movedBanda);
-
-                        // Re-renderizar
+                    const idx = parseInt(this.dataset.bandaIdx);
+                    if (idx > 0) {
+                        const temp = bandasSeleccionadas[idx];
+                        bandasSeleccionadas[idx] = bandasSeleccionadas[idx - 1];
+                        bandasSeleccionadas[idx - 1] = temp;
                         renderBandasSeleccionadas();
                     }
-                    item.style.borderTop = '';
+                });
+            });
+
+            document.querySelectorAll('.btn-mover-abajo').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const idx = parseInt(this.dataset.bandaIdx);
+                    if (idx < bandasSeleccionadas.length - 1) {
+                        const temp = bandasSeleccionadas[idx];
+                        bandasSeleccionadas[idx] = bandasSeleccionadas[idx + 1];
+                        bandasSeleccionadas[idx + 1] = temp;
+                        renderBandasSeleccionadas();
+                    }
                 });
             });
         }
@@ -740,6 +1032,7 @@
         // Búsqueda de bandas
         document.getElementById('bandaSearch').addEventListener('input', () => {
             renderBandasLista();
+            setupBandaListeners();
         });
 
         // Botón volver
@@ -747,8 +1040,8 @@
             window.location.href = '/index.html';
         });
 
-        // Botón continuar
-        document.getElementById('btnContacto').addEventListener('click', () => {
+        // Botón enviar solicitud
+        document.getElementById('btnEnviarSolicitud').addEventListener('click', async () => {
             // Validar
             if (bandasSeleccionadas.length === 0) {
                 showNotification('Debes seleccionar al menos una banda', 'warning');
@@ -759,21 +1052,70 @@
                 return;
             }
 
-            // Guardar borrador en localStorage
-            const draft = {
-                tipoEvento: 'FECHA_BANDAS',
-                bandasSeleccionadas,
-                fechasSeleccionadas: fechasSeleccionadas.filter(f => f),
-                comentariosEspeciales: document.getElementById('comentariosEspeciales').value,
-                nombreParaMostrar: 'Show en Vivo',
-                fingerprintId: visitorsId || null
+            // Obtener datos del usuario desde JWT
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showNotification('Por favor inicia sesión para enviar la solicitud', 'error');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const userData = parseJwt(token);
+            if (!userData) {
+                showNotification('Error al procesar tu sesión', 'error');
+                return;
+            }
+
+            // Preparar datos para enviar
+            const solicitudData = {
+                contacto_nombre: userData.nombre || userData.nombreCompleto || 'Usuario',
+                contacto_email: userData.email,
+                contacto_telefono: userData.telefono || '',
+                fecha_evento: fechasSeleccionadas[0],
+                hora_evento: '21:00',
+                fecha_alternativa_1: fechasSeleccionadas[1] || null,
+                fecha_alternativa_2: fechasSeleccionadas[2] || null,
+                descripcion: document.getElementById('comentariosEspeciales').value,
+                bandas_json: bandasSeleccionadas.map((b, idx) => ({
+                    id_banda: b.bandaId,
+                    nombre: b.nombre,
+                    orden_show: idx,
+                    es_principal: idx === 0
+                }))
             };
 
-            const draftKey = `draft_fecha_bandas_${Date.now()}`;
-            localStorage.setItem(draftKey, JSON.stringify(draft));
+            toggleLoadingOverlay(true, 'Enviando solicitud...');
 
-            // Redirigir a contacto
-            window.location.href = `/contacto.html?from=banda&draftKey=${encodeURIComponent(draftKey)}`;
+            try {
+                const response = await fetch('/api/solicitudes-fechas-bandas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(solicitudData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error al crear la solicitud');
+                }
+
+                const result = await response.json();
+                toggleLoadingOverlay(false);
+
+                showNotification('¡Solicitud enviada exitosamente! Redirigiendo...', 'success', 3000);
+
+                // Redirigir a comprobante después de 2 segundos
+                setTimeout(() => {
+                    window.location.href = `/comprobante.html?solicitudId=${result.solicitudId}`;
+                }, 2000);
+
+            } catch (err) {
+                toggleLoadingOverlay(false);
+                console.error('Error:', err);
+                showNotification(err.message || 'Error al enviar la solicitud', 'error');
+            }
         });
 
         // Inicializar
@@ -831,11 +1173,27 @@
         // Escuchar cambios en localStorage (sesión iniciada en otra pestaña)
         window.addEventListener('storage', updateAuthMenu);
 
+        // Toggle Escenario sección
+        function initAccordion() {
+            const btnToggle = document.getElementById('btnEscenarioToggle');
+            const content = document.getElementById('escenarioContent');
+            const icon = document.getElementById('escenarioToggleIcon');
+
+            if (btnToggle && content && icon) {
+                btnToggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    content.classList.toggle('collapsed');
+                    icon.classList.toggle('collapsed');
+                });
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             updateAuthMenu();
             initFingerprint();
             loadBandas();
             initCalendarios();
+            initAccordion();
 
             // Manejador del menú móvil responsivo
             const menuButton = document.getElementById('mobile-menu-button');

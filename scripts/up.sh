@@ -12,10 +12,15 @@
 #   -h, --help        : muestra ayuda de node server.js
 #   --migrate         : aplica migraciones SQL después de levantar
 #
+# FLAGS DE SERVICIOS (Puppeteer):
+#   --mp              : Habilita Mercado Pago (ENABLE_PUPPETEER_MP=true)
+#   --wa              : Habilita WhatsApp (ENABLE_PUPPETEER_WA=true)
+#
 # EJEMPLOS:
 #   ./up.sh              # Levanta todo con logs en vivo
 #   ./up.sh -d           # Levanta con debug detallado
 #   ./up.sh --migrate -d # Levanta, aplica migraciones y muestra debug
+#   ./up.sh --mp --wa    # Levanta con Mercado Pago y WhatsApp habilitados
 ###############################################################################
 
 # Colores
@@ -41,22 +46,29 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 # También soporta flags de depuración: -v, -e, -d, --verbose, --error, --debug
 APPLY_MIGRATIONS_CLI=0
 DEBUG_FLAGS=""
+ENABLE_MP=false
+ENABLE_WA=false
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --migrate|--apply-migrations) APPLY_MIGRATIONS_CLI=1; shift;;
+        --mp) ENABLE_MP=true; shift;;
+        --wa) ENABLE_WA=true; shift;;
         # Flags de depuración que se pasan a node
         -v|--verbose|-e|--error|-d|--debug|-h|--help)
           DEBUG_FLAGS="$DEBUG_FLAGS $1"
           shift
           ;;
         -h|--help)
-          echo "Usage: $0 [--migrate] [-v|-e|-d|-h]"
+          echo "Usage: $0 [--migrate] [--mp] [--wa] [-v|-e|-d|-h]"
           echo "Flags de depuración:"
           echo "  -v, --verbose    : muestra procesamiento detallado"
           echo "  -e, --error      : muestra solo errores"
           echo "  -d, --debug      : verbose + error (máximo detalle)"
-          echo "  -h, --help       : muestra ayuda"
+          echo ""
+          echo "Flags de servicios:"
+          echo "  --mp             : habilita Mercado Pago"
+          echo "  --wa             : habilita WhatsApp"
           exit 0
           ;;
         *) echo "Unknown arg: $1"; exit 1;;
@@ -148,6 +160,43 @@ fi
 
 echo -e "${GREEN}  ✓ Node.js $NODE_VERSION y npm $NPM_VERSION detectados${NC}"
 
+# --- Función para crear .env.tmp ---
+create_env_override() {
+    local env_file=".env"
+    local env_tmp=".env.tmp.$$"
+    
+    if [ -f "$env_file" ]; then
+        cp "$env_file" "$env_tmp"
+    else
+        touch "$env_tmp"
+    fi
+    
+    if [ "$ENABLE_MP" = true ]; then
+        sed -i 's/^ENABLE_PUPPETEER_MP=.*/ENABLE_PUPPETEER_MP=true/' "$env_tmp"
+        grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp" || echo "ENABLE_PUPPETEER_MP=true" >> "$env_tmp"
+    else
+        sed -i 's/^ENABLE_PUPPETEER_MP=.*/ENABLE_PUPPETEER_MP=false/' "$env_tmp"
+        grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp" || echo "ENABLE_PUPPETEER_MP=false" >> "$env_tmp"
+    fi
+    
+    if [ "$ENABLE_WA" = true ]; then
+        sed -i 's/^ENABLE_PUPPETEER_WA=.*/ENABLE_PUPPETEER_WA=true/' "$env_tmp"
+        grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp" || echo "ENABLE_PUPPETEER_WA=true" >> "$env_tmp"
+    else
+        sed -i 's/^ENABLE_PUPPETEER_WA=.*/ENABLE_PUPPETEER_WA=false/' "$env_tmp"
+        grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp" || echo "ENABLE_PUPPETEER_WA=false" >> "$env_tmp"
+    fi
+    
+    echo "$env_tmp"
+}
+
+cleanup_env_tmp() {
+    rm -f docker/.env.tmp.* 2>/dev/null || true
+}
+
+# Trap para limpiar en caso de exit
+trap cleanup_env_tmp EXIT
+
 # --- Lista de Variables de Entorno Requeridas ---
 # Aquí se listan todas las variables que DEBEN existir en el archivo .env
 # para que la aplicación funcione correctamente. Si alguna falta, el script se detendrá.
@@ -201,10 +250,17 @@ echo -e "${GREEN}  ✓ Todas las variables de entorno están configuradas${NC}"
 
 # --- Fase 2: Limpieza y Arranque de Docker ---
 
+# Crear archivo .env.tmp con overrides si es necesario
+ENV_FILE_TO_USE="$ENV_FILE"
+if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+    ENV_FILE_TO_USE=$(create_env_override)
+    echo -e "${CYAN}[*] Usando .env override con: MP=$ENABLE_MP, WA=$ENABLE_WA${NC}"
+fi
+
 echo ""
 echo -e "${YELLOW}[*]${NC} Limpiando y levantando contenedores Docker..."
 echo -ne "  → Deteniendo contenedores... "
-eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE down" 2>/dev/null
+eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE down" 2>/dev/null
 echo -e "${GREEN}✓${NC}"
 
 # Eliminar volumen de MariaDB
@@ -218,9 +274,9 @@ echo -e "${GREEN}✓${NC}"
 echo -ne "  → Levantando contenedores... "
 if [ -n "$DEBUG_FLAGS" ]; then
     echo ""
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d mariadb"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE up --build -d mariadb"
 else
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE up --build -d"
 fi
 
 if [ $? -ne 0 ]; then
@@ -240,7 +296,7 @@ echo -e "${GREEN}================================================${NC}"
 echo ""
 echo -e "${CYAN}[*] Status de contenedores:${NC}"
 sleep 3
-eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE ps"
+eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE ps"
 echo ""
 
 # Aplicar migraciones si se solicitó
@@ -250,7 +306,7 @@ if [ "${APPLY_MIGRATIONS_CLI:-0}" = "1" ] || [ "${APPLY_MIGRATIONS,,}" = "true" 
     if [ -d "$MIG_DIR" ] && ls $MIG_DIR/*.sql >/dev/null 2>&1; then
         TRIES=0
         MAX_TRIES=30
-        until $COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mariadb mysql -u root -p"$MARIADB_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; do
+        until $COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE exec -T mariadb mysql -u root -p"$MARIADB_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; do
             TRIES=$((TRIES+1))
             if [ $TRIES -ge $MAX_TRIES ]; then
                 echo -e "${RED}[✗] ERROR: MariaDB no está listo${NC}"
@@ -264,7 +320,7 @@ if [ "${APPLY_MIGRATIONS_CLI:-0}" = "1" ] || [ "${APPLY_MIGRATIONS,,}" = "true" 
                 continue
             fi
             echo -e "  → $(basename $sqlfile)... "
-            if ! cat "$sqlfile" | $COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""; then
+            if ! cat "$sqlfile" | $COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""; then
                 echo -e "${RED}[✗] ERROR en migración${NC}"
                 exit 1
             fi
@@ -290,7 +346,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
     sleep 5
     
     echo -e "${CYAN}[*] Ejecutando backend en background con flags:$DEBUG_FLAGS${NC}"
-    BACKEND_RUN_ID=$(eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE run -d --rm backend $DEBUG_FLAGS")
+    BACKEND_RUN_ID=$(eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE run -d --rm backend $DEBUG_FLAGS")
     
     NETWORK_NAME="docker_default"
     echo -ne "${CYAN}[*] Configurando red... ${NC}"
@@ -301,7 +357,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
     sleep 2
     
     echo -ne "${CYAN}[*] Levantando nginx... ${NC}"
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE up -d --no-deps nginx"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE up -d --no-deps nginx"
     echo -e "${GREEN}✓${NC}"
     
     sleep 1
@@ -312,7 +368,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
     echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
     echo -e "${BLUE}======================================================${NC}"
     echo ""
-    docker logs -f "$BACKEND_RUN_ID" 2>/dev/null || eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
+    docker logs -f "$BACKEND_RUN_ID" 2>/dev/null || eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE logs -f backend"
 else
     echo ""
     echo -e "${BLUE}======================================================${NC}"
@@ -320,5 +376,5 @@ else
     echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
     echo -e "${BLUE}======================================================${NC}"
     echo ""
-    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE logs -f backend"
+    eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE logs -f backend"
 fi

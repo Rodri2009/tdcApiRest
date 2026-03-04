@@ -1,29 +1,199 @@
 /* Estilos simples — líneas y espaciado, sin fondos ni colores excepto el banner verde */
-body{
-  font-family: Inter, Roboto, Arial, sans-serif;
-  color: #111;
-  margin: 20px;
+body {
+    font-family: Inter, Roboto, Arial, sans-serif;
+    color: #111;
+    margin: 20px;
 }
-.container{ max-width:800px; margin:0 auto; }
-h1{ margin:0 0 18px 0; font-size:20px; }
-.balance-section, .tx-section{ padding:12px 0; }
-.balance-amount{ font-size:1.6rem; font-weight:700; margin:6px 0; }
-.controls{ display:flex; align-items:center; gap:12px; }
-.btn{ padding:6px 10px; border:1px solid #bbb; background:transparent; cursor:pointer; border-radius:4px; }
-.status{ font-size:0.85rem; color:#666; }
 
-/* Banner verde para ingresos */
-.banner{ display:block; padding:10px 12px; border-radius:4px; margin-bottom:12px; border:1px solid #c3e6cb; background:#d4edda; color:#155724; font-weight:600; }
-.hidden{ display:none; }
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
 
-/* Lista de transacciones — sólo líneas */
-.tx-list{ list-style:none; margin:0; padding:0; border-top:1px solid #e6e6e6; }
-.tx-list li{ display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid #e6e6e6; }
-.tx-desc{ flex:1; font-size:0.95rem; color:#222; }
-.tx-meta{ display:flex; gap:12px; align-items:center; min-width:160px; justify-content:flex-end; }
-.tx-amount{ font-weight:700; font-variant-numeric: tabular-nums; }
-.tx-date{ font-size:0.82rem; color:#666; }
+h1 {
+    margin: 0 0 18px 0;
+    font-size: 20px;
+}
+
+.balance-section,
+.tx-section {
+    padding: 12px 0;
+}
+
+.balance-amount {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 6px 0;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    background: linear-gradient(135deg, #0066cc, #0052a3);
+    color: white;
+    cursor: pointer;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.2);
+}
+
+.btn:hover {
+    background: linear-gradient(135deg, #0052a3, #003d7a);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 102, 204, 0.2);
+}
+
+.status {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+/* Banner verde para ingresos y notificaciones */
+.banner {
+    display: block;
+    padding: 12px 14px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    border: 2px solid #28a745;
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hidden {
+    display: none;
+}
+
+/* Tabla de transacciones */
+.tx-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid #e6e6e6;
+}
+
+.tx-table thead {
+    background: #f9f9f9;
+    font-weight: 600;
+}
+
+.tx-table th {
+    padding: 10px 8px;
+    text-align: left;
+    font-size: 0.9rem;
+    color: #555;
+    border-bottom: 2px solid #e6e6e6;
+}
+
+.tx-col-desc {
+    min-width: 200px;
+}
+
+.tx-col-amount {
+    width: 120px;
+    text-align: right;
+}
+
+.tx-col-date {
+    width: 140px;
+    text-align: right;
+}
+
+.tx-table tbody tr {
+    border-bottom: 1px solid #e6e6e6;
+    transition: background 0.1s ease;
+}
+
+.tx-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.tx-table td {
+    padding: 10px 8px;
+    font-size: 0.95rem;
+    color: #222;
+}
+
+.tx-table td:nth-child(2) {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.tx-table td:nth-child(3) {
+    font-size: 0.82rem;
+    color: #666;
+    text-align: right;
+}
+
+/* Estilos para transacciones de ingreso (positivas) */
+.tx-table tbody tr.income {
+    background: linear-gradient(90deg, rgba(40, 167, 69, 0.08), transparent);
+    transition: background 0.2s ease;
+}
+
+.tx-table tbody tr.income:hover {
+    background: linear-gradient(90deg, rgba(40, 167, 69, 0.15), transparent);
+}
+
+.tx-table tbody tr.income td:nth-child(2) {
+    color: #28a745;
+    font-weight: 700;
+    font-size: 1rem;
+}
 
 /* Separadores y pequeñas utilidades */
-.small{ font-size:0.85rem; color:#666; }
-@media (max-width:520px){ .tx-meta{ min-width:120px; font-size:0.95rem; } }
+.small {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+/* Raw JSON panel */
+.tx-raw {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+    background: #fafafa;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #e6e6e6;
+    margin-top: 12px;
+    max-height: 360px;
+    overflow: auto;
+    white-space: pre;
+    font-size: 0.85rem;
+}
+
+@media (max-width:520px) {
+    .tx-meta {
+        min-width: 120px;
+        font-size: 0.95rem;
+    }
+}

@@ -731,7 +731,7 @@ const finalizarSolicitud = async (req, res) => {
     // CAMBIO: Si usuario está autenticado y faltan datos, obtenerlos del JWT
     if (req.user && (!nombreCompleto || !celular || !email)) {
         console.log('[FINALIZAR] Usuario autenticado (id=' + req.user.id_usuario + '), obteniendo datos del JWT');
-        
+
         // Obtener datos del usuario autenticado desde la BD
         let conn;
         try {
@@ -1458,10 +1458,12 @@ const updateVisibilidad = async (req, res) => {
         let idValue = id;
 
         if (String(id).startsWith('ev_')) {
-            // Evento confirmado: actualizamos directamente en eventos_confirmados
+            // Evento confirmado: obtener id_solicitud y actualizar en solicitudes (única fuente de verdad)
             idValue = parseInt(String(id).substring(3), 10);
-            const result = await conn.query(`UPDATE eventos_confirmados SET es_publico = ? WHERE id = ?`, [es_publico ? 1 : 0, idValue]);
-            if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado' });
+            const [evento] = await conn.query(`SELECT id_solicitud FROM eventos_confirmados WHERE id = ?`, [idValue]);
+            if (!evento) return res.status(404).json({ message: 'Evento no encontrado' });
+            // Actualizar es_publico en la tabla padre solicitudes
+            await conn.query(`UPDATE solicitudes SET es_publico = ? WHERE id_solicitud = ?`, [es_publico ? 1 : 0, evento.id_solicitud]);
             return res.status(200).json({ message: es_publico ? 'Evento visible en agenda pública' : 'Evento oculto de agenda pública', es_publico: es_publico ? 1 : 0 });
         }
 
@@ -1479,12 +1481,8 @@ const updateVisibilidad = async (req, res) => {
             return res.status(404).json({ message: 'Solicitud no encontrada' });
         }
 
-        // Propagar a eventos_confirmados si existen
-        try {
-            await conn.query(`UPDATE eventos_confirmados SET es_publico = ? WHERE id_solicitud = ?`, [es_publico ? 1 : 0, idValue]);
-        } catch (err) {
-            logWarning('No se pudo propagar es_publico a eventos_confirmados:', err.message);
-        }
+        // Ya no sincronizamos a eventos_confirmados - es_publico es solo en solicitudes
+        // Los datos se leen ON-THE-FLY mediante JOINs en endpoints públicos
 
         return res.status(200).json({ message: es_publico ? 'Solicitud visible en agenda pública' : 'Solicitud oculta de agenda pública', es_publico: es_publico ? 1 : 0 });
     } catch (error) {

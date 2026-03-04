@@ -4,6 +4,7 @@ const router = express.Router();
 const {
     getTiposDeEvento,
     getAdicionales,
+    getAdicionalesPorTipo,
     getConfig,
     getTarifas,
     getOpcionesDuracion,
@@ -14,6 +15,7 @@ const {
 
 router.get('/tipos-evento', getTiposDeEvento);
 router.get('/adicionales', getAdicionales);
+router.get('/adicionales/:tipoEvento', getAdicionalesPorTipo);
 router.get('/config', getConfig);
 router.get('/tarifas', getTarifas);
 router.get('/duraciones', getOpcionesDuracion);

@@ -33,12 +33,12 @@ INSERT INTO `opciones_tipos`
   `categoria`, `es_publico`, `permite_adicionales`, `monto_sena`, `deposito`) 
 VALUES 
   ('INFANTILES', 
-   'INFANTILES: Cumpleaños hasta 12 años (SERVICIO COMPLETO)', 
+   'CUMPLEAÑOS INFANTIL   (de 1 a 12 años - SERVICIO COMPLETO)', 
    '🎈 **CUMPLEAÑOS INFANTILES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina completa con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool y Jenga gigante\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Baño equipado\n• Música y juego de luces\n• Cancha de fútbol (niños hasta 12 años)\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Bebidas, alimentos, animación, vajilla de cristal',
    'ALQUILER_SALON', 1, 1, 50000.00, NULL),
 
   ('ADOLESCENTES',
-   'ADOLESCENTES: Cumpleaños de 13 a 17 años',
+   'CUMPLEAÑOS PARA ADOLESCENTES   (de 13 a 17 años)',
    '🎧 **CUMPLEAÑOS ADOLESCENTES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina con cocinera\n• Metegoles, Ping Pong, Pool, Jenga\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Música y juego de luces\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Cancha de fútbol',
    'ALQUILER_SALON', 1, 1, 50000.00, 80000.00),
 
@@ -48,12 +48,12 @@ VALUES
    'ALQUILER_SALON', 1, 1, 50000.00, NULL),
 
   ('CON_SERVICIO_DE_MESA',
-   'FIESTAS de 15 / 18 / casamientos (SERVICIO COMPLETO)',
+   'FIESTA de 15 / 18 / casamiento (SERVICIO COMPLETO)',
    '🌟 **SERVICIO COMPLETO**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Cocinera y uso completo de cocina\n• Meseras según cantidad\n• Mesas, sillas y mantelería\n• Vajilla de cristal y cubiertos de metal\n• Sonido profesional PA JBL\n• Backline para bandas\n• Baño equipado\n\n❌ **NO INCLUYE:** DJ, decoración, cancha de fútbol',
    'ALQUILER_SALON', 1, 0, 80000.00, NULL),
 
   ('INFORMALES',
-   'INFORMALES: Juntadas, parrilladas (SERVICIO ECONÓMICO)',
+   'JUNTADA / PARRILLADA INFORMAL PARA FAMILIA O AMIGOS (SERVICIO ECONÓMICO)',
    '🎉 **SERVICIO ECONÓMICO**\n\n✅ **INCLUYE:**\n• Encargada/o general y control de puerta\n• Mesas y sillas\n• Uso de parrilla\n• Uso de bachas, mesadas, barra\n• Heladera y freezer\n• Baño equipado\n• Equipo de música\n• Metegoles, Ping Pong, Pool\n\n❌ **NO INCLUYE:** Horno, hornallas, cocinera, mantelería, vajilla',
    'ALQUILER_SALON', 1, 1, 50000.00, 80000.00),
 
@@ -228,51 +228,115 @@ VALUES
 /*!40000 ALTER TABLE `configuracion_horarios` ENABLE KEYS */;
 UNLOCK TABLES;
 
--- =====================================================================
--- SERVICIOS ADICIONALES (INFLABLES, MANTELES, etc.)
--- =====================================================================
 LOCK TABLES `opciones_adicionales` WRITE;
-/*!40000 ALTER TABLE `opciones_adicionales` DISABLE KEYS */;
 INSERT INTO `opciones_adicionales` 
-  (`nombre`, `precio`, `descripcion`, `url_imagen`) 
+  (`id_opciones_adicionales`, `nombre`, `precio`, `descripcion`, `url_imagen`) 
 VALUES 
-  ('Inflable Cocodrilo', 30000.00, 
+  (1, 'Inflable Cocodrilo', 30000.00,
    'Inflable con forma de cocodrilo de 4x7 metros con tobogan',
    'https://lh3.googleusercontent.com/pw/AP1GczM9WbWMorMn_fPb7f9_uS7-IWAsKEj0LcCn8Zvi7U14_7Kjdjge28_RV50Gcu7wkinQk_W5mK5NFNXh1iFjv-Uq-EHjvQWigm3TcSlMvNhhM3ZOZMT05WkaWaxuL-QNciykkIuCmLe0YwQYRrFieHTl=w394-h231-s-no-gm?authuser=0'),
-
-  ('Inflable Mickey/Minnie', 25000.00,
+  (2, 'Inflable Mickey/Minnie', 25000.00,
    'Inflable de 4x4 metros con caras gigantes de Mickey y Minnie',
    'https://lh3.googleusercontent.com/pw/AP1GczMQl1ffjotYB0j0jFCInMgBquqvsgAITDe31BuKk14RFS3Bky5eSfrTjuDJFDCqZ8bAkeVK1xqPFz3xzJBw8R_YXNyS6Zo0ZIytnwaHNIQCJvghvfhwP5xetCI7Xg2cVqFmbbDUuJ3Cv_-SHFU3BI6f=w340-h358-s-no-gm?authuser=0'),
-
-  ('Inflable Princesa', 22000.00,
+  (3, 'Inflable Princesa', 22000.00,
    'Inflable temática Princesas de 3x3 metros',
    'https://lh3.googleusercontent.com/pw/AP1GczOYtkKsvQOWJsscPoXvPKxmGWHFzXBUCnWMVr3jyPXvQLDPJFLKivYfqf0HP0DCFCiDZeuF_OHT2Dg7mY5gdOva0YQL94uS9aGQOhRviny_ZNoIPCAR-9p5x2gOXjrNYaAIzRnEKbOOqseXBmWgwfnT=w377-h360-s-no-gm?authuser=0'),
-
-  ('Inflable Spiderman', 22000.00,
+  (4, 'Inflable Spiderman', 22000.00,
    'Inflable temática Hombre Araña de 3x3 metros',
    'https://lh3.googleusercontent.com/pw/AP1GczOlO48NaDkNnHM_ZPKJT-4eHH36bUYMJUZFlAObTvGgIgHy6H0hwaSbyxFJvAjmIrucr12rvG2FTpeLcezzfGBVUCmADUhhTYXZAUdUPw4bw2gdvjts1P-GOH4XPD3MrxLG3AfhHWlHtnk2IosfgBhl=w418-h349-s-no-gm?authuser=0'),
-
-  ('Cama elástica', 30000.00,
+  (5, 'Cama elástica', 30000.00,
    'Cama elástica con red lateral para niños hasta 10 años',
    'https://lh3.googleusercontent.com/pw/AP1GczMM-aZTEqkYM4KlsY5A79dD5IMy03IVXb0EgLUWVPlflvdfCikVlgkn3p6PVwELvS4qtBoD9HGf8LiIVAHNIuTzn3FxMxYcIecyqjeE1Ew-PZfl723Rt1kQGs-ClWpThLxG77uaRM153VQfVvD4O8fJ=w700-h933-s-no-gm?authuser=0'),
-
-  ('Manteles negros con camino blanco', 30000.00,
+  (6, 'Manteles negros con camino blanco', 30000.00,
    'Manteles negros con camino blanco para todas las mesas',
    'https://lh3.googleusercontent.com/pw/AP1GczPfoLiluF0pE9tFCtHRtuXpK0pFM3BQRZ97t81cE9aapbIAzlsJ5srLNeaJYfmI_2F247p2zH33ilH6oW3D-N_nM7BQKZL0CcrE49wNHZ1hQALYnGrsjMk3VsdwQ66In8Ub11R8bW8rD4Riyl6WJTjp=w999-h779-s-no-gm?authuser=0'),
-
-  ('Manteles negros sólos', 20000.00,
+  (7, 'Manteles negros sólos', 20000.00,
    'Manteles negros para todas las mesas',
    'https://lh3.googleusercontent.com/pw/AP1GczOSpOTKTwuEAckvaWRc8thYEivYe0el_Fno_l6-ylS331QQaBD7L8zRVPQ1BVBXGdCjdyFbinue3OMV6BtZXpndGSbE4AuCCH710iGesDuGLotzH3gHsirHRral9vmMs-x8pG1S-rrSV0odj9BLrCSV=w800-h749-s-no-gm?authuser=0'),
-
-  ('Mesa extra', 5000.00,
-   'Mesa extra para buffet',
-   NULL),
-
-  ('Silla extra', 300.00,
-   'Silla plegable extra',
-   NULL);
-/*!40000 ALTER TABLE `opciones_adicionales` ENABLE KEYS */;
+  (8, 'Decoración HBD Completa', 390000.00,
+   'Decoración temática Happy Birthday con globos y accesorios',
+   'https://via.placeholder.com/400?text=Decoracion+HBD'),
+  (9, 'Kit Números y Globos', 950000.00,
+   'Globos de números gigantes + decoraciones',
+   'https://via.placeholder.com/400?text=Globos+Numeros'),
+  (10, 'Decoración Boho', 969000.00,
+   'Decoración temática boho con arco de globos y mesas',
+   'https://via.placeholder.com/400?text=Decoracion+Boho'),
+  (11, 'Globos Comic (helio)', 59000.00,
+   'Pack de globos radionde con helio temático comic',
+   'https://via.placeholder.com/400?text=Globos+Comic'),
+  (12, 'Gazebo 3x5m', 20000.00,
+   'Carpa/Gazebo para sombra y ambientación',
+   'https://i.imgur.com/0FhGJ1S.png'),
+  (13, 'Sillas Plásticas (10 unidades)', 15000.00,
+   'Alquiler de 10 sillas plásticas para eventos',
+   'https://via.placeholder.com/400?text=Sillas+10pcs'),
+  (14, 'Toldo/Carpa 3x5m', 20000.00,
+   'Carpa para sombra de 3x5 metros',
+   'https://via.placeholder.com/400?text=Carpa+3x5m'),
+  (15, 'Cama Elástica (basica)', 120000.00,
+   'Cama elástica básica para niños',
+   'https://via.placeholder.com/400?text=Cama+Elastica'),
+  (16, 'Livings Infantiles', 40000.00,
+   'Juego de livings infantiles para eventos',
+   'https://i.imgur.com/GnYzLQJ.png'),
+  (17, 'Gazebo Decorativo', 50000.00,
+   'Gazebo para ambientación en fiestas',
+   'https://via.placeholder.com/400?text=Gazebo+Decorativo'),
+  (18, 'Set Globos Helio (30 unidades)', 8000.00,
+   'Set de 30 globos con helio para decoración',
+   'https://via.placeholder.com/400?text=Globos+Helio+30'),
+  (19, 'Centro de Mesa Elegante', 10000.00,
+   'Centro de mesa decorativo para eventos',
+   'https://via.placeholder.com/400?text=Centro+Mesa'),
+  (20, 'Luces LED Ambientación', 12000.00,
+   'Luces LED para ambientación de eventos',
+   'https://via.placeholder.com/400?text=Luces+LED');
 UNLOCK TABLES;
+
+
+-- =====================================================================
+-- CAMBIO: RELACIÓN ENTRE ADICIONALES Y TIPOS DE EVENTOS
+-- =====================================================================
+LOCK TABLES `opciones_adicionales_x_tipo_evento` WRITE;
+/*!40000 ALTER TABLE `opciones_adicionales_x_tipo_evento` DISABLE KEYS */;
+INSERT INTO `opciones_adicionales_x_tipo_evento` 
+  (`id_opciones_adicionales`, `id_tipo_evento`, `precio_especifico`, `activo`)
+VALUES
+  -- INFANTILES: Inflables, globos, decoración
+  (1, 'INFANTILES', NULL, 1),
+  (2, 'INFANTILES', NULL, 1),
+  (3, 'INFANTILES', NULL, 1),
+  (4, 'INFANTILES', NULL, 1),
+  (5, 'INFANTILES', NULL, 1),
+  (8, 'INFANTILES', NULL, 1),
+  
+  -- ADOLESCENTES: Luces, decoración, equipos de sonido
+  (4, 'ADOLESCENTES', NULL, 1),
+  (5, 'ADOLESCENTES', 8000, 1),
+  (6, 'ADOLESCENTES', 5000, 1),
+  
+  -- BABY_SHOWERS: Decoración temática
+  (7, 'BABY_SHOWERS', 15000, 1),
+  (8, 'BABY_SHOWERS', 4000, 1),
+  
+  -- CON_SERVICIO_DE_MESA: Decoración elegante, centro de mesa
+  (9, 'CON_SERVICIO_DE_MESA', 12000, 1),
+  (10, 'CON_SERVICIO_DE_MESA', 6000, 1),
+  (11, 'CON_SERVICIO_DE_MESA', 20000, 1),
+  
+  -- INFORMALES: Globos, decoración simple
+  (2, 'INFORMALES', 5000, 1),
+  (3, 'INFORMALES', 3000, 1),
+  
+  -- FECHA_BANDAS: Luces especiales para conciertos
+  (4, 'FECHA_BANDAS', NULL, 1),
+  (5, 'FECHA_BANDAS', 8000, 1),
+  (6, 'FECHA_BANDAS', 5000, 1),
+  (12, 'FECHA_BANDAS', 25000, 1);
+/*!40000 ALTER TABLE `opciones_adicionales_x_tipo_evento` ENABLE KEYS */;
+UNLOCK TABLES;
+
 
 -- =====================================================================
 -- CATÁLOGO DE ROLES DEL PERSONAL
@@ -383,37 +447,38 @@ VALUES
   (4, 'INFANTILES', 61, 70, 65000.00, '2025-08-01', NULL),
   (5, 'INFANTILES', 71, 80, 70000.00, '2025-08-01', NULL),
   (6, 'INFANTILES', 81, 90, 75000.00, '2025-08-01', NULL),
-  (7, 'INFANTILES', 91, 100, 75000.00, '2025-08-01', NULL),
-  (8, 'INFANTILES', 101, 110, 75000.00, '2025-08-01', NULL),
+
   
-  -- INFORMALES: 30K-60K segun cantidad
-  (9, 'INFORMALES', 1, 50, 30000.00, '2025-08-01', NULL),
-  (10, 'INFORMALES', 51, 70, 40000.00, '2025-08-01', NULL),
-  (11, 'INFORMALES', 71, 90, 50000.00, '2025-08-01', NULL),
-  (12, 'INFORMALES', 91, 110, 60000.00, '2025-08-01', NULL),
+  -- INFORMALES: 20K-110K segun cantidad
+  (9, 'INFORMALES', 1, 30, 20000.00, '2025-08-01', NULL),
+  (10, 'INFORMALES', 31, 40, 30000.00, '2025-08-01', NULL),
+  (11, 'INFORMALES', 41, 50, 40000.00, '2025-08-01', NULL),
+  (12, 'INFORMALES', 51, 60, 50000.00, '2025-08-01', NULL),
+  (13, 'INFORMALES', 61, 70, 65000.00, '2025-08-01', NULL),
+  (14, 'INFORMALES', 71, 80, 80000.00, '2025-08-01', NULL),
+  (15, 'INFORMALES', 81, 90, 95000.00, '2025-08-01', NULL),
+  (16, 'INFORMALES', 91, 100, 110000.00, '2025-08-01', NULL),
   
   -- CON_SERVICIO_DE_MESA: 60K-140K segun cantidad
-  (13, 'CON_SERVICIO_DE_MESA', 1, 40, 60000.00, '2025-08-01', NULL),
-  (14, 'CON_SERVICIO_DE_MESA', 41, 60, 80000.00, '2025-08-01', NULL),
-  (15, 'CON_SERVICIO_DE_MESA', 61, 80, 100000.00, '2025-08-01', NULL),
-  (16, 'CON_SERVICIO_DE_MESA', 81, 100, 120000.00, '2025-08-01', NULL),
-  (17, 'CON_SERVICIO_DE_MESA', 101, 120, 140000.00, '2025-08-01', NULL),
+  (17, 'CON_SERVICIO_DE_MESA', 1, 40, 100000.00, '2025-08-01', NULL),
+  (18, 'CON_SERVICIO_DE_MESA', 41, 60, 150000.00, '2025-08-01', NULL),
+  (19, 'CON_SERVICIO_DE_MESA', 61, 80, 200000.00, '2025-08-01', NULL),
   
   -- BABY_SHOWERS: 50K-75K segun cantidad
-  (18, 'BABY_SHOWERS', 1, 40, 50000.00, '2025-08-01', NULL),
-  (19, 'BABY_SHOWERS', 41, 50, 55000.00, '2025-08-01', NULL),
-  (20, 'BABY_SHOWERS', 51, 60, 60000.00, '2025-08-01', NULL),
-  (21, 'BABY_SHOWERS', 61, 70, 65000.00, '2025-08-01', NULL),
-  (22, 'BABY_SHOWERS', 71, 80, 70000.00, '2025-08-01', NULL),
-  (23, 'BABY_SHOWERS', 81, 90, 75000.00, '2025-08-01', NULL),
+  (20, 'BABY_SHOWERS', 1, 40, 50000.00, '2025-08-01', NULL),
+  (21, 'BABY_SHOWERS', 41, 50, 55000.00, '2025-08-01', NULL),
+  (22, 'BABY_SHOWERS', 51, 60, 60000.00, '2025-08-01', NULL),
+  (23, 'BABY_SHOWERS', 61, 70, 65000.00, '2025-08-01', NULL),
+  (24, 'BABY_SHOWERS', 71, 80, 70000.00, '2025-08-01', NULL),
+  (25, 'BABY_SHOWERS', 81, 90, 75000.00, '2025-08-01', NULL),
   
   -- ADOLESCENTES: 50K-60K
-  (24, 'ADOLESCENTES', 1, 40, 50000.00, '2025-11-01', NULL),
-  (25, 'ADOLESCENTES', 41, 50, 55000.00, '2025-11-01', NULL),
-  (26, 'ADOLESCENTES', 51, 60, 60000.00, '2025-11-01', NULL),
+  (26, 'ADOLESCENTES', 1, 40, 50000.00, '2025-11-01', NULL),
+  (27, 'ADOLESCENTES', 41, 50, 55000.00, '2025-11-01', NULL),
+  (28, 'ADOLESCENTES', 51, 60, 60000.00, '2025-11-01', NULL),
   
   -- FECHA_BANDAS: 120K fijo
-  (27, 'FECHA_BANDAS', 1, 120, 120000.00, '2025-10-01', NULL);
+  (29, 'FECHA_BANDAS', 1, 120, 120000.00, '2025-10-01', NULL);
 /*!40000 ALTER TABLE `precios_vigencia` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -471,8 +536,10 @@ VALUES
 UNLOCK TABLES;
 
 -- ============================================
--- INSTRUMENOTS (para bandas)
+-- INSTRUMENTOS (para bandas)
 -- ============================================  
+LOCK TABLES `catalogo_instrumentos` WRITE;
+/*!40000 ALTER TABLE `catalogo_instrumentos` DISABLE KEYS */;
 INSERT INTO `catalogo_instrumentos` (
     `nombre`, `categoria`, `icono`
 ) VALUES
@@ -500,6 +567,10 @@ INSERT INTO `catalogo_instrumentos` (
     ('Shaker', 'Percusión', NULL),
     ('Pandero', 'Percusión', NULL),
     ('Arpa', 'Cuerdas', NULL);
+/*!40000 ALTER TABLE `catalogo_instrumentos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
 
 
 

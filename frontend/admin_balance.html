@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Admin — Balance</title>
+    <link rel="stylesheet" href="admin_balance.css">
+</head>
+
+<body>
+    <main class="container">
+        <h1>Admin — Balance</h1>
+
+        <!-- Banner de notificación (verde para nuevos ingresos) -->
+        <div id="banner" class="banner hidden" role="status" aria-live="polite"></div>
+
+        <section class="balance-section">
+            <h2>Saldo disponible</h2>
+            <div id="balance-amount" class="balance-amount">—</div>
+            <div class="controls">
+                <button id="refresh-btn" class="btn">Actualizar</button>
+                <span id="status" class="status">conectando...</span>
+            </div>
+        </section>
+
+        <section class="tx-section">
+            <h2>Últimos movimientos</h2>
+
+            <div class="controls small">
+                <button id="view-all-btn" class="btn">Ver todas las transacciones</button>
+                <button id="toggle-raw-btn" class="btn">Ver JSON crudo</button>
+                <button id="copy-raw-btn" class="btn hidden">Copiar JSON</button>
+                <span id="tx-raw-status" class="small" style="margin-left:8px;color:#444"></span>
+            </div>
+
+            <table class="tx-table" aria-live="polite">
+                <thead>
+                    <tr>
+                        <th class="tx-col-desc">Descripción</th>
+                        <th class="tx-col-amount">Monto</th>
+                        <th class="tx-col-date">Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="tx-list"></tbody>
+            </table>
+
+            <pre id="tx-raw" class="tx-raw hidden" aria-live="polite" tabindex="0"></pre>
+        </section>
+    </main>
+
+    <script src="admin_balance.js"></script>
+</body>
+
+</html>

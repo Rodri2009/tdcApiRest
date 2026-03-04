@@ -13,6 +13,14 @@ const { protect } = require('../middleware/authMiddleware');
  * - Fase 2 (prod): http://mp-browser:9001 (en docker-compose)
  */
 
+// ✅ Middleware para acompañar mpPage (desde global si ENABLE_PUPPETEER_MP=true)
+router.use((req, res, next) => {
+    if (global.mpPage) {
+        req.mpPage = global.mpPage;
+    }
+    next();
+});
+
 // ✅ Aplicar autenticación JWT a TODAS las rutas de Mercado Pago
 router.use(protect);
 

@@ -814,7 +814,7 @@ const performSyncFlyers = async () => {
 
         // Obtener solicitudes y eventos sin url_flyer
         const solicitudes = await conn.query(
-            `SELECT id FROM solicitudes WHERE url_flyer IS NULL OR url_flyer = ''`
+            `SELECT id_solicitud as id FROM solicitudes WHERE url_flyer IS NULL OR url_flyer = ''`
         );
         const eventos = await conn.query(
             `SELECT id FROM eventos_confirmados WHERE url_flyer IS NULL OR url_flyer = ''`
@@ -855,7 +855,7 @@ const performSyncFlyers = async () => {
 
             if (flyerEncontrado) {
                 await conn.query(
-                    `UPDATE solicitudes SET url_flyer = ? WHERE id = ?`,
+                    `UPDATE solicitudes SET url_flyer = ? WHERE id_solicitud = ?`,
                     [flyerEncontrado, sol.id]
                 );
                 actualizadas++;

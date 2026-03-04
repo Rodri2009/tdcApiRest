@@ -4,13 +4,61 @@ const path = require('path');
 // NOTA: Asegúrate de haber eliminado la línea: require('dotenv').config();
 // como hablamos antes, para evitar conflictos con las variables de Docker.
 
+// ============================================================================
+// PARSE DEBUG FLAGS FROM COMMAND LINE ARGUMENTS
+// ============================================================================
+// Detecta argumentos como -d o --debug y activa DEBUG_VERBOSE
+if (process.argv.includes('-d') || process.argv.includes('--debug')) {
+    process.env.DEBUG_VERBOSE = 'true';
+    process.env.DEBUG_MODE = 'true';
+}
+
 const pool = require('./db');
 const { logRequest, logVerbose, logError, logWarning, logSuccess } = require('./lib/debugFlags');
 const logResponseMiddleware = require('./middleware/logResponseMiddleware');
 const { performSyncLogos, performSyncFlyers } = require('./controllers/bandaController');
 
+// ============================================================================
+// IMPORTS DE PUPPETEER (Mercado Pago & WhatsApp) - CONDICIONAL
+// ============================================================================
+let browserManager = null;
+let SessionMonitor = null;
+let warmupBalance = null;
+let warmupActivity = null;
+let initializeWatch = null;
+
+// Variables de ENV para determinar si cargar Puppeteer
+const ENABLE_PUPPETEER_MP = process.env.ENABLE_PUPPETEER_MP === 'true';
+const ENABLE_PUPPETEER_WA = process.env.ENABLE_PUPPETEER_WA === 'true';
+
+// Cargar módulos de Puppeteer solo si alguno está habilitado
+if (ENABLE_PUPPETEER_MP || ENABLE_PUPPETEER_WA) {
+    try {
+        browserManager = require('./core/browserManager');
+        SessionMonitor = require('./lib/sessionMonitor');
+        warmupBalance = require('./services/balanceService').warmupCache;
+        warmupActivity = require('./services/activityService').warmupCache;
+        initializeWatch = require('./controllers/watchController').initializeWatch;
+        logVerbose('[INIT] ✓ Módulos Puppeteer cargados correctamente');
+    } catch (err) {
+        logWarning('[INIT] ⚠️  No se pudieron cargar módulos Puppeteer:', err.message);
+        logWarning('[INIT] ⚠️  Asegúrate de instalar: npm install puppeteer');
+        logWarning('[INIT] ⚠️  Los servicios de Puppeteer estarán deshabilitados');
+    }
+}
+
+const { protect: authProtect } = require('./middleware/authMiddleware');
+const tokenManager = require('./lib/tokenManager');
+
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Estado global para servicios Puppeteer
+let mpBrowser = null;
+let mpPage = null;
+let waBrowser = null;
+let waPage = null;
+let isShuttingDown = false;
 
 // --- Middlewares ---
 // Aumento límite para aceptar payloads con imágenes en base64 (ej. url_flyer)
@@ -18,6 +66,13 @@ app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser()); // <-- USAR
 // También limitar urlencoded para paridad
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+// Middleware para pasar mpPage a los handlers de Mercado Pago
+app.use((req, res, next) => {
+    req.mpPage = mpPage;
+    req.waPage = waPage;
+    next();
+});
 
 // Capturar errores de body-parser (PayloadTooLarge) y devolver 413 legible
 app.use((err, req, res, next) => {
@@ -70,9 +125,96 @@ app.use((req, res, next) => {
 // Middleware para interceptar y loguear respuestas JSON
 app.use(logResponseMiddleware);
 
-// Health check
+// ============================================================================
+// ENDPOINTS DE AUTENTICACIÓN Y HEALTH (SIN PROTECCIÓN)
+// ============================================================================
+
+// Health check de tdcApiRest
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok' });
+    const healthStatus = {
+        status: 'ok',
+        service: 'tdcApiRest',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        puppeteer: {
+            mp: ENABLE_PUPPETEER_MP && mpPage ? 'ready' : 'disabled',
+            wa: ENABLE_PUPPETEER_WA && waPage ? 'ready' : 'disabled'
+        }
+    };
+    res.status(200).json(healthStatus);
+});
+
+// Health check de Mercado Pago (si está habilitado)
+app.get('/api/mercadopago/health', (req, res) => {
+    if (!ENABLE_PUPPETEER_MP) {
+        return res.status(503).json({
+            status: 'disabled',
+            service: 'mercadopago',
+            message: 'Servicio de Puppeteer para Mercado Pago está deshabilitado'
+        });
+    }
+
+    const mpStatus = {
+        status: mpPage ? 'ok' : 'not_ready',
+        service: 'mercadopago',
+        browser: mpBrowser ? 'initialized' : 'not_initialized',
+        page: mpPage ? 'initialized' : 'not_initialized',
+        timestamp: new Date().toISOString()
+    };
+
+    res.status(mpPage ? 200 : 503).json(mpStatus);
+});
+
+// Endpoint de login automático para MP (SIN PROTECCIÓN)
+app.post('/api/mercadopago/auth/login', (req, res) => {
+    try {
+        logSuccess('[mercadopago-auth] Generando token de autenticación automática');
+
+        const userData = {
+            id: 'admin-mp',
+            role: 'admin',
+            email: 'admin-mp@localhost',
+            permissions: ['read:balance', 'read:activity', 'write:refresh']
+        };
+
+        const { accessToken, refreshToken, expiresIn } = tokenManager.generateTokenPair(userData);
+
+        res.status(200).json({
+            success: true,
+            accessToken,
+            refreshToken,
+            expiresIn,
+            user: userData,
+            message: 'Autenticación exitosa'
+        });
+    } catch (error) {
+        logError('[mercadopago-auth] Error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Error al generar token'
+        });
+    }
+});
+
+// Health check de WhatsApp (si está habilitado)
+app.get('/api/whatsapp/health', (req, res) => {
+    if (!ENABLE_PUPPETEER_WA) {
+        return res.status(503).json({
+            status: 'disabled',
+            service: 'whatsapp',
+            message: 'Servicio de Puppeteer para WhatsApp está deshabilitado'
+        });
+    }
+
+    const waStatus = {
+        status: waPage ? 'ok' : 'not_ready',
+        service: 'whatsapp',
+        browser: waBrowser ? 'initialized' : 'not_initialized',
+        page: waPage ? 'initialized' : 'not_initialized',
+        timestamp: new Date().toISOString()
+    };
+
+    res.status(waPage ? 200 : 503).json(waStatus);
 });
 
 // --- Rutas de la API ---
@@ -94,8 +236,18 @@ try {
     const usuariosRoutes = require('./routes/usuariosRoutes');
     const eventosRoutes = require('./routes/eventosRoutes');
     const uploadsRoutes = require('./routes/uploadsRoutes');
-    const mercadopagoRoutes = require('./routes/mercadopagoRoutes'); // NUEVO: Integración Mercado Pago
-    const whatsappRoutes = require('./routes/whatsappRoutes'); // NUEVO: Integración WhatsApp
+
+    // NUEVO: Rutas de Integración con Puppeteer (cargar condicionalmente con try/catch)
+    let mercadopagoRoutes = null;
+    let whatsappRoutes = null;
+    try {
+        mercadopagoRoutes = require('./routes/mercadopagoRoutes');
+        whatsappRoutes = require('./routes/whatsappRoutes');
+        logVerbose('[ROUTES] Routes MP y WA cargadas correctamente');
+    } catch (err) {
+        logWarning('[ROUTES] No se pudieron cargar rutas MP/WA:', err.message);
+        logWarning('[ROUTES] MP y WA estarán deshabilitados');
+    }
 
     app.use('/api/opciones', opcionesRoutes);
 
@@ -122,9 +274,15 @@ try {
     app.use('/api/eventos', eventosRoutes);
     app.use('/api/uploads', uploadsRoutes);
 
-    // NUEVAS INTEGRACIONES - Servicios Puppeteer (Fase 1)
-    app.use('/api/mercadopago', mercadopagoRoutes); // Integración con serverMP
-    app.use('/api/whatsapp', whatsappRoutes); // Integración con serverWhatsApp
+    // NUEVAS INTEGRACIONES - Servicios Puppeteer (solo si se cargaron correctamente)
+    if (mercadopagoRoutes) {
+        app.use('/api/mercadopago', mercadopagoRoutes);
+        logVerbose('[ROUTES] ✓ Rutas MP disponibles');
+    }
+    if (whatsappRoutes) {
+        app.use('/api/whatsapp', whatsappRoutes);
+        logVerbose('[ROUTES] ✓ Rutas WA disponibles');
+    }
 
     logSuccess("Rutas configuradas correctamente (incluidas nuevas rutas de bandas y solicitudes de fechas, y servicios Puppeteer).");
 
@@ -185,6 +343,82 @@ async function startServer() {
             } catch (err) {
                 logWarning('[INIT-SYNC] ⚠ Fallo al sincronizar flyers:', err.message);
             }
+
+            // ================================================================
+            // 4. Inicializar servicios de Puppeteer (si están habilitados)
+            // ================================================================
+
+            if (ENABLE_PUPPETEER_MP) {
+                logVerbose('[PUPPETEER-MP] Iniciando servicio Mercado Pago...');
+                try {
+                    const mpConfig = {
+                        userDataDir: process.env.USER_DATA_DIR || '/home/pptruser/profile',
+                        headless: process.env.HEADLESS === 'true' ? true : false,
+                        port: 9001  // Para debugging local
+                    };
+
+                    // Lanzar browser
+                    mpBrowser = await browserManager.launchBrowser(mpConfig);
+                    const mpPages = await mpBrowser.pages();
+                    mpPage = mpPages.length > 0 ? mpPages[0] : await mpBrowser.newPage();
+                    await mpPage.setViewport({ width: 1920, height: 1080 });
+
+                    logSuccess('[PUPPETEER-MP] ✓ Browser y page inicializados');
+
+                    // Warmup de caché
+                    Promise.allSettled([
+                        warmupBalance(mpPage),
+                        warmupActivity(mpPage)
+                    ]).catch(() => { /* silent fail */ });
+
+                    // Inicializar watch service
+                    const transactionWatch = initializeWatch(mpPage);
+                    transactionWatch.start();
+                    logSuccess('[PUPPETEER-MP] ✓ Watch service iniciado');
+
+                    // Inicializar session monitor
+                    const mpSessionMonitor = new SessionMonitor(mpPage);
+                    global.mpSessionMonitor = mpSessionMonitor;
+                    mpSessionMonitor.start();
+                    logSuccess('[PUPPETEER-MP] ✓ Session monitor iniciado');
+
+                } catch (err) {
+                    logError('[PUPPETEER-MP] Error al inicializar:', err.message);
+                    logWarning('[PUPPETEER-MP] ⚠️  Mercado Pago continuará deshabilitado hasta reinicio');
+                    mpBrowser = null;
+                    mpPage = null;
+                }
+            } else {
+                logVerbose('[PUPPETEER-MP] ℹ️  Servicio Mercado Pago deshabilitado (ENABLE_PUPPETEER_MP=false)');
+            }
+
+            if (ENABLE_PUPPETEER_WA) {
+                logVerbose('[PUPPETEER-WA] Iniciando servicio WhatsApp...');
+                try {
+                    const waConfig = {
+                        userDataDir: process.env.WA_USER_DATA_DIR || '/home/pptruser/wa-profile',
+                        headless: process.env.HEADLESS === 'true' ? true : false,
+                        port: 9002  // Para debugging local
+                    };
+
+                    // Lanzar browser
+                    waBrowser = await browserManager.launchBrowser(waConfig);
+                    const waPages = await waBrowser.pages();
+                    waPage = waPages.length > 0 ? waPages[0] : await waBrowser.newPage();
+                    await waPage.setViewport({ width: 1920, height: 1080 });
+
+                    logSuccess('[PUPPETEER-WA] ✓ Browser y page inicializados');
+
+                } catch (err) {
+                    logError('[PUPPETEER-WA] Error al inicializar:', err.message);
+                    logWarning('[PUPPETEER-WA] ⚠️  WhatsApp continuará deshabilitado hasta reinicio');
+                    waBrowser = null;
+                    waPage = null;
+                }
+            } else {
+                logVerbose('[PUPPETEER-WA] ℹ️  Servicio WhatsApp deshabilitado (ENABLE_PUPPETEER_WA=false)');
+            }
+
         } catch (err) {
             logWarning(`Intento #${attempts} falló`, { error: err.message });
 
@@ -202,22 +436,70 @@ async function startServer() {
     // 3. Iniciar Express solo después de conectar a la DB
     app.listen(port, () => {
         logSuccess(`SERVIDOR LISTO: Backend escuchando en el puerto ${port}`);
+        logSuccess(`📊 Servicios habilitados:`);
+        logSuccess(`   ✓ tdcApiRest API (eventos, bandas, usuarios, etc.)`);
+        logSuccess(`   ${ENABLE_PUPPETEER_MP ? '✓' : '✗'} Mercado Pago (Puppeteer)`);
+        logSuccess(`   ${ENABLE_PUPPETEER_WA ? '✓' : '✗'} WhatsApp (Puppeteer)`);
+        logSuccess(`🔌 Variables de entorno:`);
+        logSuccess(`   ENABLE_PUPPETEER_MP=${ENABLE_PUPPETEER_MP}`);
+        logSuccess(`   ENABLE_PUPPETEER_WA=${ENABLE_PUPPETEER_WA}`);
     });
 }
 
 startServer();
 
-// Agregar handlers para SIGINT y SIGTERM para permitir Ctrl+C
+// ============================================================================
+// GRACEFUL SHUTDOWN
+// ============================================================================
+
+async function gracefulShutdown() {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
+    logWarning('[shutdown] Iniciando cierre graceful...');
+
+    try {
+        if (mpPage) await mpPage.close();
+        if (mpBrowser) await mpBrowser.close();
+        logSuccess('[shutdown] ✓ Mercado Pago browser cerrado');
+    } catch (err) {
+        logError('[shutdown] Error cerrando MP:', err.message);
+    }
+
+    try {
+        if (waPage) await waPage.close();
+        if (waBrowser) await waBrowser.close();
+        logSuccess('[shutdown] ✓ WhatsApp browser cerrado');
+    } catch (err) {
+        logError('[shutdown] Error cerrando WA:', err.message);
+    }
+
+    logSuccess('[shutdown] ✅ Servidor cerrado');
+    process.exit(0);
+}
+
+// Agregar handlers para SIGINT y SIGTERM
 process.on('SIGINT', () => {
     console.log('\n[server.js] ✓ SIGINT recibida - terminando...');
-    process.exit(0);
+    gracefulShutdown();
 });
 
 process.on('SIGTERM', () => {
     console.log('[server.js] ✓ SIGTERM recibida - terminando...');
-    process.exit(0);
+    gracefulShutdown();
 });
 
 process.on('SIGHUP', () => {
     console.log('[server.js] ✓ SIGHUP recibida - ignorada');
+});
+
+// Excepciones no capturadas
+process.on('uncaughtException', (error) => {
+    logError('[fatal] Excepción no capturada:', error);
+    gracefulShutdown();
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logError('[fatal] Promise rechazada:', reason);
+    gracefulShutdown();
 });

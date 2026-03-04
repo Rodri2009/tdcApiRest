@@ -1,88 +1,191 @@
-const whatsappClient = require('../services/whatsappClient');
-const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
+/**
+ * WhatsApp Controller
+ * Maneja solicitudes HTTP relacionadas con WhatsApp
+ */
+
+const { logRequest, logVerbose, logError, logSuccess } = require('../lib/debugFlags');
 
 /**
- * POST /api/whatsapp/send-message
- * Envía un mensaje por WhatsApp
- * Body:
- *   - phone (string, required): número con código de país (+549123456789)
- *   - message (string, required): contenido del mensaje
+ * GET /api/whatsapp/status
+ * Obtiene el estado de la sesión de WhatsApp
  */
-exports.sendMessage = async (req, res) => {
-  try {
-    const { phone, message } = req.body;
+async function getStatusHandler(req, res, whatsappService) {
+    try {
+        logRequest('GET', '/api/whatsapp/status');
 
-    if (!phone || !message) {
-      return res.status(400).json({
-        error: 'phone and message are required'
-      });
+        if (!whatsappService || !whatsappService.isSessionValid) {
+            return res.status(503).json({
+                success: false,
+                message: 'WhatsApp no está inicializado',
+                status: 'not_ready'
+            });
+        }
+
+        const status = await whatsappService.getStatus();
+
+        return res.status(200).json({
+            success: true,
+            status: status,
+            ready: true
+        });
+    } catch (error) {
+        logError('[WhatsAppController] getStatus error:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
-
-    const result = await whatsappClient.sendMessage(phone, message);
-    res.json(result);
-  } catch (error) {
-    logError('[whatsappController] sendMessage error:', error);
-    res.status(503).json({ error: error.message });
-  }
-};
+}
 
 /**
- * GET /api/whatsapp/chats
- * Obtiene la lista de chats/conversaciones
- * Query params:
- *   - fresh (boolean): fuerza scrape en vivo
+ * GET /api/whatsapp/chats?limit=20
+ * Obtiene la lista de chats
  */
-exports.getChats = async (req, res) => {
-  try {
-    const fresh = req.query.fresh === 'true';
-    const data = await whatsappClient.getChats(fresh);
-    res.json(data);
-  } catch (error) {
-    logError('[whatsappController] getChats error:', error);
-    res.status(503).json({ error: error.message });
-  }
-};
+async function getChatsHandler(req, res, whatsappService) {
+    try {
+        logRequest('GET', '/api/whatsapp/chats');
 
-/**
- * GET /api/whatsapp/messages/:chatId
- * Obtiene los mensajes de un chat específico
- * URL params:
- *   - chatId (string, required): identificador del chat
- * Query params:
- *   - limit (number): cantidad de mensajes a retornar
- */
-exports.getMessages = async (req, res) => {
-  try {
-    const { chatId } = req.params;
-    const limit = parseInt(req.query.limit) || 20;
+        if (!whatsappService || !whatsappService.isSessionValid) {
+            return res.status(503).json({
+                success: false,
+                message: 'WhatsApp no está inicializado'
+            });
+        }
 
-    if (!chatId) {
-      return res.status(400).json({
-        error: 'chatId is required'
-      });
+        const limit = parseInt(req.query.limit) || 20;
+        const chats = await whatsappService.getChats(limit);
+
+        return res.status(200).json({
+            success: true,
+            chats: chats,
+            count: chats ? chats.length : 0
+        });
+    } catch (error) {
+        logError('[WhatsAppController] getChats error:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
-
-    const data = await whatsappClient.getMessages(chatId, limit);
-    res.json(data);
-  } catch (error) {
-    logError('[whatsappController] getMessages error:', error);
-    res.status(503).json({ error: error.message });
-  }
-};
+}
 
 /**
- * POST /api/whatsapp/refresh
- * Fuerza un refresh inmediato
- * Body:
- *   - page (string): 'chats' o 'all'
+ * GET /api/whatsapp/messages?chatId=...&limit=50
+ * Obtiene mensajes de un chat específico
  */
-exports.refresh = async (req, res) => {
-  try {
-    const page = req.body.page || 'all';
-    const result = await whatsappClient.refresh(page);
-    res.json(result);
-  } catch (error) {
-    logError('[whatsappController] refresh error:', error);
-    res.status(503).json({ error: error.message });
-  }
+async function getMessagesHandler(req, res, whatsappService) {
+    try {
+        logRequest('GET', '/api/whatsapp/messages');
+
+        const { chatId } = req.query;
+        if (!chatId) {
+            return res.status(400).json({
+                success: false,
+                error: 'chatId es requerido'
+            });
+        }
+
+        if (!whatsappService || !whatsappService.isSessionValid) {
+            return res.status(503).json({
+                success: false,
+                message: 'WhatsApp no está inicializado'
+            });
+        }
+
+        const limit = parseInt(req.query.limit) || 50;
+        const messages = await whatsappService.getMessages(chatId, limit);
+
+        return res.status(200).json({
+            success: true,
+            chatId: chatId,
+            messages: messages,
+            count: messages ? messages.length : 0
+        });
+    } catch (error) {
+        logError('[WhatsAppController] getMessages error:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+}
+
+/**
+ * POST /api/whatsapp/send
+ * Envía un mensaje a un chat
+ * Body: { chatId, message }
+ */
+async function sendMessageHandler(req, res, whatsappService) {
+    try {
+        logRequest('POST', '/api/whatsapp/send');
+
+        const { chatId, message } = req.body;
+
+        if (!chatId || !message) {
+            return res.status(400).json({
+                success: false,
+                error: 'chatId y message son requeridos'
+            });
+        }
+
+        if (!whatsappService || !whatsappService.isSessionValid) {
+            return res.status(503).json({
+                success: false,
+                message: 'WhatsApp no está inicializado'
+            });
+        }
+
+        const result = await whatsappService.sendMessage(chatId, message);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Mensaje enviado',
+            result: result
+        });
+    } catch (error) {
+        logError('[WhatsAppController] sendMessage error:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+}
+
+/**
+ * GET /api/whatsapp/contacts
+ * Obtiene la lista de contactos
+ */
+async function getContactsHandler(req, res, whatsappService) {
+    try {
+        logRequest('GET', '/api/whatsapp/contacts');
+
+        if (!whatsappService || !whatsappService.isSessionValid) {
+            return res.status(503).json({
+                success: false,
+                message: 'WhatsApp no está inicializado'
+            });
+        }
+
+        const contacts = await whatsappService.getContacts();
+
+        return res.status(200).json({
+            success: true,
+            contacts: contacts,
+            count: contacts ? contacts.length : 0
+        });
+    } catch (error) {
+        logError('[WhatsAppController] getContacts error:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+}
+
+module.exports = {
+    getStatusHandler,
+    getChatsHandler,
+    getMessagesHandler,
+    sendMessageHandler,
+    getContactsHandler
 };

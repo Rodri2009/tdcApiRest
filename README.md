@@ -1,5 +1,13 @@
 # TDC - Sistema de Gestión Total (Versión Beta)
 
+> **🔧 ESTADO ACTUAL (3 Marzo 2026)**: Fase 2 Normalización en progreso
+> - ✅ Parte 1 Completada: Eliminadas escrituras redundantes de `es_publico`
+> - 🔵 Parte 2 Próxima: Testing de cambios (45 min)
+> - 📋 Timeline: 4 fases de normalización, 25% completadas
+> - 🟢 Sistema: Funcionando, cambios revertibles
+>
+> Ver: [QUICKSTART_FASE2_PARTE2.md](QUICKSTART_FASE2_PARTE2.md) para qué hacer ahora<br>
+> Plan completo: [PLAN_ACCION_NORMALIZACION.md](PLAN_ACCION_NORMALIZACION.md)
 
 **Versión Beta**
 

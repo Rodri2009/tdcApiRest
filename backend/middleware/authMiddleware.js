@@ -1,28 +1,80 @@
-const jwt = require('jsonwebtoken');
+const tokenManager = require('../lib/tokenManager');
+const { logWarning, logSuccess } = require('../lib/debugFlags');
 
+/**
+ * Middleware de autenticación JWT mejorado
+ * - Valida token access
+ * - Verifica contra blacklist
+ * - Expone req.user con permisos
+ * - Soporta token desde Authorization header, cookies, o query strings (para EventSource/SSE)
+ */
 const protect = (req, res, next) => {
-    // Buscar token en cookies O en el header Authorization
-    let token = req.cookies.token;
-    
-    // Si no hay token en cookies, buscar en header Authorization
-    if (!token && req.headers.authorization) {
-        const authHeader = req.headers.authorization;
-        if (authHeader.startsWith('Bearer ')) {
-            token = authHeader.substring(7); // Eliminar "Bearer "
-        }
-    }
-
-    if (!token) {
-        return res.status(401).json({ message: 'No autorizado, no hay token.' });
-    }
-
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // Añadimos los datos del usuario (id, email, rol) a la petición
+        // Extraer token (primero desde extractToken estándar)
+        let token = tokenManager.extractToken(req);
+
+        // Si no hay token en header/cookie, intentar desde query string (para EventSource)
+        if (!token && req.query && req.query.token) {
+            token = req.query.token;
+        }
+
+        if (!token) {
+            return res.status(401).json({
+                error: 'No autorizado',
+                message: 'No se encontró token de autenticación',
+                required: 'Authorization header, cookie accessToken, o parámetro ?token='
+            });
+        }
+
+        // Verificar token
+        const decoded = tokenManager.verifyToken(token, 'access');
+        if (!decoded) {
+            return res.status(401).json({
+                error: 'Token inválido o expirado',
+                message: 'El token no es válido o ha expirado'
+            });
+        }
+
+        // Exponer información del usuario
+        req.user = decoded;
+        req.token = token;
+
+        logSuccess(`[authMiddleware] ✅ User autenticado: ${decoded.id} (${decoded.role})`);
         next();
     } catch (error) {
-        return res.status(401).json({ message: 'No autorizado, token inválido.' });
+        logWarning('[authMiddleware] Error en middleware:', error.message);
+        return res.status(500).json({
+            error: 'Error en autenticación'
+        });
     }
 };
 
-module.exports = { protect };
+/**
+ * Valida que el usuario sea un rol específico
+ */
+const requireRole = (allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({
+                error: 'No autenticado'
+            });
+        }
+
+        const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({
+                error: 'Acceso denegado',
+                message: `Se requiere uno de estos roles: ${roles.join(', ')}`,
+                userRole: req.user.role
+            });
+        }
+
+        next();
+    };
+};
+
+module.exports = {
+    protect,
+    requireRole
+};

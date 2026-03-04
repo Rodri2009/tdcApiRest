@@ -19,6 +19,10 @@
 #   --only-seed      Solo carga 02_seed.sql
 #   --only-test      Solo carga 03_test_data.sql
 #
+# Opciones de Servicios (Puppeteer):
+#   --mp             Habilita Mercado Pago (ENABLE_PUPPETEER_MP=true)
+#   --wa             Habilita WhatsApp (ENABLE_PUPPETEER_WA=true)
+#
 # Opciones de debug:
 #   -d, --debug      Muestra debug detallado + logs en vivo
 #   -l, --local      Fuerza MySQL local (sin Docker)
@@ -30,6 +34,7 @@
 #   ./reset.sh --backend -d       # Solo backend con logs en vivo
 #   ./reset.sh --db --skip-test   # DB sin datos de prueba
 #   ./reset.sh --all-rebuild -d   # Todo con rebuild + logs
+#   ./reset.sh --mp --wa -d       # Con WA y MP habilitados + debug
 ###############################################################################
 
 set -e
@@ -62,6 +67,8 @@ USE_DOCKER=true
 CONTAINERS_TO_RESET=""  # all, db, backend, frontend
 REBUILD_IMAGES=false
 SKIP_SQL=false
+ENABLE_MP=false
+ENABLE_WA=false
 SQL_SCRIPTS=("01_schema.sql" "02_seed.sql" "03_test_data.sql")
 
 # Cargar .env
@@ -89,6 +96,14 @@ while [[ $# -gt 0 ]]; do
         -l|--local)
             USE_LOCAL=true
             USE_DOCKER=false
+            shift
+            ;;
+        --mp)
+            ENABLE_MP=true
+            shift
+            ;;
+        --wa)
+            ENABLE_WA=true
             shift
             ;;
         --all)
@@ -163,6 +178,45 @@ fi
 # FUNCIONES
 # ============================================================================
 
+create_env_override() {
+    # Crea un archivo .env.tmp con overrides de variables
+    # Copia el .env original y sobrescribe ENABLE_PUPPETEER_MP y ENABLE_PUPPETEER_WA
+    local env_file="$DOCKER_DIR/.env"
+    local env_tmp="$DOCKER_DIR/.env.tmp.$$"
+    
+    if [ -f "$env_file" ]; then
+        cp "$env_file" "$env_tmp"
+    else
+        touch "$env_tmp"
+    fi
+    
+    if [ "$ENABLE_MP" = true ]; then
+        sed -i 's/^ENABLE_PUPPETEER_MP=.*/ENABLE_PUPPETEER_MP=true/' "$env_tmp"
+        grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp" || echo "ENABLE_PUPPETEER_MP=true" >> "$env_tmp"
+    else
+        sed -i 's/^ENABLE_PUPPETEER_MP=.*/ENABLE_PUPPETEER_MP=false/' "$env_tmp"
+        grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp" || echo "ENABLE_PUPPETEER_MP=false" >> "$env_tmp"
+    fi
+    
+    if [ "$ENABLE_WA" = true ]; then
+        sed -i 's/^ENABLE_PUPPETEER_WA=.*/ENABLE_PUPPETEER_WA=true/' "$env_tmp"
+        grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp" || echo "ENABLE_PUPPETEER_WA=true" >> "$env_tmp"
+    else
+        sed -i 's/^ENABLE_PUPPETEER_WA=.*/ENABLE_PUPPETEER_WA=false/' "$env_tmp"
+        grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp" || echo "ENABLE_PUPPETEER_WA=false" >> "$env_tmp"
+    fi
+    
+    echo "$env_tmp"
+}
+
+cleanup_env_tmp() {
+    # Limpia los archivos temporales .env
+    rm -f "$DOCKER_DIR"/.env.tmp.* 2>/dev/null || true
+}
+
+# Trap para limpiar en caso de exit
+trap cleanup_env_tmp EXIT
+
 get_container_name() {
     local docker_dir=$1
     if [ ! -f "$docker_dir/docker-compose.yml" ]; then
@@ -190,6 +244,8 @@ print_debug_config() {
         echo -e "${BLUE}  - CONTAINERS: $CONTAINERS_TO_RESET${NC}"
         echo -e "${BLUE}  - REBUILD: $REBUILD_IMAGES${NC}"
         echo -e "${BLUE}  - SKIP_SQL: $SKIP_SQL${NC}"
+        echo -e "${BLUE}  - ENABLE_MP: $ENABLE_MP${NC}"
+        echo -e "${BLUE}  - ENABLE_WA: $ENABLE_WA${NC}"
         echo -e "${BLUE}  - SQL_SCRIPTS: ${SQL_SCRIPTS[@]}${NC}"
         echo ""
     fi
@@ -202,11 +258,17 @@ reset_docker_containers() {
 
     echo -e "${YELLOW}[*]${NC} Controlando contenedores Docker..."
     
-    local compose_cmd="docker-compose --env-file ../.env"
+    # Crear archivo .env.tmp con overrides si es necesario
+    local env_file_to_use=".env"
+    if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+        env_file_to_use=$(create_env_override)
+    fi
+    
+    local compose_cmd="docker-compose --env-file $env_file_to_use"
     if command -v docker-compose &>/dev/null; then
-        compose_cmd="docker-compose --env-file ../.env"
+        compose_cmd="docker-compose --env-file $env_file_to_use"
     elif docker compose version &>/dev/null; then
-        compose_cmd="docker compose --env-file ../.env"
+        compose_cmd="docker compose --env-file $env_file_to_use"
     fi
 
     local build_flag=""
@@ -475,7 +537,7 @@ if [ "$DEBUG" = true ] && [ "$USE_DOCKER" = true ]; then
         cd "$DOCKER_DIR"
         
         # Detener el backend previo que está en background
-        docker-compose --env-file ../.env stop backend 2>/dev/null || true
+        docker-compose --env-file .env stop backend 2>/dev/null || true
         sleep 1
         
         echo -e "${CYAN}[*] Mostrando output del backend con verbose logging:${NC}"
@@ -483,10 +545,7 @@ if [ "$DEBUG" = true ] && [ "$USE_DOCKER" = true ]; then
         
         # Ejecutar en foreground pasando DEBUG_FLAGS como variable de entorno
         # El --no-TTY asegura que docker-compose no intente usar terminal interactivo
-        docker-compose --env-file ../.env run --rm --no-TTY -e DEBUG_FLAGS="-d" backend 2>&1 || true
-        else
-            echo -e "${YELLOW}[!] docker-compose.yml no encontrado${NC}"
-        fi
+        docker-compose --env-file .env run --rm --no-TTY -e DEBUG_FLAGS="-d" backend 2>&1 || true
     else
         echo -e "${YELLOW}[!] Backend no está corriendo${NC}"
     fi

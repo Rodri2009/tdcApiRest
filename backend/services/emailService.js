@@ -38,7 +38,7 @@ const sendComprobanteEmail = async (to, subject, solicitud, headers) => {
 
         // 2. Preparar los datos y formatearlos
         const formatCurrency = (num) => `$${parseFloat(num || 0).toLocaleString('es-AR')}`;
-        
+
         let totalAdicionales = 0;
         let adicionalesHtml = '';
         if (solicitud.adicionales && solicitud.adicionales.length > 0) {
@@ -57,7 +57,7 @@ const sendComprobanteEmail = async (to, subject, solicitud, headers) => {
             adicionales_html: adicionalesHtml,
             precio_final: formatCurrency(parseFloat(solicitud.precio_basico) + totalAdicionales),
         };
-        
+
         // 3. Reemplazar todos los placeholders en la plantilla
         for (const key in dataForTemplate) {
             const regex = new RegExp(`{{${key}}}`, 'g');
@@ -80,6 +80,55 @@ const sendComprobanteEmail = async (to, subject, solicitud, headers) => {
 };
 
 
+
+/**
+ * Envía notificación a admin de una nueva solicitud
+ */
+const sendAdminNotification = async (solicitud) => {
+    logVerbose(`-> Preparando notificación de nueva solicitud para admin`);
+
+    try {
+        const adminEmail = process.env.EMAIL_ADMIN || 'temploclaypole@gmail.com';
+
+        // Formatear datos de la solicitud
+        const formatDate = (dateString) => new Date(dateString).toLocaleDateString('es-AR');
+        const bandasInfo = solicitud.bandas_json && typeof solicitud.bandas_json === 'string'
+            ? JSON.parse(solicitud.bandas_json)
+            : solicitud.bandas_json || [];
+
+        const bandasHtml = bandasInfo.map((b, i) => `<li>${i + 1}º - ${b.nombre}</li>`).join('');
+
+        const htmlBody = `
+            <h2>Nueva Solicitud de Show en Vivo</h2>
+            <p><strong>ID Solicitud:</strong> ${solicitud.id_solicitud}</p>
+            <p><strong>Cliente:</strong> ${solicitud.nombre_cliente || 'Datos pendientes'}</p>
+            <p><strong>Email:</strong> ${solicitud.email_cliente || 'No disponible'}</p>
+            <p><strong>Teléfono:</strong> ${solicitud.telefono_cliente || 'No disponible'}</p>
+            <hr />
+            <h3>Detalles del Evento</h3>
+            <p><strong>Fecha del Evento:</strong> ${formatDate(solicitud.fecha_evento)}</p>
+            <p><strong>Hora del Evento:</strong> ${solicitud.hora_evento || '21:00'}</p>
+            <p><strong>Bandas Seleccionadas:</strong></p>
+            <ul>${bandasHtml}</ul>
+            <p><strong>Descripción/Comentarios:</strong></p>
+            <p>${solicitud.descripcion || 'Sin comentarios'}</p>
+            <hr />
+            <p><a href="${process.env.ADMIN_URL || 'http://localhost'}/admin.html?tab=solicitudes">Ver en Administración</a></p>
+        `;
+
+        await transporter.sendMail({
+            from: `"Sistema TDC" <${process.env.EMAIL_USER}>`,
+            to: adminEmail,
+            subject: `[TDC] Nueva Solicitud de Show en Vivo - ID #${solicitud.id_solicitud}`,
+            html: htmlBody,
+        });
+
+        logVerbose(`✅ Notificación de solicitud enviada a admin: ${adminEmail}`);
+    } catch (error) {
+        logError(`❌ Error al enviar notificación a admin:`, error);
+        // No lanzar error para no bloquear el flujo
+    }
+};
 
 /**
  * Envía un correo de prueba simple para verificar la configuración.
@@ -109,4 +158,5 @@ const sendTestEmail = async () => {
 module.exports = {
     sendTestEmail,
     sendComprobanteEmail,
+    sendAdminNotification,
 };

@@ -33,8 +33,16 @@ services:
       EMAIL_ADMIN: ${EMAIL_ADMIN}
       JWT_SECRET: ${JWT_SECRET}
       DEBUG_FLAGS: ${DEBUG_FLAGS:-}
+      MP_SERVER_URL: ${MP_SERVER_URL}
+      WA_SERVER_URL: ${WA_SERVER_URL}
+      ENABLE_PUPPETEER_MP: ${ENABLE_PUPPETEER_MP}
+      ENABLE_PUPPETEER_WA: ${ENABLE_PUPPETEER_WA}
+      USER_DATA_DIR: ${USER_DATA_DIR}
+      HEADLESS: ${HEADLESS}
+      ENABLE_VNC: ${ENABLE_VNC:-false}
     ports:
       - "3000:3000"
+      - "5901:5901"
     #networks:
     #  - tdc_network
     volumes:

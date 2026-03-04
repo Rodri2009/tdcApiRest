@@ -13,12 +13,12 @@ const getSolicitudes = async (req, res) => {
                 COALESCE(sol.fecha_creacion, s.fecha_evento) as fechaSolicitud,
                 COALESCE(c.nombre, '') as nombreCliente,
                 COALESCE(ot.categoria, 'ALQUILER') as categoria,
-                COALESCE(ot.nombre_para_mostrar, s.tipo_servicio) as tipoNombre,
-                COALESCE(s.tipo_servicio, 'ALQUILER_SALON') as tipoEventoId,
+                COALESCE(ot.nombre_para_mostrar, 'ALQUILER_SALON') as tipoNombre,
+                COALESCE(s.id_tipo_evento, 'ALQUILER_SALON') as tipoEventoId,
                 NULL as subtipo,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 s.estado,
-                s.tipo_servicio as tipoServicioId,
+                NULL as tipoServicioId,
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
@@ -28,7 +28,7 @@ const getSolicitudes = async (req, res) => {
             FROM solicitudes_alquiler s
             LEFT JOIN solicitudes sol ON sol.id_solicitud = s.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
-            LEFT JOIN opciones_tipos ot ON (s.tipo_de_evento = ot.id_tipo_evento OR s.tipo_servicio = ot.id_tipo_evento)
+            LEFT JOIN opciones_tipos ot ON s.id_tipo_evento = ot.id_tipo_evento
             LEFT JOIN eventos_confirmados ec_alq ON ec_alq.id_solicitud = s.id_solicitud AND ec_alq.tipo_evento = 'ALQUILER_SALON'
             UNION ALL
             SELECT
@@ -161,9 +161,9 @@ const getSolicitudes = async (req, res) => {
         }
 
         // Detect stale schema references before running the query
-        if (String(sql).includes('s.tipo_de_evento') || String(sql).includes('sb.cantidad_de_personas') || String(sql).includes('s.cantidad_de_personas')) {
+        if (String(sql).includes('tipo_de_evento') || String(sql).includes('cantidad_de_personas')) {
             logError('Detected stale column reference(s) in SQL - aborting query', {
-                contains_tipo_de_evento: String(sql).includes('s.tipo_de_evento'),
+                contains_tipo_de_evento: String(sql).includes('tipo_de_evento'),
                 contains_cantidad_de_personas: String(sql).includes('cantidad_de_personas')
             });
         }
@@ -262,9 +262,15 @@ const actualizarEstadoSolicitud = async (req, res) => {
 
         // Manejar eventos_confirmados para TODOS los tipos
         if (estado === 'Confirmado') {
+            // ✅ NUEVA LÓGICA (Opción A): Si es BANDA en vivo, automáticamente hacer es_publico = 1
+            if (tipoEvento === 'BANDA') {
+                await conn.query('UPDATE solicitudes SET es_publico = 1 WHERE id_solicitud = ?', [realId]);
+                logVerbose(`[ADMIN] ✅ Estado 'Confirmado' para BANDA - Automáticamente seteado es_publico = 1 (Opción A)`);
+            }
+
             // Determinar si debe ser público y obtener url_flyer (según la tabla padre `solicitudes`)
-            const [parent] = await conn.query('SELECT es_publico, url_flyer FROM solicitudes WHERE id = ?', [realId]);
-            const esPublico = parent && parent.es_publico ? 1 : 0;
+            const [parent] = await conn.query('SELECT es_publico, url_flyer FROM solicitudes WHERE id_solicitud = ?', [realId]);
+            const esPublico = parent && parent.es_publico ? 1 : 0;  // Ahora será 1 si es BANDA recién confirmada
             const urlFlyer = parent && parent.url_flyer ? parent.url_flyer : null;
 
             // Buscar evento existente (incluyendo su estado 'activo')
@@ -277,7 +283,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
             let nombreEvento, nombreCliente, emailCliente, telefonoCliente, generoMusical, cantidadPersonas, tipoServicio, nombreTaller;
 
             // Obtener info de cliente si está disponible en la tabla padre
-            const [clienteInfo] = await conn.query('SELECT s.id_cliente, c.nombre, c.email, c.telefono FROM solicitudes s LEFT JOIN clientes c ON s.id_cliente = c.id_cliente WHERE s.id = ?', [realId]);
+            const [clienteInfo] = await conn.query('SELECT s.id_cliente, c.nombre, c.email, c.telefono FROM solicitudes s LEFT JOIN clientes c ON s.id_cliente = c.id_cliente WHERE s.id_solicitud = ?', [realId]);
             const clienteRow = clienteInfo || null;
 
             if (tablaOrigen === 'solicitudes_bandas' || tablaOrigen === 'solicitudes_fechas_bandas') {
@@ -339,8 +345,8 @@ const actualizarEstadoSolicitud = async (req, res) => {
             } else if (eventoExistente.activo === 0) {
                 // Reactivar y actualizar campos del evento existente
                 // ✅ Opción B3: No actualizar precios (viven en tabla de origen)
-                await conn.query(`UPDATE eventos_confirmados SET activo = 1, cancelado_en = NULL, es_publico = ?, nombre_evento = ?, descripcion = ?, url_flyer = ?, fecha_evento = ?, hora_inicio = ?, duracion_estimada = ?, id_cliente = ?, genero_musical = ?, cantidad_personas = ?, tipo_servicio = ?, nombre_taller = ? WHERE id = ?`, [
-                    esPublico,
+                // ✅ es_publico ya está en solicitudes, no duplicar
+                await conn.query(`UPDATE eventos_confirmados SET activo = 1, cancelado_en = NULL, nombre_evento = ?, descripcion = ?, url_flyer = ?, fecha_evento = ?, hora_inicio = ?, duracion_estimada = ?, id_cliente = ?, genero_musical = ?, cantidad_personas = ?, tipo_servicio = ?, nombre_taller = ? WHERE id = ?`, [
                     nombreEvento,
                     solicitud.descripcion || null,
                     urlFlyer,
@@ -354,6 +360,10 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     nombreTaller || null,
                     eventoExistente.id
                 ]);
+            } else {
+                // ✅ NUEVA LÓGICA: Solo actualizar solicitudes.es_publico (ya se hizo arriba)
+                // No actualizamos eventos_confirmados.es_publico - es_publico es solo en solicitudes
+                // Los datos se leen ON-THE-FLY mediante JOINs en endpoints públicos
             }
         } else if (estado === 'Solicitado') {
             // Si la solicitud es degradada a 'Solicitado', auditar y eliminar cualquier evento confirmado asociado
