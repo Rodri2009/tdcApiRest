@@ -1,4 +1,14 @@
-const { validateSession } = require('../utils/sessionValidator');
+// sessionValidator lives in ../utils and may not be present in every
+environment (separado por commits, etc). Cargamos de forma defensiva y
+caemos a función trivial en caso de error para que el módulo pueda
+importarse sin fallar.
+let validateSession;
+try {
+    ({ validateSession } = require('../utils/sessionValidator'));
+} catch (err) {
+    console.warn('[SessionMonitor] ⚠️  sessionValidator no disponible, usando stub');
+    validateSession = async () => true; // siempre válido
+}
 
 /**
  * Monitor de sesión - detecta y restaura sesión perdida

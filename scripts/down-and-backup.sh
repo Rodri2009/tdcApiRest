@@ -10,6 +10,22 @@
 
 set -euo pipefail
 
+show_help() {
+    cat <<EOF
+Uso: $(basename "$0") [--help]
+
+Realiza un volcado de tablas sensibles y luego destruye el entorno Docker.
+
+Opciones:
+  -h, --help  Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
 # --- Configuración por defecto (override mediante variables de entorno si se desea) ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-$SCRIPT_DIR/docker/docker-compose.yml}"

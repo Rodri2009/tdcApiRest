@@ -11,6 +11,23 @@
 
 set -e
 
+show_help() {
+  cat <<EOF
+Uso: $(basename "$0") [--help]
+
+Ejecuta la suite de pruebas interactivas definidas en
+TESTING_PLAN_FASE2_PARTE2.md contra la API del backend.
+
+Opciones:
+  -h, --help  Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+  exit 0
+fi
+
 # Colores
 RED='\033[0;31m'
 GREEN='\033[0;32m'

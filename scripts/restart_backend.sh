@@ -45,6 +45,33 @@ DEBUG_FLAGS=""
 ENABLE_MP=false
 ENABLE_WA=false
 
+show_help() {
+  cat <<EOF
+Uso: $0 [--rebuild] [--down] [--no-logs] [--mp] [--wa] [-v|-e|-d|-h]
+
+FLAGS DE DOCKER:
+  --rebuild         : reconstruye la imagen del backend
+  --down            : hace docker compose down antes de rebuild
+  --no-logs         : no muestra logs en foreground
+
+FLAGS DE SERVICIOS (Puppeteer):
+  --mp              : Habilita Mercado Pago (ENABLE_PUPPETEER_MP=true)
+  --wa              : Habilita WhatsApp (ENABLE_PUPPETEER_WA=true)
+
+FLAGS DE DEPURACIÓN (se pasan a node server.js):
+  -v, --verbose     : muestra logs detallados de procesamiento
+  -e, --error       : muestra solo errores
+  -d, --debug       : combina verbose + error (máximo detalle)
+  -h, --help        : muestra ayuda de node server.js
+
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+  exit 0
+fi
+
 # Parsear argumentos separando flags de Docker de flags de depuración
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -54,7 +81,7 @@ while [ $# -gt 0 ]; do
     --mp) ENABLE_MP=true; shift;;
     --wa) ENABLE_WA=true; shift;;
     # Flags de depuración que se pasan a node
-    -v|--verbose|-e|--error|-d|--debug|-h|--help)
+    -v|--verbose|-e|--error|-d|--debug)
       DEBUG_FLAGS="$DEBUG_FLAGS $1"
       shift
       ;;
@@ -81,18 +108,30 @@ create_env_override() {
     
     if [ "$ENABLE_MP" = true ]; then
         sed -i 's/^ENABLE_PUPPETEER_MP=.*/ENABLE_PUPPETEER_MP=true/' "$env_tmp"
-        grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp" || echo "ENABLE_PUPPETEER_MP=true" >> "$env_tmp"
+        if ! grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_PUPPETEER_MP=true" >> "$env_tmp"
+        fi
     else
         sed -i 's/^ENABLE_PUPPETEER_MP=.*/ENABLE_PUPPETEER_MP=false/' "$env_tmp"
-        grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp" || echo "ENABLE_PUPPETEER_MP=false" >> "$env_tmp"
+        if ! grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_PUPPETEER_MP=false" >> "$env_tmp"
+        fi
     fi
     
     if [ "$ENABLE_WA" = true ]; then
         sed -i 's/^ENABLE_PUPPETEER_WA=.*/ENABLE_PUPPETEER_WA=true/' "$env_tmp"
-        grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp" || echo "ENABLE_PUPPETEER_WA=true" >> "$env_tmp"
+        if ! grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_PUPPETEER_WA=true" >> "$env_tmp"
+        fi
     else
         sed -i 's/^ENABLE_PUPPETEER_WA=.*/ENABLE_PUPPETEER_WA=false/' "$env_tmp"
-        grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp" || echo "ENABLE_PUPPETEER_WA=false" >> "$env_tmp"
+        if ! grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_PUPPETEER_WA=false" >> "$env_tmp"
+        fi
     fi
     
     echo "$env_tmp"
@@ -102,8 +141,8 @@ cleanup_env_tmp() {
     rm -f "$ROOT_DIR"/.env.tmp.* 2>/dev/null || true
 }
 
-# Trap para limpiar en caso de exit
-trap cleanup_env_tmp EXIT
+# Trap para limpiar en caso de exit o interrupción (INT/TERM)
+trap cleanup_env_tmp EXIT INT TERM
 
 if docker compose version >/dev/null 2>&1; then
   COMPOSE_CMD="docker compose"

@@ -5,6 +5,22 @@
 
 set -euo pipefail
 
+show_help() {
+  cat <<EOF
+Usage: $(basename "$0") [--help]
+
+Realiza un backup de tablas sensibles y actualiza archivos SQL en database/.
+
+Opciones:
+  -h, --help   Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+  exit 0
+fi
+
 # Cargar variables desde el archivo .env
 if [ -f "$(dirname "$0")/../.env" ]; then
   export $(grep -v '^#' "$(dirname "$0")/../.env" | xargs)

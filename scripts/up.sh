@@ -55,7 +55,7 @@ while [ $# -gt 0 ]; do
         --mp) ENABLE_MP=true; shift;;
         --wa) ENABLE_WA=true; shift;;
         # Flags de depuración que se pasan a node
-        -v|--verbose|-e|--error|-d|--debug|-h|--help)
+        -v|--verbose|-e|--error|-d|--debug)
           DEBUG_FLAGS="$DEBUG_FLAGS $1"
           shift
           ;;
@@ -78,6 +78,18 @@ done
 # --- Comprobaciones previas: comandos y daemon ---
 command_exists() {
     command -v "$1" >/dev/null 2>&1
+}
+
+# El backend se levanta siempre con imagen "docker-backend"; cuando se usa
+# "docker compose run" o se crean contenedores temporales pueden quedar
+# instancias viejas que posteriormente provocan múltiples contenedores.
+# Esta función borra cualquier contenedor residual antes de arrancar el stack.
+cleanup_old_backend_containers() {
+    echo -ne "  → Eliminando contenedores backend antiguos... "
+    docker ps -a --filter "ancestor=$(docker images --filter 'reference=docker-backend' -q 2>/dev/null)" -q | xargs -r docker rm -f 2>/dev/null || true
+    docker ps -a --filter "name=docker-backend" -q | xargs -r docker rm -f 2>/dev/null || true
+    docker ps -a --filter "name=docker-backend-run-" -q | xargs -r docker rm -f 2>/dev/null || true
+    echo -e "${GREEN}✓${NC}"
 }
 
 echo -e "${BLUE}======================================================${NC}"
@@ -173,18 +185,31 @@ create_env_override() {
     
     if [ "$ENABLE_MP" = true ]; then
         sed -i 's/^ENABLE_PUPPETEER_MP=.*/ENABLE_PUPPETEER_MP=true/' "$env_tmp"
-        grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp" || echo "ENABLE_PUPPETEER_MP=true" >> "$env_tmp"
+        if ! grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp"; then
+            # make sure file ends with newline so new line isn't appended to last line
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_PUPPETEER_MP=true" >> "$env_tmp"
+        fi
     else
         sed -i 's/^ENABLE_PUPPETEER_MP=.*/ENABLE_PUPPETEER_MP=false/' "$env_tmp"
-        grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp" || echo "ENABLE_PUPPETEER_MP=false" >> "$env_tmp"
+        if ! grep-q "^ENABLE_PUPPETEER_MP=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_PUPPETEER_MP=false" >> "$env_tmp"
+        fi
     fi
     
     if [ "$ENABLE_WA" = true ]; then
         sed -i 's/^ENABLE_PUPPETEER_WA=.*/ENABLE_PUPPETEER_WA=true/' "$env_tmp"
-        grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp" || echo "ENABLE_PUPPETEER_WA=true" >> "$env_tmp"
+        if ! grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_PUPPETEER_WA=true" >> "$env_tmp"
+        fi
     else
         sed -i 's/^ENABLE_PUPPETEER_WA=.*/ENABLE_PUPPETEER_WA=false/' "$env_tmp"
-        grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp" || echo "ENABLE_PUPPETEER_WA=false" >> "$env_tmp"
+        if ! grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_PUPPETEER_WA=false" >> "$env_tmp"
+        fi
     fi
     
     echo "$env_tmp"
@@ -194,8 +219,9 @@ cleanup_env_tmp() {
     rm -f docker/.env.tmp.* 2>/dev/null || true
 }
 
-# Trap para limpiar en caso de exit
-trap cleanup_env_tmp EXIT
+# Trap para limpiar en caso de exit o interrupciones (Ctrl‑C, kill)
+# Se atajan EXIT, INT y TERM para asegurarse de borrar archivos temporales
+trap cleanup_env_tmp EXIT INT TERM
 
 # --- Lista de Variables de Entorno Requeridas ---
 # Aquí se listan todas las variables que DEBEN existir en el archivo .env
@@ -258,6 +284,9 @@ if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
 fi
 
 echo ""
+echo -e "${YELLOW}[*]${NC} Limpiando contenedores previos..."
+cleanup_old_backend_containers
+
 echo -e "${YELLOW}[*]${NC} Limpiando y levantando contenedores Docker..."
 echo -ne "  → Deteniendo contenedores... "
 eval "$COMPOSE_CMD -f $COMPOSE_FILE --env-file $ENV_FILE_TO_USE down" 2>/dev/null

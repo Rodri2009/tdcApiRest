@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  echo "Entrypoint para la aplicación Node. Todos los argumentos se pasan finalmente a node."
+  echo "Uso: docker run <imagen> [<node args>]"
+  exit 0
+fi
+
 echo "[entrypoint] Comprobando node_modules y dependencias..."
 
 cd /app || exit 1

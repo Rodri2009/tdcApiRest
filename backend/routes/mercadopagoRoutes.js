@@ -46,4 +46,7 @@ router.get('/activity', mercadopagoController.getActivity);
  */
 router.post('/refresh', mercadopagoController.refresh);
 
+// SSE endpoint que el frontend consulta con `/activity/watch`
+router.get('/watch', mercadopagoController.watchTransactions);
+
 module.exports = router;

@@ -1,6 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+show_help() {
+  cat <<EOF
+Uso: $(basename "$0") [--help]
+
+Descripción:
+  Descarga Tailwind CSS y Font Awesome a copias locales, ajusta HTML y
+  fuentes para depender de recursos locales en lugar de CDNs.
+
+Opciones:
+  -h, --help   Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+  exit 0
+fi
+
 # Descarga versiones locales de Tailwind CSS y Font Awesome,
 # copia fuentes a directorio propio y actualiza los HTML para
 # dejar de depender de CDNs.

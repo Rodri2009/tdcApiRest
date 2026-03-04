@@ -63,7 +63,7 @@ function logSuccess(message, data = null) {
  * Log de advertencia
  */
 function logWarning(message, data = null) {
-    if (process.env.DEBUG_VERBOSE !== 'true') return;
+    // siempre mostramos advertencias, son útiles incluso sin DEBUG_VERBOSE
     const timestamp = getTimestamp();
     const prefix = `[${timestamp}] ⚠`;
     if (data !== null && typeof data === 'object') {

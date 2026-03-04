@@ -1,6 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+show_help() {
+  cat <<EOF
+Uso: $(basename "$0") [--help]
+
+Descripción:
+  Genera versiones subset de las fuentes Font Awesome con solo glifos usados en el frontend.
+
+Opciones:
+  -h, --help   Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+  exit 0
+fi
+
 # Genera versiones "subset" de las fuentes de Font Awesome que contienen
 # únicamente los glifos realmente usados en los HTML del frontend.
 #

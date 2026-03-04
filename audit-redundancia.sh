@@ -7,6 +7,23 @@
 # Uso: ./audit-redundancia.sh
 # ============================================================================
 
+show_help() {
+    cat <<EOF
+Uso: $(basename "$0") [--help]
+
+Este script recorre la base de datos y detecta campos duplicados
+entre tablas relacionadas, imprimiendo alertas si encuentra inconsistencias.
+
+Opciones:
+  -h, --help   Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
 set -e
 
 # Colores

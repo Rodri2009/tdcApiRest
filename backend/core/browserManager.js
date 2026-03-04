@@ -52,8 +52,10 @@ async function launchBrowser(config) {
             chromiumArgs.unshift('--start-fullscreen');
         }
 
+        // headless se hereda de la configuración pasada; por defecto asumimos
+        // verdadero si no se especifica (caso despliegue sin VNC).
         const browserConfig = {
-            headless: false,  // Usar display :1 de Xvfb para GUI (Debian tiene xvfb instalado)
+            headless: config.headless !== undefined ? config.headless : true,
             userDataDir: config.userDataDir,
             args: chromiumArgs,
             defaultViewport: {

@@ -14,7 +14,21 @@ set -euo pipefail
 # Uso:
 #   ./scripts/fix_font_bbox.sh
 #   y después recarga el servidor/limpia caché del navegador.
+show_help() {
+  cat <<EOF
+Uso: $(basename "$0") [--help]
 
+Recalcula bounding boxes de fuentes Font-Awesome en frontend/webfonts.
+
+Opciones:
+  -h, --help  Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+  exit 0
+fi
 if ! command -v python3 >/dev/null 2>&1; then
   echo "❌ Python 3 no está disponible. Instala Python para poder ejecutar este script." >&2
   exit 1

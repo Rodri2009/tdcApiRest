@@ -3,6 +3,22 @@
 # Script para crear backup del proyecto completo con máxima compresión
 # Excluye archivos según .gitignore
 
+show_help() {
+    cat <<EOF
+Uso: $(basename "$0") [--help]
+
+Crea un archivo tar.gz del proyecto excluyendo patrones en .gitignore.
+
+Opciones:
+  -h, --help  Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
 set -e
 
 PROJECT_DIR="/home/almacen/tdcApiRest"

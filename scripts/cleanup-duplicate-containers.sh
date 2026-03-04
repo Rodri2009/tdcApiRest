@@ -14,6 +14,22 @@
 #   3. Elimina los detenidos y opcionalmente los duplicados en ejecución
 # ==============================================================================
 
+show_help() {
+  cat <<EOF
+Uso: $(basename "$0") [--help]
+
+Limpia contenedores duplicados o huérfanos relacionados con el proyecto TDC.
+
+Opciones:
+  -h, --help  Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+  exit 0
+fi
+
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║     Limpieza de Contenedores Duplicados/Huérfanos del TDC      ║"
 echo "╚════════════════════════════════════════════════════════════════╝"

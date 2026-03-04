@@ -7,6 +7,24 @@
 #           y sincronizar eventos_confirmados correctamente
 # ============================================================================
 
+show_help() {
+    cat <<EOF
+Uso: $(basename "$0") [--help]
+
+Corrige el estado de una solicitud y sincroniza la tabla eventos_confirmados.
+
+Invoca este script desde la raíz del proyecto. No requiere parámetros propios.
+
+Opciones:
+  -h, --help  Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
 set -e
 
 # Colores para output

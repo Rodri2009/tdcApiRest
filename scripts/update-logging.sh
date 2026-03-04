@@ -1,6 +1,25 @@
 #!/bin/bash
 # Script para reemplazar console.log y console.error en controllers del backend
 
+show_help() {
+  cat <<EOF
+Uso: $(basename "$0") [--help]
+
+Descripción:
+  Reemplaza los llamados a console.log, console.error y console.warn en los
+  controladores del backend y añade las importaciones de debugFlags si
+  faltan.
+
+Opciones:
+  -h, --help  Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+  exit 0
+fi
+
 BACKEND_DIR="../backend"  # Actualización de la ruta relativa
 
 # Lista de controladores clave

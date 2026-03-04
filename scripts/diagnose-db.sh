@@ -6,6 +6,23 @@
 # Este script verifica la disponibilidad de MySQL/MariaDB (local o Docker)
 # y proporciona información para solucionar problemas.
 
+show_help() {
+  cat <<EOF
+Uso: $(basename "$0") [--help]
+
+Comprueba la disponibilidad de Docker y MySQL/MariaDB, muestra configuraciones
+y recomienda acciones para resolver errores.
+
+Opciones:
+  -h, --help  Muestra esta ayuda y sale.
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+  exit 0
+fi
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
