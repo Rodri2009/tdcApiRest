@@ -11,13 +11,14 @@ echo "[entrypoint] Comprobando node_modules y dependencias..."
 
 cd /app || exit 1
 
-# Si no existe node_modules o el módulo 'uuid' no se puede requerir, instalamos dependencias
+# Si no existe node_modules o faltan paquetes importantes, instalamos dependencias
 need_install=0
 if [ ! -d node_modules ]; then
   need_install=1
 else
-  # Intenta requerir 'uuid' para validar una dependencia crítica
+  # Intenta requerir un par de módulos críticos para validar instalación
   node -e "require('uuid')" >/dev/null 2>&1 || need_install=1
+  node -e "require('puppeteer')" >/dev/null 2>&1 || need_install=1
 fi
 
 if [ "$need_install" -eq 1 ]; then
@@ -53,22 +54,31 @@ if [ "$ENABLE_VNC" = "true" ]; then
   
   sleep 2  # Dar tiempo a Xvfb para inicializar
   
+  # Configurar teclado Español
+  # Layout: es (Spanish keyboard)
+  # Alt Gr + Q = @
+  # Alt Gr + 2 = @
+  export DISPLAY=:1
+  echo "[entrypoint] ⌨️  Configurando teclado Español..."
+  setxkbmap -display :1 es
+  echo "[entrypoint] ✓ Teclado configurado: es (Alt Gr + Q/2 = @)"
+  
   echo "[entrypoint] 🔌 Iniciando x11vnc en puerto 5901..."
   
   # Iniciar x11vnc
   # -display :1 = conectar a Xvfb
   # -forever = mantener corriendo
   # -nopw = sin contraseña
-  # -listen localhost = solo escuchar en localhost
-  # -noxkb = sin teclado X11 (simplifica)
   # -noxdamage = sin damagea X11
-  x11vnc -display :1 -forever -nopw -listen localhost -rfbport 5901 -noxkb -noxdamage -bg -quiet
+  # Al ejecutarse dentro de un contenedor Docker el puerto se publica desde
+  # 0.0.0.0, por lo que debemos escuchar en todas las interfaces. El
+  # parámetro "-listen localhost" restringía el binding a 127.0.0.1, lo que
+  # hacía que Docker NAT rechazara las conexiones entrantes. Por eso quitamos
+  # "-listen localhost" y dejamos la configuración por defecto (0.0.0.0).
+  x11vnc -display :1 -forever -nopw -rfbport 5901 -noxdamage -bg -quiet
   
-  echo "[entrypoint] ✓ VNC disponible en localhost:5901"
-  echo "[entrypoint] 📱 Conexión: VNC Viewer → 127.0.0.1:5901 (sin contraseña)"
-  
-  # Exportar DISPLAY para que Node.js sepa dónde está el servidor X
-  export DISPLAY=:1
+  echo "[entrypoint] ✓ VNC disponible en puerto 5901 (contenedor escucha en 0.0.0.0)"
+  echo "[entrypoint] 📱 Conéctate desde el host: vncviewer localhost:5901 (sin contraseña)"
 else
   echo "[entrypoint] ℹ️  VNC deshabilitado (ENABLE_VNC!=true)"
 fi

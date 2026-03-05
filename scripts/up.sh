@@ -174,8 +174,8 @@ echo -e "${GREEN}  ✓ Node.js $NODE_VERSION y npm $NPM_VERSION detectados${NC}"
 
 # --- Función para crear .env.tmp ---
 create_env_override() {
-    local env_file=".env"
-    local env_tmp=".env.tmp.$$"
+    local env_file="docker/.env"
+    local env_tmp="docker/.env.tmp.$$"
     
     if [ -f "$env_file" ]; then
         cp "$env_file" "$env_tmp"
@@ -192,7 +192,7 @@ create_env_override() {
         fi
     else
         sed -i 's/^ENABLE_PUPPETEER_MP=.*/ENABLE_PUPPETEER_MP=false/' "$env_tmp"
-        if ! grep-q "^ENABLE_PUPPETEER_MP=" "$env_tmp"; then
+        if ! grep -q "^ENABLE_PUPPETEER_MP=" "$env_tmp"; then
             [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
             echo "ENABLE_PUPPETEER_MP=false" >> "$env_tmp"
         fi
@@ -209,6 +209,21 @@ create_env_override() {
         if ! grep -q "^ENABLE_PUPPETEER_WA=" "$env_tmp"; then
             [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
             echo "ENABLE_PUPPETEER_WA=false" >> "$env_tmp"
+        fi
+    fi
+
+    # Si activamos cualquiera de los servicios Puppeteer, fuerza el modo no-headless
+    # para que la ventana sea visible en VNC y habilita VNC automáticamente.
+    if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+        sed -i 's/^HEADLESS=.*/HEADLESS=false/' "$env_tmp" || true
+        if ! grep -q "^HEADLESS=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "HEADLESS=false" >> "$env_tmp"
+        fi
+        sed -i 's/^ENABLE_VNC=.*/ENABLE_VNC=true/' "$env_tmp" || true
+        if ! grep -q "^ENABLE_VNC=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_VNC=true" >> "$env_tmp"
         fi
     fi
     
@@ -281,6 +296,9 @@ ENV_FILE_TO_USE="$ENV_FILE"
 if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
     ENV_FILE_TO_USE=$(create_env_override)
     echo -e "${CYAN}[*] Usando .env override con: MP=$ENABLE_MP, WA=$ENABLE_WA${NC}"
+    echo -e "${YELLOW}[*] Puppeteer habilitado: MP=$ENABLE_MP WA=$ENABLE_WA${NC}"
+    echo -e "${YELLOW}    VNC estará disponible en el contenedor backend: conecta con vncviewer localhost:5901 (sin contraseña).${NC}"
+    echo -e "${YELLOW}    Los puertos de debug del navegador son 9001 (MP) y 9002 (WA) si los necesita.${NC}"
 fi
 
 echo ""

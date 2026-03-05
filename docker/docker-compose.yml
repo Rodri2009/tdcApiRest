@@ -38,9 +38,7 @@ services:
       ENABLE_PUPPETEER_MP: ${ENABLE_PUPPETEER_MP}
       ENABLE_PUPPETEER_WA: ${ENABLE_PUPPETEER_WA}
       USER_DATA_DIR: ${USER_DATA_DIR}
-      # HEADLESS: si no está definido en .env asumimos true para que el
-      # navegador funcione en contenedores sin VNC
-      HEADLESS: ${HEADLESS:-true}
+      HEADLESS: ${HEADLESS}
       ENABLE_VNC: ${ENABLE_VNC:-false}
     ports:
       - "3000:3000"

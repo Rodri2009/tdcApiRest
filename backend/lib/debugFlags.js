@@ -66,8 +66,13 @@ function logWarning(message, data = null) {
     // siempre mostramos advertencias, son útiles incluso sin DEBUG_VERBOSE
     const timestamp = getTimestamp();
     const prefix = `[${timestamp}] ⚠`;
-    if (data !== null && typeof data === 'object') {
-        console.warn(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    if (data !== null) {
+        // imprimir cualquier tipo de dato (string, objeto, etc.)
+        if (typeof data === 'object') {
+            console.warn(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+        } else {
+            console.warn(`${prefix} ${message}`, data);
+        }
     } else {
         console.warn(`${prefix} ${message}`);
     }

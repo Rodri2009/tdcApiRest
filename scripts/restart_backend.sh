@@ -134,6 +134,20 @@ create_env_override() {
         fi
     fi
     
+    # Forzar modo no-headless y activar VNC si se habilitan servicios Puppeteer
+    if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+        sed -i 's/^HEADLESS=.*/HEADLESS=false/' "$env_tmp" || true
+        if ! grep -q "^HEADLESS=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "HEADLESS=false" >> "$env_tmp"
+        fi
+        sed -i 's/^ENABLE_VNC=.*/ENABLE_VNC=true/' "$env_tmp" || true
+        if ! grep -q "^ENABLE_VNC=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_VNC=true" >> "$env_tmp"
+        fi
+    fi
+    
     echo "$env_tmp"
 }
 
@@ -163,6 +177,9 @@ if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
     ENV_FILE_TO_USE=$(create_env_override)
     echo -e "${CYAN}[*] Usando comando: $COMPOSE_CMD${NC}"
     echo -e "${CYAN}[*] Usando .env override con: MP=$ENABLE_MP, WA=$ENABLE_WA${NC}"
+    echo -e "${YELLOW}[*] Puppeteer habilitado: MP=$ENABLE_MP WA=$ENABLE_WA${NC}"
+    echo -e "${YELLOW}    Conectar VNC: vncviewer localhost:5901 (sin contraseña).${NC}"
+    echo -e "${YELLOW}    Puertos de debug del navegador: 9001/9002 según corresponda.${NC}"
 else
     echo -e "${CYAN}[*] Usando comando: $COMPOSE_CMD${NC}"
 fi

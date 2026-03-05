@@ -31,10 +31,6 @@ let initializeWatch = null;
 const ENABLE_PUPPETEER_MP = process.env.ENABLE_PUPPETEER_MP === 'true';
 const ENABLE_PUPPETEER_WA = process.env.ENABLE_PUPPETEER_WA === 'true';
 
-// Loguear valores para diagnóstico temprano
-logVerbose(`[INIT] ENABLE_PUPPETEER_MP=${ENABLE_PUPPETEER_MP}`);
-logVerbose(`[INIT] ENABLE_PUPPETEER_WA=${ENABLE_PUPPETEER_WA}`);
-
 // Cargar módulos de Puppeteer solo si alguno está habilitado
 if (ENABLE_PUPPETEER_MP || ENABLE_PUPPETEER_WA) {
     try {
@@ -355,24 +351,9 @@ async function startServer() {
             if (ENABLE_PUPPETEER_MP) {
                 logVerbose('[PUPPETEER-MP] Iniciando servicio Mercado Pago...');
                 try {
-                    // Determinamos si debemos correr en modo headless. La variable
-                    // HEADLESS permite forzar cualquiera de los dos estados; cuando no
-                    // está definida asumimos ``true`` si VNC no está habilitado (es la
-                    // configuración por defecto en despliegues)
-                    let headlessFlag;
-                    if (process.env.HEADLESS === 'true') {
-                        headlessFlag = true;
-                    } else if (process.env.HEADLESS === 'false') {
-                        headlessFlag = false;
-                    } else {
-                        // sin valor explícito, optamos por headless salvo que se haya
-                        // activado VNC (donde el navegador debe ser visible)
-                        headlessFlag = process.env.ENABLE_VNC === 'true' ? false : true;
-                    }
-
                     const mpConfig = {
                         userDataDir: process.env.USER_DATA_DIR || '/home/pptruser/profile',
-                        headless: headlessFlag,
+                        headless: process.env.HEADLESS === 'true' ? true : false,
                         port: 9001  // Para debugging local
                     };
 
@@ -402,9 +383,7 @@ async function startServer() {
                     logSuccess('[PUPPETEER-MP] ✓ Session monitor iniciado');
 
                 } catch (err) {
-                    // logError ignora el segundo parámetro si no es un Error, así que
-                    // pasamos el objeto completo para que imprima mensaje + stack
-                    logError('[PUPPETEER-MP] Error al inicializar:', err);
+                    logError('[PUPPETEER-MP] Error al inicializar:', err.message);
                     logWarning('[PUPPETEER-MP] ⚠️  Mercado Pago continuará deshabilitado hasta reinicio');
                     mpBrowser = null;
                     mpPage = null;
@@ -416,19 +395,9 @@ async function startServer() {
             if (ENABLE_PUPPETEER_WA) {
                 logVerbose('[PUPPETEER-WA] Iniciando servicio WhatsApp...');
                 try {
-                    // reutilizamos la misma lógica de HEADLESS/VNC para el servicio WA
-                    let headlessFlag;
-                    if (process.env.HEADLESS === 'true') {
-                        headlessFlag = true;
-                    } else if (process.env.HEADLESS === 'false') {
-                        headlessFlag = false;
-                    } else {
-                        headlessFlag = process.env.ENABLE_VNC === 'true' ? false : true;
-                    }
-
                     const waConfig = {
                         userDataDir: process.env.WA_USER_DATA_DIR || '/home/pptruser/wa-profile',
-                        headless: headlessFlag,
+                        headless: process.env.HEADLESS === 'true' ? true : false,
                         port: 9002  // Para debugging local
                     };
 

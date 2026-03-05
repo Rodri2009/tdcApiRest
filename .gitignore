@@ -30,3 +30,6 @@ gemini-env/
 *.tar.gz
 tdcApiRest_backup_*.tar.gz
 _backups/*.tar.gz
+# Volumen de Chromium (datos de sesión, cookies, historiales)
+# Recuperado del volumen anterior - contiene datos que cambian constantemente
+chromium-profile/

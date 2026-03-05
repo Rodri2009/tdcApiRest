@@ -227,6 +227,20 @@ create_env_override() {
         fi
     fi
     
+    # Ajuste del modo HEADLESS y VNC cuando se habilita MP/WA
+    if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+        sed -i 's/^HEADLESS=.*/HEADLESS=false/' "$env_tmp" || true
+        if ! grep -q "^HEADLESS=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "HEADLESS=false" >> "$env_tmp"
+        fi
+        sed -i 's/^ENABLE_VNC=.*/ENABLE_VNC=true/' "$env_tmp" || true
+        if ! grep -q "^ENABLE_VNC=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_VNC=true" >> "$env_tmp"
+        fi
+    fi
+    
     echo "$env_tmp"
 }
 
@@ -270,6 +284,10 @@ print_debug_config() {
         echo -e "${BLUE}  - ENABLE_WA: $ENABLE_WA${NC}"
         echo -e "${BLUE}  - SQL_SCRIPTS: ${SQL_SCRIPTS[@]}${NC}"
         echo ""
+    if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+        echo -e "${YELLOW}[*] Puppeteer flags detectadas: MP=$ENABLE_MP WA=$ENABLE_WA${NC}"
+        echo -e "${YELLOW}    Para ver el navegador use vncviewer localhost:5901 (sin contraseña).${NC}"
+    fi
     fi
 }
 
@@ -287,6 +305,8 @@ reset_docker_containers() {
     local env_file_to_use=".env"
     if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
         env_file_to_use=$(create_env_override)
+        echo -e "${YELLOW}[*] Puppeteer habilitado: MP=$ENABLE_MP WA=$ENABLE_WA${NC}"
+        echo -e "${YELLOW}    VNC disponible en localhost:5901 → vncviewer localhost:5901${NC}"
     fi
 
     # DEBUG: mostrar ruta que usará docker-compose y su contenido
@@ -576,10 +596,13 @@ if [ "$DEBUG" = true ] && [ "$USE_DOCKER" = true ]; then
         
         echo -e "${CYAN}[*] Mostrando output del backend con verbose logging:${NC}"
         echo ""
+        echo -e "${YELLOW}    Nota: usando --service-ports para publicar puertos definidos (3000,5901,9001-9002).${NC}"
+        echo -e "${YELLOW}    Mientras este contenedor esté activo podrás conectar VNC en localhost:5901.${NC}"
         
         # Ejecutar en foreground pasando DEBUG_FLAGS como variable de entorno
+        # --service-ports publica los puertos definidos en compose
         # El --no-TTY asegura que docker-compose no intente usar terminal interactivo
-        docker-compose --env-file .env run --rm --no-TTY -e DEBUG_FLAGS="-d" backend 2>&1 || true
+        docker-compose --env-file .env run --rm --no-TTY --service-ports -e DEBUG_FLAGS="-d" backend 2>&1 || true
     else
         echo -e "${YELLOW}[!] Backend no está corriendo${NC}"
     fi

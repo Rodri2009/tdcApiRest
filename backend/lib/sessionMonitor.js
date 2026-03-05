@@ -1,7 +1,7 @@
 // sessionValidator lives in ../utils and may not be present in every
-environment (separado por commits, etc). Cargamos de forma defensiva y
-caemos a función trivial en caso de error para que el módulo pueda
-importarse sin fallar.
+// environment (separado por commits, etc). Cargamos de forma defensiva y
+// caemos a función trivial en caso de error para que el módulo pueda
+// importarse sin fallar.
 let validateSession;
 try {
     ({ validateSession } = require('../utils/sessionValidator'));
