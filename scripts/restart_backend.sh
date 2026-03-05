@@ -238,14 +238,34 @@ if [ -n "$DEBUG_FLAGS" ]; then
   
   sleep 1
   
-  # Mostrar logs en foreground
+  # Mensaje final claro
   echo ""
-  echo -e "${BLUE}======================================================${NC}"
-  echo -e "${BLUE}  Logs del Backend en Tiempo Real${NC}"
-  echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
-  echo -e "${BLUE}======================================================${NC}"
+  echo -e "${GREEN}======================================================${NC}"
+  echo -e "${GREEN}  ✓ Backend reiniciado correctamente${NC}"
+  echo -e "${GREEN}======================================================${NC}"
   echo ""
-  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" logs -f backend
+  echo -e "${CYAN}Servicios activos:${NC}"
+  $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" ps
+  echo ""
+  echo -e "${YELLOW}¿Cómo probar la app?${NC}"
+  echo -e "  - Frontend:     ${CYAN}http://localhost:8080${NC} (nginx)"
+  echo -e "  - Backend API:  ${CYAN}http://localhost:3000${NC} (Node.js)"
+  if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+    echo -e "  - VNC Backend:  ${CYAN}vncviewer localhost:5901${NC} (sin contraseña)"
+    echo -e "  - Debug Chrome: ${CYAN}localhost:9001 (MP), localhost:9002 (WA)${NC}"
+  fi
+  echo ""
+  echo -e "${YELLOW}¿Cómo ver logs en vivo?${NC}"
+  echo -e "  Ejecuta: ${CYAN}./scripts/backend-logs.sh${NC}"
+  echo ""
+  echo -e "${YELLOW}¿Cómo reiniciar o resetear?${NC}"
+  echo -e "  Reiniciar backend: ${CYAN}./scripts/restart_backend.sh${NC}"
+  echo -e "  Resetear todo:     ${CYAN}./scripts/reset.sh${NC}"
+  echo ""
+  echo -e "${YELLOW}¿Ayuda?${NC}"
+  echo -e "  Lee los README.md o ejecuta los scripts con -h"
+  echo ""
+  exit 0
 else
   echo -ne "  → Levantando backend... "
   $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" up -d --no-deps backend
@@ -257,17 +277,37 @@ else
   echo -e "${GREEN}✓${NC}"
   
   if [ $SHOW_LOGS -eq 1 ]; then
+    # Mensaje final claro
     echo ""
-    echo -e "${BLUE}======================================================${NC}"
-    echo -e "${BLUE}  Logs del Backend en Tiempo Real${NC}"
-    echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
-    echo -e "${BLUE}======================================================${NC}"
+    echo -e "${GREEN}======================================================${NC}"
+    echo -e "${GREEN}  ✓ Backend reiniciado correctamente${NC}"
+    echo -e "${GREEN}======================================================${NC}"
     echo ""
-    $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" logs -f backend
-  else
-    echo -e "${GREEN}✓${NC} Backend levantado en background"
+    echo -e "${CYAN}Servicios activos:${NC}"
+    $COMPOSE_CMD -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" ps
+    echo ""
+    echo -e "${YELLOW}¿Cómo probar la app?${NC}"
+    echo -e "  - Frontend:     ${CYAN}http://localhost:8080${NC} (nginx)"
+    echo -e "  - Backend API:  ${CYAN}http://localhost:3000${NC} (Node.js)"
+    if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+      echo -e "  - VNC Backend:  ${CYAN}vncviewer localhost:5901${NC} (sin contraseña)"
+      echo -e "  - Debug Chrome: ${CYAN}localhost:9001 (MP), localhost:9002 (WA)${NC}"
+    fi
+    echo ""
+    echo -e "${YELLOW}¿Cómo ver logs en vivo?${NC}"
+    echo -e "  Ejecuta: ${CYAN}./scripts/backend-logs.sh${NC}"
+    echo ""
+    echo -e "${YELLOW}¿Cómo reiniciar o resetear?${NC}"
+    echo -e "  Reiniciar backend: ${CYAN}./scripts/restart_backend.sh${NC}"
+    echo -e "  Resetear todo:     ${CYAN}./scripts/reset.sh${NC}"
+    echo ""
+    echo -e "${YELLOW}¿Ayuda?${NC}"
+    echo -e "  Lee los README.md o ejecuta los scripts con -h"
+    echo ""
+
+    exit 0
   fi
-fi
+  fi
 
 echo ""
 echo -e "${GREEN}================================================${NC}"

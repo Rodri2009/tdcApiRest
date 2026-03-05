@@ -33,3 +33,6 @@ _backups/*.tar.gz
 # Volumen de Chromium (datos de sesión, cookies, historiales)
 # Recuperado del volumen anterior - contiene datos que cambian constantemente
 chromium-profile/
+# Temp env overrides
+*.env.tmp*
+docker/.env.tmp*

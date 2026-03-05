@@ -563,49 +563,35 @@ fi
 echo "  SQL ejecutado: $([ "$SKIP_SQL" = true ] && echo "NO" || echo "SÍ (${#SQL_SCRIPTS[@]} scripts)")"
 echo ""
 
-# Paso 4: Mostrar logs en vivo si se solicitó debug
-if [ "$DEBUG" = true ] && [ "$USE_DOCKER" = true ]; then
+
+# --- Mensaje Final Claro ---
+echo -e "${GREEN}======================================================${NC}"
+echo -e "${GREEN}  ✓ Reset de entorno TDC completado${NC}"
+echo -e "${GREEN}======================================================${NC}"
+echo ""
+if [ "$USE_DOCKER" = true ]; then
+    echo -e "${CYAN}Servicios activos:${NC}"
+    docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | grep -E 'docker-(mariadb|backend|nginx)' || echo "    (sin contenedores Docker TDC activos)"
     echo ""
-    echo -e "${BLUE}======================================================${NC}"
-    echo -e "${BLUE}  🐛 Mostrando logs del sistema en tiempo real${NC}"
-    echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
-    echo -e "${BLUE}======================================================${NC}"
-    echo ""
-    
-    sleep 1
-    
-    echo -e "${CYAN}[*] Status de contenedores:${NC}"
-    docker ps --format "table {{.Names}}\t{{.Status}}" | grep -E 'docker-(mariadb|backend|nginx)' || docker ps --all --format "table {{.Names}}\t{{.Status}}" | grep -E 'docker-(mariadb|backend|nginx)'
-    echo ""
-    
-    # Mostrar logs de mariadb si está activo
-    if docker ps --format "{{.Names}}" 2>/dev/null | grep -q docker-mariadb; then
-        echo -e "${CYAN}[*] Logs de MariaDB (últimas líneas):${NC}"
-        docker logs --tail=20 docker-mariadb-1 2>/dev/null | tail -15
-        echo ""
-    fi
-    
-    # Mostrar logs del backend con debug flags  
-    if docker ps --format "{{.Names}}" 2>/dev/null | grep -q docker-backend; then
-        echo -e "${CYAN}[*] Ejecutando backend en foreground con flags de debug...${NC}"
-        cd "$DOCKER_DIR"
-        
-        # Detener el backend previo que está en background
-        docker-compose --env-file .env stop backend 2>/dev/null || true
-        sleep 1
-        
-        echo -e "${CYAN}[*] Mostrando output del backend con verbose logging:${NC}"
-        echo ""
-        echo -e "${YELLOW}    Nota: usando --service-ports para publicar puertos definidos (3000,5901,9001-9002).${NC}"
-        echo -e "${YELLOW}    Mientras este contenedor esté activo podrás conectar VNC en localhost:5901.${NC}"
-        
-        # Ejecutar en foreground pasando DEBUG_FLAGS como variable de entorno
-        # --service-ports publica los puertos definidos en compose
-        # El --no-TTY asegura que docker-compose no intente usar terminal interactivo
-        docker-compose --env-file .env run --rm --no-TTY --service-ports -e DEBUG_FLAGS="-d" backend 2>&1 || true
-    else
-        echo -e "${YELLOW}[!] Backend no está corriendo${NC}"
-    fi
 fi
+echo -e "${YELLOW}¿Cómo probar la app?${NC}"
+echo -e "  - Frontend:     ${CYAN}http://localhost:8080${NC} (nginx)"
+echo -e "  - Backend API:  ${CYAN}http://localhost:3000${NC} (Node.js)"
+if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+    echo -e "  - VNC Backend:  ${CYAN}vncviewer localhost:5901${NC} (sin contraseña)"
+    echo -e "  - Debug Chrome: ${CYAN}localhost:9001 (MP), localhost:9002 (WA)${NC}"
+fi
+echo ""
+echo -e "${YELLOW}¿Cómo ver logs en vivo?${NC}"
+echo -e "  Ejecuta: ${CYAN}./scripts/backend-logs.sh${NC}"
+echo ""
+echo -e "${YELLOW}¿Cómo reiniciar o resetear?${NC}"
+echo -e "  Reiniciar backend: ${CYAN}./scripts/restart_backend.sh${NC}"
+echo -e "  Resetear todo:     ${CYAN}./scripts/reset.sh${NC}"
+echo ""
+echo -e "${YELLOW}¿Ayuda?${NC}"
+echo -e "  Lee los README.md o ejecuta los scripts con -h"
+echo ""
+exit 0
 
 exit 0

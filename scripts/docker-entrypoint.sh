@@ -63,6 +63,12 @@ if [ "$ENABLE_VNC" = "true" ]; then
   setxkbmap -display :1 es
   echo "[entrypoint] ✓ Teclado configurado: es (Alt Gr + Q/2 = @)"
   
+  # arrancar gestor de ventanas liviano para que x11vnc pueda detectar
+  # daños (sin él el escritorio queda estático y no redibuja).  no hace falta
+  # abrir un terminal adicional, solo entorpece la carga.
+  echo "[entrypoint] 🚪 Iniciando openbox en display :1..."
+  openbox --display :1 &
+  
   echo "[entrypoint] 🔌 Iniciando x11vnc en puerto 5901..."
   
   # Iniciar x11vnc
@@ -70,14 +76,19 @@ if [ "$ENABLE_VNC" = "true" ]; then
   # -forever = mantener corriendo
   # -nopw = sin contraseña
   # -noxdamage = sin damagea X11
-  # Al ejecutarse dentro de un contenedor Docker el puerto se publica desde
-  # 0.0.0.0, por lo que debemos escuchar en todas las interfaces. El
-  # parámetro "-listen localhost" restringía el binding a 127.0.0.1, lo que
-  # hacía que Docker NAT rechazara las conexiones entrantes. Por eso quitamos
-  # "-listen localhost" y dejamos la configuración por defecto (0.0.0.0).
-  x11vnc -display :1 -forever -nopw -rfbport 5901 -noxdamage -bg -quiet
+  # -o /app/vnc.log = escribe un log con información de conexiones entrantes
+  # -wait/-defer: ayuda cuando no hay WM
+  # -ncache*: mejora rendimiento del cliente TigerVNC
+  # -defer causes x11vnc to sleep when no clients are connected; a large
+  # value (50s) introduced a *huge* lag between a connection attempt and the
+  # server waking to accept it.  the delay the user saw (~2 min) was exactly
+  # two defer intervals.  drop the flag (or keep it small) so the listener
+  # responds immediately.
+  x11vnc -display :1 -forever -nopw -rfbport 5901 -noxdamage -wait 5 \
+          -ncache 10 -ncache_cr -o /app/vnc.log -bg
   
   echo "[entrypoint] ✓ VNC disponible en puerto 5901 (contenedor escucha en 0.0.0.0)"
+  echo "[entrypoint] 📝 Registrando conexiones de VNC en /app/vnc.log"
   echo "[entrypoint] 📱 Conéctate desde el host: vncviewer localhost:5901 (sin contraseña)"
 else
   echo "[entrypoint] ℹ️  VNC deshabilitado (ENABLE_VNC!=true)"
