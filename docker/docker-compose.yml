@@ -57,8 +57,8 @@ services:
       - ../scripts:/app/scripts
       # IMPORTANTE: Bind mounts (HOST) para perfiles de navegadores Puppeteer
       # Las cookies/sesión se persisten EN EL HOST, no en volúmenes Docker anónimos
-      - ../backend/profile/mp-profile:/home/pptruser/mp-profile    # Mercado Pago
-      - ../backend/profile/wa-profile:/home/pptruser/wa-profile    # WhatsApp
+      - ../backend/profile/mp-profile:/home/pptruser/mp-profile # Mercado Pago
+      - ../backend/profile/wa-profile:/home/pptruser/wa-profile # WhatsApp
 
   mariadb:
     image: mariadb:10.6

@@ -16,6 +16,7 @@ if (process.argv.includes('-d') || process.argv.includes('--debug')) {
 const pool = require('./db');
 const { logRequest, logVerbose, logError, logWarning, logSuccess } = require('./lib/debugFlags');
 const logResponseMiddleware = require('./middleware/logResponseMiddleware');
+const { logMiddleware } = require('./middleware/logMiddleware');
 const { performSyncLogos, performSyncFlyers } = require('./controllers/bandaController');
 
 // ============================================================================
@@ -121,6 +122,9 @@ app.use((req, res, next) => {
     logVerbose(`Body recibido: ${JSON.stringify(req.body)}`);
     next();
 });
+
+// Middleware de logging automático por servicio (TDC, MP, WA)
+app.use(logMiddleware);
 
 // Middleware para interceptar y loguear respuestas JSON
 app.use(logResponseMiddleware);

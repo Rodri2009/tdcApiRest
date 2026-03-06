@@ -1,6 +1,4 @@
-# Ignorar contenido de perfiles de navegadores (cookies, caché, sesiones)
-# pero mantener la estructura de directorios
+# Ignora cookies y cache pero mantiene la estructura
 *
+!.gitkeep
 !.gitignore
-!mp-profile/.gitkeep
-!wa-profile/.gitkeep

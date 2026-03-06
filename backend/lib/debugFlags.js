@@ -17,6 +17,70 @@ function logRequest(method, endpoint, extra = '') {
 }
 
 /**
+ * Logs específicos por servicio - facilitan filtrado en tiempo real
+ */
+
+// Logs de TDC (endpoints principales: /api/bandas, /api/solicitudes, etc.)
+function logTDC(message, data = null) {
+    if (process.env.DEBUG_VERBOSE !== 'true') return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] [TDC]`;
+    if (data !== null && typeof data === 'object') {
+        console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    } else {
+        console.log(`${prefix} ${message}`);
+    }
+}
+
+// Logs de Mercado Pago
+function logMP(message, data = null) {
+    if (process.env.DEBUG_VERBOSE !== 'true') return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] [MP]`;
+    if (data !== null && typeof data === 'object') {
+        console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    } else {
+        console.log(`${prefix} ${message}`);
+    }
+}
+
+// Logs de WhatsApp
+function logWA(message, data = null) {
+    if (process.env.DEBUG_VERBOSE !== 'true') return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] [WA]`;
+    if (data !== null && typeof data === 'object') {
+        console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    } else {
+        console.log(`${prefix} ${message}`);
+    }
+}
+
+// Logs de inicialización/sincronización
+function logInit(message, data = null) {
+    if (process.env.DEBUG_VERBOSE !== 'true') return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] [INIT]`;
+    if (data !== null && typeof data === 'object') {
+        console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    } else {
+        console.log(`${prefix} ${message}`);
+    }
+}
+
+// Logs de Puppeteer
+function logPuppeteer(message, data = null) {
+    if (process.env.DEBUG_VERBOSE !== 'true') return;
+    const timestamp = getTimestamp();
+    const prefix = `[${timestamp}] [PUPPETEER]`;
+    if (data !== null && typeof data === 'object') {
+        console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    } else {
+        console.log(`${prefix} ${message}`);
+    }
+}
+
+/**
  * Log verbose (solo con DEBUG_VERBOSE=true)
  */
 function logVerbose(message, data = null) {
@@ -90,5 +154,10 @@ module.exports = {
     logVerbose,
     logError,
     logSuccess,
-    logWarning
+    logWarning,
+    logTDC,
+    logMP,
+    logWA,
+    logInit,
+    logPuppeteer
 };
