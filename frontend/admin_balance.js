@@ -210,7 +210,7 @@
         if (isNaN(d)) return { date: '—', time: '—' };
         const shortMonths = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
         const mon = shortMonths[d.getMonth()] || '';
-        const dd = String(d.getDate()).padStart(2, '0');
+        const dd = String(d.getDate());              // no leading zero
         const hh = String(d.getHours()).padStart(2, '0');
         const mi = String(d.getMinutes()).padStart(2, '0');
         return { date: `${dd} ${mon}`, time: `${hh}:${mi}` };
