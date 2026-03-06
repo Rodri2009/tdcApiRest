@@ -208,11 +208,12 @@
         if (!dt) return { date: '—', time: '—' };
         const d = new Date(dt);
         if (isNaN(d)) return { date: '—', time: '—' };
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const shortMonths = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        const mon = shortMonths[d.getMonth()] || '';
         const dd = String(d.getDate()).padStart(2, '0');
         const hh = String(d.getHours()).padStart(2, '0');
         const mi = String(d.getMinutes()).padStart(2, '0');
-        return { date: `${mm}/${dd}`, time: `${hh}:${mi}` };
+        return { date: `${dd} ${mon}`, time: `${hh}:${mi}` };
     }
 
     /* --- util --- */
@@ -419,10 +420,23 @@
 
     function showRawJson(obj) {
         const pre = document.getElementById('tx-raw');
-        if (!obj) {
+        const translateType = t => ({income:'Ingreso',payment:'Pago',transfer:'Transferencia',purchase:'Compra',withdrawal:'Retiro',unknown:'Desconocido'})[t] || t;
+        let out = obj;
+        try {
+            // si es estructura de actividad, traducir tipos
+            if (out && out.transactions && Array.isArray(out.transactions)) {
+                out = JSON.parse(JSON.stringify(out)); // clone
+                out.transactions.forEach(tx => {
+                    if (tx.type) tx.type = translateType(tx.type);
+                });
+            }
+        } catch (e) {
+            // ignore
+        }
+        if (!out) {
             pre.textContent = 'null';
         } else {
-            try { pre.textContent = JSON.stringify(obj, null, 2); } catch (e) { pre.textContent = String(obj); }
+            try { pre.textContent = JSON.stringify(out, null, 2); } catch (e) { pre.textContent = String(out); }
         }
         pre.classList.remove('hidden');
         document.getElementById('copy-raw-btn').classList.remove('hidden');

@@ -146,13 +146,24 @@ h1 {
 .tx-table td:nth-child(2) {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    text-align: right;
+    text-align: left;
 }
 
 .tx-table td:nth-child(3) {
     font-size: 0.82rem;
     color: #666;
-    text-align: right;
+    text-align: left;
+}
+
+/* all cells left align by default to match headers */
+.tx-table td {
+    text-align: left;
+}
+
+/* destacar filas de ingreso */
+.tx-table tbody tr.income {
+    background: linear-gradient(90deg, rgba(40, 167, 69, 0.08), transparent);
+    font-weight: 700;
 }
 
 /* Estilos para transacciones de ingreso (positivas) */
