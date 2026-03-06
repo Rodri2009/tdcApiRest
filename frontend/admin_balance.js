@@ -175,17 +175,13 @@
         
         if (currentFingerprint !== lastTransactionState) {
             lastTransactionState = currentFingerprint;
-            console.log('[SSE] 📥 DATOS INGRESADOS:', {
-                type: msgData?.type,
-                transaction: {
-                    nombre: tx?.name,
-                    descripcion: tx?.description,
-                    monto: tx?.amount,
-                    fecha: tx?.date,
-                    hora: tx?.time,
-                    raw: tx?.raw?.substring(0, 50)
-                }
-            });
+            console.log('[SSE] 📥 JSON TRANSACCIÓN:', JSON.stringify({
+                nombre: tx?.name,
+                descripcion: tx?.description,
+                monto: tx?.amount,
+                fecha: tx?.date,
+                hora: tx?.time
+            }, null, 2));
         }
     }
 
