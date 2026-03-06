@@ -12,6 +12,10 @@
 #   -h, --help        : muestra ayuda de node server.js
 #   --migrate         : aplica migraciones SQL después de levantar
 #
+# Nota: este script ya no engancha los logs del backend al finalizar.  Si
+# quieres monitorear la salida en tiempo real utiliza el helper
+#   ./scripts/backend-logs.sh
+#
 # FLAGS DE SERVICIOS (Puppeteer):
 #   --mp              : Habilita Mercado Pago (ENABLE_PUPPETEER_MP=true)
 #   --wa              : Habilita WhatsApp (ENABLE_PUPPETEER_WA=true)
@@ -419,22 +423,10 @@ if [ -n "$DEBUG_FLAGS" ]; then
     echo -e "${GREEN}✓${NC}"
     
     sleep 1
-    
-    echo ""
-    echo -e "${BLUE}======================================================${NC}"
-    echo -e "${BLUE}  Logs del Backend en Tiempo Real${NC}"
-    echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
-    echo -e "${BLUE}======================================================${NC}"
-    echo ""
-    docker logs -f "$BACKEND_RUN_ID" 2>/dev/null || "${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" logs -f backend
-else
-    echo ""
-    echo -e "${BLUE}======================================================${NC}"
-    echo -e "${BLUE}  Logs del Backend en Tiempo Real${NC}"
-    echo -e "${BLUE}  (Presiona Ctrl+C para salir)${NC}"
-    echo -e "${BLUE}======================================================${NC}"
-    echo ""
-    "${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" logs -f backend
+
+    # ya no hacemos tail automático de logs; el usuario debe ejecutar
+    # ./scripts/backend-logs.sh si quiere ver la salida en vivo.
+
 fi
 
 # --- Mensaje Final Claro ---

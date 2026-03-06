@@ -24,14 +24,14 @@
 #   --wa             Habilita WhatsApp (ENABLE_PUPPETEER_WA=true)
 #
 # Opciones de debug:
-#   -d, --debug      Muestra debug detallado + logs en vivo
+#   -d, --debug      Muestra debug detallado (no engancha logs en tiempo real)
 #   -l, --local      Fuerza MySQL local (sin Docker)
 #   -h, --help       Muestra esta ayuda
 #
 # Ejemplos:
 #   ./reset.sh                    # Todos los contenedores + reset BD
 #   ./reset.sh --db               # Solo mariadb + reset BD
-#   ./reset.sh --backend -d       # Solo backend con logs en vivo
+#   ./reset.sh --backend -d       # Solo backend (usa backend-logs.sh para ver salida)
 #   ./reset.sh --db --skip-test   # DB sin datos de prueba
 #   ./reset.sh --all-rebuild -d   # Todo con rebuild + logs
 #   ./reset.sh --mp --wa -d       # Con WA y MP habilitados + debug
