@@ -52,15 +52,18 @@ EOF
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --tdc)
-            FILTER="[TDC]"
+            # Filtro para TDC: incluye [TDC] y excluye [MP] y [WA]
+            FILTER="\\[TDC\\]|^\\[entrypoint\\]|^\\[Browser|^\\[SessionMonitor|^\\[INIT|^\\[ROUTES|^\\[SYNC"
             shift
             ;;
         --mp)
-            FILTER="[MP]"
+            # Filtro para Mercado Pago: incluye [MP] y logs relacionados
+            FILTER="\\[MP\\]|\\[ActivityService\\]|\\[BalanceService\\]|\\[TransactionWatch\\]|\\[WatchController\\]|Puppeteer|Mercado|mercadopago"
             shift
             ;;
         --wa)
-            FILTER="[WA]"
+            # Filtro para WhatsApp: incluye [WA] y logs relacionados
+            FILTER="\\[WA\\]|WhatsApp|whatsapp|Whatsapp|botpress"
             shift
             ;;
         --all)
@@ -104,10 +107,12 @@ else
     # Mapear el filtro a un nombre legible
     FILTER_NAME=""
     case "$FILTER" in
-        "[TDC]") FILTER_NAME="TDC" ;;
-        "[MP]") FILTER_NAME="Mercado Pago" ;;
-        "[WA]") FILTER_NAME="WhatsApp" ;;
+        *"TDC"*) FILTER_NAME="TDC (endpoints principales)" ;;
+        *"MP"*) FILTER_NAME="Mercado Pago (MP, activity, balance)" ;;
+        *"WA"*) FILTER_NAME="WhatsApp (WA, botpress)" ;;
     esac
-    echo -e "${CYAN}[*] Mostrando logs de: $CONTAINER_NAME (filtro: $FILTER_NAME)${NC}"
+    echo -e "${CYAN}[*] Filtrando logs por: $FILTER_NAME${NC}"
+    echo -e "${YELLOW}    Puedes presionar Ctrl+C para detener${NC}"
+    echo ""
     docker logs -f "$CONTAINER_NAME" | grep -E "$FILTER" || true
 fi
