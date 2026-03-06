@@ -121,10 +121,14 @@ exports.watchTransactions = async (req, res) => {
         // Validar token
         try {
             const decoded = tokenManager.verifyToken(token);
+            if (!decoded) {
+                logError(`[MP-Watch] ❌ Token validation failed: Token inválido o tipo incorrecto`);
+                return res.status(401).json({ error: 'Invalid token' });
+            }
             req.user = decoded;  // Asignar usuario para que watchActivityHandler pueda acceder
-            logVerbose(`[MP-Watch] ✓ Token validado para usuario: ${decoded.id}`);
+            logVerbose(`[MP-Watch] ✓ Token validado para usuario: ${decoded.id || 'unknown'}`);
         } catch (err) {
-            logError('[MP-Watch] ❌ Token validation failed:', err.message);
+            logError(`[MP-Watch] ❌ Token validation failed: ${err?.message || err || 'Unknown error'}`);
             return res.status(401).json({ error: 'Invalid token' });
         }
 
