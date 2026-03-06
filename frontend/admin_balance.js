@@ -379,11 +379,13 @@
             console.debug('[UI] fetchTransactions', json);
             if (json && json.success && json.data && Array.isArray(json.data.transactions)) {
                 allTransactions = json.data.transactions;
+                console.log('[UI] fetchTransactions -> tx count', allTransactions.length);
                 renderTransactions(allTransactions);
                 return allTransactions;
             }
             if (json && json.transactions) {
                 allTransactions = json.transactions;
+                console.log('[UI] fetchTransactions (legacy) -> tx count', allTransactions.length);
                 renderTransactions(allTransactions);
                 return allTransactions;
             }
