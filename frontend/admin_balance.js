@@ -435,7 +435,10 @@
         try {
             // refrescar token cada vez que intentamos conectar
             if (!authToken) {
+                console.log('[SSE] autentificando antes de conectar...');
                 await authenticateAndGetToken();
+            } else {
+                console.log('[SSE] usando token existente, longitud', authToken.length);
             }
             // EventSource no soporta headers personalizados, pasar token como query param
             const watchUrl = authToken
@@ -498,7 +501,8 @@
                 console.error('[SSE] readyState:', es.readyState);
                 statusEl.textContent = 'watch: desconectado — reintentando...';
                 es.close();
-                console.log('[SSE] Cerrando conexión, reintentando en 3s...');
+                console.log('[SSE] cerrada con error, reautenticando y reintentando en 3s...');
+                authToken = null; // forzar re-autenticación
                 setTimeout(initSSE, 3000);
             };
         } catch (err) {
