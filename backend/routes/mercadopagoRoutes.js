@@ -21,7 +21,10 @@ router.use((req, res, next) => {
     next();
 });
 
-// ✅ Aplicar autenticación JWT a TODAS las rutas de Mercado Pago
+// ⚠️ SSE endpoint SIN protección JWT (valida token en query param internamente)
+router.get('/watch', mercadopagoController.watchTransactions);
+
+// ✅ Aplicar autenticación JWT a las demás rutas de Mercado Pago
 router.use(protect);
 
 /**
@@ -45,8 +48,5 @@ router.get('/activity', mercadopagoController.getActivity);
  * Autenticado: ✅ Requiere token JWT válido
  */
 router.post('/refresh', mercadopagoController.refresh);
-
-// SSE endpoint que el frontend consulta con `/activity/watch`
-router.get('/watch', mercadopagoController.watchTransactions);
 
 module.exports = router;

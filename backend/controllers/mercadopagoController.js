@@ -11,6 +11,7 @@ const { logSuccess, logError, logVerbose } = require('../lib/debugFlags') || {
     logError: (msg) => console.error('[ERR]', msg),
     logVerbose: (msg) => console.log('[VERBOSE]', msg)
 };
+const tokenManager = require('../lib/tokenManager');
 
 const MP_SERVER = process.env.MP_SERVER_URL || 'http://localhost:9001';
 
@@ -110,6 +111,23 @@ exports.getActivity = async (req, res) => {
  */
 exports.watchTransactions = async (req, res) => {
     try {
+        // Validar token del query param (ya que no viene en headers para SSE/EventSource)
+        const token = req.query.token || req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            logError('[MP-Watch] ❌ No token provided');
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        // Validar token
+        try {
+            const decoded = tokenManager.verifyToken(token);
+            req.user = decoded;  // Asignar usuario para que watchActivityHandler pueda acceder
+            logVerbose(`[MP-Watch] ✓ Token validado para usuario: ${decoded.id}`);
+        } catch (err) {
+            logError('[MP-Watch] ❌ Token validation failed:', err.message);
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+
         // Modo 1: Usar handler local si req.mpPage disponible
         if (req.mpPage && watchActivityHandler) {
             logVerbose(`[MP-Watch] Usando handler local (modo directo)`);
