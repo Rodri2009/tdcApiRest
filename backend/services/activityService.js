@@ -343,15 +343,33 @@ async function scrapeActivity(page) {
 
             // Apply normalization in-place
             transactions = transactions.map(t => {
-                // For structured transactions, use the data as-is when available
+                // dom-precise: monto ya calculado correctamente, solo normalizar formato
+                if (t._source === 'dom-precise') {
+                    const amountValue = (t.amount !== null && t.amount !== undefined)
+                        ? Number(Number(t.amount).toFixed(2))
+                        : null;
+                    const type = guessType('', t.description, null);
+                    return {
+                        ...t,
+                        amount:      amountValue,
+                        currency:    t.currency || 'ARS',
+                        // Mantener date y time separados; también componer dateTime para compat
+                        date:        t.date  || '',
+                        time:        t.time  || '',
+                        dateTime:    t.date && t.time ? `${t.date} ${t.time}` : (t.date || t.time || null),
+                        type,
+                        name:        (t.name || '').substring(0, 100),
+                        title:       (t.name || '').substring(0, 100),
+                        description: (t.description || '').substring(0, 200)
+                    };
+                }
+
+                // Para estrategias plantilla / in-page-json
                 let amountValue = null;
                 if (t._isStructured && t.amount) {
-                    // Structured data: parse the fraction (may include sign and formatting)
                     amountValue = parseNumberText(t.amount);
-                    // Apply sign detection with structured category info
                     amountValue = detectSignFromText(t.title + ' ' + (t.description || ''), amountValue, { category: t.category });
                 } else {
-                    // Unstructured (DOM fallback): extract and parse
                     const full = (t.raw || '').replace(/\s+/g, ' ').trim();
                     const numRegex = /([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{1,2})?)/g;
                     const nums = [];
@@ -363,11 +381,9 @@ async function scrapeActivity(page) {
                     }
                 }
 
-                // Date parsing: for structured data, prefer creating Date → grouperDate.value → creationDate
                 let dateTimeIso = null;
                 if (t._isStructured) {
-                    // grouperDate is formatted like "20:18 hs" or "17 de febrero"
-                    const gVal = t.dateTime; // e.g., "20:18 hs" or "17 de febrero"
+                    const gVal = t.dateTime;
                     dateTimeIso = parseDateTimeFromText(gVal, gVal, t.creationDate);
                 } else {
                     dateTimeIso = parseDateTimeFromText(t.dateTime, t.dateTime, null);
@@ -377,11 +393,14 @@ async function scrapeActivity(page) {
 
                 return {
                     ...t,
-                    amount: amountValue !== null ? Number(Number(amountValue).toFixed(2)) : (t.amount || null),
-                    currency: t.currency || 'ARS',
-                    dateTime: dateTimeIso || t.dateTime || null,
+                    amount:      amountValue !== null ? Number(Number(amountValue).toFixed(2)) : (t.amount || null),
+                    currency:    t.currency || 'ARS',
+                    dateTime:    dateTimeIso || t.dateTime || null,
+                    date:        t.date  || '',
+                    time:        t.time  || '',
                     type,
-                    title: (t.title || t.description || '').substring(0, 100),
+                    name:        (t.name || t.title || t.description || '').substring(0, 100),
+                    title:       (t.title || t.description || '').substring(0, 100),
                     description: (t.description || '').substring(0, 200)
                 };
             });

@@ -218,21 +218,27 @@
         displayList.forEach(tx => {
             const tr = document.createElement('tr');
 
-            const desc = escapeHtml(tx.raw || tx.type || 'Movimiento');
-            const amtNum = parseAmount(tx.amount);
-            const sign = (amtNum > 0) ? '+' : (amtNum < 0 ? '-' : '');
-            const amtDisplay = isNaN(amtNum) ? escapeHtml(tx.amount || '') : `${sign}${formatCurrency(Math.abs(amtNum))}`;
+            const name  = escapeHtml(tx.name  || tx.title || '—');
+            const desc  = escapeHtml(tx.description || tx.type || '—');
+            const date  = escapeHtml(tx.date  || (tx.dateTime ? tx.dateTime.split(' ').slice(0, 3).join(' ') : '') || '—');
+            const time  = escapeHtml(tx.time  || (tx.dateTime || '').replace(/^.*?(\d{1,2}:\d{2}.*)$/, '$1') || '—');
 
-            // Agregar clase "income" si es un ingreso (monto positivo)
-            if (amtNum > 0) {
-                tr.classList.add('income');
-            }
+            const amtNum    = parseAmount(tx.amount);
+            const sign      = (amtNum > 0) ? '+' : '';
+            const amtDisplay = isNaN(amtNum)
+                ? escapeHtml(String(tx.amount || '—'))
+                : `${sign}${formatCurrency(amtNum)}`;
+
+            if (amtNum > 0) tr.classList.add('income');
+            if (amtNum < 0) tr.classList.add('expense');
 
             tr.innerHTML = `
-        <td>${desc}</td>
-        <td>${amtDisplay}</td>
-        <td>${escapeHtml(tx.dateTime || '')}</td>
-      `;
+                <td class="tx-col-name">${name}</td>
+                <td class="tx-col-desc">${desc}</td>
+                <td class="tx-col-amount">${amtDisplay}</td>
+                <td class="tx-col-date">${date}</td>
+                <td class="tx-col-time">${time}</td>
+            `;
 
             tbody.appendChild(tr);
         });
