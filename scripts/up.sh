@@ -319,6 +319,20 @@ if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
 fi
 
 echo ""
+
+# --- Comprobación: si backend ya está corriendo, sugerir restart_backend.sh ---
+BACKEND_RUNNING=$(docker ps --filter "name=docker-backend" --filter "status=running" -q 2>/dev/null | wc -l)
+if [ "$BACKEND_RUNNING" -gt 0 ]; then
+    echo -e "${YELLOW}[⚠]  El backend ya está en ejecución.${NC}"
+    echo -e "${CYAN}[*]  Para reiniciarlo sin perder la sesión de Mercado Pago:${NC}"
+    echo -e "       ./scripts/restart_backend.sh"
+    echo ""
+    echo -e "${CYAN}[*]  Para reiniciar COMPLETAMENTE (limpiar BD):${NC}"
+    echo -e "       ./scripts/up.sh${NC}"
+    echo ""
+    exit 0
+fi
+
 echo -e "${YELLOW}[*]${NC} Limpiando contenedores previos..."
 cleanup_old_backend_containers
 
