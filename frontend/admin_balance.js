@@ -272,7 +272,7 @@
             const headers = {};
             if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
-            const res = await fetch(`${API}/api/balance?fresh=${fresh}`, { headers });
+            const res = await fetch(`${API}/balance?fresh=${fresh}`, { headers });
             const json = await res.json();
             if (json && json.success && json.data) {
                 setBalance(json.data);
@@ -303,7 +303,7 @@
             if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
             // Siempre pedir muchas transacciones para poder mostrar "ver todas"
-            const res = await fetch(`${API}/api/activity?fresh=${fresh}&limit=200`, { headers });
+            const res = await fetch(`${API}/activity?fresh=${fresh}&limit=200`, { headers });
             const json = await res.json();
             console.debug('[UI] fetchTransactions', json);
             if (json && json.success && json.data && Array.isArray(json.data.transactions)) {
@@ -333,7 +333,7 @@
             const headers = {};
             if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
-            const res = await fetch(`${API}/api/activity?fresh=${fresh}&limit=${limit}`, { headers });
+            const res = await fetch(`${API}/activity?fresh=${fresh}&limit=${limit}`, { headers });
             const json = await res.json();
             console.debug('[UI] fetchTransactionsRaw', json);
             if (json && json.success && json.data) return json.data;
@@ -363,8 +363,8 @@
         try {
             // EventSource no soporta headers personalizados, pasar token como query param
             const watchUrl = authToken
-                ? `${API}/api/activity/watch?token=${encodeURIComponent(authToken)}`
-                : `${API}/api/activity/watch`;
+                ? `${API}/watch?token=${encodeURIComponent(authToken)}`
+                : `${API}/watch`;
 
             const es = new EventSource(watchUrl);
             es.onopen = () => { statusEl.textContent = 'watch: conectado'; };

@@ -17,15 +17,15 @@ router.use((req, res, next) => {
 });
 
 // POST /api/whatsapp/send-message - Envía un mensaje
-router.post('/send-message', whatsappController.sendMessage);
+router.post('/send-message', whatsappController.sendMessageHandler);
 
 // GET /api/whatsapp/chats - Obtiene lista de chats
-router.get('/chats', whatsappController.getChats);
+router.get('/chats', whatsappController.getChatsHandler);
 
 // GET /api/whatsapp/messages/:chatId - Obtiene mensajes de un chat
-router.get('/messages/:chatId', whatsappController.getMessages);
+router.get('/messages/:chatId', whatsappController.getMessagesHandler);
 
-// POST /api/whatsapp/refresh - Fuerza refresh
-router.post('/refresh', whatsappController.refresh);
+// GET /api/whatsapp/status - Estado de sesión WA
+router.get('/status', whatsappController.getStatusHandler);
 
 module.exports = router;
