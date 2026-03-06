@@ -218,13 +218,13 @@
         displayList.forEach(tx => {
             const tr = document.createElement('tr');
 
-            const name  = escapeHtml(tx.name  || tx.title || '—');
-            const desc  = escapeHtml(tx.description || tx.type || '—');
-            const date  = escapeHtml(tx.date  || (tx.dateTime ? tx.dateTime.split(' ').slice(0, 3).join(' ') : '') || '—');
-            const time  = escapeHtml(tx.time  || (tx.dateTime || '').replace(/^.*?(\d{1,2}:\d{2}.*)$/, '$1') || '—');
+            const name = escapeHtml(tx.name || tx.title || '—');
+            const desc = escapeHtml(tx.description || tx.type || '—');
+            const date = escapeHtml(tx.date || (tx.dateTime ? tx.dateTime.split(' ').slice(0, 3).join(' ') : '') || '—');
+            const time = escapeHtml(tx.time || (tx.dateTime || '').replace(/^.*?(\d{1,2}:\d{2}.*)$/, '$1') || '—');
 
-            const amtNum    = parseAmount(tx.amount);
-            const sign      = (amtNum > 0) ? '+' : '';
+            const amtNum = parseAmount(tx.amount);
+            const sign = (amtNum > 0) ? '+' : '';
             const amtDisplay = isNaN(amtNum)
                 ? escapeHtml(String(tx.amount || '—'))
                 : `${sign}${formatCurrency(amtNum)}`;

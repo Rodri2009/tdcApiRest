@@ -352,7 +352,7 @@ async function startServer() {
                 logVerbose('[PUPPETEER-MP] Iniciando servicio Mercado Pago...');
                 try {
                     const mpConfig = {
-                        userDataDir: process.env.USER_DATA_DIR || '/home/pptruser/profile',
+                        userDataDir: process.env.USER_DATA_DIR || '/home/pptruser/mp-profile',
                         headless: process.env.HEADLESS === 'true' ? true : false,
                         port: 9001  // Para debugging local
                     };

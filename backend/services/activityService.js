@@ -351,15 +351,15 @@ async function scrapeActivity(page) {
                     const type = guessType('', t.description, null);
                     return {
                         ...t,
-                        amount:      amountValue,
-                        currency:    t.currency || 'ARS',
+                        amount: amountValue,
+                        currency: t.currency || 'ARS',
                         // Mantener date y time separados; también componer dateTime para compat
-                        date:        t.date  || '',
-                        time:        t.time  || '',
-                        dateTime:    t.date && t.time ? `${t.date} ${t.time}` : (t.date || t.time || null),
+                        date: t.date || '',
+                        time: t.time || '',
+                        dateTime: t.date && t.time ? `${t.date} ${t.time}` : (t.date || t.time || null),
                         type,
-                        name:        (t.name || '').substring(0, 100),
-                        title:       (t.name || '').substring(0, 100),
+                        name: (t.name || '').substring(0, 100),
+                        title: (t.name || '').substring(0, 100),
                         description: (t.description || '').substring(0, 200)
                     };
                 }
@@ -393,14 +393,14 @@ async function scrapeActivity(page) {
 
                 return {
                     ...t,
-                    amount:      amountValue !== null ? Number(Number(amountValue).toFixed(2)) : (t.amount || null),
-                    currency:    t.currency || 'ARS',
-                    dateTime:    dateTimeIso || t.dateTime || null,
-                    date:        t.date  || '',
-                    time:        t.time  || '',
+                    amount: amountValue !== null ? Number(Number(amountValue).toFixed(2)) : (t.amount || null),
+                    currency: t.currency || 'ARS',
+                    dateTime: dateTimeIso || t.dateTime || null,
+                    date: t.date || '',
+                    time: t.time || '',
                     type,
-                    name:        (t.name || t.title || t.description || '').substring(0, 100),
-                    title:       (t.title || t.description || '').substring(0, 100),
+                    name: (t.name || t.title || t.description || '').substring(0, 100),
+                    title: (t.title || t.description || '').substring(0, 100),
                     description: (t.description || '').substring(0, 200)
                 };
             });

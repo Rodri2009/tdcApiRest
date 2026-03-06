@@ -98,7 +98,7 @@ class WhatsAppService {
 
             this.browser = await puppeteer.launch({
                 headless: false,
-                userDataDir: '/home/pptruser/profile',
+                userDataDir: '/home/pptruser/wa-profile',
                 args: chromiumArgs,
                 defaultViewport: {
                     width: 1920,
