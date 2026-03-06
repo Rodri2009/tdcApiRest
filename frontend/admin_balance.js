@@ -7,6 +7,7 @@
     let viewAllMode = false;
     let allTransactions = [];
     let authToken = null;  // Token JWT para autenticación
+    let lastTransactionState = null;  // Para loguear solo si cambian los datos de transacción
 
     /* --- Authentication --- */
     async function authenticateAndGetToken() {
@@ -158,6 +159,33 @@
             }
         } catch (err) {
             console.debug('[Audio] No se pudo reproducir sonido:', err.message);
+        }
+    }
+
+    /* --- Comparación inteligente de transacciones (solo loguea si cambia) --- */
+    function getTransactionFingerprint(tx) {
+        // Crea un "fingerprint" simple para detectar cambios
+        if (!tx) return null;
+        return `${tx.name}|${tx.description}|${tx.amount}|${tx.date}|${tx.time}`;
+    }
+
+    function logTransactionOnChange(tx, msgData) {
+        // Solo loguea si los datos cambiaron desde la última vez
+        const currentFingerprint = getTransactionFingerprint(tx);
+        
+        if (currentFingerprint !== lastTransactionState) {
+            lastTransactionState = currentFingerprint;
+            console.log('[SSE] 📥 DATOS INGRESADOS:', {
+                type: msgData?.type,
+                transaction: {
+                    nombre: tx?.name,
+                    descripcion: tx?.description,
+                    monto: tx?.amount,
+                    fecha: tx?.date,
+                    hora: tx?.time,
+                    raw: tx?.raw?.substring(0, 50)
+                }
+            });
         }
     }
 
@@ -375,30 +403,31 @@
 
             console.log('[SSE] URL:', watchUrl.substring(0, 50) + '...');
             const es = new EventSource(watchUrl);
-            
+
             let messageCount = 0;
             let lastMessageTime = Date.now();
-            
+
             es.onopen = () => {
                 console.log('[SSE] ✅ Conexión establecida (onopen)');
                 statusEl.textContent = 'watch: conectado';
             };
-            
+
             es.onmessage = (ev) => {
                 messageCount++;
                 const now = Date.now();
                 const timeSinceLastMsg = now - lastMessageTime;
                 lastMessageTime = now;
-                
+
                 console.log(`[SSE] 📨 Mensaje #${messageCount} recibido (${timeSinceLastMsg}ms):`, ev.data.substring(0, 100));
-                
+
                 try {
                     const msg = JSON.parse(ev.data);
                     console.log('[SSE] ✓ JSON parseado:', msg.type);
-                    
+
                     if (msg && msg.type === 'new_transaction' && msg.transaction) {
                         const tx = msg.transaction;
                         console.log('[SSE] 🔄 Nueva transacción:', tx.name, '|', tx.amount);
+                        logTransactionOnChange(tx, msg);  // Log solo si cambia
                         addTransactionToTop(tx);
                         const amt = parseAmount(tx.amount);
                         if (!isNaN(amt)) {
@@ -422,7 +451,7 @@
                     console.error('[SSE] ❌ Parse error:', e.message, 'Data:', ev.data.substring(0, 200));
                 }
             };
-            
+
             es.onerror = (err) => {
                 console.error('[SSE] ❌ Error en conexión:', err);
                 console.error('[SSE] readyState:', es.readyState);
@@ -440,7 +469,7 @@
     /* --- init --- */
     async function init() {
         console.log('[Init] Iniciando admin_balance...', new Date().toLocaleString());
-        
+
         // Obtener token de autenticación primero
         const token = await authenticateAndGetToken();
         if (!token) {
@@ -448,7 +477,7 @@
         } else {
             console.log('[Init] ✅ Token obtenido, largo:', token.length, 'chars');
         }
-        
+
         console.log('[Init] Inicializando SSE...');
 
         document.getElementById('refresh-btn').addEventListener('click', async () => {

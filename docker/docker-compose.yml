@@ -21,6 +21,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy # Espera hasta que el healthcheck de mariadb pase
+    env_file:
+      - ../.env
     environment:
       PORT: ${PORT}
       DB_HOST: ${DB_HOST}
@@ -33,10 +35,9 @@ services:
       EMAIL_ADMIN: ${EMAIL_ADMIN}
       JWT_SECRET: ${JWT_SECRET}
       DEBUG_FLAGS: ${DEBUG_FLAGS:-}
+      DEBUG_VERBOSE: ${DEBUG_VERBOSE:-false}
       MP_SERVER_URL: ${MP_SERVER_URL}
       WA_SERVER_URL: ${WA_SERVER_URL}
-      ENABLE_PUPPETEER_MP: ${ENABLE_PUPPETEER_MP}
-      ENABLE_PUPPETEER_WA: ${ENABLE_PUPPETEER_WA}
       USER_DATA_DIR: ${USER_DATA_DIR}
       WA_USER_DATA_DIR: ${WA_USER_DATA_DIR}
       HEADLESS: ${HEADLESS}
