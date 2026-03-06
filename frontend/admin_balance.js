@@ -172,7 +172,7 @@
     function logTransactionOnChange(tx, msgData) {
         // Solo loguea si los datos cambiaron desde la última vez
         const currentFingerprint = getTransactionFingerprint(tx);
-        
+
         if (currentFingerprint !== lastTransactionState) {
             lastTransactionState = currentFingerprint;
             console.log('[SSE] 📥 JSON TRANSACCIÓN:', JSON.stringify({
@@ -183,6 +183,36 @@
                 hora: tx?.time
             }, null, 2));
         }
+    }
+
+    /* --- helpers para conversión de datos --- */
+    function parseRaw(raw) {
+        if (!raw || typeof raw !== 'string') return { name: '—', desc: '—' };
+        const lines = raw.split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(l => l && l !== '$' && l !== '-');
+        const name = lines[0] || '—';
+        let desc = '—';
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i];
+            if (/^[\d.,]+$/.test(line)) continue;
+            if (/hs$/i.test(line)) continue;
+            if (line.toLowerCase().includes('dinero')) continue;
+            desc = line;
+            break;
+        }
+        return { name, desc };
+    }
+
+    function formatDateTime(dt) {
+        if (!dt) return { date: '—', time: '—' };
+        const d = new Date(dt);
+        if (isNaN(d)) return { date: '—', time: '—' };
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mi = String(d.getMinutes()).padStart(2, '0');
+        return { date: `${mm}/${dd}`, time: `${hh}:${mi}` };
     }
 
     /* --- util --- */
@@ -242,10 +272,21 @@
         displayList.forEach(tx => {
             const tr = document.createElement('tr');
 
-            const name = escapeHtml(tx.name || tx.title || '—');
-            const desc = escapeHtml(tx.description || tx.type || '—');
-            const date = escapeHtml(tx.date || (tx.dateTime ? tx.dateTime.split(' ').slice(0, 3).join(' ') : '') || '—');
-            const time = escapeHtml(tx.time || (tx.dateTime || '').replace(/^.*?(\d{1,2}:\d{2}.*)$/, '$1') || '—');
+            // intentar normalizar campos faltantes usando 'raw' si es necesario
+            let name = tx.name || tx.title || '';
+            let desc = tx.description || tx.type || '';
+            if ((!name || name === '') || (!desc || desc === '')) {
+                const parsed = parseRaw(tx.raw || '');
+                if (!name || name === '') name = parsed.name;
+                if (!desc || desc === '') desc = parsed.desc;
+            }
+            name = escapeHtml(name || '—');
+            desc = escapeHtml(desc || '—');
+
+            // formato fecha/hora uniforme
+            const dt = formatDateTime(tx.dateTime);
+            const date = escapeHtml(dt.date);
+            const time = escapeHtml(dt.time);
 
             const amtNum = parseAmount(tx.amount);
             const sign = (amtNum > 0) ? '+' : '';
@@ -388,10 +429,14 @@
     }
 
     /* --- SSE / realtime --- */
-    function initSSE() {
+    async function initSSE() {
         const statusEl = document.getElementById('status');
         console.log('[SSE] Iniciando conexión SSE...');
         try {
+            // refrescar token cada vez que intentamos conectar
+            if (!authToken) {
+                await authenticateAndGetToken();
+            }
             // EventSource no soporta headers personalizados, pasar token como query param
             const watchUrl = authToken
                 ? `${API}/watch?token=${encodeURIComponent(authToken)}`
