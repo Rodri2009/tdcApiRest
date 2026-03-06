@@ -54,6 +54,10 @@ services:
       - tdc_backend_node_modules:/app/node_modules
       # Scripts de utilidad (crear-admin.js, etc.)
       - ../scripts:/app/scripts
+      # IMPORTANTE: Volúmenes persistentes para perfiles de navegadores Puppeteer
+      # Esto preserva cookies/sesión entre reinicios del backend
+      - mp_browser_profile:/home/pptruser/profile
+      - wa_browser_profile:/home/pptruser/wa-profile
 
   mariadb:
     image: mariadb:10.6
@@ -96,3 +100,5 @@ services:
 volumes:
   mariadb_data:
   tdc_backend_node_modules:
+  mp_browser_profile:   # Persiste las cookies/sesión de Mercado Pago entre reinicios
+  wa_browser_profile:   # Persiste las cookies/sesión de WhatsApp entre reinicios
