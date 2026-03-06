@@ -44,7 +44,11 @@ async function launchBrowser(config) {
             '--disable-client-side-phishing-detection',
             '--disable-component-update',
             '--disable-domain-reliability',
-            '--disable-ipc-flooding-protection'
+            '--disable-ipc-flooding-protection',
+            // IMPORTANTE: permitir entrada de teclado/ratón desde VNC
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-fre'
         ];
 
         // Añadir fullscreen solo si se solicita vía env
