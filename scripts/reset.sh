@@ -179,6 +179,18 @@ fi
 # ============================================================================
 
 # similar cleanup helper used by restart_backend.sh
+
+# La función sync_env_file también se puede reutilizar aquí para que los
+# scripts utilitarios mantengan la coherencia del archivo .env dentro de
+docker/, evitando tener que copiar manualmente en cada ocasión.
+sync_env_file() {
+    local src="$ROOT_DIR/.env"
+    local dst="$ROOT_DIR/docker/.env"
+    if [ -f "$src" ]; then
+        cp "$src" "$dst" 2>/dev/null || true
+    fi
+}
+
 cleanup_old_backend_containers() {
     echo -ne "  → Eliminando contenedores backend antiguos... "
     docker ps -a --filter "ancestor=$(docker images --filter 'reference=docker-backend' -q 2>/dev/null)" -q | xargs -r docker rm -f 2>/dev/null || true
@@ -333,6 +345,8 @@ reset_docker_containers() {
     if [[ " $CONTAINERS_TO_RESET " =~ " all " ]]; then
         echo -e "${YELLOW}  → Deteniendo y levantando TODOS los contenedores${NC}"
         cd "$DOCKER_DIR"
+        # asegurarnos que el .env dentro de docker esté al día
+        sync_env_file
         
         # Detener
         echo -ne "    Deteniendo... "

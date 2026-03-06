@@ -22,7 +22,7 @@ services:
       mariadb:
         condition: service_healthy # Espera hasta que el healthcheck de mariadb pase
     env_file:
-      - ../.env
+      - .env
     environment:
       PORT: ${PORT}
       DB_HOST: ${DB_HOST}

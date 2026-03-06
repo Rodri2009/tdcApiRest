@@ -37,6 +37,23 @@ NC='\033[0m' # No Color
 
 # --- Sección de Configuración ---
 
+# El archivo .env se mantiene en la raíz del repositorio, pero el
+# docker-compose local dentro de docker/ también necesita una copia.
+# Esta función sincroniza automáticamente el env antes de arrancar.
+sync_env_file() {
+    local src="$ROOT_DIR/.env"
+    local dst="$ROOT_DIR/docker/.env"
+    if [ -f "$src" ]; then
+        cp "$src" "$dst" 2>/dev/null || true
+    fi
+}
+
+# No eliminamos nunca los perfiles de Puppeteer (mp-profile / wa-profile)
+# para preservar sesiones entre reinicios. Los scripts de limpieza se
+# centran únicamente en contenedores temporales.
+
+
+
 # Define la ubicación del archivo de entorno.
 ENV_FILE=".env"
 
@@ -335,6 +352,12 @@ fi
 
 echo -e "${YELLOW}[*]${NC} Limpiando contenedores previos..."
 cleanup_old_backend_containers
+
+# sincronizar .env hacia docker/ para que docker-compose cargue los valores más recientes
+echo -ne "  → Sincronizando .env... "
+ sync_env_file
+ echo -e "${GREEN}✓${NC}"
+
 
 echo -e "${YELLOW}[*]${NC} Limpiando y levantando contenedores Docker..."
 echo -ne "  → Deteniendo contenedores... "
