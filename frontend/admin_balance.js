@@ -366,55 +366,90 @@
     /* --- SSE / realtime --- */
     function initSSE() {
         const statusEl = document.getElementById('status');
+        console.log('[SSE] Iniciando conexión SSE...');
         try {
             // EventSource no soporta headers personalizados, pasar token como query param
             const watchUrl = authToken
                 ? `${API}/watch?token=${encodeURIComponent(authToken)}`
                 : `${API}/watch`;
 
+            console.log('[SSE] URL:', watchUrl.substring(0, 50) + '...');
             const es = new EventSource(watchUrl);
-            es.onopen = () => { statusEl.textContent = 'watch: conectado'; };
+            
+            let messageCount = 0;
+            let lastMessageTime = Date.now();
+            
+            es.onopen = () => {
+                console.log('[SSE] ✅ Conexión establecida (onopen)');
+                statusEl.textContent = 'watch: conectado';
+            };
+            
             es.onmessage = (ev) => {
+                messageCount++;
+                const now = Date.now();
+                const timeSinceLastMsg = now - lastMessageTime;
+                lastMessageTime = now;
+                
+                console.log(`[SSE] 📨 Mensaje #${messageCount} recibido (${timeSinceLastMsg}ms):`, ev.data.substring(0, 100));
+                
                 try {
                     const msg = JSON.parse(ev.data);
+                    console.log('[SSE] ✓ JSON parseado:', msg.type);
+                    
                     if (msg && msg.type === 'new_transaction' && msg.transaction) {
                         const tx = msg.transaction;
+                        console.log('[SSE] 🔄 Nueva transacción:', tx.name, '|', tx.amount);
                         addTransactionToTop(tx);
                         const amt = parseAmount(tx.amount);
                         if (!isNaN(amt)) {
                             if (amt > 0) {
+                                console.log('[SSE] 💰 INGRESO detectado');
                                 showBanner(`💰 NUEVO INGRESO: ${formatCurrency(Math.abs(amt))}`);
                                 // Reproducir sonido de notificación para ingresos
                                 playIncomeSound();
                             } else if (amt < 0 && tx.raw && tx.raw.toLowerCase().includes('transfer')) {
                                 // Mostrar también egreso si es una transferencia
+                                console.log('[SSE] ↗️ Transferencia detectada');
                                 showBanner(`↗️ Transferencia enviada: ${formatCurrency(Math.abs(amt))}`);
                             }
                         }
                     }
                     if (msg && msg.type === 'connected') {
+                        console.log('[SSE] ✓ servidor dice: conectado');
                         statusEl.textContent = 'watch: conectado';
                     }
-                } catch (e) { console.warn('SSE parse error', e); }
+                } catch (e) {
+                    console.error('[SSE] ❌ Parse error:', e.message, 'Data:', ev.data.substring(0, 200));
+                }
             };
-            es.onerror = () => {
+            
+            es.onerror = (err) => {
+                console.error('[SSE] ❌ Error en conexión:', err);
+                console.error('[SSE] readyState:', es.readyState);
                 statusEl.textContent = 'watch: desconectado — reintentando...';
                 es.close();
+                console.log('[SSE] Cerrando conexión, reintentando en 3s...');
                 setTimeout(initSSE, 3000);
             };
         } catch (err) {
-            console.warn('SSE not available', err);
+            console.error('[SSE] ❌ Error al crear EventSource:', err);
             document.getElementById('status').textContent = 'watch: no disponible';
         }
     }
 
     /* --- init --- */
     async function init() {
+        console.log('[Init] Iniciando admin_balance...', new Date().toLocaleString());
+        
         // Obtener token de autenticación primero
         const token = await authenticateAndGetToken();
         if (!token) {
-            console.error('[Init] No se pudo obtener token - algunos endpoints fallarán');
+            console.error('[Init] ❌ No se pudo obtener token - algunos endpoints fallarán');
+        } else {
+            console.log('[Init] ✅ Token obtenido, largo:', token.length, 'chars');
         }
+        
+        console.log('[Init] Inicializando SSE...');
 
         document.getElementById('refresh-btn').addEventListener('click', async () => {
             const statusEl = document.getElementById('status');

@@ -81,9 +81,26 @@ class TransactionWatchService {
             lastSignature: this.lastKnownSignature || null,
             timestamp: new Date().toISOString()
         });
+        console.log('[TransactionWatch] Sent initial connection message');
+
+        // Enviar heartbeat cada 30 segundos para mantener viva la conexión
+        const heartbeatInterval = setInterval(() => {
+            if (res.writableEnded) {
+                clearInterval(heartbeatInterval);
+                return;
+            }
+            try {
+                console.log('[TransactionWatch] 💓 Sending heartbeat to subscriber');
+                res.write(': keepalive\n\n');
+            } catch (err) {
+                console.error('[TransactionWatch] Heartbeat error:', err.message);
+                clearInterval(heartbeatInterval);
+            }
+        }, 30000); // 30 segundos
 
         // Limpiar cuando el cliente se desconecte
         res.on('close', () => {
+            clearInterval(heartbeatInterval);
             this.subscribers = this.subscribers.filter(s => s !== res);
             console.log(`[TransactionWatch] Subscriber disconnected. Total: ${this.subscribers.length}`);
         });
