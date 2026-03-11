@@ -485,7 +485,7 @@ CREATE TABLE IF NOT EXISTS bandas_artistas (
 
 CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
     id_solicitud INT PRIMARY KEY COMMENT 'FK a solicitudes.id_solicitud',
-    id_banda INT DEFAULT NULL COMMENT 'FK a bandas_artistas (la banda solicitante)',
+    id_banda INT DEFAULT NULL COMMENT 'FK opcional a bandas_artistas: si el solicitante es una banda conocida, o para referencia a la banda principal',
     fecha_evento DATE DEFAULT NULL,
     hora_evento VARCHAR(20) DEFAULT NULL,
     duracion VARCHAR(100) DEFAULT NULL,
@@ -495,7 +495,7 @@ CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
     precio_anticipada DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de venta anticipada',
     precio_puerta DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de puerta / venta en puerta',
     cantidad_bandas INT DEFAULT 1,
-    expectativa_publico VARCHAR(100) DEFAULT NULL,
+    expectativa_publico VARCHAR(100) DEFAULT NULL COMMENT 'Traducido en la UI como aforo_maximo; máximo templo 150 personas',
     bandas_json LONGTEXT COMMENT 'JSON array de bandas: [{id_banda, nombre, orden_show, es_principal}] - ÚNICA FUENTE DE VERDAD',
     estado VARCHAR(50) DEFAULT 'Solicitado',
     fecha_alternativa DATE DEFAULT NULL,

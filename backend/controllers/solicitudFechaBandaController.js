@@ -23,6 +23,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
         contacto_email,
         contacto_telefono,
         fecha_evento,
+        fecha_alternativa,  // opcional
         hora_evento,
         duracion,
         descripcion,
@@ -180,6 +181,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
             INSERT INTO solicitudes_fechas_bandas (
                 id_solicitud,
                 fecha_evento,
+                fecha_alternativa,
                 hora_evento,
                 duracion,
                 descripcion,
@@ -191,18 +193,19 @@ const crearSolicitudFechaBanda = async (req, res) => {
                 estado,
                 creado_en,
                 actualizado_en
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Solicitado', NOW(), NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Solicitado', NOW(), NOW())
         `;
 
         const paramsFechaBanda = [
             solicitudId,
             fecha_evento,
+            fecha_alternativa || null,
             hora_evento || '21:00',
-            duracion || null,
+            duracion || 8*60,            // por defecto 8h (480 min)
             descripcion || '',
             parseFloat(precio_basico) || 0,
             precio_puerta ? parseFloat(precio_puerta) : null,
-            expectativa_publico || null,
+            expectativa_publico || 150,  // aforo máximo templo
             bandasArray.length,
             bandasArray.length > 0 ? JSON.stringify(bandasArray) : null
         ];
@@ -415,19 +418,26 @@ const listarSolicitudesFechasBandas = async (req, res) => {
         let sql = `
             SELECT
                 sfb.id_solicitud,
+                sfb.id_banda,
                 sfb.fecha_evento,
+                sfb.fecha_alternativa,
                 sfb.hora_evento,
                 sfb.duracion,
                 sfb.descripcion,
+                sfb.precio_basico,
                 sfb.precio_anticipada,
-                sfb.precio_puerta,
+                sfb.precio_puerta AS precio_puerta_propuesto,
                 sfb.estado,
                 sfb.expectativa_publico,
-                sfb.bandas_json,
+                sfb.es_publico,
+                -- enviar bandas_json también bajo el nombre invitadas_json para que el frontend la parsee
+                sfb.bandas_json AS invitadas_json,
+                b.genero_musical,
                 s.descripcion_corta AS nombre_evento,
                 s.id_cliente,
                 sfb.creado_en
             FROM solicitudes_fechas_bandas sfb
+            LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
             JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
             WHERE 1=1
         `;
@@ -466,7 +476,7 @@ const listarSolicitudesFechasBandas = async (req, res) => {
 
         const solicitudes = await conn.query(sql, params);
 
-        // ✅ Parsear bandas_json para cada solicitud y limpiar campos denormalizados
+        // ✅ Parsear invitadas_json para cada solicitud y limpiar campos denormalizados
         const result = solicitudes.map(s => {
             // Limpiar campos denormalizados que no debería haber
             delete s.cliente_nombre;
@@ -474,32 +484,30 @@ const listarSolicitudesFechasBandas = async (req, res) => {
             delete s.cliente_telefono;
             delete s.banda_id;
             delete s.banda_nombre;
-            delete s.genero_musical;
+            // *** no borramos genero_musical ni precio_puerta_propuesto ni es_publico ***
             delete s.logo_url;
             delete s.instagram;
             delete s.facebook;
             delete s.youtube;
             delete s.spotify;
             delete s.precio_base;
-            delete s.precio_puerta_propuesto;
             delete s.invitadas;
 
-            // Parsear bandas_json
-            if (s.bandas_json && typeof s.bandas_json === 'string') {
+            // Parsear invitadas_json (alias de bandas_json en la consulta)
+            if (s.invitadas_json && typeof s.invitadas_json === 'string') {
                 try {
-                    s.bandas_json = JSON.parse(s.bandas_json);
+                    s.invitadas_json = JSON.parse(s.invitadas_json);
                 } catch (e) {
-                    logWarning(`[FECHA_BANDA] Error parseando bandas_json para id=${s.id_solicitud}:`, e.message);
-                    s.bandas_json = [];
+                    logWarning(`[FECHA_BANDA] Error parseando invitadas_json para id=${s.id_solicitud}:`, e.message);
+                    s.invitadas_json = [];
                 }
-            } else if (!s.bandas_json) {
-                s.bandas_json = [];
+            } else if (!s.invitadas_json) {
+                s.invitadas_json = [];
             }
 
             // Calcular cantidad_bandas
-            s.cantidad_bandas = s.bandas_json && Array.isArray(s.bandas_json)
-                ? s.bandas_json.length
-                : 0;
+            s.cantidad_bandas = s.cantidad_bandas ||
+                (s.invitadas_json && Array.isArray(s.invitadas_json) ? s.invitadas_json.length : 0);
 
             // ✅ AUTO-RECUPERACIÓN: Si url_flyer es NULL, intentar recuperar del disco
             if (!s.url_flyer) {

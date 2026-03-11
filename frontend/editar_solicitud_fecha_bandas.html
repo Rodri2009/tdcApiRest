@@ -131,9 +131,9 @@
         /* GRID DE BANDAS */
         .band-list-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 12px;
-            max-height: 500px;
+            max-height: 250px;
             overflow-y: auto;
             padding: 10px;
             background-color: #0f172a;
@@ -637,6 +637,8 @@
                 <div>
                     <span style="color: #9ca3af;">ID:</span>
                     <span id="eventoId" style="font-weight: bold;">-</span>
+                    <span style="color: #9ca3af; margin-left: 12px;">Creado:</span>
+                    <span id="eventoCreado" style="font-weight: bold;">-</span>
                 </div>
                 <div>
                     <span style="color: #9ca3af;">Estado:</span>
@@ -716,10 +718,26 @@
             <!-- Fecha y Horarios -->
             <div class="form-section">
                 <h3><i class="fas fa-calendar-days"></i> Fecha y Horarios</h3>
-                <div class="form-grid form-grid-3">
+                <!-- lista con selector de fechas -->
+                <div id="fechasList" style="margin-bottom:12px;">
+                    <select id="fechaSelector" style="width:100%; padding:6px;">
+                        <option value="" disabled>Seleccionar fecha...</option>
+                        <option value="" id="optFecha0">Fecha principal</option>
+                        <option value="" id="optFecha1">Fecha alternativa</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-secondary" id="btnEditarFechas" style="margin-bottom:10px;">Editar fechas</button>
+                <div id="fechasInputsContainer" class="form-grid form-grid-4" style="display:none;">
                     <div class="form-group">
                         <label for="fechaEvento">Fecha del Evento *</label>
-                        <input type="text" id="fechaEvento" placeholder="Seleccionar fecha...">
+                        <input type="text" id="fechaEvento" placeholder="Seleccionar fecha..." style="display:none;">
+                    </div>
+                    <div class="form-group">
+                        <label for="fechaAlternativa">Fecha alternativa</label>
+                        <input type="text" id="fechaAlternativa" placeholder="Seleccionar fecha..." style="display:none;">
+                        <div style="margin-top:4px;font-size:0.9rem;">
+                            <label><input type="checkbox" id="usarAlt"> Usar alternativa</label>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="horaInicio">Hora de Inicio</label>
@@ -811,10 +829,25 @@
 
     <script src="/navbar.js"></script>
     <script>
+        /*
+         * Cambios introducidos durante marzo 2026:
+         * - Declaración de fechasSeleccionadas y helper updateFechaText
+         * - Conversión de lista de fechas a <select> con dos opciones (principal/alternativa)
+         *   y único botón "Editar fechas" que despliega los inputs.
+         * - Eliminados altInput en flatpickr y checkbox usarAlt fuera del contenedor
+         * - Corrección de cálculo de horaFin para interpretar números como minutos
+         * - Autocompletado de comentarios en solicitud_fecha_bandas
+         * - Defaults de hora, duración, aforo 150 en creación y edición
+         * - Otras mejoras de usabilidad (ocultar inputs, limpiar selector al editar)
+         */
         // Variables globales
         let eventoId = null;
         let eventoPrefix = '';
         let calendario = null;
+        let calendarioAlternativa = null;
+
+        // Fechas seleccionadas (fecha principal + alternativa)
+        let fechasSeleccionadas = [null, null];
 
         // Bandas (lista disponible + seleccionadas)
         let bandasDisponibles = [];
@@ -920,10 +953,44 @@
             calendario = flatpickr('#fechaEvento', {
                 locale: 'es',
                 dateFormat: 'Y-m-d',
-                altInput: true,
-                altFormat: 'j \\de F, Y',
-                minDate: 'today'
+                altInput: false,
+                //altFormat: 'j \\de F, Y',
+                minDate: 'today',
+                onChange: (selectedDates, dateStr) => {
+                    fechasSeleccionadas[0] = dateStr;
+                    updateFechaText(0);
+                    // ocultar input una vez seleccionada
+                    document.getElementById('fechaEvento').style.display = 'none';
+                }
             });
+            // alternativa
+            calendarioAlternativa = flatpickr('#fechaAlternativa', {
+                locale: 'es',
+                dateFormat: 'Y-m-d',
+                altInput: false,
+                //altFormat: 'j \\de F, Y',
+                minDate: 'today',
+                onChange: (selectedDates, dateStr) => {
+                    fechasSeleccionadas[1] = dateStr;
+                    updateFechaText(1);
+                    document.getElementById('fechaAlternativa').style.display = 'none';
+                }
+            });
+            // listener único para editar fechas
+            const btn = document.getElementById('btnEditarFechas');
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    // show inputs container instead of individual inputs
+                    const cont = document.getElementById('fechasInputsContainer');
+                    cont.style.display = cont.style.display === 'none' ? 'block' : 'none';
+                    document.getElementById('fechaEvento').style.display = 'block';
+                    document.getElementById('fechaAlternativa').style.display = 'block';
+                    if (calendario) calendario.open();
+                    // cuando se modifica, limpiar selector
+                    const sel = document.getElementById('fechaSelector');
+                    if (sel) sel.value = '';
+                });
+            }
         }
 
         // Helper para asegurar formato HH:MM (24hs)
@@ -988,7 +1055,7 @@
             }
         }
 
-        // Calcular hora de fin basada en hora de inicio + duración (como string "X horas")
+        // Calcular hora de fin basada en hora de inicio + duración (como string "X horas" o sólo número)
         function calcularHoraFin() {
             const horaInicio = document.getElementById('horaInicio').value;
             const duracionText = document.querySelector('[data-duracion]')?.dataset?.duracion || window.duracionEvento || '';
@@ -999,7 +1066,7 @@
             }
 
             try {
-                // Parsear duración de string como "3 horas" o "180 minutos"
+                // Parsear duración de string como "3 horas" o "180 minutos" o incluso "480" (minutos)
                 const duracionMatch = duracionText.match(/(\d+)\s*(hora|horas|minuto|minutos)?/i);
                 if (!duracionMatch) {
                     console.warn('[HORARIOS] No se pudo parsear duración:', duracionText);
@@ -1007,11 +1074,16 @@
                 }
 
                 const valor = parseInt(duracionMatch[1], 10);
-                const unidad = (duracionMatch[2] || 'horas').toLowerCase();
-                let duracionMinutos = valor;
+                let unidad = (duracionMatch[2] || '').toLowerCase();
+                let duracionMinutos;
 
                 if (unidad.includes('hora')) {
                     duracionMinutos = valor * 60;
+                } else if (unidad.includes('minuto')) {
+                    duracionMinutos = valor;
+                } else {
+                    // sin unidad: interpretar como minutos si valor > 24, de lo contrario asumir minutos
+                    duracionMinutos = valor;
                 }
 
                 const [horas, minutos] = horaInicio.split(':').map(Number);
@@ -1118,6 +1190,11 @@
                 document.getElementById('nombreEvento').value = evento.nombre_evento || evento.nombre_banda || '';
                 document.getElementById('descripcion').value = evento.descripcion || '';
                 document.getElementById('urlFlyer').value = evento.url_flyer || '';
+                // mostrar fecha de creación formateada
+                if (evento.creado_en) {
+                    const fechaCreado = new Date(evento.creado_en);
+                    document.getElementById('eventoCreado').textContent = fechaCreado.toLocaleString('es-AR');
+                }
 
                 // Intentar cargar preview, pero no fallar si hay un problema
                 try {
@@ -1169,9 +1246,27 @@
                         const ymd = typeof evento.fecha_evento === 'string' ? evento.fecha_evento.substring(0, 10) : evento.fecha_evento;
                         if (ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
                             calendario.setDate(ymd, false);
+                            fechasSeleccionadas[0] = ymd;
+                            updateFechaText(0);
                         }
                     } catch (err) {
                         console.error('[BANDAS] Error setDate fecha:', evento.fecha_evento, err);
+                    }
+                }
+                // alternativa
+                if (evento.fecha_alternativa) {
+                    const altInput = document.getElementById('fechaAlternativa');
+                    if (altInput) {
+                        try {
+                            const ymd2 = typeof evento.fecha_alternativa === 'string' ? evento.fecha_alternativa.substring(0,10) : evento.fecha_alternativa;
+                            if (ymd2 && /^\d{4}-\d{2}-\d{2}$/.test(ymd2)) {
+                                if (window.calendarioAlternativa) window.calendarioAlternativa.setDate(ymd2, false);
+                                fechasSeleccionadas[1] = ymd2;
+                                updateFechaText(1);
+                            }
+                        } catch (err) {
+                            console.error('[BANDAS] Error setDate alternativa:', evento.fecha_alternativa, err);
+                        }
                     }
                 }
 
@@ -1294,8 +1389,8 @@
             }
 
             // Para eventos existentes, la fecha NO es requerida (no se debe editar)
-            // Para nuevos eventos, la fecha SÍ es requerida
-            if (!eventoId && !fecha) {
+            // Para nuevos eventos, se pide al menos una fecha (principal o alternativa)
+            if (!eventoId && !fecha && !document.getElementById('fechaAlternativa').value) {
                 showNotification('La fecha es obligatoria para nuevos eventos', 'warning');
                 return;
             }
@@ -1305,6 +1400,15 @@
             // Preparar datos para la API (mapear claves a lo que el backend espera)
             const horaInicio = document.getElementById('horaInicio').value.trim() || '21:00';
             const formatoHora = formatTime24(horaInicio);
+            // fechas: principal + alternativa
+            let fechaPrin = document.getElementById('fechaEvento').value;
+            let fechaAlt = document.getElementById('fechaAlternativa').value || null;
+            if (document.getElementById('usarAlt').checked && fechaAlt) {
+                // swap
+                const tmp = fechaPrin;
+                fechaPrin = fechaAlt;
+                fechaAlt = tmp;
+            }
 
             if (!isValidTime(formatoHora)) {
                 showNotification('Formato de hora inválido. Use HH:MM (ej: 21:30)', 'error');
@@ -1314,7 +1418,8 @@
 
             const datos = {
                 id_banda: idBanda,
-                fecha_evento: fecha || undefined,
+                fecha_evento: fechaPrin || undefined,
+                fecha_alternativa: fechaAlt,
                 descripcion: document.getElementById('descripcion').value.trim(),
                 hora_evento: formatoHora,
                 expectativa_publico: parseInt(document.getElementById('aforoMaximo').value, 10) || 120,

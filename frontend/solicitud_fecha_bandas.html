@@ -613,7 +613,7 @@
         <!-- SECCIÓN ESCENARIO -->
         <button type="button" id="btnEscenarioToggle" class="accordion-header">
             <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; flex: 1;">
-                <i class="fas fa-microphone"></i> Escenario - Backline y Sonido
+                <i class="fas fa-microphone"></i> Espacio - Escenario - Backline y Sonido
             </h3>
             <span class="accordion-toggle collapsed" id="escenarioToggleIcon">
                 <i class="fas fa-chevron-down"></i>
@@ -621,6 +621,26 @@
         </button>
 
         <div id="escenarioContent" class="accordion-content collapsed">
+            <div class="form-group">
+                <label for="backlineInfo"><i class="fas fa-guitar"></i> Espacio:</label>
+                <div
+                    style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
+                    <ul>
+                        <li><i class="fas fa-users"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>El Templo de Claypole cuenta con un aforo para 150 personas para shows en vivo</li>
+                        <li><i class="fas fa-location-dot"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Estamos a 3 cuadras de la Estación de Claypole.</li>
+                        <li><i class="fas fa-road" style="margin-right:8px;color:var(--color-secondary);"></i>Calle de asfalto, sin problemas de acceso para equipos y público.
+                        </li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Frente de madera, ambientación tipo rustica, parrilla, patio, mesas y sillas</li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>En el interior escenario al frente, barra en el fondo, baños al costado.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="backlineInfo"><i class="fas fa-guitar"></i> Backline Disponible:</label>
                 <div
@@ -702,9 +722,9 @@
         </div>
 
         <!-- SECCIÓN FECHAS -->
-        <h3><i class="fas fa-calendar"></i> Fechas Propuestas (Máximo 3)</h3>
+        <h3><i class="fas fa-calendar"></i> Fechas Propuestas (Máximo 2)</h3>
         <div class="info-banner">
-            Selecciona hasta 3 fechas tentativas. Al menos una es obligatoria. El horario se definirá más adelante.
+            Selecciona hasta 2 fechas tentativas. Al menos una es obligatoria. El horario se definirá más adelante.
         </div>
 
         <div class="form-group">
@@ -716,10 +736,6 @@
                 <div class="date-slot">
                     <label class="label-inline">Fecha 2 (Opcional):</label>
                     <input type="text" class="fechaEvento" data-fecha-index="1" placeholder="Selecciona fecha">
-                </div>
-                <div class="date-slot">
-                    <label class="label-inline">Fecha 3 (Opcional):</label>
-                    <input type="text" class="fechaEvento" data-fecha-index="2" placeholder="Selecciona fecha">
                 </div>
             </div>
         </div>
@@ -759,8 +775,9 @@
         let visitorsId = null;
         let bandasDisponibles = [];
         let bandasSeleccionadas = [];
-        let fechasSeleccionadas = [null, null, null];
+        let fechasSeleccionadas = [null, null];
         let calendarios = [];
+        // solo dos entradas ahora
 
         // Obtener parámetros URL
         const params = new URLSearchParams(window.location.search);
@@ -921,6 +938,27 @@
             renderBandasSeleccionadas();
         }
 
+        // Helper: generar texto por defecto para comentarios según bandas
+        function computeDefaultComments() {
+            if (!bandasSeleccionadas || bandasSeleccionadas.length === 0) return '';
+            const principal = bandasSeleccionadas[bandasSeleccionadas.length - 1].nombre || '';
+            const invitadas = Math.max(0, bandasSeleccionadas.length - 1);
+            let text = `Fecha de ${principal}`;
+            if (invitadas > 0) {
+                text += ` con ${invitadas} banda${invitadas !== 1 ? 's' : ''} invitada${invitadas !== 1 ? 's' : ''}`;
+            }
+            text += '.';
+            return text;
+        }
+
+        // Si el campo de comentarios está vacío, poner texto por defecto
+        function updateDefaultComments() {
+            const textarea = document.getElementById('comentariosEspeciales');
+            if (textarea && !textarea.value.trim()) {
+                textarea.value = computeDefaultComments();
+            }
+        }
+
         // Renderizar bandas seleccionadas
         function renderBandasSeleccionadas() {
             console.log('[RENDER SELECCIONADAS] Renderizando bandas seleccionadas:', bandasSeleccionadas);
@@ -931,6 +969,8 @@
             if (bandasSeleccionadas.length === 0) {
                 container.innerHTML = '<div class="helper-text p-20" style="text-align:center; padding:30px 20px;">Selecciona bandas para verlas aquí</div>';
             } else {
+                // después de modificar la lista, actualizar comentarios por defecto
+                updateDefaultComments();
                 container.innerHTML = bandasSeleccionadas.map((banda, idx) => `
                     <div class="card card-row">
                         <div class="order-number" style="min-width:35px;text-align:center;">Toca ${idx + 1}º</div>
@@ -1072,10 +1112,11 @@
                 contacto_email: userData.email,
                 contacto_telefono: userData.telefono || '',
                 fecha_evento: fechasSeleccionadas[0],
-                hora_evento: '21:00',
-                fecha_alternativa_1: fechasSeleccionadas[1] || null,
-                fecha_alternativa_2: fechasSeleccionadas[2] || null,
-                descripcion: document.getElementById('comentariosEspeciales').value,
+                hora_evento: '21:00',            // default 21:00
+                duracion: 8 * 60,               // 8 horas en minutos
+                fecha_alternativa: fechasSeleccionadas[1] || null,
+                descripcion: document.getElementById('comentariosEspeciales').value || computeDefaultComments(),
+                expectativa_publico: 150,       // aforo máximo del templo
                 bandas_json: bandasSeleccionadas.map((b, idx) => ({
                     id_banda: b.bandaId,
                     nombre: b.nombre,

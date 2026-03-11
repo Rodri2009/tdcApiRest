@@ -106,6 +106,30 @@
         border-collapse: collapse;
         table-layout: fixed;
     }
+    /* ajustar anchos de columnas en escritorio */
+    @media (min-width: 768px) {
+        table th:nth-child(1), table td:nth-child(1) { /* ID */
+            width: 80px;
+        }
+        table th:nth-child(3), table td:nth-child(3) { /* Tipo */
+            width: 230px;
+        }
+        table th:nth-child(4), table td:nth-child(4) { /* Cliente */
+            width: 100px;
+        }
+        table th:nth-child(5), table td:nth-child(5) { /* Fecha Evento */
+            width: 110px;
+        }
+        table th:nth-child(6), table td:nth-child(6) { /* Hora Inicio */
+            width: 80px;
+        }
+        table th:nth-child(7), table td:nth-child(7) { /* FLYER */
+            width: 200px;
+        }
+        table th:nth-child(8), table td:nth-child(8) { /* DESCRIPCION */
+            width: 230px;
+        }
+    }
 
     th,
     td {
@@ -118,6 +142,7 @@
         word-break: break-word;
         white-space: normal;
         vertical-align: middle;
+        cursor: pointer; /* asegurar puntero mano sobre cada celda también */
     }
 
     th {
@@ -131,6 +156,7 @@
     tr:hover {
         background-color: rgba(240, 171, 252, 0.05);
         transition: background-color 0.2s ease;
+        cursor: pointer; /* mostrar puntero de mano en desktop */
     }
 
     /* Colores suaves según estado */
@@ -160,9 +186,14 @@
         flex-direction: row;
         flex-wrap: nowrap;
         gap: 8px;
-        align-items: center;
+        /* alinear al inicio para que los íconos no salten cuando la fila crece de altura */
+        align-items: flex-start;
         justify-content: flex-start;
         min-width: 150px;
+        cursor: pointer; /* asegurar manito cuando se pasa sobre el contenedor */
+    }
+    .actions-cell * {
+        cursor: pointer;
     }
 
     .action-btn {
@@ -483,6 +514,7 @@
             background-color: #333333;
             box-shadow: 0 4px 12px rgba(240, 171, 252, 0.15);
             border-color: rgba(240, 171, 252, 0.4);
+            cursor: pointer; /* mano también en vista móvil/compacta */
         }
 
         td {
@@ -519,6 +551,10 @@
             padding: 12px 8px;
             margin-top: 8px;
             border-top: 1px solid rgba(240, 171, 252, 0.2);
+            cursor: pointer;
+        }
+        .actions-cell * {
+            cursor: pointer;
         }
 
         .action-btn {
@@ -679,7 +715,7 @@
             <table id="solicitudes-table" style="display:none">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th>Creado</th>
                         <th style="display:none;">Fecha Solicitud</th>
                         <!-- <th>Categoría</th> -->
                         <th>Tipo</th>
@@ -789,11 +825,19 @@
 
                 // Event delegation for button clicks (action-btn and icon-btn)
                 tbody.addEventListener('click', (event) => {
-                    const button = event.target.closest('button.action-btn, button.icon-btn, .row-hover-overlay');
-                    if (!button) return;
-
-                    const tr = button.closest('tr');
+                    const tr = event.target.closest('tr');
                     if (!tr) return;
+
+                    // convertir clic en cualquier lugar de la fila en modificación si no se hizo sobre un botón
+                    const button = event.target.closest('button.action-btn, button.icon-btn, .row-hover-overlay');
+                    if (!button) {
+                        const solicitudId = tr.dataset.solicitudId;
+                        const tipoEventoId = tr.dataset.tipoEventoId;
+                        const categoria = tr.dataset.categoria;
+                        const origen = tr.dataset.origen;
+                        modificarSolicitud(solicitudId, categoria, origen);
+                        return;
+                    }
 
                     const solicitudId = tr.dataset.solicitudId;
                     const tipoEventoId = tr.dataset.tipoEventoId;
@@ -937,10 +981,16 @@
 
                         if (!res.ok) throw new Error('Error al conectar con el servidor');
 
-                        const data = await res.json();
+                        let data = await res.json();
                         console.log('Solicitudes recibidas:', data);
 
-                        if (data.length === 0) {
+                        // seguridad adicional: si backend devolvió un solo objeto en lugar de
+                        // un arreglo, convertirlo en arreglo para evitar fallos de TypeError.
+                        if (!Array.isArray(data) && data !== null && typeof data === 'object') {
+                            data = [data];
+                        }
+
+                        if (!Array.isArray(data) || data.length === 0) {
                             loader.textContent = 'No se encontraron solicitudes.';
                             return;
                         }
@@ -950,6 +1000,8 @@
                         console.log('Tipos de eventos encontrados:', [...new Set(tipos)]);
 
                         // Guardar datos para filtrado
+                        // ordenar localmente por fechaSolicitud desc por si el backend no lo hace
+                        data.sort((a,b) => new Date(b.fechaSolicitud) - new Date(a.fechaSolicitud));
                         todasLasSolicitudes = data;
 
                         // Renderizar todas las solicitudes
@@ -986,7 +1038,7 @@
                         // Formato Fecha Evento: Nombre corto del día, DD, MM, AAAA
                         const fechaEvento = solicitud.fechaEvento ? (() => {
                             const d = new Date(String(solicitud.fechaEvento) + 'T00:00:00');
-                            const weekday = d.toLocaleDateString('es-AR', { weekday: 'short' });
+                            const weekday = d.toLocaleDateString('es-AR', { weekday: 'long' });
                             const date = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
                             return `${weekday} ${date}`;
                         })() : 'N/A';
@@ -1069,7 +1121,7 @@
                         // Banda/Artista and Cantidad/Aforo removed from admin view (use descripcionCorta/tipoNombre)
                         // (Field kept in other forms/controllers if needed)
 
-                        tr.innerHTML = `<td data-label="ID">${solicitud.id}</td><td data-label="Fecha Solicitud" style="display:none;">${fechaSolicitud}</td><td data-label="Tipo">${solicitud.tipoNombre || tipoLegible}</td><td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td><td data-label="Fecha Evento">${fechaEvento}</td><td data-label="Hora Inicio">${horaInicio}</td><td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td><td data-label="Descripción"><div class="description">${descripcionCorta}</div></td><td data-label="Estado"><div class="estado-badge ${String(solicitud.estado).toLowerCase()}">${solicitud.estado}</div>${!solicitud.es_publico ? '<div class="privado-indicator">🔒 Privado</div>' : ''}</td><td data-label="Acciones" class="actions-cell">${botones}</td>`;
+                        tr.innerHTML = `<td data-label="Creado" title="ID: ${solicitud.id}">${fechaSolicitud}</td><td data-label="Fecha Solicitud" style="display:none;">${fechaSolicitud}</td><td data-label="Tipo">${solicitud.tipoNombre || tipoLegible}</td><td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td><td data-label="Fecha Evento">${fechaEvento}</td><td data-label="Hora Inicio">${horaInicio}</td><td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td><td data-label="Descripción"><div class="description">${descripcionCorta}</div></td><td data-label="Estado"><div class="estado-badge ${String(solicitud.estado).toLowerCase()}">${solicitud.estado}</div>${!solicitud.es_publico ? '<div class="privado-indicator">🔒 Privado</div>' : ''}</td><td data-label="Acciones"><div class="actions-cell">${botones}</div></td>`;
 
                         tbody.appendChild(tr);
 

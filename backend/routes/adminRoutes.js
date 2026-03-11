@@ -16,6 +16,7 @@ const {
     getEventoById
 } = require('../controllers/adminController');
 
+
 const { updateVisibilidad } = require('../controllers/solicitudController');
 const eventosAuditController = require('../controllers/eventosAuditController');
 

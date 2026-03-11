@@ -46,7 +46,8 @@ const getSolicitudes = async (req, res) => {
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
                 COALESCE(sol2.es_publico, 0) as es_publico,
-                COALESCE(sol2.descripcion_corta, '') as descripcionCorta,
+                -- para bandases usamos el comentario guardado en sfb.descripcion en lugar de la descripcion_corta de la tabla solicitudes
+                COALESCE(s.descripcion, '') as descripcionCorta,
                 COALESCE(ec_bnd.url_flyer, sol2.url_flyer) as url_flyer
             FROM solicitudes_fechas_bandas s
             LEFT JOIN solicitudes sol2 ON sol2.id_solicitud = s.id_solicitud
@@ -155,24 +156,17 @@ const getSolicitudes = async (req, res) => {
                 sql += ` AND allsol.estado = ?`;
                 params.push(estado);
             }
-            sql += ` ORDER BY fechaEvento DESC, fechaSolicitud DESC`;
+            // ordenar por fecha de creación (solicitud) primero, luego por fecha de evento como respaldo
+            sql += ` ORDER BY fechaSolicitud DESC, fechaEvento DESC`;
         } else {
-            sql += ` ORDER BY fechaEvento DESC, fechaSolicitud DESC`;
+            // sin filtros también ordenar por fecha de creación (más reciente primero)
+            sql += ` ORDER BY fechaSolicitud DESC, fechaEvento DESC`;
         }
-
-        // Detect stale schema references before running the query
-        if (String(sql).includes('tipo_de_evento') || String(sql).includes('cantidad_de_personas')) {
-            logError('Detected stale column reference(s) in SQL - aborting query', {
-                contains_tipo_de_evento: String(sql).includes('tipo_de_evento'),
-                contains_cantidad_de_personas: String(sql).includes('cantidad_de_personas')
-            });
-        }
-        logVerbose('DEBUG SQL getSolicitudes', { sql, paramsCount: params.length });
+        // ejecutar la consulta con los filtros / ordenamiento ya aplicados
         const solicitudes = await conn.query(sql, params);
-        res.status(200).json(solicitudes);
-    } catch (err) {
-        logError('Error al obtener solicitudes de admin', err);
-        res.status(500).json({ message: 'Error del servidor al obtener solicitudes.' });
+        // DEBUG: registrar tipo / longitud para diagnosticar front-end
+        logVerbose('[ADMIN] getSolicitudes returned type:', typeof solicitudes, 'isArray:', Array.isArray(solicitudes), 'len:', solicitudes && solicitudes.length);
+        return res.json(solicitudes);
     } finally {
         if (conn) conn.release();
     }
