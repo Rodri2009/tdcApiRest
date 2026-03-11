@@ -167,7 +167,12 @@ const App = {
                     const uploadUrl = this.solicitudId
                         ? `/api/uploads/flyers?solicitudId=${this.solicitudId}`
                         : '/api/uploads/flyers';
-                    const resp = await fetch(uploadUrl, { method: 'POST', body: fd });
+                    const token = localStorage.getItem('authToken');
+                    const headers = {};
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+                    const resp = await fetch(uploadUrl, { method: 'POST', body: fd, headers: headers });
                     if (!resp.ok) throw new Error('Error en la subida: ' + resp.statusText);
                     const body = await resp.json();
                     if (body && body.url) {
@@ -220,10 +225,16 @@ const App = {
         console.log('[FORM-INIT] 📡 Endpoints a cargar:', Object.keys(endpoints));
         console.log('[FORM-INIT] Mode:', this.config.mode);
 
+        const token = localStorage.getItem('authToken');
+        const headers = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         Promise.all(
             Object.entries(endpoints).map(([key, url]) => {
                 console.log(`[FORM-INIT] 📥 Fetching ${key}: ${url}`);
-                return fetch(url).then(res => {
+                return fetch(url, { headers }).then(res => {
                     console.log(`[FORM-INIT] 📨 ${key} status: ${res.status}`);
                     // Añadimos un chequeo de 401 para el caso del admin
                     if (res.status === 401) {
@@ -397,8 +408,15 @@ const App = {
             }
             this.loadAbortController = new AbortController();
 
+            const token = localStorage.getItem('authToken');
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             fetch(`/api/solicitudes/${this.solicitudId}`, {
-                signal: this.loadAbortController.signal
+                signal: this.loadAbortController.signal,
+                headers: headers
             })
                 .then(res => res.json())
                 .then(solicitudData => {
@@ -446,7 +464,15 @@ const App = {
     },
 
     buscarSesionExistente: function () {
-        fetch(`/api/solicitudes/sesion?fingerprintId=${this.visitorId}`)
+        const token = localStorage.getItem('authToken');
+        const headers = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        fetch(`/api/solicitudes/sesion?fingerprintId=${this.visitorId}`, {
+            headers: headers
+        })
             .then(res => {
                 if (!res.ok) {
                     // 404 o cualquier error: no hay sesión guardada, continuar normalmente
@@ -482,6 +508,16 @@ const App = {
         // Guardar solicitud en window para acceso global
         window.currentSolicitud = solicitud;
 
+        // LOG: Mostrar ID de la solicitud cargada
+        const solicitudId = solicitud.solicitudId || 'desconocido';
+        console.log('📍 [FORM] Cargando solicitud:', solicitudId);
+        if (solicitudId && solicitudId !== 'desconocido' && solicitudId.startsWith('alq_')) {
+            const idNumerico = solicitudId.replace('alq_', '');
+            console.log('   → Búsqueda en DB: SELECT * FROM solicitudes_alquiler WHERE id_solicitud = ' + idNumerico + ';');
+        }
+        // Registrar el objeto recibido para depuración completa
+        console.log('📋 [FORM] Datos recibidos de la API:', JSON.stringify(solicitud, null, 2));
+
         // CORRECCIÓN: tipoServicio es el subtipo (INFANTILES), tipoEvento es la categoría (ALQUILER_SALON)
         // Para el formulario necesitamos el subtipo (tipoServicio)
         let tipo = solicitud.tipoServicio || solicitud.tipo_servicio || solicitud.tipoEvento || solicitud.tipo_de_evento;
@@ -489,10 +525,18 @@ const App = {
         if (typeof tipo === 'number') tipo = String(tipo);
         if (tipo && typeof tipo === 'string') tipo = tipo.trim();
         let cantidadRaw = solicitud.cantidadPersonas || solicitud.cantidad_de_personas;
-        const duracion = solicitud.duracionEvento || solicitud.duracion;
+        let duracion = solicitud.duracionEvento || solicitud.duracion;
+        // Convertir duración de minutos (número) a formato "X horas" (string)
+        if (typeof duracion === 'number' && duracion > 0) {
+            const horas = Math.floor(duracion / 60);
+            duracion = horas > 0 ? `${horas} horas` : `${duracion} minutos`;
+        }
         const fecha = solicitud.fechaEvento || solicitud.fecha_evento;
         let horaRaw = solicitud.horaInicio || solicitud.hora_evento;
-        const detalles = solicitud.descripcion || '';
+        // detalles adicionales: el API puede devolver distintos campos según el tipo
+        // - para alquiler: descripcion_alquiler viene de solicitudes_alquiler.comentarios
+        // - para otros tipos pueden usarse descripcion, descripcion_corta, comentarios, etc.
+        const detalles = solicitud.descripcion_alquiler || solicitud.descripcion || solicitud.comentarios || solicitud.descripcion_corta || '';
 
         // Helper: Convertir cantidad numérica al label del rango correspondiente
         const convertirCantidadALabel = (cantidadNum, tipoKey) => {
@@ -749,6 +793,7 @@ const App = {
         console.log('[populate] cantidad raw:', cantidadRaw, '-> label:', cantidad, 'para tipo:', resolvedTipoForOptions || tipo);
         console.log('[populate] hora raw:', horaRaw, '-> normalizada:', hora);
         console.log('[populate] duracion raw:', duracion, 'tipo resuelto:', resolvedTipoForOptions || tipo);
+        console.log('[populate] detalles raw:', detalles);
 
         // 3. Llamar a actualizarTodo pasándole TODOS los datos que conocemos.
         // Esto llenará los selects y calculará el precio inicial.
@@ -807,7 +852,15 @@ const App = {
                 const match = String(this.solicitudId).match(/(\d+)/);
                 const nid = match ? match[1] : null;
                 if (nid) {
-                    fetch(`/api/solicitudes/${nid}/adicionales`).then(r => r.json()).then(data => {
+                    const token = localStorage.getItem('authToken');
+                    const headers = {};
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
+                    fetch(`/api/solicitudes/${nid}/adicionales`, {
+                        headers: headers
+                    }).then(r => r.json()).then(data => {
                         if (data && data.seleccionados) renderAdicionales(data.seleccionados);
                     }).catch(err => { console.warn('Error cargando adicionales separados:', err); });
                 }
@@ -922,16 +975,22 @@ const App = {
 
             console.log(`[FORM-ALQUILER] 🚀 Sending ${method} to ${url}`);
 
+            const token = localStorage.getItem('authToken');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             if (this.solicitudId) {
                 response = await fetch(url, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify(bodyData)
                 });
             } else {
                 response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify(bodyData)
                 });
             }
@@ -1158,13 +1217,24 @@ const App = {
         let hora = overrides.overrideHora || this.elements.horaInicioSelect.value;
 
 
-        // Parsear fecha de forma segura: soportar 'YYYY-MM-DD' y ISO con 'T'
+        // Parsear fecha de forma segura en hora local, evitando desface UTC
         let fechaSeleccionada = null;
         if (fechaStr) {
-            if (typeof fechaStr === 'string' && fechaStr.includes('T')) {
-                fechaSeleccionada = new Date(fechaStr);
-            } else {
-                fechaSeleccionada = new Date(String(fechaStr).trim() + 'T00:00:00');
+            // for strings like '2026-03-22' or '2026-03-22T00:00:00.000Z'
+            try {
+                const str = String(fechaStr).trim();
+                // extraer el componente Y-M-D
+                const ymd = str.split('T')[0];
+                const parts = ymd.split('-').map(p => parseInt(p, 10));
+                if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+                    // construir fecha en local (mes en 0-11)
+                    fechaSeleccionada = new Date(parts[0], parts[1] - 1, parts[2]);
+                } else {
+                    // fallback confiable a new Date
+                    fechaSeleccionada = new Date(str);
+                }
+            } catch (err) {
+                fechaSeleccionada = null;
             }
             if (fechaSeleccionada && isNaN(fechaSeleccionada.getTime())) fechaSeleccionada = null;
         }
@@ -1221,24 +1291,39 @@ const App = {
             const esFeriado = this.feriadosGlobal.includes(fechaStr);
             let tipoDeDia = (diaDeLaSemana === 6 && !esFeriado) ? 'sabado' : 'domingo/feriado';
 
+            console.log('[actualizarTodo] fechaSeleccionada parsed:', fechaSeleccionada, 'diaSemana', diaDeLaSemana, 'esFeriado', esFeriado);
+
             // usar resolvedTipoKey para buscar horarios (fallback si la clave no existe)
             const todosLosHorariosParaTipo = this.opcionesHoras[resolvedTipoKey] || this.opcionesHoras[tipoId] || [];
             const horariosFiltrados = todosLosHorariosParaTipo.filter(h => h.tipoDia === 'todos' || h.tipoDia === tipoDeDia).map(h => h.hora).sort();
+            console.log('[actualizarTodo] tipoDeDia:', tipoDeDia, 'horariosFiltrados (pre-normalización):', horariosFiltrados);
 
             this.llenarSelect(this.elements.horaInicioSelect, horariosFiltrados, 'Seleccione hora...');
-            // Restauramos el valor de la hora, intentando variantes (con/sin 'hs') si no hay match exacto
+            // Restauramos el valor de la hora, intentando variantes (con/sin 'hs', con/sin ':00' segundos) si no hay match exacto
             const setHoraIfPossible = (val) => {
                 if (!val) return false;
                 const opts = Array.from(this.elements.horaInicioSelect.options).map(o => o.value);
                 if (opts.includes(val)) {
                     this.elements.horaInicioSelect.value = val; return true;
                 }
-                // variantes comunes: '21:00' vs '21:00hs' vs '21:00 hs'
+                // variantes comunes: '18:00' vs '18:00:00' vs '21:00hs' vs '21:00 hs'
                 const candidates = [];
                 const normalized = String(val).trim();
+
+                // Si incluye segundos, intentar también la versión sin ellos
+                if (/^\d{2}:\d{2}:\d{2}$/.test(normalized)) {
+                    candidates.push(normalized.substring(0, 5));
+                }
+
+                // Si no tiene segundos, agregar :00 al final
+                if (!/:\d{2}:\d{2}$/.test(normalized) && /:\d{2}$/.test(normalized)) {
+                    candidates.push(normalized + ':00');
+                }
+
                 if (!normalized.endsWith('hs')) candidates.push(normalized + 'hs');
                 if (normalized.endsWith('hs')) candidates.push(normalized.replace(/\s*hs\s*$/i, ''));
                 candidates.push(normalized.replace(/\s+/g, ''));
+
                 for (const c of candidates) {
                     if (opts.includes(c)) { this.elements.horaInicioSelect.value = c; return true; }
                 }
@@ -1595,10 +1680,16 @@ const App = {
         if (this.elements.urlFlyerInput) bodyData.url_flyer = this.elements.urlFlyerInput.value.trim();
 
         try {
+            const token = localStorage.getItem('authToken');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             // Usamos el endpoint PUT /api/solicitudes/:id, que llama a 'actualizarSolicitud'
             const response = await fetch(`/api/solicitudes/${this.solicitudId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(bodyData)
             });
 

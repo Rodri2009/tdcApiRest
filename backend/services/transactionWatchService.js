@@ -3,11 +3,23 @@ const { randomWait } = require('../lib/randomDelay');
 const crypto = require('crypto');
 
 /**
- * Genera una firma única para una transacción (para detección de cambios)
+ * Genera una firma única para una transacción.
+ * Combina todos los campos disponibles para minimizar colisiones entre
+ * transacciones del mismo tipo/monto en fechas distintas.
  */
 function getTransactionSignature(tx) {
-    const key = `${tx.raw || ''}|${tx.amount}|${tx.dateTime}`;
-    return crypto.createHash('sha1').update(key).digest('hex').substring(0, 12);
+    const parts = [
+        tx.raw || '',
+        tx.name || '',
+        tx.description || '',
+        tx.amount || '',
+        tx.dateTime || '',
+        tx.date || '',
+        tx.time || '',
+        tx.type || ''
+    ];
+    const key = parts.join('|');
+    return crypto.createHash('sha1').update(key).digest('hex').substring(0, 20);
 }
 
 /**
@@ -19,12 +31,16 @@ class TransactionWatchService {
         this.page = page;
         this.isActive = false;
         this.pollIntervalId = null;
-        this.lastKnownSignature = null; // Usar signature en lugar de ID
+        // Set de firmas de todas las transacciones ya conocidas.
+        // Cualquier tx nueva (no vista antes) dispara la notificación,
+        // incluso si no es la primera de la lista.
+        this.knownSignatures = new Set();
+        this.knownSignaturesMaxSize = 200; // evitar crecimiento infinito
         this.pollMinSeconds = 3;
         this.pollMaxSeconds = 7;
         this.subscribers = []; // SSE clients
         this.errorCount = 0;
-        this.maxErrors = 3;
+        this.maxErrors = 5;
     }
 
     /**
@@ -40,12 +56,15 @@ class TransactionWatchService {
         this.errorCount = 0;
         console.log(`[TransactionWatch] Starting polling (${this.pollMinSeconds}-${this.pollMaxSeconds}s random intervals)`);
 
-        // Hacer un scrape inicial para obtener la firma de la última transacción conocida
+        // Scrape inicial: cargar todas las transacciones visibles actualmente en el Set.
+        // A partir de aquí cualquier tx que NO esté en el Set se considerará nueva.
         try {
             const activity = await this._safeActivityFetch();
             if (activity && activity.transactions.length > 0) {
-                this.lastKnownSignature = getTransactionSignature(activity.transactions[0]);
-                console.log('[TransactionWatch] Initial signature:', this.lastKnownSignature);
+                activity.transactions.forEach(tx => {
+                    this.knownSignatures.add(getTransactionSignature(tx));
+                });
+                console.log(`[TransactionWatch] Initial load: ${this.knownSignatures.size} transacciones conocidas`);
             }
         } catch (err) {
             console.warn('[TransactionWatch] Initial fetch failed:', err.message);
@@ -70,15 +89,17 @@ class TransactionWatchService {
     /**
      * Suscribe un cliente SSE a notificaciones
      */
-    subscribe(res) {
+    subscribe(res, userId = null) {
+        // attach user id to response for debugging
+        res._userId = userId;
         this.subscribers.push(res);
-        console.log(`[TransactionWatch] New subscriber. Total: ${this.subscribers.length}`);
+        console.log(`[TransactionWatch] New subscriber (user=${userId || '?'}) Total: ${this.subscribers.length}`);
 
         // Enviar ping inicial
         this._sendToSubscriber(res, {
             type: 'connected',
             message: 'Watching for new transactions',
-            lastSignature: this.lastKnownSignature || null,
+            knownTransactions: this.knownSignatures.size,
             timestamp: new Date().toISOString()
         });
         console.log('[TransactionWatch] Sent initial connection message');
@@ -120,20 +141,31 @@ class TransactionWatchService {
                 return;
             }
 
-            const latestTx = activity.transactions[0];
-            const currentSignature = getTransactionSignature(latestTx);
+            // Buscar CUALQUIER transacción que no haya sido vista antes
+            const newTransactions = [];
+            for (const tx of activity.transactions) {
+                const sig = getTransactionSignature(tx);
+                if (!this.knownSignatures.has(sig)) {
+                    newTransactions.push({ tx, sig });
+                }
+            }
 
-            // Comparar con la última firma conocida (basada en contenido, no ID)
-            if (!this.lastKnownSignature || currentSignature !== this.lastKnownSignature) {
-                console.log(`[TransactionWatch] ✨ New transaction detected: ${currentSignature.substring(0, 8)}... (${latestTx.amount} ${latestTx.currency})`);
-
-                // Notificar a todos los subscribers
-                this._broadcastNewTransaction(latestTx);
-
-                this.lastKnownSignature = currentSignature;
-                this.errorCount = 0; // reset error count on success
+            if (newTransactions.length > 0) {
+                // Registrar las nuevas firmas en el Set
+                for (const { tx, sig } of newTransactions) {
+                    this.knownSignatures.add(sig);
+                    console.log(`[TransactionWatch] ✨ Nueva tx detectada: ${sig.substring(0, 8)}... amount=${tx.amount} name=${tx.name || tx.raw?.split('\n')[0] || '?'}`);
+                    // Notificar a suscriptores
+                    this._broadcastNewTransaction(tx);
+                }
+                // Limpiar el Set si creció demasiado (mantener las últimas N)
+                if (this.knownSignatures.size > this.knownSignaturesMaxSize) {
+                    const toRemove = Array.from(this.knownSignatures).slice(0, this.knownSignatures.size - this.knownSignaturesMaxSize);
+                    toRemove.forEach(s => this.knownSignatures.delete(s));
+                }
+                this.errorCount = 0;
             } else {
-                console.debug('[TransactionWatch] No new transactions (same signature)');
+                console.debug(`[TransactionWatch] Sin transacciones nuevas (${activity.transactions.length} revisadas)`);
             }
 
         } catch (err) {
@@ -223,7 +255,7 @@ class TransactionWatchService {
         return {
             active: this.isActive,
             subscriberCount: this.subscribers.length,
-            lastKnownSignature: this.lastKnownSignature,
+            knownSignaturesCount: this.knownSignatures.size,
             errorCount: this.errorCount,
             maxErrors: this.maxErrors,
             pollRange: `${this.pollMinSeconds}-${this.pollMaxSeconds}s`

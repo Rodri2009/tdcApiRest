@@ -157,9 +157,9 @@ const crearSolicitud = async (req, res) => {
             const sqlAlquiler = `
                 INSERT INTO solicitudes_alquiler (
                     id_solicitud, fecha_evento, hora_evento, duracion, id_tipo_evento,
-                    id_precio_vigencia, precio_basico, total_adicionales, monto_sena, monto_deposito, 
+                    id_precio_vigencia, cantidad_personas, precio_basico, total_adicionales, monto_sena, monto_deposito, 
                     comentarios, estado
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const paramsAlquiler = [
                 newId,                                      // id_solicitud
@@ -168,6 +168,7 @@ const crearSolicitud = async (req, res) => {
                 duracionMinutos,                            // duracion (CAMBIO: ahora INT minutos)
                 tipoEvento,                                 // id_tipo_evento (CAMBIO: FK a opciones_tipos)
                 idPrecioVigencia,                           // id_precio_vigencia (NUEVO: FK a precios_vigencia)
+                cantidadNum,                                // cantidad_personas (NUEVO DENORMALIZADO: facilita búsqueda)
                 parseFloat(precioBase) || 0,               // precio_basico
                 0,                                          // total_adicionales (NUEVO: inicialmente 0, se actualiza con adicionales)
                 0,                                          // monto_sena (NUEVO: inicialmente 0, se actualiza con opciones_tipos)
@@ -490,24 +491,25 @@ const getSolicitudPorId = async (req, res) => {
             const sql = `
                 SELECT
                     CONCAT('alq_', sa.id_solicitud) as solicitudId,
-                    sa.tipo_servicio as tipoServicio,
+                    sa.id_tipo_evento as tipoServicio,
                     sa.fecha_evento as fechaEvento,
                     sa.hora_evento as horaInicio,
                     sa.duracion as duracionEvento,
-                    sa.cantidad_de_personas as cantidadPersonas,
+                    sa.cantidad_personas as cantidadPersonas,
                     sa.precio_basico as precioBase,
-                    sa.descripcion as descripcion_alquiler,
+                    sa.comentarios as descripcion_alquiler,
                     sa.estado,
                     COALESCE(c.nombre, '') as nombreCompleto,
                     c.telefono as telefono,
                     c.email as email,
-                    sa.tipo_de_evento as tipoEvento,
+                    COALESCE(ot.nombre_para_mostrar, sa.id_tipo_evento) as tipoEvento,
                     COALESCE(sol.es_publico, 0) as esPublico,
                     COALESCE(sol.descripcion_corta, '') as descripcion_corta,
                     COALESCE(sol.descripcion_larga, '') as descripcion_larga
                 FROM solicitudes_alquiler sa
                 JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+                LEFT JOIN opciones_tipos ot ON sa.id_tipo_evento = ot.id_tipo_evento
                 WHERE sa.id_solicitud = ?
             `;
 
@@ -545,6 +547,7 @@ const getSolicitudPorId = async (req, res) => {
             };
 
             logVerbose(`[SOLICITUD][GET] Alquiler obtenido: ${alquiler.nombreCompleto}`);
+            console.log(`[SOLICITUD][GET] JSON COMPLETO PARA alq_${alquilerId}:`, JSON.stringify(respuesta, null, 2));
             return res.status(200).json(respuesta);
         }
 
@@ -986,25 +989,43 @@ const actualizarSolicitud = async (req, res) => {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
-        // Crear o actualizar cliente y asociarlo a la solicitud
-        const clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
+        // Crear o actualizar cliente y asociarlo a la solicitud **solo si** se recibieron datos
+        let clienteId = null;
+        if (nombreFinal || telefonoFinal || emailFinal) {
+            clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
+            logVerbose(`[SOLICITUD][EDIT] Cliente determinado/creado: id=${clienteId}`);
+        } else {
+            // conservar cliente existente cuando no se envían datos nuevos
+            const existingRow = await conn.query(
+                'SELECT id_cliente FROM solicitudes WHERE id_solicitud = ? LIMIT 1',
+                [idNumerico]
+            );
+            if (existingRow && existingRow.length > 0) {
+                clienteId = existingRow[0].id_cliente;
+                logVerbose(`[SOLICITUD][EDIT] Reutilizando cliente actual: id=${clienteId}`);
+            }
+        }
 
-        // Actualizar datos en la tabla general 'solicitudes'
-        const sqlUpdateGeneral = `
+        // Actualizar datos en la tabla general 'solicitudes' (no sobrescribir id_cliente si es NULL)
+        let sqlUpdateGeneral = `
             UPDATE solicitudes SET 
                 descripcion_corta = ?,
                 descripcion_larga = ?,
-                descripcion = ?,
-                id_cliente = ?
-            WHERE id_solicitud = ?
-        `;
+                descripcion = ?`;
         const paramsUpdateGeneral = [
             descripcionCorta || (descripcion || detallesAdicionales ? String((descripcion || detallesAdicionales)).substring(0, 200) : null),
             descripcionLarga || null,
-            descripcion || detallesAdicionales || '',
-            clienteId,
-            idNumerico
+            descripcion || detallesAdicionales || ''
         ];
+        if (clienteId !== null) {
+            sqlUpdateGeneral += ",\n                id_cliente = ?";
+            paramsUpdateGeneral.push(clienteId);
+        }
+        sqlUpdateGeneral += `
+            WHERE id_solicitud = ?
+        `;
+        paramsUpdateGeneral.push(idNumerico);
+
         logVerbose(`[SOLICITUD][EDIT] Ejecutando UPDATE en solicitudes (id_solicitud=${idNumerico})`);
         await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
 
@@ -1194,27 +1215,54 @@ const actualizarSolicitud = async (req, res) => {
                     horaInicio;
             }
 
+            // Actualizar solo los campos que realmente se enviaron
+            let setClauses = [];
+            let params = [];
+
+            if (fechaEvento) {
+                setClauses.push('fecha_evento = ?');
+                params.push(fechaEvento);
+            }
+            if (horaEventoTime) {
+                setClauses.push('hora_evento = ?');
+                params.push(horaEventoTime);
+            }
+            if (duracionMinutos !== null) {
+                setClauses.push('duracion = ?');
+                params.push(duracionMinutos);
+            }
+            if (tipoEvento) {
+                setClauses.push('id_tipo_evento = ?');
+                params.push(tipoEvento);
+            }
+            if (typeof cantidadNum === 'number') {
+                setClauses.push('cantidad_personas = ?');
+                params.push(cantidadNum);
+            }
+            if (precioBase) {
+                setClauses.push('precio_basico = ?');
+                params.push(parseFloat(precioBase));
+            }
+            if (descripcion || detallesAdicionales) {
+                setClauses.push('comentarios = ?');
+                params.push(descripcion || detallesAdicionales || null);
+            }
+
+            if (setClauses.length === 0) {
+                logVerbose(`[SOLICITUD][EDIT] ⚠️ No hay campos para actualizar en solicitudes_alquiler`);
+                await conn.commit();
+                return res.status(400).json({ error: 'No hay campos para actualizar.' });
+            }
+
             const sqlUpdateAlquiler = `
                 UPDATE solicitudes_alquiler SET
-                    fecha_evento = ?,
-                    hora_evento = ?,
-                    duracion = ?,
-                    id_tipo_evento = ?,
-                    precio_basico = ?,
-                    comentarios = ?
+                    ${setClauses.join(',\n                    ')}
                 WHERE id_solicitud = ?
             `;
-            const paramsAlquiler = [
-                fechaEvento || null,
-                horaEventoTime || null,
-                duracionMinutos || null,
-                tipoEvento || null,
-                parseFloat(precioBase) || null,
-                descripcion || detallesAdicionales || null,
-                idNumerico
-            ];
+            params.push(idNumerico);
+
             try {
-                const result = await conn.query(sqlUpdateAlquiler, paramsAlquiler);
+                const result = await conn.query(sqlUpdateAlquiler, params);
                 affectedRowsEspecifico = result.affectedRows || 0;
                 tablaActualizada = 'solicitudes_alquiler';
                 logVerbose(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_alquiler: affectedRows=${affectedRowsEspecifico}`);

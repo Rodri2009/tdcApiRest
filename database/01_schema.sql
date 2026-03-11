@@ -327,6 +327,8 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     -- REFERENCIA A RANGO DE CANTIDAD DE PERSONAS (NUEVO: obtiene de precios_vigencia)
     id_precio_vigencia INT COMMENT 'NUEVO FK: precios_vigencia.id - Permite obtener cantidad_min, cantidad_max y precio_por_hora. NULL si no se puede determinar el rango',
     
+    -- CANTIDAD DE PERSONAS (CAMPO DENORMALIZADO IMPORTANTE)
+    cantidad_personas INT COMMENT 'Cantidad de personas para el evento (deducida de id_precio_vigencia). Se denormaliza aquí para facilitar queries y búsqueda rápida',
     -- PRECIOS Y MONTOS
     precio_basico DECIMAL(10,2) COMMENT 'Precio base = precio_por_hora × duracion_horas. Capturado en momento de solicitud',
     total_adicionales DECIMAL(10,2) DEFAULT 0 COMMENT 'NUEVO: Suma total de precios de adicionales seleccionados. Se actualiza en guardarAdicionales()',
@@ -381,6 +383,10 @@ CREATE TABLE IF NOT EXISTS solicitudes_talleres (
     precio DECIMAL(10,2),
     CONSTRAINT fk_solicitudes_talleres_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Solicitudes de talleres'; 
+
+
+
+
 
 -- =============================================================================
 -- TABLA UNIFICADA DE EVENTOS CONFIRMADOS
@@ -472,6 +478,38 @@ CREATE TABLE IF NOT EXISTS bandas_artistas (
     INDEX idx_activa (activa)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+
+-- =============================================================================
+-- SOLICITUDES DE FECHAS PARA BANDAS
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
+    id_solicitud INT PRIMARY KEY COMMENT 'FK a solicitudes.id_solicitud',
+    id_banda INT DEFAULT NULL COMMENT 'FK a bandas_artistas (la banda solicitante)',
+    fecha_evento DATE DEFAULT NULL,
+    hora_evento VARCHAR(20) DEFAULT NULL,
+    duracion VARCHAR(100) DEFAULT NULL,
+    descripcion TEXT COMMENT 'Descripción del show/evento',
+    precio_basico DECIMAL(10,2) DEFAULT NULL,
+    precio_final DECIMAL(10,2) DEFAULT NULL,
+    precio_anticipada DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de venta anticipada',
+    precio_puerta DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de puerta / venta en puerta',
+    cantidad_bandas INT DEFAULT 1,
+    expectativa_publico VARCHAR(100) DEFAULT NULL,
+    bandas_json LONGTEXT COMMENT 'JSON array de bandas: [{id_banda, nombre, orden_show, es_principal}] - ÚNICA FUENTE DE VERDAD',
+    estado VARCHAR(50) DEFAULT 'Solicitado',
+    fecha_alternativa DATE DEFAULT NULL,
+    notas_admin TEXT,
+    id_evento_generado INT DEFAULT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_fecha (fecha_evento),
+    INDEX idx_estado (estado),
+    INDEX idx_banda (id_banda),
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
+    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Solicitudes de fechas/shows para bandas (3NF)';
+
 -- Catálogo de instrumentos disponibles (para autocompletado)
 CREATE TABLE IF NOT EXISTS catalogo_instrumentos (
     id_instrumento INT AUTO_INCREMENT PRIMARY KEY,
@@ -542,36 +580,6 @@ CREATE TABLE IF NOT EXISTS eventos_bandas_invitadas (
 
 DROP TABLE IF EXISTS bandas_invitadas;
 
--- =============================================================================
--- SOLICITUDES DE FECHAS PARA BANDAS
--- =============================================================================
-
-CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
-    id_solicitud INT PRIMARY KEY COMMENT 'FK a solicitudes.id_solicitud',
-    id_banda INT DEFAULT NULL COMMENT 'FK a bandas_artistas (la banda solicitante)',
-    fecha_evento DATE DEFAULT NULL,
-    hora_evento VARCHAR(20) DEFAULT NULL,
-    duracion VARCHAR(100) DEFAULT NULL,
-    descripcion TEXT COMMENT 'Descripción del show/evento',
-    precio_basico DECIMAL(10,2) DEFAULT NULL,
-    precio_final DECIMAL(10,2) DEFAULT NULL,
-    precio_anticipada DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de venta anticipada',
-    precio_puerta DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de puerta / venta en puerta',
-    cantidad_bandas INT DEFAULT 1,
-    expectativa_publico VARCHAR(100) DEFAULT NULL,
-    bandas_json LONGTEXT COMMENT 'JSON array de bandas: [{id_banda, nombre, orden_show, es_principal}] - ÚNICA FUENTE DE VERDAD',
-    estado VARCHAR(50) DEFAULT 'Solicitado',
-    fecha_alternativa DATE DEFAULT NULL,
-    notas_admin TEXT,
-    id_evento_generado INT DEFAULT NULL,
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_fecha (fecha_evento),
-    INDEX idx_estado (estado),
-    INDEX idx_banda (id_banda),
-    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
-    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Solicitudes de fechas/shows para bandas (3NF)';
 
 -- Personal asignado a eventos de bandas
 CREATE TABLE IF NOT EXISTS eventos_personal (

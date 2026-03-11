@@ -23,6 +23,13 @@
 #   --mp             Habilita Mercado Pago (ENABLE_PUPPETEER_MP=true)
 #   --wa             Habilita WhatsApp (ENABLE_PUPPETEER_WA=true)
 #
+# Opciones de respaldo de sesión (no destruyen datos existentes, simplemente
+# copian/recuperan carpetas en backend/profile):
+#   --save-mp        Si va a reiniciar contenedores con MP, guarda/restaura
+#                   la carpeta mp-profile antes/después del reset
+#   --save-wa        parecido para wa-profile
+#   --save-all       alias para los dos anteriores (mp+wa)
+#
 # Opciones de debug:
 #   -d, --debug      Muestra debug detallado (no engancha logs en tiempo real)
 #   -l, --local      Fuerza MySQL local (sin Docker)
@@ -69,6 +76,10 @@ REBUILD_IMAGES=false
 SKIP_SQL=false
 ENABLE_MP=false
 ENABLE_WA=false
+# session backup flags (nuevos)
+SAVE_MP_SESSION=false
+SAVE_WA_SESSION=false
+SAVE_ALL_SESSION=false
 SQL_SCRIPTS=("01_schema.sql" "02_seed.sql" "03_test_data.sql")
 
 # Cargar .env
@@ -104,6 +115,18 @@ while [[ $# -gt 0 ]]; do
             ;;
         --wa)
             ENABLE_WA=true
+            shift
+            ;;
+        --save-mp)
+            SAVE_MP_SESSION=true
+            shift
+            ;;
+        --save-wa)
+            SAVE_WA_SESSION=true
+            shift
+            ;;
+        --save-all)
+            SAVE_ALL_SESSION=true
             shift
             ;;
         --all)
@@ -154,12 +177,42 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Si --save-all se pidió, activar ambas banderas específicas
+if [ "$SAVE_ALL_SESSION" = true ]; then
+    SAVE_MP_SESSION=true
+    SAVE_WA_SESSION=true
+fi
+
 # Si no especificó contenedores, usar "all" por defecto
 if [ -z "$CONTAINERS_TO_RESET" ]; then
     CONTAINERS_TO_RESET="all"
 fi
 
 # Auto-detectar Docker
+# antes de tocar contenedores, podemos respaldar perfiles si se pidió
+PROFILE_BACKUP_DIR=""
+backup_profiles() {
+    PROFILE_BACKUP_DIR="$PROJECT_DIR/backend/profile-backup-$$"
+    mkdir -p "$PROFILE_BACKUP_DIR"
+    if [ "$SAVE_ALL_SESSION" = true ] || [ "$SAVE_MP_SESSION" = true ]; then
+        cp -a "$PROJECT_DIR/backend/profile/mp-profile" "$PROFILE_BACKUP_DIR/" 2>/dev/null || true
+    fi
+    if [ "$SAVE_ALL_SESSION" = true ] || [ "$SAVE_WA_SESSION" = true ]; then
+        cp -a "$PROJECT_DIR/backend/profile/wa-profile" "$PROFILE_BACKUP_DIR/" 2>/dev/null || true
+    fi
+}
+restore_profiles() {
+    if [ -d "$PROFILE_BACKUP_DIR" ]; then
+        if [ "$SAVE_ALL_SESSION" = true ] || [ "$SAVE_MP_SESSION" = true ]; then
+            cp -a "$PROFILE_BACKUP_DIR/mp-profile" "$PROJECT_DIR/backend/profile/" 2>/dev/null || true
+        fi
+        if [ "$SAVE_ALL_SESSION" = true ] || [ "$SAVE_WA_SESSION" = true ]; then
+            cp -a "$PROFILE_BACKUP_DIR/wa-profile" "$PROJECT_DIR/backend/profile/" 2>/dev/null || true
+        fi
+        rm -rf "$PROFILE_BACKUP_DIR"
+    fi
+}
+
 if [ "$USE_LOCAL" = false ]; then
     if command -v docker &>/dev/null && docker --version &>/dev/null; then
         if [ -f "$DOCKER_DIR/docker-compose.yml" ]; then
@@ -182,7 +235,7 @@ fi
 
 # La función sync_env_file también se puede reutilizar aquí para que los
 # scripts utilitarios mantengan la coherencia del archivo .env dentro de
-docker/, evitando tener que copiar manualmente en cada ocasión.
+# docker/, evitando tener que copiar manualmente en cada ocasión.
 sync_env_file() {
     local src="$ROOT_DIR/.env"
     local dst="$ROOT_DIR/docker/.env"
@@ -295,6 +348,8 @@ print_debug_config() {
         echo -e "${BLUE}  - ENABLE_MP: $ENABLE_MP${NC}"
         echo -e "${BLUE}  - ENABLE_WA: $ENABLE_WA${NC}"
         echo -e "${BLUE}  - SQL_SCRIPTS: ${SQL_SCRIPTS[@]}${NC}"
+        echo -e "${BLUE}  - DB_USER: $DB_USER${NC}"
+        echo -e "${BLUE}  - DB_PASSWORD: $( [ -n "$DB_PASSWORD" ] && echo '***' || echo '(empty)' )${NC}"
         echo ""
     if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
         echo -e "${YELLOW}[*] Puppeteer flags detectadas: MP=$ENABLE_MP WA=$ENABLE_WA${NC}"
@@ -303,9 +358,31 @@ print_debug_config() {
     fi
 }
 
+wait_for_mysql_ready() {
+    # espera hasta que el servidor acepte conexiones con las credenciales configuradas
+    CONTAINER_NAME=$(get_container_name "$DOCKER_DIR")
+    if [ -z "$CONTAINER_NAME" ]; then
+        echo -e "${RED}\n[!] No se encontró el contenedor de MariaDB${NC}"
+        return 1
+    fi
+    # el mysqladmin ping retorna 0 cuando el servidor está listo
+    until docker exec "$CONTAINER_NAME" mysqladmin ping -u"$DB_USER" -p"$DB_PASSWORD" --silent &>/dev/null; do
+        echo -n "."
+        sleep 1
+    done
+    echo -e " ${GREEN}✓${NC}"
+}
+
 reset_docker_containers() {
     if [ "$USE_DOCKER" = false ]; then
         return 0
+    fi
+
+    # si se solicitan respaldos de sesión, hacer copia previa
+    if [ "$SAVE_ALL_SESSION" = true ] || [ "$SAVE_MP_SESSION" = true ] || [ "$SAVE_WA_SESSION" = true ]; then
+        echo -e "${YELLOW}[*]${NC} Respaldando perfiles de Puppeteer..."
+        backup_profiles
+        echo -e "${GREEN}✓${NC}"
     fi
 
     echo -e "${YELLOW}[*]${NC} Controlando contenedores Docker..."
@@ -373,10 +450,15 @@ reset_docker_containers() {
         fi
         echo -e "${GREEN}✓${NC}"
         
-        # Esperar a que MariaDB esté listo
-        echo -ne "    Esperando MariaDB... "
-        sleep 5
-        echo -e "${GREEN}✓${NC}"
+        # Esperar a que MariaDB esté listo (poll hasta responder)
+        wait_for_mysql_ready
+
+        # Restaurar perfiles si correspondía
+        if [ "$SAVE_ALL_SESSION" = true ] || [ "$SAVE_MP_SESSION" = true ] || [ "$SAVE_WA_SESSION" = true ]; then
+            echo -e "${YELLOW}[*]${NC} Restaurando perfiles de Puppeteer..."
+            restore_profiles
+            echo -e "${GREEN}✓${NC}"
+        fi
     else
         # Resetear contenedores específicos
         cd "$DOCKER_DIR"
@@ -396,8 +478,7 @@ reset_docker_containers() {
             echo -e "${GREEN}✓${NC}"
             
             echo -ne "    Esperando MariaDB... "
-            sleep 5
-            echo -e "${GREEN}✓${NC}"
+            wait_for_mysql_ready
         fi
         
         if [[ " $CONTAINERS_TO_RESET " =~ " backend " ]]; then

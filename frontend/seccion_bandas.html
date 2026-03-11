@@ -508,7 +508,7 @@
                         });
                     }
                     return resultado;
-                }).filter(e => e._fechaObj && e.es_publico === 1); // quitar los inválidos y privados
+                }).filter(e => e._fechaObj && e.es_publico === 1 && e.tipo_evento === 'BANDA'); // quitar inválidos, privados y no‑bandas
 
                 console.log('✅ Eventos válidos después de filtrar:', mapped.length);
                 console.groupEnd();

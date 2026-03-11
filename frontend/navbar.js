@@ -291,8 +291,20 @@ class NavbarManager {
             else if (rolPrincipal === 'VIEWER') avatarClass = 'viewer';
 
             authButtonsHTML = `
-                <!-- Botón Admin (Desktop) -->
-                <div class="hidden md:flex relative" id="admin-dropdown-container">
+                <!-- Botón Admin (Desktop) / Hamburguesa (Mobile) -->
+                <div class="flex relative" id="admin-dropdown-container" style="display: none;">
+                    <style>
+                        @media (min-width: 768px) {
+                            #admin-dropdown-container {
+                                display: flex !important;
+                            }
+                        }
+                        @media (max-width: 767px) {
+                            #admin-dropdown-container {
+                                display: none !important;
+                            }
+                        }
+                    </style>
                     <!-- Botón Usuario con Avatar -->
                     <button id="admin-dropdown-btn" class="navbar-btn-user">
                         <div class="user-avatar ${avatarClass}">${iniciales}</div>
@@ -755,7 +767,8 @@ const STAFF_ROUTES = [
     '/admin_',
     '/editar_',
     '/config_',
-    '/admin.html'
+    '/admin.html',
+    '/admin_balance.html' // acceso restringido al balance también
 ];
 
 /**

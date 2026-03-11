@@ -109,6 +109,78 @@ exports.getActivity = async (req, res) => {
 /**
  * GET /api/mercadopago/watch (Server-Sent Events)
  */
+// debug: POST /api/mercadopago/watch/debug
+// body: transaction object
+exports.debugBroadcast = (req, res) => {
+    try {
+        const tx = req.body;
+        const { debugBroadcastHandler, getWatchService } = require('./watchController');
+        const { success, subscribers } = debugBroadcastHandler(tx);
+        if (success) {
+            return res.status(200).json({ success: true, message: 'Event broadcast', subscribers });
+        } else {
+            return res.status(400).json({ success: false, error: 'Watch service not active', subscribers });
+        }
+    } catch (err) {
+        logError('[MP-Debug] Error broadcasting:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+/**
+ * POST /api/mercadopago/watch/test
+ * Simula un ingreso SIN requerir JWT — solo necesita la clave DEBUG_SECRET del .env
+ * Ideal para pruebas con curl desde terminal.
+ *
+ * Body (todos opcionales):
+ *   { secret, name, amount, description }
+ *
+ * Curl de ejemplo:
+ *   curl -s -X POST http://localhost/api/mercadopago/watch/test \
+ *     -H 'Content-Type: application/json' \
+ *     -d '{"secret":"test123","name":"Juan Perez","amount":"5000"}'
+ */
+exports.testBroadcast = (req, res) => {
+    try {
+        const DEBUG_SECRET = process.env.DEBUG_SECRET || 'test123';
+        const { secret, name, amount, description } = req.body || {};
+
+        if (!secret || secret !== DEBUG_SECRET) {
+            return res.status(401).json({ success: false, error: 'Invalid or missing secret' });
+        }
+
+        const { debugBroadcastHandler } = require('./watchController');
+
+        const txAmount = amount || String(Math.floor(Math.random() * 50000) + 1000);
+        const txName = name || 'Test Ingreso';
+        const now = new Date();
+
+        const fakeTx = {
+            name: txName,
+            description: description || 'Transferencia recibida (test)',
+            amount: txAmount,
+            type: 'income',
+            dateTime: now.toISOString(),
+            date: now.toLocaleDateString('es-AR'),
+            time: now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+            raw: `${txName}\n$\n${txAmount}\nIngreso de dinero\n${now.toLocaleTimeString('es-AR')}`
+        };
+
+        const { success, subscribers } = debugBroadcastHandler(fakeTx);
+        logVerbose(`[MP-Test] Broadcast enviado: amount=${txAmount} name=${txName} subscribers=${subscribers}`);
+
+        return res.status(200).json({
+            success,
+            message: success ? `Notificación enviada a ${subscribers} cliente/s` : 'Watch service no activo',
+            subscribers,
+            transaction: fakeTx
+        });
+    } catch (err) {
+        logError('[MP-Test] Error:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 exports.watchTransactions = async (req, res) => {
     try {
         // Validar token del query param (ya que no viene en headers para SSE/EventSource)

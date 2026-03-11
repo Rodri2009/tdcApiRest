@@ -5,9 +5,14 @@
     // Estado global para tracking
     let MAX_ITEMS = MAX_ITEMS_DEFAULT;
     let viewAllMode = false;
+    // show only positive (income) transactions by default
+    let filterIncome = true;
     let allTransactions = [];
     let authToken = null;  // Token JWT para autenticación
     let lastTransactionState = null;  // Para loguear solo si cambian los datos de transacción
+    let sharedWorker = null;  // SharedWorker para SSE persistente entre recargas
+    let sseReady = false;      // true cuando worker confirma sse-open
+    let directES = null;       // EventSource directo (fallback)
 
     /* --- Authentication --- */
     async function authenticateAndGetToken() {
@@ -35,10 +40,38 @@
     // ELIGE UNO: 'doReMi' | 'coin' | 'bell' | 'success' | 'alert'
     const NOTIFICATION_SOUND = 'coin';
 
+    /* --- AudioContext compartido (singleton) ---
+     * El navegador bloquea AudioContext si no hay gesto previo del usuario.
+     * Solución: un único contexto que se reanuda con el primer click/tecla.
+     */
+    let _sharedAudioCtx = null;
+
+    function getAudioCtx() {
+        if (!_sharedAudioCtx) {
+            _sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        // Si el contexto fue suspendido (política autoplay), reanudar
+        if (_sharedAudioCtx.state === 'suspended') {
+            _sharedAudioCtx.resume().catch(() => { });
+        }
+        return _sharedAudioCtx;
+    }
+
+    // Reanudar contexto en el primer gesto del usuario (una sola vez)
+    function _unlockAudio() {
+        if (_sharedAudioCtx && _sharedAudioCtx.state === 'suspended') {
+            _sharedAudioCtx.resume().catch(() => { });
+        }
+        document.removeEventListener('click', _unlockAudio);
+        document.removeEventListener('keydown', _unlockAudio);
+    }
+    document.addEventListener('click', _unlockAudio, { once: true });
+    document.addEventListener('keydown', _unlockAudio, { once: true });
+
     /* --- Sonido de notificación --- */
     function playSoundDoReMi() {
         // Do-Re-Mi: notas agradables para ingresos
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioContext = getAudioCtx();
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
         oscillator.connect(gain);
@@ -64,7 +97,7 @@
 
     function playSoundCoin() {
         // Sonido de moneda (retro gaming) - dos notas descendentes rápidas
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioContext = getAudioCtx();
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
         oscillator.connect(gain);
@@ -90,7 +123,7 @@
 
     function playSoundBell() {
         // Sonido de campana - nota larga y aguda
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioContext = getAudioCtx();
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
         oscillator.connect(gain);
@@ -107,7 +140,7 @@
 
     function playSoundSuccess() {
         // Sonido success - pitido corto energético
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioContext = getAudioCtx();
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
         oscillator.connect(gain);
@@ -123,7 +156,7 @@
 
     function playSoundAlert() {
         // Sonido de alerta - dos pitidos rápidos
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioContext = getAudioCtx();
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
         oscillator.connect(gain);
@@ -208,7 +241,7 @@
         if (!dt) return { date: '—', time: '—' };
         const d = new Date(dt);
         if (isNaN(d)) return { date: '—', time: '—' };
-        const shortMonths = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        const shortMonths = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
         const mon = shortMonths[d.getMonth()] || '';
         const dd = String(d.getDate());              // no leading zero
         const hh = String(d.getHours()).padStart(2, '0');
@@ -266,16 +299,28 @@
         const tbody = document.getElementById('tx-list');
         tbody.innerHTML = '';
 
-        // Si estamos en modo "ver todas", mostrar todas; si no, mostrar solo MAX_ITEMS_DEFAULT
-        const displayList = viewAllMode ? list : list.slice(0, MAX_ITEMS);
-        const totalCount = list.length;
+        // aplicar filtro por montos positivos si está activo
+        let filtered = list;
+        if (filterIncome) {
+            filtered = list.filter(tx => {
+                const num = parseAmount(tx.amount);
+                return !isNaN(num) && num > 0;
+            });
+        }
+        // Si estamos en modo "ver todas", mostrar todas las encontradas; si no, cortar a MAX_ITEMS
+        const displayList = viewAllMode ? filtered : filtered.slice(0, MAX_ITEMS);
+        const totalCount = filtered.length;
 
         displayList.forEach(tx => {
             const tr = document.createElement('tr');
 
             // intentar normalizar campos faltantes usando 'raw' si es necesario
             let name = tx.name || tx.title || '';
-            let desc = tx.description || tx.type || '';
+            let desc = tx.description || '';
+            // si no hay descripción, mostrar un texto basado en el tipo (traducido)
+            if (!desc && tx.type) {
+                desc = translateType(tx.type);
+            }
             if ((!name || name === '') || (!desc || desc === '')) {
                 const parsed = parseRaw(tx.raw || '');
                 if (!name || name === '') name = parsed.name;
@@ -290,10 +335,9 @@
             const time = escapeHtml(dt.time);
 
             const amtNum = parseAmount(tx.amount);
-            const sign = (amtNum > 0) ? '+' : '';
             const amtDisplay = isNaN(amtNum)
                 ? escapeHtml(String(tx.amount || '—'))
-                : `${sign}${formatCurrency(amtNum)}`;
+                : formatCurrency(amtNum);
 
             if (amtNum > 0) tr.classList.add('income');
             if (amtNum < 0) tr.classList.add('expense');
@@ -330,10 +374,23 @@
 
     /* --- banner --- */
     let bannerTimer = null;
-    function showBanner(msg) {
+    // msg: texto o HTML a mostrar
+    // type: 'success' (verde) o 'neutral' (gris). Por defecto usa el estilo base verde.
+    // opts.allowHtml: si true, `msg` se inserta como HTML; de lo contrario se escapa.
+    function showBanner(msg, type = 'success', opts = {}) {
         const b = document.getElementById('banner');
-        b.textContent = msg;
+        if (opts.allowHtml) {
+            b.innerHTML = msg;
+        } else {
+            b.textContent = msg;
+        }
         b.classList.remove('hidden');
+        // ajustar clase de tipo
+        if (type === 'neutral') {
+            b.classList.add('neutral');
+        } else {
+            b.classList.remove('neutral');
+        }
         if (bannerTimer) clearTimeout(bannerTimer);
         bannerTimer = setTimeout(() => b.classList.add('hidden'), 8000);
     }
@@ -379,8 +436,30 @@
             const json = await res.json();
             console.debug('[UI] fetchTransactions', json);
             if (json && json.success && json.data && Array.isArray(json.data.transactions)) {
+                const prevFirstFingerprint = allTransactions.length > 0 ? getTransactionFingerprint(allTransactions[0]) : null;
+
                 allTransactions = json.data.transactions;
                 console.log('[UI] fetchTransactions -> tx count', allTransactions.length);
+
+                // detectar si el primer elemento cambió y, si es ingreso, notificar
+                if (allTransactions.length > 0) {
+                    const newFirst = allTransactions[0];
+                    const newFingerprint = getTransactionFingerprint(newFirst);
+                    if (prevFirstFingerprint && newFingerprint !== prevFirstFingerprint) {
+                        const amtNum = parseAmount(newFirst.amount);
+                        if (!isNaN(amtNum) && amtNum > 0) {
+                            showBanner(
+                                `💰 NUEVO INGRESO: <span class="banner-amount">${formatCurrency(Math.abs(amtNum))}</span> ` +
+                                `( <span class="banner-name">${escapeHtml(newFirst.name || '')}</span> )`,
+                                'success',
+                                { allowHtml: true }
+                            );
+                            playIncomeSound();
+                        }
+                    }
+                    lastTransactionState = newFingerprint;
+                }
+
                 renderTransactions(allTransactions);
                 return allTransactions;
             }
@@ -401,135 +480,259 @@
         }
     }
 
-    // --- Debug: fetch raw JSON (sin renderizar) ---------------------------------
-    async function fetchTransactionsRaw(fresh = false, limit = 100) {
-        try {
-            const headers = {};
-            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
-            const res = await fetch(`${API}/activity?fresh=${fresh}&limit=${limit}`, { headers });
-            const json = await res.json();
-            console.debug('[UI] fetchTransactionsRaw', json);
-            if (json && json.success && json.data) return json.data;
-            return json;
-        } catch (err) {
-            console.error('fetchTransactionsRaw error', err);
-            return null;
-        }
+
+    // utilitario compartido: convierte los valores 'type' del backend en cadenas legibles
+    function translateType(t) {
+        return ({
+            income: 'Ingreso',
+            payment: 'Pago',
+            transfer: 'Transferencia',
+            purchase: 'Compra',
+            withdrawal: 'Retiro',
+            unknown: 'Desconocido'
+        })[t] || t;
     }
 
-    function showRawJson(obj) {
-        const pre = document.getElementById('tx-raw');
-        const translateType = t => ({income:'Ingreso',payment:'Pago',transfer:'Transferencia',purchase:'Compra',withdrawal:'Retiro',unknown:'Desconocido'})[t] || t;
-        let out = obj;
-        try {
-            // si es estructura de actividad, traducir tipos
-            if (out && out.transactions && Array.isArray(out.transactions)) {
-                out = JSON.parse(JSON.stringify(out)); // clone
-                out.transactions.forEach(tx => {
-                    if (tx.type) tx.type = translateType(tx.type);
-                });
-            }
-        } catch (e) {
-            // ignore
-        }
-        if (!out) {
-            pre.textContent = 'null';
-        } else {
-            try { pre.textContent = JSON.stringify(out, null, 2); } catch (e) { pre.textContent = String(out); }
-        }
-        pre.classList.remove('hidden');
-        document.getElementById('copy-raw-btn').classList.remove('hidden');
-        document.getElementById('tx-raw-status').textContent = `Última actualización: ${new Date().toLocaleString()}`;
-        pre.scrollIntoView({ behavior: 'smooth' });
-    }
+
+
+    // Versión del worker — incrementar cada vez que se modifique sse-worker.js
+    // para forzar al browser a crear una nueva instancia
+    const SSE_WORKER_VERSION = '7';
 
     /* --- SSE / realtime --- */
+
+    /**
+     * Procesa el payload de un mensaje SSE (compartido entre SharedWorker y fallback directo)
+     */
+    function handleSSEData(rawData) {
+        try {
+            const msg = JSON.parse(rawData);
+            console.log('[SSE] ✓ JSON parseado:', msg.type);
+
+            if (msg && msg.type === 'new_transaction' && msg.transaction) {
+                const tx = msg.transaction;
+                console.log('[SSE] 🔄 Nueva transacción:', tx.name, '|', tx.amount);
+                logTransactionOnChange(tx, msg);
+                addTransactionToTop(tx);
+                const amt = parseAmount(tx.amount);
+                if (!isNaN(amt)) {
+                    if (amt > 0) {
+                        console.log('[SSE] 💰 INGRESO detectado');
+                        showBanner(
+                            `💰 NUEVO INGRESO: <span class="banner-amount">${formatCurrency(Math.abs(amt))}</span> ` +
+                            `( <span class="banner-name">${escapeHtml(tx.name || '')}</span> )`,
+                            'success',
+                            { allowHtml: true }
+                        );
+                        playIncomeSound();
+                    } else if (amt < 0 && tx.raw && tx.raw.toLowerCase().includes('transfer')) {
+                        console.log('[SSE] ↗️ Transferencia detectada');
+                        showBanner(`↗️ Transferencia enviada: ${formatCurrency(Math.abs(amt))}`);
+                    }
+                }
+            }
+            if (msg && msg.type === 'connected') {
+                console.log('[SSE] ✓ servidor dice: conectado');
+                document.getElementById('status').textContent = 'watch: conectado';
+            }
+        } catch (e) {
+            console.error('[SSE] ❌ Parse error:', e.message, 'Data:', String(rawData).substring(0, 200));
+        }
+    }
+
+    /**
+     * Handler de mensajes provenientes del SharedWorker
+     */
+    function onWorkerMessage(ev) {
+        let msg;
+        try {
+            msg = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data;
+        } catch (e) { return; }
+
+        const statusEl = document.getElementById('status');
+
+        if (msg.type === 'sse-open') {
+            console.log('[SSE] ✅ Conexión establecida (SharedWorker persistente)');
+            statusEl.textContent = 'watch: conectado';
+        } else if (msg.type === 'sse-state' || msg.type === 'pong') {
+            // Respuesta sincrónica al ping/start: readyState 1 = OPEN
+            if (msg.readyState === 1 || msg.connected) {
+                if (!sseReady) {
+                    console.log('[SSE] ✅ Estado confirmado por ping/state: conectado');
+                    statusEl.textContent = 'watch: conectado';
+                }
+            } else {
+                console.log('[SSE] Estado worker:', msg.readyState === 0 ? 'conectando...' : 'cerrado');
+            }
+        } else if (msg.type === 'sse-error') {
+            console.warn('[SSE] ⚠️ Error SSE — el worker reconectará automáticamente');
+            statusEl.textContent = 'watch: reconectando...';
+            sseReady = false;
+
+            // Actualizar token por si expiró y reenviarlo al worker tras 4s
+            setTimeout(async () => {
+                authToken = null;
+                await authenticateAndGetToken();
+                if (authToken && sharedWorker) {
+                    sharedWorker.port.postMessage(JSON.stringify({ type: 'start', token: authToken }));
+                }
+            }, 4000);
+        } else if (msg.type === 'sse-message') {
+            handleSSEData(msg.data);
+        }
+    }
+
+
+
+    /** Envía ping al worker periódicamente para detectar cuando la conexión queda lista */
+    function startWorkerPingLoop() {
+        let attempts = 0;
+        const maxAttempts = 20;  // 20 × 2s = 40s máx esperando
+        const interval = setInterval(() => {
+            if (sseReady || !sharedWorker) {
+                clearInterval(interval);
+                return;
+            }
+            attempts++;
+            if (attempts > maxAttempts) {
+                clearInterval(interval);
+                console.warn('[SSE] Worker no confirmó conexión tras 40s — usando SSE directo');
+                try { sharedWorker.port.close(); } catch (e) { }
+                sharedWorker = null;
+                initSSEDirect();
+                return;
+            }
+            sharedWorker.port.postMessage(JSON.stringify({ type: 'ping' }));
+        }, 2000);
+    }
+
+    /**
+     * SSE directo (sin SharedWorker) — fallback para navegadores sin soporte
+     */
+    function initSSEDirect() {
+        const statusEl = document.getElementById('status');
+        console.log('[SSE] Modo directo (sin SharedWorker)');
+
+        // Evitar conexiones duplicadas
+        if (directES) {
+            if (directES.readyState !== EventSource.CLOSED) {
+                console.log('[SSE] Conexión directa ya activa, readyState:', directES.readyState);
+                return;
+            }
+            directES = null;
+        }
+
+        const watchUrl = authToken
+            ? `${API}/watch?token=${encodeURIComponent(authToken)}`
+            : `${API}/watch`;
+
+        const es = new EventSource(watchUrl);
+        directES = es;
+        let messageCount = 0;
+
+        es.onopen = () => {
+            console.log('[SSE] ✅ Conexión establecida (directo)');
+            statusEl.textContent = 'watch: conectado';
+        };
+
+        es.onmessage = (ev) => {
+            messageCount++;
+            console.log(`[SSE] 📨 Msg #${messageCount}:`, ev.data.substring(0, 80));
+            handleSSEData(ev.data);
+        };
+
+        es.onerror = () => {
+            console.error('[SSE] ❌ Error directo — readyState:', es.readyState);
+            statusEl.textContent = 'watch: desconectado — reintentando...';
+            sseReady = false;
+            es.close();
+            directES = null;
+            authToken = null;
+            fetchTransactions(true);
+            setTimeout(initSSE, 3000);
+        };
+    }
+
+    /**
+     * Punto de entrada principal:
+     * Usa SharedWorker si está disponible (conexión sobrevive recargas),
+     * si no, cae a EventSource directo.
+     */
     async function initSSE() {
         const statusEl = document.getElementById('status');
-        console.log('[SSE] Iniciando conexión SSE...');
-        try {
-            // refrescar token cada vez que intentamos conectar
-            if (!authToken) {
-                console.log('[SSE] autentificando antes de conectar...');
-                await authenticateAndGetToken();
-            } else {
-                console.log('[SSE] usando token existente, longitud', authToken.length);
-            }
-            // EventSource no soporta headers personalizados, pasar token como query param
-            const watchUrl = authToken
-                ? `${API}/watch?token=${encodeURIComponent(authToken)}`
-                : `${API}/watch`;
+        console.log('[SSE] Iniciando...');
 
-            console.log('[SSE] URL:', watchUrl.substring(0, 50) + '...');
-            const es = new EventSource(watchUrl);
+        if (!authToken) {
+            console.log('[SSE] Sin token — autenticando...');
+            await authenticateAndGetToken();
+        }
 
-            let messageCount = 0;
-            let lastMessageTime = Date.now();
+        if (!authToken) {
+            statusEl.textContent = 'watch: sin token';
+            console.error('[SSE] No hay token disponible');
+            return;
+        }
 
-            es.onopen = () => {
-                console.log('[SSE] ✅ Conexión establecida (onopen)');
-                statusEl.textContent = 'watch: conectado';
-            };
-
-            es.onmessage = (ev) => {
-                messageCount++;
-                const now = Date.now();
-                const timeSinceLastMsg = now - lastMessageTime;
-                lastMessageTime = now;
-
-                console.log(`[SSE] 📨 Mensaje #${messageCount} recibido (${timeSinceLastMsg}ms):`, ev.data.substring(0, 100));
-
-                try {
-                    const msg = JSON.parse(ev.data);
-                    console.log('[SSE] ✓ JSON parseado:', msg.type);
-
-                    if (msg && msg.type === 'new_transaction' && msg.transaction) {
-                        const tx = msg.transaction;
-                        console.log('[SSE] 🔄 Nueva transacción:', tx.name, '|', tx.amount);
-                        logTransactionOnChange(tx, msg);  // Log solo si cambia
-                        addTransactionToTop(tx);
-                        const amt = parseAmount(tx.amount);
-                        if (!isNaN(amt)) {
-                            if (amt > 0) {
-                                console.log('[SSE] 💰 INGRESO detectado');
-                                showBanner(`💰 NUEVO INGRESO: ${formatCurrency(Math.abs(amt))}`);
-                                // Reproducir sonido de notificación para ingresos
-                                playIncomeSound();
-                            } else if (amt < 0 && tx.raw && tx.raw.toLowerCase().includes('transfer')) {
-                                // Mostrar también egreso si es una transferencia
-                                console.log('[SSE] ↗️ Transferencia detectada');
-                                showBanner(`↗️ Transferencia enviada: ${formatCurrency(Math.abs(amt))}`);
-                            }
-                        }
-                    }
-                    if (msg && msg.type === 'connected') {
-                        console.log('[SSE] ✓ servidor dice: conectado');
-                        statusEl.textContent = 'watch: conectado';
-                    }
-                } catch (e) {
-                    console.error('[SSE] ❌ Parse error:', e.message, 'Data:', ev.data.substring(0, 200));
+        if (window.SharedWorker) {
+            try {
+                if (!sharedWorker) {
+                    console.log('[SSE] Creando SharedWorker sse-worker.js');
+                    sharedWorker = new SharedWorker(`/sse-worker.js?v=${SSE_WORKER_VERSION}`);
+                    sharedWorker.port.onmessage = onWorkerMessage;
+                    sharedWorker.onerror = (err) => {
+                        console.error('[SSE] Error en SharedWorker:', err.message);
+                        sharedWorker = null;
+                        // Fallback a SSE directo
+                        initSSEDirect();
+                    };
+                    sharedWorker.port.start();
                 }
-            };
+                // Enviar token al worker (conecta si no está conectado, o reutiliza conexión)
+                sharedWorker.port.postMessage(JSON.stringify({ type: 'start', token: authToken }));
+                statusEl.textContent = 'watch: conectando...';
+                console.log('[SSE] ✅ SharedWorker activo — conexión persiste entre recargas');
 
-            es.onerror = (err) => {
-                console.error('[SSE] ❌ Error en conexión:', err);
-                console.error('[SSE] readyState:', es.readyState);
-                statusEl.textContent = 'watch: desconectado — reintentando...';
-                es.close();
-                console.log('[SSE] cerrada con error, reautenticando y reintentando en 3s...');
-                authToken = null; // forzar re-autenticación
-                setTimeout(initSSE, 3000);
-            };
-        } catch (err) {
-            console.error('[SSE] ❌ Error al crear EventSource:', err);
-            document.getElementById('status').textContent = 'watch: no disponible';
+                // Ping loop: confirma cuándo el worker tiene SSE abierto
+                startWorkerPingLoop();
+
+                // Fallback: si en 12 segundos no llega sse-open, el worker faló silenciosamente
+                // → cerrar worker y usar SSE directo
+                setTimeout(() => {
+                    if (!sseReady) {
+                        console.warn('[SSE] Timeout esperando sse-open — abandonando SharedWorker, usando SSE directo');
+                        if (sharedWorker) {
+                            try { sharedWorker.port.close(); } catch (e) { }
+                            sharedWorker = null;
+                        }
+                        initSSEDirect();
+                    }
+                }, 12000);
+            } catch (err) {
+                console.error('[SSE] SharedWorker falló, usando SSE directo:', err);
+                sharedWorker = null;
+                initSSEDirect();
+            }
+        } else {
+            console.log('[SSE] SharedWorker no disponible — usando SSE directo');
+            initSSEDirect();
         }
     }
 
     /* --- init --- */
     async function init() {
         console.log('[Init] Iniciando admin_balance...', new Date().toLocaleString());
+
+        // seguridad en frontend: solo personal (nivel >= 50)
+        if (window.navbarManager) {
+            if (!navbarManager.protectAdminPage() || !navbarManager.tieneNivel(50)) {
+                if (navbarManager.userNivel < 50) {
+                    alert('Acceso restringido al personal.');
+                    window.location.href = '/index.html';
+                }
+                return;
+            }
+        }
 
         // Obtener token de autenticación primero
         const token = await authenticateAndGetToken();
@@ -569,34 +772,60 @@
             renderTransactions(allTransactions);
         });
 
-        // Raw JSON controls
-        const toggleRawBtn = document.getElementById('toggle-raw-btn');
-        const copyRawBtn = document.getElementById('copy-raw-btn');
-
-        toggleRawBtn.addEventListener('click', async () => {
-            const pre = document.getElementById('tx-raw');
-            const hidden = pre.classList.contains('hidden');
-            if (hidden) {
-                document.getElementById('tx-raw-status').textContent = 'cargando...';
-                const raw = await fetchTransactionsRaw(false, 100);
-                showRawJson(raw);
-                toggleRawBtn.textContent = 'Ocultar JSON crudo';
-            } else {
-                pre.classList.add('hidden');
-                copyRawBtn.classList.add('hidden');
-                document.getElementById('tx-raw-status').textContent = '';
-                toggleRawBtn.textContent = 'Ver JSON crudo';
-            }
+        // botón especiales
+        const toggleBalanceBtn = document.getElementById('toggle-balance-btn');
+        const balanceSection = document.querySelector('.balance-section');
+        toggleBalanceBtn.addEventListener('click', () => {
+            const hidden = balanceSection.classList.toggle('hidden');
+            toggleBalanceBtn.textContent = hidden ? 'Mostrar saldo' : 'Ocultar saldo';
         });
 
-        copyRawBtn.addEventListener('click', async () => {
+        const checkBtn = document.getElementById('check-btn');
+        checkBtn.addEventListener('click', async () => {
+            // mostrar spinner/disable
+            checkBtn.disabled = true;
+            checkBtn.innerHTML = 'Actualizando <span class="spinner"></span>';
+
+            const prevFingerprint = allTransactions.length > 0 ? getTransactionFingerprint(allTransactions[0]) : null;
             try {
-                await navigator.clipboard.writeText(document.getElementById('tx-raw').textContent);
-                showBanner('JSON copiado al portapapeles');
+                await fetchTransactions(true);
             } catch (e) {
-                showBanner('No se pudo copiar el JSON');
+                showBanner('Servicio no disponible', 'neutral');
             }
+            const currentFingerprint = allTransactions.length > 0 ? getTransactionFingerprint(allTransactions[0]) : null;
+
+            if (prevFingerprint && currentFingerprint === prevFingerprint) {
+                showBanner('Todo funciona bien, NO hay nuevos ingresos', 'neutral');
+            } else {
+                if (allTransactions.length > 0) {
+                    const amtNum = parseAmount(allTransactions[0].amount);
+                    if (isNaN(amtNum) || amtNum <= 0) {
+                        showBanner('Todo funciona bien, NO hay nuevos ingresos', 'neutral');
+                    }
+                }
+            }
+
+            // restaurar botón
+            checkBtn.disabled = false;
+            checkBtn.textContent = 'Actualizar';
         });
+
+        // filtro por defecto y botón para desactivarlo
+        const filterBtn = document.getElementById('filter-btn');
+        function updateFilterButton() {
+            filterBtn.textContent = filterIncome ? 'Sin filtro' : 'Filtrar ingresos';
+        }
+        filterBtn.addEventListener('click', () => {
+            filterIncome = !filterIncome;
+            updateFilterButton();
+            renderTransactions(allTransactions);
+            console.log('transactions:', allTransactions);
+        });
+        updateFilterButton();
+
+        // Botón de prueba de notificaciones
+
+
 
         await Promise.all([fetchBalance(false), fetchTransactions(false)]);
         initSSE();

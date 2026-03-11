@@ -157,9 +157,12 @@
 
     .actions-cell {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: row;
+        flex-wrap: nowrap;
         gap: 8px;
         align-items: center;
+        justify-content: flex-start;
+        min-width: 150px;
     }
 
     .action-btn {
@@ -182,6 +185,112 @@
 
     .action-btn:active {
         transform: translateY(0);
+    }
+
+    /* Row position relative para que el overlay se posicione respecto a toda la fila */
+    tbody tr {
+        position: relative;
+        overflow: visible;
+    }
+
+    /* Estado Badge Styles */
+    .estado-badge {
+        display: inline-block;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 13px;
+        text-align: center;
+        min-width: 100px;
+    }
+
+    .estado-badge.solicitado {
+        background: #3b82f6;
+        color: #fff;
+    }
+
+    .estado-badge.contactado {
+        background: #8b5cf6;
+        color: #fff;
+    }
+
+    .estado-badge.confirmado {
+        background: #10b981;
+        color: #fff;
+    }
+
+    .estado-badge.cancelado {
+        background: #ef4444;
+        color: #fff;
+    }
+
+    .privado-indicator {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 4px 8px;
+        background: #6b7280;
+        color: #fff;
+        font-size: 11px;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+
+    /* Icon Buttons */
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        color: #fff;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .icon-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .icon-btn.btn-edit {
+        background: #f59e0b;
+    }
+
+    .icon-btn.btn-delete {
+        background: #ef4444;
+    }
+
+    .icon-btn.btn-assign {
+        background: #8b5cf6;
+    }
+
+    .icon-btn.btn-work-order {
+        background: #06b6d4;
+    }
+
+    /* Modification hand overlay - aparece en hover */
+    .row-hover-overlay {
+        cursor: pointer;
+        background: #f093fb;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        z-index: 100;
+        transition: transform 0.2s ease;
+    }
+
+    .row-hover-overlay:hover {
+        transform: scale(1.15);
     }
 
     .btn-edit {
@@ -572,7 +681,7 @@
                     <tr>
                         <th>ID</th>
                         <th style="display:none;">Fecha Solicitud</th>
-                        <th>Categoría</th>
+                        <!-- <th>Categoría</th> -->
                         <th>Tipo</th>
                         <th>Cliente</th>
                         <th>Fecha Evento</th>
@@ -580,7 +689,6 @@
                         <th>Flyer</th>
                         <th>Descripción</th>
                         <th>Estado</th>
-                        <th>Público</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -679,9 +787,9 @@
                     contadorResultados.textContent = `Mostrando ${filtradas.length} de ${todasLasSolicitudes.length} solicitudes`;
                 }
 
-                // Event delegation for button clicks
+                // Event delegation for button clicks (action-btn and icon-btn)
                 tbody.addEventListener('click', (event) => {
-                    const button = event.target.closest('button.action-btn');
+                    const button = event.target.closest('button.action-btn, button.icon-btn, .row-hover-overlay');
                     if (!button) return;
 
                     const tr = button.closest('tr');
@@ -693,6 +801,15 @@
                     const categoria = tr.dataset.categoria;
                     const origen = tr.dataset.origen;
 
+                    // Handle row-hover-overlay (modification hand)
+                    if (button.classList.contains('row-hover-overlay') || button.dataset.action === 'modify') {
+                        const modifyId = button.dataset.id || solicitudId;
+                        const modifyTipo = button.dataset.tipo || tipoEventoId;
+                        modificarSolicitud(modifyId, categoria, origen);
+                        return;
+                    }
+
+                    // Handle other buttons
                     if (button.classList.contains('btn-delete')) {
                         eliminarSolicitud(solicitudId);
                     } else if (button.classList.contains('btn-edit')) {
@@ -803,7 +920,15 @@
                     table.style.display = 'none';
 
                     try {
-                        const res = await fetch('/api/admin/solicitudes');
+                        const token = localStorage.getItem('authToken');
+                        const headers = {};
+                        if (token) {
+                            headers['Authorization'] = `Bearer ${token}`;
+                        }
+
+                        const res = await fetch('/api/admin/solicitudes', {
+                            headers: headers
+                        });
 
                         if (res.status === 401) {
                             window.location.href = '/login.html';
@@ -853,6 +978,7 @@
                         const tr = document.createElement('tr');
                         tr.dataset.solicitudId = solicitud.id;
                         tr.dataset.tipoEventoId = solicitud.tipoEventoId || solicitud.tipoEvento || '';
+                        tr.dataset.origen = solicitud.origen || '';
                         // Preferimos 'categoria' devuelto por el backend; si no existe, usamos 'tipoEvento'
                         tr.dataset.categoria = solicitud.categoria || solicitud.tipoEvento || '';
                         // Fecha de solicitud (timestamp) - mostrar fecha+hora local
@@ -868,7 +994,8 @@
                         const descripcionCorta = solicitud.descripcionCorta || '<em>Sin descripción</em>';
 
                         let botones = '';
-                        // Mostrar Modificar y Eliminar siempre. Si está confirmado, mostrar Asignar y Orden.
+                        // Mostrar Eliminar, Asignar y Orden con iconos.
+                        // El botón "Modificar" ahora es una manito en hover en la primera columna.
                         // Para eventos `id` viene como 'ev_<id>' y `solicitud.origen==='evento'`.
                         const isEvento = solicitud.origen === 'evento';
                         const isConfirmado = (String(solicitud.estado).toLowerCase() === 'confirmado');
@@ -886,31 +1013,23 @@
                         console.log('  Cambiar Estado:', puedeCambiarEstado);
                         console.log('  Gestionar Personal:', puedeGestionarPersonal);
 
-                        // Botones base (solo si tiene permisos)
-                        if (puedeEditarSolicitudes) {
-                            if (isEvento) {
-                                botones += `<button class="action-btn btn-edit-event">Modificar</button>`;
-                            } else {
-                                botones += `<button class="action-btn btn-edit">Modificar</button>`;
-                            }
-                        }
-
+                        // Botones como iconos
                         if (puedeEliminarSolicitudes) {
                             if (isEvento) {
-                                botones += `<button class="action-btn btn-delete-event">Eliminar</button>`;
+                                botones += `<button class="icon-btn btn-delete btn-delete-event" title="Eliminar solicitud" data-id="${solicitud.id}">🗑️</button>`;
                             } else {
-                                botones += `<button class="action-btn btn-delete">Eliminar</button>`;
+                                botones += `<button class="icon-btn btn-delete btn-delete" title="Eliminar solicitud" data-id="${solicitud.id}">🗑️</button>`;
                             }
                         }
 
                         if (isConfirmado) {
-                            // Mostrar botón "Asignar Personal" siempre que esté confirmado (si tiene permiso)
+                            // Mostrar botón "Asignar Personal" con icono siempre que esté confirmado (si tiene permiso)
                             if (puedeGestionarPersonal) {
-                                botones += `<button class="action-btn btn-assign" data-action="assign" data-id="${solicitud.id}" data-tipo="${solicitud.tipoEventoId}" style="white-space: normal; line-height: 1.2;">Asignar<br>Personal</button>`;
+                                botones += `<button class="icon-btn btn-assign" data-action="assign" data-id="${solicitud.id}" data-tipo="${solicitud.tipoEventoId}" title="Asignar Personal">👥</button>`;
                             }
                             // Solo mostrar "Orden de Trabajo" si ya tiene personal asignado
                             if (solicitud.tienePersonalAsignado) {
-                                botones += `<button class="action-btn btn-work-order" data-action="work-order" data-id="${solicitud.id}">Orden de Trabajo</button>`;
+                                botones += `<button class="icon-btn btn-work-order" data-action="work-order" data-id="${solicitud.id}" title="Ver Orden de Trabajo">📋</button>`;
                             }
                         }
 
@@ -950,36 +1069,34 @@
                         // Banda/Artista and Cantidad/Aforo removed from admin view (use descripcionCorta/tipoNombre)
                         // (Field kept in other forms/controllers if needed)
 
-                        tr.innerHTML = `
-                            <td data-label="ID">${solicitud.id}</td>
-                            <td data-label="Fecha Solicitud" style="display:none;">${fechaSolicitud}</td>
-                            <td data-label="Categoría">${solicitud.categoria || '-'}</td>
-                            <td data-label="Tipo">${solicitud.tipoNombre || tipoLegible}</td>
-                            <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
-                            <td data-label="Fecha Evento">${fechaEvento}</td>
-                            <td data-label="Hora Inicio">${horaInicio}</td>
-                            <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td>
-                            <td data-label="Descripción"><div class="description">${descripcionCorta}</div></td>
-                            <td data-label="Estado">
-                                <select data-id="${solicitud.id}" class="estado-select" ${puedeCambiarEstado ? '' : 'disabled style="opacity:0.6;cursor:not-allowed;"'}>
-                                        <option value="Solicitado" ${solicitud.estado === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
-                                        <option value="Contactado" ${solicitud.estado === 'Contactado' ? 'selected' : ''}>Contactado</option>
-                                        <option value="Confirmado" ${solicitud.estado === 'Confirmado' ? 'selected' : ''}>Confirmado</option>
-                                        <option value="Cancelado" ${solicitud.estado === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
-                                </select>
-                            </td>
-                            <td data-label="Público" class="text-center">
-                                <label class="inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="publico-checkbox sr-only peer" data-id="${solicitud.id}" ${solicitud.es_publico ? 'checked' : ''}>
-                                    <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-fuchsia-400 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-fuchsia-500"></div>
-                                </label>
-                            </td>
-                            <td data-label="Acciones" class="actions-cell">
-                                ${botones}
-                            </td>
-                        `;
+                        tr.innerHTML = `<td data-label="ID">${solicitud.id}</td><td data-label="Fecha Solicitud" style="display:none;">${fechaSolicitud}</td><td data-label="Tipo">${solicitud.tipoNombre || tipoLegible}</td><td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td><td data-label="Fecha Evento">${fechaEvento}</td><td data-label="Hora Inicio">${horaInicio}</td><td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td><td data-label="Descripción"><div class="description">${descripcionCorta}</div></td><td data-label="Estado"><div class="estado-badge ${String(solicitud.estado).toLowerCase()}">${solicitud.estado}</div>${!solicitud.es_publico ? '<div class="privado-indicator">🔒 Privado</div>' : ''}</td><td data-label="Acciones" class="actions-cell">${botones}</td>`;
 
                         tbody.appendChild(tr);
+
+                        // Crear el overlay de manito una sola vez, se muestra/oculta en hover
+                        const overlay = document.createElement('div');
+                        overlay.className = 'row-hover-overlay';
+                        overlay.setAttribute('data-action', 'modify');
+                        overlay.setAttribute('data-id', solicitud.id);
+                        overlay.setAttribute('data-row-id', solicitud.id);
+                        overlay.setAttribute('data-tipo', solicitud.tipoEventoId);
+                        overlay.setAttribute('title', 'Modificar (☝️ haz click)');
+                        overlay.textContent = '☝️';
+
+                        // Posicionar en hover
+                        tr.addEventListener('mouseenter', () => {
+                            const rect = tr.getBoundingClientRect();
+                            const containerRect = document.getElementById('admin-table-container').getBoundingClientRect();
+                            overlay.style.position = 'fixed';
+                            overlay.style.top = (rect.top + rect.height / 2 - 16) + 'px';
+                            overlay.style.left = (containerRect.left + 12) + 'px';
+                            overlay.style.display = 'flex';
+                            document.body.appendChild(overlay);
+                        });
+
+                        tr.addEventListener('mouseleave', () => {
+                            overlay.style.display = 'none';
+                        });
                     });
 
                     loader.style.display = 'none';

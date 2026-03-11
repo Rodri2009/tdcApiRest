@@ -189,62 +189,50 @@
         }
 
         .oauth-btn {
-            padding: 12px 10px;
-            border: 2px solid var(--color-secondary);
+            padding: 14px 12px;
+            border: none;
             border-radius: 8px;
-            background: transparent;
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 5px;
-            color: var(--color-secondary);
-            text-decoration: none;
-            min-height: 70px;
+            gap: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: var(--color-secondary);
         }
 
         .oauth-btn i {
-            font-size: 18px;
+            font-size: 16px;
+        }
+
+        .oauth-btn.google {
+            background: #4285f4;
+        }
+
+        .oauth-btn.facebook {
+            background: #1877F2;
+        }
+
+        .oauth-btn.instagram {
+            background: #E4405F;
         }
 
         .oauth-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 0 10px var(--color-secondary);
-            background: rgba(240, 171, 252, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        .oauth-btn.google {
-            border-color: #4285f4;
-            color: #4285f4;
+        .oauth-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
         }
 
-        .oauth-btn.google:hover {
-            background: rgba(66, 133, 244, 0.15);
-            box-shadow: 0 0 10px #4285f4;
-        }
-
-        .oauth-btn.facebook {
-            border-color: #1877F2;
-            color: #1877F2;
-        }
-
-        .oauth-btn.facebook:hover {
-            background: rgba(24, 119, 242, 0.15);
-            box-shadow: 0 0 10px #1877F2;
-        }
-
-        .oauth-btn.instagram {
-            border-color: #E1306C;
-            color: #E1306C;
-        }
-
-        .oauth-btn.instagram:hover {
-            background: rgba(225, 48, 108, 0.15);
-            box-shadow: 0 0 10px #E1306C;
+        .oauth-btn:focus {
+            outline: 2px solid var(--color-secondary);
+            outline-offset: 2px;
         }
 
         .divider {
@@ -320,7 +308,7 @@
         /* Notification Banner */
         #notification-banner {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             padding: 16px 24px;
@@ -332,7 +320,7 @@
             text-align: center;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
             z-index: 1000;
-            animation: slideDown 0.3s ease;
+            animation: slideUp 0.3s ease;
             display: none;
         }
 
@@ -352,10 +340,10 @@
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         }
 
-        @keyframes slideDown {
+        @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateX(-50%) translateY(-10px);
+                transform: translateX(-50%) translateY(10px);
             }
 
             to {
@@ -409,17 +397,14 @@
                 <!-- Sección de OAuth -->
                 <div class="oauth-section">
                     <h5><i class="fas fa-link"></i> Registro Rápido</h5>
-                    <!-- Contenedor para Google (se renderiza automáticamente) -->
-                    <div id="google-btn-signup" style="margin-bottom: 10px;"></div>
-                    <!-- Fallback: botones manuales si Google no se renderiza -->
                     <div class="oauth-buttons">
                         <button type="button" class="oauth-btn google" onclick="handleGoogleSignup()"
-                            style="display:none;" id="google-manual-signup">
+                            id="google-manual-signup">
                             <i class="fab fa-google"></i>
                             <span>Google</span>
                         </button>
                         <button type="button" class="oauth-btn facebook" onclick="initiateFacebookSignup()">
-                            <i class="fab fa-facebook"></i>
+                            <i class="fab fa-facebook-f"></i>
                             <span>Facebook</span>
                         </button>
                         <button type="button" class="oauth-btn instagram" onclick="handleInstagramSignup()">
@@ -501,8 +486,9 @@
 
     <script>
         // Variables globales
-        let googleInitialized = false;
         let notificationTimer = null;
+        let googleInitialized = false;
+        let googleTokenClient = null;
 
         /**
          * Clase para manejar registro
@@ -515,11 +501,32 @@
                 this.notificationTimer = null;
 
                 this.setupEventListeners();
-                this.initializeOAuth();
+                //this.initializeOAuth(); // manual buttons used instead
+                this.initializeGoogleIfNeeded();
             }
 
             setupEventListeners() {
                 this.form.addEventListener('submit', (e) => this.handleRegistro(e));
+            }
+
+            initializeGoogleIfNeeded() {
+                if (googleInitialized) return;
+                if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                    setTimeout(() => this.initializeGoogleIfNeeded(), 100);
+                    return;
+                }
+                if (!CONFIG || !CONFIG.GOOGLE_CLIENT_ID) {
+                    console.warn('CONFIG.GOOGLE_CLIENT_ID faltante');
+                    return;
+                }
+                // Pre-crear token client UNA SOLA VEZ para que el clic sea síncrono
+                googleTokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CONFIG.GOOGLE_CLIENT_ID,
+                    scope: 'openid email profile',
+                    callback: handleGoogleOAuthResult
+                });
+                googleInitialized = true;
+                console.log('👍 Google SDK inicializado para registro');
             }
 
             showNotification(message, type = 'info', duration = 5000) {
@@ -657,73 +664,65 @@
                 }
             }
 
-            initializeOAuth() {
-                initializeGoogleSDK();
-                setTimeout(() => renderGoogleButtons(), 500);
-
-                // Reintentar renderizar botones
-                let retries = 0;
-                const retryInterval = setInterval(() => {
-                    retries++;
-                    if (retries > 5) {
-                        clearInterval(retryInterval);
-                        return;
-                    }
-
-                    const googleSignup = document.getElementById('google-btn-signup');
-                    if (googleSignup && googleSignup.children.length === 0) {
-                        renderGoogleButtons();
-                    } else {
-                        clearInterval(retryInterval);
-                    }
-                }, 1000);
-            }
         }
 
-        // ============================================
-        // GOOGLE OAUTH
-        // ============================================
-        function initializeGoogleSDK() {
-            if (googleInitialized) return;
-
-            if (typeof google === 'undefined') {
-                setTimeout(initializeGoogleSDK, 100);
+        // --------------------------------------------
+        // GOOGLE OAUTH helpers
+        // --------------------------------------------
+        function handleGoogleOAuthResult(tokenResponse) {
+            if (tokenResponse.error) {
+                console.error('Google token error:', tokenResponse.error);
+                registroManager?.showNotification('Error al obtener token de Google.', 'error');
                 return;
             }
-
-            google.accounts.id.initialize({
-                client_id: CONFIG.GOOGLE_CLIENT_ID,
-                callback: handleGoogleCallback
-            });
-            googleInitialized = true;
-        }
-
-        function renderGoogleButtons() {
-            if (typeof google === 'undefined' || !google.accounts.id) {
-                document.getElementById('google-manual-signup').style.display = 'block';
-                return;
-            }
-
-            const googleBtnSignup = document.getElementById('google-btn-signup');
-            if (googleBtnSignup && googleBtnSignup.children.length === 0) {
-                try {
-                    google.accounts.id.renderButton(googleBtnSignup, {
-                        type: 'standard',
-                        size: 'large',
-                        theme: 'outline',
-                        text: 'signup_with',
-                        locale: 'es'
+            registroManager?.showNotification('Verificando con Google…', 'info', -1);
+            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
+            })
+                .then(r => r.json())
+                .then(user => {
+                    const payload = {
+                        proveedor_oauth: 'google',
+                        id_oauth: user.sub,
+                        email: user.email,
+                        nombre: user.given_name || '',
+                        apellido: user.family_name || '',
+                        foto_url: user.picture || ''
+                    };
+                    return fetch('/api/auth/oauth-callback', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
                     });
-                } catch (e) {
-                    document.getElementById('google-manual-signup').style.display = 'block';
-                }
-            }
+                })
+                .then(r => r.json())
+                .then(result => {
+                    if (result.token) {
+                        localStorage.setItem('authToken', result.token);
+                        if (result.user) localStorage.setItem('user_data', JSON.stringify(result.user));
+                        registroManager?.showNotification('¡Bienvenido ' + (result.user?.nombre || '') + '!', 'success', 2000);
+                        setTimeout(() => {
+                            const returnTo = sessionStorage.getItem('returnTo');
+                            sessionStorage.removeItem('returnTo');
+                            window.location.href = returnTo || '/index.html';
+                        }, 2000);
+                    } else {
+                        registroManager?.showNotification(result.message || 'Error al registrarse.', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Google OAuth error', err);
+                    registroManager?.showNotification('Error en Google OAuth.', 'error');
+                });
         }
 
+        // Clic en botón: síncrono, sin trabajo previo → no bloqueado por popup blocker
         function handleGoogleSignup() {
-            if (typeof google !== 'undefined' && google.accounts.id) {
-                google.accounts.id.prompt();
+            if (!googleTokenClient) {
+                registroManager?.showNotification('Google aún no está listo, intenta en un momento.', 'error');
+                return;
             }
+            googleTokenClient.requestAccessToken({ prompt: 'select_account' });
         }
 
         function handleGoogleCallback(response) {

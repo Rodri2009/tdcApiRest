@@ -1,8 +1,32 @@
-/* Estilos simples — líneas y espaciado, sin fondos ni colores excepto el banner verde */
+/* Colores globales y tema oscuro, similares a admin_solicitudes */
+:root {
+    --color-primary: #581c87;
+    --color-secondary: #f0abfc;
+    --color-rustic: #44403c;
+}
+
 body {
-    font-family: Inter, Roboto, Arial, sans-serif;
-    color: #111;
-    margin: 20px;
+    font-family: 'Inter', sans-serif;
+    color: #d6d3d1;
+    background: #0c0a09;
+    margin: 0;
+    padding: 0;
+}
+
+/* si hay navbar fija, dejar espacio en el top */
+header.bg-rustic {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+}
+
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 20px 16px;
+    /* similar a .wrap, pero adaptado para esta página */
 }
 
 .container {
@@ -35,25 +59,54 @@ h1 {
 .btn {
     padding: 8px 16px;
     border: none;
-    background: linear-gradient(135deg, #0066cc, #0052a3);
-    color: white;
+    background: #44403c;
+    color: #d6d3d1;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 8px;
     font-weight: 500;
     font-size: 0.9rem;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.2);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.btn-green {
+    background: linear-gradient(135deg, #28a745 0%, #71dd8a 100%);
+    color: #0c0a09;
+}
+.btn-green:hover {
+    background: linear-gradient(135deg, #1e7e34 0%, #58c16e 100%);
+}
+
+/* simple spinner inside button */
+.btn .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: rgba(255,255,255,0.9);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-left: 6px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* neutral banner style */
+.banner.neutral {
+    border-color: #888;
+    background: linear-gradient(135deg, #eee 0%, #ccc 100%);
+    color: #333;
 }
 
 .btn:hover {
-    background: linear-gradient(135deg, #0052a3, #003d7a);
+    background: #555;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
 }
 
 .btn:active {
     transform: translateY(0);
-    box-shadow: 0 1px 4px rgba(0, 102, 204, 0.2);
 }
 
 .status {
@@ -61,31 +114,45 @@ h1 {
     color: #666;
 }
 
-/* Banner verde para ingresos y notificaciones */
+/* Banner verde para ingresos y notificaciones (ahora emergente desde abajo) */
 .banner {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -80px;
+    /* arrancar oculto fuera de pantalla */
+    z-index: 1000;
     display: block;
-    padding: 12px 14px;
+    padding: 14px 18px;
     border-radius: 6px;
-    margin-bottom: 12px;
     border: 2px solid #28a745;
     background: linear-gradient(135deg, #d4edda, #c3e6cb);
     color: #155724;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 1.25rem;
     box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
-    animation: slideDown 0.3s ease-out;
+    transition: bottom 0.4s ease-out, opacity 0.4s;
+    opacity: 0;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
+/* clases para resaltar nombre y monto dentro del banner */
+.banner-name,
+.banner-amount {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #0c0a09;
+}
+.banner-amount {
+    margin-left: 0.25rem;
+}
+.banner-name {
+    margin-right: 0.25rem;
+}
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* cuando no está oculto, lo movemos arriba y lo hacemos visible */
+.banner:not(.hidden) {
+    bottom: 20px;
+    opacity: 1;
 }
 
 .hidden {
@@ -134,13 +201,14 @@ h1 {
 }
 
 .tx-table tbody tr:hover {
-    background: #fafafa;
+    /* resalta ligeramente con un gris suave, similar al color del propio registro */
+    background: #f0f0f0;
 }
 
 .tx-table td {
     padding: 10px 8px;
     font-size: 0.95rem;
-    color: #222;
+    color: cyan;
 }
 
 .tx-table td:nth-child(2) {
@@ -176,10 +244,18 @@ h1 {
     background: linear-gradient(90deg, rgba(40, 167, 69, 0.15), transparent);
 }
 
-.tx-table tbody tr.income td:nth-child(2) {
-    color: #28a745;
+/* income row cells: make both description and amount greenyellow and bold */
+.tx-table tbody tr.income td:nth-child(2),
+.tx-table tbody tr.income td:nth-child(3) {
+    color: greenyellow;
     font-weight: 700;
     font-size: 1rem;
+}
+
+/* expense row cells: description and amount in red */
+.tx-table tbody tr.expense td:nth-child(2),
+.tx-table tbody tr.expense td:nth-child(3) {
+    color: red;
 }
 
 /* Separadores y pequeñas utilidades */

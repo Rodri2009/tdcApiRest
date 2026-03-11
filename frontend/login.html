@@ -159,7 +159,7 @@
         /* Notification Banner */
         #notification-banner {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             padding: 16px 24px;
@@ -171,7 +171,7 @@
             text-align: center;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
             z-index: 1000;
-            animation: slideDown 0.3s ease;
+            animation: slideUp 0.3s ease;
             display: none;
         }
 
@@ -191,10 +191,10 @@
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         }
 
-        @keyframes slideDown {
+        @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateX(-50%) translateY(-10px);
+                transform: translateX(-50%) translateY(10px);
             }
 
             to {
@@ -247,62 +247,50 @@
         }
 
         .oauth-btn {
-            padding: 12px 10px;
-            border: 2px solid var(--color-secondary);
+            padding: 14px 12px;
+            border: none;
             border-radius: 8px;
-            background: transparent;
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 5px;
-            color: var(--color-secondary);
-            text-decoration: none;
-            min-height: 70px;
+            gap: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: var(--color-secondary);
         }
 
         .oauth-btn i {
-            font-size: 18px;
+            font-size: 16px;
+        }
+
+        .oauth-btn.google {
+            background: #4285f4;
+        }
+
+        .oauth-btn.facebook {
+            background: #1877F2;
+        }
+
+        .oauth-btn.instagram {
+            background: #E4405F;
         }
 
         .oauth-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 0 10px var(--color-secondary);
-            background: rgba(240, 171, 252, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        .oauth-btn.google {
-            border-color: #4285f4;
-            color: #4285f4;
+        .oauth-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
         }
 
-        .oauth-btn.google:hover {
-            background: rgba(66, 133, 244, 0.15);
-            box-shadow: 0 0 10px #4285f4;
-        }
-
-        .oauth-btn.facebook {
-            border-color: #1877F2;
-            color: #1877F2;
-        }
-
-        .oauth-btn.facebook:hover {
-            background: rgba(24, 119, 242, 0.15);
-            box-shadow: 0 0 10px #1877F2;
-        }
-
-        .oauth-btn.instagram {
-            border-color: #E1306C;
-            color: #E1306C;
-        }
-
-        .oauth-btn.instagram:hover {
-            background: rgba(225, 48, 108, 0.15);
-            box-shadow: 0 0 10px #E1306C;
+        .oauth-btn:focus {
+            outline: 2px solid var(--color-secondary);
+            outline-offset: 2px;
         }
 
         .divider {
@@ -353,17 +341,16 @@
                 <!-- Sección de OAuth -->
                 <div class="oauth-section">
                     <h5><i class="fas fa-link"></i> Acceso Rápido</h5>
-                    <!-- Contenedor para Google (se renderiza automáticamente) -->
-                    <div id="google-btn-login" style="margin-bottom: 10px;"></div>
-                    <!-- Fallback: botones manuales si Google no se renderiza -->
+                    <!-- Usamos botones estilizados manuales para los tres proveedores
+                         para mantener un aspecto consistente y moderno. -->
                     <div class="oauth-buttons">
                         <button type="button" class="oauth-btn google" onclick="handleGoogleLogin()"
-                            style="display:none;" id="google-manual-login">
+                            id="google-manual-login">
                             <i class="fab fa-google"></i>
                             <span>Google</span>
                         </button>
                         <button type="button" class="oauth-btn facebook" onclick="initiateFacebookLogin()">
-                            <i class="fab fa-facebook"></i>
+                            <i class="fab fa-facebook-f"></i>
                             <span>Facebook</span>
                         </button>
                         <button type="button" class="oauth-btn instagram" onclick="handleInstagramLogin()">
@@ -408,7 +395,7 @@
         <!-- Notification Banner -->
         <div id="notification-banner"></div>
 
-        <!-- Google SDK -->
+        <!-- Google SDK (not needed when using manual buttons but left for compatibility) -->
         <script src="https://accounts.google.com/gsi/client" async defer></script>
         <!-- Facebook SDK -->
         <script async defer crossorigin="anonymous"
@@ -534,8 +521,30 @@
                         // Guardar JWT en localStorage
                         localStorage.setItem('authToken', data.token);
 
+                        // Si el servidor retornó información del usuario, guardarla también (igual que OAuth)
+                        if (data.user) {
+                            localStorage.setItem('user_data', JSON.stringify(data.user));
+                        }
+
                         // Mostrar éxito
                         this.showNotification('✓ Login exitoso. Redirigiendo...', 'success', 2000);
+
+                        // Función auxiliar para decidir URL de destino según rol
+                        const computeDefaultTarget = () => {
+                            let defaultUrl = '/index.html';
+                            try {
+                                const user = data.user || (data.token ? parseJwt(data.token) : null);
+                                if (user) {
+                                    const roles = user.roles || [];
+                                    if (roles.includes('admin') || roles.includes('SUPER_ADMIN')) {
+                                        defaultUrl = '/admin.html';
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn('No pudo determinar rol de usuario para redirección', e);
+                            }
+                            return defaultUrl;
+                        };
 
                         // Redirigir después de 2 segundos
                         setTimeout(() => {
@@ -543,11 +552,12 @@
                             // 1. returnTo en sessionStorage (usado por páginas de solicitud protegidas)
                             // 2. redirectAfterLogin en sessionStorage (compatibilidad con otros usos)
                             // 3. redirect en parámetro URL
-                            // 4. Por defecto: /admin.html
+                            // 4. Por defecto: decide según rol (admin → /admin.html, otros → /index.html)
                             const returnTo = sessionStorage.getItem('returnTo');
                             const redirectFromSession = sessionStorage.getItem('redirectAfterLogin');
                             const redirectFromUrl = new URLSearchParams(window.location.search).get('redirect');
-                            const targetUrl = returnTo || redirectFromSession || redirectFromUrl || '/admin.html';
+                            const defaultTarget = computeDefaultTarget();
+                            const targetUrl = returnTo || redirectFromSession || redirectFromUrl || defaultTarget;
 
                             // Limpiar sessionStorage después de usar
                             sessionStorage.removeItem('returnTo');
@@ -584,77 +594,89 @@
             // Inicializar el login manager cuando el DOM esté listo
             document.addEventListener('DOMContentLoaded', () => {
                 new LoginManager();
-                initializeOAuth();
+                ensureGoogleInitialized();
             });
 
             // ============================================
-            // GOOGLE OAUTH
+            // GOOGLE SDK helper
             // ============================================
             let googleInitialized = false;
+            let googleTokenClient = null;
 
-            function initializeOAuth() {
-                initializeGoogleSDK();
-                setTimeout(() => renderGoogleButtons(), 500);
-
-                // Reintentar renderizar botones
-                let retries = 0;
-                const retryInterval = setInterval(() => {
-                    retries++;
-                    if (retries > 5) {
-                        clearInterval(retryInterval);
-                        return;
-                    }
-
-                    const googleLogin = document.getElementById('google-btn-login');
-                    if (googleLogin && googleLogin.children.length === 0) {
-                        renderGoogleButtons();
-                    } else {
-                        clearInterval(retryInterval);
-                    }
-                }, 1000);
-            }
-
-            function initializeGoogleSDK() {
-                if (googleInitialized) return;
-
-                if (typeof google === 'undefined') {
-                    setTimeout(initializeGoogleSDK, 100);
+            function handleGoogleOAuthResult(tokenResponse) {
+                if (tokenResponse.error) {
+                    console.error('Google token error:', tokenResponse.error);
+                    window.loginManagerInstance?.showNotification('Error al obtener token de Google.', 'error');
                     return;
                 }
+                window.loginManagerInstance?.showNotification('Verificando con Google…', 'info', -1);
+                fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
+                })
+                    .then(r => r.json())
+                    .then(user => {
+                        const payload = {
+                            proveedor_oauth: 'google',
+                            id_oauth: user.sub,
+                            email: user.email,
+                            nombre: user.given_name || '',
+                            apellido: user.family_name || '',
+                            foto_url: user.picture || ''
+                        };
+                        return fetch('/api/auth/oauth-callback', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    })
+                    .then(r => r.json())
+                    .then(result => {
+                        if (result.token) {
+                            localStorage.setItem('authToken', result.token);
+                            if (result.user) localStorage.setItem('user_data', JSON.stringify(result.user));
+                            window.loginManagerInstance?.showNotification('¡Bienvenido ' + (result.user?.nombre || '') + '!', 'success', 2000);
+                            setTimeout(() => {
+                                const returnTo = sessionStorage.getItem('returnTo');
+                                sessionStorage.removeItem('returnTo');
+                                window.location.href = returnTo || computeDefaultTargetFrom(result.user || result.token);
+                            }, 2000);
+                        } else {
+                            window.loginManagerInstance?.showNotification(result.message || 'Error al iniciar sesión.', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Google OAuth error', err);
+                        window.loginManagerInstance?.showNotification('Error en Google OAuth.', 'error');
+                    });
+            }
 
-                google.accounts.id.initialize({
+            function ensureGoogleInitialized() {
+                if (googleInitialized) return;
+                if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                    setTimeout(ensureGoogleInitialized, 100);
+                    return;
+                }
+                if (!CONFIG || !CONFIG.GOOGLE_CLIENT_ID) {
+                    console.warn('CONFIG.GOOGLE_CLIENT_ID faltante');
+                    return;
+                }
+                // Crear el cliente UNA SOLA VEZ al inicio para que el clic sea sinócrono
+                googleTokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: CONFIG.GOOGLE_CLIENT_ID,
-                    callback: handleGoogleCallback
+                    scope: 'openid email profile',
+                    callback: handleGoogleOAuthResult
                 });
                 googleInitialized = true;
+                console.log('👍 Google SDK inicializado');
             }
 
-            function renderGoogleButtons() {
-                if (typeof google === 'undefined' || !google.accounts.id) {
-                    document.getElementById('google-manual-login').style.display = 'block';
+            // Clic en botón: sólo llama requestAccessToken (sinócrono, no bloqueado)
+            function handleGoogleLogin() {
+                if (!googleTokenClient) {
+                    window.loginManagerInstance?.showNotification('Google aún no está listo, intenta en un momento.', 'error');
                     return;
                 }
-
-                const googleBtnLogin = document.getElementById('google-btn-login');
-                if (googleBtnLogin && googleBtnLogin.children.length === 0) {
-                    try {
-                        google.accounts.id.renderButton(googleBtnLogin, {
-                            type: 'standard',
-                            size: 'large',
-                            theme: 'outline',
-                            text: 'signin_with',
-                            locale: 'es'
-                        });
-                    } catch (e) {
-                        document.getElementById('google-manual-login').style.display = 'block';
-                    }
-                }
-            }
-
-            function handleGoogleLogin() {
-                if (typeof google !== 'undefined' && google.accounts.id) {
-                    google.accounts.id.prompt();
-                }
+                googleTokenClient.requestAccessToken({ prompt: 'select_account' });
             }
 
             function handleGoogleCallback(response) {
@@ -690,7 +712,8 @@
                                 setTimeout(() => {
                                     const returnTo = sessionStorage.getItem('returnTo');
                                     sessionStorage.removeItem('returnTo');
-                                    window.location.href = returnTo || '/index.html';
+                                    const defaultUrl = computeDefaultTargetFrom(result.user);
+                                    window.location.href = returnTo || defaultUrl;
                                 }, 2000);
                             }
                         }
@@ -702,6 +725,35 @@
                             loginManager.showNotification('Error en Google OAuth', 'error');
                         }
                     });
+            }
+
+            // ============================================
+            // UTILIDAD DE REDIRECCIÓN
+            // ============================================
+            /**
+             * Devuelve la URL por defecto según el rol contenido en el objeto de usuario
+             * puede recibir un JWT o un objeto ya parseado (data.user de la API)
+             */
+            function computeDefaultTargetFrom(userOrToken) {
+                let defaultUrl = '/index.html';
+                try {
+                    let user = null;
+                    if (typeof userOrToken === 'string') {
+                        // tratar como token JWT
+                        user = parseJwt(userOrToken);
+                    } else if (userOrToken && typeof userOrToken === 'object') {
+                        user = userOrToken;
+                    }
+                    if (user) {
+                        const roles = user.roles || [];
+                        if (roles.includes('admin') || roles.includes('SUPER_ADMIN')) {
+                            defaultUrl = '/admin.html';
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[redirect util] error computing default target', e);
+                }
+                return defaultUrl;
             }
 
             // ============================================
@@ -745,7 +797,8 @@
                                                 setTimeout(() => {
                                                     const returnTo = sessionStorage.getItem('returnTo');
                                                     sessionStorage.removeItem('returnTo');
-                                                    window.location.href = returnTo || '/index.html';
+                                                    const defaultUrl = computeDefaultTargetFrom(result.user);
+                                                    window.location.href = returnTo || defaultUrl;
                                                 }, 2000);
                                             }
                                         }

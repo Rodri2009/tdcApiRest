@@ -424,7 +424,13 @@
                     <i class="fas fa-arrow-left"></i> Volver a Solicitudes
                 </a>
                 <h2 style="margin: 0;">Editor de Solicitud de Alquiler</h2>
-                <div style="width: 180px;"></div>
+                <div id="solicitudIdBadge"
+                    style="width: 180px; padding: 8px 12px; background: #1a1a1a; border: 1px solid #f0abfc; border-radius: 6px; text-align: right; font-size: 0.85rem; color: #9ca3af;">
+                    <div style="color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px;">ID
+                        Solicitud</div>
+                    <div id="solicitudIdValue"
+                        style="color: #f0abfc; font-weight: bold; font-family: monospace; font-size: 0.95rem;">--</div>
+                </div>
             </div>
 
             <fieldset id="edit-fieldset">
@@ -445,7 +451,7 @@
                 </div>
                 <div class="column-layout">
                     <div class="form-group">
-                        <label for="fechaEvento">Fecha del Evento (Sáb, Dom y Feriados):</label>
+                        <label for="fechaEvento">Fecha del Evento:</label>
                         <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
                     </div>
                     <div class="form-group" id="horaInicioGroup">
@@ -602,6 +608,12 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('editar_solicitud_alquiler.html: DOMContentLoaded disparado');
+
+            // Obtener y mostrar ID de solicitud desde URL
+            const params = new URLSearchParams(window.location.search);
+            const solicitudId = params.get('solicitudId');
+            console.log('📍 [IDENTIFICADOR] Editando solicitud:', solicitudId);
+
             try {
                 // Proteger esta página: redirigir a login si no está autenticado
                 console.log('editar_solicitud_alquiler.html: navbarManager ya creado por navbar.js');
@@ -620,6 +632,20 @@
                     categoriaFiltro: 'ALQUILER_SALON'
                 });
                 console.log('editar_solicitud_alquiler.html: initializeApp ejecutado correctamente');
+
+                // Log de la solicitud cargada
+                setTimeout(() => {
+                    if (window.currentSolicitud && window.currentSolicitud.solicitudId) {
+                        console.log('✅ [DATOS CARGADOS] Solicitud ID (normalizado):', window.currentSolicitud.solicitudId);
+                        console.log('   → Para buscar en DB: SELECT * FROM solicitudes_alquiler WHERE id_solicitud = ' + (window.currentSolicitud.solicitudId.replace('alq_', '')) + ';');
+
+                        // Actualizar el badge visible con el ID
+                        const idBadge = document.getElementById('solicitudIdValue');
+                        if (idBadge) {
+                            idBadge.textContent = window.currentSolicitud.solicitudId;
+                        }
+                    }
+                }, 1000);
 
                 // Configurar cambio de estado con delay para asegurar que el DOM se haya cargado
                 setTimeout(() => {
@@ -657,13 +683,22 @@
                     return;
                 }
 
+                // Log con identificador
+                console.log('🔄 [CAMBIO ESTADO] Solicitud:', solicitudId, '→ Nuevo estado:', nuevoEstado);
+
                 // Mostrar notificación de carga
                 showNotification('Actualizando estado...', 'info');
+
+                const token = localStorage.getItem('authToken');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
 
                 // Realizar la petición PUT
                 const res = await fetch(`/api/admin/solicitudes/${solicitudId}/estado`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ estado: nuevoEstado })
                 });
 

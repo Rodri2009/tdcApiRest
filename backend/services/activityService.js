@@ -151,7 +151,50 @@ async function scrapeActivity(page) {
                 transactions = await page.evaluate(() => {
                     const items = [];
 
-                    // More specific selectors: look for transaction rows/cards
+                    // FIRST try structured sections (date header + rows)
+                    const feedSections = document.querySelectorAll('section.activity-feed');
+                    feedSections.forEach((sec, sidx) => {
+                        const dateHeader = sec.querySelector('h2.activity-feed__title');
+                        const sectionDate = dateHeader ? dateHeader.textContent.trim() : null;
+                        const rows = sec.querySelectorAll('li.ui-rowfeed-container');
+                        rows.forEach((row, ridx) => {
+                            try {
+                                const raw = row.innerText || row.textContent || '';
+                                const amountEl = row.querySelector('.andes-money-amount');
+                                const amountText = amountEl ? amountEl.textContent.trim() : null;
+                                const dateEl = row.querySelector('p.ui-rowfeed-date');
+                                const timeText = dateEl ? dateEl.textContent.trim() : null;
+                                const titleEl = row.querySelector('.ui-rowfeed-title');
+                                const descEl = row.querySelector('.ui-rowfeed-description__text');
+                                const name = titleEl ? titleEl.textContent.trim() : '';
+                                const desc = descEl ? descEl.textContent.trim() : '';
+                                let dateTimeStr = null;
+                                if (sectionDate) {
+                                    dateTimeStr = sectionDate + ' ' + (timeText || '');
+                                } else if (timeText) {
+                                    dateTimeStr = timeText;
+                                }
+                                items.push({
+                                    id: row.getAttribute('data-transaction-id') || `tx-${sidx}-${ridx}`,
+                                    raw,
+                                    amount: amountText,
+                                    dateTime: dateTimeStr,
+                                    date: sectionDate || '',
+                                    time: timeText || '',
+                                    name,
+                                    title: name,
+                                    description: desc
+                                });
+                            } catch (e) {
+                                // ignore
+                            }
+                        });
+                    });
+                    if (items.length > 0) {
+                        return items;
+                    }
+
+                    // FALLBACK generic selectors if section parsing found nothing
                     const txElements = document.querySelectorAll(
                         '[data-testid="transaction-item"],' +                      // standard selector
                         '.activity-row,' +                                         // common class

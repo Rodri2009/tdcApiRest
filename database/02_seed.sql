@@ -33,8 +33,8 @@ INSERT INTO `opciones_tipos`
   `categoria`, `es_publico`, `permite_adicionales`, `monto_sena`, `deposito`) 
 VALUES 
   ('INFANTILES', 
-   'CUMPLEAÑOS INFANTIL   (de 1 a 12 años - SERVICIO COMPLETO)', 
-   '🎈 **CUMPLEAÑOS INFANTILES**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina completa con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool y Jenga gigante\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Baño equipado\n• Música y juego de luces\n• Cancha de fútbol (niños hasta 12 años)\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Bebidas, alimentos, animación, vajilla de cristal',
+   'CUMPLE INFANTIL   (de 1 a 12 años - SERVICIO COMPLETO)', 
+   '🎈 **CUMPLEAÑOS INFANTIL**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina completa con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool y Jenga gigante\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Baño equipado\n• Música y juego de luces\n• Cancha de fútbol (niños hasta 12 años)\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Bebidas, alimentos, animación, vajilla de cristal',
    'ALQUILER_SALON', 1, 1, 50000.00, NULL),
 
   ('ADOLESCENTES',

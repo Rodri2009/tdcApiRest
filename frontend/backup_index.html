@@ -95,100 +95,6 @@
                 display: none !important;
             }
         }
-
-        /* GRID estilo PASSLINE */
-
-        .agenda-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 18px;
-        }
-
-        /* CARD */
-
-        .agenda-card-passline {
-            display: flex;
-            background: #1c1917;
-            border-radius: 12px;
-            overflow: hidden;
-            transition: .25s;
-            cursor: pointer;
-        }
-
-        .agenda-card-passline:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 0 20px rgba(240, 171, 252, 0.45);
-        }
-
-        /* FLYER GRANDE */
-
-        .agenda-flyer-passline {
-            width: 150px;
-            height: 180px;
-            flex-shrink: 0;
-        }
-
-        .agenda-flyer-passline img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* INFO */
-
-        .agenda-info-passline {
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            flex: 1;
-        }
-
-        /* TITULO */
-
-        .agenda-title-passline {
-            font-size: 16px;
-            font-weight: 700;
-            color: white;
-            line-height: 1.25;
-            margin-bottom: 6px;
-        }
-
-        /* FECHA PRINCIPAL */
-
-        .agenda-date-passline {
-            font-size: 20px;
-            font-weight: 800;
-            color: #f0abfc;
-            letter-spacing: .5px;
-        }
-
-        /* HORA */
-
-        .agenda-hour-passline {
-            font-size: 15px;
-            font-weight: 600;
-            color: #e9d5ff;
-            margin-top: 4px;
-        }
-
-        /* HORA */
-
-        .agenda-hour-passline {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e9d5ff;
-            margin-top: 2px;
-        }
-
-        /* PRECIO */
-
-        .agenda-price-passline {
-            font-size: 14px;
-            color: #f0abfc;
-            font-weight: 600;
-            margin-top: 6px;
-        }
     </style>
 </head>
 
@@ -303,25 +209,19 @@
 
         <!-- Sección 3: Agenda - Próximos eventos públicos -->
         <section id="agenda" class="py-20 bg-stone-900">
-
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
                 <div class="text-center mb-12">
                     <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
                         Agenda Cultural
                     </h2>
-                    <p class="mt-4 text-lg text-stone-400">
-                        Próximos eventos, talleres y bandas
-                    </p>
+                    <p class="mt-4 text-lg text-stone-400">Próximos eventos, talleres, bandas y servicios</p>
                 </div>
 
-                <div id="agenda-list" class="agenda-grid">
-                    <p class="text-center text-lg text-stone-500 col-span-full">
-                        Cargando agenda...
-                    </p>
+                <!-- Lista de Eventos -->
+                <div id="agenda-list" class="space-y-4 max-w-5xl mx-auto">
+                    <p class="text-center text-lg text-stone-500">Cargando agenda...</p>
                 </div>
-
-                <div class="text-center mt-10">
+                <div class="text-center mt-8">
                     <a href="seccion_agenda.html"
                         class="bg-fuchsia-500 text-gray-900 font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
                         Ver Agenda Completa
@@ -329,7 +229,147 @@
                 </div>
 
             </div>
+        </section>
 
+
+        <!-- Sección 2: Fotos -->
+        <!-- Se añade un enlace a Talleres en esta sección de características -->
+        <section id="fotos" class="py-20 bg-stone-950">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
+                        Galería de fotos
+                    </h2>
+                    <p class="mt-4 text-xl text-stone-400">
+                        Navega y descubre los detalles que hacen de El Templo el lugar ideal para tu próxima fecha o
+                        evento.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+                    <!-- Nueva Tarjeta: Talleres y Actividades -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card col-span-1">
+                        <a href="seccion_talleres.html">
+                            <span class="text-4xl block mb-4 text-center cursor-pointer">🎨</span>
+                            <h3 class="text-xl font-bold text-white mb-2 text-center">Talleres y Actividades</h3>
+                            <p class="text-stone-300 text-sm text-center">
+                                Consulta nuestro espacio cultural y las actividades que volverán en 2026.
+                            </p>
+                        </a>
+                    </div>
+
+                    <!-- Característica 1: Exterior Rústico y Deck -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                        <a href="seccion_salon.html">
+                            <span class="text-4xl block mb-4 text-center">🏛</span>
+                            <h3 class="text-xl font-bold text-white mb-2 text-center">El Salón</h3>
+                            <p class="text-stone-300 text-sm text-center">
+                                Salón de 8 por 15 con escenario, cocina y cabina de sonido, aire acondicionado,
+                                ventiladores y luces de colores.
+                            </p>
+                        </a>
+                    </div>
+
+                    <!-- Característica 2: Escenario y PA Profesional -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                        <span class="text-4xl block mb-4 text-center">🎤</span>
+                        <h3 class="text-xl font-bold text-white mb-2 text-center">Sonido e Iluminación Pro</h3>
+                        <p class="text-stone-300 text-sm text-center">
+                            PA profesional para música en vivo, escenario principal y cabina de sonido dedicada. ¡Listo
+                            para bandas!
+                        </p>
+                    </div>
+
+                    <!-- Característica 3: Murales Flúor y Decoración -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                        <span class="text-4xl block mb-4 text-center">👽</span>
+                        <h3 class="text-xl font-bold text-white mb-2 text-center">El Efecto Flúor</h3>
+                        <p class="text-stone-300 text-sm text-center">
+                            Murales psicodélicos de hongos, acuáticos y extraterrestres que cobran vida bajo las luces
+                            UV.
+                        </p>
+                    </div>
+
+                    <!-- Característica 4: Comodidades y Versatilidad -->
+                    <div class="p-6 rounded-xl bg-rustic neon-glow-card">
+                        <span class="text-4xl block mb-4 text-center">🚻</span>
+                        <h3 class="text-xl font-bold text-white mb-2 text-center">Equipamiento</h3>
+                        <p class="text-stone-300 text-sm text-center">
+                            Barra, cocina/buffet, amplio salón, enredaderas internas y baños sin género.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- Sección 4: Alquiler de Salón -->
+        <section id="alquiler" class="py-20 bg-rustic">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
+                        Tu Evento en un Lugar Inolvidable
+                    </h2>
+                    <p class="mt-4 text-xl text-stone-200">
+                        Alquilá El Templo para lo que necesites: ¡somos el espacio más versátil de Claypole!
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div
+                        class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
+                        <span class="text-5xl block mb-4">🥳</span>
+                        <h3 class="text-2xl font-bold text-white mb-2">Eventos Infantiles</h3>
+                        <p class="text-stone-300">La cancha de fútbol, la parrilla y el salón amplio lo hacen la opción
+                            más fácil y divertida.</p>
+                    </div>
+                    <div
+                        class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
+                        <span class="text-5xl block mb-4">🥂</span>
+                        <h3 class="text-2xl font-bold text-white mb-2">Celebraciones Adultas</h3>
+                        <p class="text-stone-300">La estética, el PA y la barra atraen a quienes buscan un ambiente
+                            original y vibrante.</p>
+                    </div>
+                    <div
+                        class="p-6 bg-stone-700 rounded-xl shadow-lg border-2 border-transparent hover:border-neon transition duration-300">
+                        <span class="text-5xl block mb-4">💼</span>
+                        <h3 class="text-2xl font-bold text-white mb-2">Todo Tipo de Eventos</h3>
+                        <p class="text-stone-300">Reuniones, talleres, ferias, rodajes... el límite lo ponés vos con la
+                            versatilidad de nuestro salón.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección 5: Reserva (Call to Action) -->
+        <section id="reservas" class="py-20 bg-stone-950">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-4xl font-extrabold text-white">
+                    <span class="text-neon block">¿Listo para Celebrar o Tocar?</span>
+                </h2>
+                <p class="mt-4 text-xl text-stone-400">
+                    Reserva tu fecha para eventos privados o consulta la agenda cultural.
+                </p>
+                <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="solicitud_alquiler.html"
+                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-glass-cheers mr-2"></i> Alquilar el Salón
+                    </a>
+                    <a href="solicitu_taller_actividad.html"
+                        class="inline-flex items-center justify-center bg-stone-800/60 border-2 border-neon text-neon font-bold py-4 px-8 rounded-xl text-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-book-open mr-2"></i> Dar un Taller
+                    </a>
+                    <a href="solicitud_servicio.html"
+                        class="inline-flex items-center justify-center bg-stone-800/60 border-2 border-neon text-neon font-bold py-4 px-8 rounded-xl text-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-spa mr-2"></i> Reservar Servicio
+                    </a>
+                </div>
+                <p class="mt-6 text-sm text-stone-500">
+                    Si buscas una fecha para tu banda, <a href="solicitud_fecha_bandas.html"
+                        class="text-fuchsia-400 underline hover:text-fuchsia-200">haz clic aquí</a>.
+                </p>
+            </div>
         </section>
 
     </main>
@@ -374,10 +414,7 @@
         // LÓGICA DE CARGA DE AGENDA PÚBLICA
         // ----------------------------------------------------
 
-        // URL Dinámica (usa el mismo origen que la página, con puerto incluido)
-        // Antes teníamos casos especiales para localhost/192.168 que eliminaban el
-        // número de puerto, lo cual provocaba llamadas a http://localhost/api/... en
-        // lugar de http://localhost:8080/api/… y por ende recibíamos 404.
+        // URL Dinámica (usa el origen completo, puerto incluido)
         const API_BASE_URL = window.location.origin;
 
         const agendaListContainer = document.getElementById('agenda-list');
@@ -411,7 +448,7 @@
             }
             return {
                 day: date.toLocaleDateString('es-AR', { day: '2-digit' }),
-                month: date.toLocaleDateString('es-AR', { month: 'long' }).toUpperCase().replace('.', ''),
+                month: date.toLocaleDateString('es-AR', { month: 'short' }).toUpperCase().replace('.', ''),
                 year: date.toLocaleDateString('es-AR', { year: 'numeric' }),
                 weekday: date.toLocaleDateString('es-AR', { weekday: 'short' })
             };
@@ -458,52 +495,53 @@
         }
 
         function generateAgendaCard(item) {
+            const categoria = getCategoria(item);
+            const cat = CATEGORIAS[categoria];
+            const fechaObj = item._fechaObj ? item._fechaObj : (item.fecha ? new Date(item.fecha) : null);
+            const { day, month, year } = fechaObj ? formatDate(fechaObj) : { day: '--', month: '--', year: '--' };
+            const hora = item.hora || '';
+            const precio = item.precio ? `$${formatPrecioAR(item.precio)}` : '';
 
-            const fechaObj = item._fechaObj;
-
-            const { day, month } = fechaObj
-                ? formatDate(fechaObj)
-                : { day: '--', month: '--' };
-
-            const flyer = item.url_flyer || '/img/hero.jpg';
-
-            const precio =
-                item.precio_anticipada
-                    ? `$${formatPrecioAR(item.precio_anticipada)}`
-                    : (item.precio ? `$${formatPrecioAR(item.precio)}` : '');
-
-            let link = "#";
-
-            if (item.tipo === "BANDA") {
-                link = `checkout_form.html?event_id=${item.id}`;
-            }
-            else if (item.tipo === "TALLER") {
-                link = "seccion_talleres.html";
-            }
-            else if (item.tipo === "SERVICIO") {
-                link = "seccion_servicios.html";
+            // Acción según categoría
+            let actionHtml = '';
+            if (categoria === 'BANDA') {
+                const link = item.id ? `checkout_form.html?event_id=${item.id}` : 'seccion_bandas.html';
+                actionHtml = `<a href="${link}" class="w-full sm:w-auto bg-fuchsia-500 hover:bg-fuchsia-400 text-gray-900 font-bold py-2 px-6 rounded-full transition shadow-lg text-center whitespace-nowrap">Sacar entrada</a>`;
+            } else if (categoria === 'TALLER' || categoria === 'SERVICIO') {
+                const link = categoria === 'TALLER' ? 'seccion_talleres.html' : 'seccion_servicios.html';
+                actionHtml = `<a href="${link}" class="w-full sm:w-auto bg-stone-800/60 border-2 border-neon text-neon font-bold py-2 px-6 rounded-full transition shadow-lg text-center whitespace-nowrap">Más información</a>`;
+            } else {
+                actionHtml = `<a href="solicitud_alquiler.html" class="w-full sm:w-auto bg-stone-700 text-white font-bold py-2 px-6 rounded-full transition shadow-lg text-center whitespace-nowrap">Ver detalles</a>`;
             }
 
             return `
-                <a href="${link}" class="agenda-card-passline">
-                <div class="agenda-flyer-passline">
-                <img src="${flyer}" alt="${item.nombre}">
+            <div class="p-4 bg-stone-800 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-l-4 ${cat.color} hover:bg-stone-700/50 transition">
+                <div class="flex items-center space-x-4 agenda-card flex-1">
+                    <div class="agenda-flyer">
+                        ${item.url_flyer ? `<img src="${item.url_flyer}" alt="${item.nombre || item.tipo}">` : `<div class="helper-text">No Flyer</div>`}
+                    </div>
+                    <div class="agenda-meta">
+                        <div class="text-center p-3 rounded-lg ${cat.bgDate} text-white flex-shrink-0 min-w-[88px] flex flex-col justify-center items-center">
+                            <p class="text-2xl font-extrabold leading-none">${day}</p>
+                            <p class="text-sm uppercase tracking-wide mt-1">${month}</p>
+                            <p class="text-sm mt-1 font-medium">${year}</p>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm ${cat.textColor}">${cat.icon} ${cat.label}</span>
+                            </div>
+                            <h4 class="text-lg font-semibold text-white">${item.nombre || item.tipo}</h4>
+                            <p class="text-sm text-stone-400">
+                                ${hora ? hora + ' hs' : ''}
+                                ${cat.icon === '🎸' && (item.precio_anticipada || item.precio_puerta) ? '<br>' : ''}
+                                ${cat.icon === '🎸' && item.precio_anticipada ? 'Ant: $' + formatPrecioAR(item.precio_anticipada) : ''}
+                                ${cat.icon === '🎸' && item.precio_puerta ? (item.precio_anticipada ? ' • ' : '') + 'Puerta: $' + formatPrecioAR(item.precio_puerta) : ''}
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <div class="agenda-info-passline">
-                <div>
-                <div class="agenda-title-passline">
-                ${item.nombre}
-                </div>
-                <div class="agenda-date-passline">
-                ${day} de ${month}
-                </div>
-                <div class="agenda-hour-passline">
-                ${item.hora ? item.hora + " hs" : ""}
-                </div>
-                ${precio ? `<div class="agenda-price-passline">${precio}</div>` : ""}
-                </div>
-                </div>
-                </a>
+                <div class="flex-shrink-0">${actionHtml}</div>
+            </div>
             `;
         }
 
@@ -601,6 +639,14 @@
                 agendaListContainer.insertAdjacentHTML('beforeend', generateAgendaCard(item));
             });
 
+            /*if (totalCount > items.length) {
+                agendaListContainer.insertAdjacentHTML('beforeend', `
+                <p class="text-center text-sm text-stone-500 mt-4">
+                    Y ${totalCount - items.length} eventos más. 
+                    <a href="seccion_agenda.html" class="text-fuchsia-400 underline hover:text-fuchsia-200">Ver agenda completa</a>.
+                </p>
+                `);
+            }*/
         }
 
         // Manejo de autenticación en el navbar
@@ -666,22 +712,6 @@
             fetchAgenda();
             // El resto de la lógica de desplazamiento y menú móvil ya está integrada.
         });
-
-        // navegación de la lista de agenda; únicamente si existen los botones
-        const prevBtn = document.getElementById('agenda-prev');
-        if (prevBtn) {
-            prevBtn.onclick = () => {
-                const list = document.getElementById('agenda-list');
-                if (list) list.scrollBy({ left: -400, behavior: 'smooth' });
-            };
-        }
-        const nextBtn = document.getElementById('agenda-next');
-        if (nextBtn) {
-            nextBtn.onclick = () => {
-                const list = document.getElementById('agenda-list');
-                if (list) list.scrollBy({ left: 400, behavior: 'smooth' });
-            };
-        }
 
     </script>
 </body>

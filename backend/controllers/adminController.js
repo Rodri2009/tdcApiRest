@@ -295,11 +295,12 @@ const actualizarEstadoSolicitud = async (req, res) => {
                 generoMusical = solicitud.genero_musical || solicitud.genero || null;
                 cantidadPersonas = solicitud.cantidad_bandas || solicitud.cantidad_de_personas || null;
             } else if (tablaOrigen === 'solicitudes_alquiler') {
-                nombreEvento = solicitud.tipo_de_evento || 'Alquiler';
-                nombreCliente = solicitud.nombre_completo;
-                emailCliente = solicitud.email;
-                telefonoCliente = solicitud.telefono;
-                cantidadPersonas = solicitud.cantidad_de_personas;
+                // Usar clienteRow que ya trae datos normalizados de la tabla clientes
+                nombreEvento = 'Alquiler Salón';
+                nombreCliente = (clienteRow && clienteRow.nombre) || solicitud.nombre_solicitante || '';
+                emailCliente = (clienteRow && clienteRow.email) || solicitud.email_solicitante || '';
+                telefonoCliente = (clienteRow && clienteRow.telefono) || solicitud.telefono_solicitante || '';
+                cantidadPersonas = null;  // La cantidad está en precios_vigencia, se trae en getSolicitudPorId
             } else if (tablaOrigen === 'solicitudes_servicios') {
                 nombreEvento = solicitud.tipo_servicio || 'Servicio';
                 nombreCliente = solicitud.nombre_solicitante;
@@ -776,12 +777,12 @@ const getOrdenDeTrabajo = async (req, res) => {
         let sqlSolicitud = `
             SELECT
                 s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
-                s.tipo_servicio,
+                s.id_tipo_evento,
                 ot.nombre_para_mostrar as tipo_evento, ot.id_tipo_evento as tipo_evento_id
             FROM solicitudes_alquiler s
-            LEFT JOIN solicitudes sol ON s.id_solicitud = sol.id
+            LEFT JOIN solicitudes sol ON s.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
-            LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_tipo_evento
+            LEFT JOIN opciones_tipos ot ON s.id_tipo_evento = ot.id_tipo_evento
             WHERE s.id_solicitud = ?;
         `;
         let solicitudResult = await conn.query(sqlSolicitud, [solicitudId]);
@@ -790,12 +791,11 @@ const getOrdenDeTrabajo = async (req, res) => {
             sqlSolicitud = `
                 SELECT
                     s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
-                    s.tipo_servicio,
-                    ot.nombre_para_mostrar as tipo_evento, ot.id_tipo_evento as tipo_evento_id
+                    'BANDA' as id_tipo_evento,
+                    'BANDA' as tipo_evento, 'BANDA' as tipo_evento_id
                 FROM solicitudes_fechas_bandas s
-                LEFT JOIN solicitudes sol ON s.id_solicitud = sol.id
+                LEFT JOIN solicitudes sol ON s.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
-                LEFT JOIN opciones_tipos ot ON s.tipo_servicio = ot.id_tipo_evento
                 WHERE s.id_solicitud = ?;
             `;
             solicitudResult = await conn.query(sqlSolicitud, [solicitudId]);

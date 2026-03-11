@@ -24,6 +24,12 @@ router.use((req, res, next) => {
 // ⚠️ SSE endpoint SIN protección JWT (valida token en query param internamente)
 router.get('/watch', mercadopagoController.watchTransactions);
 
+// DEBUG: permite enviar un evento simulado (requiere JWT)
+router.post('/watch/debug', protect, mercadopagoController.debugBroadcast);
+
+// TEST: simula ingreso con clave simple (DEBUG_SECRET), sin JWT. Para pruebas con curl.
+router.post('/watch/test', mercadopagoController.testBroadcast);
+
 // ✅ Aplicar autenticación JWT a las demás rutas de Mercado Pago
 router.use(protect);
 

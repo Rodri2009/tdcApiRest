@@ -18,6 +18,12 @@ async function validateCurrentUrl(page, expectedPath = '') {
             };
         }
 
+        // allow bypass via env var for development/debug
+        if (process.env.SKIP_URL_VALIDATION === 'true') {
+            console.log('[urlValidator] SKIP_URL_VALIDATION=true, skipping checks (currentUrl', currentUrl, ')');
+            return { valid: true, currentUrl, expectedPath };
+        }
+
         // Patrones de bloqueo/error comunes
         const blockedPatterns = [
             '/error',
@@ -40,6 +46,7 @@ async function validateCurrentUrl(page, expectedPath = '') {
         );
 
         if (isBlocked) {
+            console.warn('[urlValidator] Bloqueo detectado, currentUrl=', currentUrl);
             return {
                 valid: false,
                 reason: `Posible bloqueo detectado: URL contiene patrón peligroso`,
