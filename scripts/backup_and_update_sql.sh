@@ -16,7 +16,7 @@ Opciones:
 EOF
 }
 
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   show_help
   exit 0
 fi
@@ -35,6 +35,11 @@ DB_NAME="${MARIADB_DATABASE}"
 DB_USER="${MARIADB_USER}"
 DB_PASSWORD="${MARIADB_PASSWORD}"
 OUTPUT_DIR="$(cd "$(dirname "$0")/../database" && pwd)"
+
+# Timestamp para el dump completo
+TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
+DUMP_FILENAME="mysqldump_${TIMESTAMP}.sql"
+DUMP_FILE="$OUTPUT_DIR/${DUMP_FILENAME}"
 
 # Archivos SQL
 SCHEMA_FILE="$OUTPUT_DIR/01_schema.sql"
@@ -75,4 +80,11 @@ echo "✅ Archivo actualizado: $SEED_FILE"
 mv "$TEMP_TEST_DATA" "$TEST_DATA_FILE"
 echo "✅ Archivo actualizado: $TEST_DATA_FILE"
 
+# Generar backup de todos los datos (sin schema) con timestamp
+echo "📦 Generando backup de datos en $DUMP_FILE..."
+docker exec -i "$CONTAINER_NAME" sh -c \
+  "mysqldump -u$DB_USER -p$DB_PASSWORD --no-create-info --skip-add-drop-table --complete-insert $DB_NAME" > "$DUMP_FILE"
+echo "✅ Backup de datos generado: $DUMP_FILE"
+
 echo "🎉 Proceso completado. Los archivos SQL han sido actualizados."
+echo "   (El archivo $DUMP_FILENAME es un backup en host; NO se monta en Docker)"

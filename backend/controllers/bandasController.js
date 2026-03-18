@@ -32,8 +32,14 @@ const getBandas = async (req, res) => {
         let query = `
             SELECT 
                 b.*,
-                (SELECT COUNT(*) FROM bandas_formacion WHERE id_banda = b.id_banda) as cantidad_integrantes
+                (SELECT COUNT(*) FROM bandas_formacion WHERE id_banda = b.id_banda) as cantidad_integrantes,
+                c.nombre  AS cliente_nombre,
+                c.apellido AS cliente_apellido,
+                c.email   AS cliente_email,
+                c.telefono AS cliente_telefono,
+                c.id_usuario AS cliente_id_usuario
             FROM bandas_artistas b
+            LEFT JOIN clientes c ON b.id_cliente = c.id_cliente
             WHERE 1=1
         `;
         const params = [];
@@ -81,10 +87,18 @@ const getBandaById = async (req, res) => {
         const { id } = req.params;
         console.debug('DEBUG getBandaById START id=', id);
 
-        // Obtener datos de la banda
+        // Obtener datos de la banda con cliente vinculado
         console.debug('DEBUG getBandaById: fetching banda row for id', id);
         const [banda] = await pool.query(
-            'SELECT * FROM bandas_artistas WHERE id_banda = ?',
+            `SELECT b.*,
+                c.nombre   AS cliente_nombre,
+                c.apellido AS cliente_apellido,
+                c.email    AS cliente_email,
+                c.telefono AS cliente_telefono,
+                c.id_usuario AS cliente_id_usuario
+             FROM bandas_artistas b
+             LEFT JOIN clientes c ON b.id_cliente = c.id_cliente
+             WHERE b.id_banda = ?`,
             [id]
         );
         console.debug('DEBUG getBandaById: fetched banda row', !!banda);
@@ -172,22 +186,69 @@ const createBanda = async (req, res) => {
             });
         }
 
-        // Insertar banda
+        // Resolver id_cliente desde usuario autenticado o datos de contacto
         const isAdmin = req.user && req.user.rol === 'admin';
+        let idCliente = null;
+        if (req.user && req.user.id_usuario) {
+            const conn = await pool.getConnection();
+            try {
+                // 1. Buscar por id_usuario
+                let [clienteRow] = await conn.query(
+                    'SELECT id_cliente FROM clientes WHERE id_usuario = ? LIMIT 1',
+                    [req.user.id_usuario]
+                );
+                // 2. Si no existe, buscar por email del usuario autenticado
+                if (!clienteRow && req.user.email) {
+                    [clienteRow] = await conn.query(
+                        'SELECT id_cliente FROM clientes WHERE email = ? LIMIT 1',
+                        [req.user.email]
+                    );
+                }
+                // 3. Si sigue sin existir, crear cliente desde datos del usuario
+                if (!clienteRow) {
+                    idCliente = await getOrCreateClient(conn, {
+                        nombre: req.user.nombre || req.user.nombreCompleto || null,
+                        email: req.user.email || null,
+                        telefono: req.user.telefono || null,
+                        creado_por_id_usuario: req.user.id_usuario
+                    });
+                } else {
+                    idCliente = clienteRow.id_cliente;
+                }
+            } finally {
+                conn.release();
+            }
+        }
+        if (!idCliente && (contacto_email || contacto_telefono)) {
+            const conn2 = await pool.getConnection();
+            try {
+                idCliente = await getOrCreateClient(conn2, {
+                    nombre: contacto_nombre || null,
+                    email: contacto_email || null,
+                    telefono: contacto_telefono || null,
+                    creado_por_id_usuario: req.user ? req.user.id_usuario : null
+                });
+            } finally {
+                conn2.release();
+            }
+        }
+
+        // Insertar banda
         const result = await pool.query(`
             INSERT INTO bandas_artistas (
                 nombre, genero_musical, bio,
                 instagram, facebook, twitter, tiktok, web_oficial, youtube, spotify, otras_redes,
                 logo_url, foto_prensa_url,
                 contacto_nombre, contacto_email, contacto_telefono, contacto_rol,
-                verificada
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                id_cliente, verificada
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             nombre, genero_musical || null, bio || null,
             instagram || null, facebook || null, twitter || null, tiktok || null,
             web_oficial || null, youtube || null, spotify || null, otras_redes || null,
             logo_url || null, foto_prensa_url || null,
             contacto_nombre || null, contacto_email || null, contacto_telefono || null, contacto_rol || null,
+            idCliente,
             isAdmin ? 1 : 0 // Si es admin, se marca como verificada
         ]);
 

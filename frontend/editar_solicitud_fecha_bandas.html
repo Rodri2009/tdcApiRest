@@ -726,7 +726,8 @@
                         <option value="" id="optFecha1">Fecha alternativa</option>
                     </select>
                 </div>
-                <button type="button" class="btn btn-secondary" id="btnEditarFechas" style="margin-bottom:10px;">Editar fechas</button>
+                <button type="button" class="btn btn-secondary" id="btnEditarFechas" style="margin-bottom:10px;">Editar
+                    fechas</button>
                 <div id="fechasInputsContainer" class="form-grid form-grid-4" style="display:none;">
                     <div class="form-group">
                         <label for="fechaEvento">Fecha del Evento *</label>
@@ -734,7 +735,8 @@
                     </div>
                     <div class="form-group">
                         <label for="fechaAlternativa">Fecha alternativa</label>
-                        <input type="text" id="fechaAlternativa" placeholder="Seleccionar fecha..." style="display:none;">
+                        <input type="text" id="fechaAlternativa" placeholder="Seleccionar fecha..."
+                            style="display:none;">
                         <div style="margin-top:4px;font-size:0.9rem;">
                             <label><input type="checkbox" id="usarAlt"> Usar alternativa</label>
                         </div>
@@ -848,6 +850,25 @@
 
         // Fechas seleccionadas (fecha principal + alternativa)
         let fechasSeleccionadas = [null, null];
+
+        // Actualiza el texto del <option> en el selector de fechas
+        function updateFechaText(idx) {
+            const opt = document.getElementById(`optFecha${idx}`);
+            if (!opt) return;
+            const labels = ['Fecha principal', 'Fecha alternativa'];
+            const fecha = fechasSeleccionadas[idx];
+            if (fecha) {
+                // Formatear YYYY-MM-DD → "sáb. 18 abr. 2026"
+                const [y, m, d] = fecha.split('-').map(Number);
+                const dt = new Date(y, m - 1, d);
+                const formatted = dt.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+                opt.textContent = `${labels[idx]}: ${formatted}`;
+                opt.value = fecha;
+            } else {
+                opt.textContent = labels[idx];
+                opt.value = '';
+            }
+        }
 
         // Bandas (lista disponible + seleccionadas)
         let bandasDisponibles = [];
@@ -1258,7 +1279,7 @@
                     const altInput = document.getElementById('fechaAlternativa');
                     if (altInput) {
                         try {
-                            const ymd2 = typeof evento.fecha_alternativa === 'string' ? evento.fecha_alternativa.substring(0,10) : evento.fecha_alternativa;
+                            const ymd2 = typeof evento.fecha_alternativa === 'string' ? evento.fecha_alternativa.substring(0, 10) : evento.fecha_alternativa;
                             if (ymd2 && /^\d{4}-\d{2}-\d{2}$/.test(ymd2)) {
                                 if (window.calendarioAlternativa) window.calendarioAlternativa.setDate(ymd2, false);
                                 fechasSeleccionadas[1] = ymd2;

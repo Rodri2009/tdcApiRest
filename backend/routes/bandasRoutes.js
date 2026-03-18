@@ -50,9 +50,22 @@ const fileFilter = (req, file, cb) => {
     else cb(new Error('Tipo de archivo no permitido'), false);
 };
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: 3 * 1024 * 1024 } });
+const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 
-router.post('/upload', upload.single('logo'), bandasController.uploadLogoPublic);
+router.post('/upload', (req, res, next) => {
+    upload.single('logo')(req, res, (err) => {
+        if (err) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(413).json({ error: 'El archivo es demasiado grande. El tamaño máximo permitido es 5MB.' });
+            }
+            if (err.message === 'Tipo de archivo no permitido') {
+                return res.status(400).json({ error: 'Formato no permitido. Solo se aceptan imágenes PNG o JPEG.' });
+            }
+            return res.status(400).json({ error: err.message || 'Error al procesar el archivo.' });
+        }
+        next();
+    });
+}, bandasController.uploadLogoPublic);
 
 // =============================================================================
 // RUTAS PROTEGIDAS (requieren autenticación)

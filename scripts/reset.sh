@@ -30,6 +30,9 @@
 #   --save-wa        parecido para wa-profile
 #   --save-all       alias para los dos anteriores (mp+wa)
 #
+# Opciones de backup:
+#   --no-backup      Omite el backup automático previo al reset
+#
 # Opciones de debug:
 #   -d, --debug      Muestra debug detallado (no engancha logs en tiempo real)
 #   -l, --local      Fuerza MySQL local (sin Docker)
@@ -74,6 +77,7 @@ USE_DOCKER=true
 CONTAINERS_TO_RESET=""  # all, db, backend, frontend
 REBUILD_IMAGES=false
 SKIP_SQL=false
+SKIP_BACKUP=false
 ENABLE_MP=false
 ENABLE_WA=false
 # session backup flags (nuevos)
@@ -127,6 +131,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --save-all)
             SAVE_ALL_SESSION=true
+            shift
+            ;;
+        --no-backup)
+            SKIP_BACKUP=true
             shift
             ;;
         --all)
@@ -386,9 +394,11 @@ reset_docker_containers() {
     fi
 
     echo -e "${YELLOW}[*]${NC} Controlando contenedores Docker..."
-    
-    # eliminar cualquier contenedor backend sobrante antes de manipular
-    cleanup_old_backend_containers
+
+    # Limpiar contenedores backend sobrantes solo si se resetea todo
+    if [[ " $CONTAINERS_TO_RESET " =~ " all " ]]; then
+        cleanup_old_backend_containers
+    fi
     
     # Crear archivo .env.tmp con overrides si es necesario
     local env_file_to_use=".env"
@@ -479,6 +489,12 @@ reset_docker_containers() {
             
             echo -ne "    Esperando MariaDB... "
             wait_for_mysql_ready
+
+            # Reiniciar backend para que reconecte a la nueva instancia de MariaDB
+            echo -ne "    Reiniciando backend... "
+            $compose_cmd up -d backend 2>&1 | grep -E '(Creating|Starting|Started)' || true
+            echo -e "${GREEN}✓${NC}"
+            sleep 2
         fi
         
         if [[ " $CONTAINERS_TO_RESET " =~ " backend " ]]; then
@@ -596,6 +612,20 @@ exec_sql_docker() {
 # ============================================================================
 
 print_header
+
+# Backup automático antes del reset (solo cuando se resetea todo, sin --no-backup)
+BACKUP_SCRIPT="$SCRIPT_DIR/backup_and_update_sql.sh"
+if [ "$SKIP_BACKUP" = false ] && [ "$CONTAINERS_TO_RESET" = "all" ] && [ -x "$BACKUP_SCRIPT" ]; then
+    echo -e "${YELLOW}[*]${NC} Ejecutando backup previo al reset..."
+    if "$BACKUP_SCRIPT"; then
+        echo -e "${GREEN}  ✓ Backup completado${NC}\n"
+    else
+        echo -e "${RED}  ✗ El backup falló. Abortando reset para proteger los datos.${NC}"
+        echo -e "${YELLOW}  Usá --no-backup para omitir el backup y forzar el reset.${NC}"
+        exit 1
+    fi
+fi
+
 print_debug_config
 
 # Paso 1: Reset de contenedores Docker

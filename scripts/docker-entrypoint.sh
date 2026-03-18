@@ -43,6 +43,9 @@ ENABLE_VNC="${ENABLE_VNC:-false}"
 if [ "$ENABLE_VNC" = "true" ]; then
   echo "[entrypoint] 🖥️  Iniciando Xvfb en display :1 (1920x1080, 24-bit)..."
   
+  # Limpiar lock files stale de arranques anteriores (evita "Server is already active")
+  rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true
+
   # Iniciar Xvfb (servidor X virtual)
   # :1 = display number
   # -screen 0 1920x1080x24 = resolución y profundidad de color

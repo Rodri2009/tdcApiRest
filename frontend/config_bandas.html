@@ -1030,8 +1030,11 @@
                     <td>${b.genero_musical || '-'}</td>
                     <td>
                         <div style="font-size:0.85rem;">
-                            ${b.contacto_nombre || '-'}<br>
-                            <span style="color:#9ca3af;">${b.contacto_email || ''}</span>
+                            ${b.cliente_nombre
+                    ? `<span title="Cliente vinculado" style="color:#4ade80;">👤 ${b.cliente_nombre}${b.cliente_apellido ? ' ' + b.cliente_apellido : ''}</span><br>
+                                   <span style="color:#9ca3af;">${b.cliente_email || b.cliente_telefono || ''}</span>`
+                    : `${b.contacto_nombre || '-'}<br><span style="color:#9ca3af;">${b.contacto_email || ''}</span>`
+                }
                         </div>
                     </td>
                     <td>
@@ -1370,9 +1373,9 @@
             document.getElementById('banda-facebook').value = banda.facebook || '';
             document.getElementById('banda-youtube').value = banda.youtube || '';
             document.getElementById('banda-spotify').value = banda.spotify || '';
-            document.getElementById('banda-contacto-nombre').value = banda.contacto_nombre || '';
-            document.getElementById('banda-contacto-email').value = banda.contacto_email || '';
-            document.getElementById('banda-contacto-telefono').value = banda.contacto_telefono || '';
+            document.getElementById('banda-contacto-nombre').value = [banda.cliente_nombre, banda.cliente_apellido].filter(Boolean).join(' ') || '';
+            document.getElementById('banda-contacto-email').value = banda.cliente_email || '';
+            document.getElementById('banda-contacto-telefono').value = banda.cliente_telefono || '';
             document.getElementById('banda-contacto-rol').value = banda.contacto_rol || '';
             document.getElementById('banda-verificada').checked = !!banda.verificada;
             document.getElementById('banda-activa').checked = banda.activa !== 0;

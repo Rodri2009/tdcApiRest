@@ -3,6 +3,7 @@
 
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
+const { getOrCreateClient, updateClient } = require('../lib/clients');
 
 /**
  * GET /api/bandas
@@ -19,29 +20,33 @@ const obtenerBandas = async (req, res) => {
 
         let sql = `
             SELECT
-                id_banda as id_banda,
-                nombre,
-                genero_musical,
-                bio,
-                instagram,
-                facebook,
-                twitter,
-                tiktok,
-                web_oficial,
-                youtube,
-                spotify,
-                otras_redes,
-                logo_url,
-                foto_prensa_url,
-                contacto_nombre,
-                contacto_email,
-                contacto_telefono,
-                contacto_rol,
-                verificada,
-                activa,
-                creado_en,
-                actualizado_en
-            FROM bandas_artistas
+                b.id_banda as id_banda,
+                b.nombre,
+                b.genero_musical,
+                b.bio,
+                b.instagram,
+                b.facebook,
+                b.twitter,
+                b.tiktok,
+                b.web_oficial,
+                b.youtube,
+                b.spotify,
+                b.otras_redes,
+                b.logo_url,
+                b.foto_prensa_url,
+                b.contacto_rol,
+                b.id_cliente,
+                b.verificada,
+                b.activa,
+                b.creado_en,
+                b.actualizado_en,
+                c.nombre    AS cliente_nombre,
+                c.apellido  AS cliente_apellido,
+                c.email     AS cliente_email,
+                c.telefono  AS cliente_telefono,
+                c.id_usuario AS cliente_id_usuario
+            FROM bandas_artistas b
+            LEFT JOIN clientes c ON b.id_cliente = c.id_cliente
             WHERE 1=1
         `;
 
@@ -97,30 +102,34 @@ const obtenerBandaPorId = async (req, res) => {
 
         const sql = `
             SELECT
-                id_banda as id,
-                nombre,
-                genero_musical,
-                bio,
-                instagram,
-                facebook,
-                twitter,
-                tiktok,
-                web_oficial,
-                youtube,
-                spotify,
-                otras_redes,
-                logo_url,
-                foto_prensa_url,
-                contacto_nombre,
-                contacto_email,
-                contacto_telefono,
-                contacto_rol,
-                verificada,
-                activa,
-                creado_en,
-                actualizado_en
-            FROM bandas_artistas
-            WHERE id_banda = ?
+                b.id_banda as id,
+                b.nombre,
+                b.genero_musical,
+                b.bio,
+                b.instagram,
+                b.facebook,
+                b.twitter,
+                b.tiktok,
+                b.web_oficial,
+                b.youtube,
+                b.spotify,
+                b.otras_redes,
+                b.logo_url,
+                b.foto_prensa_url,
+                b.contacto_rol,
+                b.id_cliente,
+                b.verificada,
+                b.activa,
+                b.creado_en,
+                b.actualizado_en,
+                c.nombre    AS cliente_nombre,
+                c.apellido  AS cliente_apellido,
+                c.email     AS cliente_email,
+                c.telefono  AS cliente_telefono,
+                c.id_usuario AS cliente_id_usuario
+            FROM bandas_artistas b
+            LEFT JOIN clientes c ON b.id_cliente = c.id_cliente
+            WHERE b.id_banda = ?
         `;
 
         const [banda] = await conn.query(sql, [idNum]);
@@ -187,8 +196,12 @@ const crearBanda = async (req, res) => {
         contacto_email,
         contacto_telefono,
         contacto_rol,
-        integrantes // Array de {nombre_integrante, instrumento, es_lider, notas}
+        integrantes, // Array de {nombre_integrante, instrumento, es_lider, notas}
+        formacion    // Alias enviado desde el frontend (POST nuevo)
     } = req.body;
+
+    // Aceptar tanto 'integrantes' como 'formacion' (el frontend envía 'formacion')
+    const integrantesData = integrantes || formacion;
 
     // Validar campos obligatorios
     if (!nombre || nombre.trim().length === 0) {
@@ -199,6 +212,31 @@ const crearBanda = async (req, res) => {
     try {
         conn = await pool.getConnection();
         await conn.beginTransaction();
+
+        // Resolver id_cliente: prioriza datos de contacto, fallback al usuario autenticado
+        let idCliente = null;
+        if (contacto_email || contacto_telefono) {
+            // El contacto es el cliente/representante de la banda
+            idCliente = await getOrCreateClient(conn, {
+                nombre: contacto_nombre || null,
+                email: contacto_email || null,
+                telefono: contacto_telefono || null,
+                creado_por_id_usuario: req.user ? req.user.id_usuario : null
+            });
+        } else if (req.user && req.user.id_usuario) {
+            const [clienteRow] = await conn.query(
+                'SELECT id_cliente FROM clientes WHERE id_usuario = ? LIMIT 1',
+                [req.user.id_usuario]
+            );
+            idCliente = clienteRow ? clienteRow.id_cliente : null;
+            if (!idCliente) {
+                idCliente = await getOrCreateClient(conn, {
+                    nombre: req.user.nombre || null,
+                    email: req.user.email || null,
+                    creado_por_id_usuario: req.user.id_usuario
+                });
+            }
+        }
 
         // 1. Insertar banda
         const sqlBanda = `
@@ -216,14 +254,12 @@ const crearBanda = async (req, res) => {
                 otras_redes,
                 logo_url,
                 foto_prensa_url,
-                contacto_nombre,
-                contacto_email,
-                contacto_telefono,
                 contacto_rol,
+                id_cliente,
                 verificada,
                 activa,
                 creado_en
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())
         `;
 
         const paramsBanda = [
@@ -240,10 +276,8 @@ const crearBanda = async (req, res) => {
             otras_redes || null,
             logo_url || null,
             foto_prensa_url || null,
-            contacto_nombre || null,
-            contacto_email || null,
-            contacto_telefono || null,
-            contacto_rol || null
+            contacto_rol || null,
+            idCliente
         ];
 
         const resultBanda = await conn.query(sqlBanda, paramsBanda);
@@ -251,8 +285,8 @@ const crearBanda = async (req, res) => {
 
         logVerbose(`[BANDA] ✓ Banda creada con ID: ${bandaId}`);
 
-        // 2. Insertar integrantes (si vienen)
-        if (integrantes && Array.isArray(integrantes) && integrantes.length > 0) {
+        // 2. Insertar integrantes (si vienen) — acepta 'integrantes' o 'formacion'
+        if (integrantesData && Array.isArray(integrantesData) && integrantesData.length > 0) {
             const sqlIntegrante = `
                 INSERT INTO bandas_formacion (
                     id_banda,
@@ -263,7 +297,7 @@ const crearBanda = async (req, res) => {
                 ) VALUES (?, ?, ?, ?, ?)
             `;
 
-            for (const integrante of integrantes) {
+            for (const integrante of integrantesData) {
                 // Buscar el id_instrumento basado en el nombre
                 let id_instrumento = null;
                 if (integrante.instrumento) {
@@ -285,7 +319,7 @@ const crearBanda = async (req, res) => {
                 await conn.query(sqlIntegrante, paramsIntegrante);
             }
 
-            logVerbose(`[BANDA] ✓ ${integrantes.length} integrantes agregados`);
+            logVerbose(`[BANDA] ✓ ${integrantesData.length} integrantes agregados`);
         }
 
         await conn.commit();
@@ -344,6 +378,7 @@ const actualizarBanda = async (req, res) => {
         verificada,
         activa,
         integrantes_operacion // {action: 'add'|'update'|'delete', data: {...}}
+        // nota: contacto_nombre/email/telefono se usan para actualizar el registro clientes vinculado
     } = req.body;
 
     let conn;
@@ -417,18 +452,6 @@ const actualizarBanda = async (req, res) => {
             actualizaciones.push('foto_prensa_url = ?');
             params.push(foto_prensa_url || null);
         }
-        if (contacto_nombre !== undefined) {
-            actualizaciones.push('contacto_nombre = ?');
-            params.push(contacto_nombre || null);
-        }
-        if (contacto_email !== undefined) {
-            actualizaciones.push('contacto_email = ?');
-            params.push(contacto_email || null);
-        }
-        if (contacto_telefono !== undefined) {
-            actualizaciones.push('contacto_telefono = ?');
-            params.push(contacto_telefono || null);
-        }
         if (contacto_rol !== undefined) {
             actualizaciones.push('contacto_rol = ?');
             params.push(contacto_rol || null);
@@ -450,6 +473,29 @@ const actualizarBanda = async (req, res) => {
 
             const result = await conn.query(sqlUpdate, params);
             logVerbose(`[BANDA] ✓ Banda actualizada: ${result.affectedRows} fila(s)`);
+        }
+
+        // Actualizar el cliente vinculado si llegan datos de contacto
+        const tieneContactoData = contacto_nombre !== undefined || contacto_email !== undefined || contacto_telefono !== undefined;
+        if (tieneContactoData) {
+            const [bandaData] = await conn.query('SELECT id_cliente FROM bandas_artistas WHERE id_banda = ?', [idNum]);
+            if (bandaData && bandaData.id_cliente) {
+                await updateClient(conn, bandaData.id_cliente, {
+                    ...(contacto_nombre !== undefined ? { nombre: contacto_nombre } : {}),
+                    ...(contacto_email !== undefined ? { email: contacto_email } : {}),
+                    ...(contacto_telefono !== undefined ? { telefono: contacto_telefono } : {})
+                });
+                logVerbose(`[BANDA] ✓ Cliente ID ${bandaData.id_cliente} actualizado con datos de contacto`);
+            } else if (contacto_email || contacto_telefono) {
+                const newId = await getOrCreateClient(conn, {
+                    nombre: contacto_nombre || null,
+                    email: contacto_email || null,
+                    telefono: contacto_telefono || null,
+                    creado_por_id_usuario: req.user ? req.user.id_usuario : null
+                });
+                await conn.query('UPDATE bandas_artistas SET id_cliente = ? WHERE id_banda = ?', [newId, idNum]);
+                logVerbose(`[BANDA] ✓ Nuevo cliente ID ${newId} creado y vinculado`);
+            }
         }
 
         // 3. Manejar integrantes si viene la operación

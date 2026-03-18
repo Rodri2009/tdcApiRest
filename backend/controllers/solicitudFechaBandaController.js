@@ -124,10 +124,11 @@ const crearSolicitudFechaBanda = async (req, res) => {
                             contacto_nombre,
                             contacto_email,
                             contacto_telefono,
+                            id_cliente,
                             verificada,
                             activa,
                             creado_en
-                        ) VALUES (?, ?, ?, ?, ?, 0, 1, NOW())
+                        ) VALUES (?, ?, ?, ?, ?, ?, 0, 1, NOW())
                     `;
 
                     const resultBandaNueva = await conn.query(sqlBandaNueva, [
@@ -135,7 +136,8 @@ const crearSolicitudFechaBanda = async (req, res) => {
                         genero_musical || null,
                         contacto_nombre || null,
                         contacto_email || null,
-                        contacto_telefono || null
+                        contacto_telefono || null,
+                        clienteId || null
                     ]);
 
                     bandaId = Number(resultBandaNueva.insertId);
@@ -201,7 +203,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
             fecha_evento,
             fecha_alternativa || null,
             hora_evento || '21:00',
-            duracion || 8*60,            // por defecto 8h (480 min)
+            duracion || 8 * 60,            // por defecto 8h (480 min)
             descripcion || '',
             parseFloat(precio_basico) || 0,
             precio_puerta ? parseFloat(precio_puerta) : null,
@@ -429,7 +431,7 @@ const listarSolicitudesFechasBandas = async (req, res) => {
                 sfb.precio_puerta AS precio_puerta_propuesto,
                 sfb.estado,
                 sfb.expectativa_publico,
-                sfb.es_publico,
+                s.es_publico,
                 -- enviar bandas_json también bajo el nombre invitadas_json para que el frontend la parsee
                 sfb.bandas_json AS invitadas_json,
                 b.genero_musical,

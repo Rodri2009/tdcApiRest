@@ -461,12 +461,11 @@ CREATE TABLE IF NOT EXISTS bandas_artistas (
     logo_url VARCHAR(500) DEFAULT NULL COMMENT 'URL del logo subido',
     foto_prensa_url VARCHAR(500) DEFAULT NULL COMMENT 'Foto de prensa',
     
-    -- Datos de contacto (del manager/representante)
-    contacto_nombre VARCHAR(255) DEFAULT NULL,
-    contacto_email VARCHAR(255) DEFAULT NULL,
-    contacto_telefono VARCHAR(50) DEFAULT NULL,
+    -- Rol del representante/manager (band-specific, no pertenece a clientes)
     contacto_rol VARCHAR(100) DEFAULT NULL COMMENT 'Manager, Líder, Prensa, etc.',
     
+    id_cliente INT DEFAULT NULL COMMENT 'FK opcional a clientes.id_cliente si la banda se registró como cliente',
+
     -- Control
     verificada TINYINT(1) DEFAULT 0 COMMENT '1=Verificada por admin',
     activa TINYINT(1) DEFAULT 1,
@@ -475,7 +474,9 @@ CREATE TABLE IF NOT EXISTS bandas_artistas (
     
     INDEX idx_nombre (nombre),
     INDEX idx_genero (genero_musical),
-    INDEX idx_activa (activa)
+    INDEX idx_activa (activa),
+    INDEX idx_id_cliente (id_cliente),
+    CONSTRAINT fk_bandas_artistas_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 

@@ -176,6 +176,36 @@
             border-color: var(--color-secondary);
         }
 
+        @keyframes bandaNuevaGlow {
+            0% {
+                border-color: #4ade80;
+                box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+                background-color: rgba(74, 222, 128, 0.15);
+            }
+
+            25% {
+                border-color: #4ade80;
+                box-shadow: 0 0 18px 4px rgba(74, 222, 128, 0.7);
+                background-color: rgba(74, 222, 128, 0.2);
+            }
+
+            75% {
+                border-color: #4ade80;
+                box-shadow: 0 0 12px 2px rgba(74, 222, 128, 0.4);
+                background-color: rgba(74, 222, 128, 0.12);
+            }
+
+            100% {
+                border-color: var(--color-secondary);
+                box-shadow: none;
+                background-color: rgba(88, 28, 135, 0.1);
+            }
+        }
+
+        .banda-item.banda-nueva {
+            animation: bandaNuevaGlow 3s ease forwards;
+        }
+
         .banda-item-text {
             flex: 1;
         }
@@ -223,6 +253,17 @@
             flex: 1;
             padding: 8px !important;
             font-size: 16px !important;
+        }
+
+        .disabled-slot {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .disabled-slot .flatpickr-input,
+        .disabled-slot input {
+            cursor: not-allowed !important;
+            color: #71717a !important;
         }
 
         /* Contenedor de fechas - en fila en desktop */
@@ -626,16 +667,20 @@
                 <div
                     style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
                     <ul>
-                        <li><i class="fas fa-users"
-                                style="margin-right:8px;color:var(--color-secondary);"></i>El Templo de Claypole cuenta con un aforo para 150 personas para shows en vivo</li>
+                        <li><i class="fas fa-users" style="margin-right:8px;color:var(--color-secondary);"></i>El Templo
+                            de Claypole cuenta con un aforo para 150 personas para shows en vivo</li>
                         <li><i class="fas fa-location-dot"
-                                style="margin-right:8px;color:var(--color-secondary);"></i>Estamos a 3 cuadras de la Estación de Claypole.</li>
-                        <li><i class="fas fa-road" style="margin-right:8px;color:var(--color-secondary);"></i>Calle de asfalto, sin problemas de acceso para equipos y público.
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Estamos a 3 cuadras de la
+                            Estación de Claypole.</li>
+                        <li><i class="fas fa-road" style="margin-right:8px;color:var(--color-secondary);"></i>Calle de
+                            asfalto, sin problemas de acceso para equipos y público.
                         </li>
                         <li style="margin-left:20px;"><i class="fas fa-check"
-                                style="margin-right:8px;color:var(--color-secondary);"></i>Frente de madera, ambientación tipo rustica, parrilla, patio, mesas y sillas</li>
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Frente de madera,
+                            ambientación tipo rustica, parrilla, patio, mesas y sillas</li>
                         <li style="margin-left:20px;"><i class="fas fa-check"
-                                style="margin-right:8px;color:var(--color-secondary);"></i>En el interior escenario al frente, barra en el fondo, baños al costado.
+                                style="margin-right:8px;color:var(--color-secondary);"></i>En el interior escenario al
+                            frente, barra en el fondo, baños al costado.
                         </li>
                     </ul>
                 </div>
@@ -809,6 +854,19 @@
 
         // Flag para asignar listener una sola vez
         let bandasListenerConfigurado = false;
+
+        // Resaltar visualmente una banda recién creada
+        function highlightNuevaBanda(bandaId) {
+            const bandasList = document.getElementById('bandasList');
+            if (!bandasList) return;
+            bandasList.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const item = bandasList.querySelector(`[data-banda-id="${bandaId}"]`);
+            if (item) {
+                item.classList.add('banda-nueva');
+                setTimeout(() => item.classList.remove('banda-nueva'), 3200);
+            }
+            showNotification('✅ Banda registrada. ¡Ya podés seleccionarla de la lista!', 'success', 5000);
+        }
 
         // Cargar bandas disponibles
         async function loadBandas() {
@@ -1037,28 +1095,106 @@
         }
 
         // Inicializar calendarios de fechas
-        function initCalendarios() {
+        async function initCalendarios() {
             try {
-                // Cargar fechas ocupadas
-                fetch('/api/opciones/fechas-ocupadas')
-                    .then(res => res.json())
-                    .then(data => {
-                        const ocupadas = data.alquilerConfirmado || [];
-                        const feriados = data.feriados || [];
+                const anioActual = new Date().getFullYear();
 
-                        document.querySelectorAll('.fechaEvento').forEach((input, idx) => {
-                            const calendar = flatpickr(input, {
-                                locale: 'es',
-                                dateFormat: 'Y-m-d',
-                                minDate: 'today',
-                                disable: [...ocupadas, ...feriados],
-                                onChange: (selectedDates, dateStr) => {
-                                    fechasSeleccionadas[idx] = dateStr;
-                                }
-                            });
-                            calendarios[idx] = calendar;
-                        });
-                    });
+                // Cargar en paralelo: feriados (año actual y siguiente) + fechas ocupadas
+                const [feriadosAct, feriadosSig, ocupadasRaw] = await Promise.all([
+                    fetch(`https://api.argentinadatos.com/v1/feriados/${anioActual}`).then(r => r.json()).catch(() => []),
+                    fetch(`https://api.argentinadatos.com/v1/feriados/${anioActual + 1}`).then(r => r.json()).catch(() => []),
+                    fetch('/api/opciones/fechas-ocupadas').then(r => r.json()).catch(() => [])
+                ]);
+
+                const feriados = [...feriadosAct, ...feriadosSig].map(f => f.fecha.replace(/\//g, '-'));
+                const ocupadas = Array.isArray(ocupadasRaw) ? ocupadasRaw : [];
+
+                const input1 = document.querySelector('.fechaEvento[data-fecha-index="0"]');
+                const input2 = document.querySelector('.fechaEvento[data-fecha-index="1"]');
+
+                // Función que genera el predicado de deshabilitación para flatpickr:
+                // Sólo habilita fines de semana (sáb/dom) y feriados, excluyendo fechas ocupadas
+                // y opcionalmente una fecha reservada por el otro picker.
+                function buildDisableFn(excluir) {
+                    return function (date) {
+                        const ymd = date.getFullYear() + '-' +
+                            String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                            String(date.getDate()).padStart(2, '0');
+                        if (excluir && ymd === excluir) return true;          // excluida por Fecha 1
+                        if (ocupadas.includes(ymd)) return true;              // fecha ya ocupada
+                        const esFdS = date.getDay() === 0 || date.getDay() === 6;
+                        const esFeriado = feriados.includes(ymd);
+                        return !(esFdS || esFeriado);                         // deshabilitar días de semana
+                    };
+                }
+
+                // Helper para cambiar el estado habilitado/deshabilitado de Fecha 2
+                function setFecha2Disabled(disabled) {
+                    if (disabled) {
+                        cal2.set('clickOpens', false);
+                        if (cal2.altInput) {
+                            cal2.altInput.disabled = true;
+                            cal2.altInput.placeholder = 'Selecciona Fecha 1 primero';
+                        }
+                        input2.closest('.date-slot').classList.add('disabled-slot');
+                    } else {
+                        cal2.set('clickOpens', true);
+                        if (cal2.altInput) {
+                            cal2.altInput.disabled = false;
+                            cal2.altInput.placeholder = 'Selecciona fecha (opcional)';
+                        }
+                        input2.closest('.date-slot').classList.remove('disabled-slot');
+                    }
+                }
+
+                // --- Calendario Fecha 1 ---
+                const cal1 = flatpickr(input1, {
+                    locale: 'es',
+                    altInput: true,
+                    altFormat: 'j \\de F, Y',
+                    dateFormat: 'Y-m-d',
+                    minDate: 'today',
+                    disable: [buildDisableFn(null)],
+                    onChange: (selectedDates, dateStr) => {
+                        fechasSeleccionadas[0] = dateStr || null;
+
+                        if (dateStr) {
+                            // Si Fecha 2 ya tenía esa misma fecha, limpiarla
+                            if (fechasSeleccionadas[1] === dateStr) {
+                                cal2.clear();
+                                fechasSeleccionadas[1] = null;
+                            }
+                            // Actualizar disable de Fecha 2 para excluir la fecha recién seleccionada
+                            cal2.set('disable', [buildDisableFn(dateStr)]);
+                            setFecha2Disabled(false);
+                        } else {
+                            // Fecha 1 limpiada: deshabilitar y limpiar Fecha 2
+                            cal2.clear();
+                            fechasSeleccionadas[1] = null;
+                            cal2.set('disable', [buildDisableFn(null)]);
+                            setFecha2Disabled(true);
+                        }
+                    }
+                });
+                calendarios[0] = cal1;
+
+                // --- Calendario Fecha 2 (inicia deshabilitado) ---
+                const cal2 = flatpickr(input2, {
+                    locale: 'es',
+                    altInput: true,
+                    altFormat: 'j \\de F, Y',
+                    dateFormat: 'Y-m-d',
+                    minDate: 'today',
+                    disable: [buildDisableFn(null)],
+                    onChange: (selectedDates, dateStr) => {
+                        fechasSeleccionadas[1] = dateStr || null;
+                    }
+                });
+                calendarios[1] = cal2;
+
+                // Deshabilitar Fecha 2 al inicio (requiere que Fecha 1 esté seleccionada)
+                setFecha2Disabled(true);
+
             } catch (err) {
                 console.error('Error init calendarios:', err);
             }
@@ -1232,7 +1368,14 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateAuthMenu();
             initFingerprint();
-            loadBandas();
+            loadBandas().then(() => {
+                const params = new URLSearchParams(window.location.search);
+                const nuevaBandaId = params.get('nuevaBanda');
+                if (nuevaBandaId) {
+                    highlightNuevaBanda(parseInt(nuevaBandaId, 10));
+                    window.history.replaceState({}, '', window.location.pathname);
+                }
+            });
             initCalendarios();
             initAccordion();
 
