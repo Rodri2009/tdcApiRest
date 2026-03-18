@@ -7,363 +7,35 @@
     <title>Agenda General - Panel de Administración</title>
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
     <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-        }
-
-        .text-neon {
-            color: var(--color-secondary);
-            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-        }
-
-        .bg-rustic {
-            background-color: var(--color-rustic);
-        }
+        .wrap { max-width: 1600px; margin: 0 auto; padding: 20px 16px; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .summary-card { background: rgba(88, 28, 135, 0.2); border: 1px solid rgba(240, 171, 252, 0.2); border-radius: 12px; padding: 20px; text-align: center; }
+        .summary-card .number { font-size: 2rem; font-weight: 700; color: var(--color-secondary); }
+        .summary-card .label { font-size: 0.9rem; color: #9ca3af; margin-top: 4px; }
+        .badge-alquiler { background: #7c3aed; color: white; }
+        .badge-taller { background: #0891b2; color: white; }
+        .badge-servicio { background: #db2777; color: white; }
+        .badge-banda { background: #ea580c; color: white; }
+        .row-actions { display: flex; gap: 8px; }
     </style>
 </head>
 
 <body>
-
-    <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
-            /* Navbar offset: 72px top (64px navbar height + 8px buffer) */
-            background: #0c0a09;
-            min-height: 100vh;
-            color: #d6d3d1;
-        }
-
-        h1 {
-            text-align: center;
-            color: var(--color-secondary);
-            font-size: 1.8rem;
-            margin-bottom: 24px;
-            margin-top: 1rem;
-            text-shadow: 0 0 5px var(--color-secondary);
-        }
-
-        .wrap {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            max-width: 1600px;
-            margin: 0;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-
-        .btn-secondary {
-            background: var(--color-rustic);
-            color: #d6d3d1;
-        }
-
-        .btn-secondary:hover {
-            background: #57534e;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            border-bottom: 2px solid var(--color-rustic);
-            max-width: 1600px;
-            margin: 0 auto 24px;
-            flex-wrap: wrap;
-        }
-
-        .tab {
-            padding: 12px 20px;
-            background: transparent;
-            border: none;
-            color: #9ca3af;
-            font-size: 1rem;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tab:hover {
-            color: var(--color-secondary);
-        }
-
-        .tab.active {
-            color: var(--color-secondary);
-            border-bottom-color: var(--color-secondary);
-            font-weight: 600;
-        }
-
-        .section {
-            display: none;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        .agenda-container {
-            max-width: 1600px;
-            margin: 0 auto;
-            background: #1a1a1a;
-            padding: 20px 32px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(240, 171, 252, 0.1);
-        }
-
-        .filters {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            padding: 16px;
-            background: rgba(88, 28, 135, 0.1);
-            border-radius: 8px;
-        }
-
-        .filters>div {
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .filters label {
-            display: block;
-            font-size: 0.85rem;
-            color: #9ca3af;
-            margin-bottom: 4px;
-        }
-
-        .filters select,
-        .filters input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid var(--color-rustic);
-            border-radius: 6px;
-            background: #0c0a09;
-            color: #d6d3d1;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 12px 16px;
-            border-bottom: 1px solid #333;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        th {
-            background: linear-gradient(135deg, #581c87 0%, #764ba2 100%);
-            color: var(--color-secondary);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        tr:hover {
-            background-color: rgba(240, 171, 252, 0.05);
-        }
-
-        .badge {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: inline-block;
-        }
-
-        .badge-success {
-            background: #065f46;
-            color: #6ee7b7;
-        }
-
-        .badge-warning {
-            background: #92400e;
-            color: #fcd34d;
-        }
-
-        .badge-danger {
-            background: #7f1d1d;
-            color: #fca5a5;
-        }
-
-        .badge-info {
-            background: #1e40af;
-            color: #93c5fd;
-        }
-
-        .badge-gray {
-            background: #374151;
-            color: #9ca3af;
-        }
-
-        .badge-primary {
-            background: rgba(88, 28, 135, 0.6);
-            color: var(--color-secondary);
-        }
-
-        .badge-alquiler {
-            background: #7c3aed;
-            color: white;
-        }
-
-        .badge-taller {
-            background: #0891b2;
-            color: white;
-        }
-
-        .badge-servicio {
-            background: #db2777;
-            color: white;
-        }
-
-        .badge-banda {
-            background: #ea580c;
-            color: white;
-        }
-
-        .row-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-icon {
-            padding: 6px 10px;
-            background: rgba(240, 171, 252, 0.1);
-            border: 1px solid rgba(240, 171, 252, 0.2);
-            border-radius: 6px;
-            color: var(--color-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-icon:hover {
-            background: rgba(240, 171, 252, 0.2);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #9ca3af;
-        }
-
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .summary-card {
-            background: rgba(88, 28, 135, 0.2);
-            border: 1px solid rgba(240, 171, 252, 0.2);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .summary-card .number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--color-secondary);
-        }
-
-        .summary-card .label {
-            font-size: 0.9rem;
-            color: #9ca3af;
-            margin-top: 4px;
-        }
-
-        /* Banner de notificación */
-        .notification-banner {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            z-index: 9999;
-            animation: slideIn 0.3s ease;
-        }
-
-        .notification-banner.success {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-
-        .notification-banner.error {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-
-        .notification-banner.info {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-    </style>
-
-    <body>
-        <main class="wrap">
-            <div class="header-row"
-                style="max-width:1600px; margin:0 auto; margin-top:1rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
-                <a href="/admin.html" class="btn btn-secondary"
-                    style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
-                    <i class="fas fa-arrow-left"></i> Volver al Panel
-                </a>
-                <h1 class="text-4xl font-bold text-neon" style="margin:0; text-align:center;"><i
-                        class="fas fa-calendar-days"></i> Agenda General</h1>
-                <div style="width:150px;"></div>
-            </div>
+    <script src="/navbar.js"></script>
+    <main class="wrap">
+        <div class="page-header">
+            <a href="/admin.html" class="btn-back">
+                <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg> Volver al Panel
+            </a>
+            <h1><i class="fas fa-calendar-days"></i> Agenda General</h1>
+            <div class="spacer"></div>
+        </div>
 
             <div class="tabs">
                 <button class="tab active" data-section="proximos">
@@ -379,7 +51,7 @@
 
             <!-- SECCIÓN: Próximos Eventos -->
             <div id="section-proximos" class="section active">
-                <div class="agenda-container">
+                <div class="table-container">
                     <div class="summary-cards" id="summary-cards">
                         <div class="summary-card">
                             <div class="number" id="count-hoy">0</div>
@@ -398,25 +70,26 @@
                             <div class="label">Total Confirmados</div>
                         </div>
                     </div>
-
-                    <div class="filters">
-                        <div>
-                            <label>Categoría:</label>
-                            <select id="filtro-categoria" onchange="filterProximos()">
-                                <option value="">Todas</option>
-                                <option value="ALQUILER">Alquileres</option>
-                                <option value="TALLER">Talleres</option>
-                                <option value="SERVICIO">Servicios</option>
-                                <option value="BANDA">Bandas</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Desde:</label>
-                            <input type="date" id="filtro-desde" onchange="filterProximos()">
-                        </div>
-                        <div>
-                            <label>Hasta:</label>
-                            <input type="date" id="filtro-hasta" onchange="filterProximos()">
+                    <div class="filters-panel">
+                        <div class="filters-row">
+                            <div class="filter-field">
+                                <label>Categoría</label>
+                                <select id="filtro-categoria" onchange="filterProximos()">
+                                    <option value="">Todas</option>
+                                    <option value="ALQUILER">Alquileres</option>
+                                    <option value="TALLER">Talleres</option>
+                                    <option value="SERVICIO">Servicios</option>
+                                    <option value="BANDA">Bandas</option>
+                                </select>
+                            </div>
+                            <div class="filter-field">
+                                <label>Desde</label>
+                                <input type="date" id="filtro-desde" onchange="filterProximos()">
+                            </div>
+                            <div class="filter-field">
+                                <label>Hasta</label>
+                                <input type="date" id="filtro-hasta" onchange="filterProximos()">
+                            </div>
                         </div>
                     </div>
 
@@ -444,17 +117,19 @@
 
             <!-- SECCIÓN: Pendientes -->
             <div id="section-pendientes" class="section">
-                <div class="agenda-container">
-                    <div class="filters">
-                        <div>
-                            <label>Categoría:</label>
-                            <select id="filtro-pendiente-categoria" onchange="filterPendientes()">
-                                <option value="">Todas</option>
-                                <option value="ALQUILER">Alquileres</option>
-                                <option value="TALLER">Talleres</option>
-                                <option value="SERVICIO">Servicios</option>
-                                <option value="BANDA">Bandas</option>
-                            </select>
+                <div class="table-container">
+                    <div class="filters-panel">
+                        <div class="filters-row">
+                            <div class="filter-field">
+                                <label>Categoría</label>
+                                <select id="filtro-pendiente-categoria" onchange="filterPendientes()">
+                                    <option value="">Todas</option>
+                                    <option value="ALQUILER">Alquileres</option>
+                                    <option value="TALLER">Talleres</option>
+                                    <option value="SERVICIO">Servicios</option>
+                                    <option value="BANDA">Bandas</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -482,34 +157,36 @@
 
             <!-- SECCIÓN: Todos -->
             <div id="section-todos" class="section">
-                <div class="agenda-container">
-                    <div class="filters">
-                        <div>
-                            <label>Categoría:</label>
-                            <select id="filtro-todos-categoria" onchange="filterTodos()">
-                                <option value="">Todas</option>
-                                <option value="ALQUILER">Alquileres</option>
-                                <option value="TALLER">Talleres</option>
-                                <option value="SERVICIO">Servicios</option>
-                                <option value="BANDA">Bandas</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Estado:</label>
-                            <select id="filtro-todos-estado" onchange="filterTodos()">
-                                <option value="">Todos</option>
-                                <option value="Confirmado">Confirmados</option>
-                                <option value="Solicitado">Solicitados</option>
-                                <option value="Cancelado">Cancelados</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Desde:</label>
-                            <input type="date" id="filtro-todos-desde" onchange="filterTodos()">
-                        </div>
-                        <div>
-                            <label>Hasta:</label>
-                            <input type="date" id="filtro-todos-hasta" onchange="filterTodos()">
+                <div class="table-container">
+                    <div class="filters-panel">
+                        <div class="filters-row">
+                            <div class="filter-field">
+                                <label>Categoría</label>
+                                <select id="filtro-todos-categoria" onchange="filterTodos()">
+                                    <option value="">Todas</option>
+                                    <option value="ALQUILER">Alquileres</option>
+                                    <option value="TALLER">Talleres</option>
+                                    <option value="SERVICIO">Servicios</option>
+                                    <option value="BANDA">Bandas</option>
+                                </select>
+                            </div>
+                            <div class="filter-field">
+                                <label>Estado</label>
+                                <select id="filtro-todos-estado" onchange="filterTodos()">
+                                    <option value="">Todos</option>
+                                    <option value="Confirmado">Confirmados</option>
+                                    <option value="Solicitado">Solicitados</option>
+                                    <option value="Cancelado">Cancelados</option>
+                                </select>
+                            </div>
+                            <div class="filter-field">
+                                <label>Desde</label>
+                                <input type="date" id="filtro-todos-desde" onchange="filterTodos()">
+                            </div>
+                            <div class="filter-field">
+                                <label>Hasta</label>
+                                <input type="date" id="filtro-todos-hasta" onchange="filterTodos()">
+                            </div>
                         </div>
                     </div>
 
@@ -536,7 +213,6 @@
             </div>
 
         </main>
-        <script src="/navbar.js"></script>
         <script>
             // Activar logs detallados añadiendo ?debug=1 a la URL
             const debug = new URLSearchParams(window.location.search).get('debug') === '1';
@@ -571,15 +247,21 @@
             // BANNERS
             // ============================================================
             function showBanner(message, type = 'info', duration = 4000) {
-                document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+                document.querySelectorAll('.notification-banner').forEach(n => {
+                    n.classList.remove('show');
+                    n.classList.add('hide');
+                    setTimeout(() => n.remove(), 350);
+                });
                 const banner = document.createElement('div');
                 banner.className = `notification-banner ${type}`;
                 const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
                 banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
                 document.body.appendChild(banner);
+                requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('show')));
                 setTimeout(() => {
-                    banner.style.animation = 'slideIn 0.3s ease reverse';
-                    setTimeout(() => banner.remove(), 300);
+                    banner.classList.remove('show');
+                    banner.classList.add('hide');
+                    setTimeout(() => banner.remove(), 350);
                 }, duration);
             }
 
@@ -635,6 +317,9 @@
                     combineItems();
                     renderAll();
 
+                    const total = allItems.length;
+                    showBanner(`${total} evento${total !== 1 ? 's' : ''} cargado${total !== 1 ? 's' : ''} en agenda`, 'success', 2500);
+
                     console.group('%c📤 LOADALLDATA - Salida Completada', 'color: #ff9900; font-weight: bold; font-size: 13px');
                     console.log('allItems totales:', allItems.length);
                     console.log('Resumen por categoría:', allItems.reduce((acc, it) => { acc[it.categoria] = (acc[it.categoria] || 0) + 1; return acc; }, {}));
@@ -642,6 +327,9 @@
                 } catch (err) {
                     console.error('❌ ERROR CRÍTICO:', err);
                     console.error('Stack:', err.stack);
+                    document.querySelectorAll('tbody').forEach(tb => {
+                        tb.innerHTML = `<tr><td colspan="7" class="empty-state" style="color:#f87171;"><i class="fas fa-exclamation-circle"></i> Error al cargar datos: ${err.message}</td></tr>`;
+                    });
                     showBanner('Error al cargar datos: ' + err.message, 'error');
                 }
             }

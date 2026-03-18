@@ -6,41 +6,24 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Administración - Configuración Eventos</title>
   <link rel="stylesheet" href="/css/tailwind.min.css">
-  <style>
-    :root {
-      --color-secondary: #f0abfc;
-      --color-rustic: #44403c;
-    }
-
-    .text-neon {
-      color: var(--color-secondary);
-      text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-    }
-
-    body {
-      margin: 0;
-      padding: 72px 16px 16px 16px;
-      background: #0c0a09;
-      color: #d6d3d1;
-      font-family: 'Inter', sans-serif;
-    }
-
-    .wrap {
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 20px 16px;
-    }
-  </style>
+  <link rel="stylesheet" href="/css/fontawesome.min.css">
+  <link rel="stylesheet" href="/styles/admin.css">
+  <link rel="stylesheet" href="/css/config-pages.css">
 </head>
 
 <body>
-
+  <script src="/navbar.js"></script>
   <main class="wrap">
-    <h1 class="text-4xl font-bold mt-8 text-center">Configuración de Eventos</h1>
+    <div class="page-header">
+      <a href="/admin.html" class="btn-back">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Volver al Panel
+      </a>
+      <h1><i class="fas fa-calendar-alt"></i> Configuración de Eventos</h1>
+      <div class="spacer"></div>
+    </div>
     <p class="text-center mt-4">Aquí puedes ajustar tipos de eventos, tarifas y duraciones.</p>
   </main>
-
-  <script src="/navbar.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // navbarManager ya fue instanciado y navbar inyectada por navbar.js

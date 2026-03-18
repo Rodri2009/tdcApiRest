@@ -9,118 +9,40 @@
   <link rel="stylesheet" href="/css/fontawesome.min.css">
   <link rel="stylesheet" href="/styles/admin.css">
   <style>
-    :root {
-      --color-primary: #581c87;
-      --color-secondary: #f0abfc;
-      --color-rustic: #44403c;
-    }
-
-    header.bg-rustic {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 9999;
-    }
-
-    body {
-      margin: 0;
-      padding: 0;
-    }
-
-    .wrap {
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 20px 16px;
-    }
-
-    /* Estilos específicos de esta página */
-    .checkbox-item .rol-info {
-      flex: 1;
-    }
-
-    .checkbox-item .rol-nombre {
-      font-weight: 500;
-      color: #d6d3d1;
-    }
-
-    .checkbox-item .rol-desc {
-      font-size: 0.75rem;
-      color: #78716c;
-    }
-
-    /* Banner de notificación */
-    .notification-banner {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 12px 20px;
-      border-radius: 8px;
-      color: white;
-      font-weight: 500;
-      z-index: 9999;
-      animation: slideIn 0.3s ease;
-      max-width: 400px;
-    }
-
-    .notification-banner.success {
-      background: linear-gradient(135deg, #10b981, #059669);
-    }
-
-    .notification-banner.error {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-    }
-
-    .notification-banner.info {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 20px 16px; }
+    .checkbox-item .rol-info { flex: 1; }
+    .checkbox-item .rol-nombre { font-weight: 500; color: #d6d3d1; }
+    .checkbox-item .rol-desc { font-size: 0.75rem; color: #78716c; }
   </style>
 </head>
 
 <body>
-
+  <script src="/navbar.js"></script>
   <main class="wrap">
-    <!-- Header (estilo unificado) -->
-    <div
-      style="max-width:1600px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; margin-top:1rem;">
-      <a href="admin.html" class="btn btn-secondary"
-        style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+    <div class="page-header">
+      <a href="admin.html" class="btn-back">
         <i class="fas fa-arrow-left"></i> Volver al Panel
       </a>
-      <h1 class="text-4xl font-bold text-neon" style="margin:0; text-align:center;">👥 Administrar Usuarios</h1>
-      <div style="width: 140px;"></div>
+      <h1>👥 Administrar Usuarios</h1>
+      <div class="spacer"></div>
     </div>
-    <p class="mt-2 mb-6 text-gray-400">Gestión de cuentas de usuario y asignación de roles del sistema.</p>
 
-    <!-- Acciones -->
-    <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <div class="filters-panel">
+      <div class="filters-row" style="justify-content: space-between;">
+        <div class="filter-field">
           <button class="btn btn-primary btn-crear" data-requiere-edicion="usuarios" onclick="abrirModalUsuario()">
             <i class="fas fa-user-plus"></i> Nuevo Usuario
           </button>
         </div>
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <input type="text" id="buscar" placeholder="🔍 Buscar por email o nombre..." style="width: 250px;"
-            oninput="filtrarUsuarios()">
+        <div class="filter-field">
+          <label>Buscar</label>
+          <input type="text" id="buscar" placeholder="Email o nombre..." oninput="filtrarUsuarios()">
         </div>
       </div>
     </div>
 
     <!-- Tabla de usuarios -->
-    <div class="card">
+    <div class="table-container">
       <div id="tabla-container">
         <div class="loading">
           <i class="fas fa-spinner fa-spin fa-2x"></i>
@@ -137,72 +59,7 @@
         <!-- Se llena dinámicamente -->
       </div>
     </div>
-    // Inicializar la página solamente si el usuario está autenticado en el cliente
-    async function initPage() {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-    // Si no existe token, mostrar login
-    window.location.href = '/login.html';
-    return;
-    }
 
-    // Cargar la interfaz aquí
-
-    // actualizar menú si es necesario
-    updateAuthMenu();
-    }
-
-    function toggleMobileMenu() {
-    const mobileMenu = document.getElementById('mobile-menu');
-    mobileMenu.classList.toggle('hidden');
-    }
-
-    function updateAuthMenu() {
-    const token = localStorage.getItem('authToken');
-    const desktopMenu = document.getElementById('auth-menu-desktop');
-    const mobileMenu = document.getElementById('auth-menu-mobile');
-
-    if (token && desktopMenu) {
-    desktopMenu.innerHTML = `<a href="/admin.html"
-      class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">🔐
-      Admin Panel</a>`;
-    } else if (desktopMenu) {
-    desktopMenu.innerHTML = `<a href="login.html"
-      class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150">Login</a>`;
-    }
-    if (token && mobileMenu) {
-    mobileMenu.innerHTML = `<a href="/admin.html"
-      class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐
-      Admin Panel</a><button onclick="logout()"
-      class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">🚪
-      Cerrar Sesión</button>`;
-    } else if (mobileMenu) {
-    mobileMenu.innerHTML = `<a href="login.html"
-      class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">Login</a>`;
-    }
-    }
-
-    function logout() {
-    localStorage.removeItem('authToken');
-    window.location.href = '/index.html';
-    }
-
-    window.addEventListener('storage', updateAuthMenu);
-
-    document.addEventListener('DOMContentLoaded', () => {
-    updateAuthMenu();
-    const btn = document.getElementById('mobile-menu-button');
-    if (btn) btn.addEventListener('click', toggleMobileMenu);
-    const mobileMenu = document.getElementById('mobile-menu');
-    if (mobileMenu) {
-    mobileMenu.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-    mobileMenu.classList.add('hidden');
-    });
-    });
-    }
-    });
-  </main>
 
   <!-- Modal Crear/Editar Usuario -->
   <div id="modal-usuario" class="modal-overlay">
@@ -213,7 +70,7 @@
       </div>
       <div id="modal-error"></div>
       <form id="form-usuario" onsubmit="guardarUsuario(event)">
-        <input type="hidden" id="usuario-id">
+        <input type="hidden" id="id_usuario">
 
         <div class="form-group">
           <label>Email *</label>
@@ -273,7 +130,6 @@
   </div>
 
   </main>
-  <script src="/navbar.js"></script>
   <script>
     // Variables globales
     let usuarios = [];
@@ -297,15 +153,21 @@
 
     // Banner de notificación
     function showBanner(message, type = 'info', duration = 4000) {
-      document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+      document.querySelectorAll('.notification-banner').forEach(n => {
+        n.classList.remove('show');
+        n.classList.add('hide');
+        setTimeout(() => n.remove(), 350);
+      });
       const banner = document.createElement('div');
       banner.className = `notification-banner ${type}`;
       const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
       banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
       document.body.appendChild(banner);
+      requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('show')));
       setTimeout(() => {
-        banner.style.animation = 'slideIn 0.3s ease reverse';
-        setTimeout(() => banner.remove(), 300);
+        banner.classList.remove('show');
+        banner.classList.add('hide');
+        setTimeout(() => banner.remove(), 350);
       }, duration);
     }
 
@@ -318,6 +180,12 @@
           roles = await resRoles.json();
           renderizarRolesInfo();
           renderizarRolesCheckboxes();
+        } else if (resRoles.status === 401) {
+          window.location.href = '/login.html';
+          return;
+        } else {
+          console.error('Error cargando roles:', resRoles.status);
+          showBanner('Error al cargar roles (' + resRoles.status + ')', 'error');
         }
 
         // Cargar usuarios
@@ -325,12 +193,23 @@
         if (resUsuarios.ok) {
           usuarios = await resUsuarios.json();
           renderizarTabla();
+          showBanner(usuarios.length + ' usuario' + (usuarios.length !== 1 ? 's' : '') + ' cargado' + (usuarios.length !== 1 ? 's' : ''), 'success', 2500);
+        } else if (resUsuarios.status === 401) {
+          window.location.href = '/login.html';
+          return;
         } else if (resUsuarios.status === 403) {
           document.getElementById('tabla-container').innerHTML = `
                         <div class="error-message">
                             <i class="fas fa-lock"></i> No tienes permisos para ver usuarios.
                         </div>
                     `;
+        } else {
+          document.getElementById('tabla-container').innerHTML = `
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i> Error al cargar usuarios (${resUsuarios.status}).
+                        </div>
+                    `;
+          showBanner('Error al cargar usuarios (' + resUsuarios.status + ')', 'error');
         }
       } catch (error) {
         console.error('Error cargando datos:', error);
@@ -393,7 +272,7 @@
 
         html += `
                     <tr>
-                        <td>${u.id}</td>
+                        <td>${u.id_usuario}</td>
                         <td>${u.email}</td>
                         <td>${u.nombre || '-'}</td>
                         <td>${rolesBadges || '<span style="color:#78716c">Sin rol</span>'}</td>
@@ -401,12 +280,12 @@
                         <td style="font-size: 0.85rem; color: #78716c;">${ultimoAcceso}</td>
                         <td>
                             ${puedeEditarUsuarios ? `
-                            <button class="btn btn-secondary" onclick="editarUsuario(${u.id})" title="Editar">
+                            <button class="btn btn-secondary" onclick="editarUsuario(${u.id_usuario})" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
                             ` : ''}
                             ${puedeEliminarUsuarios ? `
-                            <button class="btn btn-danger" onclick="abrirModalEliminar(${u.id}, '${u.email}')" title="Eliminar">
+                            <button class="btn btn-danger" onclick="abrirModalEliminar(${u.id_usuario}, '${u.email}')" title="Eliminar">
                                 <i class="fas fa-trash"></i>
                             </button>
                             ` : ''}
@@ -464,7 +343,7 @@
     // Abrir modal para nuevo usuario
     function abrirModalUsuario() {
       document.getElementById('modal-title').textContent = 'Nuevo Usuario';
-      document.getElementById('usuario-id').value = '';
+      document.getElementById('id_usuario').value = '';
       document.getElementById('usuario-email').value = '';
       document.getElementById('usuario-nombre').value = '';
       document.getElementById('usuario-password').value = '';
@@ -487,7 +366,7 @@
         const usuario = await res.json();
 
         document.getElementById('modal-title').textContent = 'Editar Usuario';
-        document.getElementById('usuario-id').value = usuario.id;
+        document.getElementById('id_usuario').value = usuario.id_usuario;
         document.getElementById('usuario-email').value = usuario.email;
         document.getElementById('usuario-nombre').value = usuario.nombre || '';
         document.getElementById('usuario-password').value = '';
@@ -511,7 +390,7 @@
     async function guardarUsuario(event) {
       event.preventDefault();
 
-      const id = document.getElementById('usuario-id').value;
+      const id = document.getElementById('id_usuario').value;
       const email = document.getElementById('usuario-email').value;
       const nombre = document.getElementById('usuario-nombre').value;
       const password = document.getElementById('usuario-password').value;

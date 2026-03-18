@@ -17,7 +17,7 @@ const getUsuarios = async (req, res) => {
 
         const usuarios = await conn.query(`
             SELECT 
-                id,
+                id_usuario,
                 email,
                 nombre,
                 rol,
@@ -46,8 +46,8 @@ const getUsuarioPorId = async (req, res) => {
         conn = await pool.getConnection();
 
         const [usuario] = await conn.query(`
-            SELECT id, email, nombre, rol, activo, creado_en
-            FROM usuarios WHERE id = ?
+            SELECT id_usuario, email, nombre, rol, activo, creado_en
+            FROM usuarios WHERE id_usuario = ?
         `, [id]);
 
         if (!usuario) {
@@ -82,7 +82,7 @@ const crearUsuario = async (req, res) => {
         conn = await pool.getConnection();
 
         // Verificar si el email ya existe
-        const [existente] = await conn.query('SELECT id FROM usuarios WHERE email = ?', [email]);
+        const [existente] = await conn.query('SELECT id_usuario FROM usuarios WHERE email = ?', [email]);
         if (existente) {
             return res.status(400).json({ message: 'El email ya está registrado' });
         }
@@ -121,14 +121,14 @@ const actualizarUsuario = async (req, res) => {
         conn = await pool.getConnection();
 
         // Verificar que el usuario existe
-        const [usuario] = await conn.query('SELECT id FROM usuarios WHERE id = ?', [id]);
+        const [usuario] = await conn.query('SELECT id_usuario FROM usuarios WHERE id_usuario = ?', [id]);
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
         // Si cambia el email, verificar que no exista otro usuario con ese email
         if (email) {
-            const [existente] = await conn.query('SELECT id FROM usuarios WHERE email = ? AND id != ?', [email, id]);
+            const [existente] = await conn.query('SELECT id_usuario FROM usuarios WHERE email = ? AND id_usuario != ?', [email, id]);
             if (existente) {
                 return res.status(400).json({ message: 'El email ya está en uso por otro usuario' });
             }
@@ -166,7 +166,7 @@ const actualizarUsuario = async (req, res) => {
 
         if (updates.length > 0) {
             params.push(id);
-            await conn.query(`UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`, params);
+            await conn.query(`UPDATE usuarios SET ${updates.join(', ')} WHERE id_usuario = ?`, params);
         }
 
         res.json({ message: 'Usuario actualizado exitosamente' });
@@ -194,13 +194,13 @@ const eliminarUsuario = async (req, res) => {
         conn = await pool.getConnection();
 
         // Verificar que el usuario existe
-        const [usuario] = await conn.query('SELECT id, email FROM usuarios WHERE id = ?', [id]);
+        const [usuario] = await conn.query('SELECT id_usuario, email FROM usuarios WHERE id_usuario = ?', [id]);
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
         // Eliminar usuario
-        await conn.query('DELETE FROM usuarios WHERE id = ?', [id]);
+        await conn.query('DELETE FROM usuarios WHERE id_usuario = ?', [id]);
 
         res.json({ message: `Usuario ${usuario.email} eliminado exitosamente` });
     } catch (err) {
@@ -220,6 +220,7 @@ const getRoles = async (req, res) => {
         { id: 2, codigo: 'staff', nombre: 'Staff', descripcion: 'Gestión de solicitudes y reportes', nivel: 50 },
         { id: 3, codigo: 'cliente', nombre: 'Cliente', descripcion: 'Ver y crear solicitudes propias', nivel: 10 }
     ];
+    logVerbose('Roles disponibles:', roles);
     res.json(roles);
 };
 
@@ -247,6 +248,8 @@ const getPermisos = async (req, res) => {
         return acc;
     }, {});
 
+    logVerbose('Permisos disponibles:', permisos);
+    logVerbose('Permisos por módulo:', permisosPorModulo);
     res.json({ lista: permisos, porModulo: permisosPorModulo });
 };
 
@@ -272,6 +275,7 @@ const asignarRoles = async (req, res) => {
         }
 
         await conn.query('UPDATE usuarios SET rol = ? WHERE id = ?', [rol, id]);
+        logVerbose('Rol asignado exitosamente para el usuario:', id);
 
         res.json({ message: 'Rol asignado exitosamente' });
     } catch (err) {
@@ -315,6 +319,7 @@ const cambiarPassword = async (req, res) => {
 
         await conn.query('UPDATE usuarios SET password_hash = ? WHERE id = ?', [passwordHash, req.user.id]);
 
+        logVerbose('Contraseña actualizada exitosamente para el usuario:', req.user.id);
         res.json({ message: 'Contraseña actualizada exitosamente' });
     } catch (err) {
         logError('Error cambiando contraseña:', err);

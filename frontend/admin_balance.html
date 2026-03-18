@@ -5,40 +5,22 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Admin — Balance</title>
-    <!-- estilos comunes (dark theme, botones, responsive) similares a admin_solicitudes -->
     <link rel="stylesheet" href="/css/tailwind.min.css">
-    <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: #0c0a09;
-            min-height: 100vh;
-            color: #d6d3d1;
-        }
-
-        header.bg-rustic {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 9999;
-        }
-    </style>
-    <!-- agrego un query string para forzar recarga cuando se actualiza el JS/CSS -->
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
     <link rel="stylesheet" href="admin_balance.css?v=10">
-    <script src="./navbar.js"></script>
 </head>
 
 <body>
-    <main class="container">
-        <h1 class="text-center text-secondary text-2xl pt-20">Admin — Balance</h1>
+    <script src="/navbar.js"></script>
+    <main class="wrap">
+        <div class="page-header">
+            <a href="admin.html" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <h1>Admin — Balance</h1>
+            <div class="spacer"></div>
+        </div>
 
         <!-- Banner de notificación (verde para nuevos ingresos) -->
         <div id="banner" class="banner hidden" role="status" aria-live="polite"></div>

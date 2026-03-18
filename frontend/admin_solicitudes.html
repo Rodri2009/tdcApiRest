@@ -6,657 +6,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Panel de Administración - Solicitudes</title>
     <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
     <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
+        /* Estilos exclusivos de admin_solicitudes */
+
+        .wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px 16px;
         }
 
-        .text-neon {
-            color: var(--color-secondary);
+        h1 {
+            font-size: 2em;
+            margin-bottom: 30px;
+            margin-top: 2rem;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2.25rem !important;
+            font-weight: bold;
             text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
         }
 
-        .bg-rustic {
-            background-color: var(--color-rustic);
+        /* Estado row colors */
+        .estado-solicitado {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
         }
-    </style>
-</head>
-
-<style>
-    :root {
-        --color-primary: #581c87;
-        --color-secondary: #f0abfc;
-        --color-rustic: #44403c;
-    }
-
-    * {
-        box-sizing: border-box;
-    }
-
-    body {
-        font-family: 'Inter', sans-serif;
-        margin: 0;
-        padding: 0;
-        background: #0c0a09;
-        min-height: 100vh;
-        color: #d6d3d1;
-    }
-
-    /* Si la navbar está presente, dejarla fija en el top */
-    header.bg-rustic {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 9999;
-    }
-
-    .text-neon {
-        color: var(--color-secondary);
-        text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-    }
-
-    .bg-rustic {
-        background-color: var(--color-rustic);
-    }
-
-    h1 {
-        text-align: center;
-        color: var(--color-secondary);
-        font-size: 2em;
-        margin-bottom: 30px;
-        margin-top: 2rem;
-        text-shadow: 0 0 5px var(--color-secondary);
-    }
-
-    h2 {
-        text-align: center;
-        margin-bottom: 5px;
-        font-size: 2.25rem !important;
-        font-weight: bold;
-        color: var(--color-secondary);
-        text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-    }
-
-    .wrap {
-        max-width: 1600px;
-        margin: 0 auto;
-        padding: 20px 16px;
-    }
-
-    .table-container {
-        max-width: 100%;
-        margin: 0 auto;
-        background: #1a1a1a;
-        padding: 20px;
-        padding-left: 32px;
-        padding-right: 32px;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-        overflow-x: auto;
-        border: 1px solid rgba(240, 171, 252, 0.1);
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        table-layout: fixed;
-    }
-    /* ajustar anchos de columnas en escritorio */
-    @media (min-width: 768px) {
-        table th:nth-child(1), table td:nth-child(1) { /* ID */
-            width: 80px;
+        .estado-contactado {
+            background: linear-gradient(90deg, rgba(66, 153, 225, 0.03), rgba(66, 153, 225, 0.02));
         }
-        table th:nth-child(3), table td:nth-child(3) { /* Tipo */
-            width: 230px;
-        }
-        table th:nth-child(4), table td:nth-child(4) { /* Cliente */
-            width: 100px;
-        }
-        table th:nth-child(5), table td:nth-child(5) { /* Fecha Evento */
-            width: 110px;
-        }
-        table th:nth-child(6), table td:nth-child(6) { /* Hora Inicio */
-            width: 80px;
-        }
-        table th:nth-child(7), table td:nth-child(7) { /* FLYER */
-            width: 200px;
-        }
-        table th:nth-child(8), table td:nth-child(8) { /* DESCRIPCION */
-            width: 230px;
-        }
-    }
-
-    th,
-    td {
-        padding: 12px 16px;
-        border-bottom: 1px solid #333;
-        text-align: left;
-        font-size: 14px;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-        word-break: break-word;
-        white-space: normal;
-        vertical-align: middle;
-        cursor: pointer; /* asegurar puntero mano sobre cada celda también */
-    }
-
-    th {
-        background: linear-gradient(135deg, #581c87 0%, #764ba2 100%);
-        color: var(--color-secondary);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    tr:hover {
-        background-color: rgba(240, 171, 252, 0.05);
-        transition: background-color 0.2s ease;
-        cursor: pointer; /* mostrar puntero de mano en desktop */
-    }
-
-    /* Colores suaves según estado */
-    .estado-solicitado {
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
-    }
-
-    .estado-contactado {
-        background: linear-gradient(90deg, rgba(66, 153, 225, 0.03), rgba(66, 153, 225, 0.02));
-    }
-
-    .estado-confirmado {
-        background: linear-gradient(90deg, rgba(72, 187, 120, 0.08), rgba(72, 187, 120, 0.06));
-        border-left: 4px solid #10B981;
-    }
-
-    .estado-confirmado td {
-        font-weight: 600;
-    }
-
-    .estado-cancelado {
-        background: linear-gradient(90deg, rgba(245, 101, 101, 0.03), rgba(245, 101, 101, 0.02));
-    }
-
-    .actions-cell {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        gap: 8px;
-        /* alinear al inicio para que los íconos no salten cuando la fila crece de altura */
-        align-items: flex-start;
-        justify-content: flex-start;
-        min-width: 150px;
-        cursor: pointer; /* asegurar manito cuando se pasa sobre el contenedor */
-    }
-    .actions-cell * {
-        cursor: pointer;
-    }
-
-    .action-btn {
-        padding: 8px 14px;
-        border-radius: 6px;
-        border: none;
-        cursor: pointer;
-        color: #fff;
-        font-size: 13px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
-
-    .action-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .action-btn:active {
-        transform: translateY(0);
-    }
-
-    /* Row position relative para que el overlay se posicione respecto a toda la fila */
-    tbody tr {
-        position: relative;
-        overflow: visible;
-    }
-
-    /* Estado Badge Styles */
-    .estado-badge {
-        display: inline-block;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 13px;
-        text-align: center;
-        min-width: 100px;
-    }
-
-    .estado-badge.solicitado {
-        background: #3b82f6;
-        color: #fff;
-    }
-
-    .estado-badge.contactado {
-        background: #8b5cf6;
-        color: #fff;
-    }
-
-    .estado-badge.confirmado {
-        background: #10b981;
-        color: #fff;
-    }
-
-    .estado-badge.cancelado {
-        background: #ef4444;
-        color: #fff;
-    }
-
-    .privado-indicator {
-        display: inline-block;
-        margin-top: 4px;
-        padding: 4px 8px;
-        background: #6b7280;
-        color: #fff;
-        font-size: 11px;
-        border-radius: 4px;
-        font-weight: 500;
-    }
-
-    /* Icon Buttons */
-    .icon-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border-radius: 50%;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-        color: #fff;
-        font-size: 16px;
-        flex-shrink: 0;
-    }
-
-    .icon-btn:hover {
-        transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    .icon-btn.btn-edit {
-        background: #f59e0b;
-    }
-
-    .icon-btn.btn-delete {
-        background: #ef4444;
-    }
-
-    .icon-btn.btn-assign {
-        background: #8b5cf6;
-    }
-
-    .icon-btn.btn-work-order {
-        background: #06b6d4;
-    }
-
-    /* Modification hand overlay - aparece en hover */
-    .row-hover-overlay {
-        cursor: pointer;
-        background: #f093fb;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        z-index: 100;
-        transition: transform 0.2s ease;
-    }
-
-    .row-hover-overlay:hover {
-        transform: scale(1.15);
-    }
-
-    .btn-edit {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-
-    .btn-edit-event {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-
-    .btn-delete {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-        color: #333;
-    }
-
-    .btn-delete-event {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-        color: #333;
-    }
-
-    .btn-assign {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-
-    .btn-work-order {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
-
-    select.estado-select {
-        padding: 8px 12px;
-        border: 2px solid #667eea;
-        border-radius: 6px;
-        font-size: 13px;
-        background-color: #fff;
-        color: #333;
-        cursor: pointer;
-        transition: border-color 0.3s ease;
-        box-sizing: border-box;
-        max-width: 100%;
-    }
-
-    select.estado-select:hover {
-        border-color: #764ba2;
-    }
-
-    select.estado-select:focus {
-        outline: none;
-        border-color: #764ba2;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    /* Media query para pantallas medianas (tablets y laptops pequeñas) */
-    @media (max-width: 1024px) {
-        .table-container {
-            padding: 16px;
-            padding-left: 16px;
-            padding-right: 16px;
+        .estado-cancelado {
+            background: linear-gradient(90deg, rgba(245, 101, 101, 0.03), rgba(245, 101, 101, 0.02));
         }
 
-        table {
-            width: 100%;
-        }
+        /* Columnas específicas con wrap */
+        th:nth-child(3), td:nth-child(3) { white-space: normal; min-width: 130px; }
+        th:nth-child(4), td:nth-child(4) { min-width: 110px; }
+        th:nth-child(8), td:nth-child(8) { white-space: normal; max-width: 250px; min-width: 150px; word-break: break-word; }
 
-        th,
-        td {
-            padding: 10px 12px;
-            font-size: 13px;
-        }
-
-        .action-btn {
-            padding: 6px 10px;
-            font-size: 12px;
-        }
-    }
-
-    /* Media query para pantallas pequeñas (tablets) */
-    @media (max-width: 900px) {
-        .table-container {
-            padding: 12px;
-            padding-left: 12px;
-            padding-right: 12px;
-        }
-
-        table {
-            width: 100%;
-        }
-
-        th,
-        td {
-            padding: 8px 10px;
-            font-size: 12px;
-        }
-
-        .action-btn {
-            padding: 5px 8px;
-            font-size: 11px;
-            min-width: 60px;
-        }
-    }
-
-    .label {
-        font-weight: 600;
-        color: #2c3e50;
-    }
-
-    #loader {
-        text-align: center;
-        padding: 40px;
-        color: #667eea;
-        font-weight: 600;
-        font-size: 16px;
-    }
-
-    #notification-banner {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translate(-50%, 150%);
-        padding: 16px 24px;
-        border-radius: 8px;
-        color: #fff;
-        font-weight: 600;
-        font-size: 14px;
-        transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        max-width: 90%;
-        text-align: center;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-    }
-
-    #notification-banner.show {
-        transform: translate(-50%, 0);
-    }
-
-    #notification-banner.success {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
-
-    #notification-banner.error {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    }
-
-    #notification-banner.info {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-
-    #notification-banner.warning {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-
-    /* Responsive: stack cells on small screens */
-    @media (max-width: 768px) {
-        h1 {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-        }
-
-        .table-container {
-            padding: 12px;
-            background: #1a1a1a;
-            border: 1px solid rgba(240, 171, 252, 0.1);
-            overflow-x: auto;
-        }
-
-        table,
-        thead,
-        tbody,
-        th,
-        td,
-        tr {
-            display: block;
-        }
-
-        thead {
-            display: none;
-        }
-
-        tr {
-            margin-bottom: 16px;
-            border: 1px solid rgba(240, 171, 252, 0.2);
-            padding: 12px;
-            border-radius: 8px;
-            background: #2a2a2a;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        tr:hover {
-            background-color: #333333;
-            box-shadow: 0 4px 12px rgba(240, 171, 252, 0.15);
-            border-color: rgba(240, 171, 252, 0.4);
-            cursor: pointer; /* mano también en vista móvil/compacta */
-        }
-
-        td {
-            display: grid;
-            grid-template-columns: 90px 1fr;
-            gap: 8px;
-            padding: 10px 8px;
-            border: none;
-            align-items: center;
-            color: #d6d3d1;
-            word-break: break-word;
-            overflow-wrap: break-word;
-        }
-
-        td::before {
-            content: attr(data-label);
-            font-weight: 600;
-            color: var(--color-secondary);
-            text-transform: uppercase;
-            font-size: 12px;
-            letter-spacing: 0.5px;
-            text-shadow: 0 0 5px rgba(240, 171, 252, 0.5);
-        }
-
-        td.label {
-            display: none;
-        }
-
-        .actions-cell {
-            grid-column: 1 / -1;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            padding: 12px 8px;
-            margin-top: 8px;
-            border-top: 1px solid rgba(240, 171, 252, 0.2);
-            cursor: pointer;
-        }
-        .actions-cell * {
-            cursor: pointer;
-        }
-
-        .action-btn {
-            flex: 1;
-            min-width: 100px;
-            padding: 10px 12px;
-            font-size: 12px;
-            border-radius: 6px;
-        }
+        table { min-width: 820px; }
 
         select.estado-select {
-            width: 100%;
             padding: 8px 12px;
             border: 2px solid #667eea;
             border-radius: 6px;
+            font-size: 13px;
             background-color: #2a2a2a;
-            color: #d6d3d1;
+            color: var(--color-text);
+            cursor: pointer;
+            transition: border-color 0.3s ease;
             box-sizing: border-box;
-        }
-    }
-
-    @media (max-width: 480px) {
-        body {
-            padding: 0;
+            max-width: 100%;
         }
 
-        h1 {
-            font-size: 1.3em;
-            margin-bottom: 16px;
+        select.estado-select:hover  { border-color: #764ba2; }
+        select.estado-select:focus  { outline: none; border-color: #764ba2; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+
+        .actions-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .actions-buttons { display: flex; gap: 6px; }
+
+        #loader {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 16px;
         }
-
-        .table-container {
-            padding: 8px;
-            overflow-x: auto;
-        }
-
-        td {
-            grid-template-columns: 100px 1fr;
-        }
-
-        .action-btn {
-            min-width: 80px;
-            padding: 8px 10px;
-            font-size: 11px;
-        }
-    }
-
-    /* Estilos para navbar inyectado */
-    :root {
-        --color-primary: #581c87;
-        --color-secondary: #f0abfc;
-        --color-rustic: #44403c;
-    }
-
-    .text-neon {
-        color: var(--color-secondary);
-        text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-    }
-
-    .bg-rustic {
-        background-color: var(--color-rustic);
-    }
-</style>
-<link rel="stylesheet" href="/css/fontawesome.min.css">
+    </style>
 <script src="./navbar.js"></script>
 </head>
 
 <body>
     <main class="wrap">
-        <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; margin-top: 1rem;">
-            <a href="admin.html"
-                style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
+        <div class="page-header">
+            <a href="admin.html" class="btn-back">
                 <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
-                    </path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                 </svg> Volver al Panel
             </a>
-            <!-- <h2 style="margin: 0;">Panel de Administración de Solicitudes</h2> -->
             <h1 class="text-4xl font-bold">Administración de Solicitudes</h1>
-
-            <div style="width: 140px;"></div>
+            <div class="spacer"></div>
         </div>
 
         <!-- FILTROS -->
-        <div
-            style="background: #1a1a1a; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid rgba(240, 171, 252, 0.1);">
-            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+        <div class="filters-panel">
+            <div class="filters-row">
                 <!-- Búsqueda por texto -->
-                <div style="flex: 1; min-width: 200px;">
-                    <label
-                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Buscar</label>
-                    <input type="text" id="filtro-busqueda" placeholder="Cliente, ID, banda..."
-                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                <div class="filter-field" style="flex: 1; min-width: 200px;">
+                    <label>Buscar</label>
+                    <input type="text" id="filtro-busqueda" placeholder="Cliente, ID, banda...">
                 </div>
 
                 <!-- Filtro por Estado -->
-                <div style="min-width: 150px;">
-                    <label
-                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Estado</label>
-                    <select id="filtro-estado"
-                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                <div class="filter-field">
+                    <label>Estado</label>
+                    <select id="filtro-estado">
                         <option value="">Todos</option>
                         <option value="Solicitado">Solicitado</option>
                         <option value="Contactado">Contactado</option>
@@ -666,11 +113,9 @@
                 </div>
 
                 <!-- Filtro por Tipo -->
-                <div style="min-width: 180px;">
-                    <label
-                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Tipo</label>
-                    <select id="filtro-tipo"
-                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                <div class="filter-field">
+                    <label>Tipo</label>
+                    <select id="filtro-tipo">
                         <option value="">Todos</option>
                         <option value="ALQUILER_SALON">Alquiler del Salón</option>
                         <option value="FECHA_BANDAS">Fecha para Bandas</option>
@@ -680,34 +125,27 @@
                 </div>
 
                 <!-- Filtro por Fecha Desde -->
-                <div style="min-width: 150px;">
-                    <label
-                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Fecha
-                        Desde</label>
-                    <input type="date" id="filtro-fecha-desde"
-                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                <div class="filter-field">
+                    <label>Fecha Desde</label>
+                    <input type="date" id="filtro-fecha-desde">
                 </div>
 
                 <!-- Filtro por Fecha Hasta -->
-                <div style="min-width: 150px;">
-                    <label
-                        style="display: block; margin-bottom: 4px; color: var(--color-secondary); font-size: 12px; text-transform: uppercase;">Fecha
-                        Hasta</label>
-                    <input type="date" id="filtro-fecha-hasta"
-                        style="width: 100%; padding: 8px 12px; border: 2px solid #444; border-radius: 6px; background: #2a2a2a; color: #d6d3d1; font-size: 14px;">
+                <div class="filter-field">
+                    <label>Fecha Hasta</label>
+                    <input type="date" id="filtro-fecha-hasta">
                 </div>
 
                 <!-- Botón Limpiar -->
-                <div>
-                    <button id="btn-limpiar-filtros"
-                        style="padding: 8px 16px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; cursor: pointer; font-size: 14px;">
+                <div class="filter-field" style="justify-content: flex-end;">
+                    <button id="btn-limpiar-filtros" class="btn btn-primary">
                         <i class="fas fa-times"></i> Limpiar
                     </button>
                 </div>
             </div>
 
             <!-- Contador de resultados -->
-            <div id="contador-resultados" style="margin-top: 12px; color: #888; font-size: 13px;"></div>
+            <div id="contador-resultados" class="filter-results"></div>
         </div>
 
         <div class="table-container" id="admin-table-container">
@@ -724,7 +162,6 @@
                         <th>Hora Inicio</th>
                         <th>Flyer</th>
                         <th>Descripción</th>
-                        <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -906,7 +343,7 @@
 
                 function verOrdenDeTrabajo(id) {
                     if (!id) return;
-                    window.location.href = `/editar_orden_de_trabajo.html?solicitudId=${id}`;
+                    window.location.href = `/admin_orden_de_trabajo.html?solicitudId=${id}`;
                 }
 
                 function modificarSolicitud(id, categoria, origen) {
@@ -1066,14 +503,6 @@
                         console.log('  Gestionar Personal:', puedeGestionarPersonal);
 
                         // Botones como iconos
-                        if (puedeEliminarSolicitudes) {
-                            if (isEvento) {
-                                botones += `<button class="icon-btn btn-delete btn-delete-event" title="Eliminar solicitud" data-id="${solicitud.id}">🗑️</button>`;
-                            } else {
-                                botones += `<button class="icon-btn btn-delete btn-delete" title="Eliminar solicitud" data-id="${solicitud.id}">🗑️</button>`;
-                            }
-                        }
-
                         if (isConfirmado) {
                             // Mostrar botón "Asignar Personal" con icono siempre que esté confirmado (si tiene permiso)
                             if (puedeGestionarPersonal) {
@@ -1085,10 +514,7 @@
                             }
                         }
 
-                        // Si no tiene ningún permiso de edición, mostrar solo lectura
-                        if (!botones) {
-                            botones = '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>';
-                        }
+
 
                         // Mapear categoría a nombre legible
                         const tiposLegibles = {
@@ -1121,7 +547,8 @@
                         // Banda/Artista and Cantidad/Aforo removed from admin view (use descripcionCorta/tipoNombre)
                         // (Field kept in other forms/controllers if needed)
 
-                        tr.innerHTML = `<td data-label="Creado" title="ID: ${solicitud.id}">${fechaSolicitud}</td><td data-label="Fecha Solicitud" style="display:none;">${fechaSolicitud}</td><td data-label="Tipo">${solicitud.tipoNombre || tipoLegible}</td><td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td><td data-label="Fecha Evento">${fechaEvento}</td><td data-label="Hora Inicio">${horaInicio}</td><td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td><td data-label="Descripción"><div class="description">${descripcionCorta}</div></td><td data-label="Estado"><div class="estado-badge ${String(solicitud.estado).toLowerCase()}">${solicitud.estado}</div>${!solicitud.es_publico ? '<div class="privado-indicator">🔒 Privado</div>' : ''}</td><td data-label="Acciones"><div class="actions-cell">${botones}</div></td>`;
+                        const estadoDisplay = `<div class="estado-badge ${String(solicitud.estado).toLowerCase()}">${solicitud.estado}</div>${!solicitud.es_publico ? '<div class="privado-indicator">🔒 Privado</div>' : ''}`;
+                        tr.innerHTML = `<td data-label="Creado" title="ID: ${solicitud.id}">${fechaSolicitud}</td><td data-label="Fecha Solicitud" style="display:none;">${fechaSolicitud}</td><td data-label="Tipo">${solicitud.tipoNombre || tipoLegible}</td><td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td><td data-label="Fecha Evento">${fechaEvento}</td><td data-label="Hora Inicio">${horaInicio}</td><td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td><td data-label="Descripción"><div class="description">${descripcionCorta}</div></td><td data-label="Acciones"><div class="actions-cell">${estadoDisplay}<div class="actions-buttons">${botones}</div></div></td>`;
 
                         tbody.appendChild(tr);
 

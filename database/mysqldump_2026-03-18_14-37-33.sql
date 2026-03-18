@@ -123,6 +123,16 @@ LOCK TABLES `eventos_bandas_invitadas` WRITE;
 UNLOCK TABLES;
 
 --
+-- Dumping data for table `eventos_confirmados`
+--
+
+LOCK TABLES `eventos_confirmados` WRITE;
+/*!40000 ALTER TABLE `eventos_confirmados` DISABLE KEYS */;
+INSERT INTO `eventos_confirmados` (`id`, `id_solicitud`, `tipo_evento`, `tabla_origen`, `nombre_evento`, `descripcion`, `url_flyer`, `fecha_evento`, `hora_inicio`, `duracion_estimada`, `id_cliente`, `es_publico`, `activo`, `genero_musical`, `cantidad_personas`, `tipo_servicio`, `nombre_taller`, `confirmado_en`, `actualizado_en`, `cancelado_en`) VALUES (1,2,'ALQUILER_SALON','solicitudes_alquiler','Fiesta de 15 años - Luz','Fiesta de quince años con servicio completo de catering, meseras y sonido profesional.',NULL,'2026-03-22','16:00:00','6 horas',2,0,1,NULL,NULL,NULL,NULL,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL),(2,4,'BANDA','solicitudes_fechas_bandas','Reite - Tributo a La Renga','Show completo del tributo a La Renga. Viernes noche. Fecha propia confirmada.',NULL,'2026-03-30','22:00:00','3 horas',1,1,1,NULL,NULL,NULL,NULL,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL),(3,5,'BANDA','solicitudes_fechas_bandas','Las Mentas en Vivo','Show abierto al público de la banda Las Mentas. Rock alternativo de buena calidad.',NULL,'2026-04-10','20:00:00','2.5 horas',5,1,1,NULL,NULL,NULL,NULL,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL),(4,8,'TALLER','solicitudes_talleres','Taller de Masaje Descontracturante','Sesión grupal de masaje descontracturante. Técnicas relajantes y terapéuticas.',NULL,'2026-03-08','10:00:00','90 minutos',2,1,1,NULL,NULL,NULL,NULL,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL);
+/*!40000 ALTER TABLE `eventos_confirmados` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Dumping data for table `eventos_lineup`
 --
 
@@ -234,7 +244,6 @@ UNLOCK TABLES;
 
 LOCK TABLES `precios_talleres` WRITE;
 /*!40000 ALTER TABLE `precios_talleres` DISABLE KEYS */;
-INSERT INTO `precios_talleres` (`id`, `tipo_taller_id`, `taller_id`, `modalidad`, `cantidad_clases`, `precio`, `vigente_desde`, `vigente_hasta`, `vigente`) VALUES (1,NULL,1,'clase_suelta',1,3500.00,'2026-01-01',NULL,1),(2,NULL,1,'paquete',4,12000.00,'2026-01-01',NULL,1),(3,NULL,1,'paquete',8,22000.00,'2026-01-01',NULL,1),(4,NULL,2,'clase_suelta',1,3500.00,'2026-01-01',NULL,1),(5,NULL,2,'paquete',4,12000.00,'2026-01-01',NULL,1),(6,NULL,3,'clase_suelta',1,4000.00,'2026-01-01',NULL,1),(7,NULL,3,'paquete',4,14000.00,'2026-01-01',NULL,1),(8,NULL,3,'paquete',8,26000.00,'2026-01-01',NULL,1),(9,NULL,4,'clase_suelta',1,2500.00,'2026-01-01',NULL,1),(10,NULL,4,'paquete',4,9000.00,'2026-01-01',NULL,1),(11,NULL,4,'paquete',8,16500.00,'2026-01-01',NULL,1),(12,NULL,5,'clase_suelta',1,2800.00,'2026-01-01',NULL,1),(13,NULL,5,'paquete',4,10000.00,'2026-01-01',NULL,1),(14,NULL,6,'clase_suelta',1,5000.00,'2026-01-01',NULL,1),(15,NULL,6,'paquete',4,18000.00,'2026-01-01',NULL,1);
 /*!40000 ALTER TABLE `precios_talleres` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -352,7 +361,6 @@ UNLOCK TABLES;
 
 LOCK TABLES `talleres` WRITE;
 /*!40000 ALTER TABLE `talleres` DISABLE KEYS */;
-INSERT INTO `talleres` (`id`, `tipo_taller_id`, `tallerista_id`, `id_cliente`, `nombre`, `descripcion`, `dia_semana`, `hora_inicio`, `hora_fin`, `duracion_minutos`, `cupo_maximo`, `cupo_minimo`, `ubicacion`, `activo`, `creado_en`) VALUES (1,'TALLER_DANZA',1,NULL,'Danza Contemporánea','Clases de danza contemporánea para adultos. Trabajo corporal, improvisación y técnica.','martes','19:00:00','20:30:00',90,12,4,'Salón TDC',1,'2026-03-18 18:42:25'),(2,'TALLER_DANZA',1,NULL,'Flamenco Inicial','Introducción al flamenco. Palmas, zapateado y movimiento de brazos. Apto para principiantes.','jueves','18:00:00','19:30:00',90,10,3,'Salón TDC',1,'2026-03-18 18:42:25'),(3,'TALLER_MUSICA',2,NULL,'Guitarra para Adultos','Guitarra popular y clásica para adultos. Lectura de cifrado y partituras básicas.','lunes','17:00:00','18:00:00',60,8,3,'Salón TDC',1,'2026-03-18 18:42:25'),(4,'TALLER_YOGA',3,NULL,'Hatha Yoga','Práctica de Hatha Yoga combinando posturas (asanas), respiración y relajación profunda.','miercoles','09:00:00','10:00:00',60,15,4,'Salón TDC',1,'2026-03-18 18:42:25'),(5,'TALLER_YOGA',3,NULL,'Yoga y Meditación','Sesión de Vinyasa Yoga fluido seguida de meditación guiada de 20 minutos.','sabado','10:00:00','11:30:00',90,15,4,'Salón TDC',1,'2026-03-18 18:42:25'),(6,'TALLER_ARTE',4,NULL,'Pintura y Técnicas Mixtas','Exploración libre con acrílicos, acuarelas y collage. Todas las edades.','viernes','16:00:00','18:00:00',120,10,3,'Salón TDC',1,'2026-03-18 18:42:25');
 /*!40000 ALTER TABLE `talleres` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -362,7 +370,6 @@ UNLOCK TABLES;
 
 LOCK TABLES `talleristas` WRITE;
 /*!40000 ALTER TABLE `talleristas` DISABLE KEYS */;
-INSERT INTO `talleristas` (`id`, `nombre`, `especialidad`, `bio`, `telefono`, `email`, `instagram`, `activo`, `creado_en`) VALUES (1,'Sofía Herrera','Danza contemporánea y flamenco','Bailarina y docente con 10 años de experiencia en danza contemporánea y flamenco. Formada en el IUNA.','1123456789','sofia.herrera@mail.com','@sofiaherrera.danza',1,'2026-03-18 18:42:12'),(2,'Marcos Delgado','Guitarra y teoría musical','Músico egresado del Conservatorio Municipal. Docente de guitarra clásica y popular desde 2015.','1134567890','marcos.delgado@mail.com','@marcosdelgado.musica',1,'2026-03-18 18:42:12'),(3,'Valeria Ríos','Yoga y meditación','Instructora certificada de Hatha y Vinyasa Yoga. Facilitadora de mindfulness y meditación guiada.','1145678901','valeria.rios@mail.com','@valeria.yoga',1,'2026-03-18 18:42:12'),(4,'Tomás Ferreira','Artes plásticas y manualidades','Artista plástico y docente. Trabaja con pintura, collage, arcilla y técnicas mixtas para todas las edades.','1156789012','tomas.ferreira@mail.com','@tomasferreira.arte',1,'2026-03-18 18:42:12');
 /*!40000 ALTER TABLE `talleristas` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -402,4 +409,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-18 18:44:14
+-- Dump completed on 2026-03-18 17:37:33

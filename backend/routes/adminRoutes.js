@@ -13,7 +13,11 @@ const {
     cancelarEvento,
     eliminarEvento,
     getEventosConfirmados,
-    getEventoById
+    getEventoById,
+    getRolesPorEvento,
+    createRolPorEvento,
+    updateRolPorEvento,
+    deleteRolPorEvento,
 } = require('../controllers/adminController');
 
 
@@ -173,6 +177,14 @@ router.put('/personal/pagos/:id', checkPermiso('config.alquiler'), personalTarif
 router.delete('/personal/pagos/:id', checkPermiso('config.alquiler'), personalTarifas.deletePago);
 
 // =============================================================================
+// =============================================================================
+// ROLES POR EVENTO
+// =============================================================================
+router.get('/roles-por-evento', getRolesPorEvento);
+router.post('/roles-por-evento', checkPermiso('personal.gestionar'), createRolPorEvento);
+router.put('/roles-por-evento/:id', checkPermiso('personal.gestionar'), updateRolPorEvento);
+router.delete('/roles-por-evento/:id', checkPermiso('personal.gestionar'), deleteRolPorEvento);
+
 // DEBUG
 // =============================================================================
 router.get('/debug/asignaciones/:id', async (req, res) => {

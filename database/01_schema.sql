@@ -633,6 +633,7 @@ CREATE TABLE IF NOT EXISTS talleres (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tipo_taller_id VARCHAR(255) NOT NULL COMMENT 'FK a opciones_tipos.id_tipo_evento',
     tallerista_id INT COMMENT 'FK a talleristas.id',
+    id_cliente INT COMMENT 'FK a clientes.id_cliente',
     nombre VARCHAR(255) NOT NULL,
     descripcion TEXT,
     dia_semana VARCHAR(20) COMMENT 'lunes, martes, etc.',

@@ -6,176 +6,136 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin - Eventos Confirmados</title>
     <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
     <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-        }
-
-        .text-neon {
-            color: var(--color-secondary);
-            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-        }
-
-        .bg-rustic {
-            background-color: var(--color-rustic);
-        }
-
-        .wrap {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 20px 16px;
-        }
-
-        body {
-            font-family: Inter, sans-serif;
-            background: #0c0a09;
-            color: #d6d3d1;
-            padding: 0;
-            margin: 0;
-        }
-
-        .table-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: #1a1a1a;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid rgba(240, 171, 252, 0.08);
-            overflow-x: auto
-        }
-
-        th,
-        td {
-            padding: 10px 12px;
-            text-align: left;
-            font-size: 14px;
-            border-bottom: 1px solid #222
-        }
-
-        th {
-            background: linear-gradient(135deg, #581c87, #764ba2);
-            color: #f0abfc;
-            text-transform: uppercase;
-            font-weight: 700
-        }
-
-        .filters {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
-            flex-wrap: wrap
-        }
-
-        .description {
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            max-width: 360px
-        }
-
-        /* Flyer thumbnail */
-        .flyer-thumb {
-            width: 90px;
-            height: 56px;
-            object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-        }
-
-        .btn {
-            background: #764ba2;
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer
-        }
-
-        #loader {
-            text-align: center;
-            padding: 24px;
-            color: #9f7aea
-        }
+        .wrap { max-width: 1600px; margin: 0 auto; padding: 20px 16px; }
+        #loader { text-align: center; padding: 24px; color: #9f7aea; }
+        table { min-width: 700px; }
+        td.description { white-space: normal; max-width: 260px; word-break: break-word; }
     </style>
 </head>
 
 <body>
-
+    <script src="/navbar.js"></script>
     <main class="wrap">
-        <div class="table-container">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                <h2 style="color:#f0abfc;margin:0">Eventos Confirmados</h2>
-                <div>
-                    <button id="refreshBtn" class="btn">Actualizar</button>
-                </div>
-            </div>
+        <div class="page-header">
+            <a href="admin.html" class="btn-back">
+                <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg> Volver al Panel
+            </a>
+            <h1>Eventos Confirmados</h1>
+            <div class="spacer"></div>
+        </div>
 
-            <div class="filters" aria-hidden="false">
-                <select id="tipoFilter">
-                    <option value="">-- Tipo de evento (todos) --</option>
-                    <option value="ALQUILER">ALQUILER</option>
-                    <option value="BANDA">BANDA</option>
-                    <option value="TALLER">TALLER</option>
-                    <option value="SERVICIO">SERVICIO</option>
-                </select>
-                <input type="date" id="desde" />
-                <input type="date" id="hasta" />
-                <label style="display:inline-flex;align-items:center;gap:6px">Hora desde <input type="time"
-                        id="hora_desde" /></label>
-                <label style="display:inline-flex;align-items:center;gap:6px">Hora hasta <input type="time"
-                        id="hora_hasta" /></label>
-                <label style="display:inline-flex;align-items:center;gap:6px">Ordenar
+        <div class="filters-panel">
+            <div class="filters-row">
+                <div class="filter-field">
+                    <label>Tipo</label>
+                    <select id="tipoFilter">
+                        <option value="">Todos</option>
+                        <option value="ALQUILER">Alquiler</option>
+                        <option value="BANDA">Banda</option>
+                        <option value="TALLER">Taller</option>
+                        <option value="SERVICIO">Servicio</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>Desde</label>
+                    <input type="date" id="desde" />
+                </div>
+                <div class="filter-field">
+                    <label>Hasta</label>
+                    <input type="date" id="hasta" />
+                </div>
+                <div class="filter-field">
+                    <label>Hora desde</label>
+                    <input type="time" id="hora_desde" />
+                </div>
+                <div class="filter-field">
+                    <label>Hora hasta</label>
+                    <input type="time" id="hora_hasta" />
+                </div>
+                <div class="filter-field">
+                    <label>Ordenar por</label>
                     <select id="order_by">
                         <option value="fecha_evento">Fecha</option>
                         <option value="hora_inicio">Hora</option>
                         <option value="nombre_evento">Nombre</option>
                     </select>
+                </div>
+                <div class="filter-field">
+                    <label>Dirección</label>
                     <select id="order_dir">
                         <option value="DESC">Desc</option>
                         <option value="ASC">Asc</option>
                     </select>
-                </label>
-                <input type="number" id="limit" placeholder="Por página" style="width:110px" value="20" />
-                <button id="filtrarBtn" class="btn">Filtrar</button>
+                </div>
+                <div class="filter-field">
+                    <label>Por página</label>
+                    <input type="number" id="limit" value="20" style="width:90px" />
+                </div>
+                <div class="filter-field" style="justify-content:flex-end">
+                    <button id="filtrarBtn" class="btn btn-primary">Filtrar</button>
+                    <button id="refreshBtn" class="btn btn-secondary" style="margin-left:8px">Actualizar</button>
+                </div>
             </div>
+        </div>
 
+        <div class="table-container">
             <div id="loader" style="display:none">Cargando...</div>
 
-            <div id="tabla" style="overflow-x:auto">
-                <table id="eventsTable">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Hora</th>
-                            <th>Tipo</th>
-                            <th>Cliente</th>
-                            <th>Nombre</th>
-                            <th>Flyer</th>
-                            <th>Detalles</th>
-                            <th>Descripción</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+            <table id="eventsTable">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Tipo</th>
+                        <th>Cliente</th>
+                        <th>Nombre</th>
+                        <th>Flyer</th>
+                        <th>Detalles</th>
+                        <th>Descripción</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
 
-            <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
-                <button id="prevPage" class="btn">Anterior</button>
-                <span id="pageInfo">Página 1</span>
-                <button id="nextPage" class="btn">Siguiente</button>
+            <div id="empty" style="display:none;padding:24px;text-align:center;color:#9f7aea">
+                No se encontraron eventos con esos filtros.
             </div>
+        </div>
 
-            <div id="empty" style="display:none;padding:20px;text-align:center;color:#9f7aea">No se encontraron eventos
-                con esos filtros.</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:16px">
+            <button id="prevPage" class="btn btn-secondary">Anterior</button>
+            <span id="pageInfo" style="color:var(--color-text-muted)">Página 1</span>
+            <button id="nextPage" class="btn btn-secondary">Siguiente</button>
         </div>
     </main>
-
-    <script src="/navbar.js"></script>
     <script>
         function getToken() { return localStorage.getItem('authToken') }
         function getHeaders() { return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` } }
+
+        function showBanner(message, type = 'info', duration = 4000) {
+            document.querySelectorAll('.notification-banner').forEach(n => {
+                n.classList.remove('show');
+                n.classList.add('hide');
+                setTimeout(() => n.remove(), 350);
+            });
+            const banner = document.createElement('div');
+            banner.className = `notification-banner ${type}`;
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+            document.body.appendChild(banner);
+            requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('show')));
+            setTimeout(() => {
+                banner.classList.remove('show');
+                banner.classList.add('hide');
+                setTimeout(() => banner.remove(), 350);
+            }, duration);
+        }
 
         const $loader = document.getElementById('loader');
         const $tbody = document.querySelector('#eventsTable tbody');
@@ -233,7 +193,7 @@
                         fetchEventos();
                     } catch (err) {
                         console.error('Error cancelando evento', err);
-                        alert('No se pudo cancelar el evento. Revisa la consola.');
+                        showBanner('No se pudo cancelar el evento: ' + err.message, 'error');
                     }
                 }
 
@@ -260,11 +220,29 @@
           `;
                     $tbody.appendChild(tr);
                 }
+                showBanner(`${rows.length} evento${rows.length !== 1 ? 's' : ''} cargado${rows.length !== 1 ? 's' : ''}`, 'success', 2500);
             } catch (err) {
                 console.error('Error fetching eventos confirmados', err);
-                alert('Error al obtener eventos confirmados. Revisa la consola.');
+                showBanner('Error al obtener eventos: ' + err.message, 'error');
             } finally {
                 $loader.style.display = 'none';
+            }
+        }
+
+        async function deleteEvento(id) {
+            if (!confirm('¿Eliminar este evento definitivamente? Esta acción no se puede deshacer.')) return;
+            try {
+                const res = await fetch(`/api/admin/eventos_confirmados/${id}`, { method: 'DELETE', headers: getHeaders() });
+                if (res.status === 401) { window.location.href = '/login.html'; return; }
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || `Error ${res.status}`);
+                }
+                showBanner('Evento eliminado correctamente', 'success');
+                fetchEventos();
+            } catch (err) {
+                console.error('Error eliminando evento', err);
+                showBanner('Error al eliminar evento: ' + err.message, 'error');
             }
         }
 

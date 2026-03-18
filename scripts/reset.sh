@@ -93,6 +93,11 @@ if [ -f "$PROJECT_DIR/.env" ]; then
     set -e
 fi
 
+# Credenciales de administrador para DROP/CREATE DATABASE (requieren SUPER)
+# Usa root + MARIADB_ROOT_PASSWORD si está disponible; si no, cae en DB_USER/DB_PASSWORD
+DB_ADMIN_USER="root"
+DB_ADMIN_PASSWORD="${MARIADB_ROOT_PASSWORD:-${DB_PASSWORD:-}}"
+
 # Parsear argumentos
 show_help() {
     head -43 "$0" | tail -42
@@ -367,14 +372,17 @@ print_debug_config() {
 }
 
 wait_for_mysql_ready() {
-    # espera hasta que el servidor acepte conexiones con las credenciales configuradas
+    # Espera hasta que MariaDB acepte conexiones TCP (no socket).
+    # Usar 127.0.0.1 fuerza TCP: el socket unix está disponible durante la fase
+    # de inicialización (init-mode), pero el puerto TCP solo abre en normal-mode.
+    # Esto evita la race condition donde el ping pasa durante init y luego el
+    # contenedor reinicia al pasar a normal-mode.
     CONTAINER_NAME=$(get_container_name "$DOCKER_DIR")
     if [ -z "$CONTAINER_NAME" ]; then
         echo -e "${RED}\n[!] No se encontró el contenedor de MariaDB${NC}"
         return 1
     fi
-    # el mysqladmin ping retorna 0 cuando el servidor está listo
-    until docker exec "$CONTAINER_NAME" mysqladmin ping -u"$DB_USER" -p"$DB_PASSWORD" --silent &>/dev/null; do
+    until docker exec "$CONTAINER_NAME" mysqladmin ping -h 127.0.0.1 -u"$DB_ADMIN_USER" -p"$DB_ADMIN_PASSWORD" --silent &>/dev/null; do
         echo -n "."
         sleep 1
     done
@@ -557,19 +565,23 @@ run_sql_docker() {
     
     # Ejecutar SQL file dentro del contenedor usando cat
     # El archivo debe estar en /docker-entrypoint-initdb.d/ (montado desde database/)
+    local output exit_code
     if [ "$DEBUG" = true ]; then
-        docker exec "$CONTAINER_NAME" sh -c "cat /docker-entrypoint-initdb.d/$filename | mysql -u '$DB_USER' -p'$DB_PASSWORD' '$DB_NAME'" 2>&1
+        output=$(docker exec "$CONTAINER_NAME" sh -c "cat /docker-entrypoint-initdb.d/$filename | mysql -u '$DB_USER' -p'$DB_PASSWORD' '$DB_NAME'" 2>&1) && exit_code=0 || exit_code=$?
+        [ -n "$output" ] && echo "$output"
     else
-        docker exec "$CONTAINER_NAME" sh -c "cat /docker-entrypoint-initdb.d/$filename | mysql -u '$DB_USER' -p'$DB_PASSWORD' '$DB_NAME'" 2>/dev/null
+        output=$(docker exec "$CONTAINER_NAME" sh -c "cat /docker-entrypoint-initdb.d/$filename | mysql -u '$DB_USER' -p'$DB_PASSWORD' '$DB_NAME'" 2>&1) && exit_code=0 || exit_code=$?
     fi
-    
-    if [ $? -eq 0 ]; then
+
+    if [ $exit_code -eq 0 ]; then
         echo -e "${GREEN}✓ OK${NC}"
         return 0
     else
         echo -e "${RED}✗ FALLÓ${NC}"
         if [ "$DEBUG" = false ]; then
             echo -e "${RED}[!] Usa -d para ver los errores detallados${NC}"
+        else
+            echo -e "${RED}[!] Salida: $output${NC}"
         fi
         return 1
     fi
@@ -578,33 +590,51 @@ run_sql_docker() {
 exec_sql_docker() {
     local sql=$1
     local description=$2
-    
+    local max_retries=5
+    local attempt=0
+    local exit_code
+    local output
+
     echo -ne "${YELLOW}[*]${NC} $description... "
-    
+
     if [ "$DEBUG" = true ]; then
         echo ""
         CONTAINER_NAME=$(get_container_name "$DOCKER_DIR")
-        echo -e "${BLUE}[DEBUG] docker exec $CONTAINER_NAME mysql -u $DB_USER -p... -e '$sql'${NC}"
+        echo -e "${BLUE}[DEBUG] docker exec $CONTAINER_NAME mysql -u $DB_ADMIN_USER -p... -e '$sql'${NC}"
     fi
-    
-    CONTAINER_NAME=$(get_container_name "$DOCKER_DIR")
-    
-    if [ "$DEBUG" = true ]; then
-        docker exec "$CONTAINER_NAME" mysql -u "$DB_USER" -p"$DB_PASSWORD" -e "$sql" 2>&1
-    else
-        docker exec "$CONTAINER_NAME" mysql -u "$DB_USER" -p"$DB_PASSWORD" -e "$sql" 2>/dev/null
-    fi
-    
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ OK${NC}"
-        return 0
-    else
-        echo -e "${RED}✗ FALLÓ${NC}"
-        if [ "$DEBUG" = false ]; then
-            echo -e "${RED}[!] Usa -d para ver los errores detallados${NC}"
+
+    while [ $attempt -lt $max_retries ]; do
+        attempt=$((attempt + 1))
+        CONTAINER_NAME=$(get_container_name "$DOCKER_DIR")
+
+        output=$(docker exec "$CONTAINER_NAME" mysql -u "$DB_ADMIN_USER" -p"$DB_ADMIN_PASSWORD" -e "$sql" 2>&1) && exit_code=0 || exit_code=$?
+
+        if [ $exit_code -eq 0 ]; then
+            echo -e "${GREEN}✓ OK${NC}"
+            [ "$DEBUG" = true ] && [ -n "$output" ] && echo "$output"
+            return 0
         fi
-        return 1
+
+        # Retry si es un error de runtime del contenedor o de conexión MySQL
+        # (MariaDB aún reiniciando entre init-mode y normal-mode)
+        if echo "$output" | grep -qiE "OCI runtime|unable to start container|exec failed|setns|Can't connect|Connection refused|Lost connection|HY000|server has gone away"; then
+            if [ $attempt -lt $max_retries ]; then
+                echo -n "."
+                sleep 5
+                continue
+            fi
+        fi
+
+        break
+    done
+
+    echo -e "${RED}✗ FALLÓ${NC}"
+    if [ "$DEBUG" = true ]; then
+        echo -e "${RED}[!] Salida: $output${NC}"
+    else
+        echo -e "${RED}[!] Usa -d para ver los errores detallados${NC}"
     fi
+    return 1
 }
 
 # ============================================================================
@@ -616,13 +646,18 @@ print_header
 # Backup automático antes del reset (solo cuando se resetea todo, sin --no-backup)
 BACKUP_SCRIPT="$SCRIPT_DIR/backup_and_update_sql.sh"
 if [ "$SKIP_BACKUP" = false ] && [ "$CONTAINERS_TO_RESET" = "all" ] && [ -x "$BACKUP_SCRIPT" ]; then
-    echo -e "${YELLOW}[*]${NC} Ejecutando backup previo al reset..."
-    if "$BACKUP_SCRIPT"; then
-        echo -e "${GREEN}  ✓ Backup completado${NC}\n"
+    # Si MariaDB no está corriendo no hay nada que respaldar: saltar backup automáticamente
+    if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q "mariadb"; then
+        echo -e "${YELLOW}[*]${NC} MariaDB no está corriendo — backup omitido${NC}"
     else
-        echo -e "${RED}  ✗ El backup falló. Abortando reset para proteger los datos.${NC}"
-        echo -e "${YELLOW}  Usá --no-backup para omitir el backup y forzar el reset.${NC}"
-        exit 1
+        echo -e "${YELLOW}[*]${NC} Ejecutando backup previo al reset..."
+        if "$BACKUP_SCRIPT"; then
+            echo -e "${GREEN}  ✓ Backup completado${NC}\n"
+        else
+            echo -e "${RED}  ✗ El backup falló. Abortando reset para proteger los datos.${NC}"
+            echo -e "${YELLOW}  Usá --no-backup para omitir el backup y forzar el reset.${NC}"
+            exit 1
+        fi
     fi
 fi
 

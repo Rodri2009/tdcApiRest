@@ -8,156 +8,18 @@
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
     <link rel="stylesheet" href="/styles/admin.css">
-    <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-        }
-
-        /* Mantener la barra de navegación pegada al top y espacio para contenido */
-        header.bg-rustic {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 9999;
-        }
-
-        body {
-            /* conservar el padding base y añadir el offset del header (72px) */
-            margin: 0;
-            padding: 0;
-            background-color: #0c0a09;
-            color: #d6d3d1;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        h1 {
-            text-align: center;
-            font-size: 1.8rem;
-        }
-
-        .notification-banner {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            z-index: 9999;
-            animation: slideIn 0.3s ease;
-            max-width: 400px;
-        }
-
-        .notification-banner.success {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-
-        .notification-banner.error {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-
-        .notification-banner.info {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .card {
-            background: #1c1917;
-            border: 1px solid #44403c;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #44403c;
-        }
-
-        th {
-            background: #292524;
-            color: #f0abfc;
-            font-weight: 600;
-        }
-
-        tr:hover {
-            background: #292524;
-        }
-    </style>
-</head>
+    </head>
 
 <body>
-    <!-- Navegación -->
-    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <a href="admin.html" class="flex items-center space-x-3">
-                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Panel de Admin</span>
-                </a>
-
-                <nav class="hidden md:flex space-x-8 items-center">
-                    <a href="admin.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">← Volver</a>
-                    <div id="auth-menu-desktop"></div>
-                </nav>
-
-                <button id="mobile-menu-button"
-                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
-                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-        <div id="mobile-menu" class="hidden md:hidden">
-            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
-                <a href="admin.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">← Volver
-                    al Panel</a>
-                <div id="auth-menu-mobile"></div>
-            </div>
-        </div>
-    </header>
+  <script src="/navbar.js"></script>
 
     <main class="wrap">
-        <div
-            style="max-width:1600px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; margin-top:1rem;">
-            <a href="/admin.html"
-                style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
+        <div class="page-header">
+            <a href="/admin.html" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Volver al Panel
             </a>
-            <h1 class="text-4xl font-bold text-neon" style="margin:0; text-align:center;">Personal y Tarifas</h1>
-            <div style="width: 140px;"></div>
+            <h1>Personal y Tarifas</h1>
+            <div class="spacer"></div>
         </div>
 
         <div class="tabs">
@@ -172,6 +34,9 @@
             </button>
             <button class="tab" data-section="pagos">
                 <i class="fas fa-money-bill-wave"></i> Pagos del Personal
+            </button>
+            <button class="tab" data-section="roles-evento">
+                <i class="fas fa-calendar-check"></i> Roles por Evento
             </button>
         </div>
 
@@ -294,6 +159,35 @@
                 </table>
             </div>
         </div>
+
+        <!-- SECCIÓN: Roles por Evento -->
+        <div id="section-roles-evento" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-calendar-check"></i> Roles Requeridos por Tipo de Evento</span>
+                    <button class="btn btn-primary btn-crear" data-requiere-edicion="personal"
+                        onclick="openRolEventoModal()">
+                        <i class="fas fa-plus"></i> Agregar Rol
+                    </button>
+                </div>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th style="width:200px;white-space:normal;">Tipo de Evento</th>
+                            <th>Rol Requerido</th>
+                            <th style="width:80px;text-align:center;">Cantidad</th>
+                            <th style="width:110px;text-align:center;">Máx. Personas</th>
+                            <th style="width:100px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-roles-evento">
+                        <tr>
+                            <td colspan="5" style="text-align:center;color:#9ca3af;">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </main>
 
     <!-- Modal genérico -->
@@ -313,15 +207,12 @@
         </div>
     </div>
 
-    <script src="/navbar.js"></script>
     <script>
-        // ============================================================
-        // ESTADO
-        // ============================================================
-        let personal = [];
         let roles = [];
         let tarifas = [];
         let pagos = [];
+        let rolesEvento = [];
+        let tiposEvento = [];
         let currentModalType = null;
         let currentEditId = null;
 
@@ -339,15 +230,21 @@
         function showBanner(message, type, duration) {
             type = type || 'info';
             duration = duration || 4000;
-            document.querySelectorAll('.notification-banner').forEach(function (n) { n.remove(); });
+            document.querySelectorAll('.notification-banner').forEach(function (n) {
+                n.classList.remove('show');
+                n.classList.add('hide');
+                setTimeout(function () { n.remove(); }, 350);
+            });
             var banner = document.createElement('div');
             banner.className = 'notification-banner ' + type;
             var icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
             banner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-' + icon + '"></i><span>' + message + '</span></div>';
             document.body.appendChild(banner);
+            requestAnimationFrame(function () { requestAnimationFrame(function () { banner.classList.add('show'); }); });
             setTimeout(function () {
-                banner.style.animation = 'slideIn 0.3s ease reverse';
-                setTimeout(function () { banner.remove(); }, 300);
+                banner.classList.remove('show');
+                banner.classList.add('hide');
+                setTimeout(function () { banner.remove(); }, 350);
             }, duration);
         }
 
@@ -389,7 +286,7 @@
             // Verificar hash en URL
             var hash = window.location.hash.replace('#', '');
             console.log('Hash actual:', hash);
-            if (hash && ['personal', 'roles', 'tarifas', 'pagos'].indexOf(hash) !== -1) {
+            if (hash && ['personal', 'roles', 'tarifas', 'pagos', 'roles-evento'].indexOf(hash) !== -1) {
                 var tab = document.querySelector('.tab[data-section="' + hash + '"]');
                 if (tab) {
                     console.log('Activando pestaña desde hash:', hash);
@@ -402,6 +299,12 @@
         // PERMISOS Y AUTENTICACIÓN
         // ============================================================
         function puedeEditar(tipo) {
+            if (typeof navbarManager !== 'undefined' && navbarManager) {
+                if (tipo === 'personal') {
+                    return navbarManager.tienePermiso('personal.gestionar') || navbarManager.tienePermiso('*');
+                }
+            }
+            // fallback: leer directo de localStorage
             var permisos = JSON.parse(localStorage.getItem('userPermisos') || '[]');
             if (tipo === 'personal') {
                 return permisos.indexOf('personal.gestionar') !== -1 || permisos.indexOf('*') !== -1;
@@ -409,10 +312,10 @@
             return false;
         }
 
-        function aplicarPermisosUI() {
-            if (!puedeEditarPersonal) {
-                document.querySelectorAll('.btn-crear[data-requiere-edicion="personal"]').forEach(function (btn) { btn.style.display = 'none'; });
-            }
+        function aplicarPermisosPersonalUI() {
+            document.querySelectorAll('.btn-crear[data-requiere-edicion="personal"]').forEach(function (btn) {
+                btn.style.display = puedeEditarPersonal ? '' : 'none';
+            });
         }
 
         // Funciones de carga de datos
@@ -425,6 +328,7 @@
                     personal = await res.json();
                     console.log('Personal cargado:', personal);
                     renderPersonal();
+                    showBanner(personal.length + ' miembro' + (personal.length !== 1 ? 's' : '') + ' de personal cargado' + (personal.length !== 1 ? 's' : ''), 'success', 2500);
                 } else {
                     console.error('Error HTTP:', res.status, res.statusText);
                     var tbody = document.getElementById('tbody-personal');
@@ -447,6 +351,7 @@
                     roles = await res.json();
                     console.log('Roles cargados:', roles);
                     renderRoles();
+                    showBanner(roles.length + ' rol' + (roles.length !== 1 ? 'es' : '') + ' cargado' + (roles.length !== 1 ? 's' : ''), 'success', 2500);
                 } else {
                     console.error('Error HTTP:', res.status, res.statusText);
                     var tbody = document.getElementById('tbody-roles');
@@ -456,6 +361,7 @@
                 console.error('Error cargando roles:', err);
                 var tbody = document.getElementById('tbody-roles');
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
+                showBanner('Error de conexión al cargar roles', 'error');
             }
         }
 
@@ -468,6 +374,7 @@
                     tarifas = await res.json();
                     console.log('Tarifas cargadas:', tarifas);
                     renderTarifas();
+                    showBanner(tarifas.length + ' tarifa' + (tarifas.length !== 1 ? 's' : '') + ' cargada' + (tarifas.length !== 1 ? 's' : ''), 'success', 2500);
                 } else {
                     console.error('Error HTTP:', res.status, res.statusText);
                     var tbody = document.getElementById('tbody-tarifas');
@@ -477,11 +384,97 @@
                 console.error('Error cargando tarifas:', err);
                 var tbody = document.getElementById('tbody-tarifas');
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
+                showBanner('Error de conexión al cargar tarifas', 'error');
             }
         }
 
-        async function loadPagos() {
+        async function loadRolesEvento() {
             try {
+                var res = await fetch(API_BASE + '/roles-por-evento', { headers: authHeaders() });
+                if (res.ok) {
+                    rolesEvento = await res.json();
+                    renderRolesEvento();
+                    showBanner(rolesEvento.length + ' regla' + (rolesEvento.length !== 1 ? 's' : '') + ' de roles cargada' + (rolesEvento.length !== 1 ? 's' : ''), 'success', 2500);
+                } else {
+                    document.getElementById('tbody-roles-evento').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error al cargar: ' + res.status + '</td></tr>';
+                    showBanner('Error al cargar roles por evento', 'error');
+                }
+            } catch (err) {
+                console.error('Error cargando roles por evento:', err);
+                document.getElementById('tbody-roles-evento').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
+                showBanner('Error de conexión al cargar roles por evento', 'error');
+            }
+        }
+
+        async function loadTiposEvento() {
+            if (tiposEvento.length > 0) return; // ya cargados
+            try {
+                var res = await fetch(API_BASE + '/tipos-evento/all', { headers: authHeaders() });
+                if (res.ok) tiposEvento = await res.json();
+            } catch (err) { console.error('Error cargando tipos de evento:', err); }
+        }
+
+        function renderRolesEvento() {
+            var tbody = document.getElementById('tbody-roles-evento');
+            if (!rolesEvento || rolesEvento.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay roles configurados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rolesEvento.map(function(r) {
+                var tipoLabel = (r.nombre_para_mostrar || r.id_tipo_evento) + (r.categoria ? '<br><span style="font-size:11px;opacity:.6;">' + r.categoria + '</span>' : '');
+                return '<tr>' +
+                    '<td data-label="Tipo de Evento" style="white-space:normal;word-break:break-word;">' + tipoLabel + '</td>' +
+                    '<td data-label="Rol Requerido"><strong>' + r.rol_requerido + '</strong></td>' +
+                    '<td data-label="Cantidad" style="text-align:center;">' + r.cantidad + '</td>' +
+                    '<td data-label="Máx. Personas" style="text-align:center;">' + r.max_personas + '</td>' +
+                    '<td data-label="Acciones"><div class="actions">' +
+                    (puedeEditarPersonal ? '<button class="btn btn-sm btn-secondary" onclick="openRolEventoModal(' + r.id + ')"><i class="fas fa-edit"></i></button> ' : '') +
+                    (puedeEditarPersonal ? '<button class="btn btn-sm btn-danger" onclick="deleteRolEvento(' + r.id + ', &quot;' + r.rol_requerido + '&quot;)"><i class="fas fa-trash"></i></button>' : '') +
+                    '</div></td></tr>';
+            }).join('');
+        }
+
+        async function openRolEventoModal(id) {
+            await loadTiposEvento();
+            currentModalType = 'rol-evento';
+            currentEditId = id || null;
+            var existing = id ? rolesEvento.find(function(r) { return r.id === id; }) : null;
+
+            var tiposOptions = tiposEvento.map(function(t) {
+                var sel = existing && existing.id_tipo_evento === t.id ? 'selected' : '';
+                return '<option value="' + t.id + '" ' + sel + '>' + t.nombreParaMostrar + ' (' + (t.categoria || '') + ')</option>';
+            }).join('');
+
+            document.getElementById('modal-title').textContent = id ? 'Editar Rol por Evento' : 'Nuevo Rol por Evento';
+            document.getElementById('modal-body').innerHTML =
+                '<div class="form-group">' +
+                '<label>Tipo de Evento <span class="required">*</span></label>' +
+                '<select id="form-rol-tipo"><option value="">-- Seleccionar tipo --</option>' + tiposOptions + '</select></div>' +
+                '<div class="form-group">' +
+                '<label>Rol Requerido <span class="required">*</span></label>' +
+                '<input id="form-rol-nombre" type="text" placeholder="ej: Mesera, Sonidista..." value="' + (existing ? existing.rol_requerido : '') + '"></div>' +
+                '<div class="form-row">' +
+                '<div class="form-group"><label>Cantidad</label>' +
+                '<input id="form-rol-cantidad" type="number" min="1" value="' + (existing ? existing.cantidad : 1) + '"></div>' +
+                '<div class="form-group"><label>Mín. Personas</label>' +
+                '<input id="form-rol-min" type="number" min="0" value="' + (existing ? existing.min_personas : 0) + '"></div>' +
+                '<div class="form-group"><label>Máx. Personas</label>' +
+                '<input id="form-rol-max" type="number" min="1" value="' + (existing ? existing.max_personas : 120) + '"></div>' +
+                '</div>';
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+
+        async function deleteRolEvento(id, nombre) {
+            if (!confirm('¿Eliminar el rol "' + nombre + '"? Esta acción no se puede deshacer.')) return;
+            try {
+                var res = await fetch(API_BASE + '/roles-por-evento/' + id, { method: 'DELETE', headers: authHeaders() });
+                var data = await res.json();
+                if (res.ok) { loadRolesEvento(); showBanner(data.message, 'success'); }
+                else showBanner(data.message || 'Error al eliminar', 'error');
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        async function loadPagos() {            try {
                 console.log('Cargando pagos desde:', API_BASE + '/personal/pagos');
                 var res = await fetch(API_BASE + '/personal/pagos', { headers: authHeaders() });
                 console.log('Respuesta pagos:', res.status, res.statusText);
@@ -489,6 +482,7 @@
                     pagos = await res.json();
                     console.log('Pagos cargados:', pagos);
                     renderPagos();
+                    showBanner(pagos.length + ' pago' + (pagos.length !== 1 ? 's' : '') + ' cargado' + (pagos.length !== 1 ? 's' : ''), 'success', 2500);
                 } else {
                     console.error('Error HTTP:', res.status, res.statusText);
                     var tbody = document.getElementById('tbody-pagos');
@@ -498,6 +492,7 @@
                 console.error('Error cargando pagos:', err);
                 var tbody = document.getElementById('tbody-pagos');
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171;">Error de conexión</td></tr>';
+                showBanner('Error de conexión al cargar pagos', 'error');
             }
         }
 
@@ -576,8 +571,8 @@
         }
 
         // Funciones de modales
-        function openModal() { document.getElementById('modal-overlay').classList.add('show'); }
-        function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); currentModalType = null; currentEditId = null; }
+        function openModal() { document.getElementById('modal-overlay').classList.add('active'); }
+        function closeModal() { document.getElementById('modal-overlay').classList.remove('active'); currentModalType = null; currentEditId = null; }
 
         function openPersonalModal(id) {
             currentModalType = 'personal';
@@ -612,6 +607,24 @@
                 var res = await fetch(API_BASE + '/personal/' + id, { method: 'DELETE', headers: authHeaders() });
                 if (res.ok) { loadPersonal(); showBanner('Personal desactivado correctamente', 'success'); }
                 else { showBanner('Error al desactivar personal', 'error'); }
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        async function deleteTarifa(id) {
+            if (!confirm('¿Eliminar esta tarifa?')) return;
+            try {
+                var res = await fetch(API_BASE + '/personal/tarifas/' + id, { method: 'DELETE', headers: authHeaders() });
+                if (res.ok) { loadTarifas(); showBanner('Tarifa eliminada correctamente', 'success'); }
+                else { showBanner('Error al eliminar tarifa', 'error'); }
+            } catch (err) { showBanner('Error de conexión', 'error'); }
+        }
+
+        async function deletePago(id) {
+            if (!confirm('¿Eliminar este pago?')) return;
+            try {
+                var res = await fetch(API_BASE + '/personal/pagos/' + id, { method: 'DELETE', headers: authHeaders() });
+                if (res.ok) { loadPagos(); showBanner('Pago eliminado correctamente', 'success'); }
+                else { showBanner('Error al eliminar pago', 'error'); }
             } catch (err) { showBanner('Error de conexión', 'error'); }
         }
 
@@ -831,6 +844,21 @@
                             metodo_pago: document.getElementById('form-metodo_pago').value || 'efectivo'
                         };
                         break;
+                    case 'rol-evento':
+                        endpoint = currentEditId ? API_BASE + '/roles-por-evento/' + currentEditId : API_BASE + '/roles-por-evento';
+                        method = currentEditId ? 'PUT' : 'POST';
+                        body = {
+                            id_tipo_evento: document.getElementById('form-rol-tipo').value,
+                            rol_requerido: document.getElementById('form-rol-nombre').value,
+                            cantidad: parseInt(document.getElementById('form-rol-cantidad').value) || 1,
+                            min_personas: parseInt(document.getElementById('form-rol-min').value) || 0,
+                            max_personas: parseInt(document.getElementById('form-rol-max').value) || 120
+                        };
+                        if (!body.id_tipo_evento || !body.rol_requerido) {
+                            showBanner('Tipo de evento y nombre del rol son requeridos', 'error');
+                            return;
+                        }
+                        break;
                     default:
                         showBanner('Tipo de modal desconocido', 'error');
                         return;
@@ -844,6 +872,7 @@
                     else if (savedType === 'rol') { loadRoles(); loadPersonal(); }
                     else if (savedType === 'tarifa') { loadTarifas(); }
                     else if (savedType === 'pago') { loadPagos(); }
+                    else if (savedType === 'rol-evento') { loadRolesEvento(); }
                     showBanner(data.message || 'Guardado exitosamente', 'success');
                 } else {
                     showBanner(data.error || 'Error al guardar', 'error');
@@ -866,6 +895,7 @@
             const token = localStorage.getItem('authToken');
             const desktopMenu = document.getElementById('auth-menu-desktop');
             const mobileMenu = document.getElementById('auth-menu-mobile');
+            if (!desktopMenu || !mobileMenu) return;
 
             if (token) {
                 desktopMenu.innerHTML = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">🔐 Admin Panel</a>`;
@@ -924,7 +954,7 @@
                 console.log('Permisos de edición personal:', puedeEditarPersonal);
 
                 // Ocultar botones de crear si no tiene permisos
-                aplicarPermisosUI();
+                aplicarPermisosPersonalUI();
                 console.log('Permisos UI aplicados');
 
                 // Inicializar pestañas
@@ -936,6 +966,7 @@
                 loadRoles();
                 loadTarifas();
                 loadPagos();
+                loadRolesEvento();
 
                 console.log('Inicialización completada');
             } catch (error) {

@@ -6,25 +6,22 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Configuración - Alquiler del Salón</title>
     <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
     <link rel="stylesheet" href="/styles/admin.css">
     <link rel="stylesheet" href="/css/config-pages.css">
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-    </style>
 </head>
 
 <body>
-
+    <script src="/navbar.js"></script>
     <main class="wrap">
-        <div class="config-header">
-            <a href="/admin.html">
-                ← Volver al Panel
+        <div class="page-header">
+            <a href="/admin.html" class="btn-back">
+                <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg> Volver al Panel
             </a>
             <h1>🏢 Configuración de Alquiler</h1>
-            <div class="config-spacer"></div>
+            <div class="spacer"></div>
         </div>
 
         <div class="tabs">
@@ -87,20 +84,22 @@
                     </button>
                 </div>
                 <!-- Filtros de Duraciones -->
-                <div class="filters" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-                    <div style="flex:1;min-width:150px;">
-                        <label style="font-size:0.85rem;color:#9ca3af;">Filtrar por Tipo:</label>
-                        <select id="filtro-duracion-tipo" onchange="filterDuraciones()" style="width:100%;">
-                            <option value="">Todos los tipos</option>
-                        </select>
-                    </div>
-                    <div style="flex:1;min-width:100px;">
-                        <label style="font-size:0.85rem;color:#9ca3af;">Estado:</label>
-                        <select id="filtro-duracion-estado" onchange="filterDuraciones()" style="width:100%;">
-                            <option value="">Todos</option>
-                            <option value="activo">Solo activos</option>
-                            <option value="inactivo">Solo inactivos</option>
-                        </select>
+                <div class="filters-panel">
+                    <div class="filters-row">
+                        <div class="filter-field">
+                            <label>Filtrar por Tipo</label>
+                            <select id="filtro-duracion-tipo" onchange="filterDuraciones()">
+                                <option value="">Todos los tipos</option>
+                            </select>
+                        </div>
+                        <div class="filter-field">
+                            <label>Estado</label>
+                            <select id="filtro-duracion-estado" onchange="filterDuraciones()">
+                                <option value="">Todos</option>
+                                <option value="activo">Solo activos</option>
+                                <option value="inactivo">Solo inactivos</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="table-container">
@@ -140,20 +139,22 @@
                     precio vigente.
                 </div>
                 <!-- Filtros -->
-                <div class="filters" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-                    <div style="flex:1;min-width:150px;">
-                        <label style="font-size:0.85rem;color:#9ca3af;">Filtrar por Tipo:</label>
-                        <select id="filtro-precio-tipo" onchange="filterPrecios()" style="width:100%;">
-                            <option value="">Todos los tipos</option>
-                        </select>
-                    </div>
-                    <div style="flex:1;min-width:100px;">
-                        <label style="font-size:0.85rem;color:#9ca3af;">Estado:</label>
-                        <select id="filtro-precio-estado" onchange="filterPrecios()" style="width:100%;">
-                            <option value="">Todos</option>
-                            <option value="vigente">Solo vigentes</option>
-                            <option value="vencido">Solo vencidos</option>
-                        </select>
+                <div class="filters-panel">
+                    <div class="filters-row">
+                        <div class="filter-field">
+                            <label>Filtrar por Tipo</label>
+                            <select id="filtro-precio-tipo" onchange="filterPrecios()">
+                                <option value="">Todos los tipos</option>
+                            </select>
+                        </div>
+                        <div class="filter-field">
+                            <label>Estado</label>
+                            <select id="filtro-precio-estado" onchange="filterPrecios()">
+                                <option value="">Todos</option>
+                                <option value="vigente">Solo vigentes</option>
+                                <option value="vencido">Solo vencidos</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="table-container">
@@ -266,12 +267,7 @@
         </div>
     </div>
 
-    <script src="/navbar.js"></script>
     <script>
-        // ============================================================
-        // ESTADO
-        // ============================================================
-        let tipos = [];
         let duraciones = [];
         let precios = [];
         let adicionales = [];
@@ -293,15 +289,21 @@
         // BANNERS DE NOTIFICACIÓN
         // ============================================================
         function showBanner(message, type = 'info', duration = 4000) {
-            document.querySelectorAll('.notification-banner').forEach(n => n.remove());
+            document.querySelectorAll('.notification-banner').forEach(n => {
+                n.classList.remove('show');
+                n.classList.add('hide');
+                setTimeout(() => n.remove(), 350);
+            });
             const banner = document.createElement('div');
             banner.className = `notification-banner ${type}`;
             const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
             banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
             document.body.appendChild(banner);
+            requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('show')));
             setTimeout(() => {
-                banner.style.animation = 'slideIn 0.3s ease reverse';
-                setTimeout(() => banner.remove(), 300);
+                banner.classList.remove('show');
+                banner.classList.add('hide');
+                setTimeout(() => banner.remove(), 350);
             }, duration);
         }
 
@@ -336,9 +338,14 @@
                 if (res.ok) {
                     tipos = await res.json();
                     renderTipos();
+                    showBanner(`${tipos.length} tipo${tipos.length !== 1 ? 's' : ''} de evento cargado${tipos.length !== 1 ? 's' : ''}`, 'success', 2500);
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    showBanner(`Error al cargar tipos: ${errData.error || res.statusText}`, 'error');
                 }
             } catch (err) {
                 console.error('Error:', err);
+                showBanner(`Error de conexión al cargar tipos: ${err.message}`, 'error');
             }
         }
 
@@ -348,9 +355,14 @@
                 if (res.ok) {
                     duraciones = await res.json();
                     renderDuraciones();
+                    showBanner(`${duraciones.length} duración${duraciones.length !== 1 ? 'es' : ''} cargada${duraciones.length !== 1 ? 's' : ''}`, 'success', 2500);
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    showBanner(`Error al cargar duraciones: ${errData.error || res.statusText}`, 'error');
                 }
             } catch (err) {
                 console.error('Error:', err);
+                showBanner(`Error de conexión al cargar duraciones: ${err.message}`, 'error');
             }
         }
 
@@ -360,6 +372,7 @@
                 if (res.ok) {
                     precios = await res.json();
                     renderPrecios();
+                    showBanner(`${precios.length} precio${precios.length !== 1 ? 's' : ''} cargado${precios.length !== 1 ? 's' : ''}`, 'success', 2500);
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     console.error('Error HTTP al cargar precios:', res.status, errData);
@@ -377,9 +390,14 @@
                 if (res.ok) {
                     adicionales = await res.json();
                     renderAdicionales();
+                    showBanner(`${adicionales.length} adicional${adicionales.length !== 1 ? 'es' : ''} cargado${adicionales.length !== 1 ? 's' : ''}`, 'success', 2500);
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    showBanner(`Error al cargar adicionales: ${errData.error || res.statusText}`, 'error');
                 }
             } catch (err) {
                 console.error('Error:', err);
+                showBanner(`Error de conexión al cargar adicionales: ${err.message}`, 'error');
             }
         }
 
@@ -391,6 +409,7 @@
                     alquileres = await res.json();
                     console.log('Datos cargados en alquileres:', alquileres);
                     renderAlquileres();
+                    showBanner(`${alquileres.length} solicitud${alquileres.length !== 1 ? 'es' : ''} de alquiler cargada${alquileres.length !== 1 ? 's' : ''}`, 'success', 2500);
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     console.error('Error HTTP al cargar alquileres:', res.status, errData);

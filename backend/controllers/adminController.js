@@ -1240,6 +1240,89 @@ const getEventosConfirmados = async (req, res) => {
 };
 
 
+// =============================================================================
+// ROLES POR EVENTO - CRUD
+// =============================================================================
+const getRolesPorEvento = async (req, res) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query(
+            `SELECT rpe.id, rpe.id_tipo_evento, ot.nombre_para_mostrar, ot.categoria,
+                    rpe.rol_requerido, rpe.cantidad, rpe.min_personas, rpe.max_personas
+             FROM roles_por_evento rpe
+             LEFT JOIN opciones_tipos ot ON rpe.id_tipo_evento = ot.id_tipo_evento
+             ORDER BY ot.categoria, rpe.id_tipo_evento, rpe.rol_requerido, rpe.min_personas`
+        );
+        res.status(200).json(rows);
+    } catch (err) {
+        logError('Error al obtener roles_por_evento', err);
+        res.status(500).json({ message: 'Error del servidor.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+const createRolPorEvento = async (req, res) => {
+    const { id_tipo_evento, rol_requerido, cantidad, min_personas, max_personas } = req.body;
+    if (!id_tipo_evento || !rol_requerido) {
+        return res.status(400).json({ message: 'id_tipo_evento y rol_requerido son requeridos.' });
+    }
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const result = await conn.query(
+            'INSERT INTO roles_por_evento (id_tipo_evento, rol_requerido, cantidad, min_personas, max_personas) VALUES (?, ?, ?, ?, ?)',
+            [id_tipo_evento, rol_requerido.trim(), parseInt(cantidad) || 1, parseInt(min_personas) || 0, parseInt(max_personas) || 120]
+        );
+        res.status(201).json({ message: 'Rol creado correctamente.', id: Number(result.insertId) });
+    } catch (err) {
+        logError('Error al crear rol_por_evento', err);
+        res.status(500).json({ message: 'Error del servidor.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+const updateRolPorEvento = async (req, res) => {
+    const { id } = req.params;
+    const { id_tipo_evento, rol_requerido, cantidad, min_personas, max_personas } = req.body;
+    if (!id_tipo_evento || !rol_requerido) {
+        return res.status(400).json({ message: 'id_tipo_evento y rol_requerido son requeridos.' });
+    }
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const result = await conn.query(
+            'UPDATE roles_por_evento SET id_tipo_evento=?, rol_requerido=?, cantidad=?, min_personas=?, max_personas=? WHERE id=?',
+            [id_tipo_evento, rol_requerido.trim(), parseInt(cantidad) || 1, parseInt(min_personas) || 0, parseInt(max_personas) || 120, parseInt(id)]
+        );
+        if (result.affectedRows === 0) return res.status(404).json({ message: 'Rol no encontrado.' });
+        res.status(200).json({ message: 'Rol actualizado correctamente.' });
+    } catch (err) {
+        logError('Error al actualizar rol_por_evento', err);
+        res.status(500).json({ message: 'Error del servidor.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+const deleteRolPorEvento = async (req, res) => {
+    const { id } = req.params;
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const result = await conn.query('DELETE FROM roles_por_evento WHERE id=?', [parseInt(id)]);
+        if (result.affectedRows === 0) return res.status(404).json({ message: 'Rol no encontrado.' });
+        res.status(200).json({ message: 'Rol eliminado correctamente.' });
+    } catch (err) {
+        logError('Error al eliminar rol_por_evento', err);
+        res.status(500).json({ message: 'Error del servidor.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 module.exports = {
     getSolicitudes,
     actualizarEstadoSolicitud,
@@ -1254,4 +1337,8 @@ module.exports = {
     eliminarEvento,
     getEventosConfirmados,
     getEventoById,
+    getRolesPorEvento,
+    createRolPorEvento,
+    updateRolPorEvento,
+    deleteRolPorEvento,
 };

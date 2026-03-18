@@ -1,117 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 
 <head>
     <meta charset="utf-8">
-    <base target="_top">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Administración - Asignar Personal</title>
     <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
     <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            background-color: #0c0a09;
-            color: #d6d3d1;
-            box-sizing: border-box;
-        }
-
-        .text-neon {
-            color: var(--color-secondary);
-            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-        }
-
-        .bg-rustic {
-            background-color: var(--color-rustic);
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background-color: #1a1a1a;
-            padding: 32px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(240, 171, 252, 0.1);
-        }
-
-        h1 {
-            color: var(--color-secondary);
-            text-align: center;
-            margin: 0 0 8px 0;
-            font-size: 28px;
-            font-weight: 700;
-            text-shadow: 0 0 8px rgba(240, 171, 252, 0.3);
-        }
-
-        h2 {
-            color: var(--color-secondary);
-            border-bottom: 2px solid rgba(240, 171, 252, 0.3);
-            padding-bottom: 12px;
-            margin: 24px 0 16px 0;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .loader {
-            text-align: center;
-            padding: 60px 20px;
-            color: #9ca3af;
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .loader::after {
-            content: '';
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            margin-left: 8px;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            border: 3px solid rgba(240, 171, 252, 0.2);
-            border-top-color: #f0abfc;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
         .rol-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             padding: 16px;
             background: rgba(240, 171, 252, 0.03);
             border: 1px solid rgba(240, 171, 252, 0.1);
-            border-radius: 6px;
+            border-radius: 8px;
             transition: all 0.3s ease;
         }
-
         .rol-group:hover {
             background: rgba(240, 171, 252, 0.06);
             border-color: rgba(240, 171, 252, 0.2);
         }
-
         .rol-group label {
             display: block;
             font-weight: 600;
             margin-bottom: 8px;
-            color: #f0abfc;
-            font-size: 14px;
+            color: var(--color-secondary);
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
         .rol-group select {
             width: 100%;
             padding: 10px 12px;
@@ -119,352 +37,222 @@
             border-radius: 6px;
             border: 2px solid rgba(240, 171, 252, 0.2);
             background: #0f0f0f;
-            color: #d6d3d1;
-            margin-bottom: 5px;
+            color: var(--color-text);
             transition: all 0.3s ease;
             cursor: pointer;
+            margin-bottom: 8px;
         }
-
         .rol-group select:focus {
             outline: none;
-            border-color: #f0abfc;
+            border-color: var(--color-secondary);
             background: #1a1a1a;
             box-shadow: 0 0 0 3px rgba(240, 171, 252, 0.1);
         }
-
-        .button-group {
-            margin-top: 32px;
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            padding: 12px 24px;
-            font-size: 14px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            color: white;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        .btn-save {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            flex: 1;
-            min-width: 140px;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .btn-save:hover {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-        }
-
-        .btn-save:disabled {
-            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-            cursor: not-allowed;
-            box-shadow: none;
-            opacity: 0.6;
-        }
-
-        .btn-back {
-            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-            min-width: 140px;
-            flex: 1;
-            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
-        }
-
-        .btn-back:hover {
-            background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-            box-shadow: 0 6px 16px rgba(107, 114, 128, 0.4);
-        }
-
-        .btn-work-order {
-            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
-        }
-
-        .btn-work-order:hover {
-            background: linear-gradient(135deg, #138496 0%, #0c5a6e 100%);
-            box-shadow: 0 6px 16px rgba(23, 162, 184, 0.4);
-        }
-
-        option:disabled {
-            color: #9ca3af;
-            background-color: #1f2937;
-            font-style: italic;
-        }
-
-        #notification-banner {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translate(-50%, 150%);
-            padding: 16px 28px;
-            border-radius: 8px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 1000;
-            transition: transform 0.5s ease-in-out;
-            max-width: 90%;
-            text-align: center;
-            letter-spacing: 0.5px;
-        }
-
-        #notification-banner.show {
-            transform: translate(-50%, 0);
-        }
-
-        #notification-banner.success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-        }
-
-        #notification-banner.error {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-        }
-
-        #notification-banner.info {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        }
+        option:disabled { color: #9ca3af; background-color: #1f2937; font-style: italic; }
+        #solicitud-title { font-size: 1rem; color: var(--color-text-muted, #9ca3af); font-weight: 400; margin-bottom: 0; }
     </style>
-    <script src="/navbar.js"></script>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Asignación de Personal</h1>
-        <h2 id="solicitud-title"></h2>
-        <div id="assignment-form-container">
-            <div class="loader" id="loader">Cargando...</div>
+    <script src="/navbar.js"></script>
+    <main class="wrap" style="max-width: 860px;">
+        <div class="page-header">
+            <a href="/admin_solicitudes.html" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver a Solicitudes
+            </a>
+            <h1>Asignar Personal</h1>
+            <div class="spacer"></div>
         </div>
-        <div class="button-group">
-            <button class="btn-back" onclick="window.location.href='/admin_solicitudes.html'">Volver al Panel</button>
-            <button id="save-button" class="btn-save">Guardar Asignaciones</button>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-users-cog"></i> Asignación de Personal</span>
+                <span id="solicitud-title"></span>
+            </div>
+            <div id="assignment-form-container">
+                <div style="text-align:center;padding:40px;color:#9ca3af;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:24px;margin-bottom:12px;display:block;color:var(--color-secondary)"></i>
+                    Cargando datos...
+                </div>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap;">
+                <button class="btn btn-secondary" onclick="window.location.href='/admin_solicitudes.html'">
+                    <i class="fas fa-arrow-left"></i> Cancelar
+                </button>
+                <button id="save-button" class="btn btn-success">
+                    <i class="fas fa-save"></i> Guardar Asignaciones
+                </button>
+            </div>
         </div>
-    </div>
+    </main>
     <div id="notification-banner"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- SECCIÓN 1: INICIALIZACIÓN Y ENLACE DE ELEMENTOS ---
-            // Obtenemos los IDs de la URL. Son la base para todas nuestras peticiones.
+            // Proteger esta página antes de cargar datos
+            if (!navbarManager || !navbarManager.protectAdminPage()) return;
+
             const params = new URLSearchParams(window.location.search);
             const solicitudId = params.get('solicitudId');
             const tipoEventoId = params.get('tipoEventoId');
-            // Enlazamos los elementos del DOM que vamos a manipular.
+
             const formContainer = document.getElementById('assignment-form-container');
-            const loader = document.getElementById('loader');
             const saveButton = document.getElementById('save-button');
-            const notificationBanner = document.getElementById('notification-banner');
             const solicitudTitle = document.getElementById('solicitud-title');
             let notificationTimer;
-            // Si falta algún ID, mostramos un error y detenemos todo.
+
             if (!solicitudId || !tipoEventoId) {
-                loader.style.display = 'none';
-                formContainer.innerHTML =
-                    '<p style="color:red; font-weight:bold;">Error: Faltan el ID de solicitud o el ID de tipo de evento en la URL.</p>';
+                formContainer.innerHTML = '<p style="color:var(--color-danger);font-weight:bold;"><i class="fas fa-exclamation-triangle"></i> Error: Faltan el ID de solicitud o el ID de tipo de evento en la URL.</p>';
+                saveButton.style.display = 'none';
                 return;
             }
-            solicitudTitle.textContent = `Para Solicitud ID: ${solicitudId} (Tipo: ${tipoEventoId})`;
-            // --- SECCIÓN 2: LÓGICA DE CARGA DE DATOS ---
+
+            solicitudTitle.textContent = `Solicitud #${solicitudId} · Tipo: ${tipoEventoId}`;
+
             async function cargarDatosDeAsignacion() {
-                console.log('[ENTRADA] cargarDatosDeAsignacion()');
-                console.log('[DEBUG] solicitudId:', solicitudId, 'tipoEventoId:', tipoEventoId);
                 try {
+                    const token = localStorage.getItem('authToken');
+                    const headers = {};
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
                     const url = `/api/admin/asignacion-data?solicitudId=${solicitudId}&tipoEventoId=${tipoEventoId}`;
-                    console.log('[DEBUG] URL de petición:', url);
-                    // Hacemos la llamada a nuestra nueva API para obtener todos los datos necesarios.
-                    const response = await fetch(url);
-                    console.log('[DEBUG] Response status:', response.status);
-                    console.log('[DEBUG] Response ok:', response.ok);
+                    const response = await fetch(url, { headers });
 
                     if (response.status === 401) {
-                        console.log('[ERROR] Autenticación fallida (401)');
                         window.location.href = '/login.html';
                         return;
                     }
                     if (!response.ok) {
                         const errorText = await response.text();
-                        console.error('[ERROR] Response no OK. Status:', response.status, 'Body:', errorText);
                         throw new Error(`Error ${response.status}: ${errorText}`);
                     }
-                    const data = await response.json();
-                    console.log('[DEBUG] Datos recibidos:', data);
-                    console.log('[SUCCESS] cargarDatosDeAsignacion completado');
 
-                    loader.style.display = 'none';
+                    const data = await response.json();
+
                     if (!data.rolesRequeridos || data.rolesRequeridos.length === 0) {
-                        console.log('[WARN] No hay roles requeridos para este tipo de evento');
-                        formContainer.innerHTML =
-                            '<p>Este tipo de evento no tiene roles de personal requeridos.</p>';
+                        formContainer.innerHTML = '<p style="color:#9ca3af;"><i class="fas fa-info-circle"></i> Este tipo de evento no tiene roles de personal requeridos.</p>';
                         saveButton.disabled = true;
                         return;
                     }
-                    renderizarFormulario(data.rolesRequeridos, data.personalDisponible, data
-                        .asignacionesGuardadas);
+
+                    renderizarFormulario(data.rolesRequeridos, data.personalDisponible, data.asignacionesGuardadas);
+                    showNotification('Datos de asignación cargados', 'success', 2500);
                 } catch (error) {
-                    console.error("[ERROR] Error al cargar datos de asignación:", error);
-                    console.error("[STACK]", error.stack);
-                    loader.style.display = 'none';
-                    formContainer.innerHTML =
-                        `<p style="color:red; font-weight:bold;">Error: ${error.message}</p>`;
+                    console.error('[ERROR] cargarDatosDeAsignacion:', error);
+                    formContainer.innerHTML = `<p style="color:var(--color-danger);font-weight:bold;"><i class="fas fa-exclamation-triangle"></i> ${error.message}</p>`;
                 }
             }
-            // --- SECCIÓN 3: LÓGICA DE RENDERIZADO Y UI ---
+
             function renderizarFormulario(rolesRequeridos, personalPorRol, asignacionesGuardadas) {
                 let formHtml = '';
                 let asignacionesRestantes = [...(asignacionesGuardadas || [])];
 
-                // Si ya hay asignaciones guardadas, cambiamos el botón a "Ver orden de trabajo"
                 if (asignacionesGuardadas && asignacionesGuardadas.length > 0) {
-                    saveButton.textContent = 'Ver orden de trabajo';
-                    saveButton.className = 'btn-work-order';
+                    saveButton.innerHTML = '<i class="fas fa-clipboard-list"></i> Ver Orden de Trabajo';
+                    saveButton.className = 'btn btn-primary';
                     saveButton.onclick = () => {
-                        window.location.href = `/editar_orden_de_trabajo.html?solicitudId=${solicitudId}`;
+                        window.location.href = `/admin_orden_de_trabajo.html?solicitudId=${solicitudId}`;
                     };
                 } else {
-                    saveButton.textContent = 'Guardar Asignaciones';
-                    saveButton.className = 'btn-save';
+                    saveButton.innerHTML = '<i class="fas fa-save"></i> Guardar Asignaciones';
+                    saveButton.className = 'btn btn-success';
                     saveButton.onclick = null;
                     saveButton.addEventListener('click', guardarAsignaciones);
                 }
 
                 rolesRequeridos.forEach(rol => {
-                    formHtml +=
-                        `<div class="rol-group"><label>${rol.rol} (requeridos: ${rol.cantidad})</label>`;
+                    formHtml += `<div class="rol-group"><label><i class="fas fa-user-tag" style="margin-right:6px;"></i>${rol.rol} <span style="font-weight:400;text-transform:none;font-size:12px;opacity:.7;">(${rol.cantidad} requerido${rol.cantidad !== 1 ? 's' : ''})</span></label>`;
                     for (let i = 0; i < rol.cantidad; i++) {
                         const personalParaEsteRol = personalPorRol[rol.rol] || [];
                         let valorSeleccionado = '';
-                        const indiceAsignacion = asignacionesRestantes.findIndex(asig => asig.rol ===
-                            rol.rol);
+                        const indiceAsignacion = asignacionesRestantes.findIndex(asig => asig.rol === rol.rol);
                         if (indiceAsignacion > -1) {
                             valorSeleccionado = asignacionesRestantes[indiceAsignacion].personalId;
                             asignacionesRestantes.splice(indiceAsignacion, 1);
                         }
-                        // Creamos las opciones del select
                         let opcionesHtml = '<option value="">-- Seleccionar --</option>';
                         personalParaEsteRol.forEach(persona => {
-                            const esSeleccionado = persona.id === valorSeleccionado ?
-                                'selected' : '';
-                            opcionesHtml +=
-                                `<option value="${persona.id}" ${esSeleccionado}>${persona.nombre}</option>`;
+                            const esSeleccionado = persona.id === valorSeleccionado ? 'selected' : '';
+                            opcionesHtml += `<option value="${persona.id}" ${esSeleccionado}>${persona.nombre}</option>`;
                         });
                         formHtml += `<select name="${rol.rol}">${opcionesHtml}</select>`;
                     }
                     formHtml += `</div>`;
                 });
+
                 formContainer.innerHTML = formHtml;
-                // Añadimos el listener una vez que el HTML está en el DOM
                 formContainer.addEventListener('change', deshabilitarOpcionesSeleccionadas);
-                // Ejecutamos una vez al principio para deshabilitar las opciones ya cargadas
                 deshabilitarOpcionesSeleccionadas();
             }
 
             function deshabilitarOpcionesSeleccionadas() {
                 const allSelects = Array.from(formContainer.querySelectorAll('select'));
                 const selectedIds = new Set();
-                // Primero, encontramos todos los IDs que están actualmente seleccionados
-                allSelects.forEach(select => {
-                    if (select.value) selectedIds.add(select.value);
-                });
-                // Luego, recorremos todos los selects de nuevo para deshabilitar opciones
+                allSelects.forEach(select => { if (select.value) selectedIds.add(select.value); });
                 allSelects.forEach(select => {
                     const currentSelection = select.value;
                     select.querySelectorAll('option').forEach(option => {
-                        if (option.value) { // Ignoramos la opción vacía
-                            // Deshabilitamos una opción si su ID está en el set de seleccionados,
-                            // PERO no es la selección actual de ESTE select.
-                            option.disabled = selectedIds.has(option.value) && option.value !==
-                                currentSelection;
+                        if (option.value) {
+                            option.disabled = selectedIds.has(option.value) && option.value !== currentSelection;
                         }
                     });
                 });
             }
 
-            function showNotification(message, type = 'info', duration = 4000) {
-                clearTimeout(notificationTimer);
-                notificationBanner.textContent = message;
-                notificationBanner.className = 'show ' + type;
-                notificationTimer = setTimeout(() => {
-                    notificationBanner.className = '';
-                }, duration);
-            }
-            // --- SECCIÓN 4: LÓGICA DE GUARDADO ---
             async function guardarAsignaciones() {
                 saveButton.disabled = true;
-                saveButton.textContent = 'Guardando...';
+                saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
-                // Recolectar todas las selecciones de los selects
                 const selectsElements = Array.from(formContainer.querySelectorAll('select'));
-
-                // Validar que todos los selects tengan un valor seleccionado
                 const selectsSinValor = selectsElements.filter(select => !select.value);
                 if (selectsSinValor.length > 0) {
-                    showNotification('Por favor selecciona personal para todos los roles requeridos.', 'error');
+                    showNotification('Por favor seleccioná personal para todos los roles requeridos.', 'error');
                     saveButton.disabled = false;
-                    saveButton.textContent = 'Guardar Asignaciones';
+                    saveButton.innerHTML = '<i class="fas fa-save"></i> Guardar Asignaciones';
                     return;
                 }
 
-                // Construir el array de asignaciones
                 const assignments = [];
                 selectsElements.forEach(select => {
-                    // NO hacer parseInt - el ID de personal es VARCHAR (string)
                     const personalId = select.value;
                     if (personalId && personalId.trim() !== '') {
-                        assignments.push({
-                            rol: select.name,
-                            personalId: personalId
-                        });
+                        assignments.push({ rol: select.name, personalId });
                     }
                 });
 
                 try {
+                    const token = localStorage.getItem('authToken');
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
                     const response = await fetch(`/api/admin/solicitudes/${solicitudId}/asignaciones`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers,
                         body: JSON.stringify(assignments)
                     });
                     const data = await response.json();
                     if (!response.ok) throw new Error(data.message || 'Error del servidor.');
                     showNotification(data.message, 'success');
-                    // Redirigir a orden de trabajo después de un pequeño delay
                     setTimeout(() => {
-                        window.location.href = `/editar_orden_de_trabajo.html?solicitudId=${solicitudId}`;
+                        window.location.href = `/admin_orden_de_trabajo.html?solicitudId=${solicitudId}`;
                     }, 1000);
                 } catch (error) {
-                    console.error("Error:", error);
+                    console.error('Error:', error);
                     showNotification(error.message, 'error');
                     saveButton.disabled = false;
-                    saveButton.textContent = 'Guardar Asignaciones';
+                    saveButton.innerHTML = '<i class="fas fa-save"></i> Guardar Asignaciones';
                 }
             }
-            // --- SECCIÓN 5: PUNTO DE ENTRADA ---
-            saveButton.addEventListener('click', guardarAsignaciones);
-            // La ejecución comienza aquí
-            cargarDatosDeAsignacion();
 
-            // Proteger esta página: redirigir a login si no está autenticado
-            // navbarManager ya fue instanciado por navbar.js
-            if (!navbarManager || !navbarManager.protectAdminPage()) {
-                return; // Salir si no está autenticado
+            function showNotification(message, type = 'info', duration = 4000) {
+                clearTimeout(notificationTimer);
+                const banner = document.getElementById('notification-banner');
+                banner.textContent = message;
+                banner.className = `show ${type}`;
+                notificationTimer = setTimeout(() => { banner.className = ''; }, duration);
             }
+
+            cargarDatosDeAsignacion();
         });
     </script>
 </body>
