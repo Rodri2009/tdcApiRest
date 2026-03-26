@@ -52,8 +52,8 @@ router.post('/upload', upload.single('logo'), bandaController.uploadLogo);
 // GET /api/bandas/:id - Obtener banda específica
 router.get('/:id', bandaController.obtenerBandaPorId);
 
-// POST /api/bandas - Crear nueva banda (requiere autenticación)
-router.post('/', protect, bandaController.crearBanda);
+// POST /api/bandas - Crear nueva banda (público)
+router.post('/', bandaController.crearBanda);
 
 // PUT /api/bandas/:id - Actualizar banda (requiere autenticación)
 router.put('/:id', protect, bandaController.actualizarBanda);

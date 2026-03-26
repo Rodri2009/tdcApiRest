@@ -855,8 +855,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="otras_redes">Otros links (Bandcamp, SoundCloud, etc.)</label>
-                    <textarea id="otras_redes" name="otras_redes" rows="2" placeholder="Un link por línea"></textarea>
+                    <label for="descripcion">Descripción / Características de la banda</label>
+                    <textarea id="descripcion" name="descripcion" rows="2" placeholder="Describe tu banda, estilo, experiencia, etc."></textarea>
                 </div>
 
                 <!-- Logo -->
@@ -1241,7 +1241,7 @@
                 const facebookEl = document.getElementById('facebook'); if (facebookEl) { facebookEl.value = full.facebook || ''; }
                 const youtubeEl = document.getElementById('youtube'); if (youtubeEl) { youtubeEl.value = full.youtube || ''; }
                 const spotifyEl = document.getElementById('spotify'); if (spotifyEl) { spotifyEl.value = full.spotify || ''; }
-                const otrasEl = document.getElementById('otras_redes'); if (otrasEl) { otrasEl.value = full.otras_redes || full.web_oficial || ''; }
+                const descripcionEl = document.getElementById('descripcion'); if (descripcionEl) { descripcionEl.value = full.descripcion || full.web_oficial || ''; }
 
                 // Contacto (si existe en catálogo)
                 const contactoEmailEl = document.getElementById('contactoEmailInput'); if (contactoEmailEl) { contactoEmailEl.value = full.cliente_email || full.contacto_email || ''; }
@@ -1524,7 +1524,7 @@
                 facebook: document.getElementById('facebook').value.trim() || null,
                 youtube: document.getElementById('youtube').value.trim() || null,
                 spotify: document.getElementById('spotify').value.trim() || null,
-                otras_redes: document.getElementById('otras_redes').value.trim() || null,
+                descripcion: document.getElementById('descripcion').value.trim() || null,
                 logo_url: logoHiddenVal || logoManualVal || null,
 
                 // Meta: incluir fingerprintId para trazabilidad (el backend lo ignorará si no lo usa)

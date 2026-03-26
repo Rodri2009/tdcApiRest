@@ -31,7 +31,7 @@ const obtenerBandas = async (req, res) => {
                 b.web_oficial,
                 b.youtube,
                 b.spotify,
-                b.otras_redes,
+                b.descripcion AS descripcion,
                 b.logo_url,
                 b.foto_prensa_url,
                 b.contacto_rol,
@@ -113,7 +113,7 @@ const obtenerBandaPorId = async (req, res) => {
                 b.web_oficial,
                 b.youtube,
                 b.spotify,
-                b.otras_redes,
+                b.descripcion AS descripcion,
                 b.logo_url,
                 b.foto_prensa_url,
                 b.contacto_rol,
@@ -189,7 +189,7 @@ const crearBanda = async (req, res) => {
         web_oficial,
         youtube,
         spotify,
-        otras_redes,
+        descripcion,
         logo_url,
         foto_prensa_url,
         contacto_nombre,
@@ -238,6 +238,22 @@ const crearBanda = async (req, res) => {
             }
         }
 
+        // 0. Verificar unicidad por nombre para evitar duplicados accidentales
+        const nombreNormalizado = nombre.trim();
+        const [bandaExistente] = await conn.query(
+            'SELECT id_banda FROM bandas_artistas WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(?)) LIMIT 1',
+            [nombreNormalizado]
+        );
+
+        if (bandaExistente) {
+            logWarning('[BANDA] Banda existente detectada, evitando duplicado:', nombreNormalizado, 'id:', bandaExistente.id_banda);
+            await conn.rollback();
+            return res.status(409).json({
+                error: 'Banda ya existe con ese nombre.',
+                id: bandaExistente.id_banda
+            });
+        }
+
         // 1. Insertar banda
         const sqlBanda = `
             INSERT INTO bandas_artistas (
@@ -251,7 +267,7 @@ const crearBanda = async (req, res) => {
                 web_oficial,
                 youtube,
                 spotify,
-                otras_redes,
+                descripcion,
                 logo_url,
                 foto_prensa_url,
                 contacto_rol,
@@ -259,7 +275,7 @@ const crearBanda = async (req, res) => {
                 verificada,
                 activa,
                 creado_en
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())
         `;
 
         const paramsBanda = [
@@ -273,7 +289,7 @@ const crearBanda = async (req, res) => {
             web_oficial || null,
             youtube || null,
             spotify || null,
-            otras_redes || null,
+            descripcion || null,
             logo_url || null,
             foto_prensa_url || null,
             contacto_rol || null,
@@ -337,6 +353,7 @@ const crearBanda = async (req, res) => {
     } catch (err) {
         if (conn) await conn.rollback();
         logError('[BANDA] Error al crear banda:', err.message);
+        logError(err.stack);
         return res.status(500).json({ error: 'Error al crear banda.' });
     } finally {
         if (conn) conn.release();
@@ -368,7 +385,7 @@ const actualizarBanda = async (req, res) => {
         web_oficial,
         youtube,
         spotify,
-        otras_redes,
+        descripcion,
         logo_url,
         foto_prensa_url,
         contacto_nombre,
@@ -440,9 +457,9 @@ const actualizarBanda = async (req, res) => {
             actualizaciones.push('spotify = ?');
             params.push(spotify || null);
         }
-        if (otras_redes !== undefined) {
-            actualizaciones.push('otras_redes = ?');
-            params.push(otras_redes || null);
+        if (descripcion !== undefined) {
+            actualizaciones.push('descripcion = ?');
+            params.push(descripcion || null);
         }
         if (logo_url !== undefined) {
             actualizaciones.push('logo_url = ?');
@@ -726,17 +743,18 @@ const buscarBandas = async (req, res) => {
         // Búsqueda principal (case-insensitive + LOWER)
         const bandas = await conn.query(
             `SELECT 
-                id_banda as id,
-                nombre,
-                genero_musical,
-                logo_url,
-                contacto_nombre,
-                contacto_email,
-                verificada,
-                activa
-            FROM bandas_artistas
-            WHERE (LOWER(nombre) LIKE LOWER(?) OR LOWER(genero_musical) LIKE LOWER(?))
-            ORDER BY nombre ASC
+                b.id_banda as id,
+                b.nombre,
+                b.genero_musical,
+                b.logo_url,
+                c.nombre AS contacto_nombre,
+                c.email AS contacto_email,
+                b.verificada,
+                b.activa
+            FROM bandas_artistas b
+            LEFT JOIN clientes c ON b.id_cliente = c.id_cliente
+            WHERE (LOWER(b.nombre) LIKE LOWER(?) OR LOWER(b.genero_musical) LIKE LOWER(?))
+            ORDER BY b.nombre ASC
             LIMIT 10`,
             [searchTerm, searchTerm]
         );

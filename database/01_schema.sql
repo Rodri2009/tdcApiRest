@@ -455,8 +455,8 @@ CREATE TABLE IF NOT EXISTS bandas_artistas (
     web_oficial VARCHAR(500) DEFAULT NULL,
     youtube VARCHAR(500) DEFAULT NULL COMMENT 'Canal o video destacado',
     spotify VARCHAR(500) DEFAULT NULL COMMENT 'Perfil o playlist',
-    otras_redes TEXT COMMENT 'JSON con otras redes/links',
-    
+    descripcion TEXT COMMENT 'Descripción detallada o características de la banda',
+
     -- Imagen/Logo
     logo_url VARCHAR(500) DEFAULT NULL COMMENT 'URL del logo subido',
     foto_prensa_url VARCHAR(500) DEFAULT NULL COMMENT 'Foto de prensa',

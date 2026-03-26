@@ -163,7 +163,7 @@ const createBanda = async (req, res) => {
     try {
         const {
             nombre, genero_musical, bio,
-            instagram, facebook, twitter, tiktok, web_oficial, youtube, spotify, otras_redes,
+            instagram, facebook, twitter, tiktok, web_oficial, youtube, spotify, descripcion,
             logo_url, foto_prensa_url,
             contacto_nombre, contacto_email, contacto_telefono, contacto_rol,
             formacion // Array de {instrumento, nombre_integrante?, es_lider?, notas?}
@@ -237,17 +237,17 @@ const createBanda = async (req, res) => {
         const result = await pool.query(`
             INSERT INTO bandas_artistas (
                 nombre, genero_musical, bio,
-                instagram, facebook, twitter, tiktok, web_oficial, youtube, spotify, otras_redes,
+                instagram, facebook, twitter, tiktok, web_oficial, youtube, spotify, descripcion,
                 logo_url, foto_prensa_url,
-                contacto_nombre, contacto_email, contacto_telefono, contacto_rol,
+                contacto_rol,
                 id_cliente, verificada
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             nombre, genero_musical || null, bio || null,
             instagram || null, facebook || null, twitter || null, tiktok || null,
-            web_oficial || null, youtube || null, spotify || null, otras_redes || null,
+            web_oficial || null, youtube || null, spotify || null, descripcion || null,
             logo_url || null, foto_prensa_url || null,
-            contacto_nombre || null, contacto_email || null, contacto_telefono || null, contacto_rol || null,
+            contacto_rol || null,
             idCliente,
             isAdmin ? 1 : 0 // Si es admin, se marca como verificada
         ]);
@@ -303,7 +303,7 @@ const updateBanda = async (req, res) => {
         // Campos permitidos para actualizar
         const camposPermitidos = [
             'nombre', 'genero_musical', 'bio',
-            'instagram', 'facebook', 'twitter', 'tiktok', 'web_oficial', 'youtube', 'spotify', 'otras_redes',
+            'instagram', 'facebook', 'twitter', 'tiktok', 'web_oficial', 'youtube', 'spotify', 'descripcion',
             'logo_url', 'foto_prensa_url',
             'contacto_nombre', 'contacto_email', 'contacto_telefono', 'contacto_rol',
             'verificada', 'activa'
@@ -441,7 +441,7 @@ const updateBandaPublic = async (req, res) => {
         // Campos permitidos para actualizar (sin verificada ni activa para usuarios públicos)
         const camposPermitidos = [
             'nombre', 'genero_musical', 'bio',
-            'instagram', 'facebook', 'twitter', 'tiktok', 'web_oficial', 'youtube', 'spotify', 'otras_redes',
+            'instagram', 'facebook', 'twitter', 'tiktok', 'web_oficial', 'youtube', 'spotify', 'descripcion',
             'logo_url', 'foto_prensa_url',
             'contacto_nombre', 'contacto_email', 'contacto_telefono', 'contacto_rol'
         ];
@@ -766,7 +766,7 @@ const updateSolicitud = async (req, res) => {
             'estado', 'notas_admin', 'id_evento_generado',
             // Permitir editar datos si admin quiere completarlos
             'nombre_banda', 'genero_musical', 'formacion_json',
-            'instagram', 'facebook', 'youtube', 'spotify', 'otras_redes', 'logo_url',
+            'instagram', 'facebook', 'youtube', 'spotify', 'descripcion', 'logo_url',
             'contacto_nombre', 'contacto_email', 'contacto_telefono', 'contacto_rol',
             'fecha_preferida', 'fecha_alternativa', 'hora_preferida',
             'invitadas_json', 'cantidad_bandas',
@@ -844,7 +844,7 @@ const updateSolicitud = async (req, res) => {
             }
 
             // Si vienen campos relacionados con la banda y la solicitud tiene id_banda, actualizar bandas_artistas
-            const bandFields = ['nombre_banda', 'genero_musical', 'formacion_json', 'instagram', 'facebook', 'youtube', 'spotify', 'otras_redes', 'logo_url', 'contacto_rol'];
+            const bandFields = ['nombre_banda', 'genero_musical', 'formacion_json', 'instagram', 'facebook', 'youtube', 'spotify', 'descripcion', 'logo_url', 'contacto_rol'];
             const bandUpdates = {};
             for (const f of bandFields) if (updates[f] !== undefined) bandUpdates[f] = updates[f];
 
@@ -860,7 +860,7 @@ const updateSolicitud = async (req, res) => {
                     if (bandUpdates.facebook) { setB.push('facebook = ?'); paramsB.push(bandUpdates.facebook); }
                     if (bandUpdates.youtube) { setB.push('youtube = ?'); paramsB.push(bandUpdates.youtube); }
                     if (bandUpdates.spotify) { setB.push('spotify = ?'); paramsB.push(bandUpdates.spotify); }
-                    if (bandUpdates.otras_redes) { setB.push('otras_redes = ?'); paramsB.push(bandUpdates.otras_redes); }
+                    if (bandUpdates.descripcion) { setB.push('descripcion = ?'); paramsB.push(bandUpdates.descripcion); }
                     if (bandUpdates.logo_url) { setB.push('logo_url = ?'); paramsB.push(bandUpdates.logo_url); }
                     if (setB.length > 0) {
                         paramsB.push(idBanda);

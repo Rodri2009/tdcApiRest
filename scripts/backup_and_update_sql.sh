@@ -86,5 +86,10 @@ docker exec -i "$CONTAINER_NAME" sh -c \
   "mysqldump -u$DB_USER -p$DB_PASSWORD --no-create-info --skip-add-drop-table --complete-insert $DB_NAME" > "$DUMP_FILE"
 echo "✅ Backup de datos generado: $DUMP_FILE"
 
+# Actualizar dump latest (punto de restauración base)
+LATEST_DUMP_FILE="$OUTPUT_DIR/mysqldump_latest.sql"
+cp "$DUMP_FILE" "$LATEST_DUMP_FILE"
+echo "✅ Backup latest actualizado: $LATEST_DUMP_FILE"
+
 echo "🎉 Proceso completado. Los archivos SQL han sido actualizados."
 echo "   (El archivo $DUMP_FILENAME es un backup en host; NO se monta en Docker)"

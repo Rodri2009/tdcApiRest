@@ -18,6 +18,7 @@
 #   --only-schema    Solo carga 01_schema.sql
 #   --only-seed      Solo carga 02_seed.sql
 #   --only-test      Solo carga 03_test_data.sql
+#   --use-latest-dump Usa database/mysqldump_latest.sql para restaurar todo (ignore 01/02/03).
 #
 # Opciones de Servicios (Puppeteer):
 #   --mp             Habilita Mercado Pago (ENABLE_PUPPETEER_MP=true)
@@ -80,6 +81,7 @@ SKIP_SQL=false
 SKIP_BACKUP=false
 ENABLE_MP=false
 ENABLE_WA=false
+USE_LATEST_DUMP=false
 # session backup flags (nuevos)
 SAVE_MP_SESSION=false
 SAVE_WA_SESSION=false
@@ -181,6 +183,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --only-test)
             SQL_SCRIPTS=("03_test_data.sql")
+            shift
+            ;;
+        --use-latest-dump)
+            USE_LATEST_DUMP=true
             shift
             ;;
         *)
@@ -537,6 +543,17 @@ reset_docker_containers() {
 
 verify_sql_files() {
     echo -e "${YELLOW}[*]${NC} Verificando archivos SQL..."
+    if [ "$USE_LATEST_DUMP" = true ]; then
+        local latest="$SQL_DIR/mysqldump_latest.sql"
+        if [ ! -f "$latest" ]; then
+            echo -e "${RED}[✗] ERROR: Archivo no encontrado: $latest${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}    ✓${NC} mysqldump_latest.sql"
+        echo ""
+        return
+    fi
+
     for file in "${SQL_SCRIPTS[@]}"; do
         if [ ! -f "$SQL_DIR/$file" ]; then
             echo -e "${RED}[✗] ERROR: Archivo no encontrado: $SQL_DIR/$file${NC}"
@@ -676,31 +693,41 @@ if [ "$SKIP_SQL" = false ] && [ "$USE_DOCKER" = true ]; then
     exec_sql_docker "DROP DATABASE IF EXISTS \`$DB_NAME\`;" "Eliminando base de datos"
     exec_sql_docker "CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" "Creando base de datos"
     echo ""
-    
-    # Load SQL scripts
-    for script in "${SQL_SCRIPTS[@]}"; do
-        case $script in
-            01_schema.sql)
-                if ! run_sql_docker "$SQL_DIR/$script" "Schema (Estructura de tablas)"; then
-                    echo -e "${RED}[✗] ERROR: No se pudo cargar el schema${NC}"
-                    exit 1
-                fi
-                ;;
-            02_seed.sql)
-                if ! run_sql_docker "$SQL_DIR/$script" "Seed Data (Configuración y catálogos)"; then
-                    echo -e "${RED}[✗] ERROR: No se pudo cargar los datos de semilla${NC}"
-                    exit 1
-                fi
-                ;;
-            03_test_data.sql)
-                if ! run_sql_docker "$SQL_DIR/$script" "Test Data (Datos dinámicos de prueba)"; then
-                    echo -e "${RED}[✗] ERROR: No se pudo cargar los datos de prueba${NC}"
-                    exit 1
-                fi
-                ;;
-        esac
-    done
-    
+
+    if [ "$USE_LATEST_DUMP" = true ]; then
+        latest_dump="$SQL_DIR/mysqldump_latest.sql"
+        echo -e "${YELLOW}[*]${NC} Restaurando desde mysqldump_latest.sql..."
+        docker exec -i "$(get_container_name "$DOCKER_DIR")" mysql -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < "$latest_dump"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}[✗] ERROR: Falló restaurar desde $latest_dump${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}✓ OK${NC}"
+    else
+        # Load SQL scripts
+        for script in "${SQL_SCRIPTS[@]}"; do
+            case $script in
+                01_schema.sql)
+                    if ! run_sql_docker "$SQL_DIR/$script" "Schema (Estructura de tablas)"; then
+                        echo -e "${RED}[✗] ERROR: No se pudo cargar el schema${NC}"
+                        exit 1
+                    fi
+                    ;;
+                02_seed.sql)
+                    if ! run_sql_docker "$SQL_DIR/$script" "Seed Data (Configuración y catálogos)"; then
+                        echo -e "${RED}[✗] ERROR: No se pudo cargar los datos de semilla${NC}"
+                        exit 1
+                    fi
+                    ;;
+                03_test_data.sql)
+                    if ! run_sql_docker "$SQL_DIR/$script" "Test Data (Datos dinámicos de prueba)"; then
+                        echo -e "${RED}[✗] ERROR: No se pudo cargar los datos de prueba${NC}"
+                        exit 1
+                    fi
+                    ;;
+            esac
+        done
+    fi
     echo ""
 fi
 
