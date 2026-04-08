@@ -9,7 +9,14 @@ const serializeBigInt = (obj) => JSON.parse(JSON.stringify(obj, (key, value) => 
 const getPublicEvents = async (req, res) => {
     try {
         const query = `
-            SELECT e.id, e.id_solicitud, e.tipo_evento, e.tabla_origen, e.nombre_evento, e.descripcion, COALESCE(e.url_flyer, sol.url_flyer) as url_flyer, e.fecha_evento, e.hora_inicio, e.duracion_estimada,
+            SELECT e.id, e.id_solicitud, e.tipo_evento, e.tabla_origen,
+                   -- Preferir datos de solicitudes actualizadas cuando existan
+                   COALESCE(sol.descripcion_corta, sol.descripcion_larga) as nombre_evento,
+                   sol.descripcion_larga as descripcion,
+                   sol.url_flyer as url_flyer,
+                   COALESCE(sol.fecha_evento, sfb.fecha_evento, e.fecha_evento) as fecha_evento,
+                   COALESCE(sol.hora_inicio, sfb.hora_evento, e.hora_inicio) as hora_inicio,
+                   COALESCE(sol.duracion_minutos, e.duracion_minutos) as duracion_minutos,
                    COALESCE(c.nombre, '') as nombre_cliente,
                    COALESCE(c.email, '') as email_cliente,
                    COALESCE(c.telefono, '') as telefono_cliente,
@@ -17,10 +24,10 @@ const getPublicEvents = async (req, res) => {
                    sfb.precio_basico as precio_base,
                    sfb.precio_anticipada as precio_anticipada,
                    sfb.precio_puerta as precio_puerta,
-                   e.es_publico
+                   sol.es_publico as es_publico
             FROM eventos_confirmados e
             LEFT JOIN solicitudes sol ON e.id_solicitud = sol.id_solicitud
-            LEFT JOIN clientes c ON e.id_cliente = c.id_cliente
+            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
             WHERE e.es_publico = 1 AND e.activo = 1
             ORDER BY e.fecha_evento, e.hora_inicio
@@ -49,17 +56,23 @@ const getEventoDetallePublico = async (req, res) => {
 
         // Obtener evento confirmado
         const [evento] = await pool.query(`
-            SELECT e.id, e.id_solicitud, e.tipo_evento, e.tabla_origen, e.nombre_evento, e.descripcion, e.url_flyer, 
-                   e.fecha_evento, e.hora_inicio, e.duracion_estimada,
+            SELECT e.id, e.id_solicitud, e.tipo_evento, e.tabla_origen,
+                   COALESCE(sol.descripcion_corta, sol.descripcion_larga) as nombre_evento,
+                   sol.descripcion_larga as descripcion,
+                   COALESCE(sol.url_flyer, e.url_flyer) as url_flyer,
+                   COALESCE(sol.fecha_evento, sfb.fecha_evento, e.fecha_evento) as fecha_evento,
+                   COALESCE(sol.hora_inicio, sfb.hora_evento, e.hora_inicio) as hora_inicio,
+                   COALESCE(sol.duracion_minutos, e.duracion_minutos) as duracion_minutos,
                    COALESCE(c.nombre, '') as nombre_cliente,
                    COALESCE(c.email, '') as email_cliente,
                    COALESCE(c.telefono, '') as telefono_cliente,
                    sfb.precio_basico as precio_base,
                    sfb.precio_anticipada as precio_anticipada,
                    sfb.precio_puerta as precio_puerta,
-                   e.precio_final, e.es_publico, e.activo
+                   e.es_publico, e.activo
             FROM eventos_confirmados e
-            LEFT JOIN clientes c ON e.id_cliente = c.id_cliente
+            LEFT JOIN solicitudes sol ON e.id_solicitud = sol.id_solicitud
+            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
             WHERE e.id = ?
         `, [eventoId]);
@@ -72,10 +85,10 @@ const getEventoDetallePublico = async (req, res) => {
         if (evento.tipo_evento === 'BANDA' && evento.id_solicitud) {
             const [fechaBanda] = await pool.query(`
                 SELECT sfb.id_solicitud as id_solicitud_fecha_banda,
-                       sfb.fecha_evento, sfb.hora_evento, sfb.duracion, sfb.id_banda,
+                       sfb.fecha_evento, sfb.hora_evento, s.duracion_minutos AS duracion, sfb.id_banda,
                        sfb.precio_basico, sfb.precio_puerta_propuesto, sfb.cantidad_bandas,
-                       sfb.expectativa_publico, sfb.estado, sfb.notas_admin,
-                       sfb.bandas_json, sfb.creado_en, sfb.actualizado_en,
+                       sfb.expectativa_publico, s.estado, sfb.notas_admin,
+                       sfb.bandas_json, s.fecha_creacion AS creado_en, s.actualizado_en,
                        s.descripcion_corta, s.descripcion_larga, s.url_flyer as solicitud_url_flyer,
                        s.id_cliente, s.es_publico,
                        c.nombre as cliente_nombre, c.email as cliente_email, c.telefono as cliente_telefono,

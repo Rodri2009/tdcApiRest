@@ -15,7 +15,7 @@ const {
 // Ruta pública para obtener solicitud de solo lectura (resumen)
 router.get('/public/:id', getSolicitudPublicById);
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect, optionalProtect } = require('../middleware/authMiddleware');
 const clientesController = require('../controllers/clientesController');
 
 // POST /api/solicitudes -> Crear una nueva solicitud
@@ -47,6 +47,6 @@ router.post('/:id/adicionales', guardarAdicionales);
 
 // PUT /api/solicitudes/:id/finalizar -> Confirmar y finalizar la solicitud
 // CAMBIO: Agregar middleware protect para que req.user sea poblado desde JWT
-router.put('/:id/finalizar', protect, finalizarSolicitud);
+router.put('/:id/finalizar', optionalProtect, finalizarSolicitud);
 
 module.exports = router;

@@ -48,7 +48,7 @@
         /* Fondo con textura sutil de madera/rustico */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0c0a09;
+            background-color: black;
             /* Negro muy oscuro */
             color: #d6d3d1;
             /* Gris claro */
@@ -124,7 +124,7 @@
 
         .agenda-flyer-passline {
             width: 150px;
-            height: 180px;
+            height: 220px;
             flex-shrink: 0;
         }
 
@@ -308,11 +308,8 @@
 
                 <div class="text-center mb-12">
                     <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
-                        Agenda Cultural
+                        Próximos eventos
                     </h2>
-                    <p class="mt-4 text-lg text-stone-400">
-                        Próximos eventos, talleres y bandas
-                    </p>
                 </div>
 
                 <div id="agenda-list" class="agenda-grid">
@@ -510,42 +507,91 @@
         async function fetchAgenda() {
             try {
                 console.debug('[AGENDA-INDEX] API base URL', API_BASE_URL);
+
+                // 1) Cargar eventos confirmados publicados
+                console.debug('[AGENDA-INDEX] Fetching public events from', `${API_BASE_URL}/api/eventos/publicos`);
+                const resEventos = await fetch(`${API_BASE_URL}/api/eventos/publicos`);
+                let eventos = [];
+                if (resEventos.ok) {
+                    const data = await resEventos.json();
+                    console.debug('[AGENDA-INDEX] /api/eventos/publicos raw ->', data);
+                    eventos = data.map(item => {
+                        const fechaRaw = item.fecha_evento || item.fecha;
+                        const horaRaw = item.hora_inicio || item.hora || null;
+                        const fechaObj = parseDateString(fechaRaw, horaRaw);
+                        return {
+                            source: 'evento',
+                            id: item.id,
+                            id_solicitud: item.id_solicitud || null,
+                            fecha: fechaRaw,
+                            _fechaObj: fechaObj,
+                            hora: horaRaw,
+                            nombre: item.nombre_evento || item.nombre_banda || item.nombreCliente || item.nombreCompleto || item.descripcion || 'Evento',
+                            tipo: item.tipo_evento || 'BANDA',
+                            precio: item.precio_base || item.precio_anticipada || item.precio_final || item.precio || null,
+                            precio_anticipada: item.precio_anticipada || null,
+                            precio_puerta: item.precio_puerta || null,
+                            descripcion: item.descripcion || '',
+                            url_flyer: item.url_flyer || item.flyer_url || item.flyer || null
+                        };
+                    });
+                } else {
+                    console.warn('[AGENDA-INDEX] /api/eventos/publicos response status', resEventos.status);
+                }
+
+                // 2) Cargar solicitudes públicas confirmadas
                 console.debug('[AGENDA-INDEX] Fetching public solicitudes from', `${API_BASE_URL}/api/solicitudes/publicas`);
-                // Cargar todas las solicitudes públicas (bandas, talleres, servicios)
                 const resPublicas = await fetch(`${API_BASE_URL}/api/solicitudes/publicas`);
-                let items = [];
+                let solicitudes = [];
                 if (resPublicas.ok) {
                     const data = await resPublicas.json();
                     console.debug('[AGENDA-INDEX] /api/solicitudes/publicas raw ->', data);
-                    items = data.map(item => {
+                    solicitudes = data.map(item => {
                         const fechaRaw = item.fechaEvento;
                         const horaRaw = item.horaEvento;
                         const fechaObj = parseDateString(fechaRaw, horaRaw);
                         return {
-                            source: 'publica',
+                            source: 'solicitud',
                             id: item.id,
+                            id_solicitud: item.id,
                             fecha: fechaRaw,
                             _fechaObj: fechaObj,
                             hora: horaRaw,
-                            nombre: item.nombreEvento || item.nombreCompleto,
-                            tipo: item.tipoEvento,
-                            precio: item.precio,
-                            // precios específicos para bandas (anticipada, puerta)
+                            nombre: item.nombreEvento || item.nombreCompleto || item.nombre_cliente || item.descripcion || 'Evento',
+                            tipo: item.tipoEvento || 'ALQUILER',
+                            precio: item.precio || null,
                             precio_anticipada: item.precio_anticipada || null,
                             precio_puerta: item.precio_puerta || null,
-                            descripcion: item.descripcion,
-                            // Mapeo del campo flyer/imagen
+                            descripcion: item.descripcion || '',
                             url_flyer: item.url_flyer || item.flyer_url || item.flyerUrl || item.flyer || item.imagen || item.adjunto_url || null
                         };
                     });
+                } else {
+                    console.warn('[AGENDA-INDEX] /api/solicitudes/publicas response status', resPublicas.status);
                 }
+
+                // 3) Combinar y dedupe para evitar duplicados entre solicitudes y eventos confirmados.
+                // Prioridad: datos de solicitudes (son la fuente de verdad) sobre eventos_confirmados.
+                const itemsBySolicitud = new Map();
+                const nonSolicitudItems = [];
+
+                [...eventos, ...solicitudes].forEach(item => {
+                    if (item.id_solicitud) {
+                        // Si existen multiple entradas para la misma id_solicitud, la última (solicitudes) queda.
+                        itemsBySolicitud.set(item.id_solicitud, item);
+                    } else {
+                        nonSolicitudItems.push(item);
+                    }
+                });
+
+                let allItems = [...itemsBySolicitud.values(), ...nonSolicitudItems];
 
                 // Filtrar solo eventos futuros
                 const hoy = new Date();
                 hoy.setHours(0, 0, 0, 0);
 
-                console.debug('[AGENDA-INDEX] mapped items ->', items);
-                const proximosItems = items
+                console.debug('[AGENDA-INDEX] combined items ->', allItems);
+                const proximosItems = allItems
                     .filter(item => item._fechaObj && item._fechaObj > hoy)
                     .sort((a, b) => a._fechaObj - b._fechaObj);
 
@@ -571,7 +617,11 @@
                 } catch (e) { /* noop */ }
 
                 console.debug('[AGENDA-INDEX] filtered future items ->', proximosItems);
-                renderAgenda(proximosItems, items.length);
+
+                // Limitar a 10 eventos confirmados para la agenda
+                const proximosItemsLimitados = proximosItems.slice(0, 10);
+
+                renderAgenda(proximosItemsLimitados, allItems.length);
 
             } catch (error) {
                 console.error('Error al cargar agenda:', error);

@@ -109,17 +109,35 @@ const getTarifas = async (req, res) => {
 const getOpcionesCantidad = async (req, res) => {
     let conn;
     try {
+        const rawDate = req.query.fecha;
+        let targetDate = new Date();
+        if (rawDate) {
+            const parsed = new Date(rawDate);
+            if (!isNaN(parsed.getTime())) {
+                targetDate = parsed;
+            }
+        }
+
+        const targetDateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+
         conn = await pool.getConnection();
         const rows = await conn.query(`
-            SELECT DISTINCT
+            SELECT
                 id_tipo_evento as id_tipo_evento,
                 cantidad_min,
                 cantidad_max
-            FROM precios_vigencia
-            WHERE (vigente_hasta IS NULL OR vigente_hasta >= CURDATE())
-              AND vigente_desde <= CURDATE()
+            FROM precios_vigencia pv1
+            WHERE (pv1.vigente_hasta IS NULL OR pv1.vigente_hasta >= ?)
+              AND pv1.vigente_desde <= ?
+              AND pv1.vigente_desde = (
+                  SELECT MAX(pv2.vigente_desde)
+                  FROM precios_vigencia pv2
+                  WHERE pv2.id_tipo_evento = pv1.id_tipo_evento
+                    AND (pv2.vigente_hasta IS NULL OR pv2.vigente_hasta >= ?)
+                    AND pv2.vigente_desde <= ?
+              )
             ORDER BY id_tipo_evento, cantidad_min
-        `);
+        `, [targetDateStr, targetDateStr, targetDateStr, targetDateStr]);
         // Agrupar por tipo de evento
         const cantidadesObject = rows.reduce((acc, row) => {
             if (!acc[row.id_tipo_evento]) {
@@ -203,9 +221,9 @@ const getFechasOcupadas = async (req, res) => {
         if (detalle) {
             const sql = `
                 SELECT DISTINCT fecha, hora FROM(
-                    SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(hora_evento), 'hs', '') AS hora FROM solicitudes_alquiler WHERE estado = 'Confirmado'
+                    SELECT DATE_FORMAT(sa.fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(sa.hora_evento), 'hs', '') AS hora FROM solicitudes_alquiler sa JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud WHERE sol.estado = 'Confirmado'
                     UNION
-                    SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(hora_evento), 'hs', '') AS hora FROM solicitudes_fechas_bandas WHERE estado = 'Confirmado'
+                    SELECT DATE_FORMAT(sfb.fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(sfb.hora_evento), 'hs', '') AS hora FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud WHERE sol.estado = 'Confirmado'
                     UNION
                     SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, TIME_FORMAT(hora_inicio, '%H:%i') AS hora FROM eventos_confirmados WHERE activo = 1
                 ) AS todas
@@ -238,9 +256,9 @@ const getFechasOcupadas = async (req, res) => {
         // Esto evita discrepancias cuando hay entradas en `eventos_confirmados` pero no en `solicitudes_alquiler` o `solicitudes_bandas`.
         const sql = `
             SELECT DISTINCT fecha FROM(
-                SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_alquiler WHERE estado = 'Confirmado'
+                SELECT DATE_FORMAT(sa.fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_alquiler sa JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud WHERE sol.estado = 'Confirmado'
                 UNION
-                SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_fechas_bandas WHERE estado = 'Confirmado'
+                SELECT DATE_FORMAT(sfb.fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud WHERE sol.estado = 'Confirmado'
                 UNION
                 SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM eventos_confirmados WHERE activo = 1
             ) AS todas

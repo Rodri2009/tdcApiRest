@@ -35,19 +35,38 @@
         .estado-solicitado {
             background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
         }
+
         .estado-contactado {
             background: linear-gradient(90deg, rgba(66, 153, 225, 0.03), rgba(66, 153, 225, 0.02));
         }
+
         .estado-cancelado {
             background: linear-gradient(90deg, rgba(245, 101, 101, 0.03), rgba(245, 101, 101, 0.02));
         }
 
         /* Columnas específicas con wrap */
-        th:nth-child(3), td:nth-child(3) { white-space: normal; min-width: 130px; }
-        th:nth-child(4), td:nth-child(4) { min-width: 110px; }
-        th:nth-child(8), td:nth-child(8) { white-space: normal; max-width: 250px; min-width: 150px; word-break: break-word; }
+        th:nth-child(3),
+        td:nth-child(3) {
+            white-space: normal;
+            min-width: 130px;
+        }
 
-        table { min-width: 820px; }
+        th:nth-child(4),
+        td:nth-child(4) {
+            min-width: 110px;
+        }
+
+        th:nth-child(8),
+        td:nth-child(8) {
+            white-space: normal;
+            max-width: 250px;
+            min-width: 150px;
+            word-break: break-word;
+        }
+
+        table {
+            min-width: 820px;
+        }
 
         select.estado-select {
             padding: 8px 12px;
@@ -62,11 +81,27 @@
             max-width: 100%;
         }
 
-        select.estado-select:hover  { border-color: #764ba2; }
-        select.estado-select:focus  { outline: none; border-color: #764ba2; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+        select.estado-select:hover {
+            border-color: #764ba2;
+        }
 
-        .actions-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-        .actions-buttons { display: flex; gap: 6px; }
+        select.estado-select:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .actions-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .actions-buttons {
+            display: flex;
+            gap: 6px;
+        }
 
         #loader {
             text-align: center;
@@ -76,7 +111,7 @@
             font-size: 16px;
         }
     </style>
-<script src="./navbar.js"></script>
+    <script src="./navbar.js"></script>
 </head>
 
 <body>
@@ -158,9 +193,9 @@
                         <!-- <th>Categoría</th> -->
                         <th>Tipo</th>
                         <th>Cliente</th>
-                        <th>Fecha Evento</th>
-                        <th>Hora Inicio</th>
-                        <th>Flyer</th>
+                        <th>Fecha <br> Evento</th>
+                        <th style="width:70px;">Hora <br> Inicio</th>
+                        <th style="width:90px;">Flyer</th>
                         <th>Descripción</th>
                         <th>Acciones</th>
                     </tr>
@@ -395,6 +430,15 @@
                     }
                 }
 
+                // Base URL de API: usa mismo origen o forzar localhost:3000 en entorno local si es necesario
+                const API_BASE_URL = (window.location.hostname === 'localhost' && window.location.port !== '3000')
+                    ? 'http://localhost:3000'
+                    : window.location.origin;
+
+                function adminFetch(endpoint, options = {}) {
+                    return fetch(`${API_BASE_URL}${endpoint}`, options);
+                }
+
                 async function cargarSolicitudes() {
                     console.log('Iniciando carga de solicitudes...');
                     loader.style.display = 'block';
@@ -407,7 +451,14 @@
                             headers['Authorization'] = `Bearer ${token}`;
                         }
 
-                        const res = await fetch('/api/admin/solicitudes', {
+                        // Fase 2 fix: for local dev with backend on 3000 and frontend on 80/other,
+                        // aseguramos el origen correcto de la API.
+                        let apiBaseUrl = window.location.origin;
+                        if (window.location.hostname === 'localhost' && window.location.port !== '3000') {
+                            apiBaseUrl = 'http://localhost:3000';
+                        }
+
+                        const res = await fetch(`${apiBaseUrl}/api/admin/solicitudes`, {
                             headers: headers
                         });
 
@@ -438,7 +489,7 @@
 
                         // Guardar datos para filtrado
                         // ordenar localmente por fechaSolicitud desc por si el backend no lo hace
-                        data.sort((a,b) => new Date(b.fechaSolicitud) - new Date(a.fechaSolicitud));
+                        data.sort((a, b) => new Date(b.fechaSolicitud) - new Date(a.fechaSolicitud));
                         todasLasSolicitudes = data;
 
                         // Renderizar todas las solicitudes
@@ -471,13 +522,14 @@
                         // Preferimos 'categoria' devuelto por el backend; si no existe, usamos 'tipoEvento'
                         tr.dataset.categoria = solicitud.categoria || solicitud.tipoEvento || '';
                         // Fecha de solicitud (timestamp) - mostrar fecha+hora local
-                        const fechaSolicitud = solicitud.fechaSolicitud ? (new Date(solicitud.fechaSolicitud)).toLocaleString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A';
+                        //const fechaSolicitud = solicitud.fechaSolicitud ? (new Date(solicitud.fechaSolicitud)).toLocaleString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A';
+                        const fechaSolicitud = solicitud.fechaSolicitud ? (new Date(solicitud.fechaSolicitud)).toLocaleString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(', ', '<br>').replace(/([ap])\.\s+m\./g, '$1m') : 'N/A';
                         // Formato Fecha Evento: Nombre corto del día, DD, MM, AAAA
                         const fechaEvento = solicitud.fechaEvento ? (() => {
                             const d = new Date(String(solicitud.fechaEvento) + 'T00:00:00');
                             const weekday = d.toLocaleDateString('es-AR', { weekday: 'long' });
                             const date = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                            return `${weekday} ${date}`;
+                            return `${weekday}<br>${date}`;
                         })() : 'N/A';
                         const horaInicio = solicitud.horaInicio ? String(solicitud.horaInicio).slice(0, 5) : '-';
                         const descripcionCorta = solicitud.descripcionCorta || '<em>Sin descripción</em>';
@@ -548,7 +600,15 @@
                         // (Field kept in other forms/controllers if needed)
 
                         const estadoDisplay = `<div class="estado-badge ${String(solicitud.estado).toLowerCase()}">${solicitud.estado}</div>${!solicitud.es_publico ? '<div class="privado-indicator">🔒 Privado</div>' : ''}`;
-                        tr.innerHTML = `<td data-label="Creado" title="ID: ${solicitud.id}">${fechaSolicitud}</td><td data-label="Fecha Solicitud" style="display:none;">${fechaSolicitud}</td><td data-label="Tipo">${solicitud.tipoNombre || tipoLegible}</td><td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td><td data-label="Fecha Evento">${fechaEvento}</td><td data-label="Hora Inicio">${horaInicio}</td><td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td><td data-label="Descripción"><div class="description">${descripcionCorta}</div></td><td data-label="Acciones"><div class="actions-cell">${estadoDisplay}<div class="actions-buttons">${botones}</div></div></td>`;
+                        tr.innerHTML = `<td data-label="Creado" title="ID: ${solicitud.id}">${fechaSolicitud}</td>
+                        <td data-label="Fecha Solicitud" style="display:none;">${fechaSolicitud}</td>
+                        <td data-label="Tipo">${solicitud.tipoNombre || tipoLegible}</td>
+                        <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
+                        <td data-label="Fecha Evento">${fechaEvento}</td>
+                        <td data-label="Hora Inicio">${horaInicio}</td>
+                        <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td>
+                        <td data-label="Descripción"><div class="description">${descripcionCorta}</div></td>
+                        <td data-label="Acciones"><div class="actions-cell">${estadoDisplay}<div class="actions-buttons">${botones}</div></div></td>`;
 
                         tbody.appendChild(tr);
 

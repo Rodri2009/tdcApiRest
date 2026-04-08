@@ -29,47 +29,75 @@
             color: #d6d3d1;
         }
 
-        .event-card {
-            transition: transform 0.3s ease;
-        }
-
-        .event-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(240, 171, 252, 0.1);
-        }
-
-        /* Estilos para flyers */
-        .agenda-flyer {
-            flex-shrink-0;
-            width: 100px;
-            height: 140px;
-            border-radius: 8px;
-            overflow: hidden;
-            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+        /* CARD passline */
+        .agenda-card-passline {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(240, 171, 252, 0.2);
+            background: #1c1917;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: .25s;
+            cursor: pointer;
+            text-decoration: none;
         }
 
-        .agenda-flyer img {
+        .agenda-card-passline:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0 20px rgba(240, 171, 252, 0.45);
+        }
+
+        .agenda-flyer-passline {
+            width: 150px;
+            height: 220px;
+            flex-shrink: 0;
+        }
+
+        .agenda-flyer-passline img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            box-shadow: 0 0 15px rgba(240, 171, 252, 0.3);
         }
 
-        .agenda-flyer .helper-text {
-            color: #666;
-            font-size: 0.85rem;
-            text-align: center;
-        }
-
-        .agenda-meta {
+        .agenda-info-passline {
+            padding: 14px;
             display: flex;
-            gap: 12px;
-            align-items: flex-start;
+            flex-direction: column;
+            justify-content: space-between;
             flex: 1;
+        }
+
+        .agenda-title-passline {
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            line-height: 1.25;
+            margin-bottom: 6px;
+        }
+
+        .agenda-date-passline {
+            font-size: 20px;
+            font-weight: 800;
+            color: #f0abfc;
+            letter-spacing: .5px;
+        }
+
+        .agenda-hour-passline {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e9d5ff;
+            margin-top: 4px;
+        }
+
+        .agenda-price-passline {
+            font-size: 14px;
+            color: #f0abfc;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        .agenda-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 18px;
         }
 
         /* Menú responsivo */
@@ -206,14 +234,6 @@
 
         const eventsListContainer = document.getElementById('events-list');
 
-        // Categorías y sus estilos
-        const CATEGORIAS = {
-            'BANDA': { icon: '🎸', label: 'Banda en Vivo', color: 'border-orange-500', bgDate: 'bg-orange-900', textColor: 'text-orange-400', buttonClass: 'bg-orange-500 hover:bg-orange-400', borderClass: 'border-orange-500' },
-            'TALLER': { icon: '🎨', label: 'Taller', color: 'border-cyan-500', bgDate: 'bg-cyan-900', textColor: 'text-cyan-400', buttonClass: 'bg-cyan-500 hover:bg-cyan-400', borderClass: 'border-cyan-500' },
-            'SERVICIO': { icon: '💆', label: 'Servicio', color: 'border-pink-500', bgDate: 'bg-pink-900', textColor: 'text-pink-400', buttonClass: 'bg-pink-500 hover:bg-pink-400', borderClass: 'border-pink-500' },
-            'ALQUILER': { icon: '🏛️', label: 'Evento', color: 'border-purple-500', bgDate: 'bg-purple-900', textColor: 'text-purple-400', buttonClass: 'bg-purple-500 hover:bg-purple-400', borderClass: 'border-purple-500' }
-        };
-
         /**
          * Formatea un objeto de fecha y hora (ej: '2025-12-05 21:00:00')
          * en partes legibles para la tarjeta.
@@ -273,70 +293,45 @@
          * @returns {string} HTML del evento.
          */
         function generateEventCard(event) {
-            const categoria = getCategoria(event);
-            const cat = CATEGORIAS[categoria];
-            const { day, month, year, time } = formatDateTime(event.fecha_hora || event.fecha);
-            const hora = event.hora_evento || event.hora || time;
-            const precio = event.precio_base || event.precio_basico || event.precio_final || 0;
-            // Preferir nombre del evento (título del show) si está disponible, sino banda o nombre del cliente
-            const nombre = event.nombreEvento || event.nombre_evento || event.nombre_banda || event.nombreCliente || event.nombreCompleto || event.nombre_completo || event.descripcion || 'Evento';
-            const flyerUrl = event.url_flyer || event.flyer_url || event.flyer || null;
+            const fechaRaw = event.fecha_hora || event.fecha || null;
+            const { day, month } = fechaRaw
+                ? formatDateTime(fechaRaw)
+                : { day: '--', month: '--' };
 
-            // Estilo y texto dinámico para precio y botón
-            const esGratis = precio === 0 || precio === null;
-            let priceText = '';
-            if (precio > 0) {
-                priceText = `$ ${formatPrecioAR(precio)} ARS`;
-            }
+            const flyer = event.url_flyer || event.flyer_url || '/img/hero.jpg';
+            const nombre = event.nombre_evento || event.nombre_banda || event.nombreCliente || event.nombreCompleto || event.nombre_completo || event.descripcion || 'Evento';
+            const hora = event.hora || event.hora_evento || null;
+            const precio = event.precio_base || event.precio_basico || event.precio || null;
+            const precioText = precio ? `$${formatPrecioAR(precio)}` : '';
 
-            let buttonText = 'Más Info';
-            let buttonClass = cat.buttonClass;
-            let borderClass = cat.color;
-            let dateBgClass = cat.bgDate;
-            let priceTextColor = cat.textColor;
-            let link = '#'; // Placeholder, ajustar según necesidad
-
-            // Preferir acción de compra para BANDAS si tenemos id (checkout_form)
-            // usar la variable `categoria` ya declarada al inicio de la función
-            if (categoria === 'BANDA' && event.id) {
+            const tipo = (event.tipo || event.tipoEvento || '').toUpperCase();
+            let link = '#';
+            if (tipo === 'BANDA' && event.id) {
                 link = `checkout_form.html?event_id=${event.id}`;
-                buttonText = esGratis ? 'Reservar' : 'Sacar entrada';
-            } else {
-                // Fallback genérico
-                if (esGratis) buttonText = 'Reservar';
+            } else if (tipo === 'TALLER') {
+                link = 'seccion_talleres.html';
+            } else if (tipo === 'SERVICIO') {
+                link = 'seccion_servicios.html';
             }
 
             return `
-                <!-- Evento - ${nombre} -->
-                <div class="p-6 bg-stone-800 rounded-xl event-card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-l-4 ${borderClass}">
-                    <div class="flex items-start gap-4 flex-1">
-                        <div class="agenda-flyer flex-shrink-0">
-                            ${flyerUrl ? `<img src="${flyerUrl}" alt="${nombre}" onerror="this.src='https://placehold.co/100x140/581c87/f0abfc?text=No+Flyer'">` : `<div class="helper-text">No Flyer</div>`}
-                        </div>
-                        <div class="agenda-meta">
-                            <div class="text-center p-3 rounded-lg ${dateBgClass} flex-shrink-0 min-w-[88px] flex flex-col justify-center items-center">
-                                <p class="text-2xl font-extrabold leading-none">${day}</p>
-                                <p class="text-sm uppercase tracking-wide mt-1">${month}</p>
-                                <p class="text-sm mt-1 font-medium">${year}</p>
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-sm ${cat.textColor}">${cat.icon} ${cat.label}</span>
-                                </div>
-                                <h4 class="text-2xl font-semibold text-white">${nombre}</h4>
-                                <p class="text-sm text-stone-400">${hora ? hora + ' hs' : ''} | ${event.descripcion ? event.descripcion.substring(0, 50) + '...' : ''}</p>
-                                <p class="text-xl font-bold ${priceTextColor} mt-1">${priceText}</p>
-                            </div>
+                <a href="${link}" class="agenda-card-passline">
+                    <div class="agenda-flyer-passline">
+                        <img src="${flyer}" alt="${nombre}" onerror="this.src='/img/hero.jpg'">
+                    </div>
+                    <div class="agenda-info-passline">
+                        <div>
+                            <div class="agenda-title-passline">${nombre}</div>
+                            <div class="agenda-date-passline">${day} de ${month}</div>
+                            <div class="agenda-hour-passline">${hora ? hora + ' hs' : ''}</div>
+                            ${precioText ? `<div class="agenda-price-passline">${precioText}</div>` : ''}
                         </div>
                     </div>
-                    <div class="flex-shrink-0">
-                        <a href="${link}" class="w-full sm:w-auto ${buttonClass} text-gray-900 font-bold py-2 px-6 rounded-full text-md transition shadow-lg text-center whitespace-nowrap">
-                            ${buttonText}
-                        </a>
-                    </div>
-                </div>
+                </a>
             `;
         }
+
+
 
         /**
          * Procesa y renderiza la lista de eventos.
@@ -344,8 +339,10 @@
          */
         function renderEvents(events) {
             eventsListContainer.innerHTML = ''; // Limpia el mensaje de carga
+            eventsListContainer.classList.add('agenda-grid');
 
             if (!events || events.length === 0) {
+                eventsListContainer.classList.remove('agenda-grid');
                 eventsListContainer.innerHTML = `
                     <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
                         <p class="text-xl text-stone-400">¡Parece que aún no hay eventos programados!</p>
@@ -355,9 +352,10 @@
                 return;
             }
 
-            // Ordenar por fecha (inverso: más reciente primero)
-            events.sort((a, b) => new Date(b.fecha_hora || b.fecha) - new Date(a.fecha_hora || a.fecha));
+            // Ordenar por fecha (más reciente primero)
+            events.sort((a, b) => new Date(b.fecha_hora || b.fecha || null) - new Date(a.fecha_hora || a.fecha || null));
 
+            // Mostrar todos los eventos confirmados (sin límite)
             events.forEach(event => {
                 const cardHtml = generateEventCard(event);
                 eventsListContainer.insertAdjacentHTML('beforeend', cardHtml);

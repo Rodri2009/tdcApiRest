@@ -17,7 +17,7 @@ const getSolicitudes = async (req, res) => {
                 COALESCE(s.id_tipo_evento, 'ALQUILER_SALON') as tipoEventoId,
                 NULL as subtipo,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
-                s.estado,
+                sol.estado,
                 NULL as tipoServicioId,
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
@@ -40,14 +40,14 @@ const getSolicitudes = async (req, res) => {
                 'BANDA' as tipoEventoId,
                 NULL as subtipo,
                 DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
-                s.estado,
+                sol2.estado,
                 NULL as tipoServicioId,
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
                 COALESCE(sol2.es_publico, 0) as es_publico,
-                -- para bandases usamos el comentario guardado en sfb.descripcion en lugar de la descripcion_corta de la tabla solicitudes
-                COALESCE(s.descripcion, '') as descripcionCorta,
+                -- descripcion_larga del padre es el comentario del show de banda
+                COALESCE(sol2.descripcion_larga, '') as descripcionCorta,
                 COALESCE(ec_bnd.url_flyer, sol2.url_flyer) as url_flyer
             FROM solicitudes_fechas_bandas s
             LEFT JOIN solicitudes sol2 ON sol2.id_solicitud = s.id_solicitud
@@ -63,7 +63,7 @@ const getSolicitudes = async (req, res) => {
                 COALESCE(ote.categoria, e.tipo_evento) as categoria,
                 COALESCE(ote.nombre_para_mostrar, e.tipo_evento) as tipoNombre,
                 e.tipo_evento as tipoEventoId,
-                e.genero_musical as subtipo,
+                NULL as subtipo,
                 DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Cancelado' END as estado,
                 NULL as tipoServicioId,
@@ -200,22 +200,22 @@ const actualizarEstadoSolicitud = async (req, res) => {
         if (String(id).startsWith('alq_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_alquiler';
-            [solicitud] = await conn.query("SELECT sa.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_alquiler sa JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE sa.id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT sa.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante, sol.duracion_minutos AS duracion FROM solicitudes_alquiler sa JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE sa.id_solicitud = ?", [realId]);
             tipoEvento = 'ALQUILER_SALON';
         } else if (String(id).startsWith('bnd_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_fechas_bandas';
-            [solicitud] = await conn.query("SELECT * FROM solicitudes_fechas_bandas WHERE id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT sfb.*, sol.duracion_minutos AS duracion FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud WHERE sfb.id_solicitud = ?", [realId]);
             tipoEvento = 'BANDA';
         } else if (String(id).startsWith('srv_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_servicios';
-            [solicitud] = await conn.query("SELECT ss.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE ss.id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT ss.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante, sol.duracion_minutos AS duracion FROM solicitudes_servicios ss JOIN solicitudes sol ON ss.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE ss.id_solicitud = ?", [realId]);
             tipoEvento = 'SERVICIO';
         } else if (String(id).startsWith('tll_')) {
             realId = id.substring(4);
             tablaOrigen = 'solicitudes_talleres';
-            [solicitud] = await conn.query("SELECT st.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_talleres st JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE st.id_solicitud = ?", [realId]);
+            [solicitud] = await conn.query("SELECT st.*, COALESCE(c.nombre, '') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante, sol.duracion_minutos AS duracion FROM solicitudes_talleres st JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE st.id_solicitud = ?", [realId]);
             tipoEvento = 'TALLER';
         } else {
             // Fallback para IDs antiguos sin prefijo
@@ -225,7 +225,7 @@ const actualizarEstadoSolicitud = async (req, res) => {
                 tablaOrigen = 'solicitudes_alquiler';
                 tipoEvento = 'ALQUILER_SALON';
             } else {
-                [solicitud] = await conn.query("SELECT sb.*, COALESCE(c.nombre,'') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_fechas_bandas sb JOIN solicitudes sol ON sb.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE sb.id_solicitud = ?", [id]);
+                [solicitud] = await conn.query("SELECT sb.*, sol.duracion_minutos AS duracion, COALESCE(c.nombre,'') as nombre_solicitante, c.email as email_solicitante, c.telefono as telefono_solicitante FROM solicitudes_fechas_bandas sb JOIN solicitudes sol ON sb.id_solicitud = sol.id_solicitud LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente WHERE sb.id_solicitud = ?", [id]);
                 if (solicitud) {
                     tablaOrigen = 'solicitudes_fechas_bandas';
                     tipoEvento = 'BANDA';
@@ -315,11 +315,10 @@ const actualizarEstadoSolicitud = async (req, res) => {
                 await conn.query(`
                     INSERT INTO eventos_confirmados (
                         id_solicitud, tipo_evento, tabla_origen,
-                        nombre_evento, descripcion, url_flyer, fecha_evento, hora_inicio, duracion_estimada,
+                        nombre_evento, descripcion, url_flyer, fecha_evento, hora_inicio, duracion_minutos,
                         id_cliente,
-                        es_publico, activo,
-                        genero_musical, cantidad_personas, tipo_servicio, nombre_taller
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+                        es_publico, activo
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
                 `, [
                     realId,
                     tipoEvento,
@@ -331,17 +330,13 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     solicitud.hora_evento || '21:00:00',
                     solicitud.duracion || null,
                     clienteRow && clienteRow.id_cliente ? clienteRow.id_cliente : null,
-                    esPublico,
-                    generoMusical || null,
-                    cantidadPersonas || null,
-                    tipoServicio || null,
-                    nombreTaller || null
+                    esPublico
                 ]);
             } else if (eventoExistente.activo === 0) {
                 // Reactivar y actualizar campos del evento existente
                 // ✅ Opción B3: No actualizar precios (viven en tabla de origen)
                 // ✅ es_publico ya está en solicitudes, no duplicar
-                await conn.query(`UPDATE eventos_confirmados SET activo = 1, cancelado_en = NULL, nombre_evento = ?, descripcion = ?, url_flyer = ?, fecha_evento = ?, hora_inicio = ?, duracion_estimada = ?, id_cliente = ?, genero_musical = ?, cantidad_personas = ?, tipo_servicio = ?, nombre_taller = ? WHERE id = ?`, [
+                await conn.query(`UPDATE eventos_confirmados SET activo = 1, cancelado_en = NULL, nombre_evento = ?, descripcion = ?, url_flyer = ?, fecha_evento = ?, hora_inicio = ?, duracion_minutos = ?, id_cliente = ? WHERE id = ?`, [
                     nombreEvento,
                     solicitud.descripcion || null,
                     urlFlyer,
@@ -349,10 +344,6 @@ const actualizarEstadoSolicitud = async (req, res) => {
                     solicitud.hora_evento || '21:00:00',
                     solicitud.duracion || null,
                     clienteRow && clienteRow.id_cliente ? clienteRow.id_cliente : null,
-                    generoMusical || null,
-                    cantidadPersonas || null,
-                    tipoServicio || null,
-                    nombreTaller || null,
                     eventoExistente.id
                 ]);
             } else {
@@ -770,7 +761,7 @@ const getOrdenDeTrabajo = async (req, res) => {
         // 1. Obtener los detalles de la solicitud y el tipo de evento, primero en alquiler, luego en bandas
         let sqlSolicitud = `
             SELECT
-                s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
+                s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.comentarios AS descripcion,
                 s.id_tipo_evento,
                 ot.nombre_para_mostrar as tipo_evento, ot.id_tipo_evento as tipo_evento_id
             FROM solicitudes_alquiler s
@@ -784,7 +775,7 @@ const getOrdenDeTrabajo = async (req, res) => {
         if (!solicitud) {
             sqlSolicitud = `
                 SELECT
-                    s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, s.descripcion,
+                    s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, sol.descripcion_larga AS descripcion,
                     'BANDA' as id_tipo_evento,
                     'BANDA' as tipo_evento, 'BANDA' as tipo_evento_id
                 FROM solicitudes_fechas_bandas s
@@ -949,12 +940,10 @@ const crearEvento = async (req, res) => {
               url_flyer = ?,
               fecha_evento = ?,
               hora_inicio = ?,
-              duracion_estimada = ?,
+              duracion_minutos = ?,
               id_cliente = ?,
               es_publico = ?,
-              activo = ?,
-              genero_musical = ?,
-              cantidad_personas = ?
+              activo = ?
         `;
 
         const params = [
@@ -969,9 +958,7 @@ const crearEvento = async (req, res) => {
             null,
             eventoClienteId,
             es_publico !== undefined ? es_publico : 1,
-            activo !== undefined ? activo : 1,
-            genero_musical || null,
-            aforo_maximo || null
+            activo !== undefined ? activo : 1
         ];
 
         // Debug: asegurar que placeholders y params coinciden
@@ -1036,21 +1023,13 @@ const actualizarEvento = async (req, res) => {
         if (typeof nombre_evento !== 'undefined') { updates.push('nombre_evento = ?'); params.push(nombre_evento); }
         else if (typeof nombre_banda !== 'undefined') { updates.push('nombre_evento = ?'); params.push(nombre_banda); }
 
-        if (typeof genero_musical !== 'undefined') { updates.push('genero_musical = ?'); params.push(genero_musical); }
         if (typeof descripcion !== 'undefined') { updates.push('descripcion = ?'); params.push(descripcion); }
         if (typeof url_flyer !== 'undefined') { updates.push('url_flyer = ?'); params.push(url_flyer); } else if (typeof url_imagen !== 'undefined') { updates.push('url_flyer = ?'); params.push(url_imagen); }
 
         if (typeof fechaVal !== 'undefined') { updates.push('fecha_evento = ?'); params.push(fechaVal); }
         if (typeof hora_inicio !== 'undefined') { updates.push('hora_inicio = ?'); params.push(hora_inicio); }
-        if (typeof hora_fin !== 'undefined') { updates.push('hora_fin = ?'); params.push(hora_fin); }
-
-        // cantidad_personas en DB (antiguo aforo_maximo)
-        if (typeof cantidadPersonasVal !== 'undefined') { updates.push('cantidad_personas = ?'); params.push(cantidadPersonasVal); }
 
         if (typeof es_publico !== 'undefined') { updates.push('es_publico = ?'); params.push(es_publico ? 1 : 0); }
-        if (typeof precio_base !== 'undefined') { updates.push('precio_base = ?'); params.push(precio_base); }
-        // precio_anticipada no existe en eventos_confirmados — ignorar si viene
-        if (typeof precioFinalVal !== 'undefined') { updates.push('precio_final = ?'); params.push(precioFinalVal); }
 
         // Contacto: ahora se guarda en tabla clientes, no en eventos_confirmados
         const clienteUpdates = [];
@@ -1131,29 +1110,32 @@ const getEventoById = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const rows = await conn.query(`
-            SELECT 
-                id,
-                tipo_evento,
-                nombre_evento as nombre_banda,
-                genero_musical,
-                descripcion,
-                url_flyer as url_flyer,
+            SELECT
+                e.id,
+                e.id_solicitud,
+                e.tipo_evento,
+                e.nombre_evento as nombre_banda,
+                NULL as genero_musical,
+                e.descripcion,
+                e.url_flyer as url_flyer,
                 NULL as url_imagen,
-                nombre_cliente as nombre_contacto,
-                email_cliente as email_contacto,
-                telefono_cliente as telefono_contacto,
-                DATE_FORMAT(fecha_evento, '%Y-%m-%d') as fecha,
-                TIME_FORMAT(hora_inicio, '%H:%i:%s') as hora_inicio,
+                c.nombre as nombre_contacto,
+                c.email as email_contacto,
+                c.telefono as telefono_contacto,
+                DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fecha,
+                TIME_FORMAT(e.hora_inicio, '%H:%i:%s') as hora_inicio,
                 NULL as hora_fin,
-                precio_base,
+                NULL as precio_base,
                 NULL as precio_anticipada,
-                precio_final as precio_puerta,
-                cantidad_personas as aforo_maximo,
-                CASE WHEN activo = 1 THEN 'Confirmado' ELSE 'Cancelado' END as estado,
-                es_publico,
-                activo,
-                confirmado_en as creado_en
-            FROM eventos_confirmados WHERE id = ?
+                NULL as precio_puerta,
+                NULL as aforo_maximo,
+                CASE WHEN e.activo = 1 THEN 'Confirmado' ELSE 'Cancelado' END as estado,
+                e.es_publico,
+                e.activo,
+                e.confirmado_en as creado_en
+            FROM eventos_confirmados e
+            LEFT JOIN clientes c ON e.id_cliente = c.id_cliente
+            WHERE e.id = ?
         `, [eventId]);
 
         if (rows.length === 0) {
@@ -1226,7 +1208,7 @@ const getEventosConfirmados = async (req, res) => {
         const orderDir = (order_dir && order_dir.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
 
         // ✅ Opción B3: No seleccionar precios de eventos_confirmados (viven en solicitudes_fechas_bandas)
-        const sql = `SELECT id, id_solicitud, tipo_evento, tabla_origen, nombre_evento, descripcion as descripcion_corta, url_flyer, fecha_evento, hora_inicio, es_publico, activo, nombre_cliente, genero_musical, cantidad_personas, tipo_servicio, nombre_taller FROM eventos_confirmados ${conditions} ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
+        const sql = `SELECT e.id, e.id_solicitud, e.tipo_evento, e.tabla_origen, e.nombre_evento, e.descripcion as descripcion_corta, e.url_flyer, e.fecha_evento, e.hora_inicio, e.es_publico, e.activo, c.nombre as nombre_cliente FROM eventos_confirmados e LEFT JOIN clientes c ON e.id_cliente = c.id_cliente ${conditions} ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
         params.push(lim, off);
 
         const rows = await conn.query(sql, params);

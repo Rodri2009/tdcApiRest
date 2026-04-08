@@ -38,51 +38,75 @@
             transform: scale(1.05);
         }
 
-        .evento-card {
-            background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
-            border: 1px solid var(--color-rustic);
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .evento-card:hover {
-            border-color: var(--color-secondary);
-            box-shadow: 0 0 20px rgba(240, 171, 252, 0.2);
-        }
-
-        /* Estilos para flyers */
-        .agenda-flyer {
-            /*flex-shrink-0;*/
-            width: 100px;
-            height: 140px;
-            border-radius: 8px;
-            overflow: hidden;
-            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+        /* CARD passline */
+        .agenda-card-passline {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(240, 171, 252, 0.2);
+            background: #1c1917;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: .25s;
+            cursor: pointer;
+            text-decoration: none;
         }
 
-        .agenda-flyer img {
+        .agenda-card-passline:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0 20px rgba(240, 171, 252, 0.45);
+        }
+
+        .agenda-flyer-passline {
+            width: 150px;
+            height: 220px;
+            flex-shrink: 0;
+        }
+
+        .agenda-flyer-passline img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            box-shadow: 0 0 15px rgba(240, 171, 252, 0.3);
         }
 
-        .agenda-flyer .helper-text {
-            color: #666;
-            font-size: 0.85rem;
-            text-align: center;
-        }
-
-        .agenda-meta {
+        .agenda-info-passline {
+            padding: 14px;
             display: flex;
-            gap: 12px;
-            align-items: flex-start;
+            flex-direction: column;
+            justify-content: space-between;
             flex: 1;
+        }
+
+        .agenda-title-passline {
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            line-height: 1.25;
+            margin-bottom: 6px;
+        }
+
+        .agenda-date-passline {
+            font-size: 20px;
+            font-weight: 800;
+            color: #f0abfc;
+            letter-spacing: .5px;
+        }
+
+        .agenda-hour-passline {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e9d5ff;
+            margin-top: 4px;
+        }
+
+        .agenda-price-passline {
+            font-size: 14px;
+            color: #f0abfc;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        .agenda-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 18px;
         }
 
         /* Mantener la barra de navegación pegada al top y dejar espacio para el contenido */
@@ -197,29 +221,11 @@
                 </h2>
                 <p class="text-center text-stone-400 mb-10">Mirá la agenda y conseguí tus entradas anticipadas</p>
 
-                <!-- Contenedor: muestra hasta 4 próximos shows -->
-                <div id="eventos-container" class="space-y-6">
+                <!-- Todos los shows de bandas confirmados -->
+                <div id="eventos-container" class="agenda-grid">
                     <div class="text-center py-10 col-span-full">
                         <i class="fas fa-spinner fa-spin text-4xl text-fuchsia-400 mb-4"></i>
                         <p class="text-stone-400">Cargando eventos...</p>
-                    </div>
-                </div>
-
-                <div class="text-center mt-10">
-                    <button id="toggle-full-agenda"
-                        class="inline-flex items-center text-fuchsia-400 hover:text-fuchsia-300 font-semibold">
-                        Ver agenda de bandas completa <i class="fas fa-arrow-right ml-2"></i>
-                    </button>
-                </div>
-
-                <!-- Agenda completa (hidden por defecto) -->
-                <div id="agenda-completa" class="hidden mt-10">
-                    <h3 class="text-2xl font-bold text-neon mb-4 text-center">Agenda Completa</h3>
-                    <div id="agenda-list" class="space-y-6"></div>
-                    <div class="text-center mt-8">
-                        <button id="hide-full-agenda"
-                            class="inline-flex items-center text-stone-400 hover:text-stone-200">Ocultar agenda
-                            completa</button>
                     </div>
                 </div>
             </div>
@@ -386,72 +392,52 @@
         }
 
         function generateEventCard(e, opts = { allowPurchase: true, compact: false }) {
-            console.group(`🎭 generateEventCard para evento ${e.id}`);
             const fechaObj = e._fechaObj || parseFecha(e.fecha_hora || e.fecha, e.hora_inicio);
             const now = new Date();
             const isPast = fechaObj ? fechaObj < now : false;
-            const { day, month, year, time } = formatDateTime(fechaObj);
-            console.log('Fecha parseada:', fechaObj?.toLocaleString('es-AR') || 'NULL');
-            console.log('Formateada:', { day, month, year, time });
-            console.log('¿Pasado?:', isPast);
-            console.groupEnd();
+            const { day, month } = formatDateTime(fechaObj);
 
-            const precioAnt = (e.precio_anticipada !== undefined && e.precio_anticipada !== null) ? parseFloat(e.precio_anticipada) : null;
-            const precioPta = (e.precio_puerta !== undefined && e.precio_puerta !== null) ? parseFloat(e.precio_puerta) : null;
-            const precioBase = (e.precio_base !== undefined && e.precio_base !== null) ? parseFloat(e.precio_base) : 0;
-            const esGratis = (precioAnt === null || precioAnt === 0) && (precioPta === null || precioPta === 0) && precioBase === 0;
+            const flyer = e.url_flyer || e.flyer_url || e.flyer || '/img/hero.jpg';
+            const nombre = e.nombre_evento || e.nombre_banda || e.banda_nombre || 'Evento';
+            const hora = e.hora_inicio || e.hora || null;
 
-            let priceHtml = '';
-            if (esGratis) priceHtml = `<p class="text-emerald-400 font-semibold">¡GRATIS!</p>`;
-            else {
-                if (precioAnt) priceHtml += `<p class="text-green-400 font-semibold">Anticipada: $${precioAnt}</p>`;
-                if (precioPta) priceHtml += `<p class="text-stone-400 text-sm">En puerta: $${precioPta}</p>`;
-                if (!precioAnt && !precioPta && precioBase) priceHtml = `<p class="text-neon font-semibold">$${precioBase}</p>`;
+            const precioAnt = e.precio_anticipada != null ? parseFloat(e.precio_anticipada) : null;
+            const precioPta = e.precio_puerta != null ? parseFloat(e.precio_puerta) : null;
+            const precioBase = e.precio_base != null ? parseFloat(e.precio_base) : 0;
+            const esGratis = (!precioAnt || precioAnt === 0) && (!precioPta || precioPta === 0) && precioBase === 0;
+
+            let precioText = '';
+            if (!esGratis) {
+                if (precioAnt) precioText = `Anticipada: $${precioAnt}`;
+                else if (precioBase) precioText = `$${precioBase}`;
             }
 
-            // estilos por estado (pasado / futuro)
-            const borderClass = isPast ? 'border-rose-500' : 'border-emerald-500';
-            const dateBg = isPast ? 'bg-rose-900' : 'bg-emerald-900';
-            const dateColor = 'text-white';
-
-            // acción
-            let actionHtml = '';
-            if (!isPast && opts.allowPurchase) {
-                const btnClass = esGratis ? 'bg-emerald-500 hover:bg-emerald-400' : 'bg-fuchsia-500 hover:bg-fuchsia-400';
-                const btnText = esGratis ? 'Reservar Lugar' : 'Sacar Entrada';
-                const link = `checkout_form.html?event_id=${e.id}${esGratis ? '&free=true' : ''}`;
-                actionHtml = `<a href="${link}" class="w-full sm:w-auto ${btnClass} text-gray-900 font-bold py-3 px-6 rounded-full transition shadow-lg text-center whitespace-normal flex items-center justify-center h-16">${btnText}</a>`;
-            } else if (isPast) {
-                actionHtml = `<div class="px-3 py-2 rounded-full text-sm font-semibold text-rose-200 bg-rose-900/30">Evento finalizado</div>`;
+            let link = '#';
+            if (!isPast && opts.allowPurchase && e.id) {
+                link = `checkout_form.html?event_id=${e.id}${esGratis ? '&free=true' : ''}`;
             }
 
-            // compact flag: different spacing if needed
-            const containerClass = opts.compact ? 'p-4' : 'p-6';
-            const flyerUrl = e.url_flyer || e.flyer_url || e.flyer || null;
+            const badge = isPast
+                ? `<span class="text-xs font-semibold text-rose-400 uppercase tracking-wide">Finalizado</span>`
+                : esGratis
+                    ? `<span class="text-xs font-semibold text-emerald-400 uppercase tracking-wide">¡Gratis!</span>`
+                    : '';
 
             return `
-                <div data-event-id="${e.id}" class="${containerClass} bg-stone-800 rounded-xl event-card border-l-4 ${borderClass}">
-                    <div class="flex items-center space-x-4">
-                        <div class="agenda-flyer">
-                            ${flyerUrl ? `<img src="${flyerUrl}" alt="${e.nombre_evento || e.nombre_banda || e.banda_nombre}">` : `<div class="helper-text">No Flyer</div>`}
-                        </div>
-                        <div class="agenda-meta">
-                            <div class="text-center p-3 rounded-lg ${dateBg} ${dateColor} flex-shrink-0 min-w-[88px] flex flex-col justify-center items-center">
-                                <p class="text-2xl font-extrabold leading-none">${day}</p>
-                                <p class="text-sm uppercase tracking-wide mt-1">${month}</p>
-                                <p class="text-sm mt-1 font-medium">${year}</p>
-                            </div>
-                            <div class="flex-1">
-                                <h4 class="text-xl font-semibold text-white">${e.nombre_evento || e.nombre_banda || e.banda_nombre}</h4>
-                                <p class="text-sm text-stone-400">${(e.descripcion || '').substring(0, 80)}${(e.descripcion || '').length > 80 ? '...' : ''}</p>
-                                <div class="mt-2">${priceHtml}</div>
-                            </div>
+                <a href="${link}" class="agenda-card-passline${isPast ? ' opacity-60' : ''}">
+                    <div class="agenda-flyer-passline">
+                        <img src="${flyer}" alt="${nombre}" onerror="this.src='/img/hero.jpg'">
+                    </div>
+                    <div class="agenda-info-passline">
+                        <div>
+                            <div class="agenda-title-passline">${nombre}</div>
+                            <div class="agenda-date-passline">${day} de ${month}</div>
+                            <div class="agenda-hour-passline">${hora ? hora + ' hs' : ''}</div>
+                            ${badge}
+                            ${precioText ? `<div class="agenda-price-passline">${precioText}</div>` : ''}
                         </div>
                     </div>
-                    <div class="flex justify-end items-center mt-3">
-                        ${actionHtml}
-                    </div>
-                </div>
+                </a>
             `;
         }
 
@@ -513,42 +499,19 @@
                 console.log('✅ Eventos válidos después de filtrar:', mapped.length);
                 console.groupEnd();
 
-                // próximos futuros (>= today)
+                // Ordenar: futuros primero (asc), luego pasados (desc)
                 const todayStart = new Date();
                 todayStart.setHours(0, 0, 0, 0);
-                console.group('📅 Filtrado de eventos futuros');
-                console.log('Hoy (UTC local):', todayStart.toLocaleString('es-AR'));
                 const futuros = mapped.filter(e => e._fechaObj >= todayStart).sort((a, b) => a._fechaObj - b._fechaObj);
-                console.log('Eventos futuros:', futuros.length);
-                console.log('Próximos 4:', futuros.slice(0, 4).map(e => ({
-                    nombre: e.nombre_banda,
-                    fecha: e._fechaObj.toLocaleString('es-AR')
-                })));
-                console.groupEnd();
+                const pasados = mapped.filter(e => e._fechaObj < todayStart).sort((a, b) => b._fechaObj - a._fechaObj);
+                const sorted = [...futuros, ...pasados];
 
-                // render
-                console.log('🎨 Renderizando próximos 4 eventos');
-                container.innerHTML = futuros.slice(0, 4).map(e => generateEventCard(e, { allowPurchase: true, compact: true })).join('');
-                console.log('✅ Renderizado completado');
-
-                // preparar botón de mostrar agenda completa
-                if (mapped.length > 0) {
-                    document.getElementById('toggle-full-agenda').addEventListener('click', () => showFullAgenda(mapped));
-                    document.getElementById('hide-full-agenda').addEventListener('click', () => hideFullAgenda());
+                // Renderizar todos
+                if (sorted.length === 0) {
+                    container.innerHTML = `<div class="text-center py-10 col-span-full"><i class="fas fa-calendar-times text-4xl text-stone-500 mb-4"></i><p class="text-stone-400">No hay shows de bandas programados.</p></div>`;
                 } else {
-                    document.getElementById('toggle-full-agenda').style.display = 'none';
+                    container.innerHTML = sorted.map(e => generateEventCard(e, { allowPurchase: true, compact: false })).join('');
                 }
-
-                if (futuros.length === 0) {
-                    console.warn('⚠️ No hay eventos futuros');
-                    container.innerHTML = `<div class="text-center py-10"><i class="fas fa-calendar-times text-4xl text-stone-500 mb-4"></i><p class="text-stone-400">No hay próximos shows de bandas programados.</p><p class="text-stone-300 mt-2">Revisa la agenda completa para ver eventos pasados.</p></div>`;
-                }
-
-                console.groupEnd();
-                console.group('🎵 [BANDAS] Carga de eventos - SALIDA');
-                console.log('✅ Carga completada exitosamente');
-                console.log('📊 Resumen: Públicos totales:', eventosRaw.length, '| Válidos:', mapped.length, '| Futuros:', futuros.length);
-                console.groupEnd();
 
             } catch (err) {
                 console.group('❌ [BANDAS] ERROR en carga de eventos');
@@ -559,32 +522,7 @@
             }
         }
 
-        // Mostrar agenda completa (todos los eventos, incluidos pasados)
-        function showFullAgenda(allEvents) {
-            console.log('📖 Mostrando agenda completa con', allEvents.length, 'eventos');
-            const list = document.getElementById('agenda-list');
-            const wrapper = document.getElementById('agenda-completa');
-            const eventosContainer = document.getElementById('eventos-container');
-            // ordenar por fecha asc
-            const sorted = allEvents.sort((a, b) => (a._fechaObj ? a._fechaObj.getTime() : 0) - (b._fechaObj ? b._fechaObj.getTime() : 0));
-            console.log('Eventos ordenados:');
-            sorted.forEach(e => console.log('  -', e.nombre_banda, e._fechaObj?.toLocaleDateString('es-AR')));
-            list.innerHTML = sorted.map(e => generateEventCard(e, { allowPurchase: true, compact: false })).join('');
-            wrapper.classList.remove('hidden');
-            eventosContainer.classList.add('hidden');
-            document.getElementById('toggle-full-agenda').classList.add('hidden');
-            console.log('✅ Agenda completa renderizada');
-        }
-
-        function hideFullAgenda() {
-            console.log('📖 Ocultando agenda completa');
-            document.getElementById('agenda-completa').classList.add('hidden');
-            document.getElementById('eventos-container').classList.remove('hidden');
-            document.getElementById('toggle-full-agenda').classList.remove('hidden');
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 [BANDAS] DOMContentLoaded - iniciando carga de eventos');
             loadEventos();
         });
     </script>

@@ -131,9 +131,8 @@
         /* GRID DE BANDAS */
         .band-list-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
-            max-height: 250px;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 8px;
             overflow-y: auto;
             padding: 10px;
             background-color: #0f172a;
@@ -146,14 +145,14 @@
             background-color: #0f172a;
             border: 2px solid #581c87;
             border-radius: 8px;
-            padding: 12px;
+            padding: 8px 6px;
             cursor: pointer;
             transition: all 0.2s ease;
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
         }
 
         .banda-grid-item:hover {
@@ -169,8 +168,8 @@
         }
 
         .banda-logo {
-            width: 80px;
-            height: 80px;
+            width: 54px;
+            height: 54px;
             border-radius: 50%;
             overflow: hidden;
             background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
@@ -424,6 +423,37 @@
             color: #991b1b;
         }
 
+        .estado-badge {
+            background-color: #1d4ed8;
+            color: #ffffff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+        }
+
+        .estado-badge.estado-solicitado {
+            background-color: #1d4ed8;
+            color: #ffffff;
+            border-color: #0ea5e9;
+        }
+
+        .estado-badge.estado-contactado {
+            background-color: #6b7280;
+            color: #ffffff;
+            border-color: #4b5563;
+        }
+
+        .estado-badge.estado-confirmado {
+            background-color: #16a34a;
+            color: #ffffff;
+            border-color: #15803d;
+        }
+
+        .estado-badge.estado-cancelado {
+            background-color: #dc2626;
+            color: #ffffff;
+            border-color: #b91c1c;
+        }
+
         .btn-group {
             display: flex;
             gap: 12px;
@@ -445,6 +475,25 @@
             background: transparent;
             color: var(--color-secondary);
             border: 2px solid var(--color-secondary);
+        }
+
+        /* Botón principal más compacto */
+        #btnGuardar.btn-primary {
+            flex: 0.7;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            min-width: 130px;
+            border-radius: 6px;
+        }
+
+        /* Botón principal más compacto */
+        #btnCatalogoBandas.btn-primary {
+            flex: 0.7;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            max-width: auto;
+            height: auto;
+            border-radius: 6px;
         }
 
         .btn-primary:hover {
@@ -690,21 +739,11 @@
 
             <!-- SECCIÓN BANDAS (modo admin) -->
             <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:18px;">
-                <h3 style="color:var(--color-secondary);"><i class="fas fa-music"></i> Bandas</h3>
-                <button type="button" id="btnCrearBanda" class="btn btn-primary"
+                <h3 style="color:var(--color-secondary);"><i class="fas fa-music"></i> Bandas / Artistas</h3>
+                <button type="button" id="btnCatalogoBandas" class="btn btn-primary"
                     style="height:36px;padding:6px 10px;font-size:0.9rem;">
-                    <i class="fas fa-plus"></i> Crear banda
+                    <i class="fas fa-book-open"></i> Catálogo de Bandas
                 </button>
-            </div>
-
-            <div class="form-group" style="margin-top:8px;">
-                <label for="bandaSearch">Buscar y seleccionar bandas:</label>
-                <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                    <input type="text" id="bandaSearch" placeholder="Buscar por nombre o género..." style="flex:1;">
-                    <button type="button" id="btnLimpiarBusqueda" class="btn btn-secondary"
-                        style="height:36px;padding:6px 10px;">Limpiar</button>
-                </div>
-                <div id="bandasList" class="band-list-grid"></div>
             </div>
 
             <!-- BANDAS SELECCIONADAS CON NUMERACIÓN Y REORDEN -->
@@ -729,11 +768,11 @@
                 <button type="button" class="btn btn-secondary" id="btnEditarFechas" style="margin-bottom:10px;">Editar
                     fechas</button>
                 <div id="fechasInputsContainer" class="form-grid form-grid-4" style="display:none;">
-                    <div class="form-group">
+                    <div class="form-group" style="display:none;">
                         <label for="fechaEvento">Fecha del Evento *</label>
                         <input type="text" id="fechaEvento" placeholder="Seleccionar fecha..." style="display:none;">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="display:none;">
                         <label for="fechaAlternativa">Fecha alternativa</label>
                         <input type="text" id="fechaAlternativa" placeholder="Seleccionar fecha..."
                             style="display:none;">
@@ -741,13 +780,15 @@
                             <label><input type="checkbox" id="usarAlt"> Usar alternativa</label>
                         </div>
                     </div>
+                </div>
+                <div class="form-grid form-grid-2" style="margin-top:10px;">
                     <div class="form-group">
                         <label for="horaInicio">Hora de Inicio</label>
-                        <input type="time" id="horaInicio" value="21:00">
+                        <input type="text" id="horaInicio" class="timepicker" value="21:00" placeholder="09:00 PM">
                     </div>
                     <div class="form-group">
                         <label for="horaFin">Hora de Fin</label>
-                        <input type="time" id="horaFin" value="02:00">
+                        <input type="text" id="horaFin" class="timepicker" value="02:00" placeholder="02:00 AM">
                     </div>
                 </div>
                 <div class="form-grid form-grid-2" style="margin-top: 15px;">
@@ -881,6 +922,17 @@
             });
         }
 
+        function updateEstadoSelectClass() {
+            const select = document.getElementById('estadoSelect');
+            if (!select) return;
+            select.classList.remove('estado-solicitado', 'estado-contactado', 'estado-confirmado', 'estado-cancelado');
+            const value = (select.value || '').trim();
+            if (value === 'Confirmado') select.classList.add('estado-confirmado');
+            else if (value === 'Cancelado') select.classList.add('estado-cancelado');
+            else if (value === 'Contactado') select.classList.add('estado-contactado');
+            else select.classList.add('estado-solicitado');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             // Proteger página admin
             // navbarManager ya fue instanciado por navbar.js
@@ -951,8 +1003,9 @@
                 return;
             }
 
-            // Inicializar calendario
+            // Inicializar calendario y timepickers
             initCalendario();
+            initTimePickers();
 
             // Cargar datos del evento
             cargarEvento();
@@ -968,6 +1021,7 @@
             // Recalcular duración cuando cambia horaFin (permitir que el usuario edite manualmente)
             document.getElementById('horaFin').addEventListener('change', calcularDuracion);
             document.getElementById('horaFin').addEventListener('input', calcularDuracion);
+
         });
 
         function initCalendario() {
@@ -1001,17 +1055,32 @@
             const btn = document.getElementById('btnEditarFechas');
             if (btn) {
                 btn.addEventListener('click', () => {
-                    // show inputs container instead of individual inputs
-                    const cont = document.getElementById('fechasInputsContainer');
-                    cont.style.display = cont.style.display === 'none' ? 'block' : 'none';
-                    document.getElementById('fechaEvento').style.display = 'block';
-                    document.getElementById('fechaAlternativa').style.display = 'block';
-                    if (calendario) calendario.open();
-                    // cuando se modifica, limpiar selector
-                    const sel = document.getElementById('fechaSelector');
-                    if (sel) sel.value = '';
+                    // abrir el calendario principal para seleccionar nueva fecha principal
+                    if (calendario) {
+                        calendario.open();
+                    }
                 });
             }
+        }
+
+        function initTimePickers() {
+            flatpickr('.timepicker, .timepicker-banda', {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: 'H:i',
+                altInput: true,
+                altFormat: 'h:i K',
+                time_24hr: false,
+                minuteIncrement: 15,
+                defaultHour: 21,
+                defaultMinute: 0,
+                onChange: (selectedDates, dateStr, instance) => {
+                    // Trigger change event for duration recalculation and other bindings
+                    const input = instance.input;
+                    const event = new Event('change', { bubbles: true });
+                    input.dispatchEvent(event);
+                }
+            });
         }
 
         // Helper para asegurar formato HH:MM (24hs)
@@ -1031,7 +1100,7 @@
             return match !== null;
         }
 
-        // Calcular duración basada en hora de inicio y hora de fin
+        // Calcular duración en minutos basada en hora de inicio y hora de fin
         // Si horaFin < horaInicio, significa que es del día siguiente
         function calcularDuracion() {
             const horaInicio = document.getElementById('horaInicio').value;
@@ -1039,7 +1108,7 @@
 
             if (!horaInicio || !horaFin) {
                 console.log('[HORARIOS] Falta horaInicio o horaFin para calcular duración');
-                return;
+                return null;
             }
 
             try {
@@ -1048,85 +1117,75 @@
 
                 if (isNaN(horaIni) || isNaN(minIni) || isNaN(horaFinNum) || isNaN(minFin)) {
                     console.error('[HORARIOS] Horas inválidas');
-                    return;
+                    return null;
                 }
 
-                // Convertir a minutos desde medianoche
                 const minutosinicio = horaIni * 60 + minIni;
                 const minutosfinales = horaFinNum * 60 + minFin;
 
                 let duracionMinutos;
                 if (minutosfinales >= minutosinicio) {
-                    // Mismo día
                     duracionMinutos = minutosfinales - minutosinicio;
                 } else {
-                    // Día siguiente (horaFin < horaInicio)
                     duracionMinutos = (24 * 60 - minutosinicio) + minutosfinales;
                 }
 
+                window.duracionMinutos = duracionMinutos;
+
                 const horas = Math.floor(duracionMinutos / 60);
                 const minutos = duracionMinutos % 60;
-
                 const duracionStr = minutos > 0 ? `${horas}h ${minutos}m` : `${horas} horas`;
-                window.duracionCalculada = `${horas} horas`;  // Guardar en formato "X horas"
 
                 console.log('[HORARIOS] ✓ Duración calculada:', horaInicio, '-', horaFin, '=', duracionStr);
+                return duracionMinutos;
             } catch (err) {
                 console.error('[HORARIOS] Error calculando duración:', err);
+                return null;
             }
         }
 
-        // Calcular hora de fin basada en hora de inicio + duración (como string "X horas" o sólo número)
+        // Calcular hora de fin basada en hora de inicio + duración en minutos
         function calcularHoraFin() {
             const horaInicio = document.getElementById('horaInicio').value;
-            const duracionText = document.querySelector('[data-duracion]')?.dataset?.duracion || window.duracionEvento || '';
+            let duracionMinutos = window.duracionMinutos || null;
 
-            if (!horaInicio || !duracionText) {
+            if (!duracionMinutos && document.querySelector('[data-duracion]')) {
+                const duracionData = document.querySelector('[data-duracion]').dataset.duracion;
+                const d = parseFloat(String(duracionData).match(/(\d+(?:\.\d+)?)/)?.[1] || '0');
+                if (d > 0) {
+                    // si viene en horas asumimos horas, si es >24 entonces podría ser minutos en texto
+                    duracionMinutos = d > 24 ? d : d * 60;
+                }
+            }
+
+            if (!horaInicio || !duracionMinutos) {
                 console.log('[HORARIOS] Falta horaInicio o duración para calcular horaFin');
                 return;
             }
 
             try {
-                // Parsear duración de string como "3 horas" o "180 minutos" o incluso "480" (minutos)
-                const duracionMatch = duracionText.match(/(\d+)\s*(hora|horas|minuto|minutos)?/i);
-                if (!duracionMatch) {
-                    console.warn('[HORARIOS] No se pudo parsear duración:', duracionText);
+                const valorMinutos = parseInt(duracionMinutos, 10);
+                if (isNaN(valorMinutos) || valorMinutos <= 0) {
+                    console.warn('[HORARIOS] Duración inválida para calcular horaFin:', duracionMinutos);
                     return;
                 }
 
-                const valor = parseInt(duracionMatch[1], 10);
-                let unidad = (duracionMatch[2] || '').toLowerCase();
-                let duracionMinutos;
-
-                if (unidad.includes('hora')) {
-                    duracionMinutos = valor * 60;
-                } else if (unidad.includes('minuto')) {
-                    duracionMinutos = valor;
-                } else {
-                    // sin unidad: interpretar como minutos si valor > 24, de lo contrario asumir minutos
-                    duracionMinutos = valor;
-                }
-
                 const [horas, minutos] = horaInicio.split(':').map(Number);
-
-                if (isNaN(horas) || isNaN(minutos) || isNaN(duracionMinutos)) {
-                    console.error('[HORARIOS] Valores inválidos:', { horas, minutos, duracionMinutos });
+                if (isNaN(horas) || isNaN(minutos)) {
+                    console.error('[HORARIOS] Hora inicio inválida:', horaInicio);
                     return;
                 }
 
                 let nuevaHora = horas;
-                let nuevosMinutos = minutos + duracionMinutos;
+                let nuevosMinutos = minutos + valorMinutos;
 
-                // Ajustar si minutos exceden 60
                 nuevaHora += Math.floor(nuevosMinutos / 60);
                 nuevosMinutos = nuevosMinutos % 60;
-
-                // Ajustar si horas exceden 24 (siguiente día)
                 nuevaHora = nuevaHora % 24;
 
                 const horaFinStr = String(nuevaHora).padStart(2, '0') + ':' + String(nuevosMinutos).padStart(2, '0');
                 document.getElementById('horaFin').value = horaFinStr;
-                console.log('[HORARIOS] ✓ Hora fin calculada:', horaInicio, '+', duracionMinutos, 'min =', horaFinStr);
+                console.log('[HORARIOS] ✓ Hora fin calculada:', horaInicio, '+', valorMinutos, 'min =', horaFinStr);
             } catch (err) {
                 console.error('[HORARIOS] Error calculando hora fin:', err);
             }
@@ -1235,10 +1294,10 @@
                         // Buscar en bandasDisponibles para obtener detalles completos
                         const match = bandasDisponibles.find(b => b.id_banda === banda.id_banda);
                         if (match) {
-                            bandasSeleccionadas.push({ id_banda: match.id_banda, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '' });
+                            bandasSeleccionadas.push({ id_banda: match.id_banda, nombre: match.nombre, genero: match.genero_musical || '', logoUrl: match.logo_url || '', hora_inicio: banda.hora_inicio || '' });
                         } else {
                             // Si no existe en bandasDisponibles, usar datos del backend
-                            bandasSeleccionadas.push({ id_banda: banda.id_banda, nombre: banda.nombre, genero: '', logoUrl: '' });
+                            bandasSeleccionadas.push({ id_banda: banda.id_banda, nombre: banda.nombre, genero: '', logoUrl: '', hora_inicio: banda.hora_inicio || '' });
                         }
                     });
                     console.log('[BANDAS] ✓ bandasSeleccionadas poblado (total ' + bandasSeleccionadas.length + ' bandas)');
@@ -1295,14 +1354,22 @@
                     document.getElementById('horaInicio').value = formatTime24(evento.hora_inicio);
                 }
 
-                // Guardar duración en el DOM para cálculo de hora fin
+                // Guardar duración en minutos para el cálculo de hora fin / envío al backend
                 if (evento.duracion) {
-                    document.querySelector('[data-duracion]') ? document.querySelector('[data-duracion]').dataset.duracion = evento.duracion : null;
-                    // Si no existe elemento con data-duracion, guardar en un div invisible o usar window
-                    if (!document.querySelector('[data-duracion]')) {
-                        window.duracionEvento = evento.duracion;
-                        window.duracionCalculada = evento.duracion;  // También guardar en duracionCalculada
-                        console.log('[HORARIOS] Duración guardada en window:', evento.duracion);
+                    const duracionInHoras = typeof evento.duracion === 'number'
+                        ? evento.duracion
+                        : (typeof evento.duracion === 'string' && evento.duracion.match(/(\d+(?:\.\d+)?)/))
+                            ? parseFloat(evento.duracion.match(/(\d+(?:\.\d+)?)/)[1])
+                            : null;
+
+                    if (duracionInHoras !== null && !isNaN(duracionInHoras)) {
+                        window.duracionMinutos = Math.round(duracionInHoras * 60);
+                        console.log('[HORARIOS] Duración guardada en window.duracionMinutos:', window.duracionMinutos);
+                    }
+
+                    // Mantener data-duracion para compatibilidad con scripts antiguos
+                    if (document.querySelector('[data-duracion]')) {
+                        document.querySelector('[data-duracion]').dataset.duracion = evento.duracion;
                     }
                 }
 
@@ -1323,25 +1390,19 @@
                     document.getElementById('clienteId').value = evento.id_cliente || '';
                 }
 
-                // Cargar datos del cliente si existe (para llenar campos readonly en el formulario)
+                // Cargar datos del cliente en background (no bloquea el spinner)
                 if (evento.id_cliente) {
-                    try {
-                        const token = localStorage.getItem('authToken');
-                        const clienteRes = await fetch(`/api/admin/clientes/${evento.id_cliente}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        if (clienteRes.ok) {
-                            const cliente = await clienteRes.json();
-                            console.log('[BANDAS] 📋 Datos del cliente en cargarEvento():', cliente);
-                            document.getElementById('nombreContacto').value = cliente.nombre || '';
-                            document.getElementById('emailContacto').value = cliente.email || '';
-                            document.getElementById('telefonoContacto').value = cliente.telefono || '';
-                        } else {
-                            console.warn('[BANDAS] No se pudieron cargar datos del cliente');
-                        }
-                    } catch (err) {
-                        console.error('[BANDAS] Error cargando cliente:', err);
-                    }
+                    const idCliente = evento.id_cliente;
+                    const token = localStorage.getItem('authToken');
+                    fetch(`/api/admin/clientes/${idCliente}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }).then(r => r.ok ? r.json() : null).then(cliente => {
+                        if (!cliente) return;
+                        console.log('[BANDAS] 📋 Datos del cliente cargados:', cliente);
+                        document.getElementById('nombreContacto').value = cliente.nombre || '';
+                        document.getElementById('emailContacto').value = cliente.email || '';
+                        document.getElementById('telefonoContacto').value = cliente.telefono || '';
+                    }).catch(err => console.error('[BANDAS] Error cargando cliente:', err));
                 }
 
                 // Mostrar/ocultar botón editar cliente (siempre visible para buscar/crear cliente)
@@ -1351,6 +1412,7 @@
                 }
 
                 document.getElementById('estadoSelect').value = evento.estado || 'Solicitado';
+                updateEstadoSelectClass();
 
                 // Actualizar estado de botones según autenticación
                 const authToken = localStorage.getItem('authToken');
@@ -1422,8 +1484,14 @@
             const horaInicio = document.getElementById('horaInicio').value.trim() || '21:00';
             const formatoHora = formatTime24(horaInicio);
             // fechas: principal + alternativa
-            let fechaPrin = document.getElementById('fechaEvento').value;
+            let fechaPrin = document.getElementById('fechaEvento').value || document.getElementById('fechaSelector').value;
             let fechaAlt = document.getElementById('fechaAlternativa').value || null;
+            if (!fechaPrin && document.getElementById('optFecha0')) {
+                fechaPrin = document.getElementById('optFecha0').value || '';
+            }
+            if (!fechaAlt && document.getElementById('optFecha1')) {
+                fechaAlt = document.getElementById('optFecha1').value || null;
+            }
             if (document.getElementById('usarAlt').checked && fechaAlt) {
                 // swap
                 const tmp = fechaPrin;
@@ -1472,21 +1540,28 @@
                 datos.id_cliente = clienteId;
             }
 
-            // Duración calculada (si ha sido modificada por el usuario)
-            if (window.duracionCalculada) {
-                datos.duracion = window.duracionCalculada;
-                console.log('[BANDAS] Duración a enviar:', window.duracionCalculada);
+            // Duración calculada a partir de horaInicio/horaFin (en minutos)
+            const duracionMinutos = calcularDuracion();
+            if (duracionMinutos && !isNaN(duracionMinutos) && duracionMinutos > 0) {
+                datos.duracion = duracionMinutos; // el backend convierte a int y guarda duracion_minutos
+                console.log('[BANDAS] Duración a enviar (minutos):', datos.duracion);
+            } else {
+                console.warn('[BANDAS] Duración no válida, no se envía duracion.');
             }
 
-            // Bandas invitadas (si hay más de una seleccionada) -> enviar como invitadas_json
-            if (bandasSeleccionadas && bandasSeleccionadas.length > 1) {
-                // omitimos la primera (principal) y enviamos el resto como invitadas
-                const invitadas = bandasSeleccionadas.slice(1).map(b => ({ id_banda: b.id_banda || null, nombre: b.nombre || '' }));
-                datos.invitadas_json = invitadas;
-                console.log('[BANDAS] Bandas invitadas a enviar:', invitadas);
-            } else {
-                console.log('[BANDAS] No hay bandas invitadas (solo una banda seleccionada)');
-            }
+            // Bandas: enviar bandas_json completo con es_principal + hora_inicio
+            // Leemos hora_inicio directo del DOM para evitar problemas de sincronización con Flatpickr (altInput)
+            datos.bandas_json = bandasSeleccionadas.map((b, idx) => {
+                const horaInput = document.querySelector(`.hora-inicio-banda[data-banda-idx="${idx}"]`);
+                const horaInicio = (horaInput && horaInput.value) ? horaInput.value : (b.hora_inicio || null);
+                return {
+                    id_banda: b.id_banda || null,
+                    nombre: b.nombre || '',
+                    orden_show: idx,
+                    es_principal: idx === 0,
+                    hora_inicio: horaInicio || null
+                };
+            });
 
             // Remover campos undefined
             Object.keys(datos).forEach(key => datos[key] === undefined && delete datos[key]);
@@ -1637,7 +1712,7 @@
         function renderBandasLista() {
             const container = document.getElementById('bandasList');
             if (!container) return;
-            const searchTerm = (document.getElementById('bandaSearch')?.value || '').toLowerCase();
+            const searchTerm = (document.getElementById('modalBandaSearch')?.value || '').toLowerCase();
 
             const filtered = bandasDisponibles.filter(b =>
                 (b.nombre || '').toLowerCase().includes(searchTerm) ||
@@ -1664,6 +1739,15 @@
             if (filtered.length === 0) container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#9ca3af;">No hay bandas disponibles</div>';
         }
 
+        // Hora por defecto: banda 1 a las 23:00, cada banda +40 minutos
+        function horaDefaultBanda(idx) {
+            const base = 23 * 60;
+            const total = base + idx * 40;
+            const h = Math.floor(total / 60) % 24;
+            const m = total % 60;
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
+
         function toggleBanda(id_banda, nombre, genero, logoUrl) {
             const idx = bandasSeleccionadas.findIndex(b => b.id_banda === id_banda);
             if (idx >= 0) {
@@ -1674,7 +1758,7 @@
                     showNotification('Máximo 5 bandas seleccionadas', 'warning');
                     return;
                 }
-                bandasSeleccionadas.push({ id_banda, nombre, genero, logoUrl });
+                bandasSeleccionadas.push({ id_banda, nombre, genero, logoUrl, hora_inicio: horaDefaultBanda(bandasSeleccionadas.length) });
             }
             renderBandasLista();
             renderBandasSeleccionadas();
@@ -1691,7 +1775,13 @@
 
             container.innerHTML = bandasSeleccionadas.map((banda, idx) => `
                 <div class="banda-seleccionada-item">
-                    <div class="banda-numero">${idx + 1}</div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <div class="banda-numero">${idx + 1}</div>
+                        <input type="text" value="${escapeHtml(banda.hora_inicio || '')}" data-banda-idx="${idx}"
+                            class="hora-inicio-banda timepicker-banda"
+                            placeholder="09:00 PM"
+                            style="background:#0f172a;border:1px solid #581c87;color:#f8fafc;border-radius:4px;padding:2px 3px;font-size:0.78rem;width:40px;text-align:center;">
+                    </div>
                     <div class="banda-seleccionada-info">
                         <div class="banda-seleccionada-nombre">${escapeHtml(banda.nombre)}</div>
                         ${banda.genero ? `<div class="banda-seleccionada-genre">${escapeHtml(banda.genero)}</div>` : ''}
@@ -1703,6 +1793,16 @@
                     </div>
                 </div>
             `).join('');
+
+            // Guardar hora_inicio en el array cuando cambia
+            document.querySelectorAll('.hora-inicio-banda').forEach(input => {
+                input.addEventListener('change', function () {
+                    const idx = parseInt(this.dataset.bandaIdx);
+                    if (bandasSeleccionadas[idx]) bandasSeleccionadas[idx].hora_inicio = this.value;
+                });
+            });
+
+            initTimePickers();
         }
 
         function reorderBanda(idx, direction) {
@@ -1843,16 +1943,31 @@
             });
         }
 
-        // Listeners para búsqueda/crear
-        document.addEventListener('click', (e) => {
-            if (e.target && e.target.id === 'btnCrearBanda') {
-                window.location.href = '/solicitud_banda.html?returnTo=editar_solicitud_fecha_bandas.html';
-            }
-        });
-        const bandaSearchEl = document.getElementById('bandaSearch');
-        if (bandaSearchEl) bandaSearchEl.addEventListener('input', () => renderBandasLista());
-        const btnLimpiarBusqueda = document.getElementById('btnLimpiarBusqueda');
-        if (btnLimpiarBusqueda) btnLimpiarBusqueda.addEventListener('click', () => { if (bandaSearchEl) bandaSearchEl.value = ''; renderBandasLista(); });
+        // Listeners catálogo de bandas. Lazy setup: se registran la primera vez que se abre el modal.
+        let modalListenersSetup = false;
+        function setupModalListeners() {
+            if (modalListenersSetup) return;
+            document.getElementById('modalCatalogoClose').addEventListener('click', cerrarModalCatalogo);
+            document.getElementById('modalCatalogoOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) cerrarModalCatalogo(); });
+            document.getElementById('modalBandaSearch').addEventListener('input', () => renderBandasLista());
+            document.getElementById('btnRegistrarBanda').addEventListener('click', () => {
+                const currentFullPath = window.location.pathname + window.location.search;
+                const returnToParam = encodeURIComponent(currentFullPath);
+                window.location.href = `/solicitud_banda.html?returnTo=${returnToParam}`;
+            });
+            modalListenersSetup = true;
+        }
+        function abrirModalCatalogo() {
+            setupModalListeners();
+            document.getElementById('modalCatalogoOverlay').style.display = 'flex';
+            document.getElementById('modalBandaSearch').value = '';
+            renderBandasLista();
+        }
+        function cerrarModalCatalogo() {
+            document.getElementById('modalCatalogoOverlay').style.display = 'none';
+        }
+        const btnCatalogoBandas = document.getElementById('btnCatalogoBandas');
+        if (btnCatalogoBandas) btnCatalogoBandas.addEventListener('click', abrirModalCatalogo);
 
         /* ================ MODAL DE EDICIÓN DE CLIENTE ================ */
 
@@ -2112,6 +2227,35 @@
 
     <script>
     </script>
+
+    <!-- MODAL CATÁLOGO DE BANDAS -->
+    <div id="modalCatalogoOverlay"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:2000;align-items:center;justify-content:center;">
+        <div
+            style="background:var(--color-surface,#1e1e2e);border-radius:12px;width:95%;max-width:960px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+            <div
+                style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.1);">
+                <h3 style="margin:0;color:var(--color-secondary);"><i class="fas fa-book-open"></i> Catálogo de Bandas
+                </h3>
+                <button id="modalCatalogoClose" type="button"
+                    style="background:none;border:none;color:var(--color-text,#fff);font-size:1.4rem;cursor:pointer;line-height:1;">&times;</button>
+            </div>
+            <div
+                style="padding:12px 20px;display:flex;gap:8px;align-items:center;border-bottom:1px solid rgba(255,255,255,0.07);">
+                <input type="text" id="modalBandaSearch" placeholder="Buscar por nombre o género..."
+                    style="flex:1;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:inherit;">
+                <button type="button" id="btnRegistrarBanda" class="btn btn-secondary"
+                    style="white-space:nowrap;height:38px;padding:6px 12px;font-size:0.88rem;"><i
+                        class="fas fa-plus"></i> Registrar nueva banda</button>
+            </div>
+            <div id="bandasList" class="band-list-grid" style="overflow-y:auto;padding:12px 20px;flex:1;"></div>
+            <div
+                style="padding:12px 20px;border-top:1px solid rgba(255,255,255,0.1);display:flex;justify-content:flex-end;">
+                <button type="button" class="btn btn-primary" onclick="cerrarModalCatalogo()"
+                    style="padding:8px 20px;"><i class="fas fa-check"></i> Confirmar selección</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

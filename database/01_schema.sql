@@ -262,12 +262,20 @@ CREATE TABLE IF NOT EXISTS solicitudes (
     
     -- Información
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    estado VARCHAR(50) DEFAULT 'Solicitado',
+    estado VARCHAR(50) DEFAULT 'Solicitado' COMMENT 'Estado global de la solicitud: fuente única de verdad',
     es_publico TINYINT(1) DEFAULT 0 COMMENT 'Visibilidad pública de la solicitud',
     descripcion_corta VARCHAR(255) DEFAULT NULL,
     descripcion_larga TEXT DEFAULT NULL,
     url_flyer MEDIUMTEXT DEFAULT NULL COMMENT 'URL del flyer/cartel/promocional',
-    descripcion TEXT,
+    -- NOTA: campo legacy `descripcion` eliminado en Fase 1 (27/03/2026); usar descripcion_larga
+
+    -- Campos de evento (agregados en Fase 2 - 27/03/2026)
+    -- Consolidan fecha/hora/duración de todas las tablas hijo en el padre
+    fecha_evento      DATE     DEFAULT NULL COMMENT 'Fecha principal del evento',
+    hora_inicio       TIME     DEFAULT NULL COMMENT 'Hora de inicio del evento',
+    duracion_minutos  INT      DEFAULT NULL COMMENT 'Duración en minutos',
+    hora_fin          TIME     DEFAULT NULL COMMENT 'Hora estimada de fin',
+    fecha_alternativa DATE     DEFAULT NULL COMMENT 'Fecha alternativa propuesta',
     
     -- Auditoría
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -319,8 +327,6 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     -- DATOS DEL EVENTO - INFORMACIÓN BÁSICA
     fecha_evento DATE NOT NULL COMMENT 'Fecha del evento (ej: 2026-03-15)',
     hora_evento TIME NOT NULL COMMENT 'Hora de inicio del evento - CAMBIO: TEXT→TIME (ej: 14:30:00)',
-    duracion INT NOT NULL COMMENT 'Duración del evento en minutos - CAMBIO: VARCHAR→INT (ej: 240 = 4 horas)',
-    
     -- REFERENCIA A TIPO DE EVENTO (CAMBIO: tipo_de_evento → id_tipo_evento como FK)
     id_tipo_evento VARCHAR(255) NOT NULL COMMENT 'FK a opciones_tipos.id_tipo_evento (ej: INFANTILES, ADOLESCENTES, CON_SERVICIO_DE_MESA, BABY_SHOWERS)',
     
@@ -340,9 +346,8 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     comentarios TEXT COMMENT 'CAMBIO: Renombrado de descripcion. Comentarios/detalles del cliente capturados en campo "¿Algo más?" durante solicitud o finalización',
     
     -- AUDITORÍA Y ESTADO
-    estado VARCHAR(50) DEFAULT 'Solicitado' COMMENT 'Estado: Solicitado, Confirmado, Cancelado, Rechazado',
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'NUEVO: Auditoría - Fecha/hora de creación del registro',
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'NUEVO: Auditoría - Fecha/hora de última actualización',
+    -- NOTA: estado y timestamps (creado_en, actualizado_en) viven en la tabla padre `solicitudes`
+    -- No se duplican aquí para mantener una única fuente de verdad (Fase 1 normalización 27/03/2026)
     
     -- ÍNDICES Y CONSTRAINTS
     -- FK a solicitudes: CASCADE → si se elimina solicitud padre, se elimina el alquiler
@@ -350,7 +355,6 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
     -- FK a precios_vigencia: SET NULL → si se elimina precio, conserva el registro
     INDEX idx_id_tipo_evento (id_tipo_evento),
     INDEX idx_id_precio_vigencia (id_precio_vigencia),
-    INDEX idx_estado (estado),
     INDEX idx_id_solicitud (id_solicitud),
     CONSTRAINT fk_solicitudes_alquiler_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
     CONSTRAINT fk_solicitudes_alquiler_tipo_evento FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT,
@@ -361,25 +365,25 @@ CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
 -- Tabla específica para solicitudes de bandas
 
 -- Tabla específica para solicitudes de servicios
+-- FASE 2 (27/03/2026): hora_evento VARCHAR→TIME, duracion VARCHAR→INT (en minutos)
 CREATE TABLE IF NOT EXISTS solicitudes_servicios (
     id_solicitud_servicio INT AUTO_INCREMENT PRIMARY KEY,
     id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
     tipo_servicio VARCHAR(255),
     fecha_evento DATE,
-    hora_evento VARCHAR(20),
-    duracion VARCHAR(100),
+    hora_evento TIME DEFAULT NULL COMMENT 'Hora de inicio del evento',
     precio DECIMAL(10,2),
     CONSTRAINT fk_solicitudes_servicios_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Solicitudes de servicios';
 
 -- Tabla específica para solicitudes de talleres
+-- FASE 2 (27/03/2026): hora_evento VARCHAR→TIME, duracion VARCHAR→INT (en minutos)
 CREATE TABLE IF NOT EXISTS solicitudes_talleres (
     id_solicitud_taller INT AUTO_INCREMENT PRIMARY KEY,
     id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
     nombre_taller VARCHAR(255),
     fecha_evento DATE,
-    hora_evento VARCHAR(20),
-    duracion VARCHAR(100),
+    hora_evento TIME DEFAULT NULL COMMENT 'Hora de inicio del evento',
     precio DECIMAL(10,2),
     CONSTRAINT fk_solicitudes_talleres_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Solicitudes de talleres'; 
@@ -396,34 +400,28 @@ CREATE TABLE IF NOT EXISTS eventos_confirmados (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
     tipo_evento ENUM('ALQUILER_SALON', 'BANDA', 'SERVICIO', 'TALLER') NOT NULL,
-    tabla_origen VARCHAR(50) NOT NULL COMMENT 'solicitudes_alquiler, solicitudes_bandas, solicitudes_servicios, solicitudes_talleres',
-    
-    -- Información del evento
-    nombre_evento VARCHAR(255) NOT NULL,
-    descripcion TEXT,
-    url_flyer VARCHAR(500) DEFAULT NULL COMMENT 'URL del flyer/promocional',
+    tabla_origen VARCHAR(50) NOT NULL COMMENT 'solicitudes_alquiler, solicitudes_fechas_bandas, solicitudes_servicios, solicitudes_talleres',
+
+    nombre_evento VARCHAR(255) DEFAULT NULL COMMENT 'De solicitudes.descripcion_corta',
+    descripcion_corta VARCHAR(255) DEFAULT NULL COMMENT 'De solicitudes.descripcion_corta',
+    descripcion TEXT DEFAULT NULL COMMENT 'Para compatibilidad; deberia leerse de solicitudes.descripcion_larga',
+
+    -- Información mínima y sincronizada directamente con solicitudes
     fecha_evento DATE NOT NULL,
     hora_inicio TIME NOT NULL,
-    duracion_estimada VARCHAR(100),
-    
-    -- Información de contacto reducida: solo referenciamos al cliente
-    id_cliente INT DEFAULT NULL COMMENT 'FK a clientes.id_cliente',
-    
-    -- Información pública
-    es_publico TINYINT(1) DEFAULT 0 COMMENT '1=Visible en agenda pública',
+    duracion_minutos INT DEFAULT NULL COMMENT 'Duración en minutos (igual que solicitudes.duracion_minutos)',
+    url_flyer VARCHAR(500) DEFAULT NULL COMMENT 'De solicitudes.url_flyer',
+    es_publico TINYINT(1) DEFAULT 0 COMMENT 'De solicitudes.es_publico',
     activo TINYINT(1) DEFAULT 1 COMMENT '1=Vigente, 0=Cancelado o archivado',
-    
-    -- Información específica por tipo
-    genero_musical VARCHAR(255) COMMENT 'Solo para BANDA',
-    cantidad_personas INT COMMENT 'Solo para ALQUILER_SALON/BANDA',
-    tipo_servicio VARCHAR(255) COMMENT 'Solo para SERVICIO',
-    nombre_taller VARCHAR(255) COMMENT 'Solo para TALLER',
-    
+
+    -- Información de contacto reducida
+    id_cliente INT DEFAULT NULL COMMENT 'FK a clientes.id_cliente',
+
     -- Auditoría
     confirmado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     cancelado_en TIMESTAMP NULL,
-    
+
     -- Índices
     INDEX idx_tipo_evento (tipo_evento),
     INDEX idx_fecha (fecha_evento),
@@ -488,9 +486,9 @@ CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
     id_solicitud INT PRIMARY KEY COMMENT 'FK a solicitudes.id_solicitud',
     id_banda INT DEFAULT NULL COMMENT 'FK opcional a bandas_artistas: si el solicitante es una banda conocida, o para referencia a la banda principal',
     fecha_evento DATE DEFAULT NULL,
-    hora_evento VARCHAR(20) DEFAULT NULL,
-    duracion VARCHAR(100) DEFAULT NULL,
-    descripcion TEXT COMMENT 'Descripción del show/evento',
+    -- FASE 1 (27/03/2026): descripcion, estado, creado_en, actualizado_en eliminados (viven en padre solicitudes)
+    -- FASE 2 (27/03/2026): hora_evento VARCHAR→TIME; duracion eliminado (vive en solicitudes.duracion_minutos)
+    hora_evento TIME DEFAULT NULL COMMENT 'Hora de inicio del evento',
     precio_basico DECIMAL(10,2) DEFAULT NULL,
     precio_final DECIMAL(10,2) DEFAULT NULL,
     precio_anticipada DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de venta anticipada',
@@ -498,14 +496,10 @@ CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
     cantidad_bandas INT DEFAULT 1,
     expectativa_publico VARCHAR(100) DEFAULT NULL COMMENT 'Traducido en la UI como aforo_maximo; máximo templo 150 personas',
     bandas_json LONGTEXT COMMENT 'JSON array de bandas: [{id_banda, nombre, orden_show, es_principal}] - ÚNICA FUENTE DE VERDAD',
-    estado VARCHAR(50) DEFAULT 'Solicitado',
     fecha_alternativa DATE DEFAULT NULL,
     notas_admin TEXT,
     id_evento_generado INT DEFAULT NULL,
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_fecha (fecha_evento),
-    INDEX idx_estado (estado),
     INDEX idx_banda (id_banda),
     FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
     FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE SET NULL

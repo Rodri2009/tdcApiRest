@@ -69,9 +69,11 @@ APPLY_MIGRATIONS_CLI=0
 DEBUG_FLAGS=""
 ENABLE_MP=false
 ENABLE_WA=false
+RESET_DB=false
 
 while [ $# -gt 0 ]; do
     case "$1" in
+        --reset-db) RESET_DB=true; shift;;
         --migrate|--apply-migrations) APPLY_MIGRATIONS_CLI=1; shift;;
         --mp) ENABLE_MP=true; shift;;
         --wa) ENABLE_WA=true; shift;;
@@ -364,13 +366,19 @@ echo -ne "  → Deteniendo contenedores... "
 "${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" down 2>/dev/null
 echo -e "${GREEN}✓${NC}"
 
-# Eliminar volumen de MariaDB
-echo -ne "  → Eliminando volumen de BD... "
+# Eliminar volumen de MariaDB solo si se pidió explícitamente
+echo -ne "  → Verificando volumen de BD... "
 MARIADB_VOLUME="docker_mariadb_data"
-if docker volume ls -q | grep -q "^${MARIADB_VOLUME}$"; then
-    docker volume rm "$MARIADB_VOLUME" 2>/dev/null || true
+if [ "$RESET_DB" = true ]; then
+    if docker volume ls -q | grep -q "^${MARIADB_VOLUME}$"; then
+        docker volume rm "$MARIADB_VOLUME" 2>/dev/null || true
+        echo -e "${YELLOW}borrado (--reset-db)${NC}"
+    else
+        echo -e "${GREEN}no existía${NC}"
+    fi
+else
+    echo -e "${GREEN}conservado${NC}"
 fi
-echo -e "${GREEN}✓${NC}"
 
 echo -ne "  → Levantando contenedores... "
 # debugging output of compose invocation

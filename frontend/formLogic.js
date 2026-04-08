@@ -15,6 +15,7 @@ const App = {
     opcionesCantidades: {},
     opcionesDuraciones: {},
     opcionesHoras: {},
+    ultimoCantidadesFecha: null,
     descripcionesTipos: {},
     calendario: null,
     feriadosGlobal: [],
@@ -265,6 +266,14 @@ const App = {
                     this.opcionesDuraciones[tipo] = this.opcionesDuraciones[tipo].map(d => `${d} horas`);
                 });
 
+                // Si ya hay una fecha seleccionada al inicio (edición), actualizar cantidades según esa fecha
+                const fechaInicial = this.elements && this.elements.fechaEventoInput && this.elements.fechaEventoInput.value;
+                if (fechaInicial) {
+                    this.cargarCantidadesPorFecha(fechaInicial)
+                        .then(() => this.actualizarTodo())
+                        .catch(err => console.warn('[FORM-INIT] No se pudo cargar cantidades iniciales por fecha:', err));
+                }
+
                 // Formatear cantidades para el select
                 Object.keys(this.opcionesCantidades).forEach(tipo => {
                     this.opcionesCantidades[tipo] = this.opcionesCantidades[tipo].map(c => c.label);
@@ -301,6 +310,40 @@ const App = {
                 console.warn('[FORM-INIT] ⚠️ Error cargando feriados:', err.message);
                 this.feriadosGlobal = [];
             });
+    },
+
+    cargarCantidadesPorFecha: async function (fechaStr) {
+        if (!fechaStr) {
+            return;
+        }
+
+        if (this.ultimoCantidadesFecha === fechaStr && this.opcionesCantidades && Object.keys(this.opcionesCantidades).length > 0) {
+            return;
+        }
+
+        const token = localStorage.getItem('authToken');
+        const headers = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        try {
+            const response = await fetch(`/api/opciones/cantidades?fecha=${encodeURIComponent(fechaStr)}`, { headers });
+            if (!response.ok) {
+                throw new Error(`No se pudo cargar cantidades para fecha ${fechaStr}: ${response.status}`);
+            }
+            const cantidades = await response.json();
+
+            this.opcionesCantidades = cantidades || {};
+            Object.keys(this.opcionesCantidades).forEach(tipo => {
+                this.opcionesCantidades[tipo] = this.opcionesCantidades[tipo].map(c => c.label);
+            });
+            this.ultimoCantidadesFecha = fechaStr;
+
+            console.log('[FORM-INIT] 🟢 Cantidades actualizadas para fecha', fechaStr);
+        } catch (err) {
+            console.warn('[FORM-INIT] ⚠️ Error cargando cantidades por fecha:', err.message);
+        }
     },
 
     construirUI: function (fechaExcepcion = null) {
@@ -449,18 +492,9 @@ const App = {
 
 
     initFingerprint: function () {
-        FingerprintJS.load()
-            .then(fp => fp.get())
-            .then(result => {
-                this.visitorId = result.visitorId;
-                this.buscarSesionExistente();
-            })
-            .catch(error => {
-                console.error("[FORM][ERROR] Error al generar Fingerprint:", error.message);
-                this.visitorId = 'fingerprint_error';
-                this.toggleLoadingOverlay(false);
-                this.habilitarBotones();
-            });
+        this.visitorId = null;
+        this.toggleLoadingOverlay(false);
+        this.habilitarBotones();
     },
 
     buscarSesionExistente: function () {
@@ -1237,6 +1271,11 @@ const App = {
                 fechaSeleccionada = null;
             }
             if (fechaSeleccionada && isNaN(fechaSeleccionada.getTime())) fechaSeleccionada = null;
+        }
+
+        // Actualizar opciones de cantidades según fecha seleccionada (si cambió)
+        if (fechaStr && fechaStr !== this.ultimoCantidadesFecha) {
+            await this.cargarCantidadesPorFecha(fechaStr);
         }
 
         // Resolver la clave usable para opciones (duraciones/horas/cantidades)

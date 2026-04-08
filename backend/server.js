@@ -115,6 +115,17 @@ app.use(express.static('frontend'));
 // Servir uploads (logos, fotos) desde /uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// CORS global: permite llamados cross-origin desde el frontend (localhost:80 -> localhost:3000)
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(204);
+    }
+    next();
+});
+
 // Middleware de logging con flags de depuración
 app.use((req, res, next) => {
     logRequest(req.method, req.originalUrl);

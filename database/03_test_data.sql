@@ -21,7 +21,12 @@
 
 LOCK TABLES `eventos_confirmados` WRITE;
 /*!40000 ALTER TABLE `eventos_confirmados` DISABLE KEYS */;
-INSERT INTO `eventos_confirmados` (`id`, `id_solicitud`, `tipo_evento`, `tabla_origen`, `nombre_evento`, `descripcion`, `url_flyer`, `fecha_evento`, `hora_inicio`, `duracion_estimada`, `id_cliente`, `es_publico`, `activo`, `genero_musical`, `cantidad_personas`, `tipo_servicio`, `nombre_taller`, `confirmado_en`, `actualizado_en`, `cancelado_en`) VALUES (1,2,'ALQUILER_SALON','solicitudes_alquiler','Fiesta de 15 años - Luz','Fiesta de quince años con servicio completo de catering, meseras y sonido profesional.',NULL,'2026-03-22','16:00:00','6 horas',2,0,1,NULL,NULL,NULL,NULL,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL),(2,4,'BANDA','solicitudes_fechas_bandas','Reite - Tributo a La Renga','Show completo del tributo a La Renga. Viernes noche. Fecha propia confirmada.',NULL,'2026-03-30','22:00:00','3 horas',1,1,1,NULL,NULL,NULL,NULL,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL),(3,5,'BANDA','solicitudes_fechas_bandas','Las Mentas en Vivo','Show abierto al público de la banda Las Mentas. Rock alternativo de buena calidad.',NULL,'2026-04-10','20:00:00','2.5 horas',5,1,1,NULL,NULL,NULL,NULL,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL),(4,8,'TALLER','solicitudes_talleres','Taller de Masaje Descontracturante','Sesión grupal de masaje descontracturante. Técnicas relajantes y terapéuticas.',NULL,'2026-03-08','10:00:00','90 minutos',2,1,1,NULL,NULL,NULL,NULL,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL);
+INSERT INTO `eventos_confirmados` (`id`, `id_solicitud`, `tipo_evento`, `tabla_origen`, `nombre_evento`, `descripcion_corta`, `descripcion`, `fecha_evento`, `hora_inicio`, `duracion_minutos`, `url_flyer`, `es_publico`, `activo`, `id_cliente`, `confirmado_en`, `actualizado_en`, `cancelado_en`) VALUES
+  (1,2,'ALQUILER_SALON','solicitudes_alquiler','Fiesta de 15 años - Luz',NULL,'Fiesta de quince años con servicio completo de catering, meseras y sonido profesional.','2026-03-22','16:00:00',360,NULL,0,1,2,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL),
+  (2,4,'BANDA','solicitudes_fechas_bandas','Reite - Tributo a La Renga',NULL,'Show completo del tributo a La Renga. Viernes noche. Fecha propia confirmada.','2026-03-30','22:00:00',180,NULL,1,1,1,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL),
+  (3,5,'BANDA','solicitudes_fechas_bandas','Las Mentas en Vivo',NULL,'Show abierto al público de la banda Las Mentas. Rock alternativo de buena calidad.','2026-04-10','20:00:00',150,NULL,1,1,5,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL),
+  (4,8,'TALLER','solicitudes_talleres','Taller de Masaje Descontracturante',NULL,'Sesión grupal de masaje descontracturante. Técnicas relajantes y terapéuticas.','2026-03-08','10:00:00',90,NULL,1,1,2,'2026-02-22 14:00:00','2026-02-24 17:22:00',NULL
+);
 /*!40000 ALTER TABLE `eventos_confirmados` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -33,4 +38,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-26 19:47:08
+-- Dump completed on 2026-03-28 18:55:05

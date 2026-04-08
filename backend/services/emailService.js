@@ -48,14 +48,34 @@ const sendComprobanteEmail = async (to, subject, solicitud, headers) => {
             });
         }
 
+        const cantidadLabel = (solicitud.cantidad_min && solicitud.cantidad_max)
+            ? `${solicitud.cantidad_min} - ${solicitud.cantidad_max} personas`
+            : (solicitud.cantidad_personas || solicitud.cantidadPersonas)
+                ? `${solicitud.cantidad_personas || solicitud.cantidadPersonas} personas`
+                : '-';
+
         const dataForTemplate = {
             ...solicitud,
             header_titulo: headers.titulo,
             header_subtitulo: headers.subtitulo,
-            fecha_evento: new Date(solicitud.fecha_evento).toLocaleDateString('es-AR', { timeZone: 'UTC' }),
+            fecha_evento: solicitud.fecha_evento
+                ? new Date(solicitud.fecha_evento).toLocaleDateString('es-AR', { timeZone: 'UTC' })
+                : '-',
+            hora_evento: solicitud.hora_evento || '-',
+            duracion: solicitud.duracion
+                ? (solicitud.duracion % 60 === 0
+                    ? `${solicitud.duracion / 60} hs`
+                    : `${Math.floor(solicitud.duracion / 60)}h ${solicitud.duracion % 60}min`)
+                : '-',
+            nombre_completo: solicitud.nombre_completo || solicitud.nombreCompleto || '-',
+            email: solicitud.email || '-',
+            telefono: solicitud.telefono || '-',
+            nombre_para_mostrar: solicitud.nombre_para_mostrar || solicitud.id_tipo_evento || '-',
+            cantidad_de_personas: cantidadLabel,
+            descripcion_evento: solicitud.descripcion_evento || solicitud.descripcion_corta || '-',
             precio_basico: formatCurrency(solicitud.precio_basico),
             adicionales_html: adicionalesHtml,
-            precio_final: formatCurrency(parseFloat(solicitud.precio_basico) + totalAdicionales),
+            precio_final: formatCurrency(parseFloat(solicitud.precio_basico || 0) + totalAdicionales),
         };
 
         // 3. Reemplazar todos los placeholders en la plantilla

@@ -267,7 +267,7 @@
         }
 
         .oauth-btn.google {
-            background: #4285f4;
+            background: #374151;
         }
 
         .oauth-btn.facebook {
@@ -380,7 +380,7 @@
                             <span id="buttonText">Ingresar</span>
                         </button>
                         <button type="button" id="cancelBtn" class="btn-secondary"
-                            onclick="window.location.href='/index.html'">
+                            onclick="history.length > 1 ? history.back() : window.location.href='/index.html'">
                             Volver
                         </button>
                     </div>

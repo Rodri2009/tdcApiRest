@@ -112,14 +112,60 @@ async function scrapeActivity(page) {
             console.debug('[ActivityService] Plantilla strategy failed:', e.message);
         }
 
-        // STRATEGY 1: If plantilla failed, try window._n.ctx.r.appProps.activities.results (en-page structured)
+        // STRATEGY 1: If plantilla failed, try window._n in-page structured data
+        // Supports both new API (pageProps.listData.groups) and old API (pageProps.activities.results)
         if (!transactions || transactions.length === 0) {
             transactions = await page.evaluate(() => {
                 try {
                     const appProps = window._n?.ctx?.r?.appProps;
-                    const activities = appProps?.pageProps?.activities;
-                    const results = activities?.results || [];
+                    const pageProps = appProps?.pageProps;
 
+                    // --- NEW API (current MP structure): pageProps.listData.groups ---
+                    const groups = pageProps?.listData?.groups;
+                    if (Array.isArray(groups) && groups.length > 0) {
+                        const flat = [];
+                        for (const group of groups) {
+                            const groupDate = group.title || null; // e.g. "28 de marzo"
+                            for (const item of (group.items || [])) {
+                                flat.push({ ...item, _groupDate: groupDate });
+                            }
+                        }
+                        if (flat.length > 0) {
+                            return flat.map((item, idx) => {
+                                // Derive a sign-aware category for the normalizer:
+                                // subCategory "in" => income (positive), "out" / category "pays" => payment/transfer (negative)
+                                const sub = (item.subCategory || '').toLowerCase();
+                                const cat = (item.category || '').toLowerCase();
+                                let normCategory;
+                                if (sub === 'in') normCategory = 'income';
+                                else if (sub === 'out') normCategory = 'out';
+                                else if (cat === 'pays') normCategory = 'pays';
+                                else normCategory = cat || sub;
+
+                                return {
+                                    id: item.id || `activity-${idx}`,
+                                    title: item.title || item.description || '',
+                                    category: normCategory,
+                                    description: item.description || '',
+                                    amount: item.amount ? item.amount.fraction : null,
+                                    currency: (item.amount && item.amount.currency_id) || 'ARS',
+                                    symbol: (item.amount && item.amount.symbol) || '$',
+                                    dateTime: item._groupDate || null,
+                                    creationDate: null,
+                                    type: sub === 'in' ? 'income'
+                                        : cat === 'pays' ? 'payment'
+                                            : sub === 'out' ? 'transfer'
+                                                : (cat || 'unknown'),
+                                    raw: JSON.stringify(item).slice(0, 300),
+                                    _isStructured: true,
+                                    _source: 'in-page-json'
+                                };
+                            });
+                        }
+                    }
+
+                    // --- OLD API (fallback): pageProps.activities.results ---
+                    const results = pageProps?.activities?.results || [];
                     if (Array.isArray(results) && results.length > 0) {
                         return results.map((item, idx) => ({
                             id: item.id || `activity-${idx}`,

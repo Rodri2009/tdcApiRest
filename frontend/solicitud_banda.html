@@ -856,7 +856,8 @@
 
                 <div class="form-group">
                     <label for="descripcion">Descripción / Características de la banda</label>
-                    <textarea id="descripcion" name="descripcion" rows="2" placeholder="Describe tu banda, estilo, experiencia, etc."></textarea>
+                    <textarea id="descripcion" name="descripcion" rows="2"
+                        placeholder="Describe tu banda, estilo, experiencia, etc."></textarea>
                 </div>
 
                 <!-- Logo -->
@@ -890,11 +891,8 @@
                 <button type="button" id="backBtn" class="secondary">
                     <i class="fas fa-arrow-left"></i> Volver
                 </button>
-                <button type="submit" id="submitBtn">
-                    <i class="fas fa-check"></i> Guardar Datos de Banda
-                </button>
-                <button type="button" id="clearBtn" class="btn btn-secondary ml-8 hidden">
-                    <i class="fas fa-plus-circle"></i> Nueva Banda
+                <button type="submit" id="submitBtn" disabled>
+                    <i class="fas fa-check"></i> Guardar nueva banda / artista
                 </button>
             </div>
         </form>
@@ -917,6 +915,9 @@
         let instrumentos = [];
         let formacion = []; // Array de {instrumento, cantidad}
         let formacionCompleta = []; // Array completo con estructura del backend para actualizar
+
+        let isEditMode = false;
+        let originalBandData = null; // para detectar si hubo cambios al editar
         // Anti-bot / rate-limiting helpers
         const pageLoadTime = Date.now();
         const SUBMIT_MIN_DELAY_MS = 3000; // mínimo 3s en la página antes de enviar
@@ -1056,12 +1057,14 @@
             renderFormacion();
             select.value = '';
             cantidadInput.value = 1;
+            updateSubmitBtnState();
         }
 
         function removeFormacion(idx) {
             const removed = formacion.splice(idx, 1);
             try { console.debug('[formacion] eliminado:', removed[0] || removed, 'nuevo estado:', JSON.stringify(formacion)); } catch (e) { console.debug('[formacion] eliminado, estado actualizado'); }
             renderFormacion();
+            updateSubmitBtnState();
         }
 
         // ============================================================
@@ -1081,12 +1084,57 @@
             if (preview) preview.innerHTML = '<div class="placeholder"><i class="fas fa-cloud-arrow-up" style="font-size: 2rem; margin-bottom: 5px;"></i><div>Click para subir</div></div>';
             document.getElementById('logo_url').value = '';
             const logoManual = document.getElementById('logo_url_manual'); if (logoManual) logoManual.value = '';
-            // Ocultar nota de modo edición y botón limpiar
+            // Ocultar nota de modo edición
             const note = document.getElementById('band-mode-note'); if (note) { note.textContent = ''; note.style.display = 'none'; }
-            const clearBtn = document.getElementById('clearBtn'); if (clearBtn) clearBtn.style.display = 'none';
+            // Estado formulario nuevo
+            isEditMode = false;
+            originalBandData = null;
             // Restablecer botón submit
-            document.getElementById('submitBtn').textContent = 'Guardar Datos de Banda';
-            document.getElementById('submitBtn').disabled = false;
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.textContent = 'Guardar nueva banda / artista';
+                submitBtn.disabled = !hasRequiredFields();
+            }
+        }
+
+        function getCurrentBandData() {
+            return {
+                id_banda: document.getElementById('id_banda').value || '',
+                nombre_banda: document.getElementById('nombre_banda').value.trim(),
+                genero_musical: document.getElementById('genero_musical').value.trim(),
+                instagram: document.getElementById('instagram').value.trim(),
+                facebook: document.getElementById('facebook').value.trim(),
+                youtube: document.getElementById('youtube').value.trim(),
+                spotify: document.getElementById('spotify').value.trim(),
+                descripcion: document.getElementById('descripcion').value.trim(),
+                logo_url: (document.getElementById('logo_url').value || document.getElementById('logo_url_manual').value || '').trim(),
+                formacion: JSON.stringify(formacion || [])
+            };
+        }
+
+        function hasRequiredFields() {
+            const nombre = document.getElementById('nombre_banda').value.trim();
+            return nombre.length > 0;
+        }
+
+        function isFormDirty() {
+            if (!originalBandData) {
+                // modo creación nuevo
+                return true;
+            }
+            const current = getCurrentBandData();
+            return JSON.stringify(current) !== JSON.stringify(originalBandData);
+        }
+
+        function updateSubmitBtnState() {
+            const submitBtn = document.getElementById('submitBtn');
+            if (!submitBtn) return;
+            const requiredValid = hasRequiredFields();
+            if (isEditMode) {
+                submitBtn.disabled = !requiredValid || !isFormDirty();
+            } else {
+                submitBtn.disabled = !requiredValid;
+            }
         }
 
         // ============================================================
@@ -1258,6 +1306,7 @@
                         if (preview) {
                             preview.innerHTML = `<img src="${full.logo_url}" alt="Logo" style="max-width:120px;max-height:120px;object-fit:cover;border-radius:6px;">`;
                         }
+                        updateSubmitBtnState();
                         console.log('[SELECT-BANDA] 🖼️ Logo preview loaded');
                     } else {
                         if (logoHidden) logoHidden.value = '';
@@ -1291,19 +1340,20 @@
                     }
                 } catch (e) { console.warn('[SELECT-BANDA] 🎸 Formación parse error', e); }
 
-                // Indicar modo edición: proponer cambios (no se actualiza directamente sin contacto)
+                // Modo edición (actualizar banda existente)
+                isEditMode = true;
+                originalBandData = getCurrentBandData();
+
                 const note = document.getElementById('band-mode-note');
-                const clearBtn = document.getElementById('clearBtn');
                 if (note) {
-                    note.textContent = `Estás viendo la banda registrada. Podés actualizar la información.`;
+                    note.textContent = `Estás viendo la banda registrada. Podés actualizar la información en el formulario.`;
                     note.style.display = 'block';
                 }
-                if (clearBtn) clearBtn.style.display = 'inline-block';
 
                 const submitBtn = document.getElementById('submitBtn');
                 if (submitBtn) {
-                    submitBtn.textContent = 'Actualizar Datos de Banda';
-                    // efecto visual sutil
+                    submitBtn.textContent = 'Actualizar datos de banda / artista';
+                    submitBtn.disabled = true;
                     submitBtn.style.boxShadow = '0 0 0 4px rgba(240,171,252,0.08)';
                     setTimeout(() => { submitBtn.style.boxShadow = ''; }, 800);
                 }
@@ -1351,6 +1401,7 @@
                     document.getElementById('logo_url').value = data.url;
                     const manual = document.getElementById('logo_url_manual'); if (manual) manual.value = data.url;
                     preview.innerHTML = `<img src="${data.url}" alt="Logo preview" style="max-width:120px;max-height:120px;object-fit:cover;border-radius:6px;">`;
+                    updateSubmitBtnState();
                     showNotification('Logo subido correctamente', 'success');
                 } catch (err) {
                     console.error('Upload error:', err);
@@ -1365,8 +1416,10 @@
                 if (url) {
                     preview.innerHTML = `<img src="${url}" alt="Logo preview" onerror="this.src='';this.parentElement.innerHTML='<div class=\\'placeholder\\'><i class=\\'fas fa-exclamation-triangle\\'></i><div>Error al cargar</div></div>'">`;
                     document.getElementById('logo_url').value = url;
+                    updateSubmitBtnState();
                 } else {
                     document.getElementById('logo_url').value = '';
+                    updateSubmitBtnState();
                 }
             });
         }
@@ -1672,8 +1725,9 @@
                     // Si venimos desde otra página (returnTo), redirigir de vuelta con el ID de la banda nueva
                     const returnToParam = new URLSearchParams(window.location.search).get('returnTo');
                     if (returnToParam && data && data.id) {
+                        const separator = returnToParam.includes('?') ? '&' : '?';
                         setTimeout(() => {
-                            window.location.href = `${returnToParam}?nuevaBanda=${encodeURIComponent(data.id)}`;
+                            window.location.href = `${returnToParam}${separator}nuevaBanda=${encodeURIComponent(data.id)}`;
                         }, 1500);
                     }
                 }
@@ -1779,9 +1833,21 @@
             document.getElementById('backBtn').addEventListener('click', () => {
                 // Obtener parámetro returnTo si existe
                 const params = new URLSearchParams(window.location.search);
-                const returnTo = params.get('returnTo');
+                let returnTo = params.get('returnTo');
 
                 if (returnTo) {
+                    try {
+                        returnTo = decodeURIComponent(returnTo);
+                    } catch (e) {
+                        console.warn('No se pudo decodificar returnTo:', e);
+                    }
+
+                    // Si era una ruta relativa (sin host), reconstruir con origen actual
+                    if (!/^https?:\/\//i.test(returnTo)) {
+                        const url = new URL(returnTo, window.location.origin);
+                        returnTo = url.toString();
+                    }
+
                     window.location.href = returnTo;
                 } else if (document.referrer) {
                     window.history.back();
@@ -1792,7 +1858,26 @@
 
             // Autocomplete para banda principal
             const nombreBandaInput = document.getElementById('nombre_banda');
-            nombreBandaInput.addEventListener('input', (e) => handleBandaAutocomplete(e, false));
+            nombreBandaInput.addEventListener('input', (e) => {
+                handleBandaAutocomplete(e, false);
+                updateSubmitBtnState();
+            });
+
+            // campos que influyen en habilitar/deshabilitar submit
+            const watchFields = ['nombre_banda', 'genero_musical', 'instagram', 'facebook', 'youtube', 'spotify', 'descripcion', 'logo_url_manual'];
+            watchFields.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', updateSubmitBtnState);
+                el.addEventListener('change', updateSubmitBtnState);
+            });
+
+            const logoHidden = document.getElementById('logo_url');
+            if (logoHidden) {
+                logoHidden.addEventListener('change', updateSubmitBtnState);
+            }
+
+            updateSubmitBtnState();
             nombreBandaInput.addEventListener('blur', () => {
                 setTimeout(() => {
                     document.getElementById('banda-autocomplete').classList.remove('show');

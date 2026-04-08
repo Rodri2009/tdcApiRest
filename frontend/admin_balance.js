@@ -299,17 +299,20 @@
         const tbody = document.getElementById('tx-list');
         tbody.innerHTML = '';
 
-        // aplicar filtro por montos positivos si está activo
+        // aplicar filtro por montos positivos SOLO cuando no estamos en modo ‘ver todas’
         let filtered = list;
-        if (filterIncome) {
+        if (!viewAllMode && filterIncome) {
             filtered = list.filter(tx => {
                 const num = parseAmount(tx.amount);
                 return !isNaN(num) && num > 0;
             });
         }
-        // Si estamos en modo "ver todas", mostrar todas las encontradas; si no, cortar a MAX_ITEMS
-        const displayList = viewAllMode ? filtered : filtered.slice(0, MAX_ITEMS);
-        const totalCount = filtered.length;
+
+        // Si estamos en modo "ver todas", mostrar todas las transacciones; si no, cortar a MAX_ITEMS
+        const displayList = viewAllMode ? list : filtered.slice(0, MAX_ITEMS);
+
+        const totalCount = list.length;           // total real del conjunto completo
+        const visibleCount = filtered.length;     // cantidad tras filtro (si aplica)
 
         displayList.forEach(tx => {
             const tr = document.createElement('tr');
@@ -357,9 +360,9 @@
         const viewAllBtn = document.getElementById('view-all-btn');
         if (viewAllBtn) {
             if (viewAllMode) {
-                viewAllBtn.textContent = `Mostrar menos (${totalCount} transacciones)`;
+                viewAllBtn.textContent = `Mostrar menos (${totalCount} transacciones totales)`;
             } else {
-                viewAllBtn.textContent = `Ver todas las transacciones (${totalCount} total)`;
+                viewAllBtn.textContent = `Ver todas las transacciones (${totalCount} totales, ${visibleCount} visibles)`;
             }
         }
     }

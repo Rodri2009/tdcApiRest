@@ -740,4 +740,3 @@ textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
     .filters-panel .filter-field { min-width: 100%; }
     .card-header { flex-direction: column; align-items: flex-start; }
 }
-}

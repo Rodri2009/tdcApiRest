@@ -90,14 +90,13 @@ const crearSolicitud = async (req, res) => {
         const clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
 
         const sqlGeneral = `
-            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion_corta, descripcion_larga, descripcion, id_cliente, url_flyer)
-            VALUES (?, NOW(), 'Solicitado', ?, ?, ?, ?, ?)
+            INSERT INTO solicitudes (categoria, fecha_creacion, estado, descripcion_corta, descripcion_larga, id_cliente, url_flyer)
+            VALUES (?, NOW(), 'Solicitado', ?, ?, ?, ?)
         `;
         const paramsGeneral = [
             categoria,
             descripcionCorta || (descripcion ? descripcion.substring(0, 200) : null),
             descripcionLarga || null,
-            descripcion || '',
             clienteId,
             req.body.url_flyer || null
         ];
@@ -156,27 +155,30 @@ const crearSolicitud = async (req, res) => {
             // Insertar solicitud de alquiler con estructura normalizada
             const sqlAlquiler = `
                 INSERT INTO solicitudes_alquiler (
-                    id_solicitud, fecha_evento, hora_evento, duracion, id_tipo_evento,
-                    id_precio_vigencia, cantidad_personas, precio_basico, total_adicionales, monto_sena, monto_deposito, 
-                    comentarios, estado
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    id_solicitud, fecha_evento, hora_evento, id_tipo_evento,
+                    id_precio_vigencia, cantidad_personas, precio_basico, total_adicionales, monto_sena, monto_deposito,
+                    comentarios
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const paramsAlquiler = [
                 newId,                                      // id_solicitud
                 fechaEvento,                                // fecha_evento
-                horaEventoTime,                             // hora_evento (CAMBIO: ahora TIME)
-                duracionMinutos,                            // duracion (CAMBIO: ahora INT minutos)
-                tipoEvento,                                 // id_tipo_evento (CAMBIO: FK a opciones_tipos)
-                idPrecioVigencia,                           // id_precio_vigencia (NUEVO: FK a precios_vigencia)
-                cantidadNum,                                // cantidad_personas (NUEVO DENORMALIZADO: facilita búsqueda)
+                horaEventoTime,                             // hora_evento
+                tipoEvento,                                 // id_tipo_evento
+                idPrecioVigencia,                           // id_precio_vigencia
+                cantidadNum,                                // cantidad_personas
                 parseFloat(precioBase) || 0,               // precio_basico
-                0,                                          // total_adicionales (NUEVO: inicialmente 0, se actualiza con adicionales)
-                0,                                          // monto_sena (NUEVO: inicialmente 0, se actualiza con opciones_tipos)
-                0,                                          // monto_deposito (NUEVO: inicialmente 0, se actualiza con opciones_tipos)
-                descripcion || '',                          // comentarios (CAMBIO: renombrado de descripcion)
-                'Solicitado'                                // estado
+                0,                                          // total_adicionales
+                0,                                          // monto_sena
+                0,                                          // monto_deposito
+                descripcion || ''                           // comentarios
             ];
             await conn.query(sqlAlquiler, paramsAlquiler);
+            // Sincronizar fecha/hora/duracion al padre (fuente de verdad única)
+            await conn.query(
+                'UPDATE solicitudes SET fecha_evento = ?, hora_inicio = ?, duracion_minutos = ? WHERE id_solicitud = ?',
+                [fechaEvento, horaEventoTime, duracionMinutos, newId]
+            );
         }
 
         await conn.commit();
@@ -220,7 +222,7 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
                 ot.nombre_para_mostrar as nombreTipoEvento,
                 sa.fecha_evento as fechaEvento,
                 sa.hora_evento as horaInicio,
-                sa.duracion as duracionEvento,
+                sol.duracion_minutos as duracionEvento,
                 sa.id_precio_vigencia,
                 pv.cantidad_min,
                 pv.cantidad_max,
@@ -238,7 +240,7 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
                 COALESCE(sol.descripcion_corta, '') as descripcion_corta,
                 COALESCE(sol.descripcion_larga, '') as descripcion_larga,
                 COALESCE(sol.es_publico, 0) as esPublico,
-                sa.estado
+                sol.estado
             FROM solicitudes_alquiler sa
             JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
@@ -281,14 +283,14 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
                 'BANDA' as tipoEvento,
                 sfb.fecha_evento as fechaEvento,
                 sfb.hora_evento as horaInicio,
-                sfb.duracion as duracionEvento,
+                sol.duracion_minutos as duracionEvento,
                 sfb.cantidad_bandas as cantidadPersonas,
                 sfb.precio_basico as precioBase,
                 COALESCE(c.nombre, '') as nombreCompleto,
                 c.telefono as telefono,
                 c.email as email,
-                COALESCE(sfb.descripcion, b.bio) as descripcion_banda,
-                sfb.estado,
+                COALESCE(sol.descripcion_larga, b.bio) as descripcion_banda,
+                sol.estado,
                 COALESCE(b.genero_musical, sfb.genero_musical) as genero_musical,
                 COALESCE(b.instagram, NULL) as instagram,
                 COALESCE(b.facebook, NULL) as facebook,
@@ -330,7 +332,7 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
                 'SERVICIO' as tipoEvento,
                 ss.fecha_evento as fechaEvento,
                 ss.hora_evento as horaInicio,
-                ss.duracion as duracionEvento,
+                sol.duracion_minutos as duracionEvento,
                 NULL as cantidadPersonas,
                 ss.precio as precioBase,
                 COALESCE(c.nombre, '') as nombreCompleto,
@@ -363,7 +365,7 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
                 'TALLERES' as tipoEvento,
                 st.fecha_evento as fechaEvento,
                 st.hora_evento as horaInicio,
-                st.duracion as duracionEvento,
+                sol.duracion_minutos as duracionEvento,
                 NULL as cantidadPersonas,
                 st.precio as precioBase,
                 COALESCE(c.nombre, '') as nombreCompleto,
@@ -494,11 +496,12 @@ const getSolicitudPorId = async (req, res) => {
                     sa.id_tipo_evento as tipoServicio,
                     sa.fecha_evento as fechaEvento,
                     sa.hora_evento as horaInicio,
-                    sa.duracion as duracionEvento,
+                    sol.duracion_minutos as duracionEvento,
                     sa.cantidad_personas as cantidadPersonas,
                     sa.precio_basico as precioBase,
                     sa.comentarios as descripcion_alquiler,
-                    sa.estado,
+                    sol.estado,
+                    sol.fecha_creacion as fecha_creacion,
                     COALESCE(c.nombre, '') as nombreCompleto,
                     c.telefono as telefono,
                     c.email as email,
@@ -562,14 +565,14 @@ const getSolicitudPorId = async (req, res) => {
                     'BANDA' as tipoEvento,
                     sfb.fecha_evento as fechaEvento,
                     sfb.hora_evento as horaInicio,
-                    sfb.duracion as duracionEvento,
+                    sol.duracion_minutos as duracionEvento,
                     sfb.cantidad_bandas as cantidadPersonas,
                     sfb.precio_basico as precioBase,
                     COALESCE(c.nombre, '') as nombreCompleto,
                     c.telefono as telefono,
                     c.email as email,
-                    COALESCE(sfb.descripcion, b.bio) as descripcion_banda,
-                    sfb.estado,
+                    COALESCE(sol.descripcion_larga, b.bio) as descripcion_banda,
+                    sol.estado,
                     COALESCE(b.genero_musical, sfb.genero_musical) as genero_musical,
                     COALESCE(b.instagram, NULL) as instagram,
                     COALESCE(b.facebook, NULL) as facebook,
@@ -621,7 +624,7 @@ const getSolicitudPorId = async (req, res) => {
                     'SERVICIO' as tipoEvento,
                     ss.fecha_evento as fechaEvento,
                     ss.hora_evento as horaInicio,
-                    ss.duracion as duracionEvento,
+                    sol.duracion_minutos as duracionEvento,
                     NULL as cantidadPersonas,
                     ss.precio as precioBase,
                     COALESCE(c.nombre, '') as nombreCompleto,
@@ -665,7 +668,7 @@ const getSolicitudPorId = async (req, res) => {
                     'TALLERES' as tipoEvento,
                     st.fecha_evento as fechaEvento,
                     st.hora_evento as horaInicio,
-                    st.duracion as duracionEvento,
+                    sol.duracion_minutos as duracionEvento,
                     NULL as cantidadPersonas,
                     st.precio as precioBase,
                     COALESCE(c.nombre, '') as nombreCompleto,
@@ -776,11 +779,10 @@ const finalizarSolicitud = async (req, res) => {
                 id_cliente = ?,
                 descripcion_corta = ?,
                 descripcion_larga = ?,
-                descripcion = ?, 
                 estado = 'Solicitado'
             WHERE id_solicitud = ?
         `;
-        const paramsUpdateGeneral = [clienteId, descripcionCorta || (detallesAdicionales ? String(detallesAdicionales).substring(0, 200) : null), descripcionLarga || null, detallesAdicionales, id];
+        const paramsUpdateGeneral = [clienteId, descripcionCorta || (detallesAdicionales ? String(detallesAdicionales).substring(0, 200) : null), descripcionLarga || null, id];
         const resultGeneral = await conn.query(sqlUpdateGeneral, paramsUpdateGeneral);
 
         if (resultGeneral.affectedRows === 0) {
@@ -798,16 +800,27 @@ const finalizarSolicitud = async (req, res) => {
         await conn.query(sqlUpdateAlquiler, paramsUpdateAlquiler);
 
         // Obtener los datos completos para los emails
-        // CAMBIO: Se actualiza SELECT para usar estructura normalizada de solicitudes_alquiler
         const sqlSelect = `
             SELECT 
-                s.id_solicitud, s.categoria, s.fecha_creacion, s.estado, s.descripcion_corta, s.descripcion_larga, s.descripcion, s.id_cliente, s.url_flyer,
-                sa.fecha_evento, sa.hora_evento, sa.duracion, sa.precio_basico, sa.precio_final, sa.id_tipo_evento, sa.estado as estado_alquiler
-            FROM solicitudes s 
-            LEFT JOIN solicitudes_alquiler sa ON s.id_solicitud = sa.id_solicitud 
+                s.id_solicitud, s.categoria, s.fecha_creacion, s.estado,
+                s.descripcion_corta, s.descripcion_larga, s.url_flyer,
+                sa.fecha_evento, sa.hora_evento,
+                s.duracion_minutos as duracion,
+                sa.precio_basico, sa.precio_final, sa.id_tipo_evento,
+                sa.cantidad_personas,
+                COALESCE(c.nombre, ?) as nombre_completo,
+                COALESCE(c.email, ?) as email,
+                COALESCE(c.telefono, '') as telefono,
+                ot.nombre_para_mostrar,
+                ot.descripcion as descripcion_evento
+            FROM solicitudes s
+            LEFT JOIN solicitudes_alquiler sa ON s.id_solicitud = sa.id_solicitud
+            LEFT JOIN clientes c ON s.id_cliente = c.id_cliente
+            LEFT JOIN opciones_tipos ot ON sa.id_tipo_evento = ot.id_tipo_evento
+            LEFT JOIN precios_vigencia pv ON sa.id_precio_vigencia = pv.id
             WHERE s.id_solicitud = ?
         `;
-        const [solicitudCompleta] = await conn.query(sqlSelect, [id]);
+        const [solicitudCompleta] = await conn.query(sqlSelect, [nombreCompleto, email, id]);
 
         await conn.commit();
         res.status(200).json({ message: 'Solicitud creada como solicitada.', solicitudId: parseInt(id) });
@@ -1010,12 +1023,10 @@ const actualizarSolicitud = async (req, res) => {
         let sqlUpdateGeneral = `
             UPDATE solicitudes SET 
                 descripcion_corta = ?,
-                descripcion_larga = ?,
-                descripcion = ?`;
+                descripcion_larga = ?`;
         const paramsUpdateGeneral = [
             descripcionCorta || (descripcion || detallesAdicionales ? String((descripcion || detallesAdicionales)).substring(0, 200) : null),
-            descripcionLarga || null,
-            descripcion || detallesAdicionales || ''
+            descripcionLarga || null
         ];
         if (clienteId !== null) {
             sqlUpdateGeneral += ",\n                id_cliente = ?";
@@ -1200,10 +1211,10 @@ const actualizarSolicitud = async (req, res) => {
                 if (typeof duracionEvento === 'string') {
                     // Convertir '3 horas' → 180, '4 horas' → 240, etc
                     const match = duracionEvento.match(/(\d+)\s*hora/i);
-                    if (match) duracionMinutos = parseInt(match[1]) * 60;
-                    else duracionMinutos = parseInt(duracionEvento);
-                } else {
-                    duracionMinutos = duracionEvento;
+                    if (match) duracionMinutos = parseInt(match[1], 10) * 60;
+                    else if (!isNaN(parseInt(duracionEvento, 10))) duracionMinutos = parseInt(duracionEvento, 10);
+                } else if (!isNaN(Number(duracionEvento))) {
+                    duracionMinutos = Number(duracionEvento);
                 }
             }
 
@@ -1213,6 +1224,28 @@ const actualizarSolicitud = async (req, res) => {
                 horaEventoTime = horaInicio.includes(':') ?
                     (horaInicio.split(':').length === 2 ? `${horaInicio}:00` : horaInicio) :
                     horaInicio;
+            }
+
+            let cantidadNum = null;
+            if (typeof cantidadPersonas !== 'undefined' && cantidadPersonas !== null && String(cantidadPersonas).trim() !== '') {
+                const parsedCantidad = parseInt(cantidadPersonas, 10);
+                if (!isNaN(parsedCantidad)) cantidadNum = parsedCantidad;
+            }
+            if (typeof cantidad_personas !== 'undefined' && cantidad_personas !== null && cantidadNum === null && String(cantidad_personas).trim() !== '') {
+                const parsedCantidad = parseInt(cantidad_personas, 10);
+                if (!isNaN(parsedCantidad)) cantidadNum = parsedCantidad;
+            }
+
+            // Si tenemos tipoEvento + cantidadNum, recalcular id_precio_vigencia (versión actual) para consistencia
+            let nuevoIdPrecioVigencia = null;
+            if (tipoEvento && Number.isFinite(cantidadNum)) {
+                const pvRows = await conn.query(
+                    `SELECT id FROM precios_vigencia WHERE id_tipo_evento = ? AND ? BETWEEN cantidad_min AND cantidad_max AND (vigente_hasta IS NULL OR vigente_hasta >= CURDATE()) AND vigente_desde <= CURDATE() ORDER BY vigente_desde DESC LIMIT 1`,
+                    [tipoEvento, cantidadNum]
+                );
+                if (pvRows && pvRows.length > 0) {
+                    nuevoIdPrecioVigencia = pvRows[0].id;
+                }
             }
 
             // Actualizar solo los campos que realmente se enviaron
@@ -1227,17 +1260,17 @@ const actualizarSolicitud = async (req, res) => {
                 setClauses.push('hora_evento = ?');
                 params.push(horaEventoTime);
             }
-            if (duracionMinutos !== null) {
-                setClauses.push('duracion = ?');
-                params.push(duracionMinutos);
-            }
             if (tipoEvento) {
                 setClauses.push('id_tipo_evento = ?');
                 params.push(tipoEvento);
             }
-            if (typeof cantidadNum === 'number') {
+            if (Number.isFinite(cantidadNum)) {
                 setClauses.push('cantidad_personas = ?');
                 params.push(cantidadNum);
+            }
+            if (nuevoIdPrecioVigencia !== null) {
+                setClauses.push('id_precio_vigencia = ?');
+                params.push(nuevoIdPrecioVigencia);
             }
             if (precioBase) {
                 setClauses.push('precio_basico = ?');
@@ -1266,6 +1299,31 @@ const actualizarSolicitud = async (req, res) => {
                 affectedRowsEspecifico = result.affectedRows || 0;
                 tablaActualizada = 'solicitudes_alquiler';
                 logVerbose(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_alquiler: affectedRows=${affectedRowsEspecifico}`);
+
+                // Sincronizar campos de duración/fecha/hora en tabla general solicitudes
+                let updateParentClauses = [];
+                let updateParentParams = [];
+                if (fechaEvento) {
+                    updateParentClauses.push('fecha_evento = ?');
+                    updateParentParams.push(fechaEvento);
+                }
+                if (horaEventoTime) {
+                    updateParentClauses.push('hora_inicio = ?');
+                    updateParentParams.push(horaEventoTime);
+                }
+                if (duracionMinutos !== null) {
+                    updateParentClauses.push('duracion_minutos = ?');
+                    updateParentParams.push(duracionMinutos);
+                }
+
+                if (updateParentClauses.length > 0) {
+                    updateParentParams.push(idNumerico);
+                    await conn.query(
+                        `UPDATE solicitudes SET ${updateParentClauses.join(', ')} WHERE id_solicitud = ?`,
+                        updateParentParams
+                    );
+                    logVerbose(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes: sincronizados campos generales`);
+                }
             } catch (alqErr) {
                 logError(`[SOLICITUD][EDIT] ✗ Error en solicitudes_alquiler:`, alqErr.message);
                 throw alqErr;
@@ -1383,17 +1441,17 @@ const getSolicitudesPublicas = async (req, res) => {
                 'BANDA' as tipoEvento,
                 sb.fecha_evento as fechaEvento,
                 sb.hora_evento as horaEvento,
-                sb.duracion,
+                sol.duracion_minutos as duracion,
                 sb.cantidad_bandas as cantidad,
                 sb.precio_basico as precio,
                 sb.precio_anticipada as precio_anticipada,
                 sb.precio_puerta as precio_puerta,
-                -- Priorizar nombre de evento (si existe), luego nombre_banda, luego descripción, luego cliente
-                COALESCE(e.nombre_evento, b.nombre, sb.descripcion, COALESCE(c.nombre, '')) AS nombreEvento,
+                -- Priorizar nombre de solicitud actualizada (corta/larga), luego nombre_banda, luego cliente
+                COALESCE(sol.descripcion_corta, b.nombre, sol.descripcion_larga, COALESCE(c.nombre, '')) AS nombreEvento,
                 COALESCE(c.nombre, '') as nombreCompleto,
-                sb.descripcion,
+                sol.descripcion_larga as descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
-                COALESCE(e.url_flyer, sol.url_flyer) as url_flyer
+                COALESCE(sol.url_flyer, e.url_flyer) as url_flyer
             FROM solicitudes_fechas_bandas sb
             JOIN solicitudes sol ON sb.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
@@ -1412,7 +1470,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 'TALLER' as tipoEvento,
                 st.fecha_evento as fechaEvento,
                 st.hora_evento as horaEvento,
-                st.duracion,
+                sol.duracion_minutos as duracion,
                 NULL as cantidad,
                 st.precio as precio,
                 -- Preferir nombre de evento si existe, luego nombre del taller, luego cliente
@@ -1437,7 +1495,7 @@ const getSolicitudesPublicas = async (req, res) => {
                 'SERVICIO' as tipoEvento,
                 ss.fecha_evento as fechaEvento,
                 ss.hora_evento as horaEvento,
-                ss.duracion,
+                sol.duracion_minutos as duracion,
                 NULL as cantidad,
                 ss.precio as precio,
                 -- Preferir nombre de evento si existe, luego tipo_servicio, luego cliente
@@ -1589,7 +1647,7 @@ const getSolicitudPublicById = async (req, res) => {
                         sa.tipo_servicio as tipoServicio,
                         sa.fecha_evento as fechaEvento,
                         sa.hora_evento as horaInicio,
-                        sa.duracion as duracionEvento,
+                        sol.duracion_minutos as duracionEvento,
                         sa.cantidad_de_personas as cantidadPersonas,
                         sa.precio_basico as precioBase,
                         COALESCE(c.nombre, '') as nombreParaMostrar,
@@ -1633,14 +1691,14 @@ const getSolicitudPublicById = async (req, res) => {
                         'BANDA' as tipoEvento,
                         sfb.fecha_evento as fechaEvento,
                         sfb.hora_evento as horaInicio,
-                        sfb.duracion as duracionEvento,
+                        sol.duracion_minutos as duracionEvento,
                         sfb.cantidad_bandas as cantidadPersonas,
                         sfb.precio_basico as precioBase,
                         COALESCE(c.nombre, '') as nombreCompleto,
                         c.telefono as telefono,
                         c.email as email,
-                        COALESCE(sfb.descripcion, b.bio) as descripcion_banda,
-                        sfb.estado,
+                        COALESCE(sol.descripcion_larga, b.bio) as descripcion_banda,
+                        sol.estado,
                         COALESCE(b.genero_musical, sfb.genero_musical) as genero_musical,
                         COALESCE(b.instagram, NULL) as instagram,
                         COALESCE(b.facebook, NULL) as facebook,
@@ -1679,7 +1737,7 @@ const getSolicitudPublicById = async (req, res) => {
                         'SERVICIO' as tipoEvento,
                         ss.fecha_evento as fechaEvento,
                         ss.hora_evento as horaInicio,
-                        ss.duracion as duracionEvento,
+                        sol.duracion_minutos as duracionEvento,
                         ss.precio as precioBase,
                         COALESCE(c.nombre, '') as nombreParaMostrar,
                         sol.estado
@@ -1703,7 +1761,7 @@ const getSolicitudPublicById = async (req, res) => {
                         'TALLERES' as tipoEvento,
                         st.fecha_evento as fechaEvento,
                         st.hora_evento as horaInicio,
-                        st.duracion as duracionEvento,
+                        sol.duracion_minutos as duracionEvento,
                         st.precio as precioBase,
                         COALESCE(c.nombre, '') as nombreParaMostrar,
                         sol.estado
@@ -1730,7 +1788,7 @@ const getSolicitudPublicById = async (req, res) => {
                     sa.tipo_servicio as tipoServicio,
                     sa.fecha_evento as fechaEvento,
                     sa.hora_evento as horaInicio,
-                    sa.duracion as duracionEvento,
+                    sol.duracion_minutos as duracionEvento,
                     sa.cantidad_de_personas as cantidadPersonas,
                     sa.precio_basico as precioBase,
                     COALESCE(c.nombre, '') as nombreParaMostrar,
@@ -1770,11 +1828,11 @@ const getSolicitudPublicById = async (req, res) => {
                     'BANDA' as tipoEvento,
                     sfb.fecha_evento as fechaEvento,
                     sfb.hora_evento as horaInicio,
-                    sfb.duracion as duracionEvento,
+                    sol.duracion_minutos as duracionEvento,
                     sfb.cantidad_bandas as cantidadPersonas,
                     sfb.precio_basico as precioBase,
                     COALESCE(c.nombre, '') as nombreParaMostrar,
-                    sfb.estado
+                    sol.estado
                 FROM solicitudes_fechas_bandas sfb
                 JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
@@ -1790,7 +1848,7 @@ const getSolicitudPublicById = async (req, res) => {
                     'SERVICIO' as tipoEvento,
                     ss.fecha_evento as fechaEvento,
                     ss.hora_evento as horaInicio,
-                    ss.duracion as duracionEvento,
+                    sol.duracion_minutos as duracionEvento,
                     ss.precio as precioBase,
                     COALESCE(c.nombre, '') as nombreParaMostrar,
                     sol.estado
@@ -1809,7 +1867,7 @@ const getSolicitudPublicById = async (req, res) => {
                     'TALLERES' as tipoEvento,
                     st.fecha_evento as fechaEvento,
                     st.hora_evento as horaInicio,
-                    st.duracion as duracionEvento,
+                    sol.duracion_minutos as duracionEvento,
                     st.precio as precioBase,
                     COALESCE(c.nombre, '') as nombreParaMostrar,
                     sol.estado

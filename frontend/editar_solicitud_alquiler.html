@@ -411,6 +411,73 @@
                 font-size: 16px;
             }
         }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .back-btn {
+            background: #44403c;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #d6d3d1;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #57534e;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #111827;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .estado-badge {
+            background-color: #1d4ed8;
+            color: #ffffff;
+            border-radius: 8px;
+            border: 1.5px solid #0ea5e9;
+            padding: 4px 12px !important;
+            width: auto !important;
+            font-size: 0.9rem;
+        }
+
+        .estado-badge.estado-solicitado {
+            background-color: #1d4ed8;
+            color: #fff;
+            border-color: #0ea5e9;
+        }
+
+        .estado-badge.estado-contactado {
+            background-color: #6b7280;
+            color: #fff;
+            border-color: #4b5563;
+        }
+
+        .estado-badge.estado-confirmado {
+            background-color: #16a34a;
+            color: #fff;
+            border-color: #15803d;
+        }
+
+        .estado-badge.estado-cancelado {
+            background-color: #dc2626;
+            color: #fff;
+            border-color: #b91c1c;
+        }
     </style>
 </head>
 
@@ -418,18 +485,29 @@
 
     <main class="wrap">
         <div class="container" id="mainContainer">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <a href="admin_solicitudes.html"
-                    style="background: #44403c; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: #d6d3d1;">
-                    <i class="fas fa-arrow-left"></i> Volver a Solicitudes
+            <div class="header-row">
+                <a href="admin_solicitudes.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Volver
                 </a>
-                <h2 style="margin: 0;">Editor de Solicitud de Alquiler</h2>
-                <div id="solicitudIdBadge"
-                    style="width: 180px; padding: 8px 12px; background: #1a1a1a; border: 1px solid #f0abfc; border-radius: 6px; text-align: right; font-size: 0.85rem; color: #9ca3af;">
-                    <div style="color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px;">ID
-                        Solicitud</div>
-                    <div id="solicitudIdValue"
-                        style="color: #f0abfc; font-weight: bold; font-family: monospace; font-size: 0.95rem;">--</div>
+                <h2><i class="fas fa-home"></i> Editar Solicitud de Alquiler</h2>
+                <div style="width: 100px;"></div>
+            </div>
+
+            <div class="info-row">
+                <div>
+                    <span style="color: #9ca3af;">ID:</span>
+                    <span id="solicitudIdValue" style="font-weight: bold;">-</span>
+                    <span style="color: #9ca3af; margin-left: 12px;">Creado:</span>
+                    <span id="solicitudCreado" style="font-weight: bold;">-</span>
+                </div>
+                <div>
+                    <span style="color: #9ca3af;">Estado:</span>
+                    <select id="estadoSolicitud" class="estado-badge" style="width: auto; padding: 4px 12px;">
+                        <option value="Solicitado">Solicitado</option>
+                        <option value="Contactado">Contactado</option>
+                        <option value="Confirmado">Confirmado</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
                 </div>
             </div>
 
@@ -568,25 +646,6 @@
             <div id="detallePrecios"></div>
             <div id="presupuestoTotal"><span>Total: </span> $0</div>
 
-            <hr>
-
-            <h3>Estado de la Solicitud:</h3>
-            <div class="form-group" style="max-width: 300px;">
-                <label for="estadoSolicitud"
-                    style="display: block; margin-bottom: 6px; font-weight: bold; font-size: 0.95rem;">Cambiar
-                    Estado</label>
-                <select id="estadoSolicitud"
-                    style="padding: 6px 8px; border-radius: 4px; border: 1px solid #4b5563; background-color: #1f2937; color: #d6d3d1; cursor: pointer; width: 100%; font-size: 0.9rem;">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="Solicitado">📋 Solicitado</option>
-                    <option value="Contactado">📞 Contactado</option>
-                    <option value="Confirmado">✅ Confirmado</option>
-                    <option value="Cancelado">❌ Cancelado</option>
-                </select>
-                <small style="color: #9ca3af; display: block; margin-top: 3px; font-size: 0.85rem;">El estado actual
-                    aparecerá seleccionado</small>
-            </div>
-
             <div class="button-group">
                 <button id="cancel-button" style="background-color: #6c757d;">Cancelar</button>
                 <button id="save-button">Guardar Cambios</button>
@@ -644,6 +703,11 @@
                         if (idBadge) {
                             idBadge.textContent = window.currentSolicitud.solicitudId;
                         }
+                        const creadoSpan = document.getElementById('solicitudCreado');
+                        if (creadoSpan && window.currentSolicitud.fecha_creacion) {
+                            const d = new Date(window.currentSolicitud.fecha_creacion);
+                            creadoSpan.textContent = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        }
                     }
                 }, 1000);
 
@@ -656,9 +720,11 @@
                             estadoSelect.value = window.currentSolicitud.estado;
                             console.log('[ESTADO] Pre-seleccionado estado actual:', window.currentSolicitud.estado);
                         }
+                        updateEstadoSelectClass();
 
                         estadoSelect.addEventListener('change', () => {
                             const nuevoEstado = estadoSelect.value;
+                            updateEstadoSelectClass();
                             if (nuevoEstado) {
                                 cambiarEstadoSolicitud(nuevoEstado, estadoSelect);
                             }
@@ -670,6 +736,17 @@
                 throw err;
             }
         });
+
+        function updateEstadoSelectClass() {
+            const select = document.getElementById('estadoSolicitud');
+            if (!select) return;
+            select.classList.remove('estado-solicitado', 'estado-contactado', 'estado-confirmado', 'estado-cancelado');
+            const value = (select.value || '').trim();
+            if (value === 'Confirmado') select.classList.add('estado-confirmado');
+            else if (value === 'Cancelado') select.classList.add('estado-cancelado');
+            else if (value === 'Contactado') select.classList.add('estado-contactado');
+            else select.classList.add('estado-solicitado');
+        }
 
         // Función para cambiar el estado de la solicitud
         async function cambiarEstadoSolicitud(nuevoEstado, selectElement) {

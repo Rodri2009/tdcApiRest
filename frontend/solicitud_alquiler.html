@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
 
     <style>
         :root {
@@ -788,7 +787,6 @@
         let notificationBanner = null;
         let notificationTimer = null;
         let solicitudId = null;
-        let visitorId = null;  // Obtenido de formLogic.js (App.visitorId)
         let precioBase = 0;
         let todosLosAdicionales = [];
         let adicionalesSeleccionados = [];
@@ -818,11 +816,7 @@
 
         // ===== FUNCIONES DE LOCALSTORAGE PARA ADICIONALES =====
         function getAdicionalesStorageKey() {
-            if (!visitorId) {
-                console.warn('[STORAGE] visitorId no disponible, usando "default"');
-                return 'adicionales_default';
-            }
-            return `adicionales_${visitorId}`;
+            return 'adicionales_alquiler';
         }
 
         function cargarAdicionalesDelLocalStorage() {
@@ -993,11 +987,7 @@
 
         // Funciones de localStorage para adicionales
         function getAdicionalesStorageKey() {
-            if (!visitorId) {
-                console.warn('[STORAGE] visitorId no disponible, usando "default"');
-                return 'adicionales_default';
-            }
-            return `adicionales_${visitorId}`;
+            return 'adicionales_alquiler';
         }
 
         function cargarAdicionalesDelLocalStorage() {
@@ -1234,9 +1224,13 @@
                     detallesAdicionales: ''
                 };
 
+                const token = localStorage.getItem('authToken');
                 const finalizarResponse = await fetch(`/api/solicitudes/${currentSolicitudId}/finalizar`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
                     body: JSON.stringify(finalizarPayload)
                 });
 
@@ -1452,22 +1446,9 @@
             modalContacto = document.getElementById('modalContacto');
             notificationBanner = document.getElementById('notification-banner');
 
-            // Obtener visitorId desde formLogic.js (App.visitorId)
-            if (typeof App !== 'undefined' && App.visitorId) {
-                visitorId = App.visitorId;
-                cargarAdicionalesDelLocalStorage();
-                renderAdicionalesSeleccionados();
-                actualizarPresupuesto();
-            } else {
-                setTimeout(() => {
-                    if (typeof App !== 'undefined' && App.visitorId) {
-                        visitorId = App.visitorId;
-                        cargarAdicionalesDelLocalStorage();
-                        renderAdicionalesSeleccionados();
-                        actualizarPresupuesto();
-                    }
-                }, 500);
-            }
+            cargarAdicionalesDelLocalStorage();
+            renderAdicionalesSeleccionados();
+            actualizarPresupuesto();
 
             // Obtener solicitudId de la URL
             const params = new URLSearchParams(window.location.search);

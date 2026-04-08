@@ -820,12 +820,20 @@ const updateSolicitud = async (req, res) => {
             };
 
             // Filtrar setClauses para actualizar solo columnas válidas en solicitudes_fechas_bandas
+            // FASE 1: 'descripcion' y 'estado' ya no existen en sfb (viven en solicitudes padre)
+            // FASE 2: 'descripcion_corta', 'descripcion_larga' van a solicitudes padre
             const validChildCols = new Set([
-                'id_banda', 'fecha_evento', 'hora_evento', 'duracion', 'descripcion', 'precio_basico', 'precio_final', 'precio_puerta_propuesto', 'cantidad_bandas', 'expectativa_publico', 'invitadas_json', 'estado', 'fecha_alternativa', 'notas_admin', 'id_evento_generado'
+                'id_banda', 'fecha_evento', 'hora_evento', 'duracion', 'precio_basico', 'precio_final', 'precio_puerta_propuesto', 'cantidad_bandas', 'expectativa_publico', 'invitadas_json', 'fecha_alternativa', 'notas_admin', 'id_evento_generado'
+            ]);
+            // Columnas que van al padre solicitudes
+            const validParentCols = new Set([
+                'estado', 'descripcion_corta', 'descripcion_larga', 'es_publico', 'url_flyer'
             ]);
 
             const childSet = [];
             const childParams = [];
+            const parentSet = [];
+            const parentParams = [];
 
             for (let i = 0; i < setClauses.length; i++) {
                 // setClauses entries are like "campo = ?"; params are in same order
@@ -835,12 +843,49 @@ const updateSolicitud = async (req, res) => {
                 if (validChildCols.has(mapped)) {
                     childSet.push(`${mapped} = ?`);
                     childParams.push(params[i]);
+                } else if (validParentCols.has(mapped)) {
+                    parentSet.push(`${mapped} = ?`);
+                    parentParams.push(params[i]);
                 }
             }
 
             if (childSet.length > 0) {
                 childParams.push(id);
                 await conn.query(`UPDATE solicitudes_fechas_bandas SET ${childSet.join(', ')} WHERE id_solicitud = ?`, childParams);
+            }
+
+            // Rutar campos del padre a la tabla solicitudes
+            if (parentSet.length > 0) {
+                parentParams.push(id);
+                await conn.query(`UPDATE solicitudes SET ${parentSet.join(', ')} WHERE id_solicitud = ?`, parentParams);
+            }
+
+            // Fase 2: Sincronizar fecha/hora/duracion al padre solicitudes
+            {
+                const syncPadre = [];
+                const syncValores = [];
+                for (let i = 0; i < setClauses.length; i++) {
+                    const campo = setClauses[i].split('=')[0].trim();
+                    const mapped = columnMap[campo] || campo;
+                    if (mapped === 'fecha_evento') { syncPadre.push('fecha_evento = ?'); syncValores.push(params[i]); }
+                    if (mapped === 'hora_evento') { syncPadre.push('hora_inicio = ?'); syncValores.push(params[i]); }
+                    if (mapped === 'duracion') {
+                        syncPadre.push('duracion_minutos = ?');
+                        syncValores.push(params[i] !== null ? (parseInt(params[i], 10) || null) : null);
+                    }
+                    if (mapped === 'fecha_alternativa') { syncPadre.push('fecha_alternativa = ?'); syncValores.push(params[i]); }
+                }
+                if (syncPadre.length > 0) {
+                    syncValores.push(id);
+                    await conn.query(`UPDATE solicitudes SET ${syncPadre.join(', ')} WHERE id_solicitud = ?`, syncValores);
+                    if (syncPadre.some(f => f.startsWith('hora_inicio') || f.startsWith('duracion_minutos'))) {
+                        await conn.query(
+                            `UPDATE solicitudes SET hora_fin = ADDTIME(hora_inicio, SEC_TO_TIME(duracion_minutos * 60))
+                             WHERE id_solicitud = ? AND hora_inicio IS NOT NULL AND duracion_minutos IS NOT NULL`,
+                            [id]
+                        );
+                    }
+                }
             }
 
             // Si vienen campos relacionados con la banda y la solicitud tiene id_banda, actualizar bandas_artistas
@@ -906,9 +951,10 @@ const aprobarSolicitud = async (req, res) => {
 
         // Obtener la solicitud (normalizada)
         const [solicitud] = await pool.query(
-            `SELECT sfb.*, s.id_cliente, b.nombre AS banda_nombre, b.id_banda AS banda_id, b.genero_musical AS banda_genero
+            `SELECT sfb.*, s.id_cliente, s.estado AS estado, s.descripcion_larga AS descripcion,
+                    b.nombre AS banda_nombre, b.id_banda AS banda_id, b.genero_musical AS banda_genero
              FROM solicitudes_fechas_bandas sfb
-             JOIN solicitudes s ON sfb.id_solicitud = s.id
+             JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
              LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
              WHERE sfb.id_solicitud = ?`,
             [id]
@@ -951,7 +997,7 @@ const aprobarSolicitud = async (req, res) => {
                 descripcion,
                 fecha_evento,
                 hora_inicio,
-                duracion_estimada,
+                duracion_minutos,
                 id_cliente,
                 genero_musical,
                 cantidad_personas,

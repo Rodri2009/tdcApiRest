@@ -71,7 +71,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
                 categoria,
                 id_cliente,
                 estado,
-                descripcion,
+                descripcion_larga,
                 fecha_creacion,
                 url_flyer
             ) VALUES ('BANDA', ?, 'Solicitado', ?, NOW(), ?)
@@ -98,7 +98,8 @@ const crearSolicitudFechaBanda = async (req, res) => {
                 id_banda: b.id_banda || b.id || null,
                 nombre: b.nombre || '',
                 orden_show: b.orden_show ?? idx,
-                es_principal: b.es_principal === true
+                es_principal: b.es_principal === true,
+                hora_inicio: b.hora_inicio || null
             }));
             logVerbose(`[FECHA_BANDA] POST: bandas_json COMPLETO recibido desde frontend: ${bandasArray.length} bandas`);
         } else {
@@ -121,22 +122,16 @@ const crearSolicitudFechaBanda = async (req, res) => {
                         INSERT INTO bandas_artistas (
                             nombre,
                             genero_musical,
-                            contacto_nombre,
-                            contacto_email,
-                            contacto_telefono,
                             id_cliente,
                             verificada,
                             activa,
                             creado_en
-                        ) VALUES (?, ?, ?, ?, ?, ?, 0, 1, NOW())
+                        ) VALUES (?, ?, ?, 0, 1, NOW())
                     `;
 
                     const resultBandaNueva = await conn.query(sqlBandaNueva, [
                         nombre_banda.trim(),
                         genero_musical || null,
-                        contacto_nombre || null,
-                        contacto_email || null,
-                        contacto_telefono || null,
                         clienteId || null
                     ]);
 
@@ -185,17 +180,12 @@ const crearSolicitudFechaBanda = async (req, res) => {
                 fecha_evento,
                 fecha_alternativa,
                 hora_evento,
-                duracion,
-                descripcion,
                 precio_basico,
                 precio_puerta,
                 expectativa_publico,
                 cantidad_bandas,
-                bandas_json,
-                estado,
-                creado_en,
-                actualizado_en
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Solicitado', NOW(), NOW())
+                bandas_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const paramsFechaBanda = [
@@ -203,8 +193,6 @@ const crearSolicitudFechaBanda = async (req, res) => {
             fecha_evento,
             fecha_alternativa || null,
             hora_evento || '21:00',
-            duracion || 8 * 60,            // por defecto 8h (480 min)
-            descripcion || '',
             parseFloat(precio_basico) || 0,
             precio_puerta ? parseFloat(precio_puerta) : null,
             expectativa_publico || 150,  // aforo máximo templo
@@ -213,6 +201,27 @@ const crearSolicitudFechaBanda = async (req, res) => {
         ];
 
         await conn.query(sqlFechaBanda, paramsFechaBanda);
+
+        // Fase 2: Sincronizar campos de evento al padre solicitudes (fuente de verdad única)
+        await conn.query(
+            `UPDATE solicitudes
+             SET fecha_evento = ?, hora_inicio = ?, duracion_minutos = ?, fecha_alternativa = ?,
+                 hora_fin = CASE WHEN ? IS NOT NULL AND ? IS NOT NULL
+                                 THEN ADDTIME(?, SEC_TO_TIME(? * 60)) ELSE NULL END
+             WHERE id_solicitud = ?`,
+            [
+                fecha_evento,
+                hora_evento || '21:00',
+                parseInt(duracion, 10) || (8 * 60),
+                fecha_alternativa || null,
+                // para CASE
+                hora_evento || '21:00',
+                parseInt(duracion, 10) || (8 * 60),
+                hora_evento || '21:00',
+                parseInt(duracion, 10) || (8 * 60),
+                solicitudId
+            ]
+        );
 
         logVerbose(`[FECHA_BANDA] Fecha/show creada para solicitud: ${solicitudId}`);
 
@@ -229,7 +238,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
                     sfb.id_solicitud,
                     sfb.fecha_evento,
                     sfb.hora_evento,
-                    sfb.descripcion,
+                    s.descripcion_larga AS descripcion,
                     sfb.bandas_json,
                     c.nombre as nombre_cliente,
                     c.email as email_cliente,
@@ -299,7 +308,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
 
     } catch (err) {
         if (conn) await conn.rollback();
-        logError('[FECHA_BANDA] Error al crear solicitud:', err.message);
+        logError('[FECHA_BANDA] Error al crear solicitud:', err.message || err.sqlMessage || String(err));
         return res.status(500).json({ error: 'Error al crear solicitud de fecha.' });
     } finally {
         if (conn) conn.release();
@@ -332,14 +341,14 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
                 sfb.id_solicitud,
                 sfb.fecha_evento,
                 sfb.hora_evento,
-                sfb.duracion,
-                sfb.descripcion,
+                s.duracion_minutos AS duracion,
+                s.descripcion_larga AS descripcion,
                 sfb.id_evento_generado,
-                sfb.estado,
+                s.estado,
                 sfb.fecha_alternativa,
                 sfb.notas_admin,
-                sfb.creado_en,
-                sfb.actualizado_en,
+                s.fecha_creacion AS creado_en,
+                s.actualizado_en,
                 sfb.expectativa_publico,
                 s.descripcion_corta AS nombre_evento,
                 s.categoria,
@@ -424,12 +433,12 @@ const listarSolicitudesFechasBandas = async (req, res) => {
                 sfb.fecha_evento,
                 sfb.fecha_alternativa,
                 sfb.hora_evento,
-                sfb.duracion,
-                sfb.descripcion,
+                s.duracion_minutos AS duracion,
+                s.descripcion_larga AS descripcion,
                 sfb.precio_basico,
                 sfb.precio_anticipada,
                 sfb.precio_puerta AS precio_puerta_propuesto,
-                sfb.estado,
+                s.estado,
                 sfb.expectativa_publico,
                 s.es_publico,
                 -- enviar bandas_json también bajo el nombre invitadas_json para que el frontend la parsee
@@ -437,7 +446,7 @@ const listarSolicitudesFechasBandas = async (req, res) => {
                 b.genero_musical,
                 s.descripcion_corta AS nombre_evento,
                 s.id_cliente,
-                sfb.creado_en
+                s.fecha_creacion AS creado_en
             FROM solicitudes_fechas_bandas sfb
             LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
             JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
@@ -448,7 +457,7 @@ const listarSolicitudesFechasBandas = async (req, res) => {
 
         // Filtro por estado
         if (estado) {
-            sql += ' AND sfb.estado = ?';
+            sql += ' AND s.estado = ?';
             params.push(estado);
         }
 
@@ -692,7 +701,8 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                         id_banda: b.id_banda || b.id || null,
                         nombre: b.nombre || '',
                         orden_show: b.orden_show ?? idx,
-                        es_principal: b.es_principal === true
+                        es_principal: b.es_principal === true,
+                        hora_inicio: b.hora_inicio || null
                     }));
                     logVerbose(`[FECHA_BANDA] bandas_json COMPLETO recibido: ${bandasActual.length} bandas (incluye principal)`);
                 } else {
@@ -767,13 +777,9 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             actualizaciones.push('hora_evento = ?');
             params.push(hora_evento);
         }
-        if (duracion !== undefined) {
-            actualizaciones.push('duracion = ?');
-            params.push(duracion);
-        }
         if (descripcion !== undefined) {
-            actualizaciones.push('descripcion = ?');
-            params.push(descripcion);
+            // descripcion_larga vive en tabla padre solicitudes
+            await conn.query('UPDATE solicitudes SET descripcion_larga = ? WHERE id_solicitud = ?', [descripcion, idNum]);
         }
         // ✅ B3: Precios desde solicitudes_fechas_bandas (ÚNICA fuente de verdad)
         if (precio_anticipada !== undefined) {
@@ -804,12 +810,38 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                     return res.status(403).json({ error: 'Sólo administrador puede confirmar solicitudes.' });
                 }
             }
-            actualizaciones.push('estado = ?');
-            params.push(estado);
+            // estado vive en tabla padre solicitudes
+            await conn.query('UPDATE solicitudes SET estado = ? WHERE id_solicitud = ?', [estado, idNum]);
         }
         if (fecha_alternativa !== undefined) {
             actualizaciones.push('fecha_alternativa = ?');
             params.push(fecha_alternativa);
+        }
+        // Fase 2: Sincronizar fecha/hora/duracion al padre solicitudes
+        {
+            const syncPadre = [];
+            const syncValores = [];
+            if (fecha_evento !== undefined) { syncPadre.push('fecha_evento = ?'); syncValores.push(fecha_evento); }
+            if (hora_evento !== undefined) { syncPadre.push('hora_inicio = ?'); syncValores.push(hora_evento); }
+            if (duracion !== undefined) {
+                syncPadre.push('duracion_minutos = ?');
+                syncValores.push(duracion !== null ? (parseInt(duracion, 10) || null) : null);
+            }
+            if (fecha_alternativa !== undefined) { syncPadre.push('fecha_alternativa = ?'); syncValores.push(fecha_alternativa || null); }
+            if (syncPadre.length > 0) {
+                await conn.query(
+                    `UPDATE solicitudes SET ${syncPadre.join(', ')} WHERE id_solicitud = ?`,
+                    [...syncValores, idNum]
+                );
+                // Recalcular hora_fin si cambió hora o duración
+                if (hora_evento !== undefined || duracion !== undefined) {
+                    await conn.query(
+                        `UPDATE solicitudes SET hora_fin = ADDTIME(hora_inicio, SEC_TO_TIME(duracion_minutos * 60))
+                         WHERE id_solicitud = ? AND hora_inicio IS NOT NULL AND duracion_minutos IS NOT NULL`,
+                        [idNum]
+                    );
+                }
+            }
         }
         if (notas_admin !== undefined) {
             actualizaciones.push('notas_admin = ?');
@@ -838,8 +870,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             logVerbose(`[FECHA_BANDA] es_publico será guardado en tabla 'solicitudes':`, parentEsPublico);
         }
 
-        // Siempre actualizar timestamp
-        actualizaciones.push('actualizado_en = NOW()');
+        // actualizado_en vive en tabla padre solicitudes (ON UPDATE CURRENT_TIMESTAMP)
 
         if (actualizaciones.length > 0) {
             params.push(idNum);
@@ -856,6 +887,8 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             const result = await conn.query(sqlUpdate, params);
             logVerbose(`[FECHA_BANDA] ✓ Solicitud actualizada: ${result.affectedRows} fila(s)`);
         }
+        // Actualizar timestamp del padre siempre que haya cambios en la hija
+        await conn.query('UPDATE solicitudes SET actualizado_en = NOW() WHERE id_solicitud = ?', [idNum]);
 
         // ✅ Opción B3: Single Source of Truth
         // Los precios viven SOLO en solicitudes_fechas_bandas
@@ -959,12 +992,14 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                 const [solicitudData] = await conn.query(`
                     SELECT
                         sfb.id_solicitud,
+                        sfb.id_banda,
                         sfb.fecha_evento,
                         sfb.hora_evento,
-                        sfb.duracion,
-                        sfb.descripcion,
+                        s.duracion_minutos AS duracion,
+                        s.descripcion_larga AS descripcion,
                         sfb.precio_basico,
                         sfb.cantidad_bandas,
+                        s.id_cliente AS cliente_id,
                         s.descripcion_corta AS nombre_evento,
                         s.es_publico AS solicitud_es_publico,
                         ba.nombre as banda_nombre,
@@ -991,30 +1026,31 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                             descripcion,
                             fecha_evento,
                             hora_inicio,
-                            duracion_estimada,
+                            duracion_minutos,
+                            url_flyer,
                             id_cliente,
-                            genero_musical,
-                            cantidad_personas,
                             es_publico,
                             activo,
                             confirmado_en
-                        ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+                        ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
                     `;
 
                     // ✅ Opción B3: No insertar precios en eventos_confirmados
                     // Los precios viven SOLO en solicitudes_fechas_bandas (Single Source of Truth)
                     const esPublicoParaEvento = (typeof es_publico !== 'undefined') ? (es_publico ? 1 : 0) : (solicitudData.solicitud_es_publico ? 1 : 0);
 
+                    const nombreEvento = solicitudData.nombre_evento || solicitudData.descripcion_larga || solicitudData.banda_nombre || 'Sin nombre';
+                    const descripcionCorta = solicitudData.descripcion_larga || solicitudData.descripcion_corta || nombreEvento;
+
                     const resultEvento = await conn.query(sqlEventoConfirmado, [
                         idNum,
-                        solicitudData.banda_nombre || solicitudData.nombre_evento || 'Sin nombre',
-                        solicitudData.descripcion || '',
+                        nombreEvento,
+                        descripcionCorta,
                         solicitudData.fecha_evento,
                         solicitudData.hora_evento || '21:00',
                         solicitudData.duracion || null,
+                        solicitudData.solicitud_url_flyer || null,
                         solicitudData.cliente_id || null,
-                        solicitudData.genero_musical || solicitudData.banda_nombre || '',
-                        solicitudData.cantidad_bandas || 120,
                         esPublicoParaEvento
                     ]);
 
@@ -1050,6 +1086,44 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                 [urlFlyerPendiente, idNum]
             );
             logVerbose(`[FECHA_BANDA] ✓ url_flyer guardado en tabla 'solicitudes'`);
+        }
+
+        // Sincronizar el registro de eventos_confirmados BANDA si existe (para que el index y eventos públicos muestren datos actuales)
+        const [eventoConfirmado] = await conn.query(
+            "SELECT id FROM eventos_confirmados WHERE id_solicitud = ? AND tipo_evento = 'BANDA'",
+            [idNum]
+        );
+        if (eventoConfirmado && eventoConfirmado.id) {
+            const [solPadre] = await conn.query(
+                'SELECT descripcion_corta, url_flyer, es_publico, fecha_evento AS fecha_solicitud, hora_inicio AS hora_solicitud, duracion_minutos FROM solicitudes WHERE id_solicitud = ?',
+                [idNum]
+            );
+            const [sfbRegistro] = await conn.query(
+                'SELECT fecha_evento, hora_evento FROM solicitudes_fechas_bandas WHERE id_solicitud = ?',
+                [idNum]
+            );
+
+            const nombreEvento = solPadre && solPadre.descripcion_corta ? solPadre.descripcion_corta : null;
+            const urlEventFlyer = solPadre ? solPadre.url_flyer : null;
+            const fechaEvento = (sfbRegistro && sfbRegistro.fecha_evento) ? sfbRegistro.fecha_evento : (solPadre ? solPadre.fecha_solicitud : null);
+            const horaInicio = (sfbRegistro && sfbRegistro.hora_evento) ? sfbRegistro.hora_evento : (solPadre ? solPadre.hora_solicitud : null);
+            const duracionEstimada = solPadre ? solPadre.duracion_minutos : null;
+            const esPublico = solPadre ? solPadre.es_publico : null;
+
+            await conn.query(
+                `UPDATE eventos_confirmados
+                 SET nombre_evento = COALESCE(?, nombre_evento),
+                     descripcion_corta = COALESCE(?, descripcion_corta),
+                     url_flyer = COALESCE(?, url_flyer),
+                     fecha_evento = COALESCE(?, fecha_evento),
+                     hora_inicio = COALESCE(?, hora_inicio),
+                     duracion_minutos = COALESCE(?, duracion_minutos),
+                     es_publico = COALESCE(?, es_publico),
+                     actualizado_en = NOW()
+                 WHERE id = ?`,
+                [nombreEvento, nombreEvento, urlEventFlyer, fechaEvento, horaInicio, duracionEstimada, esPublico, eventoConfirmado.id]
+            );
+            logVerbose(`[FECHA_BANDA] ✓ eventos_confirmados actualizado para id_solicitud=${idNum} (evento id=${eventoConfirmado.id})`);
         }
 
         await conn.commit();
@@ -1095,15 +1169,18 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
         const sqlSelect = `
             SELECT
                 sfb.id_solicitud,
+                sfb.id_banda,
                 sfb.fecha_evento,
                 sfb.hora_evento,
-                sfb.duracion,
-                sfb.descripcion,
+                s.duracion_minutos AS duracion,
+                s.descripcion_larga AS descripcion,
                 sfb.precio_basico,
-                ba.nombre as banda_nombre,
-                c.nombre as cliente_nombre,
-                c.email as cliente_email,
-                c.telefono as cliente_telefono
+                sfb.cantidad_bandas,
+                ba.nombre AS banda_nombre,
+                s.id_cliente AS cliente_id,
+                c.nombre AS cliente_nombre,
+                c.email AS cliente_email,
+                c.telefono AS cliente_telefono
             FROM solicitudes_fechas_bandas sfb
             JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
             LEFT JOIN bandas_artistas ba ON sfb.id_banda = ba.id_banda
@@ -1177,20 +1254,11 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
             return res.status(404).json({ error: 'Solicitud no encontrada.' });
         }
 
-        // 2. Actualizar estado en solicitudes_fechas_bandas
-        const sqlUpdateFecha = `
-            UPDATE solicitudes_fechas_bandas 
-            SET estado = 'Confirmado', actualizado_en = NOW()
-            WHERE id_solicitud = ?
-        `;
-
-        await conn.query(sqlUpdateFecha, [idNum]);
-
-        // 3. Actualizar tabla solicitudes
+        // 2. Actualizar estado en tabla padre solicitudes (fuente única de verdad)
         const sqlUpdateSolicitud = `
             UPDATE solicitudes 
-            SET estado = 'Confirmado', es_publico = ?
-            WHERE id = ?
+            SET estado = 'Confirmado', es_publico = ?, actualizado_en = NOW()
+            WHERE id_solicitud = ?
         `;
 
         await conn.query(sqlUpdateSolicitud, [
@@ -1208,14 +1276,12 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
                 descripcion,
                 fecha_evento,
                 hora_inicio,
-                duracion_estimada,
+                duracion_minutos,
                 id_cliente,
-                genero_musical,
-                cantidad_personas,
                 es_publico,
                 activo,
                 confirmado_en
-            ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+            ) VALUES (?, 'BANDA', 'solicitudes_fechas_bandas', ?, ?, ?, ?, ?, ?, ?, 1, NOW())
         `;
 
         // ✅ precio_final fue removido en Phase 2 - usar solo precio_basico
@@ -1227,8 +1293,6 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
             solicitudFecha.hora_evento || '21:00',
             solicitudFecha.duracion || null,
             solicitudFecha.cliente_id || null,
-            solicitudFecha.banda_nombre || '',
-            solicitudFecha.cantidad_personas || 120,
             es_publico ? 1 : 0
         ]);
 

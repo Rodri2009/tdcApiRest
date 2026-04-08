@@ -130,45 +130,68 @@
         }
 
         .estado-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
+            background-color: #1d4ed8;
+            color: #ffffff;
+            border-radius: 8px;
+            border: 1.5px solid #0ea5e9;
+            padding: 4px 12px !important;
+            width: auto !important;
+            font-size: 0.9rem;
             font-weight: 500;
         }
 
-        .estado-disponible {
-            background: #d1fae5;
-            color: #065f46;
+        .estado-badge.estado-disponible {
+            background-color: #16a34a;
+            color: #fff;
+            border-color: #15803d;
         }
 
-        .estado-reservado {
-            background: #fef3c7;
-            color: #92400e;
+        .estado-badge.estado-reservado {
+            background-color: #f59e0b;
+            color: #fff;
+            border-color: #d97706;
         }
 
-        .estado-confirmado {
-            background: #dbeafe;
-            color: #1e40af;
+        .estado-badge.estado-confirmado {
+            background-color: #1d4ed8;
+            color: #fff;
+            border-color: #0ea5e9;
         }
 
-        .estado-en_curso {
-            background: #c7d2fe;
-            color: #4338ca;
+        .estado-badge.estado-en_curso {
+            background-color: #7c3aed;
+            color: #fff;
+            border-color: #6d28d9;
         }
 
-        .estado-completado {
-            background: #d1fae5;
-            color: #065f46;
+        .estado-badge.estado-completado {
+            background-color: #16a34a;
+            color: #fff;
+            border-color: #15803d;
         }
 
-        .estado-cancelado {
-            background: #fee2e2;
-            color: #991b1b;
+        .estado-badge.estado-cancelado {
+            background-color: #dc2626;
+            color: #fff;
+            border-color: #b91c1c;
         }
 
-        .estado-no_asistio {
-            background: #e5e7eb;
-            color: #374151;
+        .estado-badge.estado-no_asistio {
+            background-color: #6b7280;
+            color: #fff;
+            border-color: #4b5563;
+        }
+
+        select,
+        button,
+        input[type="text"],
+        input[type="date"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="number"],
+        input[type="file"],
+        textarea {
+            cursor: pointer;
         }
 
         .btn-group {
@@ -433,7 +456,7 @@
                 </div>
                 <div>
                     <span style="color: #9ca3af;">Estado:</span>
-                    <select id="estadoSelect" style="width: auto; padding: 4px 12px;">
+                    <select id="estadoSelect" class="estado-badge" style="width: auto; padding: 4px 12px;">
                         <option value="disponible">Disponible</option>
                         <option value="reservado">Reservado</option>
                         <option value="confirmado">Confirmado</option>
@@ -626,6 +649,7 @@
             document.getElementById('pagadoCheck').addEventListener('change', onPagadoChange);
             document.getElementById('btnGuardar').addEventListener('click', guardarTurno);
             document.getElementById('btnEliminar').addEventListener('click', eliminarTurno);
+            document.getElementById('estadoSelect').addEventListener('change', updateEstadoSelectClass);
         });
 
         function initCalendario() {
@@ -710,6 +734,7 @@
 
                 document.getElementById('notasTextarea').value = turno.notas || '';
                 document.getElementById('estadoSelect').value = turno.estado || 'disponible';
+                updateEstadoSelectClass();
 
             } catch (err) {
                 console.error(err);
@@ -906,6 +931,19 @@
     </script>
 
     <script>
+        function updateEstadoSelectClass() {
+            const select = document.getElementById('estadoSelect');
+            if (!select) return;
+            select.classList.remove('estado-disponible', 'estado-reservado', 'estado-confirmado', 'estado-en_curso', 'estado-completado', 'estado-cancelado', 'estado-no_asistio');
+            const v = (select.value || '').trim();
+            if (v === 'reservado') select.classList.add('estado-reservado');
+            else if (v === 'confirmado') select.classList.add('estado-confirmado');
+            else if (v === 'en_curso') select.classList.add('estado-en_curso');
+            else if (v === 'completado') select.classList.add('estado-completado');
+            else if (v === 'cancelado') select.classList.add('estado-cancelado');
+            else if (v === 'no_asistio') select.classList.add('estado-no_asistio');
+            else select.classList.add('estado-disponible');
+        }
     </script>
 </body>
 

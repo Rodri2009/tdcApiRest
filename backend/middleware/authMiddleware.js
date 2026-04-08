@@ -74,7 +74,31 @@ const requireRole = (allowedRoles) => {
     };
 };
 
+/**
+ * Middleware de autenticación opcional
+ * Si hay token válido, popula req.user; si no hay token, continúa sin error
+ */
+const optionalProtect = (req, res, next) => {
+    try {
+        let token = tokenManager.extractToken(req);
+        if (!token && req.query && req.query.token) {
+            token = req.query.token;
+        }
+        if (!token) return next();
+
+        const decoded = tokenManager.verifyToken(token, 'access');
+        if (decoded) {
+            req.user = decoded;
+            req.token = token;
+        }
+        next();
+    } catch (error) {
+        next();
+    }
+};
+
 module.exports = {
     protect,
+    optionalProtect,
     requireRole
 };

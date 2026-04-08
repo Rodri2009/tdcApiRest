@@ -121,31 +121,50 @@
         }
 
         .estado-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
+            background-color: #1d4ed8;
+            color: #ffffff;
+            border-radius: 8px;
+            border: 1.5px solid #0ea5e9;
+            padding: 4px 12px !important;
+            width: auto !important;
+            font-size: 0.9rem;
             font-weight: 500;
         }
 
-        .estado-activa {
-            background: #d1fae5;
-            color: #065f46;
+        .estado-badge.estado-activa {
+            background-color: #16a34a;
+            color: #fff;
+            border-color: #15803d;
         }
 
-        .estado-pausada {
-            background: #fef3c7;
-            color: #92400e;
+        .estado-badge.estado-pausada {
+            background-color: #f59e0b;
+            color: #fff;
+            border-color: #d97706;
         }
 
-        .estado-vencida {
-            background: #fee2e2;
-            color: #991b1b;
+        .estado-badge.estado-vencida {
+            background-color: #6b7280;
+            color: #fff;
+            border-color: #4b5563;
         }
 
-        .estado-cancelada {
-            background: #e5e7eb;
-            color: #374151;
+        .estado-badge.estado-cancelada {
+            background-color: #dc2626;
+            color: #fff;
+            border-color: #b91c1c;
+        }
+
+        select,
+        button,
+        input[type="text"],
+        input[type="date"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="number"],
+        input[type="file"],
+        textarea {
+            cursor: pointer;
         }
 
         .btn-group {
@@ -369,7 +388,7 @@
                 </div>
                 <div>
                     <span style="color: #9ca3af;">Estado:</span>
-                    <select id="estadoSelect" style="width: auto; padding: 4px 12px;">
+                    <select id="estadoSelect" class="estado-badge" style="width: auto; padding: 4px 12px;">
                         <option value="activa">Activa</option>
                         <option value="pausada">Pausada</option>
                         <option value="vencida">Vencida</option>
@@ -528,6 +547,7 @@
             document.getElementById('precioSelect').addEventListener('change', onPrecioChange);
             document.getElementById('btnGuardar').addEventListener('click', guardarInscripcion);
             document.getElementById('btnEliminar').addEventListener('click', eliminarInscripcion);
+            document.getElementById('estadoSelect').addEventListener('change', updateEstadoSelectClass);
         });
 
         function initCalendarios() {
@@ -600,6 +620,7 @@
                 document.getElementById('clasesRestantes').textContent = insc.clases_restantes || 0;
                 document.getElementById('montoPagado').value = insc.monto_pagado || 0;
                 document.getElementById('estadoSelect').value = insc.estado || 'activa';
+                updateEstadoSelectClass();
 
                 if (insc.fecha_inscripcion) {
                     document.querySelector('#fechaInscripcion')._flatpickr.setDate(insc.fecha_inscripcion);
@@ -766,6 +787,16 @@
     </script>
 
     <script>
+        function updateEstadoSelectClass() {
+            const select = document.getElementById('estadoSelect');
+            if (!select) return;
+            select.classList.remove('estado-activa', 'estado-pausada', 'estado-vencida', 'estado-cancelada');
+            const v = (select.value || '').trim();
+            if (v === 'pausada') select.classList.add('estado-pausada');
+            else if (v === 'vencida') select.classList.add('estado-vencida');
+            else if (v === 'cancelada') select.classList.add('estado-cancelada');
+            else select.classList.add('estado-activa');
+        }
     </script>
 </body>
 
