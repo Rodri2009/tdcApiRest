@@ -233,25 +233,35 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Nombre contacto</label>
-                            <input type="text" id="banda-contacto-nombre">
+                    <!-- Datos de contacto / representante -->
+                    <div style="border:1px solid #374151;border-radius:8px;padding:12px 14px;margin-top:4px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                            <span style="font-weight:600;font-size:0.92rem;color:#f0abfc;"><i class="fas fa-address-book"></i> Datos de contacto / representante</span>
+                            <button type="button" class="btn btn-secondary" onclick="openBandaClienteModal()"
+                                style="padding:4px 10px;font-size:0.82rem;">
+                                <i class="fas fa-edit"></i> Editar Cliente
+                            </button>
                         </div>
-                        <div class="form-group">
-                            <label>Email contacto</label>
-                            <input type="email" id="banda-contacto-email">
+                        <input type="hidden" id="banda-cliente-id">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nombre contacto</label>
+                                <input type="text" id="banda-contacto-nombre" readonly style="opacity:0.7;cursor:default;">
+                            </div>
+                            <div class="form-group">
+                                <label>Email contacto</label>
+                                <input type="email" id="banda-contacto-email" readonly style="opacity:0.7;cursor:default;">
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label><i class="fab fa-whatsapp"></i> WhatsApp</label>
-                            <input type="tel" id="banda-contacto-telefono">
-                        </div>
-                        <div class="form-group">
-                            <label>Rol del contacto</label>
-                            <input type="text" id="banda-contacto-rol" placeholder="Ej: Manager, Cantante">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fab fa-whatsapp"></i> WhatsApp</label>
+                                <input type="tel" id="banda-contacto-telefono" readonly style="opacity:0.7;cursor:default;">
+                            </div>
+                            <div class="form-group">
+                                <label>Rol del contacto</label>
+                                <input type="text" id="banda-contacto-rol" placeholder="Ej: Manager, Cantante">
+                            </div>
                         </div>
                     </div>
 
@@ -674,6 +684,10 @@
                             <button class="btn btn-icon btn-sm" onclick="editBanda(${b.id_banda})" title="Editar">
                                 ✏️
                             </button>
+                            <button class="btn btn-icon btn-sm" onclick="deleteBanda(${b.id_banda}, '${b.nombre.replace(/'/g, "\\'")}')"
+                                title="Eliminar" style="color:#f87171;">
+                                🗑️
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -996,6 +1010,7 @@
             document.getElementById('banda-facebook').value = banda.facebook || '';
             document.getElementById('banda-youtube').value = banda.youtube || '';
             document.getElementById('banda-spotify').value = banda.spotify || '';
+            document.getElementById('banda-cliente-id').value = banda.id_cliente || '';
             document.getElementById('banda-contacto-nombre').value = [banda.cliente_nombre, banda.cliente_apellido].filter(Boolean).join(' ') || '';
             document.getElementById('banda-contacto-email').value = banda.cliente_email || '';
             document.getElementById('banda-contacto-telefono').value = banda.cliente_telefono || '';
@@ -1004,6 +1019,158 @@
             document.getElementById('banda-activa').checked = banda.activa !== 0;
 
             openModal('modal-banda');
+        }
+
+        /* ========== MODAL EDITAR CLIENTE (banda) ========== */
+        async function openBandaClienteModal() {
+            const modal = document.getElementById('bandaClienteModal');
+            if (!modal) return;
+            const clienteId = document.getElementById('banda-cliente-id').value;
+            document.getElementById('bandaModalClienteInput').value = '';
+            document.getElementById('bandaModalClienteResultados').innerHTML = '';
+            if (clienteId) {
+                try {
+                    const res = await fetch(`/api/admin/clientes/${clienteId}`, {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                    });
+                    if (res.ok) {
+                        const c = await res.json();
+                        document.getElementById('bandaModalClienteId').value = c.id_cliente || '';
+                        document.getElementById('bandaModalClienteIdDisplay').textContent = c.id_cliente || '-';
+                        document.getElementById('bandaModalClienteNombre').value = c.nombre || '';
+                        document.getElementById('bandaModalClienteEmail').value = c.email || '';
+                        document.getElementById('bandaModalClienteTelefono').value = c.telefono || '';
+                    } else { _clearBandaClienteModal(); }
+                } catch (e) { _clearBandaClienteModal(); }
+            } else { _clearBandaClienteModal(); }
+            modal.style.display = 'flex';
+        }
+
+        function _clearBandaClienteModal() {
+            ['bandaModalClienteId','bandaModalClienteNombre','bandaModalClienteEmail','bandaModalClienteTelefono'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+            document.getElementById('bandaModalClienteIdDisplay').textContent = '-';
+        }
+
+        async function buscarClientesBanda(q) {
+            const container = document.getElementById('bandaModalClienteResultados');
+            if (!q || q.length < 2) { container.innerHTML = ''; return; }
+            try {
+                const res = await fetch('/api/admin/clientes/search?q=' + encodeURIComponent(q), {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') }
+                });
+                if (!res.ok) return;
+                const clientes = await res.json();
+                if (!clientes || !clientes.length) {
+                    container.innerHTML = '<div style="padding:8px;color:#9ca3af;">No se encontraron clientes</div>';
+                    return;
+                }
+                container.innerHTML = clientes.map(function(c) {
+                    var n = (c.nombre||'').replace(/"/g,'&quot;');
+                    var e = (c.email||'').replace(/"/g,'&quot;');
+                    var t = (c.telefono||'').replace(/"/g,'&quot;');
+                    return '<div style="padding:8px;border-bottom:1px solid #374151;cursor:pointer;"'
+                        + ' onmouseover="this.style.background=\'#2a2a2a\'" onmouseout="this.style.background=\'transparent\'"'
+                        + ' onclick="_seleccionarClienteBanda(' + c.id_cliente + ',\"' + n + '\",\"' + e + '\",\"' + t + '\")">' 
+                        + '<div style="font-weight:bold;color:#f0abfc;">' + (c.nombre||'Sin nombre') + '</div>'
+                        + (c.email ? '<div style="font-size:0.82rem;color:#9ca3af;">' + c.email + '</div>' : '')
+                        + (c.telefono ? '<div style="font-size:0.82rem;color:#9ca3af;">' + c.telefono + '</div>' : '')
+                        + '</div>';
+                }).join('');
+            } catch (e) { console.error('[CLIENTES]', e); }
+        }
+
+        function _seleccionarClienteBanda(id, nombre, email, telefono) {
+            document.getElementById('bandaModalClienteId').value = id;
+            document.getElementById('bandaModalClienteIdDisplay').textContent = id;
+            document.getElementById('bandaModalClienteNombre').value = nombre;
+            document.getElementById('bandaModalClienteEmail').value = email;
+            document.getElementById('bandaModalClienteTelefono').value = telefono;
+            document.getElementById('banda-cliente-id').value = id;
+            document.getElementById('bandaModalClienteInput').value = '';
+            document.getElementById('bandaModalClienteResultados').innerHTML = '';
+            showBanner('Cliente seleccionado: ' + nombre, 'success');
+        }
+
+        function closeBandaClienteModal() {
+            var modal = document.getElementById('bandaClienteModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function saveBandaClienteModal() {
+            var id = document.getElementById('bandaModalClienteId').value;
+            var nombre = document.getElementById('bandaModalClienteNombre').value.trim();
+            var email = document.getElementById('bandaModalClienteEmail').value.trim();
+            var telefono = document.getElementById('bandaModalClienteTelefono').value.trim();
+            if (!nombre && !email && !telefono) { showBanner('Completá al menos un campo.', 'error'); return; }
+            try {
+                var token = localStorage.getItem('authToken');
+                var url = id ? '/api/admin/clientes/' + id : '/api/admin/clientes';
+                var method = id ? 'PUT' : 'POST';
+                var res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ nombre: nombre, email: email, telefono: telefono })
+                });
+                var data = await res.json().catch(function() { return {}; });
+                if (!res.ok) { showBanner(data.error || 'Error al guardar cliente', 'error'); return; }
+                var nuevoId = id || data.id_cliente || data.id || '';
+                document.getElementById('banda-cliente-id').value = nuevoId;
+                document.getElementById('bandaModalClienteId').value = nuevoId;
+                document.getElementById('bandaModalClienteIdDisplay').textContent = nuevoId || '-';
+                document.getElementById('banda-contacto-nombre').value = nombre;
+                document.getElementById('banda-contacto-email').value = email;
+                document.getElementById('banda-contacto-telefono').value = telefono;
+                showBanner('Cliente guardado', 'success');
+                closeBandaClienteModal();
+            } catch (e) { console.error('[CLIENTES]', e); showBanner('Error de conexión', 'error'); }
+        }
+
+        document.body.insertAdjacentHTML('beforeend',
+            '<div id="bandaClienteModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:10000;">'
+            + '<div style="background:#1a1a1a;padding:20px;border-radius:8px;max-width:500px;width:90%;color:#d6d3d1;max-height:80vh;overflow-y:auto;">'
+            + '<h3 style="margin-top:0;">Editar Cliente / Representante</h3>'
+            + '<div style="margin-bottom:16px;padding:12px;background:#2a2a2a;border:1px solid #374151;border-radius:6px;">'
+            + '<label style="display:block;margin-bottom:6px;font-size:0.88rem;color:#f0abfc;">Buscar cliente existente:</label>'
+            + '<input type="text" id="bandaModalClienteInput" placeholder="Nombre, email o teléfono..." oninput="buscarClientesBanda(this.value)"'
+            + ' style="width:100%;padding:7px;background:#1a1a1a;border:1px solid #444;color:#d6d3d1;border-radius:4px;margin-bottom:6px;">'
+            + '<div id="bandaModalClienteResultados" style="background:#0f172a;border:1px solid #374151;border-radius:4px;max-height:180px;overflow-y:auto;"></div>'
+            + '</div>'
+            + '<hr style="border:none;border-top:1px solid #374151;margin:12px 0;">'
+            + '<input type="hidden" id="bandaModalClienteId">'
+            + '<div style="margin-bottom:8px;font-size:0.82rem;color:#9ca3af;">ID Cliente: <span id="bandaModalClienteIdDisplay">-</span></div>'
+            + '<div style="margin-bottom:10px;"><label>Nombre</label>'
+            + '<input type="text" id="bandaModalClienteNombre" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;"></div>'
+            + '<div style="margin-bottom:10px;"><label>Email</label>'
+            + '<input type="email" id="bandaModalClienteEmail" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;"></div>'
+            + '<div style="margin-bottom:16px;"><label>Teléfono / WhatsApp</label>'
+            + '<input type="tel" id="bandaModalClienteTelefono" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;"></div>'
+            + '<div style="text-align:right;">'
+            + '<button class="btn btn-secondary" onclick="closeBandaClienteModal()" style="margin-right:8px;">Cancelar</button>'
+            + '<button class="btn btn-primary" onclick="saveBandaClienteModal()">Guardar</button>'
+            + '</div></div></div>'
+        );
+        /* ========== FIN MODAL EDITAR CLIENTE ========== */
+
+        async function deleteBanda(id, nombre) {
+            if (!confirm(`¿Eliminar la banda "${nombre}"?\n\nSe marcará como inactiva (soft delete). Si tiene solicitudes vinculadas no se perderá información.`)) return;
+            try {
+                const res = await fetch(`/api/bandas/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    showBanner(`Banda "${nombre}" eliminada`, 'success');
+                    loadBandas();
+                } else {
+                    showBanner(data.error || 'Error al eliminar', 'error');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showBanner('Error de conexión', 'error');
+            }
         }
 
         async function saveBanda() {
