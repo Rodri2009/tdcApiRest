@@ -159,20 +159,21 @@
         /* Notification Banner */
         #notification-banner {
             position: fixed;
-            bottom: 20px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            padding: 16px 24px;
-            border-radius: 8px;
+            transform: translate(-50%, -50%);
+            padding: 24px 40px;
+            border-radius: 12px;
             color: #fff;
-            font-weight: 600;
-            font-size: 14px;
-            max-width: 90%;
+            font-weight: 700;
+            font-size: 18px;
+            max-width: 480px;
+            width: 90%;
             text-align: center;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            animation: slideUp 0.3s ease;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+            z-index: 2000;
             display: none;
+            animation: fadeInScale 0.25s ease;
         }
 
         #notification-banner.show {
@@ -191,17 +192,32 @@
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
+        #notification-banner .banner-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: rgba(255,255,255,0.95);
+            text-decoration: underline;
+            font-weight: 700;
         }
+
+        #notification-banner .banner-link:hover {
+            color: #ffffff;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* Overlay mientras está procesando */
+        #form-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1500;
+        }
+        #form-overlay.active { display: block; }
 
         .loading-spinner {
             display: inline-block;
@@ -388,10 +404,13 @@
 
                 <div class="footer">
                     <p>¿Olvidaste la contraseña? Contacta con el administrador.</p>
+                    <p style="margin-top:10px;">¿No tenés cuenta? <a href="/registro.html" style="color:var(--color-secondary,#f0abfc);font-weight:600;">Registrate aquí</a></p>
                 </div>
             </div>
         </div>
 
+<!-- Overlay de bloqueo -->
+        <div id="form-overlay"></div>
         <!-- Notification Banner -->
         <div id="notification-banner"></div>
 
@@ -415,6 +434,7 @@
                     this.submitBtn = document.getElementById('submitBtn');
                     this.cancelBtn = document.getElementById('cancelBtn');
                     this.banner = document.getElementById('notification-banner');
+                    this.overlay = document.getElementById('form-overlay');
                     this.notificationTimer = null;
 
                     // Guardar instancia global para acceso desde callbacks OAuth
@@ -434,10 +454,33 @@
                 /**
                  * Muestra notificación con banner
                  */
-                showNotification(message, type = 'info', duration = 5000) {
+                lockForm() {
+                    this.emailInput.disabled = true;
+                    this.passwordInput.disabled = true;
+                    this.submitBtn.disabled = true;
+                    if (this.cancelBtn) this.cancelBtn.disabled = true;
+                    if (this.overlay) this.overlay.classList.add('active');
+                    // Deshabilitar botones OAuth
+                    document.querySelectorAll('.oauth-btn').forEach(b => b.disabled = true);
+                }
+
+                unlockForm() {
+                    this.emailInput.disabled = false;
+                    this.passwordInput.disabled = false;
+                    this.submitBtn.disabled = false;
+                    if (this.cancelBtn) this.cancelBtn.disabled = false;
+                    if (this.overlay) this.overlay.classList.remove('active');
+                    document.querySelectorAll('.oauth-btn').forEach(b => b.disabled = false);
+                }
+
+                showNotification(message, type = 'info', duration = 5000, allowHtml = false) {
                     clearTimeout(this.notificationTimer);
 
-                    this.banner.textContent = message;
+                    if (allowHtml) {
+                        this.banner.innerHTML = message;
+                    } else {
+                        this.banner.textContent = message;
+                    }
                     this.banner.className = `show ${type}`;
 
                     if (duration > 0) {
@@ -493,8 +536,8 @@
                     const email = this.emailInput.value.trim();
                     const password = this.passwordInput.value;
 
-                    // Deshabilitar botón y mostrar loading
-                    this.submitBtn.disabled = true;
+                    // Bloquear formulario
+                    this.lockForm();
                     this.submitBtn.innerHTML = '<span class="loading-spinner"></span> Ingresando...';
 
                     try {
@@ -570,8 +613,8 @@
                         console.error('Error de login:', error);
                         this.showNotification(`❌ ${error.message}`, 'error', 6000);
 
-                        // Rehabilitar botón
-                        this.submitBtn.disabled = false;
+                        // Desbloquear formulario
+                        this.unlockForm();
                         this.submitBtn.innerHTML = '<span id="buttonText">Ingresar</span>';
 
                         // Limpiar password por seguridad
@@ -609,6 +652,7 @@
                     window.loginManagerInstance?.showNotification('Error al obtener token de Google.', 'error');
                     return;
                 }
+                window.loginManagerInstance?.lockForm();
                 window.loginManagerInstance?.showNotification('Verificando con Google…', 'info', -1);
                 fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                     headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
@@ -641,11 +685,13 @@
                                 window.location.href = returnTo || computeDefaultTargetFrom(result.user || result.token);
                             }, 2000);
                         } else {
+                            window.loginManagerInstance?.unlockForm();
                             window.loginManagerInstance?.showNotification(result.message || 'Error al iniciar sesión.', 'error');
                         }
                     })
                     .catch(err => {
                         console.error('Google OAuth error', err);
+                        window.loginManagerInstance?.unlockForm();
                         window.loginManagerInstance?.showNotification('Error en Google OAuth.', 'error');
                     });
             }

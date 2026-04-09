@@ -286,7 +286,11 @@
                     </a>
                     <a href="solicitud_fecha_bandas.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Tocar en El templo
+                        Producir una fecha
+                    </a>
+                    <a href="solicitud_banda.html"
+                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
+                        Registrar mi banda para tocar en el templo
                     </a>
                     <a href="solicitud_taller_actividad.html"
                         class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
@@ -654,10 +658,29 @@
         }
 
         // Manejo de autenticación en el navbar
+        function parseJwtExp(token) {
+            try {
+                const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+                const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+                return payload.exp || null;
+            } catch (e) { return null; }
+        }
+
         function updateAuthMenu() {
             const token = localStorage.getItem('authToken');
             const desktopMenu = document.getElementById('auth-menu-desktop');
             const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            // Si el token existe pero está vencido, limpiar y mostrar Login
+            if (token) {
+                const exp = parseJwtExp(token);
+                if (exp && Math.floor(Date.now() / 1000) > exp) {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user_data');
+                    updateAuthMenu();
+                    return;
+                }
+            }
 
             if (token) {
                 // Usuario autenticado

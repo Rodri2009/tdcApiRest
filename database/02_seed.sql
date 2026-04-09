@@ -110,7 +110,7 @@ INSERT INTO `catalogo_instrumentos` (`id_instrumento` , `nombre` , `categoria` ,
   (14 , 'Violín' , 'Cuerdas' , NULL),
   (15 , 'Saxo' , 'Viento' , NULL),
   (16 , 'Trompeta' , 'Viento' , NULL),
-  (17 , 'Rap / Voz sin instrumento', 'Voz', NULL
+  (17 , 'Voz y Teclado' , 'Voz' , 'fa-microphone'
 ); /*!40000
 
 ALTER TABLE `catalogo_instrumentos` ENABLE KEYS */; UNLOCK TABLES;
@@ -595,7 +595,7 @@ ALTER TABLE `solicitudes` DISABLE KEYS */;
 INSERT INTO `solicitudes` (`id_solicitud` , `categoria` , `id_cliente` , `id_usuario_creador` , `fecha_creacion` , `estado` , `es_publico` , `descripcion_corta` , `descripcion_larga` , `url_flyer` , `fecha_evento` , `hora_inicio` , `duracion_minutos` , `hora_fin` , `fecha_alternativa` , `actualizado_en`) VALUES
   (1 , 'ALQUILER' , 1 , NULL , '2026-03-13 04:29:21' , 'Solicitado' , 0 , 'Cumpleaños infantil 50 personas' , 'Cumpleaños infantil para una niña de 8 años. Necesitamos inflable, servicio de cocinero y setup básico.' , NULL , NULL , NULL , NULL , NULL , NULL , '2026-03-13 04:29:21'),
   (2 , 'ALQUILER' , 2 , NULL , '2026-03-13 04:29:21' , 'Confirmado' , 0 , 'Fiesta de 15 años - Servicio completo' , 'Fiesta de 15 años. Contratamos servicio completo con meseras, bartender y sonido profesional.' , NULL , NULL , NULL , NULL , NULL , NULL , '2026-03-13 04:29:21'),
-  (3 , 'ALQUILER' , 3 , NULL , '2026-03-13 04:29:21' , 'Solicitado' , 0 , 'Baby shower 40 personas' , 'Baby shower temático con 40 invitados. Necesitamos inflable de princesa y decoraciones.' , NULL , 240 , NULL , NULL , NULL , '2026-03-13 04:29:21'),
+  (3 , 'ALQUILER' , 3 , NULL , '2026-03-13 04:29:21' , 'Solicitado' , 0 , 'Baby shower 40 personas' , 'Baby shower temático con 40 invitados. Necesitamos inflable de princesa y decoraciones.' , NULL , 240 , NULL , NULL , NULL , NULL , '2026-03-13 04:29:21'),
   (4 , 'BANDAS' , 4 , NULL , '2026-03-13 04:29:21' , 'Confirmado' , 1 , 'Reite - Fecha Propia' , 'Tributo a La Renga solicita fecha propia. Esperan público de 250 personas.' , NULL , NULL , NULL , NULL , NULL , NULL , '2026-03-13 04:29:21'),
   (5 , 'BANDAS' , 5 , NULL , '2026-03-13 04:29:21' , 'Confirmado' , 1 , 'Las Mentas Show' , 'Banda de rock femenino solicita fecha con formato de show abierto al público general.' , '/uploads/flyers/solicitud_5.jpg' , NULL , NULL , NULL , NULL , NULL , '2026-03-13 04:29:31'),
   (6 , 'BANDAS' , 4 , NULL , '2026-03-13 04:29:21' , 'Solicitado' , 1 , 'Termidor Fest' , 'Rock nacional solicita fecha compartida con banda telonera. Esperan 200 personas.' , '/uploads/flyers/solicitud_6.jpeg' , NULL , NULL , NULL , NULL , NULL , '2026-03-26 18:27:30'),

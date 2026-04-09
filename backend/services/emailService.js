@@ -151,6 +151,80 @@ const sendAdminNotification = async (solicitud) => {
 };
 
 /**
+ * Notifica al admin cuando se registra una nueva banda.
+ * @param {object} banda - { id, nombre, genero_musical, descripcion, solicitante_nombre, solicitante_email }
+ */
+const sendBandaNotificacionAdmin = async (banda) => {
+    logVerbose(`-> Notificando admin sobre nueva banda: ${banda.nombre}`);
+    try {
+        const adminEmail = process.env.EMAIL_ADMIN || 'temploclaypole@gmail.com';
+        const adminUrl = process.env.ADMIN_URL || 'http://localhost';
+
+        const html = `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+                <h2 style="color:#581c87">🎸 Nueva Banda Registrada</h2>
+                <p><strong>ID:</strong> ${banda.id}</p>
+                <p><strong>Nombre:</strong> ${banda.nombre}</p>
+                <p><strong>Género:</strong> ${banda.genero_musical || '—'}</p>
+                <p><strong>Descripción:</strong> ${banda.descripcion || '—'}</p>
+                <hr />
+                <p><strong>Registrado por:</strong> ${banda.solicitante_nombre || '—'}</p>
+                <p><strong>Email:</strong> ${banda.solicitante_email || '—'}</p>
+                <hr />
+                <p><a href="${adminUrl}/admin.html?tab=bandas" style="color:#581c87">Ver en Administración →</a></p>
+            </div>
+        `;
+
+        await transporter.sendMail({
+            from: `"Sistema TDC" <${process.env.EMAIL_USER}>`,
+            to: adminEmail,
+            subject: `[TDC] Nueva banda registrada: ${banda.nombre}`,
+            html,
+        });
+
+        logVerbose(`✅ Notificación de banda enviada a admin: ${adminEmail}`);
+    } catch (error) {
+        logError(`❌ Error al notificar admin sobre nueva banda:`, error);
+    }
+};
+
+/**
+ * Envía confirmación al solicitante cuando su banda quedó registrada.
+ * @param {string} to - Email del solicitante.
+ * @param {object} banda - { nombre, genero_musical, descripcion }
+ */
+const sendBandaConfirmacion = async (to, banda) => {
+    logVerbose(`-> Enviando confirmación de registro de banda a: ${to}`);
+    try {
+        const html = `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+                <h2 style="color:#581c87">✅ Tu banda fue registrada exitosamente</h2>
+                <p>¡Hola! Te confirmamos que la siguiente banda fue registrada en nuestro catálogo:</p>
+                <table style="border-collapse:collapse;width:100%">
+                    <tr><td style="padding:8px;border-bottom:1px solid #eee"><strong>Nombre</strong></td><td style="padding:8px;border-bottom:1px solid #eee">${banda.nombre}</td></tr>
+                    <tr><td style="padding:8px;border-bottom:1px solid #eee"><strong>Género</strong></td><td style="padding:8px;border-bottom:1px solid #eee">${banda.genero_musical || '—'}</td></tr>
+                    <tr><td style="padding:8px"><strong>Descripción</strong></td><td style="padding:8px">${banda.descripcion || '—'}</td></tr>
+                </table>
+                <br />
+                <p style="color:#6b7280;font-size:0.9em">El equipo de El Templo de Claypole revisará la información y se pondrá en contacto a la brevedad.</p>
+                <p style="color:#6b7280;font-size:0.9em">— El Templo de Claypole</p>
+            </div>
+        `;
+
+        await transporter.sendMail({
+            from: `"El Templo de Claypole" <${process.env.EMAIL_USER}>`,
+            to,
+            subject: `✅ Banda registrada: ${banda.nombre}`,
+            html,
+        });
+
+        logVerbose(`✅ Confirmación de banda enviada a: ${to}`);
+    } catch (error) {
+        logError(`❌ Error al enviar confirmación al solicitante:`, error);
+    }
+};
+
+/**
  * Envía un correo de prueba simple para verificar la configuración.
  */
 const sendTestEmail = async () => {
@@ -179,4 +253,6 @@ module.exports = {
     sendTestEmail,
     sendComprobanteEmail,
     sendAdminNotification,
+    sendBandaNotificacionAdmin,
+    sendBandaConfirmacion,
 };

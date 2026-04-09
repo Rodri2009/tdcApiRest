@@ -40,6 +40,9 @@ router.get('/instrumentos', bandaController.obtenerInstrumentos);
 // GET /api/bandas/buscar?q=... - Buscar bandas por nombre
 router.get('/buscar', bandaController.buscarBandas);
 
+// GET /api/bandas/mis-bandas - Bandas registradas por el usuario autenticado
+router.get('/mis-bandas', protect, bandaController.obtenerMisBandas);
+
 // GET /api/bandas/sync-logos - Sincronizar logos del filesystem con BD (público)
 router.get('/sync-logos', bandaController.syncLogos);
 
@@ -52,8 +55,8 @@ router.post('/upload', upload.single('logo'), bandaController.uploadLogo);
 // GET /api/bandas/:id - Obtener banda específica
 router.get('/:id', bandaController.obtenerBandaPorId);
 
-// POST /api/bandas - Crear nueva banda (público)
-router.post('/', bandaController.crearBanda);
+// POST /api/bandas - Crear nueva banda (requiere autenticación)
+router.post('/', protect, bandaController.crearBanda);
 
 // PUT /api/bandas/:id - Actualizar banda (requiere autenticación)
 router.put('/:id', protect, bandaController.actualizarBanda);

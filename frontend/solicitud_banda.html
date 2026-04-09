@@ -449,6 +449,7 @@
             flex-direction: column;
             align-items: center;
             gap: 8px;
+            position: relative;
         }
 
         .catalogo-band-item:hover {
@@ -767,7 +768,12 @@
         <h2><i class="fas fa-music"></i> Registrar Nueva Banda o Artista</h2>
         <h3 class="subtitle">Completa este formulario para registrar tu banda. Te responderemos por email.</h3>
 
-        <!-- Stepper -->
+        <!-- Contador de bandas del usuario -->
+        <div id="mis-bandas-counter" style="display:none;text-align:center;margin-bottom:18px;">
+            <span id="mis-bandas-badge" style="display:inline-block;background:#1e293b;border:1px solid #581c87;border-radius:8px;padding:8px 20px;font-size:0.95rem;color:#f0abfc;">
+                <i class="fas fa-music"></i> <span id="mis-bandas-texto">Cargando...</span>
+            </span>
+        </div>
 
 
         <form id="bandaSolicitudForm">
@@ -813,15 +819,8 @@
                             <select id="instrumento-select">
                                 <option value="">Seleccionar instrumento...</option>
                             </select>
+                            <div id="instrumento-toast" style="display:none;margin-top:6px;padding:5px 10px;background:#10b981;color:#fff;border-radius:6px;font-size:0.82rem;font-weight:600;transition:opacity 0.4s;"></div>
                         </div>
-                        <div class="form-group" style="margin-bottom: 0; flex: 0.5;">
-                            <input type="number" id="instrumento-cantidad" min="1" max="5" value="1"
-                                style="width: 70px;">
-                        </div>
-                        <button type="button" id="add-instrumento" class="btn-outline"
-                            style="margin-bottom: 0; height: 46px;">
-                            <i class="fas fa-plus"></i> Agregar
-                        </button>
                     </div>
                 </div>
 
@@ -889,10 +888,10 @@
             <!-- Botones de acción -->
             <div class="button-group">
                 <button type="button" id="backBtn" class="secondary">
-                    <i class="fas fa-arrow-left"></i> Volver
+                    <i class="fas fa-arrow-left"></i>&nbsp; Volver
                 </button>
                 <button type="submit" id="submitBtn" disabled>
-                    <i class="fas fa-check"></i> Guardar nueva banda / artista
+                    <i class="fas fa-check"></i>&nbsp; Registrar nueva banda / artista
                 </button>
             </div>
         </form>
@@ -918,7 +917,51 @@
 
         let isEditMode = false;
         let originalBandData = null; // para detectar si hubo cambios al editar
-        // Anti-bot / rate-limiting helpers
+
+        // Estado mis-bandas
+        let misBandas = []; // IDs de bandas propias del usuario
+        let misBandasTotal = 0;
+        const LIMITE_BANDAS = 5;
+
+        // Helper: decodificar JWT sin verificar firma (solo UI)
+        function getJwtPayload() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return null;
+            try { return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); }
+            catch(e) { return null; }
+        }
+
+        // Cargar mis bandas para mostrar contador y detectar propiedad
+        async function loadMisBandas() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+            try {
+                const res = await fetch('/api/bandas/mis-bandas', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                misBandas = (data.bandas || []).map(b => b.id_banda);
+                misBandasTotal = data.total || 0;
+
+                // Mostrar contador
+                const counter = document.getElementById('mis-bandas-counter');
+                const texto = document.getElementById('mis-bandas-texto');
+                if (counter && texto) {
+                    counter.style.display = 'block';
+                    if (misBandasTotal >= LIMITE_BANDAS) {
+                        texto.textContent = `${misBandasTotal}/${LIMITE_BANDAS} bandas registradas — Límite alcanzado`;
+                        document.getElementById('mis-bandas-badge').style.borderColor = '#ef4444';
+                        document.getElementById('mis-bandas-badge').style.color = '#fca5a5';
+                    } else {
+                        texto.textContent = `${misBandasTotal}/${LIMITE_BANDAS} bandas registradas`;
+                    }
+                }
+                updateSubmitBtnState();
+            } catch(e) {
+                console.warn('[MIS-BANDAS] Error:', e.message);
+            }
+        }
         const pageLoadTime = Date.now();
         const SUBMIT_MIN_DELAY_MS = 3000; // mínimo 3s en la página antes de enviar
         const SUBMIT_COOLDOWN_MS = 10000; // 10s entre envíos
@@ -1031,33 +1074,50 @@
 
         function addFormacion() {
             const select = document.getElementById('instrumento-select');
-            const cantidadInput = document.getElementById('instrumento-cantidad');
-
             const instrumento = select.value;
-            const cantidad = parseInt(cantidadInput.value) || 1;
+            if (!instrumento) return;
 
-            if (!instrumento) {
-                showNotification('Seleccioná un instrumento', 'warning');
-                return;
-            }
-
-            // Verificar si ya existe
             const existing = formacion.find(f => f.instrumento === instrumento);
             if (existing) {
-                existing.cantidad += cantidad;
-                console.debug('[formacion] agregado:', instrumento, 'cantidad ahora:', existing.cantidad);
+                existing.cantidad += 1;
+                console.debug('[formacion] incrementado:', instrumento, 'cantidad ahora:', existing.cantidad);
+                showInstrumentoToast(`${instrumento} ×${existing.cantidad}`);
             } else {
-                formacion.push({ instrumento, cantidad });
-                console.debug('[formacion] agregado nuevo:', instrumento, 'cantidad:', cantidad);
+                formacion.push({ instrumento, cantidad: 1 });
+                console.debug('[formacion] agregado nuevo:', instrumento);
+                showInstrumentoToast(`${instrumento} agregado`);
             }
-
-            // Log estado completo
-            try { console.debug('[formacion] estado actual:', JSON.stringify(formacion)); } catch (e) { console.debug('[formacion] estado actual (non-serializable)'); }
 
             renderFormacion();
             select.value = '';
-            cantidadInput.value = 1;
             updateSubmitBtnState();
+        }
+
+        function showInstrumentoToast(msg) {
+            const toast = document.getElementById('instrumento-toast');
+            if (!toast) return;
+            toast.textContent = '✓ ' + msg;
+            toast.style.display = 'block';
+            toast.style.opacity = '1';
+            clearTimeout(toast._hideTimer);
+            toast._hideTimer = setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => { toast.style.display = 'none'; }, 400);
+            }, 2000);
+        }
+
+        const LOCKABLE_IDS = ['genero_musical', 'instrumento-select', 'instagram', 'facebook', 'youtube', 'spotify', 'descripcion', 'logo_url_manual', 'logo_file'];
+
+        function setFormDisabled(disabled) {
+            LOCKABLE_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = disabled;
+            });
+            const logoPreview = document.getElementById('logo-preview');
+            if (logoPreview) {
+                logoPreview.style.pointerEvents = disabled ? 'none' : '';
+                logoPreview.style.opacity = disabled ? '0.4' : '';
+            }
         }
 
         function removeFormacion(idx) {
@@ -1089,10 +1149,11 @@
             // Estado formulario nuevo
             isEditMode = false;
             originalBandData = null;
+            setFormDisabled(nombre.length === 0);
             // Restablecer botón submit
             const submitBtn = document.getElementById('submitBtn');
             if (submitBtn) {
-                submitBtn.textContent = 'Guardar nueva banda / artista';
+                submitBtn.textContent = 'Registrar nueva banda / artista';
                 submitBtn.disabled = !hasRequiredFields();
             }
         }
@@ -1130,6 +1191,13 @@
             const submitBtn = document.getElementById('submitBtn');
             if (!submitBtn) return;
             const requiredValid = hasRequiredFields();
+            // Bloquear si límite alcanzado y no es modo edición
+            const limiteAlcanzado = !isEditMode && misBandasTotal >= LIMITE_BANDAS;
+            if (limiteAlcanzado) {
+                submitBtn.disabled = true;
+                submitBtn.title = 'Límite de 5 bandas alcanzado';
+                return;
+            }
             if (isEditMode) {
                 submitBtn.disabled = !requiredValid || !isFormDirty();
             } else {
@@ -1340,13 +1408,15 @@
                     }
                 } catch (e) { console.warn('[SELECT-BANDA] 🎸 Formación parse error', e); }
 
-                // Modo edición (actualizar banda existente)
+                // Modo edición: si se seleccionó del catálogo, ya se validó que es propia
                 isEditMode = true;
+                setFormDisabled(false);
                 originalBandData = getCurrentBandData();
 
                 const note = document.getElementById('band-mode-note');
                 if (note) {
-                    note.textContent = `Estás viendo la banda registrada. Podés actualizar la información en el formulario.`;
+                    note.textContent = `Estás viendo tu banda registrada. Podés actualizar la información en el formulario.`;
+                    note.style.color = '#f59e0b';
                     note.style.display = 'block';
                 }
 
@@ -1666,6 +1736,18 @@
                         showNotification('Ya existe una banda con ese nombre en nuestro catálogo. ID: ' + data.id, 'warning');
                         return;
                     }
+                    // Límite de bandas alcanzado
+                    if (res.status === 403 && data && data.error && data.error.includes('Límite')) {
+                        showNotification(data.error, 'error');
+                        misBandasTotal = LIMITE_BANDAS; // forzar UI a reflejar el límite
+                        updateSubmitBtnState();
+                        return;
+                    }
+                    // Sin permiso (banda de otro usuario)
+                    if (res.status === 403) {
+                        showNotification('No tenés permiso para modificar esta banda.', 'error');
+                        return;
+                    }
                     console.error('[BANDA-SUBMIT] ❌ API Error:', data);
                     throw new Error(data.error || 'Error al procesar la banda');
                 }
@@ -1719,8 +1801,12 @@
                     document.getElementById('submitBtn').disabled = false;
                     const note = document.getElementById('band-mode-note'); if (note) { note.textContent = ''; note.style.display = 'none'; }
 
-                    // Refrescar cache/local buscando actualizado catálogo (opcional)
+                    // Bloquear campos hasta que se escriba un nuevo nombre
+                    setFormDisabled(true);
+                    // Refrescar autocomplete y mis-bandas; invalidar cache del catálogo
                     try { await loadBandas(); } catch (e) { /* noop */ }
+                    try { await loadMisBandas(); } catch (e) { /* noop */ }
+                    _catalogoBandas = null; // forzar recarga la próxima vez que se abra el modal
 
                     // Si venimos desde otra página (returnTo), redirigir de vuelta con el ID de la banda nueva
                     const returnToParam = new URLSearchParams(window.location.search).get('returnTo');
@@ -1784,8 +1870,9 @@
                 console.warn('Fingerprint error:', e);
             }
 
-            // Cargar instrumentos (fechas ocupadas no son necesarias en esta página)
+            // Cargar instrumentos y bandas propias del usuario
             await loadInstrumentos();
+            await loadMisBandas();
 
             // Setup
             setupCalendars();
@@ -1794,8 +1881,9 @@
             updateAuthMenu();
 
             // Event listeners
-            document.getElementById('add-instrumento').addEventListener('click', addFormacion);
+            document.getElementById('instrumento-select').addEventListener('change', addFormacion);
             document.getElementById('bandaSolicitudForm').addEventListener('submit', handleSubmit);
+
             const clearBtn = document.getElementById('clearBtn'); if (clearBtn) clearBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const ok = confirm('Limpiar todos los campos para agregar una nueva banda?');
@@ -1810,6 +1898,7 @@
                 document.getElementById('submitBtn').textContent = 'Guardar Datos de Banda';
                 const note = document.getElementById('band-mode-note'); if (note) { note.textContent = ''; note.style.display = 'none'; }
                 if (clearBtn) clearBtn.style.display = 'none';
+                setFormDisabled(true);
                 try { await loadBandas(); } catch (e) { /* noop */ }
             });
 
@@ -1887,10 +1976,21 @@
             // Limpiar id_banda si se edita manualmente el nombre
             nombreBandaInput.addEventListener('input', () => {
                 document.getElementById('id_banda').value = '';
+                if (isEditMode) {
+                    isEditMode = false;
+                    const note = document.getElementById('band-mode-note');
+                    if (note) { note.textContent = ''; note.style.display = 'none'; }
+                    const submitBtn = document.getElementById('submitBtn');
+                    if (submitBtn) submitBtn.textContent = 'Registrar nueva banda / artista';
+                }
+                setFormDisabled(nombreBandaInput.value.trim().length === 0);
+                updateSubmitBtnState();
             });
 
             // Render inicial
             renderFormacion();
+            // Bloquear campos secundarios hasta que el usuario escriba un nombre
+            setFormDisabled(true);
         });
     </script>
     <script src="/navbar.js"></script>
@@ -1966,13 +2066,22 @@
                 grid.innerHTML = '<div class="catalogo-empty">No se encontraron bandas</div>';
                 return;
             }
+            // Ordenar: primero las propias del usuario
+            filtered.sort((a, b) => {
+                const aEsMia = misBandas.includes(a.id_banda || a.id) ? 0 : 1;
+                const bEsMia = misBandas.includes(b.id_banda || b.id) ? 0 : 1;
+                return aEsMia - bEsMia;
+            });
             grid.innerHTML = filtered.map(b => {
                 const id = b.id_banda || b.id;
                 const nombre = (b.nombre || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
                 const genero = (b.genero_musical || '').replace(/'/g, '&#39;');
                 const logo = b.logo_url || '';
+                const esMia = misBandas.includes(id);
                 return `
-                    <div class="catalogo-band-item" onclick="_seleccionarDesdeCatalogo(${id})" title="${nombre}">
+                    <div class="catalogo-band-item" ${esMia ? `onclick="_seleccionarDesdeCatalogo(${id})"` : 'style="opacity:0.4;cursor:default;"'}
+                        title="${esMia ? nombre : nombre + ' (banda de otro usuario)'}" style="${esMia ? 'border-color:#10b981;' : 'opacity:0.4;cursor:default;'}">
+                        ${esMia ? '<div style="position:absolute;top:6px;right:6px;background:#10b981;color:#042014;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:10px;line-height:1.4;">MIA</div>' : ''}
                         <div class="catalogo-band-logo">
                             ${logo ? `<img src="${logo}" alt="${nombre}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="catalogo-band-logo-placeholder" style="display:none"><i class="fas fa-music"></i></div>` : '<div class="catalogo-band-logo-placeholder"><i class="fas fa-music"></i></div>'}
                         </div>
@@ -1984,6 +2093,7 @@
         }
 
         async function _seleccionarDesdeCatalogo(id) {
+            if (!misBandas.includes(id)) return; // solo se pueden seleccionar bandas propias
             cerrarCatalogoBandas();
             const banda = (_catalogoBandas || []).find(b => (b.id_banda || b.id) === id);
             if (!banda) return;

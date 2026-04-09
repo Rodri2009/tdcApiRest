@@ -308,20 +308,21 @@
         /* Notification Banner */
         #notification-banner {
             position: fixed;
-            bottom: 20px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            padding: 16px 24px;
-            border-radius: 8px;
+            transform: translate(-50%, -50%);
+            padding: 24px 40px;
+            border-radius: 12px;
             color: #fff;
-            font-weight: 600;
-            font-size: 14px;
-            max-width: 90%;
+            font-weight: 700;
+            font-size: 18px;
+            max-width: 480px;
+            width: 90%;
             text-align: center;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            animation: slideUp 0.3s ease;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+            z-index: 2000;
             display: none;
+            animation: fadeInScale 0.25s ease;
         }
 
         #notification-banner.show {
@@ -340,17 +341,32 @@
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
+        #notification-banner .banner-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: rgba(255,255,255,0.95);
+            text-decoration: underline;
+            font-weight: 700;
         }
+
+        #notification-banner .banner-link:hover {
+            color: #ffffff;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* Overlay mientras está procesando */
+        #form-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1500;
+        }
+        #form-overlay.active { display: block; }
 
         .loading-spinner {
             display: inline-block;
@@ -473,6 +489,8 @@
         </div>
     </div>
 
+    <!-- Overlay de bloqueo -->
+    <div id="form-overlay"></div>
     <!-- Notification Banner -->
     <div id="notification-banner"></div>
 
@@ -497,7 +515,9 @@
             constructor() {
                 this.form = document.getElementById('registroForm');
                 this.submitBtn = document.getElementById('submitBtn');
+                this.cancelBtn = document.getElementById('cancelBtn');
                 this.banner = document.getElementById('notification-banner');
+                this.overlay = document.getElementById('form-overlay');
                 this.notificationTimer = null;
 
                 this.setupEventListeners();
@@ -529,9 +549,29 @@
                 console.log('👍 Google SDK inicializado para registro');
             }
 
-            showNotification(message, type = 'info', duration = 5000) {
+            lockForm() {
+                this.form.querySelectorAll('input, select, textarea').forEach(el => el.disabled = true);
+                if (this.submitBtn) this.submitBtn.disabled = true;
+                if (this.cancelBtn) this.cancelBtn.disabled = true;
+                if (this.overlay) this.overlay.classList.add('active');
+                document.querySelectorAll('.oauth-btn').forEach(b => b.disabled = true);
+            }
+
+            unlockForm() {
+                this.form.querySelectorAll('input, select, textarea').forEach(el => el.disabled = false);
+                if (this.submitBtn) this.submitBtn.disabled = false;
+                if (this.cancelBtn) this.cancelBtn.disabled = false;
+                if (this.overlay) this.overlay.classList.remove('active');
+                document.querySelectorAll('.oauth-btn').forEach(b => b.disabled = false);
+            }
+
+            showNotification(message, type = 'info', duration = 5000, allowHtml = false) {
                 clearTimeout(this.notificationTimer);
-                this.banner.textContent = message;
+                if (allowHtml) {
+                    this.banner.innerHTML = message;
+                } else {
+                    this.banner.textContent = message;
+                }
                 this.banner.className = `show ${type}`;
 
                 if (duration > 0) {
@@ -624,7 +664,7 @@
                     password: document.getElementById('password').value
                 };
 
-                this.submitBtn.disabled = true;
+                this.lockForm();
                 this.submitBtn.innerHTML = '<span class="loading-spinner"></span> Registrando...';
 
                 try {
@@ -657,9 +697,15 @@
 
                 } catch (error) {
                     console.error('Error de registro:', error);
-                    this.showNotification(`❌ ${error.message}`, 'error', 6000);
+                    const errMsg = error.message || 'Error al registrarse';
+                    const isAlreadyRegistered = errMsg.toLowerCase().includes('ya está registrado') || errMsg.toLowerCase().includes('ya esta registrado') || errMsg.toLowerCase().includes('ya existe');
+                    if (isAlreadyRegistered) {
+                        this.showNotification(`❌ ${errMsg} <a href="/login.html" class="banner-link">Hacé clic aquí para iniciar sesión</a>`, 'error', 7000, true);
+                    } else {
+                        this.showNotification(`❌ ${errMsg}`, 'error', 6000);
+                    }
 
-                    this.submitBtn.disabled = false;
+                    this.unlockForm();
                     this.submitBtn.innerHTML = '<span id="buttonText">Registrarse</span>';
                 }
             }
@@ -675,6 +721,7 @@
                 registroManager?.showNotification('Error al obtener token de Google.', 'error');
                 return;
             }
+            registroManager?.lockForm();
             registroManager?.showNotification('Verificando con Google…', 'info', -1);
             fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                 headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
@@ -707,11 +754,13 @@
                             window.location.href = returnTo || '/index.html';
                         }, 2000);
                     } else {
+                        registroManager?.unlockForm();
                         registroManager?.showNotification(result.message || 'Error al registrarse.', 'error');
                     }
                 })
                 .catch(err => {
                     console.error('Google OAuth error', err);
+                    registroManager?.unlockForm();
                     registroManager?.showNotification('Error en Google OAuth.', 'error');
                 });
         }

@@ -311,6 +311,9 @@ try {
 // --- Manejador de Errores Global ---
 app.use((err, req, res, next) => {
     logError("ERROR NO CAPTURADO", err);
+    if (err && err.stack) {
+        logVerbose('Stack de error global:', err.stack);
+    }
     res.status(500).json({ error: 'Ocurrió un error inesperado en el servidor.' });
 });
 
@@ -435,12 +438,14 @@ async function startServer() {
             }
 
         } catch (err) {
-            logWarning(`Intento #${attempts} falló`, { error: err.message });
+            logWarning(`Intento #${attempts} falló`, { error: err.message, code: err.code, sqlState: err.sqlState });
+            if (err.stack) logVerbose('Detalles del error de conexión:', err.stack);
 
             // Diagnóstico básico del error para el log
             if (err.code === 'ECONNREFUSED') logWarning("Causa: Conexión rechazada. La base de datos podría no estar lista aún.");
             else if (err.code === 'ER_ACCESS_DENIED_ERROR') logWarning("Causa: Credenciales incorrectas.");
             else if (err.code === 'ENOTFOUND') logWarning(`Causa: No se encuentra el host '${process.env.DB_HOST}'.`);
+            else if (err.code === 'ER_BAD_DB_ERROR') logWarning(`Causa: La base de datos '${process.env.DB_NAME}' no existe o no está accesible.`);
             else logWarning(`Causa: ${err.message}`);
 
             logVerbose("Reintentando en 5 segundos...");

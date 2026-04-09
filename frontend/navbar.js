@@ -804,9 +804,26 @@ function protectRoutesAutomatically() {
             return;
         }
 
-        // Verificar que el usuario tenga nivel >= 50 (staff o superior)
-        if ((navbarManager.userNivel || 0) < 50) {
-            console.warn(`Acceso denegado: Usuario nivel ${navbarManager.userNivel} intenta acceder a ${window.location.pathname}`);
+        // Verificar que el token no esté expirado
+        if (navbarManager.isTokenExpired && navbarManager.isTokenExpired()) {
+            console.warn('Sesión expirada. Redirigiendo al login...');
+            navbarManager.clearAuth();
+            sessionStorage.setItem('returnTo', window.location.pathname + window.location.search);
+            window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+            return;
+        }
+
+        // Verificar que el usuario tenga nivel >= 50 (staff o superior) O rol de admin/staff
+        const nivel = navbarManager.userNivel || 0;
+        const role = navbarManager.userRole || '';
+        const roles = navbarManager.userRoles || [];
+        const tieneAcceso = nivel >= 50
+            || role === 'admin' || role === 'staff' || role === 'staff_readonly'
+            || roles.includes('admin') || roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')
+            || roles.includes('staff') || roles.includes('staff_readonly');
+
+        if (!tieneAcceso) {
+            console.warn(`Acceso denegado: Usuario nivel=${nivel} rol=${role} intenta acceder a ${window.location.pathname}`);
             // Redirigir a página de inicio
             window.location.href = '/index.html';
             return;

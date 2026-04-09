@@ -671,7 +671,7 @@
                     </td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn btn-icon btn-sm" onclick="editBanda(${b.id})" title="Editar">
+                            <button class="btn btn-icon btn-sm" onclick="editBanda(${b.id_banda})" title="Editar">
                                 ✏️
                             </button>
                         </div>
@@ -984,11 +984,11 @@
         }
 
         function editBanda(id) {
-            const banda = bandas.find(b => b.id === id);
+            const banda = bandas.find(b => b.id_banda === id);
             if (!banda) return;
 
             document.getElementById('modal-banda-title').textContent = 'Editar Banda';
-            document.getElementById('banda-id').value = banda.id;
+            document.getElementById('banda-id').value = banda.id_banda;
             document.getElementById('banda-nombre').value = banda.nombre || '';
             document.getElementById('banda-genero').value = banda.genero_musical || '';
             document.getElementById('banda-bio').value = banda.bio || '';

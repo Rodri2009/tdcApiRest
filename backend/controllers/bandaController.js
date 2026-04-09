@@ -4,6 +4,7 @@
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const { getOrCreateClient, updateClient } = require('../lib/clients');
+const { sendBandaNotificacionAdmin, sendBandaConfirmacion } = require('../services/emailService');
 
 /**
  * GET /api/bandas
@@ -254,6 +255,19 @@ const crearBanda = async (req, res) => {
             });
         }
 
+        // Validar límite de bandas por usuario (máx. 5 para usuarios regulares)
+        const esAdmin = req.user && req.user.nivel >= 50;
+        if (!esAdmin && req.user && req.user.id_usuario) {
+            const [{ total }] = await conn.query(
+                'SELECT COUNT(*) as total FROM bandas_artistas WHERE registrado_por_id_usuario = ?',
+                [req.user.id_usuario]
+            );
+            if (Number(total) >= 5) {
+                await conn.rollback();
+                return res.status(403).json({ error: 'Límite alcanzado. No podés registrar más de 5 bandas.' });
+            }
+        }
+
         // 1. Insertar banda
         const sqlBanda = `
             INSERT INTO bandas_artistas (
@@ -272,10 +286,11 @@ const crearBanda = async (req, res) => {
                 foto_prensa_url,
                 contacto_rol,
                 id_cliente,
+                registrado_por_id_usuario,
                 verificada,
                 activa,
                 creado_en
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())
         `;
 
         const paramsBanda = [
@@ -293,7 +308,8 @@ const crearBanda = async (req, res) => {
             logo_url || null,
             foto_prensa_url || null,
             contacto_rol || null,
-            idCliente
+            idCliente,
+            req.user ? req.user.id_usuario : null
         ];
 
         const resultBanda = await conn.query(sqlBanda, paramsBanda);
@@ -341,6 +357,20 @@ const crearBanda = async (req, res) => {
         await conn.commit();
 
         logVerbose(`[BANDA] ✓ Banda creada exitosamente`);
+
+        // Enviar emails en background (no bloquean la respuesta)
+        const emailData = {
+            id: bandaId,
+            nombre: nombre.trim(),
+            genero_musical: genero_musical || null,
+            descripcion: descripcion || null,
+            solicitante_nombre: req.user?.nombre || null,
+            solicitante_email: req.user?.email || null,
+        };
+        sendBandaNotificacionAdmin(emailData).catch(() => {});
+        if (req.user?.email) {
+            sendBandaConfirmacion(req.user.email, emailData).catch(() => {});
+        }
 
         return res.status(201).json({
             bandaId,
@@ -405,12 +435,18 @@ const actualizarBanda = async (req, res) => {
 
         // 1. Verificar que la banda existe
         const [bandaExistente] = await conn.query(
-            'SELECT id_banda FROM bandas_artistas WHERE id_banda = ?',
+            'SELECT id_banda, registrado_por_id_usuario FROM bandas_artistas WHERE id_banda = ?',
             [idNum]
         );
 
         if (!bandaExistente) {
             return res.status(404).json({ error: 'Banda no encontrada.' });
+        }
+
+        // Verificar propiedad (admin/staff pueden editar cualquier banda)
+        const esAdmin = req.user && req.user.nivel >= 50;
+        if (!esAdmin && bandaExistente.registrado_por_id_usuario !== req.user.id_usuario) {
+            return res.status(403).json({ error: 'No tenés permiso para modificar esta banda.' });
         }
 
         // 2. Actualizar banda
@@ -625,12 +661,18 @@ const eliminarBanda = async (req, res) => {
 
         // Verificar que la banda existe
         const [bandaExistente] = await conn.query(
-            'SELECT id_banda, nombre FROM bandas_artistas WHERE id_banda = ?',
+            'SELECT id_banda, nombre, registrado_por_id_usuario FROM bandas_artistas WHERE id_banda = ?',
             [idNum]
         );
 
         if (!bandaExistente) {
             return res.status(404).json({ error: 'Banda no encontrada.' });
+        }
+
+        // Verificar propiedad (admin/staff pueden eliminar cualquier banda)
+        const esAdmin = req.user && req.user.nivel >= 50;
+        if (!esAdmin && bandaExistente.registrado_por_id_usuario !== req.user.id_usuario) {
+            return res.status(403).json({ error: 'No tenés permiso para eliminar esta banda.' });
         }
 
         // Verificar si hay solicitudes vinculadas
@@ -1052,9 +1094,51 @@ const uploadLogo = async (req, res) => {
     }
 };
 
+/**
+ * GET /api/bandas/mis-bandas
+ * Devuelve las bandas registradas por el usuario autenticado + el conteo (máx. 5)
+ */
+const obtenerMisBandas = async (req, res) => {
+    logVerbose(`[BANDA] GET - Mis bandas (id_usuario: ${req.user.id_usuario})`);
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const bandas = await conn.query(
+            `SELECT
+                b.id_banda,
+                b.nombre,
+                b.genero_musical,
+                b.logo_url,
+                b.verificada,
+                b.activa,
+                b.creado_en
+             FROM bandas_artistas b
+             WHERE b.registrado_por_id_usuario = ?
+             ORDER BY b.creado_en DESC`,
+            [req.user.id_usuario]
+        );
+
+        return res.status(200).json({
+            bandas: bandas || [],
+            total: bandas ? bandas.length : 0,
+            limite: 5,
+            puede_registrar: (bandas ? bandas.length : 0) < 5
+        });
+
+    } catch (err) {
+        logError('[BANDA] Error al obtener mis bandas:', err.message);
+        return res.status(500).json({ error: 'Error al obtener tus bandas.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 module.exports = {
     obtenerBandas,
     obtenerBandaPorId,
+    obtenerMisBandas,
     crearBanda,
     actualizarBanda,
     eliminarBanda,
