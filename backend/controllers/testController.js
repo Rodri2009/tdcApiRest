@@ -11,6 +11,11 @@ const testEmail = async (req, res) => {
     }
 };
 
+const hola = (req, res) => {
+    res.status(200).json({ message: 'hola' });
+};
+
 module.exports = {
     testEmail,
-}
+    hola,
+};
