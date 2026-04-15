@@ -666,10 +666,10 @@ INSERT INTO `solicitudes` (`id_solicitud`, `categoria`, `id_cliente`, `id_usuari
   (2,'ALQUILER',2,NULL,'2026-03-13 04:29:21','Confirmado',0,'Fiesta de 15 años - Servicio completo','Fiesta de 15 años. Contratamos servicio completo con meseras, bartender y sonido profesional.',NULL,NULL,NULL,NULL,NULL,NULL,'2026-03-13 04:29:21'),
   (3,'ALQUILER',3,NULL,'2026-03-13 04:29:21','Solicitado',0,'Prueba de actualización',NULL,NULL,'2026-03-28','14:00:00',240,NULL,NULL,'2026-03-30 23:08:23'),
   (4,'BANDAS',4,NULL,'2026-03-13 04:29:21','Confirmado',1,'Fecha Tributo','Fecha con bandas tributo, a jovenes pordioseros, a la renga y a los redondos','/uploads/flyers/solicitud_4.jpg','2026-05-09','22:00:00',390,'28:30:00',NULL,'2026-04-01 02:07:15'),
-  (5,'BANDAS',5,NULL,'2026-03-13 04:29:21','Confirmado',1,'Bandas tributo e invitadas','Tributo a La Renga y a Almafuerte, mas dos bandas invitadas','/uploads/flyers/solicitud_5.jpeg','2026-04-11','21:00:00',1080,'39:00:00',NULL,'2026-04-01 02:39:32'),
+  (5,'BANDAS',5,NULL,'2026-03-13 04:29:21','Confirmado',1,'Bandas tributo e invitadas','Tributo a La Renga y a Almafuerte, mas dos bandas invitadas','/uploads/flyers/solicitud_5.jpeg','2026-04-25','21:00:00',360,'06:00:00',NULL,'2026-04-01 02:39:32'),
   (6,'BANDAS',4,NULL,'2026-03-13 04:29:21','Confirmado',1,'Termidor Fest','Rock nacional solicita fecha compartida con banda telonera. Esperan 200 personas.','/uploads/flyers/solicitud_6.jpeg','2026-04-18','21:00:00',450,'28:30:00',NULL,'2026-04-01 02:06:35'),
   (7,'SERVICIOS',1,NULL,'2026-03-13 04:29:21','Solicitado',0,'Taller de Fotografía de Eventos','Taller teórico-práctico de fotografía profesional para eventos. 4 horas de instrucción.',NULL,NULL,NULL,NULL,NULL,NULL,'2026-03-13 04:29:21'),
-  (8,'TALLERES',2,NULL,'2026-03-13 04:29:21','Confirmado',1,'Taller de Masaje Descontracturante','Sesión grupal de masaje descontracturante para empleados.',NULL,NULL,NULL,NULL,NULL,NULL,'2026-03-13 04:29:21'),
+  (8,'TALLERES',2,NULL,'2026-03-13 04:29:21','Confirmado',1,'Taller de Masaje Descontracturante','Sesión grupal de masaje descontracturante para empleados.',NULL,'2026-04-22','10:00:00',90,NULL,NULL,'2026-03-13 04:29:21'),
   (11,'ALQUILER',15,NULL,'2026-03-31 17:09:25','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:09:25'),
   (12,'ALQUILER',16,NULL,'2026-03-31 17:11:03','Solicitado',0,'Este es un comentario',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:11:03'),
   (13,'ALQUILER',17,NULL,'2026-03-31 17:12:07','Solicitado',0,'esto es un comentario',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:12:07'),
@@ -727,7 +727,7 @@ LOCK TABLES `solicitudes_fechas_bandas` WRITE;
 INSERT INTO `solicitudes_fechas_bandas` (`id_solicitud`, `id_banda`, `fecha_evento`, `hora_evento`, `precio_basico`, `precio_final`, `precio_anticipada`, `precio_puerta`, `cantidad_bandas`, `expectativa_publico`, `bandas_json`, `fecha_alternativa`, `notas_admin`, `id_evento_generado`) VALUES
 
   (4,1,'2026-05-09','22:00:00',100000.00,120000.00,8000.00,15000.00,3,'200','[{\"id_banda\":36,\"nombre\":\"Pánico\",\"orden_show\":0,\"es_principal\":true,\"hora_inicio\":\"23:00\"},{\"id_banda\":1,\"nombre\":\"Reite\",\"orden_show\":1,\"es_principal\":false,\"hora_inicio\":\"00:30\"},{\"id_banda\":35,\"nombre\":\"Cruz Diablo\",\"orden_show\":2,\"es_principal\":false,\"hora_inicio\":\"02:00\"}]',NULL,NULL,NULL),
-  (5,3,'2026-04-11','21:00:00',100000.00,120000.00,7000.00,7000.00,4,'200','[{\"id_banda\":34,\"nombre\":\"Clasicos Matados\",\"orden_show\":0,\"es_principal\":true,\"hora_inicio\":\"23:00\"},{\"id_banda\":24,\"nombre\":\"Le Debes Plata a la Banda\",\"orden_show\":1,\"es_principal\":false,\"hora_inicio\":\"12:00\"},{\"id_banda\":39,\"nombre\":\"Descanso Eterno\",\"orden_show\":2,\"es_principal\":false,\"hora_inicio\":\"01:00\"},{\"id_banda\":10,\"nombre\":\"Nomade 73\",\"orden_show\":3,\"es_principal\":false,\"hora_inicio\":\"03:00\"}]',NULL,NULL,NULL),
+  (5,3,'2026-04-25','21:00:00',100000.00,120000.00,7000.00,7000.00,4,'200','[{\"id_banda\":34,\"nombre\":\"Clasicos Matados\",\"orden_show\":0,\"es_principal\":true,\"hora_inicio\":\"23:00\"},{\"id_banda\":24,\"nombre\":\"Le Debes Plata a la Banda\",\"orden_show\":1,\"es_principal\":false,\"hora_inicio\":\"12:00\"},{\"id_banda\":39,\"nombre\":\"Descanso Eterno\",\"orden_show\":2,\"es_principal\":false,\"hora_inicio\":\"01:00\"},{\"id_banda\":10,\"nombre\":\"Nomade 73\",\"orden_show\":3,\"es_principal\":false,\"hora_inicio\":\"03:00\"}]',NULL,NULL,NULL),
   (6,2,'2026-04-18','21:00:00',120000.00,120000.00,5000.00,5000.00,3,'200','[{\"id_banda\":29,\"nombre\":\"India Madre\",\"orden_show\":0,\"es_principal\":true,\"hora_inicio\":\"22:00\"},{\"id_banda\":33,\"nombre\":\"KorGue\",\"orden_show\":1,\"es_principal\":false,\"hora_inicio\":\"23:00\"},{\"id_banda\":27,\"nombre\":\"Defensores de la fe\",\"orden_show\":2,\"es_principal\":false,\"hora_inicio\":\"12:00\"}]',NULL,NULL,5);
 /*!40000 ALTER TABLE `solicitudes_fechas_bandas` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -761,7 +761,7 @@ LOCK TABLES `solicitudes_talleres` WRITE;
 /*!40000 ALTER TABLE `solicitudes_talleres` DISABLE KEYS */;
 INSERT INTO `solicitudes_talleres` (`id_solicitud_taller`, `id_solicitud`, `nombre_taller`, `fecha_evento`, `hora_evento`, `precio`) VALUES
 
-  (1,8,'Masaje Descontracturante Grupal','2026-03-08','10:00:00',2500.00);
+  (1,8,'Masaje Descontracturante Grupal','2026-04-22','10:00:00',2500.00);
 /*!40000 ALTER TABLE `solicitudes_talleres` ENABLE KEYS */;
 UNLOCK TABLES;
 

@@ -347,7 +347,139 @@
         <p>Versión 25/02/2026 Casa</p>
     </footer>
 
+    <!-- Panel de Logs de Depuración -->
+    <div id="debug-console" class="fixed bottom-4 right-4 w-96 max-h-80 bg-black border-2 border-neon rounded-lg shadow-lg z-50 flex flex-col hidden">
+        <div class="flex justify-between items-center bg-stone-900 p-3 border-b border-neon rounded-t-lg">
+            <span class="text-neon text-sm font-bold">🔧 DEBUG CONSOLE</span>
+            <div class="flex gap-2">
+                <button onclick="clearDebugLogs()" class="text-xs bg-stone-700 hover:bg-stone-600 text-white px-2 py-1 rounded">Limpiar</button>
+                <button onclick="toggleDebugConsole()" class="text-xs bg-red-700 hover:bg-red-600 text-white px-2 py-1 rounded">✕</button>
+            </div>
+        </div>
+        <div id="debug-logs" class="flex-1 overflow-y-auto p-2 text-xs font-mono bg-black text-green-400 space-y-1"></div>
+        <div class="bg-stone-900 p-2 border-t border-neon text-xs text-neon">
+            <button onclick="testServerConnection()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded mr-2">Probar Servidor</button>
+            <button onclick="testAPIEndpoints()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded">Probar APIs</button>
+        </div>
+    </div>
+
+    <!-- Botón flotante para abrir debug console -->
+    <button id="debug-toggle-btn" onclick="toggleDebugConsole()" class="fixed bottom-4 right-4 w-12 h-12 bg-neon text-black rounded-full font-bold text-lg hover:scale-110 transition z-40 shadow-lg hidden">🔧</button>
+
     <script>
+        // ========== SISTEMA DE LOGS DE DEPURACIÓN ==========
+        
+        // Detectar si estamos en desarrollo (localhost, 127.0.0.1, etc)
+        const isDev = () => {
+            const h = window.location.hostname;
+            return h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '0.0.0.0';
+        };
+
+        // Mostrar panel de debug solo en desarrollo
+        document.addEventListener('DOMContentLoaded', () => {
+            if (isDev()) {
+                document.getElementById('debug-toggle-btn').classList.remove('hidden');
+                addDebugLog('🟢 MODO DESARROLLO ACTIVO', 'info');
+                addDebugLog(`Host: ${window.location.hostname}:${window.location.port || 'Defecto'}`, 'info');
+                addDebugLog(`URL Base: ${window.location.origin}`, 'info');
+                addDebugLog('Inicializando aplicación...', 'info');
+            }
+        });
+
+        function toggleDebugConsole() {
+            const console = document.getElementById('debug-console');
+            const btn = document.getElementById('debug-toggle-btn');
+            console.classList.toggle('hidden');
+            btn.classList.toggle('hidden');
+        }
+
+        function clearDebugLogs() {
+            document.getElementById('debug-logs').innerHTML = '';
+            addDebugLog('Logs limpiados', 'info');
+        }
+
+        function addDebugLog(message, type = 'log') {
+            const logsContainer = document.getElementById('debug-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            let prefix = '';
+            let color = 'text-green-400';
+            
+            switch(type) {
+                case 'error':
+                    prefix = '❌';
+                    color = 'text-red-400';
+                    break;
+                case 'success':
+                    prefix = '✅';
+                    color = 'text-emerald-400';
+                    break;
+                case 'warning':
+                    prefix = '⚠️';
+                    color = 'text-yellow-400';
+                    break;
+                case 'info':
+                    prefix = 'ℹ️';
+                    color = 'text-blue-400';
+                    break;
+                default:
+                    prefix = '📝';
+                    break;
+            }
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `${color}`;
+            logEntry.textContent = `[${timestamp}] ${prefix} ${message}`;
+            logsContainer.appendChild(logEntry);
+            
+            // Auto-scroll al final
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+            
+            // También mostrar en consola navegador
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        // Prueba de conectividad del servidor
+        async function testServerConnection() {
+            addDebugLog('Probando conexión con servidor...', 'info');
+            try {
+                const response = await fetch(window.location.origin, {
+                    method: 'HEAD',
+                    mode: 'no-cors'
+                });
+                addDebugLog('✨ Servidor respondiendo correctamente', 'success');
+                return true;
+            } catch (error) {
+                addDebugLog(`❌ No se puede conectar con el servidor: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Prueba de endpoints de API
+        async function testAPIEndpoints() {
+            const endpoints = [
+                '/api/eventos/publicos',
+                '/api/solicitudes/publicas'
+            ];
+            
+            addDebugLog('Probando endpoints de API...', 'info');
+            
+            for (const endpoint of endpoints) {
+                try {
+                    addDebugLog(`Testando ${endpoint}...`, 'info');
+                    const response = await fetch(window.location.origin + endpoint);
+                    if (response.ok) {
+                        addDebugLog(`✅ ${endpoint} - Status: ${response.status}`, 'success');
+                    } else {
+                        addDebugLog(`⚠️ ${endpoint} - Status: ${response.status}`, 'warning');
+                    }
+                } catch (error) {
+                    addDebugLog(`❌ ${endpoint} - Error: ${error.message}`, 'error');
+                }
+            }
+            addDebugLog('Prueba de endpoints completada', 'info');
+        }
+
         // Lógica de JavaScript para el menú móvil y el año del footer
         document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -511,14 +643,18 @@
         async function fetchAgenda() {
             try {
                 console.debug('[AGENDA-INDEX] API base URL', API_BASE_URL);
+                if (isDev()) addDebugLog(`API Base URL: ${API_BASE_URL}`, 'info');
 
                 // 1) Cargar eventos confirmados publicados
                 console.debug('[AGENDA-INDEX] Fetching public events from', `${API_BASE_URL}/api/eventos/publicos`);
+                if (isDev()) addDebugLog('Obteniendo eventos públicos...', 'info');
+                
                 const resEventos = await fetch(`${API_BASE_URL}/api/eventos/publicos`);
                 let eventos = [];
                 if (resEventos.ok) {
                     const data = await resEventos.json();
                     console.debug('[AGENDA-INDEX] /api/eventos/publicos raw ->', data);
+                    if (isDev()) addDebugLog(`✅ Eventos cargados: ${data.length} encontrados`, 'success');
                     eventos = data.map(item => {
                         const fechaRaw = item.fecha_evento || item.fecha;
                         const horaRaw = item.hora_inicio || item.hora || null;
@@ -541,15 +677,19 @@
                     });
                 } else {
                     console.warn('[AGENDA-INDEX] /api/eventos/publicos response status', resEventos.status);
+                    if (isDev()) addDebugLog(`⚠️ Error al cargar eventos (Status: ${resEventos.status})`, 'warning');
                 }
 
                 // 2) Cargar solicitudes públicas confirmadas
                 console.debug('[AGENDA-INDEX] Fetching public solicitudes from', `${API_BASE_URL}/api/solicitudes/publicas`);
+                if (isDev()) addDebugLog('Obteniendo solicitudes públicas...', 'info');
+                
                 const resPublicas = await fetch(`${API_BASE_URL}/api/solicitudes/publicas`);
                 let solicitudes = [];
                 if (resPublicas.ok) {
                     const data = await resPublicas.json();
                     console.debug('[AGENDA-INDEX] /api/solicitudes/publicas raw ->', data);
+                    if (isDev()) addDebugLog(`✅ Solicitudes cargadas: ${data.length} encontradas`, 'success');
                     solicitudes = data.map(item => {
                         const fechaRaw = item.fechaEvento;
                         const horaRaw = item.horaEvento;
@@ -572,6 +712,7 @@
                     });
                 } else {
                     console.warn('[AGENDA-INDEX] /api/solicitudes/publicas response status', resPublicas.status);
+                    if (isDev()) addDebugLog(`⚠️ Error al cargar solicitudes (Status: ${resPublicas.status})`, 'warning');
                 }
 
                 // 3) Combinar y dedupe para evitar duplicados entre solicitudes y eventos confirmados.
@@ -629,6 +770,7 @@
 
             } catch (error) {
                 console.error('Error al cargar agenda:', error);
+                if (isDev()) addDebugLog(`❌ Error fatal al cargar agenda: ${error.message}`, 'error');
                 agendaListContainer.innerHTML = `
                 <div class="p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
                     <p class="text-xl text-stone-400">No se pudo cargar la agenda</p>
@@ -636,10 +778,13 @@
                 </div>
                 `;
             }
+            if (isDev()) addDebugLog('Carga de agenda completada', 'success');
         }
 
         function renderAgenda(items, totalCount) {
             agendaListContainer.innerHTML = '';
+            
+            if (isDev()) addDebugLog(`Renderizando agenda con ${items.length} eventos`, 'info');
 
             if (!items || items.length === 0) {
                 agendaListContainer.innerHTML = `
@@ -648,12 +793,15 @@
                     <p class="text-sm text-stone-500 mt-2">Estamos preparando la agenda cultural.</p>
                 </div>
                 `;
+                if (isDev()) addDebugLog('⚠️ No hay eventos para mostrar', 'warning');
                 return;
             }
 
             items.forEach(item => {
                 agendaListContainer.insertAdjacentHTML('beforeend', generateAgendaCard(item));
             });
+            
+            if (isDev()) addDebugLog(`✅ Agenda renderizada correctamente`, 'success');
 
         }
 
@@ -670,11 +818,14 @@
             const token = localStorage.getItem('authToken');
             const desktopMenu = document.getElementById('auth-menu-desktop');
             const mobileMenu = document.getElementById('auth-menu-mobile');
+            
+            if (isDev()) addDebugLog(token ? '🔐 Token encontrado en localStorage' : '🔓 Sin autenticación', 'info');
 
             // Si el token existe pero está vencido, limpiar y mostrar Login
             if (token) {
                 const exp = parseJwtExp(token);
                 if (exp && Math.floor(Date.now() / 1000) > exp) {
+                    if (isDev()) addDebugLog('⚠️ Token expirado, limpiando sesión', 'warning');
                     localStorage.removeItem('authToken');
                     localStorage.removeItem('user_data');
                     updateAuthMenu();
@@ -733,10 +884,17 @@
         // INICIALIZACIÓN
         // ----------------------------------------------------
         document.addEventListener('DOMContentLoaded', () => {
+            if (isDev()) {
+                addDebugLog('📄 DOMContentLoaded disparado', 'info');
+                addDebugLog('Actualizando menú de autenticación...', 'info');
+            }
             // 1. Actualizar menú de autenticación
             updateAuthMenu();
+            
+            if (isDev()) addDebugLog('Iniciando carga de agenda pública...', 'info');
             // 2. Inicia la carga de la agenda pública
             fetchAgenda();
+            if (isDev()) addDebugLog('🚀 Aplicación lista', 'success');
             // El resto de la lógica de desplazamiento y menú móvil ya está integrada.
         });
 
