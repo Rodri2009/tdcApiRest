@@ -120,7 +120,7 @@ recover_to_time() {
   # mysqlbinlog con stop-datetime
   local sql_file="/tmp/recovery_${RANDOM}.sql"
   
-  docker exec "$container" sh -c "mysqlbinlog --force-if-open --stop-datetime='$binlog_time' /var/log/mariadb/mariadb-bin.* 2>/dev/null" > "$sql_file"
+  docker exec "$container" sh -c "mysqlbinlog --force-if-open --stop-datetime='$binlog_time' /var/lib/mysql/binlogs/mariadb-bin.* 2>/dev/null" > "$sql_file"
   
   if [ ! -s "$sql_file" ]; then
     echo -e "${RED}❌ No se generó archivo de recuperación. Verifica la fecha.${NC}"
@@ -151,7 +151,7 @@ recover_from_binlog_file() {
   # Generar SQL desde binlog
   local sql_file="/tmp/recovery_${RANDOM}.sql"
   
-  docker exec "$container" sh -c "mysqlbinlog --force-if-open /var/log/mariadb/$binlog_file 2>/dev/null" > "$sql_file"
+  docker exec "$container" sh -c "mysqlbinlog --force-if-open /var/lib/mysql/binlogs/$binlog_file 2>/dev/null" > "$sql_file"
   
   if [ ! -s "$sql_file" ]; then
     echo -e "${RED}❌ No se generó archivo de recuperación${NC}"

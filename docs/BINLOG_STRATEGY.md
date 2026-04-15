@@ -26,13 +26,13 @@ TDC implementa **Binary Logs (Binlog)** de MariaDB como estrategia de recovery. 
 ```yaml
 mariadb:
   command:
-    - '--log-bin=/var/log/mariadb/mariadb-bin'
+    - '--log-bin=/var/lib/mysql/binlogs/mariadb-bin'
     - '--binlog-format=MIXED'
     - '--binlog-expire-logs-seconds=604800'      # 7 días
     - '--max-binlog-size=1073741824'              # 1GB
   
   volumes:
-    - mariadb_binlogs:/var/log/mariadb
+    - mariadb_binlogs:/var/lib/mysql/binlogs
 
 volumes:
   mariadb_binlogs:  # Volumen persistente para binlogs
@@ -42,7 +42,7 @@ volumes:
 
 | Parámetro | Valor | Significado |
 |-----------|-------|-------------|
-| `log-bin` | `/var/log/mariadb/mariadb-bin` | La ruta y prefijo de los archivos binlog |
+| `log-bin` | `/var/lib/mysql/binlogs/mariadb-bin` | La ruta y prefijo de los archivos binlog |
 | `binlog-format` | `MIXED` | Formato: ROW, STATEMENT, o MIXED (recomendado) |
 | `binlog-expire-logs-seconds` | `604800` | 7 días - duración de retención |
 | `max-binlog-size` | `1073741824` | 1GB - tamaño máximo por archivo |
@@ -60,7 +60,7 @@ Archivos:
 ├── mariadb-bin.000003
 └── mariadb-bin.index
 
-Dentro del contenedor: /var/log/mariadb/
+Dentro del contenedor: /var/lib/mysql/binlogs/
 En el host (Docker): /var/lib/docker/volumes/docker_mariadb_binlogs/_data/
 ```
 
@@ -258,8 +258,8 @@ MARIADB_INIT_COMMAND: |
 ### Verificar tamaño de binlogs
 
 ```bash
-docker exec docker-mariadb-1 du -sh /var/log/mariadb
-# Output: 5.2G    /var/log/mariadb
+docker exec docker-mariadb-1 du -sh /var/lib/mysql/binlogs
+# Output: 5.2G    /var/lib/mysql/binlogs
 ```
 
 ### Verificar estado de binlog
