@@ -82,16 +82,16 @@ TDC utiliza **Binary Logs (Binlog)** de MariaDB como estrategia nativa de recove
 - ✅ Cero configuración requerida por host
 - ✅ Replicación y auditoría integradas
 
-**Recovery en 3 pasos:**
+### Quickstart Binlog
 
 ```bash
-# 1. Listar binlogs disponibles (últimos 7 días)
+# 1. Listar binlogs disponibles
 ./scripts/recover-from-binlog.sh -l
 
-# 2. Recuperar a un momento específico
+# 2. Generar la recuperación hasta un momento antes del error
 ./scripts/recover-from-binlog.sh -t "2026-04-15 14:30:00"
 
-# 3. Revisar y aplicar el SQL generado
+# 3. Aplicar el SQL generado al contenedor
 mysql -u root -p < /tmp/recovery_*.sql
 ```
 
