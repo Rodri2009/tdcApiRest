@@ -68,6 +68,7 @@ cp .env.example .env   # Editar con tus variables
 | Script | Descripción |
 |--------|-------------|
 | `./scripts/up.sh` | Levanta todos los servicios. No aplica migraciones por defecto — usa `./scripts/up.sh --migrate` o `APPLY_MIGRATIONS=true ./scripts/up.sh` para aplicarlas desde `database/migrations` |
+| `./scripts/restart.sh` | Reinicia contenedores específicos (backend, frontend, db) con flags opcionales |
 | `./scripts/down-and-backup.sh` | Detiene servicios y crea backup de la BD |
 | `./scripts/reset.sh` | Reinicia completamente (elimina datos y reconstruye) — **aplica** las migraciones SQL que estén en `database/migrations` después de recrear la BD |
 | `./scripts/export_db_to_migrations.sh` | Exporta el estado actual de la BD a un archivo SQL dentro de `database/migrations/` (data-only, `REPLACE INTO`). Soporta `--truncate-first` (opcional) para incluir `TRUNCATE TABLE` antes de los `REPLACE INTO`. Revisar y commitear manualmente |
@@ -138,11 +139,43 @@ docker exec -it tdc-backend node /app/scripts/crear-admin.js
 
 > **IMPORTANTE:** Esta versión es funcional y estable, pero no es la estructura final recomendada. Consulta `README_MIGRACION.md` para el futuro modelo de datos y lógica de negocio.
 
-### Reiniciar solo el backend
+### Reiniciar Contenedores
+
+El script `restart.sh` permite reiniciar contenedores específicos (backend, frontend, BD) de forma flexible:
 
 ```bash
-./scripts/restart_backend.sh
+# Por defecto: reinicia solo backend
+./scripts/restart.sh
+
+# Reiniciar contenedores específicos
+./scripts/restart.sh --backend              # Solo backend (Node.js)
+./scripts/restart.sh --frontend             # Solo frontend (nginx)
+./scripts/restart.sh --db                   # Solo MariaDB
+
+# Reiniciar múltiples contenedores a la vez
+./scripts/restart.sh --backend --frontend   # Backend y frontend
+./scripts/restart.sh --backend --db         # Backend y BD
+
+# Con flags adicionales
+./scripts/restart.sh --backend -v           # Backend con logs verbosos
+./scripts/restart.sh --backend --rebuild    # Rebuild la imagen de backend
+./scripts/restart.sh --backend --down       # Docker down antes de restart
+./scripts/restart.sh --backend --mp -d      # Backend + Mercado Pago + debug completo
+./scripts/restart.sh --backend --wa -d      # Backend + WhatsApp + debug completo
+
+# Caso avanzado: rebuild y restart todo con debug
+./scripts/restart.sh --backend --frontend --db --down --rebuild -d
 ```
+
+**Flags disponibles:**
+- `--backend`, `--frontend`, `--db` — Qué contenedores reiniciar (default: solo backend)
+- `--rebuild` — Reconstruye imagen del contenedor
+- `--down` — Ejecuta `docker compose down` antes de restart
+- `--mp` — Habilita Mercado Pago (Puppeteer)
+- `--wa` — Habilita WhatsApp (Puppeteer)
+- `-v|--verbose, -e|--error, -d|--debug` — Niveles de debug (solo backend)
+
+Para más detalles: `./scripts/restart.sh -h`
 
 ## Estructura del Proyecto
 
