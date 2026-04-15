@@ -65,6 +65,10 @@ services:
     image: mariadb:10.6
     command:
       - '--max_allowed_packet=64M'
+      - '--log-bin=/var/log/mariadb/mariadb-bin'
+      - '--binlog-format=MIXED'
+      - '--binlog-expire-logs-seconds=604800'
+      - '--max-binlog-size=1073741824'
     healthcheck:
       # El 'test' ahora usa las variables del archivo .env
       #test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "${MARIADB_USER}", "-p${MARIADB_PASSWORD}" ]
@@ -83,6 +87,8 @@ services:
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
     volumes:
       - mariadb_data:/var/lib/mysql
+      # Volumen para Binary Logs (Binlog) - Point-in-time recovery
+      - mariadb_binlogs:/var/log/mariadb
       # Docker entrypoint ejecuta automáticamente scripts .sql en orden alfabético
       # SQL refactorizado - Febrero 2026: archivos ejecutados en orden
       # 01_schema.sql - Estructura de tablas (DDL) + bandas_json + precio_anticipada
@@ -101,4 +107,5 @@ services:
 # Definición de volúmenes persistentes
 volumes:
   mariadb_data:
+  mariadb_binlogs:
   tdc_backend_node_modules:

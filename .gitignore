@@ -13,6 +13,11 @@ frontend/config.js
 # Backups y archivos de migración (no subirlos al repositorio)
 _backups/
 
+# Binary Logs de MariaDB (recovery estrategy - punto en tiempo)
+docker/binlogs/
+mariadb_binlogs/
+*.binlog
+mariadb-bin.*
 # Logs y archivos temporales
 *.log
 npm-debug.log*

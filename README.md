@@ -69,16 +69,35 @@ cp .env.example .env   # Editar con tus variables
 |--------|-------------|
 | `./scripts/up.sh` | Levanta todos los servicios. No aplica migraciones por defecto — usa `./scripts/up.sh --migrate` o `APPLY_MIGRATIONS=true ./scripts/up.sh` para aplicarlas desde `database/migrations` |
 | `./scripts/restart.sh` | Reinicia contenedores específicos (backend, frontend, db) con flags opcionales |
-| `./scripts/down-and-backup.sh` | Detiene servicios y crea backup de la BD |
 | `./scripts/reset.sh` | Reinicia completamente (elimina datos y reconstruye) — **aplica** las migraciones SQL que estén en `database/migrations` después de recrear la BD |
-| `./scripts/export_db_to_migrations.sh` | Exporta el estado actual de la BD a un archivo SQL dentro de `database/migrations/` (data-only, `REPLACE INTO`). Soporta `--truncate-first` (opcional) para incluir `TRUNCATE TABLE` antes de los `REPLACE INTO`. Revisar y commitear manualmente |
+| `./scripts/recover-from-binlog.sh` | Recupera BD desde Binary Logs de MariaDB a un punto específico en tiempo (Point-in-Time Recovery) |
 
-*Nota:* Para aplicar migraciones sin hacer un `reset` completo puedes:
-- ejecutar manualmente las SQL en `database/migrations` contra el contenedor MariaDB, por ejemplo:
+## Estrategia de Backup: Binary Logs de MariaDB
 
-  `cat database/migrations/20260210_add_url_flyer_to_eventos_confirmados.sql | docker compose -f docker/docker-compose.yml exec -T mariadb sh -c "mysql -u root -p\"$MARIADB_ROOT_PASSWORD\" \"$MARIADB_DATABASE\""`
+TDC utiliza **Binary Logs (Binlog)** de MariaDB como estrategia nativa de recovery. No hay scripts de backup periódicos:
 
-- o realizar las comprobaciones y pasos de migración manualmente (no hay utilidades automáticas en este repo).
+**Ventajas:**
+- ✅ Point-in-time recovery automático (recupera a cualquier segundo)
+- ✅ Zero overhead (~0% CPU adicional)
+- ✅ Cero configuración requerida por host
+- ✅ Replicación y auditoría integradas
+
+**Recovery en 3 pasos:**
+
+```bash
+# 1. Listar binlogs disponibles (últimos 7 días)
+./scripts/recover-from-binlog.sh -l
+
+# 2. Recuperar a un momento específico
+./scripts/recover-from-binlog.sh -t "2026-04-15 14:30:00"
+
+# 3. Revisar y aplicar el SQL generado
+mysql -u root -p < /tmp/recovery_*.sql
+```
+
+**Documentación completa:** [docs/BINLOG_STRATEGY.md](docs/BINLOG_STRATEGY.md)
+
+**Retención:** 7 días. Para backups más antiguos, necesitarías snapshots externos.
 
 ### Verificación manual (QA) — pasos rápidos
 Sigue estos pasos antes y después de aplicar cualquier migración o cambio estructural.
@@ -86,8 +105,9 @@ Sigue estos pasos antes y después de aplicar cualquier migración o cambio estr
 1) Preparar
    - Asegúrate de tener `.env` configurado y `./scripts/up.sh` corriendo.
 
-2) Backup de la base de datos (obligatorio)
-   - `docker compose -f docker/docker-compose.yml exec -T mariadb sh -c 'mysqldump -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' > backup_pre_migration.sql`
+2) Backup de la base de datos (opcional)
+   - Los cambios están siendo grabados automáticamente en Binlog
+   - Si necesitas un snapshot específico: `./scripts/recover-from-binlog.sh -l`
 
 3) Comprobar archivos/migraciones pendientes
    - `ls database/migrations | sort`  — revisa los SQL a aplicar.
@@ -112,10 +132,8 @@ Sigue estos pasos antes y después de aplicar cualquier migración o cambio estr
 
 8) Logs y rollback
    - Revisa logs: `docker compose -f docker/docker-compose.yml logs --tail 200 backend`
-   - Si algo falla, restaura DB desde `backup_pre_migration.sql`:
-     `docker compose -f docker/docker-compose.yml exec -T mariadb sh -c 'mysql -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' < backup_pre_migration.sql`
-
-> Nota: las utilidades automáticas `check_*`, `apply_*` y `scripts/verify_migration.sh` fueron retiradas del repositorio; utiliza los pasos anteriores para QA manual.
+   - Si algo falla, usa Binlog para recuperar:
+     `./scripts/recover-from-binlog.sh -t "TIMESTAMP_ANTES_DE_CAMBIO"`
 
 ### Crear usuario administrador
 
