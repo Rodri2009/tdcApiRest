@@ -2,6 +2,28 @@ const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
 /**
+ * GET /api/admin/clientes
+ * Lista todos los clientes (admin)
+ */
+const listClientes = async (req, res) => {
+    logVerbose('[CLIENTES] GET - Obtener todos los clientes');
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const clientes = await conn.query(
+            `SELECT id_cliente, nombre, telefono, email FROM clientes ORDER BY nombre ASC`
+        );
+        res.status(200).json(clientes);
+    } catch (err) {
+        logError('Error en listClientes:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+/**
  * GET /api/admin/clientes/search?q=term
  * Busca clientes por nombre, email o teléfono (admin)
  */
@@ -127,4 +149,27 @@ const updateCliente = async (req, res) => {
     }
 };
 
-module.exports = { searchClientes, createCliente, getCliente, updateCliente };
+/**
+ * DELETE /api/admin/clientes/:id
+ * Elimina un cliente (admin)
+ */
+const deleteCliente = async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    logVerbose(`[CLIENTES] DELETE /api/admin/clientes/${id}`);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID de cliente inválido.' });
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const result = await conn.query(`DELETE FROM clientes WHERE id_cliente = ?`, [id]);
+        logVerbose('[CLIENTES] DELETE ejecutado');
+        res.json({ id_cliente: id, message: 'Cliente eliminado.' });
+    } catch (err) {
+        logError('Error en deleteCliente:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+module.exports = { listClientes, searchClientes, createCliente, getCliente, updateCliente, deleteCliente };

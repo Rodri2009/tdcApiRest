@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuración - Clientes</title>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <link rel="stylesheet" href="/css/config-pages.css">
+</head>
+
+<body>
+    <script src="/navbar.js"></script>
+    <main class="wrap">
+        <div class="page-header">
+            <a href="/admin.html" class="btn-back">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                Volver al Panel
+            </a>
+            <h1><i class="fas fa-users"></i> Gestión de Clientes</h1>
+            <div class="spacer"></div>
+        </div>
+
+        <!-- Sección: Clientes -->
+        <div id="section-clientes" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-users"></i> Contactos / Clientes</h3>
+                    <button class="btn btn-primary" onclick="openClienteModal()">
+                        ➕ Nuevo Cliente
+                    </button>
+                </div>
+                <div class="filters-panel">
+                    <div class="filters-row">
+                        <div class="filter-field">
+                            <label>Buscar</label>
+                            <input type="text" id="search-clientes" placeholder="Buscar por nombre, email o teléfono..." oninput="filterClientes()">
+                        </div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="table-clientes">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-clientes">
+                            <tr>
+                                <td colspan="5" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Editar Cliente -->
+    <div id="modal-cliente" class="modal-overlay">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="modal-cliente-title">Nuevo Cliente</h3>
+                <button class="btn btn-icon" onclick="closeModal('modal-cliente')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form-cliente">
+                    <input type="hidden" id="cliente-id">
+
+                    <div class="form-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="cliente-nombre" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="cliente-email" placeholder="contacto@ejemplo.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="tel" id="cliente-telefono" placeholder="+54 9 11 XXXX-XXXX">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-cliente')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveCliente()">
+                    💾 Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ESTADO Y CONFIGURACIÓN
+        let clientes = [];
+        let clientesFiltrados = [];
+        let currentSection = 'clientes';
+
+        // Normaliza texto para búsqueda sin distinción de acentos ni mayúsculas
+        function normalizeSearch(str) {
+            return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        // Banner de notificación
+        function showBanner(message, type = 'info', duration = 4000) {
+            document.querySelectorAll('.notification-banner').forEach(n => {
+                n.classList.remove('show');
+                n.classList.add('hide');
+                setTimeout(() => n.remove(), 350);
+            });
+            const banner = document.createElement('div');
+            banner.className = `notification-banner ${type}`;
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+            banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+            document.body.appendChild(banner);
+            requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('show')));
+            setTimeout(() => {
+                banner.classList.remove('show');
+                banner.classList.add('hide');
+                setTimeout(() => banner.remove(), 350);
+            }, duration);
+        }
+
+        // ============================================================
+        // CARGAR CLIENTES
+        // ============================================================
+        async function loadClientes() {
+            try {
+                const res = await fetch('/api/admin/clientes', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') }
+                });
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        showBanner('No autorizado', 'error');
+                        return;
+                    }
+                    throw new Error('Error al obtener clientes');
+                }
+                const data = await res.json();
+                clientes = Array.isArray(data) ? data : (data.clientes || []);
+                filterClientes();
+            } catch (err) {
+                console.error('Error cargando clientes:', err);
+                showBanner('Error al cargar clientes: ' + err.message, 'error');
+            }
+        }
+
+        // Filtrar clientes según búsqueda
+        function filterClientes() {
+            const searchTerm = normalizeSearch(document.getElementById('search-clientes').value);
+            clientesFiltrados = clientes.filter(c => {
+                const nombre = normalizeSearch(c.nombre || '');
+                const email = normalizeSearch(c.email || '');
+                const telefono = normalizeSearch(c.telefono || '');
+                return nombre.includes(searchTerm) || email.includes(searchTerm) || telefono.includes(searchTerm);
+            });
+            renderClientes();
+        }
+
+        // Renderizar tabla de clientes
+        function renderClientes() {
+            const tbody = document.getElementById('tbody-clientes');
+
+            if (clientesFiltrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay clientes</td></tr>';
+                return;
+            }
+
+            let html = '';
+            clientesFiltrados.forEach(c => {
+                html += `
+                    <tr>
+                        <td><code style="color:#a78bfa;">#${c.id_cliente}</code></td>
+                        <td><strong>${c.nombre || '-'}</strong></td>
+                        <td>${c.email ? `<a href="mailto:${c.email}" style="color:#f0abfc;text-decoration:none;">${c.email}</a>` : '-'}</td>
+                        <td>${c.telefono ? `<a href="tel:${c.telefono}" style="color:#f0abfc;text-decoration:none;">${c.telefono}</a>` : '-'}</td>
+                        <td>
+                            <div class="row-actions">
+                                <button class="btn btn-icon btn-sm" onclick="editCliente(${c.id_cliente})" title="Editar">
+                                    ✏️
+                                </button>
+                                <button class="btn btn-icon btn-sm" onclick="deleteCliente(${c.id_cliente})" title="Eliminar" style="margin-left:6px">
+                                    🗑️
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // ============================================================
+        // MODALES Y CRUD
+        // ============================================================
+        function openModal(id) {
+            document.getElementById(id).classList.add('show');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        function openClienteModal() {
+            document.getElementById('modal-cliente-title').textContent = 'Nuevo Cliente';
+            document.getElementById('form-cliente').reset();
+            document.getElementById('cliente-id').value = '';
+            openModal('modal-cliente');
+        }
+
+        function editCliente(id) {
+            const cliente = clientes.find(c => c.id_cliente === id);
+            if (!cliente) return;
+
+            document.getElementById('modal-cliente-title').textContent = 'Editar Cliente';
+            document.getElementById('cliente-id').value = cliente.id_cliente;
+            document.getElementById('cliente-nombre').value = cliente.nombre || '';
+            document.getElementById('cliente-email').value = cliente.email || '';
+            document.getElementById('cliente-telefono').value = cliente.telefono || '';
+
+            openModal('modal-cliente');
+        }
+
+        async function saveCliente() {
+            const id = document.getElementById('cliente-id').value;
+            const nombre = document.getElementById('cliente-nombre').value.trim();
+            const email = document.getElementById('cliente-email').value.trim();
+            const telefono = document.getElementById('cliente-telefono').value.trim();
+
+            if (!nombre) {
+                showBanner('El nombre es obligatorio', 'error');
+                return;
+            }
+
+            const payload = { nombre, email, telefono };
+
+            try {
+                const url = id ? `/api/admin/clientes/${id}` : '/api/admin/clientes';
+                const method = id ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showBanner(data.message || 'Cliente guardado correctamente', 'success');
+                    closeModal('modal-cliente');
+                    loadClientes();
+                } else {
+                    throw new Error(data.error || 'Error al guardar');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showBanner('Error: ' + err.message, 'error');
+            }
+        }
+
+        async function deleteCliente(id) {
+            if (!confirm('¿Estás seguro de eliminar este cliente? Esta acción no se puede deshacer.')) return;
+
+            try {
+                const res = await fetch(`/api/admin/clientes/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                });
+
+                if (res.ok) {
+                    showBanner('Cliente eliminado correctamente', 'success');
+                    loadClientes();
+                } else {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Error al eliminar');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showBanner('Error: ' + err.message, 'error');
+            }
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!navbarManager || !navbarManager.protectAdminPage()) return;
+            loadClientes();
+        });
+    </script>
+</body>
+
+</html>
