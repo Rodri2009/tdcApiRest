@@ -65,6 +65,12 @@ const getUsuarioPorId = async (req, res) => {
 
 /**
  * Crear nuevo usuario
+ * 
+ * Validaciones:
+ * - Email único en usuarios (no puede duplicarse)
+ * - Si email existe en clientes:
+ *   - Con id_usuario → rechaza (cliente ya vinculado)
+ *   - Sin id_usuario → crea usuario y vincula automáticamente
  */
 const crearUsuario = async (req, res) => {
     const { email, password, nombre, rol } = req.body;
@@ -81,10 +87,27 @@ const crearUsuario = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // Verificar si el email ya existe
-        const [existente] = await conn.query('SELECT id_usuario FROM usuarios WHERE email = ?', [email]);
-        if (existente) {
-            return res.status(400).json({ message: 'El email ya está registrado' });
+        // ✅ Verificar si el email ya existe en usuarios
+        const [existenteUsuario] = await conn.query('SELECT id_usuario FROM usuarios WHERE email = ?', [email]);
+        if (existenteUsuario) {
+            return res.status(409).json({ message: 'El email ya está registrado en usuarios' });
+        }
+
+        // ✅ Verificar si el email existe en clientes
+        let idClienteExistente = null;
+        const [clienteExistente] = await conn.query('SELECT id_cliente, id_usuario FROM clientes WHERE email = ?', [email]);
+        
+        if (clienteExistente) {
+            if (clienteExistente.id_usuario) {
+                // El cliente ya está vinculado a otro usuario
+                return res.status(409).json({
+                    message: 'Este email ya está vinculado a otro usuario (ID: ' + clienteExistente.id_usuario + ')',
+                    id_cliente: clienteExistente.id_cliente,
+                    id_usuario_existente: clienteExistente.id_usuario
+                });
+            }
+            // El cliente existe pero sin id_usuario (lo vincularemos después)
+            idClienteExistente = clienteExistente.id_cliente;
         }
 
         // Hash de la contraseña
@@ -97,10 +120,23 @@ const crearUsuario = async (req, res) => {
             VALUES (?, ?, ?, ?, 1)
         `, [email, passwordHash, nombre || '', rolFinal]);
 
-        res.status(201).json({
-            message: 'Usuario creado exitosamente',
-            id: Number(result.insertId)
-        });
+        const nuevoIdUsuario = Number(result.insertId);
+
+        // ✅ Si hay un cliente existente sin id_usuario, vincularlo
+        if (idClienteExistente) {
+            await conn.query('UPDATE clientes SET id_usuario = ? WHERE id_cliente = ?', [nuevoIdUsuario, idClienteExistente]);
+            logVerbose(`[USUARIOS] Usuario #${nuevoIdUsuario} vinculado automáticamente a cliente #${idClienteExistente}`);
+            res.status(201).json({
+                message: 'Usuario creado y vinculado automáticamente a cliente',
+                id: nuevoIdUsuario,
+                id_cliente: idClienteExistente
+            });
+        } else {
+            res.status(201).json({
+                message: 'Usuario creado exitosamente',
+                id: nuevoIdUsuario
+            });
+        }
     } catch (err) {
         logError('Error creando usuario:', err);
         res.status(500).json({ message: 'Error al crear usuario', error: err.message });
@@ -111,6 +147,11 @@ const crearUsuario = async (req, res) => {
 
 /**
  * Actualizar usuario existente
+ * 
+ * Validaciones al cambiar email:
+ * - No puede duplicarse en usuarios
+ * - Si existe en clientes con id_usuario diferente → rechaza
+ * - Si existe en clientes sin id_usuario → vincula
  */
 const actualizarUsuario = async (req, res) => {
     const { id } = req.params;
@@ -121,16 +162,33 @@ const actualizarUsuario = async (req, res) => {
         conn = await pool.getConnection();
 
         // Verificar que el usuario existe
-        const [usuario] = await conn.query('SELECT id_usuario FROM usuarios WHERE id_usuario = ?', [id]);
+        const [usuario] = await conn.query('SELECT id_usuario, email as email_actual FROM usuarios WHERE id_usuario = ?', [id]);
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        // Si cambia el email, verificar que no exista otro usuario con ese email
-        if (email) {
-            const [existente] = await conn.query('SELECT id_usuario FROM usuarios WHERE email = ? AND id_usuario != ?', [email, id]);
-            if (existente) {
-                return res.status(400).json({ message: 'El email ya está en uso por otro usuario' });
+        // Si cambia el email, aplicar validaciones
+        let clienteParaVincular = null;
+        if (email && email !== usuario.email_actual) {
+            // ✅ Verificar que no exista otro usuario con ese email
+            const [existenteUsuario] = await conn.query('SELECT id_usuario FROM usuarios WHERE email = ? AND id_usuario != ?', [email, id]);
+            if (existenteUsuario) {
+                return res.status(409).json({ message: 'El email ya está en uso por otro usuario' });
+            }
+
+            // ✅ Verificar si el email existe en clientes
+            const [clienteExistente] = await conn.query('SELECT id_cliente, id_usuario FROM clientes WHERE email = ?', [email]);
+            if (clienteExistente) {
+                if (clienteExistente.id_usuario && clienteExistente.id_usuario != id) {
+                    // El cliente está vinculado a otro usuario
+                    return res.status(409).json({
+                        message: 'Este email ya está vinculado a otro usuario (ID: ' + clienteExistente.id_usuario + ')',
+                        id_cliente: clienteExistente.id_cliente
+                    });
+                } else if (!clienteExistente.id_usuario) {
+                    // El cliente existe pero sin id_usuario, lo vincularemos
+                    clienteParaVincular = clienteExistente.id_cliente;
+                }
             }
         }
 
@@ -169,7 +227,17 @@ const actualizarUsuario = async (req, res) => {
             await conn.query(`UPDATE usuarios SET ${updates.join(', ')} WHERE id_usuario = ?`, params);
         }
 
-        res.json({ message: 'Usuario actualizado exitosamente' });
+        // ✅ Si hay un cliente para vincular, hacerlo después de actualizar
+        if (clienteParaVincular) {
+            await conn.query('UPDATE clientes SET id_usuario = ? WHERE id_cliente = ?', [id, clienteParaVincular]);
+            logVerbose(`[USUARIOS] Usuario #${id} vinculado automáticamente a cliente #${clienteParaVincular} (por cambio de email)`);
+            res.json({
+                message: 'Usuario actualizado y vinculado automáticamente a cliente',
+                id_cliente: clienteParaVincular
+            });
+        } else {
+            res.json({ message: 'Usuario actualizado exitosamente' });
+        }
     } catch (err) {
         logError('Error actualizando usuario:', err);
         res.status(500).json({ message: 'Error al actualizar usuario', error: err.message });
