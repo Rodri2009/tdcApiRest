@@ -37,7 +37,6 @@ const obtenerBandas = async (req, res) => {
                 b.descripcion AS descripcion,
                 b.logo_url,
                 b.foto_prensa_url,
-                b.contacto_rol,
                 b.id_cliente,
                 b.verificada,
                 b.activa,
@@ -129,7 +128,6 @@ const obtenerBandaPorId = async (req, res) => {
                 b.descripcion AS descripcion,
                 b.logo_url,
                 b.foto_prensa_url,
-                b.contacto_rol,
                 b.id_cliente,
                 b.verificada,
                 b.activa,
@@ -208,7 +206,6 @@ const crearBanda = async (req, res) => {
         contacto_nombre,
         contacto_email,
         contacto_telefono,
-        contacto_rol,
         integrantes, // Array de {nombre_integrante, instrumento, es_lider, notas}
         formacion    // Alias enviado desde el frontend (POST nuevo)
     } = req.body;
@@ -296,13 +293,12 @@ const crearBanda = async (req, res) => {
                 descripcion,
                 logo_url,
                 foto_prensa_url,
-                contacto_rol,
                 id_cliente,
                 registrado_por_id_usuario,
                 verificada,
                 activa,
                 creado_en
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())
         `;
 
         const paramsBanda = [
@@ -319,7 +315,6 @@ const crearBanda = async (req, res) => {
             descripcion || null,
             logo_url || null,
             foto_prensa_url || null,
-            contacto_rol || null,
             idCliente,
             req.user ? req.user.id_usuario : null
         ];
@@ -433,7 +428,6 @@ const actualizarBanda = async (req, res) => {
         contacto_nombre,
         contacto_email,
         contacto_telefono,
-        contacto_rol,
         verificada,
         activa,
         integrantes_operacion // {action: 'add'|'update'|'delete', data: {...}}
@@ -516,10 +510,6 @@ const actualizarBanda = async (req, res) => {
         if (foto_prensa_url !== undefined) {
             actualizaciones.push('foto_prensa_url = ?');
             params.push(foto_prensa_url || null);
-        }
-        if (contacto_rol !== undefined) {
-            actualizaciones.push('contacto_rol = ?');
-            params.push(contacto_rol || null);
         }
         if (verificada !== undefined) {
             actualizaciones.push('verificada = ?');
