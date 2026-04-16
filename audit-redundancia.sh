@@ -362,7 +362,7 @@ main() {
     if ! run_sql "SELECT 1" > /dev/null 2>&1; then
         log_error "No se puede conectar a MariaDB"
         echo "Asegúrate de que docker-compose está corriendo:"
-        echo "  cd /home/almacen/tdcApiRest && ./start-clean.sh up"
+        echo "  cd /home/almacen/tdcApiRest && ./start_clean.sh up"
         exit 1
     fi
     

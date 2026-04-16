@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script de inicio con limpieza preventiva de Docker para tdcApiRest
-# Uso: ./start-clean.sh [up|down|logs]
+# Uso: ./start_clean.sh [up|down|logs]
 
 set -e
 
@@ -135,7 +135,7 @@ show_help() {
 ${BLUE}tdcApiRest - Script de Inicio con Limpieza Preventiva${NC}
 
 ${GREEN}Uso:${NC}
-    ./start-clean.sh [comando]
+    ./start_clean.sh [comando]
 
 ${GREEN}Comandos:${NC}
     up      - Limpia Docker e inicia tdcApiRest (por defecto)
@@ -146,11 +146,11 @@ ${GREEN}Comandos:${NC}
     help    - Muestra esta ayuda
 
 ${GREEN}Ejemplos:${NC}
-    ./start-clean.sh               # Limpia e inicia
-    ./start-clean.sh up            # Limpia e inicia
-    ./start-clean.sh down          # Detiene servicios
-    ./start-clean.sh logs          # Ver logs en vivo
-    ./start-clean.sh status        # Ver estado actual
+    ./start_clean.sh               # Limpia e inicia
+    ./start_clean.sh up            # Limpia e inicia
+    ./start_clean.sh down          # Detiene servicios
+    ./start_clean.sh logs          # Ver logs en vivo
+    ./start_clean.sh status        # Ver estado actual
 
 ${YELLOW}Nota:${NC}
     - Los datos de la BD (mariadb_data) se preservan siempre
@@ -196,7 +196,7 @@ main() {
             ;;
         *)
             print_error "Comando desconocido: $command"
-            echo "Usa './start-clean.sh help' para ver opciones disponibles"
+            echo "Usa './start_clean.sh help' para ver opciones disponibles"
             exit 1
             ;;
     esac

@@ -32,16 +32,19 @@
         }
 
         /* Estado row colors */
-        .estado-solicitado {
-            background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+        .estado-solicitado,
+        .estado-contactado,
+        .estado-cancelado,
+        .estado-confirmado {
+            background: none !important;
         }
 
-        .estado-contactado {
-            background: linear-gradient(90deg, rgba(66, 153, 225, 0.03), rgba(66, 153, 225, 0.02));
+        /* Filas alternadas en marrón */
+        tbody tr:nth-child(odd) {
+            background-color: #6D4C41;
         }
-
-        .estado-cancelado {
-            background: linear-gradient(90deg, rgba(245, 101, 101, 0.03), rgba(245, 101, 101, 0.02));
+        tbody tr:nth-child(even) {
+            background-color: #A1887F;
         }
 
         /* Columnas específicas con wrap */
@@ -96,6 +99,37 @@
             flex-direction: column;
             align-items: center;
             gap: 6px;
+        }
+
+        .row-editable {
+            cursor: pointer;
+        }
+
+        .row-editable:hover {
+            background-color: rgba(240, 171, 252, 0.08);
+        }
+
+        .flyer-missing {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 100px;
+            min-width: 120px;
+            padding: 0 10px;
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.03);
+            color: #e2e8f0;
+            font-size: 14px;
+            border-radius: 8px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .flyer-missing-text {
+            display: block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #9ca3af;
         }
 
         .actions-buttons {
@@ -548,6 +582,10 @@
                         const puedeCambiarEstado = tienePermiso('solicitudes.cambiar_estado');
                         const puedeGestionarPersonal = tienePermiso('personal.gestionar');
 
+                        if (puedeEditarSolicitudes) {
+                            tr.classList.add('row-editable');
+                        }
+
                         console.log(`%c📋 Solicitud ${solicitud.id}`, 'color: #00aaff; font-weight: bold');
                         console.log('  Editar:', puedeEditarSolicitudes);
                         console.log('  Eliminar:', puedeEliminarSolicitudes);
@@ -606,36 +644,16 @@
                         <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
                         <td data-label="Fecha Evento">${fechaEvento}</td>
                         <td data-label="Hora Inicio">${horaInicio}</td>
-                        <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer">' : ''}</td>
+                        <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer" onerror="handleFlyerError(this)">' : '<span class="flyer-missing">📄<span class="flyer-missing-text">Sin flyer</span></span>'}</td>
                         <td data-label="Descripción"><div class="description">${descripcionCorta}</div></td>
                         <td data-label="Acciones"><div class="actions-cell">${estadoDisplay}<div class="actions-buttons">${botones}</div></div></td>`;
 
                         tbody.appendChild(tr);
 
-                        // Crear el overlay de manito una sola vez, se muestra/oculta en hover
-                        const overlay = document.createElement('div');
-                        overlay.className = 'row-hover-overlay';
-                        overlay.setAttribute('data-action', 'modify');
-                        overlay.setAttribute('data-id', solicitud.id);
-                        overlay.setAttribute('data-row-id', solicitud.id);
-                        overlay.setAttribute('data-tipo', solicitud.tipoEventoId);
-                        overlay.setAttribute('title', 'Modificar (☝️ haz click)');
-                        overlay.textContent = '☝️';
+                        // La fila es clickeable con el propio evento de tabla; no se muestra overlay de mano.
+                        // Eliminar el overlay visual mejora la experiencia y evita cursor de mano innecesario.
+                        // Si se necesita un indicador de edición, se puede agregar en los botones de acción.
 
-                        // Posicionar en hover
-                        tr.addEventListener('mouseenter', () => {
-                            const rect = tr.getBoundingClientRect();
-                            const containerRect = document.getElementById('admin-table-container').getBoundingClientRect();
-                            overlay.style.position = 'fixed';
-                            overlay.style.top = (rect.top + rect.height / 2 - 16) + 'px';
-                            overlay.style.left = (containerRect.left + 12) + 'px';
-                            overlay.style.display = 'flex';
-                            document.body.appendChild(overlay);
-                        });
-
-                        tr.addEventListener('mouseleave', () => {
-                            overlay.style.display = 'none';
-                        });
                     });
 
                     loader.style.display = 'none';
@@ -825,6 +843,14 @@
                     notificationTimer = setTimeout(() => {
                         banner.className = '';
                     }, duration);
+                }
+
+                function handleFlyerError(img) {
+                    img.onerror = null;
+                    const fallback = document.createElement('span');
+                    fallback.className = 'flyer-missing';
+                    fallback.innerHTML = '📄<span class="flyer-missing-text">Flyer no disponible</span>';
+                    img.replaceWith(fallback);
                 }
 
                 // Proteger esta página: redirigir a login si no está autenticado
