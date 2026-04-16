@@ -136,6 +136,7 @@
                                 <th>Descripción</th>
                                 <th>Bandas Invitadas</th>
                                 <th>Género</th>
+                                <th>Contacto</th>
                                 <th>Horario</th>
                                 <th>Entradas</th>
                                 <th>Estado</th>
@@ -144,7 +145,7 @@
                         </thead>
                         <tbody id="tbody-eventos">
                             <tr>
-                                <td colspan="8" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
+                                <td colspan="9" class="loading"><i class="fas fa-spinner"></i><br>Cargando...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -235,12 +236,9 @@
 
                     <!-- Datos de contacto / representante -->
                     <div style="border:1px solid #374151;border-radius:8px;padding:12px 14px;margin-top:4px;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                        <div style="margin-bottom:10px;">
                             <span style="font-weight:600;font-size:0.92rem;color:#f0abfc;"><i class="fas fa-address-book"></i> Datos de contacto / representante</span>
-                            <button type="button" class="btn btn-secondary" onclick="openBandaClienteModal()"
-                                style="padding:4px 10px;font-size:0.82rem;">
-                                <i class="fas fa-edit"></i> Editar Cliente
-                            </button>
+                            <span style="font-size:0.78rem;color:#9ca3af;margin-left:8px;">Editar desde la tabla del catálogo</span>
                         </div>
                         <input type="hidden" id="banda-cliente-id">
                         <div class="form-row">
@@ -430,12 +428,9 @@
 
                     <!-- Datos de contacto -->
                     <div style="border:1px solid #374151;border-radius:8px;padding:12px 14px;margin-top:4px;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                        <div style="margin-bottom:10px;">
                             <span style="font-weight:600;font-size:0.92rem;color:#f0abfc;"><i class="fas fa-address-book"></i> Datos de contacto</span>
-                            <button type="button" class="btn btn-secondary" onclick="openEventoClienteModal()"
-                                style="padding:4px 10px;font-size:0.82rem;">
-                                <i class="fas fa-edit"></i> Editar Contacto
-                            </button>
+                            <span style="font-size:0.78rem;color:#9ca3af;margin-left:8px;">Editar desde la tabla de eventos</span>
                         </div>
                         <input type="hidden" id="evento-cliente-id">
                         <div class="form-row">
@@ -606,6 +601,9 @@
                             id_banda: it.id_banda || null,
                             id_cliente: it.id_cliente || null,
                             nombre_evento: it.nombre_evento || '',
+                            contacto_nombre: it.contacto_nombre || null,
+                            contacto_email: it.contacto_email || null,
+                            contacto_telefono: it.contacto_telefono || it.contacto_whatsapp || null,
                             fecha: it.fecha_evento || it.fecha || null,
                             hora_inicio: it.hora_evento || it.hora_inicio || null,
                             nombre_banda: it.banda_nombre || it.nombre_banda || it.nombre_evento || '',
@@ -690,12 +688,17 @@
                     <td><strong>${b.nombre}</strong></td>
                     <td>${b.genero_musical || '-'}</td>
                     <td>
-                        <div style="font-size:0.85rem;">
-                            ${b.cliente_nombre
-                    ? `<span title="Cliente vinculado" style="color:#4ade80;">👤 ${b.cliente_nombre}${b.cliente_apellido ? ' ' + b.cliente_apellido : ''}</span><br>
+                        <div style="display:flex;align-items:flex-start;gap:6px;">
+                            <div style="font-size:0.85rem;flex:1;">
+                                ${b.cliente_nombre
+                    ? `<span style="color:#4ade80;">👤 ${b.cliente_nombre}${b.cliente_apellido ? ' ' + b.cliente_apellido : ''}</span><br>
                                    <span style="color:#9ca3af;">${b.cliente_email || b.cliente_telefono || ''}</span>`
-                    : `${b.contacto_nombre || '-'}<br><span style="color:#9ca3af;">${b.contacto_email || ''}</span>`
+                    : `${b.contacto_nombre || '<span style="color:#6b7280;">Sin contacto</span>'}<br><span style="color:#9ca3af;">${b.contacto_email || ''}</span>`
                 }
+                            </div>
+                            <button class="btn btn-icon btn-sm" onclick="editContactoBanda(${b.id_banda}, ${b.id_cliente || 'null'})" title="Editar contacto" style="flex-shrink:0;color:#a78bfa;">
+                                <i class="fas fa-address-book"></i>
+                            </button>
                         </div>
                     </td>
                     <td>
@@ -741,11 +744,6 @@
                 return true;
             });
 
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#9ca3af;">No hay eventos</td></tr>';
-                return;
-            }
-
             tbody.innerHTML = filtered.map(e => {
                 const fechaStr = e.fecha ? e.fecha.substring(0, 10) : null;
                 const fecha = fechaStr ? new Date(fechaStr + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-';
@@ -763,6 +761,19 @@
                         '</div>';
                 }
 
+                // Contacto
+                const contactoNombre = e.contacto_nombre || (e.id_cliente ? `Cliente #${e.id_cliente}` : null);
+                const contactoSub = e.contacto_email || e.contacto_telefono || '';
+                const contactoHtml = `<div style="display:flex;align-items:flex-start;gap:6px;">
+                    <div style="font-size:0.85rem;flex:1;">
+                        ${contactoNombre ? `<span>${contactoNombre}</span>` : '<span style="color:#6b7280;">Sin contacto</span>'}
+                        ${contactoSub ? `<br><span style="color:#9ca3af;font-size:0.8rem;">${contactoSub}</span>` : ''}
+                    </div>
+                    <button class="btn btn-icon btn-sm" onclick="editContactoEvento(${e.id}, ${e.id_cliente || 'null'})" title="Editar contacto" style="flex-shrink:0;color:#a78bfa;">
+                        <i class="fas fa-address-book"></i>
+                    </button>
+                </div>`;
+
                 const horario = e.hora_inicio ? e.hora_inicio.substring(0, 5) + 'hs' : '-';
                 const precios = e.precio_anticipada || e.precio_puerta
                     ? `$${e.precio_anticipada || '-'} / $${e.precio_puerta || '-'}`
@@ -777,6 +788,7 @@
                         </td>
                         <td style="max-width:200px;">${invitadasHtml}</td>
                         <td>${e.genero_musical || '-'}</td>
+                        <td style="min-width:160px;">${contactoHtml}</td>
                         <td>${horario}</td>
                         <td style="font-size:0.85rem;">${precios}</td>
                         <td><span class="badge ${estadoBadge}">${e.estado}</span></td>
@@ -793,6 +805,10 @@
                     </tr>
                 `;
             }).join('');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#9ca3af;">No hay eventos</td></tr>';
+            }
         }
 
         function filterEventos() {
@@ -1057,6 +1073,59 @@
             openModal('modal-banda');
         }
 
+        /* ========== EDITAR CONTACTO DESDE FILA DE TABLA ========== */
+        var _editContactoBandaCtx  = null;  // { id_banda: number } | null
+        var _editContactoEventoCtx = null;  // { id_evento: number } | null
+
+        async function editContactoBanda(id_banda, id_cliente) {
+            _editContactoBandaCtx = { id_banda: id_banda };
+            const modal = document.getElementById('bandaClienteModal');
+            if (!modal) return;
+            document.getElementById('bandaModalClienteInput').value = '';
+            document.getElementById('bandaModalClienteResultados').innerHTML = '';
+            if (id_cliente) {
+                try {
+                    const res = await fetch('/api/admin/clientes/' + id_cliente, {
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') }
+                    });
+                    if (res.ok) {
+                        const c = await res.json();
+                        document.getElementById('bandaModalClienteId').value = c.id_cliente || '';
+                        document.getElementById('bandaModalClienteIdDisplay').textContent = c.id_cliente || '-';
+                        document.getElementById('bandaModalClienteNombre').value = c.nombre || '';
+                        document.getElementById('bandaModalClienteEmail').value = c.email || '';
+                        document.getElementById('bandaModalClienteTelefono').value = c.telefono || '';
+                    } else { _clearBandaClienteModal(); }
+                } catch (e) { _clearBandaClienteModal(); }
+            } else { _clearBandaClienteModal(); }
+            modal.style.display = 'flex';
+        }
+
+        async function editContactoEvento(id_evento, id_cliente) {
+            _editContactoEventoCtx = { id_evento: id_evento };
+            const modal = document.getElementById('eventoClienteModal');
+            if (!modal) return;
+            document.getElementById('eventoModalClienteInput').value = '';
+            document.getElementById('eventoModalClienteResultados').innerHTML = '';
+            if (id_cliente) {
+                try {
+                    const res = await fetch('/api/admin/clientes/' + id_cliente, {
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') }
+                    });
+                    if (res.ok) {
+                        const c = await res.json();
+                        document.getElementById('eventoModalClienteId').value = c.id_cliente || '';
+                        document.getElementById('eventoModalClienteIdDisplay').textContent = c.id_cliente || '-';
+                        document.getElementById('eventoModalClienteNombre').value = c.nombre || '';
+                        document.getElementById('eventoModalClienteEmail').value = c.email || '';
+                        document.getElementById('eventoModalClienteTelefono').value = c.telefono || '';
+                    } else { _clearEventoClienteModal(); }
+                } catch (e) { _clearEventoClienteModal(); }
+            } else { _clearEventoClienteModal(); }
+            modal.style.display = 'flex';
+        }
+        /* ========== FIN EDITAR CONTACTO DESDE FILA ========== */
+
         /* ========== MODAL EDITAR CLIENTE (banda) ========== */
         async function openBandaClienteModal() {
             const modal = document.getElementById('bandaClienteModal');
@@ -1153,6 +1222,23 @@
             if (!nombre && !email && !telefono) { showBanner('Completá al menos un campo.', 'error'); return; }
             try {
                 var token = localStorage.getItem('authToken');
+                // ── Caso: llamado desde icono de fila (no desde modal de banda)
+                if (_editContactoBandaCtx) {
+                    var idBanda = _editContactoBandaCtx.id_banda;
+                    _editContactoBandaCtx = null;
+                    var res = await fetch('/api/bandas/' + idBanda, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ contacto_nombre: nombre, contacto_email: email, contacto_telefono: telefono })
+                    });
+                    var data = await res.json().catch(function() { return {}; });
+                    if (!res.ok) { showBanner(data.error || 'Error al guardar contacto', 'error'); return; }
+                    showBanner('Contacto actualizado', 'success');
+                    closeBandaClienteModal();
+                    loadBandas();
+                    return;
+                }
+                // ── Caso: llamado desde dentro del modal de editar banda
                 var url = id ? '/api/admin/clientes/' + id : '/api/admin/clientes';
                 var method = id ? 'PUT' : 'POST';
                 var res = await fetch(url, {
@@ -1309,6 +1395,23 @@
             if (!nombre && !email && !telefono) { showBanner('Completá al menos un campo.', 'error'); return; }
             try {
                 var token = localStorage.getItem('authToken');
+                // ── Caso: llamado desde icono de fila de eventos
+                if (_editContactoEventoCtx) {
+                    var idEvento = _editContactoEventoCtx.id_evento;
+                    _editContactoEventoCtx = null;
+                    var res = await fetch('/api/solicitudes-fechas-bandas/' + idEvento, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ contacto_nombre: nombre, contacto_email: email, contacto_telefono: telefono })
+                    });
+                    var data = await res.json().catch(function() { return {}; });
+                    if (!res.ok) { showBanner(data.error || 'Error al guardar contacto', 'error'); return; }
+                    showBanner('Contacto actualizado', 'success');
+                    closeEventoClienteModal();
+                    loadEventos();
+                    return;
+                }
+                // ── Caso: llamado desde dentro del modal de editar evento
                 var url = id ? '/api/admin/clientes/' + id : '/api/admin/clientes';
                 var method = id ? 'PUT' : 'POST';
                 var res = await fetch(url, {

@@ -446,10 +446,14 @@ const listarSolicitudesFechasBandas = async (req, res) => {
                 b.genero_musical,
                 s.descripcion_corta AS nombre_evento,
                 s.id_cliente,
+                c.nombre  AS contacto_nombre,
+                c.email   AS contacto_email,
+                c.telefono AS contacto_telefono,
                 s.fecha_creacion AS creado_en
             FROM solicitudes_fechas_bandas sfb
             LEFT JOIN bandas_artistas b ON sfb.id_banda = b.id_banda
             JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
+            LEFT JOIN clientes c ON s.id_cliente = c.id_cliente
             WHERE 1=1
         `;
 
@@ -490,9 +494,6 @@ const listarSolicitudesFechasBandas = async (req, res) => {
         // ✅ Parsear invitadas_json para cada solicitud y limpiar campos denormalizados
         const result = solicitudes.map(s => {
             // Limpiar campos denormalizados que no debería haber
-            delete s.cliente_nombre;
-            delete s.cliente_email;
-            delete s.cliente_telefono;
             delete s.banda_id;
             delete s.banda_nombre;
             // *** no borramos genero_musical ni precio_puerta_propuesto ni es_publico ***
