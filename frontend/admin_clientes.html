@@ -178,10 +178,13 @@
 
             let html = '';
             clientesFiltrados.forEach(c => {
+                const usuarioIndicador = c.id_usuario 
+                    ? `<span title="Vinculado a usuario #${c.id_usuario} (${c.usuario_rol})" style="color:#10b981;font-weight:bold;">👤</span>` 
+                    : '';
                 html += `
                     <tr>
                         <td><code style="color:#a78bfa;">#${c.id_cliente}</code></td>
-                        <td><strong>${c.nombre || '-'}</strong></td>
+                        <td><strong>${c.nombre || '-'}</strong> ${usuarioIndicador}</td>
                         <td>${c.email ? `<a href="mailto:${c.email}" style="color:#f0abfc;text-decoration:none;">${c.email}</a>` : '-'}</td>
                         <td>${c.telefono ? `<a href="tel:${c.telefono}" style="color:#f0abfc;text-decoration:none;">${c.telefono}</a>` : '-'}</td>
                         <td>
@@ -261,15 +264,29 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    showBanner(data.message || 'Cliente guardado correctamente', 'success');
+                    let mensaje = data.message;
+                    // Mejorar mensaje de éxito con emojis
+                    if (data.id_usuario) {
+                        mensaje = `✅ ${mensaje}`;
+                    } else if (email && !id) {
+                        mensaje = `✅ Cliente creado (sin vinculación a usuario)`;
+                    }
+                    showBanner(mensaje, 'success');
                     closeModal('modal-cliente');
                     loadClientes();
                 } else {
-                    throw new Error(data.error || 'Error al guardar');
+                    // Mostrar errores de forma amigable
+                    let errorMsg = data.error || 'Error al guardar';
+                    if (res.status === 409 && data.id_cliente) {
+                        errorMsg = `⚠️ Ya existe un cliente con este email (ID: ${data.id_cliente})`;
+                    } else if (res.status === 409) {
+                        errorMsg = `⚠️ ${errorMsg}`;
+                    }
+                    throw new Error(errorMsg);
                 }
             } catch (err) {
                 console.error('Error:', err);
-                showBanner('Error: ' + err.message, 'error');
+                showBanner(err.message, 'error');
             }
         }
 
