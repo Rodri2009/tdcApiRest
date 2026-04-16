@@ -1141,6 +1141,38 @@ const obtenerMisBandas = async (req, res) => {
     }
 };
 
+/**
+ * GET /api/bandas/generos
+ * Obtener lista de géneros musicales únicos usados en el catálogo
+ */
+const obtenerGeneros = async (req, res) => {
+    logVerbose('[BANDA] GET - Obtener géneros únicos');
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const generos = await conn.query(
+            `SELECT DISTINCT genero_musical 
+             FROM bandas_artistas 
+             WHERE genero_musical IS NOT NULL AND genero_musical != '' 
+             ORDER BY genero_musical ASC`
+        );
+
+        logVerbose(`[BANDA] Se encontraron ${generos.length} géneros únicos`);
+
+        return res.status(200).json({
+            generos: generos.map(g => g.genero_musical)
+        });
+
+    } catch (err) {
+        logError('[BANDA] Error al obtener géneros:', err.message);
+        return res.status(500).json({ error: 'Error al obtener géneros.' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 module.exports = {
     obtenerBandas,
     obtenerBandaPorId,
@@ -1154,5 +1186,6 @@ module.exports = {
     syncFlyers,
     uploadLogo,
     performSyncLogos,
-    performSyncFlyers
+    performSyncFlyers,
+    obtenerGeneros
 };
