@@ -3,7 +3,7 @@
 
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
-const { getOrCreateClient } = require('../lib/clients');
+const { getOrCreateClient, resolveContactUpdate } = require('../lib/clients');
 const { tryRecoverFlyerUrl } = require('./uploadsController');
 const { sendComprobanteEmail, sendAdminNotification } = require('../services/emailService');
 
@@ -624,47 +624,26 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             const [parentRow] = await conn.query('SELECT id_cliente FROM solicitudes WHERE id_solicitud = ?', [idNum]);
             const clienteId = parentRow && parentRow.id_cliente ? parentRow.id_cliente : null;
 
-            if (clienteId) {
-                const clientUpdates = [];
-                const clientParams = [];
-                if (typeof contacto_nombre !== 'undefined') { clientUpdates.push('nombre = ?'); clientParams.push(contacto_nombre); }
-                if (typeof contacto_email !== 'undefined') { clientUpdates.push('email = ?'); clientParams.push(contacto_email); }
-                if (typeof contacto_telefono !== 'undefined') { clientUpdates.push('telefono = ?'); clientParams.push(contacto_telefono); }
-
-                if (clientUpdates.length) {
-                    clientParams.push(clienteId);
-                    try {
-                        await conn.query(`UPDATE clientes SET ${clientUpdates.join(', ')} WHERE id_cliente = ?`, clientParams);
-                        logVerbose(`[FECHA_BANDA] Cliente id=${clienteId} actualizado desde PUT solicitud ${idNum}`);
-                    } catch (err) {
-                        // Si el UPDATE falla por email duplicado, intentar ligar la solicitud al cliente existente con ese email
-                        if (err && err.errno === 1062 && contacto_email) {
-                            const [existing] = await conn.query('SELECT id_cliente FROM clientes WHERE email = ?', [contacto_email]);
-                            if (existing && existing.id_cliente && existing.id_cliente !== clienteId) {
-                                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id_solicitud = ?', [existing.id_cliente, idNum]);
-                                logVerbose(`[FECHA_BANDA] Cliente conflict (email existente). Solicitud ${idNum} ligada a cliente id=${existing.id_cliente}`);
-                            } else {
-                                // No podemos resolver el conflicto automáticamente
-                                throw err;
-                            }
-                        } else {
-                            throw err;
-                        }
-                    }
-                }
-            } else {
-                // No hay cliente asociado: crear uno y ligar a la solicitud padre
-                const newClienteId = await getOrCreateClient(conn, {
-                    nombre: contacto_nombre || null,
-                    telefono: contacto_telefono || null,
-                    email: contacto_email || null
+            try {
+                const { id_cliente: nuevoClienteId, fkChanged } = await resolveContactUpdate(conn, {
+                    currentClienteId: clienteId,
+                    ...(typeof contacto_nombre   !== 'undefined' ? { nombre: contacto_nombre }     : {}),
+                    ...(typeof contacto_email    !== 'undefined' ? { email: contacto_email }       : {}),
+                    ...(typeof contacto_telefono !== 'undefined' ? { telefono: contacto_telefono } : {})
                 });
-                await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id_solicitud = ?', [newClienteId, idNum]);
-                logVerbose(`[FECHA_BANDA] Nuevo cliente id=${newClienteId} ligado a solicitud ${idNum}`);
+                if (fkChanged || !clienteId) {
+                    await conn.query('UPDATE solicitudes SET id_cliente = ? WHERE id_solicitud = ?', [nuevoClienteId, idNum]);
+                    logVerbose(`[FECHA_BANDA] FK id_cliente actualizado a ${nuevoClienteId} en solicitudes id=${idNum}`);
+                } else {
+                    logVerbose(`[FECHA_BANDA] Cliente id=${nuevoClienteId} actualizado desde PUT solicitud ${idNum}`);
+                }
+            } catch (err) {
+                if (err.code === 'EMAIL_CONFLICT') {
+                    await conn.rollback();
+                    return res.status(409).json({ error: err.message });
+                }
+                throw err;
             }
-
-            // No se propagan campos de contacto a eventos_confirmados: ahora usamos id_cliente en la tabla
-            // Si hubo cambios de contacto (getOrCreateClient arriba los actualizó en clientes), no hacemos nada extra aquí.
         }
 
         // Construir UPDATE dinámico

@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
-const { getOrCreateClient, updateClient } = require('../lib/clients');
+const { getOrCreateClient, updateClient, resolveContactUpdate } = require('../lib/clients');
 const { sendBandaNotificacionAdmin, sendBandaConfirmacion } = require('../services/emailService');
 
 /**
@@ -544,22 +544,26 @@ const actualizarBanda = async (req, res) => {
         const tieneContactoData = contacto_nombre !== undefined || contacto_email !== undefined || contacto_telefono !== undefined;
         if (tieneContactoData) {
             const [bandaData] = await conn.query('SELECT id_cliente FROM bandas_artistas WHERE id_banda = ?', [idNum]);
-            if (bandaData && bandaData.id_cliente) {
-                await updateClient(conn, bandaData.id_cliente, {
-                    ...(contacto_nombre !== undefined ? { nombre: contacto_nombre } : {}),
-                    ...(contacto_email !== undefined ? { email: contacto_email } : {}),
-                    ...(contacto_telefono !== undefined ? { telefono: contacto_telefono } : {})
-                });
-                logVerbose(`[BANDA] ✓ Cliente ID ${bandaData.id_cliente} actualizado con datos de contacto`);
-            } else if (contacto_email || contacto_telefono) {
-                const newId = await getOrCreateClient(conn, {
-                    nombre: contacto_nombre || null,
-                    email: contacto_email || null,
-                    telefono: contacto_telefono || null,
+            try {
+                const { id_cliente: nuevoClienteId, fkChanged } = await resolveContactUpdate(conn, {
+                    currentClienteId: bandaData && bandaData.id_cliente ? bandaData.id_cliente : null,
+                    ...(contacto_nombre   !== undefined ? { nombre: contacto_nombre }     : {}),
+                    ...(contacto_email    !== undefined ? { email: contacto_email }       : {}),
+                    ...(contacto_telefono !== undefined ? { telefono: contacto_telefono } : {}),
                     creado_por_id_usuario: req.user ? req.user.id_usuario : null
                 });
-                await conn.query('UPDATE bandas_artistas SET id_cliente = ? WHERE id_banda = ?', [newId, idNum]);
-                logVerbose(`[BANDA] ✓ Nuevo cliente ID ${newId} creado y vinculado`);
+                if (fkChanged || !(bandaData && bandaData.id_cliente)) {
+                    await conn.query('UPDATE bandas_artistas SET id_cliente = ? WHERE id_banda = ?', [nuevoClienteId, idNum]);
+                    logVerbose(`[BANDA] ✓ FK id_cliente actualizado a ${nuevoClienteId} en bandas_artistas`);
+                } else {
+                    logVerbose(`[BANDA] ✓ Cliente ID ${nuevoClienteId} actualizado en tabla clientes`);
+                }
+            } catch (err) {
+                if (err.code === 'EMAIL_CONFLICT') {
+                    await conn.rollback();
+                    return res.status(409).json({ error: err.message });
+                }
+                throw err;
             }
         }
 
