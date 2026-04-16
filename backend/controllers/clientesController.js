@@ -15,7 +15,8 @@ const listClientes = async (req, res) => {
             `SELECT 
                 c.id_cliente, 
                 c.id_usuario, 
-                c.nombre, 
+                c.nombre,
+                c.apellido,
                 c.telefono, 
                 c.email,
                 u.rol as usuario_rol,
@@ -68,7 +69,7 @@ const searchClientes = async (req, res) => {
  * - Retorna advertencia si cliente ya existe
  */
 const createCliente = async (req, res) => {
-    const { nombre, telefono, email } = req.body;
+    const { nombre, apellido, telefono, email } = req.body;
     if (!nombre && !telefono && !email) {
         return res.status(400).json({ error: 'Se requiere al menos nombre, teléfono o email.' });
     }
@@ -104,8 +105,8 @@ const createCliente = async (req, res) => {
 
             // Crear cliente con vinculación automática si corresponde
             const result = await conn.query(
-                `INSERT INTO clientes (id_usuario, nombre, telefono, email, creado_en) VALUES (?, ?, ?, ?, NOW())`,
-                [idUsuario || null, nombre || null, telefono || null, emailTrimmed]
+                `INSERT INTO clientes (id_usuario, nombre, apellido, telefono, email, creado_en) VALUES (?, ?, ?, ?, ?, NOW())`,
+                [idUsuario || null, nombre || null, apellido || null, telefono || null, emailTrimmed]
             );
             res.status(201).json({
                 id_cliente: Number(result.insertId),
@@ -117,8 +118,8 @@ const createCliente = async (req, res) => {
         } else {
             // Sin email: crear cliente simple
             const result = await conn.query(
-                `INSERT INTO clientes (nombre, telefono, email, creado_en) VALUES (?, ?, ?, NOW())`,
-                [nombre || null, telefono || null, null]
+                `INSERT INTO clientes (nombre, apellido, telefono, email, creado_en) VALUES (?, ?, ?, ?, NOW())`,
+                [nombre || null, apellido || null, telefono || null, null]
             );
             res.status(201).json({ id_cliente: Number(result.insertId), message: 'Cliente creado' });
         }
@@ -143,7 +144,7 @@ const getCliente = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const cliente = await conn.query(
-            `SELECT id_cliente, id_usuario, nombre, telefono, email FROM clientes WHERE id_cliente = ?`,
+            `SELECT id_cliente, id_usuario, nombre, apellido, telefono, email FROM clientes WHERE id_cliente = ?`,
             [id]
         );
         if (!cliente || cliente.length === 0) {
@@ -185,7 +186,7 @@ const updateCliente = async (req, res) => {
     const id = parseInt(req.params.id, 10);
     logVerbose(`[CLIENTES] PUT /api/admin/clientes/${id}`);
     if (isNaN(id)) return res.status(400).json({ error: 'ID de cliente inválido.' });
-    const { nombre, telefono, email } = req.body;
+    const { nombre, apellido, telefono, email } = req.body;
     logVerbose('[CLIENTES] Body recibido:', req.body);
     if (!nombre && !telefono && !email) return res.status(400).json({ error: 'Se requiere al menos un campo para actualizar.' });
 
@@ -221,6 +222,7 @@ const updateCliente = async (req, res) => {
         const updates = [];
         const params = [];
         if (typeof nombre !== 'undefined') { updates.push('nombre = ?'); params.push(nombre || null); }
+        if (typeof apellido !== 'undefined') { updates.push('apellido = ?'); params.push(apellido || null); }
         if (typeof telefono !== 'undefined') { updates.push('telefono = ?'); params.push(telefono || null); }
         if (typeof email !== 'undefined') { updates.push('email = ?'); params.push(email ? email.trim() : null); }
         // ✅ Actualizar id_usuario si se detectó vinculación

@@ -46,6 +46,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Nombre</th>
+                                <th>Apellido</th>
                                 <th>Email</th>
                                 <th>Teléfono</th>
                                 <th>Acciones</th>
@@ -78,6 +79,11 @@
                     <div class="form-group">
                         <label>Nombre *</label>
                         <input type="text" id="cliente-nombre" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Apellido</label>
+                        <input type="text" id="cliente-apellido">
                     </div>
 
                     <div class="form-group">
@@ -148,6 +154,12 @@
                 }
                 const data = await res.json();
                 clientes = Array.isArray(data) ? data : (data.clientes || []);
+                console.log('📊 [DEBUG] Datos recibidos del endpoint GET /api/admin/clientes:');
+                console.log('Total de clientes:', clientes.length);
+                console.log('Clientes completos:', clientes);
+                clientes.forEach((c, idx) => {
+                    console.log(`  [${idx}] ID: ${c.id_cliente}, Nombre: "${c.nombre}", Apellido: "${c.apellido}", Email: "${c.email}", ID_Usuario: ${c.id_usuario}`);
+                });
                 filterClientes();
             } catch (err) {
                 console.error('Error cargando clientes:', err);
@@ -158,21 +170,36 @@
         // Filtrar clientes según búsqueda
         function filterClientes() {
             const searchTerm = normalizeSearch(document.getElementById('search-clientes').value);
+            console.log('🔍 [DEBUG] filterClientes() - Término de búsqueda:', searchTerm);
+            console.log('📌 Total de clientes ANTES de filtrar:', clientes.length);
+            
             clientesFiltrados = clientes.filter(c => {
                 const nombre = normalizeSearch(c.nombre || '');
+                const apellido = normalizeSearch(c.apellido || '');
                 const email = normalizeSearch(c.email || '');
                 const telefono = normalizeSearch(c.telefono || '');
-                return nombre.includes(searchTerm) || email.includes(searchTerm) || telefono.includes(searchTerm);
+                const match = nombre.includes(searchTerm) || apellido.includes(searchTerm) || email.includes(searchTerm) || telefono.includes(searchTerm);
+                if (!match && searchTerm === '') {
+                    console.log(`   No coincide: ID=${c.id_cliente}, nombre="${c.nombre}", apellido="${c.apellido}", email="${c.email}"`);
+                }
+                return match;
             });
+            
+            console.log('📌 Total de clientes DESPUÉS de filtrar:', clientesFiltrados.length);
+            console.log('Clientes filtrados:', clientesFiltrados);
             renderClientes();
         }
 
         // Renderizar tabla de clientes
         function renderClientes() {
             const tbody = document.getElementById('tbody-clientes');
+            
+            console.log('🎨 [DEBUG] renderClientes() - Total a renderizar:', clientesFiltrados.length);
+            console.log('Datos a renderizar:', clientesFiltrados);
 
             if (clientesFiltrados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No hay clientes</td></tr>';
+                console.warn('⚠️ Sin clientes para mostrar');
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hay clientes</td></tr>';
                 return;
             }
 
@@ -181,10 +208,12 @@
                 const usuarioIndicador = c.id_usuario 
                     ? `<span title="Vinculado a usuario #${c.id_usuario} (${c.usuario_rol})" style="color:#10b981;font-weight:bold;">👤</span>` 
                     : '';
+                console.log(`✏️ Renderizando: ID=${c.id_cliente}, Nombre="${c.nombre}", Apellido="${c.apellido}"`);
                 html += `
                     <tr>
                         <td><code style="color:#a78bfa;">#${c.id_cliente}</code></td>
                         <td><strong>${c.nombre || '-'}</strong> ${usuarioIndicador}</td>
+                        <td>${c.apellido || '-'}</td>
                         <td>${c.email ? `<a href="mailto:${c.email}" style="color:#f0abfc;text-decoration:none;">${c.email}</a>` : '-'}</td>
                         <td>${c.telefono ? `<a href="tel:${c.telefono}" style="color:#f0abfc;text-decoration:none;">${c.telefono}</a>` : '-'}</td>
                         <td>
@@ -202,6 +231,7 @@
             });
 
             tbody.innerHTML = html;
+            console.log('✅ Tabla renderizada con éxito');
         }
 
         // ============================================================
@@ -229,6 +259,7 @@
             document.getElementById('modal-cliente-title').textContent = 'Editar Cliente';
             document.getElementById('cliente-id').value = cliente.id_cliente;
             document.getElementById('cliente-nombre').value = cliente.nombre || '';
+            document.getElementById('cliente-apellido').value = cliente.apellido || '';
             document.getElementById('cliente-email').value = cliente.email || '';
             document.getElementById('cliente-telefono').value = cliente.telefono || '';
 
@@ -238,6 +269,7 @@
         async function saveCliente() {
             const id = document.getElementById('cliente-id').value;
             const nombre = document.getElementById('cliente-nombre').value.trim();
+            const apellido = document.getElementById('cliente-apellido').value.trim();
             const email = document.getElementById('cliente-email').value.trim();
             const telefono = document.getElementById('cliente-telefono').value.trim();
 
@@ -246,7 +278,7 @@
                 return;
             }
 
-            const payload = { nombre, email, telefono };
+            const payload = { nombre, apellido, email, telefono };
 
             try {
                 const url = id ? `/api/admin/clientes/${id}` : '/api/admin/clientes';
@@ -321,7 +353,9 @@
         // INICIALIZACIÓN
         // ============================================================
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 [DEBUG] admin_clientes.html cargado');
             if (!navbarManager || !navbarManager.protectAdminPage()) return;
+            console.log('✅ [DEBUG] Autenticación verificada, cargando clientes...');
             loadClientes();
         });
     </script>

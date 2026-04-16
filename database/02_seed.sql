@@ -176,21 +176,16 @@ INSERT INTO `clientes` (`id_cliente`, `id_usuario`, `nombre`, `apellido`, `telef
   (1,NULL,'Juan','Pérez','+5491111111','juan@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
   (2,NULL,'María','González','+5491111112','maria@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
   (3,NULL,'Pedro','López','+5491111113','pedro@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (4,NULL,'Ana','Rodríguez','+5491111114','ana@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
+  (4,NULL,'Rodrigo','Rodríguez','+5491111114','villalbarodrigo2009@gmail.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
   (5,NULL,'Carlos','Martínez','+5491111115','carlos@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (6,2,'Rodrigo Villalba',NULL,NULL,'villalbarodrigo2009@gmail.com',NULL,2,1,'2026-03-17 23:43:07','2026-03-17 23:43:07'),
-  (7,1,'Templo User',NULL,NULL,'temploclaypole@gmail.com',NULL,1,1,'2026-03-17 23:43:07','2026-03-17 23:43:07'),
-  (8,NULL,'Juan','Reite','1155001122','reite.tributo@gmail.com','Rol en banda: Manager (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
+  (6,NULL,'Bruno',NULL,NULL,NULL,NULL,NULL,1,'2026-03-17 23:43:07','2026-03-17 23:43:07'),
+  (7,1,'Templo','User',NULL,'temploclaypole@gmail.com',NULL,1,1,'2026-03-17 23:43:07','2026-03-17 23:43:07'),
+  (8,NULL,'Lucho','Reite','1155001122',NULL,'Rol en banda: Manager (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
   (9,NULL,'Marco','Sández','1155003344','pateando.bares@gmail.com','Rol en banda: Productor (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
   (10,NULL,'Sol','Rodríguez','1155005566','lasmentas@gmail.com','Rol en banda: Vocalista/Manager (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
   (11,NULL,'Carlos','Mendoza','1144445566','cumbia.sudaka@gmail.com','Rol en banda: Líder (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
-  (15,NULL,'Test Usuario',NULL,'1122334455','test@test.com',NULL,NULL,1,'2026-03-31 17:09:25','2026-03-31 17:09:25'),
-  (16,NULL,NULL,NULL,NULL,NULL,NULL,NULL,1,'2026-03-31 17:11:03','2026-03-31 17:11:03'),
-  (17,NULL,NULL,NULL,NULL,NULL,NULL,NULL,1,'2026-03-31 17:12:07','2026-03-31 17:12:07'),
-  (18,NULL,NULL,NULL,NULL,NULL,NULL,NULL,1,'2026-03-31 20:56:17','2026-03-31 20:56:17'),
-  (19,NULL,NULL,NULL,NULL,NULL,NULL,NULL,1,'2026-03-31 22:12:55','2026-03-31 22:12:55'),
-  (20,NULL,NULL,NULL,NULL,NULL,NULL,NULL,1,'2026-03-31 22:13:06','2026-03-31 22:13:06'),
-  (21,NULL,NULL,NULL,NULL,NULL,NULL,NULL,1,'2026-03-31 22:16:11','2026-03-31 22:16:11');
+  (12,NULL,'Test','Binlog',NULL,'test@binlog.com',NULL,NULL,1,'2026-03-31 17:09:25','2026-03-31 17:09:25'),
+  (13,NULL,'Seba',NULL,NULL,NULL,NULL,NULL,1,'2026-03-31 17:11:03','2026-03-31 17:11:03');
 /*!40000 ALTER TABLE `clientes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -670,13 +665,13 @@ INSERT INTO `solicitudes` (`id_solicitud`, `categoria`, `id_cliente`, `id_usuari
   (6,'BANDAS',4,NULL,'2026-03-13 04:29:21','Confirmado',1,'Termidor Fest','Rock nacional solicita fecha compartida con banda telonera. Esperan 200 personas.','/uploads/flyers/solicitud_6.jpeg','2026-04-18','21:00:00',450,'28:30:00',NULL,'2026-04-01 02:06:35'),
   (7,'SERVICIOS',1,NULL,'2026-03-13 04:29:21','Solicitado',0,'Taller de Fotografía de Eventos','Taller teórico-práctico de fotografía profesional para eventos. 4 horas de instrucción.',NULL,NULL,NULL,NULL,NULL,NULL,'2026-03-13 04:29:21'),
   (8,'TALLERES',2,NULL,'2026-03-13 04:29:21','Confirmado',1,'Taller de Masaje Descontracturante','Sesión grupal de masaje descontracturante para empleados.',NULL,'2026-04-22','10:00:00',90,NULL,NULL,'2026-03-13 04:29:21'),
-  (11,'ALQUILER',15,NULL,'2026-03-31 17:09:25','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:09:25'),
-  (12,'ALQUILER',16,NULL,'2026-03-31 17:11:03','Solicitado',0,'Este es un comentario',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:11:03'),
-  (13,'ALQUILER',17,NULL,'2026-03-31 17:12:07','Solicitado',0,'esto es un comentario',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:12:07'),
-  (14,'ALQUILER',15,NULL,'2026-03-31 17:16:55','Solicitado',0,'Prueba sin auth',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:17:00'),
+  (11,'ALQUILER',1,NULL,'2026-03-31 17:09:25','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:09:25'),
+  (12,'ALQUILER',2,NULL,'2026-03-31 17:11:03','Solicitado',0,'Este es un comentario',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:11:03'),
+  (13,'ALQUILER',3,NULL,'2026-03-31 17:12:07','Solicitado',0,'esto es un comentario',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:12:07'),
+  (14,'ALQUILER',4,NULL,'2026-03-31 17:16:55','Solicitado',0,'Prueba sin auth',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:17:00'),
   (15,'ALQUILER',7,NULL,'2026-03-31 20:56:17','Solicitado',0,'Este es el comantario de prueba',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 20:56:17'),
-  (16,'ALQUILER',19,NULL,'2026-03-31 22:12:55','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 22:12:55'),
-  (17,'ALQUILER',20,NULL,'2026-03-31 22:13:06','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 22:13:06'),
+  (16,'ALQUILER',5,NULL,'2026-03-31 22:12:55','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 22:12:55'),
+  (17,'ALQUILER',6,NULL,'2026-03-31 22:13:06','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 22:13:06'),
   (18,'ALQUILER',6,NULL,'2026-03-31 22:16:11','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 22:16:11');
 /*!40000 ALTER TABLE `solicitudes` ENABLE KEYS */;
 UNLOCK TABLES;
