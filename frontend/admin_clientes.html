@@ -283,15 +283,20 @@
                 });
 
                 if (res.ok) {
-                    showBanner('Cliente eliminado correctamente', 'success');
+                    showBanner('✅ Cliente eliminado correctamente', 'success');
                     loadClientes();
                 } else {
                     const data = await res.json();
-                    throw new Error(data.error || 'Error al eliminar');
+                    // Mostrar mensaje de error más amigable
+                    let errorMsg = data.error || 'Error al eliminar';
+                    if (res.status === 409) {
+                        errorMsg = '⚠️ ' + errorMsg;
+                    }
+                    throw new Error(errorMsg);
                 }
             } catch (err) {
                 console.error('Error:', err);
-                showBanner('Error: ' + err.message, 'error');
+                showBanner(err.message, 'error');
             }
         }
 

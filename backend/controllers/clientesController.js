@@ -169,7 +169,7 @@ const deleteCliente = async (req, res) => {
         // Errores comunes con FK
         if (err && err.code === 'ER_ROW_IS_REFERENCED_2_FOREIGN_KEY') {
             return res.status(409).json({ 
-                error: 'No se puede eliminar este cliente porque está siendo utilizado en bandas, eventos u otros registros.' 
+                error: 'Este cliente está vinculado a bandas o eventos. Por favor, desvincula primero los registros asociados.' 
             });
         }
         res.status(500).json({ error: 'Error interno del servidor: ' + err.message });
