@@ -1,6 +1,8 @@
 // backend/controllers/bandasController.js
 // API para gestión de bandas/artistas y solicitudes de fechas
 
+const fs = require('fs');
+const path = require('path');
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const { getOrCreateClient, updateClient } = require('../lib/clients');
@@ -70,7 +72,16 @@ const getBandas = async (req, res) => {
         query += ' ORDER BY b.nombre ASC';
 
         const bandas = await pool.query(query, params);
-        res.json(serializeBigInt(bandas));
+        // Anular logo_url si el archivo no existe físicamente en disco (evita 404 en el cliente)
+        const uploadsBase = path.join(__dirname, '..', 'uploads');
+        const result = bandas.map(b => {
+            if (b.logo_url) {
+                const filePath = path.join(uploadsBase, b.logo_url.replace(/^\/uploads/, ''));
+                if (!fs.existsSync(filePath)) b = { ...b, logo_url: null };
+            }
+            return b;
+        });
+        res.json(serializeBigInt(result));
     } catch (err) {
         logError('[BANDA] Error al obtener bandas:', err.message);
         logError('[BANDA] Stack:', err.stack);

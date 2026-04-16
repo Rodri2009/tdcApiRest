@@ -1,6 +1,8 @@
 // backend/controllers/bandaController.js
 // Controlador para gestión de bandas/artistas (CRUD)
 
+const fs = require('fs');
+const path = require('path');
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const { getOrCreateClient, updateClient } = require('../lib/clients');
@@ -72,7 +74,17 @@ const obtenerBandas = async (req, res) => {
 
         logVerbose(`[BANDA] ✓ Se encontraron ${bandas.length} bandas`);
 
-        return res.status(200).json(bandas);
+        // Anular logo_url si el archivo no existe en disco (evita 404 en el cliente)
+        const uploadsBase = path.join(__dirname, '..', 'uploads');
+        const result = bandas.map(b => {
+            if (b.logo_url) {
+                const filePath = path.join(uploadsBase, b.logo_url.replace(/^\/uploads/, ''));
+                if (!fs.existsSync(filePath)) return { ...b, logo_url: null };
+            }
+            return b;
+        });
+
+        return res.status(200).json(result);
 
     } catch (err) {
         console.error('[BANDA-ERROR] Fallo en obtenerBandas:', err.message);
