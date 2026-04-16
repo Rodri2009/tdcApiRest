@@ -166,7 +166,13 @@ const deleteCliente = async (req, res) => {
         res.json({ id_cliente: id, message: 'Cliente eliminado.' });
     } catch (err) {
         logError('Error en deleteCliente:', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        // Errores comunes con FK
+        if (err && err.code === 'ER_ROW_IS_REFERENCED_2_FOREIGN_KEY') {
+            return res.status(409).json({ 
+                error: 'No se puede eliminar este cliente porque está siendo utilizado en bandas, eventos u otros registros.' 
+            });
+        }
+        res.status(500).json({ error: 'Error interno del servidor: ' + err.message });
     } finally {
         if (conn) conn.release();
     }
