@@ -700,6 +700,23 @@
                 </div>
             </div>
 
+            <!-- Contacto (COMPACTO) -->
+            <div
+                style="padding:8px 12px;background:#1a1025;border-left:3px solid #f0abfc;border-radius:0 4px 4px 0;font-size:0.85rem;display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-address-book" style="color:#f0abfc;flex-shrink:0;"></i>
+                <span id="contactDataInfo"
+                    style="color:#d6d3d1;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cargando
+                    datos de contacto...</span>
+                <button type="button" class="btn btn-secondary" id="btnEditCliente" onclick="openEditClienteModal()"
+                    style="padding:5px 10px;font-size:0.85rem;flex-shrink:0;"><i class="fas fa-edit"></i>
+                    Editar</button>
+            </div>
+            <!-- Campos ocultos para datos de contacto (compatibilidad) -->
+            <input type="hidden" id="clienteId" value="" />
+            <input type="hidden" id="nombreContacto" />
+            <input type="hidden" id="emailContacto" />
+            <input type="hidden" id="telefonoContacto" />
+
             <!-- NUEVA SECCIÓN: Nombre de la fecha / show + Flyer -->
             <div class="form-section" style="margin-top: 14px;">
                 <h3><i class="fas fa-tag"></i> Nombre de la fecha / show & Flyer</h3>
@@ -820,18 +837,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Contacto (COMPACTO) -->
-            <div style="margin-top:12px;padding:8px 12px;background:#1a1025;border-left:3px solid #f0abfc;border-radius:0 4px 4px 0;font-size:0.85rem;display:flex;align-items:center;gap:10px;">
-                <i class="fas fa-address-book" style="color:#f0abfc;flex-shrink:0;"></i>
-                <span id="contactDataInfo" style="color:#d6d3d1;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cargando datos de contacto...</span>
-                <button type="button" class="btn btn-secondary" id="btnEditCliente" onclick="openEditClienteModal()" style="padding:5px 10px;font-size:0.85rem;flex-shrink:0;"><i class="fas fa-edit"></i> Editar</button>
-            </div>
-            <!-- Campos ocultos para datos de contacto (compatibilidad) -->
-            <input type="hidden" id="clienteId" value="" />
-            <input type="hidden" id="nombreContacto" />
-            <input type="hidden" id="emailContacto" />
-            <input type="hidden" id="telefonoContacto" />
 
             <!-- Botones -->
             <div class="btn-group">
@@ -1384,12 +1389,12 @@
                     }).then(r => r.ok ? r.json() : null).then(cliente => {
                         if (!cliente) return;
                         console.log('[BANDAS] 📋 Datos del cliente cargados:', cliente);
-                        
+
                         // Llenar campos de contacto
                         document.getElementById('nombreContacto').value = cliente.nombre || '';
                         document.getElementById('emailContacto').value = cliente.email || '';
                         document.getElementById('telefonoContacto').value = cliente.telefono || '';
-                        
+
                         // ✓ ACTUALIZAR ELEMENTO COMPACTO contactDataInfo
                         const contactDataInfo = document.getElementById('contactDataInfo');
                         if (contactDataInfo) {
@@ -1968,7 +1973,7 @@
         if (btnCatalogoBandas) btnCatalogoBandas.addEventListener('click', abrirModalCatalogo);
 
         /* ================ MODAL DE EDICIÓN DE CLIENTE ================ */
-        
+
         function updateContactDataInfo(nombre, email, telefono) {
             const contactDataInfo = document.getElementById('contactDataInfo');
             if (contactDataInfo) {
@@ -2155,7 +2160,7 @@
                 document.getElementById('nombreContacto').value = nombre;
                 document.getElementById('emailContacto').value = email;
                 document.getElementById('telefonoContacto').value = telefono;
-                
+
                 // ✓ Actualizar contactDataInfo
                 updateContactDataInfo(nombre, email, telefono);
 

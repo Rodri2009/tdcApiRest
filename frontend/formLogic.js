@@ -73,7 +73,7 @@ const App = {
             flyerFileInput: document.getElementById('flyerFile'),
             flyerPreviewDiv: document.getElementById('flyerPreview')
         };
-        
+
         console.log('[formLogic] bindElements - contactDataInfo encontrado:', this.elements.contactDataInfo);
         console.log('[formLogic] bindElements - clientDataInfo encontrado:', this.elements.clientDataInfo);
 
@@ -855,11 +855,11 @@ const App = {
             const nombre = solicitud.nombreCompleto || solicitud.nombre_completo || '';
             const telefono = solicitud.telefono || solicitud.telefonoContacto || '';
             const email = solicitud.email || solicitud.email_contacto || '';
-            
+
             if (this.elements.clientNameSpan) this.elements.clientNameSpan.textContent = nombre;
             if (this.elements.clientPhoneSpan) this.elements.clientPhoneSpan.textContent = telefono;
             if (this.elements.clientEmailSpan) this.elements.clientEmailSpan.textContent = email;
-            
+
             // Actualizar resumen compacto de cliente
             if (this.elements.clientDataInfo) {
                 const parts = [nombre, telefono, email].filter(Boolean);
@@ -871,18 +871,18 @@ const App = {
         try {
             console.log('[populateForm 4c] Iniciando actualización de datos de contacto');
             console.log('[populateForm 4c] this.elements.contactDataInfo:', this.elements.contactDataInfo);
-            
+
             const nombreContacto = solicitud.nombreContacto || solicitud.nombre_contacto || solicitud.nombreCompleto || solicitud.nombre_completo || '';
             const emailContacto = solicitud.emailContacto || solicitud.email_contacto || solicitud.email || '';
             const telefonoContacto = solicitud.telefonoContacto || solicitud.telefono_contacto || solicitud.telefono || '';
-            
+
             console.log('[populateForm 4c] Datos extraídos:', { nombreContacto, emailContacto, telefonoContacto });
-            
+
             // Llenar campos ocultos (si existen)
             if (document.getElementById('nombreContacto')) document.getElementById('nombreContacto').value = nombreContacto;
             if (document.getElementById('emailContacto')) document.getElementById('emailContacto').value = emailContacto;
             if (document.getElementById('telefonoContacto')) document.getElementById('telefonoContacto').value = telefonoContacto;
-            
+
             // Actualizar resumen compacto de contacto
             if (this.elements.contactDataInfo) {
                 const parts = [nombreContacto, emailContacto, telefonoContacto].filter(Boolean);
