@@ -821,32 +821,17 @@
                 </div>
             </div>
 
-            <!-- Contacto -->
-            <div class="form-section">
-                <h3><i class="fas fa-address-book"></i> Datos de Contacto</h3>
-                <!-- Campo oculto: id del cliente asociado -->
-                <input type="hidden" id="clienteId" value="" />
-                <div class="btn-group" style="margin-bottom:8px;">
-                    <button type="button" class="btn btn-secondary" id="btnEditCliente" onclick="openEditClienteModal()"
-                        style="flex:0.3; padding:6px 10px; font-size:0.9rem;">
-                        <i class="fas fa-edit"></i> Editar Cliente
-                    </button>
-                </div>
-                <div class="form-grid form-grid-3">
-                    <div class="form-group">
-                        <label for="nombreContacto">Nombre del Contacto</label>
-                        <input type="text" id="nombreContacto" placeholder="Responsable/Manager" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="emailContacto">Email</label>
-                        <input type="email" id="emailContacto" placeholder="email@ejemplo.com" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="telefonoContacto">Teléfono</label>
-                        <input type="tel" id="telefonoContacto" placeholder="11-1234-5678" readonly>
-                    </div>
-                </div>
+            <!-- Contacto (COMPACTO) -->
+            <div style="margin-top:12px;padding:8px 12px;background:#1a1025;border-left:3px solid #f0abfc;border-radius:0 4px 4px 0;font-size:0.85rem;display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-address-book" style="color:#f0abfc;flex-shrink:0;"></i>
+                <span id="contactDataInfo" style="color:#d6d3d1;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cargando datos de contacto...</span>
+                <button type="button" class="btn btn-secondary" id="btnEditCliente" onclick="openEditClienteModal()" style="padding:5px 10px;font-size:0.85rem;flex-shrink:0;"><i class="fas fa-edit"></i> Editar</button>
             </div>
+            <!-- Campos ocultos para datos de contacto (compatibilidad) -->
+            <input type="hidden" id="clienteId" value="" />
+            <input type="hidden" id="nombreContacto" />
+            <input type="hidden" id="emailContacto" />
+            <input type="hidden" id="telefonoContacto" />
 
             <!-- Botones -->
             <div class="btn-group">
@@ -1399,9 +1384,22 @@
                     }).then(r => r.ok ? r.json() : null).then(cliente => {
                         if (!cliente) return;
                         console.log('[BANDAS] 📋 Datos del cliente cargados:', cliente);
+                        
+                        // Llenar campos de contacto
                         document.getElementById('nombreContacto').value = cliente.nombre || '';
                         document.getElementById('emailContacto').value = cliente.email || '';
                         document.getElementById('telefonoContacto').value = cliente.telefono || '';
+                        
+                        // ✓ ACTUALIZAR ELEMENTO COMPACTO contactDataInfo
+                        const contactDataInfo = document.getElementById('contactDataInfo');
+                        if (contactDataInfo) {
+                            const parts = [cliente.nombre, cliente.email, cliente.telefono].filter(Boolean);
+                            const summary = parts.length > 0 ? parts.join(' | ') : 'Sin información de contacto';
+                            contactDataInfo.textContent = summary;
+                            console.log('[BANDAS] Contacto summary actualizado:', summary);
+                        } else {
+                            console.warn('[BANDAS] elemento contactDataInfo no encontrado');
+                        }
                     }).catch(err => console.error('[BANDAS] Error cargando cliente:', err));
                 }
 
@@ -1970,6 +1968,16 @@
         if (btnCatalogoBandas) btnCatalogoBandas.addEventListener('click', abrirModalCatalogo);
 
         /* ================ MODAL DE EDICIÓN DE CLIENTE ================ */
+        
+        function updateContactDataInfo(nombre, email, telefono) {
+            const contactDataInfo = document.getElementById('contactDataInfo');
+            if (contactDataInfo) {
+                const parts = [nombre, email, telefono].filter(Boolean);
+                const summary = parts.length > 0 ? parts.join(' | ') : 'Sin información de contacto';
+                contactDataInfo.textContent = summary;
+                console.log('[BANDAS] contactDataInfo actualizado:', summary);
+            }
+        }
 
         // Helper para validar formato de email
         function isValidEmail(email) {
@@ -2077,6 +2085,12 @@
             document.getElementById('modalClienteTelefono').value = telefono;
             // Actualizar el ID del cliente actual
             document.getElementById('clienteId').value = idCliente;
+            // Actualizar formulario principal
+            document.getElementById('nombreContacto').value = nombre;
+            document.getElementById('emailContacto').value = email;
+            document.getElementById('telefonoContacto').value = telefono;
+            // ✓ Actualizar contactDataInfo
+            updateContactDataInfo(nombre, email, telefono);
             // Limpiar búsqueda
             document.getElementById('modalBuscadorClienteInput').value = '';
             document.getElementById('modalBuscadorResultados').innerHTML = '';
@@ -2141,6 +2155,9 @@
                 document.getElementById('nombreContacto').value = nombre;
                 document.getElementById('emailContacto').value = email;
                 document.getElementById('telefonoContacto').value = telefono;
+                
+                // ✓ Actualizar contactDataInfo
+                updateContactDataInfo(nombre, email, telefono);
 
                 // Ahora actualizar la solicitud con el id_cliente (si existe solicitud abierta)
                 if (eventoId) {

@@ -31,20 +31,21 @@
             text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
         }
 
-        /* Estado row colors */
+        /* Estado row colors - mantener consistencia visual */
         .estado-solicitado,
         .estado-contactado,
         .estado-cancelado,
         .estado-confirmado {
-            background: none !important;
+            background: inherit;
         }
 
-        /* Filas alternadas en marrón */
+        /* Filas alternadas con colores oscuros */
         tbody tr:nth-child(odd) {
-            background-color: #6D4C41;
+            background-color: #1a2537;
         }
+
         tbody tr:nth-child(even) {
-            background-color: #A1887F;
+            background-color: #131c2a;
         }
 
         /* Columnas específicas con wrap */
@@ -130,6 +131,106 @@
             margin-top: 6px;
             font-size: 12px;
             color: #9ca3af;
+        }
+
+        .btn-upload-flyer {
+            margin-top: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            background: rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102, 126, 234, 0.5);
+            border-radius: 6px;
+            color: #a5b4fc;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-upload-flyer:hover {
+            background: rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        td[data-label="Flyer"] {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 8px;
+        }
+
+        .flyer-thumb {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .flyer-thumb:hover {
+            transform: scale(1.05);
+        }
+
+        td[data-label="Flyer"] {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 8px;
+        }
+
+        .flyer-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 100000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            pointer-events: none;
+        }
+
+        .flyer-modal.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .flyer-modal-content {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100001;
+        }
+
+        .flyer-modal-content img {
+            display: block;
+            max-width: 85vw;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .flyer-modal-close {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.95);
+            color: #111;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
         }
 
         .actions-buttons {
@@ -238,12 +339,48 @@
             </table>
         </div>
         <div id="notification-banner"></div>
+        <div id="flyer-modal" class="flyer-modal" aria-hidden="true">
+            <div class="flyer-modal-content">
+                <button type="button" class="flyer-modal-close" aria-label="Cerrar">×</button>
+                <img id="flyer-modal-img" src="" alt="Flyer ampliado">
+            </div>
+        </div>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const tbody = document.getElementById('solicitudes-tbody');
                 const table = document.getElementById('solicitudes-table');
                 const loader = document.getElementById('loader');
                 let notificationTimer;
+
+                const flyerModal = document.getElementById('flyer-modal');
+                const flyerModalImg = document.getElementById('flyer-modal-img');
+                const flyerModalClose = document.querySelector('.flyer-modal-close');
+
+                function abrirFlyerModal(src, alt) {
+                    flyerModalImg.src = src;
+                    flyerModalImg.alt = alt || 'Flyer ampliado';
+                    flyerModal.classList.add('show');
+                    flyerModal.setAttribute('aria-hidden', 'false');
+                }
+
+                function cerrarFlyerModal() {
+                    flyerModal.classList.remove('show');
+                    flyerModal.setAttribute('aria-hidden', 'true');
+                    flyerModalImg.src = '';
+                }
+
+                flyerModalClose.addEventListener('click', cerrarFlyerModal);
+                flyerModal.addEventListener('click', (event) => {
+                    if (event.target === flyerModal) {
+                        cerrarFlyerModal();
+                    }
+                });
+
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape' && flyerModal.classList.contains('show')) {
+                        cerrarFlyerModal();
+                    }
+                });
 
                 // Datos originales para filtrado
                 let todasLasSolicitudes = [];
@@ -331,6 +468,14 @@
 
                 // Event delegation for button clicks (action-btn and icon-btn)
                 tbody.addEventListener('click', (event) => {
+                    const flyerImg = event.target.closest('img.flyer-thumb');
+                    if (flyerImg) {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        abrirFlyerModal(flyerImg.src, flyerImg.alt);
+                        return;
+                    }
+
                     const tr = event.target.closest('tr');
                     if (!tr) return;
 
@@ -644,7 +789,7 @@
                         <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
                         <td data-label="Fecha Evento">${fechaEvento}</td>
                         <td data-label="Hora Inicio">${horaInicio}</td>
-                        <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer" onerror="handleFlyerError(this)">' : '<span class="flyer-missing">📄<span class="flyer-missing-text">Sin flyer</span></span>'}</td>
+                        <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer" onerror="handleFlyerError(this)">' : '<span class="flyer-missing" style="flex-direction:column;">📄<span class="flyer-missing-text">Sin flyer</span><button type="button" class="btn-upload-flyer" data-solicitud-id="' + solicitud.id + '">＋ Subir imagen</button></span>'}</td>
                         <td data-label="Descripción"><div class="description">${descripcionCorta}</div></td>
                         <td data-label="Acciones"><div class="actions-cell">${estadoDisplay}<div class="actions-buttons">${botones}</div></div></td>`;
 
@@ -849,9 +994,64 @@
                     img.onerror = null;
                     const fallback = document.createElement('span');
                     fallback.className = 'flyer-missing';
-                    fallback.innerHTML = '📄<span class="flyer-missing-text">Flyer no disponible</span>';
+                    fallback.style.flexDirection = 'column';
+                    const tr = img.closest('tr');
+                    const solicitudId = tr ? tr.dataset.solicitudId : '';
+                    fallback.innerHTML = `📄<span class="flyer-missing-text">Flyer no disponible</span><button type="button" class="btn-upload-flyer" data-solicitud-id="${solicitudId}">＋ Subir imagen</button>`;
                     img.replaceWith(fallback);
                 }
+
+                tbody.addEventListener('click', (event) => {
+                    const btnUpload = event.target.closest('.btn-upload-flyer');
+                    if (!btnUpload) return;
+                    event.stopPropagation();
+                    event.preventDefault();
+                    const solicitudId = btnUpload.dataset.solicitudId;
+                    if (!solicitudId) return;
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/jpeg, image/png';
+                    input.addEventListener('change', async () => {
+                        const file = input.files[0];
+                        if (!file) return;
+                        btnUpload.disabled = true;
+                        btnUpload.textContent = 'Subiendo...';
+                        try {
+                            const formData = new FormData();
+                            formData.append('flyer', file);
+                            const res = await fetch(`${API_BASE_URL}/api/uploads/flyers?solicitudId=${encodeURIComponent(solicitudId)}`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` },
+                                body: formData
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.message || 'Error al subir imagen');
+                            // Actualizar url_flyer en la solicitud via API
+                            const resPatch = await fetch(`${API_BASE_URL}/api/admin/solicitudes/${solicitudId}/flyer`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` },
+                                body: JSON.stringify({ url_flyer: data.url })
+                            });
+                            if (resPatch.ok) {
+                                showNotification('Flyer subido correctamente', 'success');
+                                await cargarSolicitudes();
+                            } else {
+                                // El archivo se subió pero no se pudo guardar la URL en BD;
+                                // mostrar la imagen igualmente de manera optimista
+                                const cell = btnUpload.closest('td');
+                                if (cell) {
+                                    cell.innerHTML = `<img src="${data.url}" class="flyer-thumb" alt="flyer" onerror="handleFlyerError(this)">`;
+                                }
+                                showNotification('Flyer subido. Recarga para confirmar.', 'warning');
+                            }
+                        } catch (err) {
+                            showNotification(err.message, 'error');
+                            btnUpload.disabled = false;
+                            btnUpload.textContent = '＋ Subir imagen';
+                        }
+                    });
+                    input.click();
+                }, true);
 
                 // Proteger esta página: redirigir a login si no está autenticado
                 // navbarManager ya fue instanciado automáticamente por navbar.js

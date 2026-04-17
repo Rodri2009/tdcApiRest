@@ -66,11 +66,16 @@ const App = {
             clientNameSpan: document.getElementById('clientName'),
             clientPhoneSpan: document.getElementById('clientPhone'),
             clientEmailSpan: document.getElementById('clientEmail'),
+            clientDataInfo: document.getElementById('clientDataInfo'),
+            contactDataInfo: document.getElementById('contactDataInfo'),
             adicionalesSeleccionadosDiv: document.getElementById('adicionalesSeleccionados'),
             urlFlyerInput: document.getElementById('urlFlyer'),
             flyerFileInput: document.getElementById('flyerFile'),
             flyerPreviewDiv: document.getElementById('flyerPreview')
         };
+        
+        console.log('[formLogic] bindElements - contactDataInfo encontrado:', this.elements.contactDataInfo);
+        console.log('[formLogic] bindElements - clientDataInfo encontrado:', this.elements.clientDataInfo);
 
         // Campos específicos de banda (edición)
         this.elements.nombreBandaInput = document.getElementById('nombreBandaInput');
@@ -847,10 +852,47 @@ const App = {
 
         // 4b. Mostrar datos del cliente (si disponibles)
         try {
-            if (this.elements.clientNameSpan) this.elements.clientNameSpan.textContent = solicitud.nombreCompleto || solicitud.nombre_completo || '';
-            if (this.elements.clientPhoneSpan) this.elements.clientPhoneSpan.textContent = solicitud.telefono || solicitud.telefonoContacto || '';
-            if (this.elements.clientEmailSpan) this.elements.clientEmailSpan.textContent = solicitud.email || solicitud.email_contacto || '';
+            const nombre = solicitud.nombreCompleto || solicitud.nombre_completo || '';
+            const telefono = solicitud.telefono || solicitud.telefonoContacto || '';
+            const email = solicitud.email || solicitud.email_contacto || '';
+            
+            if (this.elements.clientNameSpan) this.elements.clientNameSpan.textContent = nombre;
+            if (this.elements.clientPhoneSpan) this.elements.clientPhoneSpan.textContent = telefono;
+            if (this.elements.clientEmailSpan) this.elements.clientEmailSpan.textContent = email;
+            
+            // Actualizar resumen compacto de cliente
+            if (this.elements.clientDataInfo) {
+                const parts = [nombre, telefono, email].filter(Boolean);
+                this.elements.clientDataInfo.textContent = parts.length > 0 ? parts.join(' | ') : 'Sin información de cliente';
+            }
         } catch (err) { console.warn('populateForm: fallo al setear datos de cliente:', err); }
+
+        // 4c. Mostrar datos de contacto (si disponibles, para editar_solicitud_fecha_bandas.html)
+        try {
+            console.log('[populateForm 4c] Iniciando actualización de datos de contacto');
+            console.log('[populateForm 4c] this.elements.contactDataInfo:', this.elements.contactDataInfo);
+            
+            const nombreContacto = solicitud.nombreContacto || solicitud.nombre_contacto || solicitud.nombreCompleto || solicitud.nombre_completo || '';
+            const emailContacto = solicitud.emailContacto || solicitud.email_contacto || solicitud.email || '';
+            const telefonoContacto = solicitud.telefonoContacto || solicitud.telefono_contacto || solicitud.telefono || '';
+            
+            console.log('[populateForm 4c] Datos extraídos:', { nombreContacto, emailContacto, telefonoContacto });
+            
+            // Llenar campos ocultos (si existen)
+            if (document.getElementById('nombreContacto')) document.getElementById('nombreContacto').value = nombreContacto;
+            if (document.getElementById('emailContacto')) document.getElementById('emailContacto').value = emailContacto;
+            if (document.getElementById('telefonoContacto')) document.getElementById('telefonoContacto').value = telefonoContacto;
+            
+            // Actualizar resumen compacto de contacto
+            if (this.elements.contactDataInfo) {
+                const parts = [nombreContacto, emailContacto, telefonoContacto].filter(Boolean);
+                const summary = parts.length > 0 ? parts.join(' | ') : 'Sin información de contacto';
+                this.elements.contactDataInfo.textContent = summary;
+                console.log('[populateForm 4c] Resumen actualizado:', summary);
+            } else {
+                console.warn('[populateForm 4c] this.elements.contactDataInfo es NULL');
+            }
+        } catch (err) { console.error('populateForm: fallo al setear datos de contacto:', err); }
 
         // 4d. Si la solicitud es un taller con schedule recurrente, mostrar un resumen
         try {

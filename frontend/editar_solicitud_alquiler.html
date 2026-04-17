@@ -559,33 +559,11 @@
                     <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
                 </div>
 
-                <!-- INFO DE CLIENTE - READ ONLY -->
-                <div class="form-section"
-                    style="margin-top: 12px; background-color: #1a2332; border-left: 4px solid #f0abfc; padding: 12px; border-radius: 4px;">
-                    <h3 style="margin-top: 0; color: #f0abfc;">📋 Datos del Cliente (Información de Solo Lectura)</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; font-size: 0.95rem;">
-                        <div
-                            style="background-color: #0f1419; padding: 8px; border-radius: 4px; border: 1px solid #2d3748;">
-                            <label
-                                style="color: #9ca3af; font-size: 0.85rem; display: block; margin-bottom: 4px; font-weight: 500; text-transform: uppercase;">Nombre</label>
-                            <span id="clientName"
-                                style="color: #d6d3d1; font-weight: 500; word-break: break-word;">-</span>
-                        </div>
-                        <div
-                            style="background-color: #0f1419; padding: 8px; border-radius: 4px; border: 1px solid #2d3748;">
-                            <label
-                                style="color: #9ca3af; font-size: 0.85rem; display: block; margin-bottom: 4px; font-weight: 500; text-transform: uppercase;">Teléfono</label>
-                            <span id="clientPhone"
-                                style="color: #d6d3d1; font-weight: 500; word-break: break-word;">-</span>
-                        </div>
-                        <div
-                            style="background-color: #0f1419; padding: 8px; border-radius: 4px; border: 1px solid #2d3748;">
-                            <label
-                                style="color: #9ca3af; font-size: 0.85rem; display: block; margin-bottom: 4px; font-weight: 500; text-transform: uppercase;">Email</label>
-                            <span id="clientEmail"
-                                style="color: #d6d3d1; font-weight: 500; word-break: break-word;">-</span>
-                        </div>
-                    </div>
+                <!-- INFO DE CLIENTE - READ ONLY (COMPACTO) -->
+                <div style="margin-top:12px;padding:8px 12px;background:#1a1025;border-left:3px solid #f0abfc;border-radius:0 4px 4px 0;font-size:0.85rem;display:flex;align-items:center;gap:10px;">
+                    <i class="fas fa-user" style="color:#f0abfc;flex-shrink:0;"></i>
+                    <span id="clientDataInfo" style="color:#d6d3d1;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cargando datos del cliente...</span>
+                    <span style="color:#6b7280;font-size:0.72rem;white-space:nowrap;font-style:italic;">Solo lectura</span>
                 </div>
 
                 <!-- ADICIONALES SELECCIONADOS -->

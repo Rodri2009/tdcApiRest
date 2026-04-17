@@ -1546,6 +1546,37 @@ const getSolicitudesPublicas = async (req, res) => {
 /**
  * Actualiza la visibilidad pública de una solicitud (es_publico).
  */
+const updateFlyer = async (req, res) => {
+    const { id } = req.params;
+    const { url_flyer } = req.body;
+    if (!url_flyer) return res.status(400).json({ message: 'Falta el campo url_flyer' });
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        // Resolver id numérico real en tabla solicitudes
+        let solicitudId = id;
+        if (String(id).startsWith('ev_')) {
+            const evId = parseInt(String(id).substring(3), 10);
+            const [ev] = await conn.query('SELECT id_solicitud FROM eventos_confirmados WHERE id = ?', [evId]);
+            if (!ev) return res.status(404).json({ message: 'Evento no encontrado' });
+            solicitudId = ev.id_solicitud;
+        } else if (/^(alq|bnd|srv|tll)_/.test(String(id))) {
+            solicitudId = parseInt(String(id).replace(/^[a-z]+_/, ''), 10);
+        } else {
+            solicitudId = parseInt(id, 10);
+        }
+        if (isNaN(solicitudId)) return res.status(400).json({ message: 'ID de solicitud inválido' });
+        await conn.query('UPDATE solicitudes SET url_flyer = ? WHERE id_solicitud = ?', [url_flyer, solicitudId]);
+        return res.status(200).json({ message: 'Flyer actualizado', url_flyer });
+    } catch (err) {
+        logError('Error actualizando flyer:', err);
+        return res.status(500).json({ message: 'Error interno al actualizar flyer' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 const updateVisibilidad = async (req, res) => {
     const { id } = req.params;
     const { es_publico } = req.body;
@@ -1901,5 +1932,6 @@ module.exports = {
     obtenerAdicionales,
     getSesionExistente,
     getSolicitudesPublicas,
-    updateVisibilidad
+    updateVisibilidad,
+    updateFlyer
 };

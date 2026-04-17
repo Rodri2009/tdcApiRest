@@ -21,7 +21,7 @@ const {
 } = require('../controllers/adminController');
 
 
-const { updateVisibilidad } = require('../controllers/solicitudController');
+const { updateVisibilidad, updateFlyer } = require('../controllers/solicitudController');
 const eventosAuditController = require('../controllers/eventosAuditController');
 
 const alquilerAdmin = require('../controllers/alquilerAdminController');
@@ -45,6 +45,7 @@ router.get('/solicitudes', getSolicitudes);
 router.put('/solicitudes/:id/estado', checkPermiso('solicitudes.cambiar_estado'), actualizarEstadoSolicitud);
 router.put('/solicitudes/:id/visibilidad', checkPermiso('solicitudes.cambiar_estado'), updateVisibilidad);
 router.delete('/solicitudes/:id', checkPermiso('solicitudes.eliminar'), eliminarSolicitud);
+router.patch('/solicitudes/:id/flyer', checkPermiso('solicitudes.editar'), updateFlyer);
 router.get('/asignacion-data', getDatosAsignacion);
 router.post('/solicitudes/:id/asignaciones', checkPermiso('personal.gestionar'), guardarAsignaciones);
 router.get('/orden-trabajo/:id', getOrdenDeTrabajo);
