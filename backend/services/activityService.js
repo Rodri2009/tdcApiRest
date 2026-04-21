@@ -125,12 +125,35 @@ async function scrapeActivity(page) {
                     if (Array.isArray(groups) && groups.length > 0) {
                         const flat = [];
                         for (const group of groups) {
-                            const groupDate = group.title || null; // e.g. "28 de marzo"
+                            const groupDate = group.title || null; // e.g. "28 de marzo" o "Hoy"
                             for (const item of (group.items || [])) {
                                 flat.push({ ...item, _groupDate: groupDate });
                             }
                         }
                         if (flat.length > 0) {
+                            // El JSON de window._n NO incluye la hora de cada movimiento.
+                            // La hora real está en <time class="fuji-activities__date"> del DOM.
+                            // Extraemos todas en orden para cruzarlas por índice con los items.
+                            const domTimes = [];
+                            try {
+                                document.querySelectorAll('time.fuji-activities__date').forEach(el => {
+                                    const iso = el.getAttribute('datetime'); // e.g. "2026-04-21"
+                                    const raw = (el.getAttribute('title') || el.textContent || '').trim(); // e.g. "10:28 hs"
+                                    const tm = raw.match(/(\d{1,2}):(\d{2})/);
+                                    let creationDate = null;
+                                    if (iso && tm) {
+                                        try {
+                                            const d = new Date(iso + 'T00:00:00');
+                                            d.setHours(Number(tm[1]), Number(tm[2]), 0, 0);
+                                            creationDate = d.toISOString();
+                                        } catch (e) { }
+                                    } else if (iso) {
+                                        creationDate = iso + 'T00:00:00.000Z';
+                                    }
+                                    domTimes.push(creationDate);
+                                });
+                            } catch (e) { }
+
                             return flat.map((item, idx) => {
                                 // Derive a sign-aware category for the normalizer:
                                 // subCategory "in" => income (positive), "out" / category "pays" => payment/transfer (negative)
@@ -151,7 +174,9 @@ async function scrapeActivity(page) {
                                     currency: (item.amount && item.amount.currency_id) || 'ARS',
                                     symbol: (item.amount && item.amount.symbol) || '$',
                                     dateTime: item._groupDate || null,
-                                    creationDate: null,
+                                    // ISO datetime preciso del DOM (fecha + hora);
+                                    // parseDateTimeFromText lo usa con prioridad máxima
+                                    creationDate: domTimes[idx] || null,
                                     type: sub === 'in' ? 'income'
                                         : cat === 'pays' ? 'payment'
                                             : sub === 'out' ? 'transfer'
@@ -401,6 +426,18 @@ async function scrapeActivity(page) {
                 const isoFromParts = (y, m, d, h, mn) => {
                     try { return new Date(y, m - 1, d, h || 0, mn || 0).toISOString(); } catch (e) { return null; }
                 };
+
+                // Manejar "Hoy" y "Ayer" (grupo del día actual/anterior en MP)
+                const trimmedDate = (dateStr || '').trim().toLowerCase();
+                if (trimmedDate === 'hoy' || trimmedDate === 'ayer') {
+                    const base = new Date();
+                    if (trimmedDate === 'ayer') base.setDate(base.getDate() - 1);
+                    if (timeMatch) {
+                        return isoFromParts(base.getFullYear(), base.getMonth() + 1, base.getDate(),
+                            Number(timeMatch[1]), Number(timeMatch[2]));
+                    }
+                    return isoFromParts(base.getFullYear(), base.getMonth() + 1, base.getDate());
+                }
 
                 if (spanishDate) {
                     const day = Number(spanishDate[1]);

@@ -249,6 +249,15 @@ class TransactionWatchService {
     }
 
     /**
+     * Emite un evento de servicio (session_lost, session_restored, etc.) a todos los suscriptores SSE.
+     */
+    broadcastServiceEvent(type, message) {
+        const event = { type, message, timestamp: new Date().toISOString() };
+        this.subscribers.forEach(res => this._sendToSubscriber(res, event));
+        console.log(`[TransactionWatch] 📡 broadcastServiceEvent: type=${type} subscribers=${this.subscribers.length}`);
+    }
+
+    /**
      * Obtiene estado del watch
      */
     getStatus() {

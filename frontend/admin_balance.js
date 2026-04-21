@@ -32,6 +32,7 @@
             return authToken;
         } catch (err) {
             console.error('[Auth] ❌ Error:', err);
+            updateServiceStatus('auth_error');
             return null;
         }
     }
@@ -389,11 +390,9 @@
         }
         b.classList.remove('hidden');
         // ajustar clase de tipo
-        if (type === 'neutral') {
-            b.classList.add('neutral');
-        } else {
-            b.classList.remove('neutral');
-        }
+        b.classList.remove('neutral', 'error');
+        if (type === 'neutral') b.classList.add('neutral');
+        else if (type === 'error') b.classList.add('error');
         if (bannerTimer) clearTimeout(bannerTimer);
         bannerTimer = setTimeout(() => b.classList.add('hidden'), 8000);
     }
@@ -485,6 +484,67 @@
 
 
 
+    /* ─── Indicador de estado del servicio ─────────────────────────────────── */
+    const STATUS_CONFIGS = {
+        connecting: { css: 'ss-connecting', text: 'conectando…' },
+        ok: { css: 'ss-ok', text: 'operativo' },
+        reconnecting: { css: 'ss-warning', text: 'reconectando…' },
+        session_lost: { css: 'ss-error', text: 'sesión perdida' },
+        watch_stopped: { css: 'ss-error', text: 'watch detenido' },
+        not_ready: { css: 'ss-warning', text: 'iniciando navegador…' },
+        disabled: { css: 'ss-disabled', text: 'servicio deshabilitado' },
+        auth_error: { css: 'ss-error', text: 'error de autenticación' },
+        api_error: { css: 'ss-error', text: 'error de API' },
+    };
+
+    let _currentServiceState = 'connecting';
+
+    function updateServiceStatus(state, detail) {
+        _currentServiceState = state;
+        const cfg = STATUS_CONFIGS[state] || { css: 'ss-connecting', text: state };
+        const el = document.getElementById('service-status');
+        const txt = document.getElementById('ss-text');
+        if (!el || !txt) return;
+        el.className = `service-status ${cfg.css}`;
+        txt.textContent = detail || cfg.text;
+    }
+
+    /* ─── Health polling (cada 30 s) — confirma estado real del backend ───── */
+    async function pollHealth() {
+        try {
+            const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+            const res = await fetch(`${API}/health`, { headers });
+            if (!res.ok) {
+                // solo degradar si ya no estamos ok ni reconectando
+                if (_currentServiceState !== 'ok' && _currentServiceState !== 'reconnecting') {
+                    updateServiceStatus('api_error', 'sin respuesta del servidor');
+                }
+                return;
+            }
+            const data = await res.json();
+            if (data.status === 'disabled') {
+                updateServiceStatus('disabled');
+                return;
+            }
+            if (data.status === 'not_ready') {
+                // solo degradar si el SSE no confirmó conexión
+                if (_currentServiceState !== 'ok' &&
+                    _currentServiceState !== 'watch_stopped' &&
+                    _currentServiceState !== 'session_lost') {
+                    updateServiceStatus('not_ready');
+                }
+            }
+            // status 'ok': el SSE es la fuente de verdad; health poll lo confirma en silencio
+        } catch (e) {
+            // error de red — el SSE ya gestiona la reconexión
+        }
+    }
+
+    function startHealthPolling() {
+        pollHealth();                        // chequeo inmediato al cargar
+        setInterval(pollHealth, 30000);      // y cada 30 s
+    }
+
     // utilitario compartido: convierte los valores 'type' del backend en cadenas legibles
     function translateType(t) {
         return ({
@@ -538,6 +598,25 @@
             if (msg && msg.type === 'connected') {
                 console.log('[SSE] ✓ servidor dice: conectado');
                 document.getElementById('status').textContent = 'watch: conectado';
+                updateServiceStatus('ok');
+            }
+            if (msg && msg.type === 'error') {
+                console.error('[SSE] ❌ Watch detenido por max errores:', msg.message);
+                document.getElementById('status').textContent = 'watch: detenido';
+                updateServiceStatus('watch_stopped');
+                showBanner('⚠️ El monitor de transacciones se detuvo por errores reiterados. Recargá la página para reintentar.', 'error');
+            }
+            if (msg && msg.type === 'session_lost') {
+                console.warn('[SSE] 🔒 Sesión de Mercado Pago perdida');
+                document.getElementById('status').textContent = 'watch: sesión perdida';
+                updateServiceStatus('session_lost');
+                showBanner('⚠️ La sesión de Mercado Pago se perdió. El sistema intentará recuperarla automáticamente.', 'error');
+            }
+            if (msg && msg.type === 'session_restored') {
+                console.log('[SSE] ✅ Sesión de Mercado Pago restaurada');
+                document.getElementById('status').textContent = 'watch: conectado';
+                updateServiceStatus('ok');
+                showBanner('✅ Sesión de Mercado Pago restaurada correctamente.', 'success');
             }
         } catch (e) {
             console.error('[SSE] ❌ Parse error:', e.message, 'Data:', String(rawData).substring(0, 200));
@@ -558,12 +637,16 @@
         if (msg.type === 'sse-open') {
             console.log('[SSE] ✅ Conexión establecida (SharedWorker persistente)');
             statusEl.textContent = 'watch: conectado';
+            sseReady = true;
+            updateServiceStatus('ok');
         } else if (msg.type === 'sse-state' || msg.type === 'pong') {
             // Respuesta sincrónica al ping/start: readyState 1 = OPEN
             if (msg.readyState === 1 || msg.connected) {
                 if (!sseReady) {
+                    sseReady = true;
                     console.log('[SSE] ✅ Estado confirmado por ping/state: conectado');
                     statusEl.textContent = 'watch: conectado';
+                    updateServiceStatus('ok');
                 }
             } else {
                 console.log('[SSE] Estado worker:', msg.readyState === 0 ? 'conectando...' : 'cerrado');
@@ -572,6 +655,9 @@
             console.warn('[SSE] ⚠️ Error SSE — el worker reconectará automáticamente');
             statusEl.textContent = 'watch: reconectando...';
             sseReady = false;
+            if (_currentServiceState !== 'watch_stopped' && _currentServiceState !== 'session_lost') {
+                updateServiceStatus('reconnecting');
+            }
 
             // Actualizar token por si expiró y reenviarlo al worker tras 4s
             setTimeout(async () => {
@@ -637,6 +723,7 @@
         es.onopen = () => {
             console.log('[SSE] ✅ Conexión establecida (directo)');
             statusEl.textContent = 'watch: conectado';
+            updateServiceStatus('ok');
         };
 
         es.onmessage = (ev) => {
@@ -649,10 +736,14 @@
             console.error('[SSE] ❌ Error directo — readyState:', es.readyState);
             statusEl.textContent = 'watch: desconectado — reintentando...';
             sseReady = false;
+            if (_currentServiceState !== 'watch_stopped' && _currentServiceState !== 'session_lost') {
+                updateServiceStatus('reconnecting');
+            }
             es.close();
             directES = null;
             authToken = null;
-            fetchTransactions(true);
+            // Re-obtener token antes de refrescar transacciones (authToken acaba de limpiarse)
+            getAuthToken().then(() => fetchTransactions(true)).catch(() => { });
             setTimeout(initSSE, 3000);
         };
     }
@@ -831,6 +922,7 @@
 
 
         await Promise.all([fetchBalance(false), fetchTransactions(false)]);
+        startHealthPolling();
         initSSE();
     }
 

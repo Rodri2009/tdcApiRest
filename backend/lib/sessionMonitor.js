@@ -184,15 +184,28 @@ class SessionMonitor {
     }
 
     /**
+     * Permite registrar un callback que se llama cuando hay un evento de sesión.
+     * El callback recibe (type: string, message: string).
+     */
+    setOnSessionEvent(cb) {
+        this._onSessionEvent = cb;
+    }
+
+    /**
      * Broadcasts
      */
     _broadcastSessionLost() {
         console.log('[SessionMonitor] 📢 Notificando pérdida de sesión');
-        // Aquí podríamos notificar a las transacciones watch u otros servicios
+        if (this._onSessionEvent) {
+            try { this._onSessionEvent('session_lost', 'Sesión de Mercado Pago perdida'); } catch (e) { }
+        }
     }
 
     _broadcastSessionRestored() {
         console.log('[SessionMonitor] 📢 Notificando restauración de sesión');
+        if (this._onSessionEvent) {
+            try { this._onSessionEvent('session_restored', 'Sesión de Mercado Pago restaurada'); } catch (e) { }
+        }
     }
 
     /**

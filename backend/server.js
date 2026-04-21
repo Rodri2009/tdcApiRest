@@ -400,6 +400,15 @@ async function startServer() {
                     mpSessionMonitor.start();
                     logSuccess('[PUPPETEER-MP] ✓ Session monitor iniciado');
 
+                    // Conectar session monitor → watch service para propagar eventos por SSE
+                    mpSessionMonitor.setOnSessionEvent((type, msg) => {
+                        try {
+                            const { getWatchService } = require('./controllers/watchController');
+                            const svc = getWatchService();
+                            if (svc) svc.broadcastServiceEvent(type, msg);
+                        } catch (e) { /* silenciar para no romper el flujo de inicio */ }
+                    });
+
                 } catch (err) {
                     logError('[PUPPETEER-MP] Error al inicializar:', err.message);
                     logWarning('[PUPPETEER-MP] ⚠️  Mercado Pago continuará deshabilitado hasta reinicio');
