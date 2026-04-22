@@ -72,6 +72,9 @@ async function launchBrowser(config) {
             }
         };
 
+        // Pasar DISPLAY al proceso de Chromium para que use Xvfb
+        browserConfig.env = { ...process.env, DISPLAY: process.env.DISPLAY || ':1' };
+
         const browser = await puppeteer.launch(browserConfig);
         console.log('✅ [Browser Manager] Navegador iniciado correctamente (headless=false con display :1 - Xvfb)');
 

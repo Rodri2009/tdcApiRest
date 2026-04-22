@@ -50,6 +50,7 @@ if (ENABLE_PUPPETEER_MP || ENABLE_PUPPETEER_WA) {
 
 const { protect: authProtect } = require('./middleware/authMiddleware');
 const tokenManager = require('./lib/tokenManager');
+const WhatsAppService = require('./services/whatsappService');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -59,6 +60,7 @@ let mpBrowser = null;
 let mpPage = null;
 let waBrowser = null;
 let waPage = null;
+let whatsappServiceInstance = null;
 let isShuttingDown = false;
 
 // --- Middlewares ---
@@ -68,10 +70,11 @@ app.use(cookieParser()); // <-- USAR
 // También limitar urlencoded para paridad
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
-// Middleware para pasar mpPage a los handlers de Mercado Pago
+// Middleware para pasar mpPage y waPage/waBrowser a los handlers
 app.use((req, res, next) => {
     req.mpPage = mpPage;
     req.waPage = waPage;
+    req.waBrowser = waBrowser;
     next();
 });
 
@@ -299,6 +302,15 @@ try {
         logVerbose('[ROUTES] ✓ Rutas WA disponibles');
     }
 
+    // DIAGNÓSTICO - (siempre disponible)
+    try {
+        const diagnosticRoutes = require('./routes/diagnosticRoutes');
+        app.use('/api/diagnostic', diagnosticRoutes);
+        logVerbose('[ROUTES] ✓ Rutas de diagnóstico disponibles');
+    } catch (err) {
+        logWarning('[ROUTES] No se pudieron cargar rutas de diagnóstico:', err.message);
+    }
+
     logSuccess("Rutas configuradas correctamente (incluidas nuevas rutas de bandas y solicitudes de fechas, y servicios Puppeteer).");
 
 } catch (error) {
@@ -409,6 +421,12 @@ async function startServer() {
                         } catch (e) { /* silenciar para no romper el flujo de inicio */ }
                     });
 
+                    // PEQUEÑO DELAY: Si también va a haber WA, dejar que MP se estabilice primero
+                    if (ENABLE_PUPPETEER_WA) {
+                        logVerbose('[PUPPETEER-MP] ⏳ Esperando a que MP se estabilice antes de iniciar WA (3s)...');
+                        await new Promise(r => setTimeout(r, 3000));
+                    }
+
                 } catch (err) {
                     logError('[PUPPETEER-MP] Error al inicializar:', err.message);
                     logWarning('[PUPPETEER-MP] ⚠️  Mercado Pago continuará deshabilitado hasta reinicio');
@@ -422,25 +440,27 @@ async function startServer() {
             if (ENABLE_PUPPETEER_WA) {
                 logVerbose('[PUPPETEER-WA] Iniciando servicio WhatsApp...');
                 try {
-                    const waConfig = {
-                        userDataDir: process.env.WA_USER_DATA_DIR || '/home/pptruser/wa-profile',
-                        headless: process.env.HEADLESS === 'true' ? true : false,
-                        port: 9002  // Para debugging local
-                    };
+                    whatsappServiceInstance = new WhatsAppService();
+                    whatsappServiceInstance.headlessMode = process.env.HEADLESS === 'true';
 
-                    // Lanzar browser
-                    waBrowser = await browserManager.launchBrowser(waConfig);
-                    const waPages = await waBrowser.pages();
-                    waPage = waPages.length > 0 ? waPages[0] : await waBrowser.newPage();
-                    await waPage.setViewport({ width: 1920, height: 1080 });
-
-                    logSuccess('[PUPPETEER-WA] ✓ Browser y page inicializados');
-
+                    // Si MP está activo y su browser fue iniciado con éxito,
+                    // reutilizar ese mismo Chromium (pestaña aislada) en lugar de lanzar uno nuevo
+                    const browserToShare = (ENABLE_PUPPETEER_MP && mpBrowser) ? mpBrowser : null;
+                    if (browserToShare) {
+                        logVerbose('[PUPPETEER-WA] 🔀 Reutilizando browser de MP — WA abrirá nueva pestaña');
+                    }
+                    await whatsappServiceInstance.initialize(browserToShare);
+                    // En modo compartido browser es null (usamos mpBrowser), en modo propio está en la instancia
+                    waBrowser = whatsappServiceInstance.browser || browserToShare;
+                    waPage = whatsappServiceInstance.page;
+                    global.waPage = waPage;
+                    logSuccess('[PUPPETEER-WA] ✓ Servicio WhatsApp inicializado y autenticado');
                 } catch (err) {
                     logError('[PUPPETEER-WA] Error al inicializar:', err.message);
                     logWarning('[PUPPETEER-WA] ⚠️  WhatsApp continuará deshabilitado hasta reinicio');
                     waBrowser = null;
                     waPage = null;
+                    whatsappServiceInstance = null;
                 }
             } else {
                 logVerbose('[PUPPETEER-WA] ℹ️  Servicio WhatsApp deshabilitado (ENABLE_PUPPETEER_WA=false)');

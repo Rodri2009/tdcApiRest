@@ -22,7 +22,7 @@ services:
       mariadb:
         condition: service_healthy # Espera hasta que el healthcheck de mariadb pase
     env_file:
-      - .env
+      - ../.env
     environment:
       PORT: ${PORT}
       DB_HOST: ${DB_HOST}
@@ -42,6 +42,8 @@ services:
       WA_USER_DATA_DIR: ${WA_USER_DATA_DIR}
       HEADLESS: ${HEADLESS}
       ENABLE_VNC: ${ENABLE_VNC:-false}
+      ENABLE_PUPPETEER_MP: ${ENABLE_PUPPETEER_MP:-false}
+      ENABLE_PUPPETEER_WA: ${ENABLE_PUPPETEER_WA:-false}
     ports:
       - "3000:3000"
       - "5901:5901"

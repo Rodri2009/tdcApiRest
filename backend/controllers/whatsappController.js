@@ -4,20 +4,50 @@
  */
 
 const { logRequest, logVerbose, logError, logSuccess } = require('../lib/debugFlags');
+const WhatsAppService = require('../services/whatsappService');
+const whatsappService = new WhatsAppService();
+
+function ensureWhatsAppService(req) {
+    const page = req.waPage;
+    const browser = req.waBrowser;
+    if (!page || !browser) {
+        return false;
+    }
+    whatsappService.page = page;
+    whatsappService.browser = browser;
+    whatsappService.isSessionValid = true;
+    return true;
+}
 
 /**
  * GET /api/whatsapp/status
  * Obtiene el estado de la sesión de WhatsApp
  */
-async function getStatusHandler(req, res, whatsappService) {
+async function getStatusHandler(req, res) {
     try {
         logRequest('GET', '/api/whatsapp/status');
 
-        if (!whatsappService || !whatsappService.isSessionValid) {
+        if (!ensureWhatsAppService(req)) {
             return res.status(503).json({
                 success: false,
                 message: 'WhatsApp no está inicializado',
-                status: 'not_ready'
+                status: 'not_ready',
+                authenticated: false
+            });
+        }
+
+        // Verificar si está autenticado
+        const isAuthenticated = await whatsappService.page.evaluate(() => {
+            return !!(document.querySelector('#pane-side') || document.querySelector('[role="main"]'));
+        });
+
+        if (!isAuthenticated) {
+            return res.status(200).json({
+                success: true,
+                status: 'requires_authentication',
+                authenticated: false,
+                message: 'Sesión de WhatsApp expirada. Abre VNC (localhost:5901) y escanea el QR en la pantalla.',
+                action: 'Abre vncviewer localhost:5901 y escanea el código QR con tu teléfono'
             });
         }
 
@@ -26,6 +56,7 @@ async function getStatusHandler(req, res, whatsappService) {
         return res.status(200).json({
             success: true,
             status: status,
+            authenticated: true,
             ready: true
         });
     } catch (error) {
@@ -41,14 +72,29 @@ async function getStatusHandler(req, res, whatsappService) {
  * GET /api/whatsapp/chats?limit=20
  * Obtiene la lista de chats
  */
-async function getChatsHandler(req, res, whatsappService) {
+async function getChatsHandler(req, res) {
     try {
         logRequest('GET', '/api/whatsapp/chats');
 
-        if (!whatsappService || !whatsappService.isSessionValid) {
+        if (!ensureWhatsAppService(req)) {
             return res.status(503).json({
                 success: false,
-                message: 'WhatsApp no está inicializado'
+                message: 'WhatsApp no está inicializado',
+                authenticated: false
+            });
+        }
+
+        // Verificar si está autenticado
+        const isAuthenticated = await whatsappService.page.evaluate(() => {
+            return !!(document.querySelector('#pane-side') || document.querySelector('[role="main"]'));
+        });
+
+        if (!isAuthenticated) {
+            return res.status(401).json({
+                success: false,
+                authenticated: false,
+                chats: [],
+                message: 'No autenticado. Abre vncviewer localhost:5901 y escanea el QR'
             });
         }
 
@@ -73,7 +119,7 @@ async function getChatsHandler(req, res, whatsappService) {
  * GET /api/whatsapp/messages?chatId=...&limit=50
  * Obtiene mensajes de un chat específico
  */
-async function getMessagesHandler(req, res, whatsappService) {
+async function getMessagesHandler(req, res) {
     try {
         logRequest('GET', '/api/whatsapp/messages');
 
@@ -85,7 +131,7 @@ async function getMessagesHandler(req, res, whatsappService) {
             });
         }
 
-        if (!whatsappService || !whatsappService.isSessionValid) {
+        if (!ensureWhatsAppService(req)) {
             return res.status(503).json({
                 success: false,
                 message: 'WhatsApp no está inicializado'
@@ -115,7 +161,7 @@ async function getMessagesHandler(req, res, whatsappService) {
  * Envía un mensaje a un chat
  * Body: { chatId, message }
  */
-async function sendMessageHandler(req, res, whatsappService) {
+async function sendMessageHandler(req, res) {
     try {
         logRequest('POST', '/api/whatsapp/send');
 
@@ -128,7 +174,7 @@ async function sendMessageHandler(req, res, whatsappService) {
             });
         }
 
-        if (!whatsappService || !whatsappService.isSessionValid) {
+        if (!ensureWhatsAppService(req)) {
             return res.status(503).json({
                 success: false,
                 message: 'WhatsApp no está inicializado'
@@ -155,11 +201,11 @@ async function sendMessageHandler(req, res, whatsappService) {
  * GET /api/whatsapp/contacts
  * Obtiene la lista de contactos
  */
-async function getContactsHandler(req, res, whatsappService) {
+async function getContactsHandler(req, res) {
     try {
         logRequest('GET', '/api/whatsapp/contacts');
 
-        if (!whatsappService || !whatsappService.isSessionValid) {
+        if (!ensureWhatsAppService(req)) {
             return res.status(503).json({
                 success: false,
                 message: 'WhatsApp no está inicializado'

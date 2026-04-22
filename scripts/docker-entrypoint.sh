@@ -88,7 +88,7 @@ if [ "$ENABLE_VNC" = "true" ]; then
   # two defer intervals.  drop the flag (or keep it small) so the listener
   # responds immediately.
   x11vnc -display :1 -forever -nopw -rfbport 5901 -noxdamage -wait 5 \
-          -ncache 10 -ncache_cr -o /app/vnc.log -bg
+          -ncache 10 -ncache_cr -noresize -o /app/vnc.log -bg
   
   echo "[entrypoint] ✓ VNC disponible en puerto 5901 (contenedor escucha en 0.0.0.0)"
   echo "[entrypoint] 📝 Registrando conexiones de VNC en /app/vnc.log"

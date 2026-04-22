@@ -74,46 +74,98 @@ class WhatsAppService {
     }
 
     /**
-     * Inicializar: abrir navegador y navegar a WhatsApp Web
+     * Restaurar sesión de WhatsApp desde archivo de cookies
+     * (usado cuando se opera en contexto aislado compartiendo browser con MP)
      */
-    async initialize() {
+    async _restoreSession() {
+        const cookieFile = process.env.WA_COOKIES_FILE || '/home/pptruser/wa-session.json';
+        if (!fs.existsSync(cookieFile)) return;
+        try {
+            const session = JSON.parse(fs.readFileSync(cookieFile, 'utf-8'));
+            if (session.cookies && session.cookies.length > 0) {
+                await this.page.setCookie(...session.cookies);
+                console.log(`[WhatsAppService] 🍪 Sesión restaurada desde archivo (${session.cookies.length} cookies)`);
+            }
+        } catch (e) {
+            console.warn('[WhatsAppService] No se pudo restaurar sesión desde archivo:', e.message);
+        }
+    }
+
+    /**
+     * Guardar cookies de sesión de WhatsApp en archivo
+     * (usado cuando se opera en contexto aislado)
+     */
+    async _saveSession() {
+        const cookieFile = process.env.WA_COOKIES_FILE || '/home/pptruser/wa-session.json';
+        try {
+            const cookies = await this.page.cookies();
+            fs.writeFileSync(cookieFile, JSON.stringify({ cookies, savedAt: new Date().toISOString() }, null, 2));
+            console.log(`[WhatsAppService] 💾 Sesión guardada (${cookies.length} cookies)`);
+        } catch (e) {
+            console.warn('[WhatsAppService] No se pudo guardar sesión:', e.message);
+        }
+    }
+
+    /**
+     * Inicializar: abrir navegador y navegar a WhatsApp Web
+     * @param {Object|null} sharedBrowser - Browser de Puppeteer compartido (ej. el de MP).
+     *   Si se pasa, WA abre un contexto aislado (incógnito) dentro de ese browser
+     *   en lugar de lanzar su propio Chromium. La sesión se persiste via cookies en archivo.
+     *   Si es null/undefined, WA lanza su propio Chromium con userDataDir propio.
+     */
+    async initialize(sharedBrowser = null) {
         try {
             console.log('[WhatsAppService] Inicializando servicio...');
 
-            // Lanzar Chromium conectado al display :1 de Xvfb
-            const chromiumArgs = [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--disable-extensions',
-                '--start-maximized',
-                '--window-size=1920,1080',
-                '--disable-web-security',
-                '--disable-features=VizDisplayCompositor',
-                '--force-device-scale-factor=1',
-                '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                '--disable-blink-features=AutomationControlled'
-            ];
+            if (sharedBrowser) {
+                // ── MODO COMPARTIDO ──────────────────────────────────────────
+                // Abrir nueva pestaña en el MISMO contexto del browser de MP.
+                // Al ser dominios distintos (mercadopago.com vs web.whatsapp.com)
+                // no hay conflicto de cookies. La sesión de WA persiste en el
+                // userDataDir del browser compartido (mp-profile), igual que la de MP.
+                console.log('[WhatsAppService] 🔀 Usando browser compartido — abriendo nueva pestaña');
+                this.page = await sharedBrowser.newPage();
+                await this.page.setViewport({ width: 1920, height: 1080 });
+                await this.page.setUserAgent(
+                    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+                );
+            } else {
+                // ── MODO PROPIO ──────────────────────────────────────────────
+                // Limpiar lock files del perfil para evitar "profile in use"
+                const userDataDir = process.env.WA_USER_DATA_DIR || '/home/pptruser/wa-profile';
+                ['SingletonLock', 'SingletonCookie', 'SingletonSocket'].forEach(f => {
+                    const fp = path.join(userDataDir, f);
+                    try { if (fs.existsSync(fp)) { fs.unlinkSync(fp); console.log(`[WhatsAppService] 🔓 Lock eliminado: ${fp}`); } } catch (e) { /* ignorar */ }
+                });
 
-            this.browser = await puppeteer.launch({
-                headless: false,
-                userDataDir: '/home/pptruser/wa-profile',
-                args: chromiumArgs,
-                defaultViewport: {
-                    width: 1920,
-                    height: 1080,
-                    deviceScaleFactor: 1,
-                    isMobile: false,
-                    hasTouch: false,
-                    isLandscape: true
-                }
-            });
+                const chromiumArgs = [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--disable-extensions',
+                    '--start-maximized',
+                    '--window-size=1920,1080',
+                    '--disable-web-security',
+                    '--disable-features=VizDisplayCompositor',
+                    '--force-device-scale-factor=1',
+                    '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                    '--disable-blink-features=AutomationControlled'
+                ];
 
-            console.log('✅ [WhatsAppService] Navegador iniciado');
+                this.browser = await puppeteer.launch({
+                    headless: this.headlessMode !== undefined ? this.headlessMode : (process.env.HEADLESS === 'true'),
+                    userDataDir: userDataDir,
+                    env: { ...process.env, DISPLAY: process.env.DISPLAY || ':1' },
+                    args: chromiumArgs,
+                    defaultViewport: { width: 1920, height: 1080, deviceScaleFactor: 1, isMobile: false, hasTouch: false, isLandscape: true }
+                });
 
-            const pages = await this.browser.pages();
-            this.page = pages.length > 0 ? pages[0] : await this.browser.newPage();
+                console.log('✅ [WhatsAppService] Navegador propio iniciado');
+
+                const pages = await this.browser.pages();
+                this.page = pages.length > 0 ? pages[0] : await this.browser.newPage();
+            }
 
             // Navegar a WhatsApp Web
             console.log('[WhatsAppService] Navegando a https://web.whatsapp.com...');
@@ -123,10 +175,25 @@ class WhatsAppService {
             });
 
             console.log('✅ [WhatsAppService] Página de WhatsApp Web cargada');
-            console.log('[WhatsAppService] ⏳ Esperando a que escanees el QR con tu teléfono...');
-            console.log('[WhatsAppService] 📱 Abre VNC en localhost:5902 para ver la pantalla del navegador');
 
-            // Esperar a que se autentique
+            // Detectar si ya está autenticado antes de esperar QR
+            const isAlreadyAuthenticated = await this.page.evaluate(() => {
+                const hasChatList = !!document.querySelector('#pane-side');
+                const hasConversation = !!document.querySelector('[role="main"]');
+                return hasChatList || hasConversation;
+            });
+
+            if (isAlreadyAuthenticated) {
+                console.log('[WhatsAppService] ✅ Sesión previa detectada - ya autenticado');
+                this.isSessionValid = true;
+                await this._logPageStructure();
+                return;
+            }
+
+            console.log('[WhatsAppService] ⏳ Esperando a que escanees el QR con tu teléfono...');
+            console.log('[WhatsAppService] 📱 Abre VNC en localhost:5901 para ver la pantalla del navegador');
+
+            // Esperar autenticación
             await this._waitForAuthentication();
 
             this.isSessionValid = true;
@@ -267,9 +334,10 @@ class WhatsAppService {
 
     /**
      * Verificar si el servicio está listo
+     * Soporta tanto browser propio (this.browser) como contexto compartido (this.context)
      */
     isReady() {
-        return this.isSessionValid && !!this.page && !!this.browser;
+        return this.isSessionValid && !!this.page;
     }
 
     /**
@@ -339,6 +407,13 @@ class WhatsAppService {
             console.error('[WhatsAppService] Error obteniendo chats:', error.message);
             throw error;
         }
+    }
+
+    /**
+     * Obtener contactos (alias de chats)
+     */
+    async getContacts(limit = 50) {
+        return this.getChats(limit);
     }
 
     /**
