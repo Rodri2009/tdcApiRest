@@ -1104,3 +1104,116 @@ td.description {
         grid-template-columns: 100px 1fr;
     }
 }
+
+/* =============================================================================
+   DROPDOWN PERSONALIZADO DE ESTADO (REUTILIZABLE)
+   ============================================================================= */
+.estado-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.estado-dropdown-toggle {
+    background-color: #1d4ed8;
+    color: #ffffff;
+    border: 1px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+}
+
+.estado-dropdown-toggle:hover {
+    opacity: 0.9;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.estado-dropdown-toggle.estado-solicitado {
+    background-color: #1d4ed8;
+    border-color: #0ea5e9;
+}
+
+.estado-dropdown-toggle.estado-contactado {
+    background-color: #6b7280;
+    border-color: #4b5563;
+}
+
+.estado-dropdown-toggle.estado-confirmado {
+    background-color: #16a34a;
+    border-color: #15803d;
+}
+
+.estado-dropdown-toggle.estado-cancelado {
+    background-color: #dc2626;
+    border-color: #b91c1c;
+}
+
+.estado-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #1e293b;
+    border: 1px solid #581c87;
+    border-radius: 8px;
+    margin-top: 4px;
+    z-index: 1000;
+    min-width: 140px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    display: none;
+    overflow: hidden;
+}
+
+.estado-dropdown-menu.show {
+    display: block;
+}
+
+.estado-dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    color: #ffffff;
+    border-bottom: 1px solid rgba(140, 140, 140, 0.1);
+}
+
+.estado-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.estado-dropdown-item[data-estado="Solicitado"] {
+    background-color: #1d4ed8;
+}
+
+.estado-dropdown-item[data-estado="Solicitado"]:hover {
+    background-color: #1e40af;
+}
+
+.estado-dropdown-item[data-estado="Contactado"] {
+    background-color: #6b7280;
+}
+
+.estado-dropdown-item[data-estado="Contactado"]:hover {
+    background-color: #4b5563;
+}
+
+.estado-dropdown-item[data-estado="Confirmado"] {
+    background-color: #16a34a;
+}
+
+.estado-dropdown-item[data-estado="Confirmado"]:hover {
+    background-color: #15803d;
+}
+
+.estado-dropdown-item[data-estado="Cancelado"] {
+    background-color: #dc2626;
+}
+
+.estado-dropdown-item[data-estado="Cancelado"]:hover {
+    background-color: #b91c1c;
+}

@@ -9,6 +9,38 @@
     <link rel="stylesheet" href="/css/fontawesome.min.css">
     <link rel="stylesheet" href="/styles/admin.css">
     <link rel="stylesheet" href="/css/config-pages.css">
+    <style>
+        /* Agrandar título y logos del catálogo de bandas */
+        #section-catalogo .card-title {
+            font-size: 2.1rem;
+            letter-spacing: 0.02em;
+        }
+
+        .tabs .tab[data-section="catalogo"] {
+            font-size: 1.05rem;
+        }
+
+        .tabs .tab[data-section="catalogo"] i {
+            font-size: 1.3rem;
+            margin-right: 0.55rem;
+        }
+
+        #section-catalogo .logo-thumb {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+            border-radius: 10px;
+            display: inline-block;
+            background: #1f2937;
+        }
+
+        #section-catalogo table th:first-child,
+        #section-catalogo table td:first-child {
+            width: 90px;
+            text-align: center;
+            vertical-align: middle;
+        }
+    </style>
 </head>
 
 <body>
@@ -506,13 +538,13 @@
         // ============================================================
         // CARGA DE DATOS
         // ============================================================
-        async function loadBandas() {
+        async function loadBandas(silent = false) {
             try {
                 const res = await fetch('/api/bandas');
                 if (res.ok) {
                     bandas = await res.json();
                     renderBandas();
-                    showBanner(`${bandas.length} banda${bandas.length !== 1 ? 's' : ''} cargada${bandas.length !== 1 ? 's' : ''}`, 'success', 2500);
+                    if (!silent) showBanner(`${bandas.length} banda${bandas.length !== 1 ? 's' : ''} cargada${bandas.length !== 1 ? 's' : ''}`, 'success', 2500);
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     showBanner(`Error al cargar bandas: ${errData.error || res.statusText}`, 'error');
@@ -1089,6 +1121,7 @@
                         document.getElementById('bandaModalClienteId').value = c.id_cliente || '';
                         document.getElementById('bandaModalClienteIdDisplay').textContent = c.id_cliente || '-';
                         document.getElementById('bandaModalClienteNombre').value = c.nombre || '';
+                        document.getElementById('bandaModalClienteApellido').value = c.apellido || '';
                         document.getElementById('bandaModalClienteEmail').value = c.email || '';
                         document.getElementById('bandaModalClienteTelefono').value = c.telefono || '';
                     } else { _clearBandaClienteModal(); }
@@ -1157,6 +1190,7 @@
                         document.getElementById('bandaModalClienteId').value = c.id_cliente || '';
                         document.getElementById('bandaModalClienteIdDisplay').textContent = c.id_cliente || '-';
                         document.getElementById('bandaModalClienteNombre').value = c.nombre || '';
+                        document.getElementById('bandaModalClienteApellido').value = c.apellido || '';
                         document.getElementById('bandaModalClienteEmail').value = c.email || '';
                         document.getElementById('bandaModalClienteTelefono').value = c.telefono || '';
                     } else { _clearBandaClienteModal(); }
@@ -1166,7 +1200,7 @@
         }
 
         function _clearBandaClienteModal() {
-            ['bandaModalClienteId','bandaModalClienteNombre','bandaModalClienteEmail','bandaModalClienteTelefono'].forEach(id => {
+            ['bandaModalClienteId','bandaModalClienteNombre','bandaModalClienteApellido','bandaModalClienteEmail','bandaModalClienteTelefono'].forEach(id => {
                 document.getElementById(id).value = '';
             });
             document.getElementById('bandaModalClienteIdDisplay').textContent = '-';
@@ -1187,15 +1221,18 @@
                 }
                 container.innerHTML = clientes.map(function(c, idx) {
                     var nombre = c.nombre || '';
+                    var apellido = c.apellido || '';
                     var email = c.email || '';
                     var telefono = c.telefono || '';
                     var nombreDisplay = nombre ? nombre.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Sin nombre';
+                    var apellidoDisplay = apellido ? apellido.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
                     var emailDisplay = email.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     var telefonoDisplay = telefono.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    var nombreCompleto = nombreDisplay + (apellidoDisplay ? ' ' + apellidoDisplay : '');
                     return '<div style="padding:8px;border-bottom:1px solid #374151;cursor:pointer;"'
                         + ' data-idx="' + idx + '"'
                         + ' onmouseover="this.style.background=\'#2a2a2a\'" onmouseout="this.style.background=\'transparent\'">'
-                        + '<div style="font-weight:bold;color:#f0abfc;">' + nombreDisplay + '</div>'
+                        + '<div style="font-weight:bold;color:#f0abfc;">' + nombreCompleto + '</div>'
                         + (email ? '<div style="font-size:0.82rem;color:#9ca3af;">' + emailDisplay + '</div>' : '')
                         + (telefono ? '<div style="font-size:0.82rem;color:#9ca3af;">' + telefonoDisplay + '</div>' : '')
                         + '</div>';
@@ -1205,16 +1242,17 @@
                     var idx = parseInt(el.dataset.idx, 10);
                     var c = clientes[idx];
                     el.addEventListener('click', function() {
-                        _seleccionarClienteBanda(c.id_cliente, c.nombre || '', c.email || '', c.telefono || '');
+                        _seleccionarClienteBanda(c.id_cliente, c.nombre || '', c.apellido || '', c.email || '', c.telefono || '');
                     });
                 });
             } catch (e) { console.error('[CLIENTES]', e); }
         }
 
-        function _seleccionarClienteBanda(id, nombre, email, telefono) {
+        function _seleccionarClienteBanda(id, nombre, apellido, email, telefono) {
             document.getElementById('bandaModalClienteId').value = id;
             document.getElementById('bandaModalClienteIdDisplay').textContent = id;
             document.getElementById('bandaModalClienteNombre').value = nombre;
+            document.getElementById('bandaModalClienteApellido').value = apellido;
             document.getElementById('bandaModalClienteEmail').value = email;
             document.getElementById('bandaModalClienteTelefono').value = telefono;
             document.getElementById('banda-cliente-id').value = id;
@@ -1231,25 +1269,45 @@
         async function saveBandaClienteModal() {
             var id = document.getElementById('bandaModalClienteId').value;
             var nombre = document.getElementById('bandaModalClienteNombre').value.trim();
+            var apellido = document.getElementById('bandaModalClienteApellido').value.trim();
             var email = document.getElementById('bandaModalClienteEmail').value.trim();
             var telefono = document.getElementById('bandaModalClienteTelefono').value.trim();
-            if (!nombre && !email && !telefono) { showBanner('Completá al menos un campo.', 'error'); return; }
+            if (!nombre && !apellido && !email && !telefono) { showBanner('Completá al menos un campo.', 'error'); return; }
             try {
                 var token = localStorage.getItem('authToken');
                 // ── Caso: llamado desde icono de fila (no desde modal de banda)
                 if (_editContactoBandaCtx) {
                     var idBanda = _editContactoBandaCtx.id_banda;
                     _editContactoBandaCtx = null;
-                    var res = await fetch('/api/bandas/' + idBanda, {
-                        method: 'PUT',
+                    // El contacto se guarda en la tabla clientes (no en bandas_artistas)
+                    var clienteId = document.getElementById('bandaModalClienteId').value;
+                    var clienteUrl = clienteId ? '/api/admin/clientes/' + clienteId : '/api/admin/clientes';
+                    var clienteMethod = clienteId ? 'PUT' : 'POST';
+                    var res = await fetch(clienteUrl, {
+                        method: clienteMethod,
                         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                        body: JSON.stringify({ contacto_nombre: nombre, contacto_email: email, contacto_telefono: telefono })
+                        body: JSON.stringify({ nombre: nombre, apellido: apellido, email: email, telefono: telefono })
                     });
                     var data = await res.json().catch(function() { return {}; });
-                    if (!res.ok) { showBanner(data.error || 'Error al guardar contacto', 'error'); return; }
-                    showBanner('Contacto actualizado', 'success');
+                    if (!res.ok) { showBanner(data.error || 'Error al ' + (clienteId ? 'modificar' : 'agregar') + ' los datos del contacto', 'error'); return; }
+                    // Si fue un cliente nuevo, vincular la banda con el nuevo id_cliente
+                    if (!clienteId && data.id_cliente) {
+                        var resVinculo = await fetch('/api/bandas/' + idBanda, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                            body: JSON.stringify({ id_cliente: data.id_cliente })
+                        });
+                        if (!resVinculo.ok) {
+                            showBanner('Contacto creado pero no se pudo vincular a la banda', 'error');
+                            closeBandaClienteModal();
+                            loadBandas();
+                            return;
+                        }
+                    }
+                    var accionContacto = clienteId ? 'Datos del contacto modificados correctamente' : 'Datos del contacto agregados correctamente';
+                    showBanner(accionContacto, 'success');
                     closeBandaClienteModal();
-                    loadBandas();
+                    loadBandas(true);
                     return;
                 }
                 // ── Caso: llamado desde dentro del modal de editar banda
@@ -1258,21 +1316,22 @@
                 var res = await fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ nombre: nombre, email: email, telefono: telefono })
+                    body: JSON.stringify({ nombre: nombre, apellido: apellido, email: email, telefono: telefono })
                 });
                 var data = await res.json().catch(function() { return {}; });
-                if (!res.ok) { showBanner(data.error || 'Error al guardar cliente', 'error'); return; }
+                if (!res.ok) { showBanner(data.error || 'Error al ' + (id ? 'modificar' : 'agregar') + ' los datos del contacto', 'error'); return; }
                 var nuevoId = id || data.id_cliente || data.id || '';
                 document.getElementById('banda-cliente-id').value = nuevoId;
                 document.getElementById('bandaModalClienteId').value = nuevoId;
                 document.getElementById('bandaModalClienteIdDisplay').textContent = nuevoId || '-';
-                document.getElementById('banda-contacto-nombre').value = nombre;
+                document.getElementById('banda-contacto-nombre').value = [nombre, apellido].filter(Boolean).join(' ');
                 document.getElementById('banda-contacto-email').value = email;
                 document.getElementById('banda-contacto-telefono').value = telefono;
                 _updateBandaContactoResumen();
-                showBanner('Cliente guardado', 'success');
+                var accion = id ? 'Datos del contacto modificados correctamente' : 'Datos del contacto agregados correctamente';
+                showBanner(accion, 'success');
                 closeBandaClienteModal();
-            } catch (e) { console.error('[CLIENTES]', e); showBanner('Error de conexión', 'error'); }
+            } catch (e) { console.error('[CLIENTES]', e); showBanner('Hubo un error al procesar los datos del contacto', 'error'); }
         }
 
         document.body.insertAdjacentHTML('beforeend',
@@ -1290,6 +1349,8 @@
             + '<div style="margin-bottom:8px;font-size:0.82rem;color:#9ca3af;">ID Cliente: <span id="bandaModalClienteIdDisplay">-</span></div>'
             + '<div style="margin-bottom:10px;"><label>Nombre</label>'
             + '<input type="text" id="bandaModalClienteNombre" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;"></div>'
+            + '<div style="margin-bottom:10px;"><label>Apellido</label>'
+            + '<input type="text" id="bandaModalClienteApellido" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;"></div>'
             + '<div style="margin-bottom:10px;"><label>Email</label>'
             + '<input type="email" id="bandaModalClienteEmail" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;"></div>'
             + '<div style="margin-bottom:16px;"><label>Teléfono / WhatsApp</label>'

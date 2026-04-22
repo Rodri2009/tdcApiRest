@@ -342,6 +342,7 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
                 sfb.fecha_evento,
                 sfb.hora_evento,
                 s.duracion_minutos AS duracion,
+                s.hora_fin,
                 s.descripcion_larga AS descripcion,
                 sfb.id_evento_generado,
                 s.estado,
@@ -764,11 +765,11 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
         // ✅ B3: Precios desde solicitudes_fechas_bandas (ÚNICA fuente de verdad)
         if (precio_anticipada !== undefined) {
             actualizaciones.push('precio_anticipada = ?');
-            params.push(precio_anticipada ? parseFloat(precio_anticipada) : null);
+            params.push(precio_anticipada !== null && precio_anticipada !== '' ? parseFloat(precio_anticipada) : null);
         }
         if (precio_puerta !== undefined) {
             actualizaciones.push('precio_puerta = ?');
-            params.push(precio_puerta ? parseFloat(precio_puerta) : null);
+            params.push(precio_puerta !== null && precio_puerta !== '' ? parseFloat(precio_puerta) : null);
         }
 
         if (expectativa_publico !== undefined) {

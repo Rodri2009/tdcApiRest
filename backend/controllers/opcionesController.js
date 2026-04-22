@@ -225,7 +225,7 @@ const getFechasOcupadas = async (req, res) => {
                     UNION
                     SELECT DATE_FORMAT(sfb.fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(sfb.hora_evento), 'hs', '') AS hora FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud WHERE sol.estado = 'Confirmado'
                     UNION
-                    SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha, TIME_FORMAT(hora_inicio, '%H:%i') AS hora FROM eventos_confirmados WHERE activo = 1
+                    SELECT DATE_FORMAT(ec.fecha_evento, '%Y-%m-%d') AS fecha, TIME_FORMAT(ec.hora_inicio, '%H:%i') AS hora FROM eventos_confirmados ec JOIN solicitudes sol ON ec.id_solicitud = sol.id_solicitud WHERE ec.activo = 1 AND sol.estado = 'Confirmado'
                 ) AS todas
                 WHERE fecha IS NOT NULL
                 ORDER BY fecha, hora;
@@ -260,7 +260,7 @@ const getFechasOcupadas = async (req, res) => {
                 UNION
                 SELECT DATE_FORMAT(sfb.fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud WHERE sol.estado = 'Confirmado'
                 UNION
-                SELECT DATE_FORMAT(fecha_evento, '%Y-%m-%d') AS fecha FROM eventos_confirmados WHERE activo = 1
+                SELECT DATE_FORMAT(ec.fecha_evento, '%Y-%m-%d') AS fecha FROM eventos_confirmados ec JOIN solicitudes sol ON ec.id_solicitud = sol.id_solicitud WHERE ec.activo = 1 AND sol.estado = 'Confirmado'
             ) AS todas
             WHERE fecha IS NOT NULL
             ORDER BY fecha;

@@ -346,6 +346,17 @@
             </div>
         </div>
         <script>
+            function handleFlyerError(img) {
+                img.onerror = null;
+                const fallback = document.createElement('span');
+                fallback.className = 'flyer-missing';
+                fallback.style.flexDirection = 'column';
+                const tr = img.closest('tr');
+                const solicitudId = tr ? tr.dataset.solicitudId : '';
+                fallback.innerHTML = `📄<span class="flyer-missing-text">Flyer no disponible</span><button type="button" class="btn-upload-flyer" data-solicitud-id="${solicitudId}">＋ Subir imagen</button>`;
+                img.replaceWith(fallback);
+            }
+
             document.addEventListener('DOMContentLoaded', () => {
                 const tbody = document.getElementById('solicitudes-tbody');
                 const table = document.getElementById('solicitudes-table');
@@ -988,17 +999,6 @@
                     notificationTimer = setTimeout(() => {
                         banner.className = '';
                     }, duration);
-                }
-
-                function handleFlyerError(img) {
-                    img.onerror = null;
-                    const fallback = document.createElement('span');
-                    fallback.className = 'flyer-missing';
-                    fallback.style.flexDirection = 'column';
-                    const tr = img.closest('tr');
-                    const solicitudId = tr ? tr.dataset.solicitudId : '';
-                    fallback.innerHTML = `📄<span class="flyer-missing-text">Flyer no disponible</span><button type="button" class="btn-upload-flyer" data-solicitud-id="${solicitudId}">＋ Subir imagen</button>`;
-                    img.replaceWith(fallback);
                 }
 
                 tbody.addEventListener('click', (event) => {

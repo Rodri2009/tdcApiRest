@@ -238,16 +238,8 @@ const actualizarEstadoSolicitud = async (req, res) => {
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
         }
 
-        // Actualizar estado en la tabla de solicitudes específica
-        // Todas las tablas hijas usan ahora `id_solicitud` como PK
-        const fieldName = 'id_solicitud';
-        let result;
-        // En servicios y talleres el estado se guarda en la tabla padre `solicitudes`
-        if (tablaOrigen === 'solicitudes_servicios' || tablaOrigen === 'solicitudes_talleres') {
-            result = await conn.query(`UPDATE solicitudes SET estado = ? WHERE id = ?`, [estado, realId]);
-        } else {
-            result = await conn.query(`UPDATE ${tablaOrigen} SET estado = ? WHERE ${fieldName} = ?`, [estado, realId]);
-        }
+        // Actualizar estado en la tabla padre `solicitudes` (TODAS las solicitudes tienen su estado allí)
+        const result = await conn.query(`UPDATE solicitudes SET estado = ? WHERE id_solicitud = ?`, [estado, realId]);
 
         if (result.affectedRows === 0) {
             await conn.rollback();
@@ -1072,7 +1064,7 @@ const actualizarEvento = async (req, res) => {
 };
 
 /**
- * Cancela/desactiva un evento (marca activo = 0).
+ * Cancela/desactiva un evento (marca activo = 0) y actualiza el estado de la solicitud a 'Cancelado'.
  */
 const cancelarEvento = async (req, res) => {
     const { id } = req.params;
@@ -1082,13 +1074,31 @@ const cancelarEvento = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        // Actualizar tanto el estado como el campo activo
-        // La tabla de eventos ahora es `eventos_confirmados` (reemplaza a la definición previa usada para bandas).
-        const result = await conn.query(
+        
+        // Primero obtener el id_solicitud del evento
+        const eventoResult = await conn.query(
+            "SELECT id_solicitud FROM eventos_confirmados WHERE id = ?",
+            [eventId]
+        );
+        
+        if (eventoResult.length === 0) {
+            return res.status(404).json({ message: 'Evento no encontrado.' });
+        }
+        
+        const idSolicitud = eventoResult[0].id_solicitud;
+        
+        // Actualizar el evento como inactivo
+        const updateEventoResult = await conn.query(
             "UPDATE eventos_confirmados SET activo = 0, cancelado_en = NOW() WHERE id = ?",
             [eventId]
         );
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Evento no encontrado.' });
+        
+        // Actualizar la solicitud padre a estado 'Cancelado'
+        await conn.query(
+            "UPDATE solicitudes SET estado = 'Cancelado' WHERE id_solicitud = ?",
+            [idSolicitud]
+        );
+        
         res.status(200).json({ success: true, message: 'Evento cancelado correctamente.' });
     } catch (err) {
         logError('Error al cancelar evento', err);

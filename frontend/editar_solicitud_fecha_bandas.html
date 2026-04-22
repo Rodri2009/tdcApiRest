@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <style>
@@ -691,12 +692,18 @@
                 </div>
                 <div>
                     <span style="color: #9ca3af;">Estado:</span>
-                    <select id="estadoSelect" class="estado-badge" style="width: auto; padding: 4px 12px;">
-                        <option value="Solicitado">Solicitado</option>
-                        <option value="Contactado">Contactado</option>
-                        <option value="Confirmado">Confirmado</option>
-                        <option value="Cancelado">Cancelado</option>
-                    </select>
+                    <div class="estado-dropdown-container">
+                        <button class="estado-dropdown-toggle" id="estadoToggle">
+                            <span id="estadoLabel">Solicitado</span>
+                            <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                        </button>
+                        <div class="estado-dropdown-menu" id="estadoMenu">
+                            <div class="estado-dropdown-item" data-estado="Solicitado">Solicitado</div>
+                            <div class="estado-dropdown-item" data-estado="Contactado">Contactado</div>
+                            <div class="estado-dropdown-item" data-estado="Confirmado">Confirmado</div>
+                            <div class="estado-dropdown-item" data-estado="Cancelado">Cancelado</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -912,15 +919,113 @@
             });
         }
 
-        function updateEstadoSelectClass() {
-            const select = document.getElementById('estadoSelect');
-            if (!select) return;
-            select.classList.remove('estado-solicitado', 'estado-contactado', 'estado-confirmado', 'estado-cancelado');
-            const value = (select.value || '').trim();
-            if (value === 'Confirmado') select.classList.add('estado-confirmado');
-            else if (value === 'Cancelado') select.classList.add('estado-cancelado');
-            else if (value === 'Contactado') select.classList.add('estado-contactado');
-            else select.classList.add('estado-solicitado');
+        // Estado anterior para revertir si cancela
+        let estadoAnterior = 'Solicitado';
+
+        function updateEstadoDisplay(estado) {
+            const toggle = document.getElementById('estadoToggle');
+            const label = document.getElementById('estadoLabel');
+            
+            if (!toggle || !label) return;
+            
+            // Actualizar texto
+            label.textContent = estado;
+            
+            // Actualizar colores del botón
+            toggle.classList.remove('estado-solicitado', 'estado-contactado', 'estado-confirmado', 'estado-cancelado');
+            if (estado === 'Confirmado') toggle.classList.add('estado-confirmado');
+            else if (estado === 'Cancelado') toggle.classList.add('estado-cancelado');
+            else if (estado === 'Contactado') toggle.classList.add('estado-contactado');
+            else toggle.classList.add('estado-solicitado');
+        }
+
+        function setupEstadoDropdown() {
+            const toggle = document.getElementById('estadoToggle');
+            const menu = document.getElementById('estadoMenu');
+            const items = document.querySelectorAll('.estado-dropdown-item');
+            
+            if (!toggle || !menu) return;
+
+            // Abrir/cerrar dropdown
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = menu.classList.contains('show');
+                if (!isOpen) {
+                    // Guardar estado actual al abrir
+                    estadoAnterior = document.getElementById('estadoLabel').textContent;
+                }
+                menu.classList.toggle('show');
+            });
+
+            // Cerrar cuando haces click fuera
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.estado-dropdown-container')) {
+                    if (menu.classList.contains('show')) {
+                        menu.classList.remove('show');
+                        // Revertir al estado anterior cuando cierras sin seleccionar
+                        updateEstadoDisplay(estadoAnterior);
+                    }
+                }
+            });
+
+            // Click en opciones
+            items.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const nuevoEstado = item.dataset.estado;
+                    menu.classList.remove('show');
+                    cambiarEstado(nuevoEstado);
+                });
+            });
+        }
+
+        function cambiarEstado(nuevoEstado) {
+            if (!eventoId) {
+                showNotification('No hay un evento cargado para cambiar el estado', 'error');
+                updateEstadoDisplay(estadoAnterior);
+                return;
+            }
+
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                showNotification('No tiene autorización para cambiar el estado', 'error');
+                updateEstadoDisplay(estadoAnterior);
+                return;
+            }
+
+            (async () => {
+                try {
+                    console.log('[BANDAS] Cambiando estado a:', nuevoEstado);
+                    showLoading(true);
+
+                    const res = await fetch(`/api/solicitudes-fechas-bandas/${eventoId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ estado: nuevoEstado })
+                    });
+
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        throw new Error(data.message || data.error || `Error HTTP ${res.status}`);
+                    }
+
+                    console.log('[BANDAS] ✓ Estado actualizado correctamente a:', nuevoEstado);
+                    estadoAnterior = nuevoEstado; // Guardar nuevo estado anterior
+                    updateEstadoDisplay(nuevoEstado);
+                    showNotification(`Estado actualizado a ${nuevoEstado}`, 'success');
+                } catch (err) {
+                    console.error('[BANDAS] ✗ Error al cambiar estado:', err);
+                    showNotification('Error al cambiar estado: ' + err.message, 'error');
+                    // Revertir
+                    updateEstadoDisplay(estadoAnterior);
+                } finally {
+                    showLoading(false);
+                }
+            })();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -951,6 +1056,7 @@
                 document.querySelector('h2').textContent = 'Crear Nuevo Evento';
                 document.getElementById('btnEliminar').style.display = 'none';
                 initCalendario();
+                setupEstadoDropdown(); // Configurar dropdown de estados
                 showLoading(false);
                 document.getElementById('btnGuardar').addEventListener('click', guardarEvento);
                 return;
@@ -1341,19 +1447,26 @@
                 }
 
                 if (evento.hora_inicio) {
-                    document.getElementById('horaInicio').value = formatTime24(evento.hora_inicio);
+                    const horaInicioStr = formatTime24(evento.hora_inicio);
+                    const fpHoraInicio = document.getElementById('horaInicio')._flatpickr;
+                    if (fpHoraInicio) {
+                        fpHoraInicio.setDate(horaInicioStr, false);
+                    } else {
+                        document.getElementById('horaInicio').value = horaInicioStr;
+                    }
                 }
 
                 // Guardar duración en minutos para el cálculo de hora fin / envío al backend
+                // NOTA: evento.duracion ya viene en MINUTOS desde el backend (s.duracion_minutos)
                 if (evento.duracion) {
-                    const duracionInHoras = typeof evento.duracion === 'number'
+                    const durMinutos = typeof evento.duracion === 'number'
                         ? evento.duracion
-                        : (typeof evento.duracion === 'string' && evento.duracion.match(/(\d+(?:\.\d+)?)/))
-                            ? parseFloat(evento.duracion.match(/(\d+(?:\.\d+)?)/)[1])
-                            : null;
+                        : (typeof evento.duracion === 'string'
+                            ? (parseInt(evento.duracion, 10) || null)
+                            : null);
 
-                    if (duracionInHoras !== null && !isNaN(duracionInHoras)) {
-                        window.duracionMinutos = Math.round(duracionInHoras * 60);
+                    if (durMinutos !== null && !isNaN(durMinutos) && durMinutos > 0) {
+                        window.duracionMinutos = durMinutos;
                         console.log('[HORARIOS] Duración guardada en window.duracionMinutos:', window.duracionMinutos);
                     }
 
@@ -1364,16 +1477,24 @@
                 }
 
                 // Calcular hora de fin después de cargar horaInicio y duracion
-                calcularHoraFin();
+                // Si el backend retorna hora_fin, usarla directamente (fuente de verdad)
                 if (evento.hora_fin) {
-                    document.getElementById('horaFin').value = evento.hora_fin ? formatTime24(evento.hora_fin) : '';
+                    const horaFinStr = formatTime24(evento.hora_fin);
+                    const fpHoraFin = document.getElementById('horaFin')._flatpickr;
+                    if (fpHoraFin) {
+                        fpHoraFin.setDate(horaFinStr, false);
+                    } else {
+                        document.getElementById('horaFin').value = horaFinStr;
+                    }
+                } else {
+                    calcularHoraFin();
                 }
 
                 document.getElementById('aforoMaximo').value = evento.aforo_maximo || 120;
                 document.getElementById('esPublico').value = evento.es_publico ? '1' : '0';
 
-                document.getElementById('precioAnticipada').value = evento.precio_anticipada || '';
-                document.getElementById('precioPuerta').value = evento.precio_puerta || '';
+                document.getElementById('precioAnticipada').value = evento.precio_anticipada != null ? evento.precio_anticipada : '0';
+                document.getElementById('precioPuerta').value = evento.precio_puerta != null ? evento.precio_puerta : '0';
 
                 // Guardar cliente_id en campo oculto para permitir edición
                 if (document.getElementById('clienteId')) {
@@ -1414,8 +1535,11 @@
                     btnEdit.style.display = 'inline-block';
                 }
 
-                document.getElementById('estadoSelect').value = evento.estado || 'Solicitado';
-                updateEstadoSelectClass();
+                // Cargar estado actual del evento en el dropdown personalizado
+                const estadoActual = evento.estado || 'Solicitado';
+                estadoAnterior = estadoActual;
+                updateEstadoDisplay(estadoActual);
+                setupEstadoDropdown();
 
                 // Actualizar estado de botones según autenticación
                 const authToken = localStorage.getItem('authToken');
@@ -1516,9 +1640,9 @@
                 hora_evento: formatoHora,
                 expectativa_publico: parseInt(document.getElementById('aforoMaximo').value, 10) || 120,
                 es_publico: document.getElementById('esPublico').value === '1' ? 1 : 0,
-                precio_puerta: document.getElementById('precioPuerta').value ? parseFloat(document.getElementById('precioPuerta').value) : null,
+                precio_puerta: document.getElementById('precioPuerta').value !== '' ? parseFloat(document.getElementById('precioPuerta').value) : null,
                 url_flyer: document.getElementById('urlFlyer').value.trim(),
-                estado: document.getElementById('estadoSelect').value
+                estado: document.getElementById('estadoLabel').textContent
             };
 
             // Evitar enviar data:URI dentro del JSON (usar /api/uploads/flyers)
@@ -1532,10 +1656,8 @@
             if (nombreEventoVal) datos.descripcion_corta = nombreEventoVal;
 
             // Precio Anticipada -> mapear a precio_anticipada
-            const precioAnt = parseFloat(document.getElementById('precioAnticipada').value) || null;
-            if (precioAnt && precioAnt > 0) {
-                datos.precio_anticipada = precioAnt;
-            }
+            const precioAntVal = document.getElementById('precioAnticipada').value;
+            datos.precio_anticipada = precioAntVal !== '' ? parseFloat(precioAntVal) : null;
 
             // ID del cliente asociado
             const clienteId = document.getElementById('clienteId').value;

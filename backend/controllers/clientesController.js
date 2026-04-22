@@ -47,8 +47,8 @@ const searchClientes = async (req, res) => {
         conn = await pool.getConnection();
         const like = `%${q}%`;
         const rows = await conn.query(
-            `SELECT id_cliente, nombre, telefono, email FROM clientes WHERE nombre LIKE ? OR email LIKE ? OR telefono LIKE ? LIMIT 50`,
-            [like, like, like]
+            `SELECT id_cliente, nombre, apellido, telefono, email FROM clientes WHERE nombre LIKE ? OR apellido LIKE ? OR email LIKE ? OR telefono LIKE ? LIMIT 50`,
+            [like, like, like, like]
         );
         res.status(200).json(rows);
     } catch (err) {

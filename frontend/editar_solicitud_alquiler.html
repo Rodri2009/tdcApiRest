@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
@@ -502,12 +503,18 @@
                 </div>
                 <div>
                     <span style="color: #9ca3af;">Estado:</span>
-                    <select id="estadoSolicitud" class="estado-badge" style="width: auto; padding: 4px 12px;">
-                        <option value="Solicitado">Solicitado</option>
-                        <option value="Contactado">Contactado</option>
-                        <option value="Confirmado">Confirmado</option>
-                        <option value="Cancelado">Cancelado</option>
-                    </select>
+                    <div class="estado-dropdown-container">
+                        <button class="estado-dropdown-toggle" id="estadoToggle">
+                            <span id="estadoLabel">Solicitado</span>
+                            <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                        </button>
+                        <div class="estado-dropdown-menu" id="estadoMenu">
+                            <div class="estado-dropdown-item" data-estado="Solicitado">Solicitado</div>
+                            <div class="estado-dropdown-item" data-estado="Contactado">Contactado</div>
+                            <div class="estado-dropdown-item" data-estado="Confirmado">Confirmado</div>
+                            <div class="estado-dropdown-item" data-estado="Cancelado">Cancelado</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -694,24 +701,13 @@
                     }
                 }, 1000);
 
-                // Configurar cambio de estado con delay para asegurar que el DOM se haya cargado
+                // Configurar estado inicial del dropdown
                 setTimeout(() => {
-                    const estadoSelect = document.getElementById('estadoSolicitud');
-                    if (estadoSelect) {
-                        // Si aún no está seleccionado, intentar nuevamente
-                        if (!estadoSelect.value && window.currentSolicitud && window.currentSolicitud.estado) {
-                            estadoSelect.value = window.currentSolicitud.estado;
-                            console.log('[ESTADO] Pre-seleccionado estado actual:', window.currentSolicitud.estado);
-                        }
-                        updateEstadoSelectClass();
-
-                        estadoSelect.addEventListener('change', () => {
-                            const nuevoEstado = estadoSelect.value;
-                            updateEstadoSelectClass();
-                            if (nuevoEstado) {
-                                cambiarEstadoSolicitud(nuevoEstado, estadoSelect);
-                            }
-                        });
+                    if (window.currentSolicitud && window.currentSolicitud.estado) {
+                        const estadoActual = window.currentSolicitud.estado;
+                        estadoAnterior = estadoActual;
+                        updateEstadoDisplay(estadoActual);
+                        console.log('[ESTADO] Estado inicial cargado:', estadoActual);
                     }
                 }, 500);
             } catch (err) {
@@ -719,70 +715,6 @@
                 throw err;
             }
         });
-
-        function updateEstadoSelectClass() {
-            const select = document.getElementById('estadoSolicitud');
-            if (!select) return;
-            select.classList.remove('estado-solicitado', 'estado-contactado', 'estado-confirmado', 'estado-cancelado');
-            const value = (select.value || '').trim();
-            if (value === 'Confirmado') select.classList.add('estado-confirmado');
-            else if (value === 'Cancelado') select.classList.add('estado-cancelado');
-            else if (value === 'Contactado') select.classList.add('estado-contactado');
-            else select.classList.add('estado-solicitado');
-        }
-
-        // Función para cambiar el estado de la solicitud
-        async function cambiarEstadoSolicitud(nuevoEstado, selectElement) {
-            try {
-                // Obtener el ID de la solicitud desde el formulario o parámetros
-                const params = new URLSearchParams(window.location.search);
-                const solicitudId = params.get('solicitudId');
-
-                if (!solicitudId) {
-                    showNotification('No se pudo identificar la solicitud', 'error');
-                    return;
-                }
-
-                // Log con identificador
-                console.log('🔄 [CAMBIO ESTADO] Solicitud:', solicitudId, '→ Nuevo estado:', nuevoEstado);
-
-                // Mostrar notificación de carga
-                showNotification('Actualizando estado...', 'info');
-
-                const token = localStorage.getItem('authToken');
-                const headers = { 'Content-Type': 'application/json' };
-                if (token) {
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
-
-                // Realizar la petición PUT
-                const res = await fetch(`/api/admin/solicitudes/${solicitudId}/estado`, {
-                    method: 'PUT',
-                    headers: headers,
-                    body: JSON.stringify({ estado: nuevoEstado })
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    throw new Error(data.message || 'Error al cambiar el estado');
-                }
-
-                showNotification(`Estado actualizado a: ${nuevoEstado}`, 'success');
-                console.log('[ESTADO] Solicitud actualizada:', data);
-
-                // Opcionalmente, recargar la página después de 2 segundos para refrescar los datos
-                setTimeout(() => {
-                    location.reload();
-                }, 2000);
-
-            } catch (error) {
-                console.error('[ESTADO] Error al cambiar estado:', error);
-                showNotification(error.message || 'Error al cambiar el estado', 'error');
-                // Revertir el cambio visual
-                selectElement.value = '';
-            }
-        }
 
         // Función para mostrar notificaciones (compatible con formLogic)
         function showNotification(message, type = 'info', duration = 3000) {
@@ -830,6 +762,119 @@
     </script>
 
     <script>
+        // Estado anterior para revertir si cancela
+        let estadoAnterior = 'Solicitado';
+
+        function updateEstadoDisplay(estado) {
+            const toggle = document.getElementById('estadoToggle');
+            const label = document.getElementById('estadoLabel');
+            
+            if (!toggle || !label) return;
+            
+            // Actualizar texto
+            label.textContent = estado;
+            
+            // Actualizar colores del botón
+            toggle.classList.remove('estado-solicitado', 'estado-contactado', 'estado-confirmado', 'estado-cancelado');
+            if (estado === 'Confirmado') toggle.classList.add('estado-confirmado');
+            else if (estado === 'Cancelado') toggle.classList.add('estado-cancelado');
+            else if (estado === 'Contactado') toggle.classList.add('estado-contactado');
+            else toggle.classList.add('estado-solicitado');
+        }
+
+        function setupEstadoDropdown() {
+            const toggle = document.getElementById('estadoToggle');
+            const menu = document.getElementById('estadoMenu');
+            const items = document.querySelectorAll('.estado-dropdown-item');
+            
+            if (!toggle || !menu) return;
+
+            // Abrir/cerrar dropdown
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = menu.classList.contains('show');
+                if (!isOpen) {
+                    // Guardar estado actual al abrir
+                    estadoAnterior = document.getElementById('estadoLabel').textContent;
+                }
+                menu.classList.toggle('show');
+            });
+
+            // Cerrar cuando haces click fuera
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.estado-dropdown-container')) {
+                    if (menu.classList.contains('show')) {
+                        menu.classList.remove('show');
+                        // Revertir al estado anterior cuando cierras sin seleccionar
+                        updateEstadoDisplay(estadoAnterior);
+                    }
+                }
+            });
+
+            // Click en opciones
+            items.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const nuevoEstado = item.dataset.estado;
+                    menu.classList.remove('show');
+                    cambiarEstado(nuevoEstado);
+                });
+            });
+        }
+
+        function cambiarEstado(nuevoEstado) {
+            if (!window.solicitudId) {
+                showNotification('No hay una solicitud cargada para cambiar el estado', 'error');
+                updateEstadoDisplay(estadoAnterior);
+                return;
+            }
+
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                showNotification('No tiene autorización para cambiar el estado', 'error');
+                updateEstadoDisplay(estadoAnterior);
+                return;
+            }
+
+            (async () => {
+                try {
+                    console.log('[SOLICITUD] Cambiando estado a:', nuevoEstado);
+                    showLoading(true);
+
+                    const res = await fetch(`/api/solicitudes/${window.solicitudId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ estado: nuevoEstado })
+                    });
+
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        throw new Error(data.message || data.error || `Error HTTP ${res.status}`);
+                    }
+
+                    console.log('[SOLICITUD] ✓ Estado actualizado correctamente a:', nuevoEstado);
+                    estadoAnterior = nuevoEstado; // Guardar nuevo estado anterior
+                    updateEstadoDisplay(nuevoEstado);
+                    showNotification(`Estado actualizado a ${nuevoEstado}`, 'success');
+                } catch (err) {
+                    console.error('[SOLICITUD] ✗ Error al cambiar estado:', err);
+                    showNotification('Error al cambiar estado: ' + err.message, 'error');
+                    // Revertir
+                    updateEstadoDisplay(estadoAnterior);
+                } finally {
+                    showLoading(false);
+                }
+            })();
+        }
+
+        // Inicializar dropdown cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEstadoDropdown();
+        });
     </script>
 </body>
 

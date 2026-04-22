@@ -316,7 +316,7 @@ const updateBanda = async (req, res) => {
             'nombre', 'genero_musical', 'bio',
             'instagram', 'facebook', 'twitter', 'tiktok', 'web_oficial', 'youtube', 'spotify', 'descripcion',
             'logo_url', 'foto_prensa_url',
-            'contacto_nombre', 'contacto_email', 'contacto_telefono', 'contacto_rol',
+            'contacto_rol', 'id_cliente',
             'verificada', 'activa'
         ];
 
