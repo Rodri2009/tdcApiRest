@@ -46,8 +46,8 @@ const getSolicitudes = async (req, res) => {
                 'solicitud' as origen,
                 s.hora_evento as horaInicio,
                 COALESCE(sol2.es_publico, 0) as es_publico,
-                -- descripcion_larga del padre es el comentario del show de banda
-                COALESCE(sol2.descripcion_larga, '') as descripcionCorta,
+                -- Usar la descripción corta como resumen; la larga se mantiene en la tabla si se necesita luego
+                COALESCE(sol2.descripcion_corta, '') as descripcionCorta,
                 COALESCE(ec_bnd.url_flyer, sol2.url_flyer) as url_flyer
             FROM solicitudes_fechas_bandas s
             LEFT JOIN solicitudes sol2 ON sol2.id_solicitud = s.id_solicitud
@@ -177,11 +177,14 @@ const getSolicitudes = async (req, res) => {
  */
 const actualizarEstadoSolicitud = async (req, res) => {
     const { id } = req.params;
-    const { estado } = req.body;
+    const { estado, hora_evento } = req.body;
 
-    // Lista de estados válidos para seguridad
+    // Al menos uno de los campos debe estar presente
     const estadosValidos = ['Solicitado', 'Contactado', 'Confirmado', 'Cancelado'];
-    if (!estado || !estadosValidos.includes(estado)) {
+    if (!estado && !hora_evento) {
+        return res.status(400).json({ message: 'Se requiere estado o hora_evento.' });
+    }
+    if (estado && !estadosValidos.includes(estado)) {
         return res.status(400).json({ message: 'Estado no válido.' });
     }
 
@@ -236,6 +239,22 @@ const actualizarEstadoSolicitud = async (req, res) => {
         if (!solicitud) {
             await conn.rollback();
             return res.status(404).json({ message: 'Solicitud no encontrada.' });
+        }
+
+        // Actualizar hora_evento en la tabla específica si se proporcionó
+        if (hora_evento) {
+            // Validar formato HH:MM o HH:MM:SS básico
+            if (!/^\d{2}:\d{2}(:\d{2})?$/.test(hora_evento)) {
+                await conn.rollback();
+                return res.status(400).json({ message: 'Formato de hora inválido. Use HH:MM' });
+            }
+            await conn.query(`UPDATE ${tablaOrigen} SET hora_evento = ? WHERE id_solicitud = ?`, [hora_evento, realId]);
+        }
+
+        // Si solo se actualiza la hora, confirmar y salir
+        if (!estado) {
+            await conn.commit();
+            return res.json({ message: 'Hora actualizada correctamente.' });
         }
 
         // Actualizar estado en la tabla padre `solicitudes` (TODAS las solicitudes tienen su estado allí)

@@ -1250,6 +1250,13 @@
                 // Deshabilitar Fecha 2 al inicio (requiere que Fecha 1 esté seleccionada)
                 setFecha2Disabled(true);
 
+                // Pre-llenar fecha desde parámetro de URL (?fecha=YYYY-MM-DD)
+                const fechaParam = new URLSearchParams(window.location.search).get('fecha');
+                if (fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam)) {
+                    cal1.setDate(fechaParam, true);
+                    setFecha2Disabled(false);
+                }
+
             } catch (err) {
                 console.error('Error init calendarios:', err);
             }

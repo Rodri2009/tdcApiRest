@@ -632,6 +632,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateAuthMenu();
 
+            // Mostrar fecha sugerida desde parámetro de URL (?fecha=YYYY-MM-DD)
+            const fechaParam = new URLSearchParams(window.location.search).get('fecha');
+            if (fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam)) {
+                const [yy, mm, dd] = fechaParam.split('-');
+                const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+                const banner = document.createElement('div');
+                banner.style.cssText = 'background:#1e3a5f;border:1px solid #3b82f6;color:#93c5fd;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:0.9rem;display:flex;align-items:center;gap:8px;';
+                banner.innerHTML = `<i class="fas fa-calendar-day"></i> <span>Fecha seleccionada desde el calendario: <strong>${parseInt(dd)} de ${meses[parseInt(mm)-1]} de ${yy}</strong>. Podés tenerla en cuenta al configurar los horarios.</span>`;
+                const container = document.querySelector('.container, form, main, .content');
+                if (container) container.prepend(banner);
+            }
+
             // Manejador del menú móvil responsivo
             const menuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');

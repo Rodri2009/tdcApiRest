@@ -1560,6 +1560,12 @@
             if (btnAdicionales) {
                 btnAdicionales.style.display = 'block';
             }
+
+            // Pre-llenar fecha desde parámetro de URL (?fecha=YYYY-MM-DD)
+            const fechaParam = new URLSearchParams(window.location.search).get('fecha');
+            if (fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam) && App.calendario) {
+                App.calendario.setDate(fechaParam, true);
+            }
         });
     </script>
 

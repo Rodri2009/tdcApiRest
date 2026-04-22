@@ -9,6 +9,442 @@
     <link rel="stylesheet" href="/css/fontawesome.min.css">
     <link rel="stylesheet" href="/styles/admin.css">
     <style>
+        /* ===== FILTROS ===== */
+        .agenda-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            background: #1a1025;
+            border: 1px solid #581c87;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+        }
+
+        .agenda-filters label {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            margin-bottom: 2px;
+            display: block;
+        }
+
+        .agenda-filters select,
+        .agenda-filters input[type="month"] {
+            background: #0f172a;
+            border: 1px solid #581c87;
+            color: #d6d3d1;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .agenda-filters select:focus,
+        .agenda-filters input[type="month"]:focus {
+            outline: none;
+            border-color: #f0abfc;
+        }
+
+        .btn-nav {
+            background: #1d4ed8;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+
+        .btn-nav:hover { background: #1e40af; }
+
+        /* ===== CALENDARIO ===== */
+        .calendar-wrapper {
+            background: #0f172a;
+            border: 1px solid #581c87;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .calendar-month-title {
+            text-align: center;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #f0abfc;
+            text-shadow: 0 0 6px #f0abfc55;
+            border-bottom: 1px solid #581c87;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            width: 100%;
+        }
+
+        .calendar-day-header {
+            background: #1e1b4b;
+            color: #a5b4fc;
+            text-align: center;
+            padding: 8px 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-right: 1px solid #1e293b;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .calendar-day-header:last-child { border-right: none; }
+
+        .calendar-cell {
+            min-height: 100px;
+            border-right: 1px solid #1e293b;
+            border-bottom: 1px solid #1e293b;
+            padding: 4px;
+            vertical-align: top;
+            position: relative;
+        }
+
+        .calendar-cell:nth-child(7n) { border-right: none; }
+        .calendar-cell.empty { background: #090d18; cursor: default; }
+        .calendar-cell.today { background: rgba(88, 28, 135, 0.15); }
+        .calendar-cell.today .cell-number { color: #f0abfc; font-weight: 800; }
+
+        /* Botón agregar evento en celda de día */
+        .cell-add-btn {
+            display: none;
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #581c87;
+            color: #f0abfc;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            line-height: 1;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: background 0.15s, transform 0.1s;
+            z-index: 2;
+        }
+
+        .calendar-cell:not(.empty):hover .cell-add-btn { display: flex; }
+        .cell-add-btn:hover { background: #7e22ce; transform: scale(1.15); }
+
+        /* Fines de semana */
+        .calendar-cell.weekend {
+            background: rgba(30, 58, 138, 0.12);
+        }
+        .calendar-cell.weekend .cell-number {
+            color: #60a5fa;
+        }
+        /* Feriados */
+        .calendar-cell.feriado {
+            background: rgba(120, 53, 15, 0.18);
+        }
+        .calendar-cell.feriado .cell-number {
+            color: #fbbf24;
+        }
+        .cell-feriado-label {
+            font-size: 0.62rem;
+            color: #f59e0b;
+            opacity: 0.85;
+            margin-bottom: 2px;
+            display: block;
+            line-height: 1.1;
+            font-style: italic;
+        }
+        /* Feriado + fin de semana: prevalece feriado */
+        .calendar-cell.feriado.weekend { background: rgba(120, 53, 15, 0.22); }
+
+        /* Submenú de tipo de nuevo evento */
+        .day-type-menu {
+            position: fixed;
+            background: #1e293b;
+            border: 1px solid #581c87;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            z-index: 9998;
+            min-width: 210px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .day-type-menu.visible { display: block; }
+
+        .day-type-header {
+            background: #581c87;
+            padding: 7px 12px;
+            font-size: 0.8rem;
+            color: #f0abfc;
+            font-weight: 700;
+        }
+
+        .day-type-item {
+            padding: 9px 13px;
+            font-size: 0.82rem;
+            color: #d6d3d1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            border-bottom: 1px solid #1e293b;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+
+        .day-type-item:last-child { border-bottom: none; }
+        .day-type-item:hover { background: #334155; color: #f0abfc; }
+
+        .cell-number {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 3px;
+            display: block;
+        }
+
+        /* ===== EVENTOS EN CELDA ===== */
+        .event-chip {
+            display: block;
+            width: 100%;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 2px;
+            white-space: normal;
+            word-wrap: break-word;
+            overflow: hidden;
+            border-left: 3px solid transparent;
+            transition: opacity 0.15s;
+            position: relative;
+            z-index: 1;
+            line-height: 1.2;
+        }
+
+        .event-chip:hover { opacity: 0.82; }
+
+        /* Colores por estado */
+        .chip-solicitado  { background: #1d4ed855; border-left-color: #3b82f6; color: #93c5fd; }
+        .chip-contactado  { background: #37415155; border-left-color: #9ca3af; color: #d1d5db; }
+        .chip-confirmado  { background: #16a34a44; border-left-color: #22c55e; color: #86efac; }
+        .chip-cancelado   { background: #dc262644; border-left-color: #f87171; color: #fca5a5; }
+
+        /* ===== MENÚ CONTEXTUAL ===== */
+        .ctx-menu {
+            position: fixed;
+            background: #1e293b;
+            border: 1px solid #581c87;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            z-index: 9999;
+            min-width: 230px;
+            max-width: 280px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .ctx-menu.visible { display: block; }
+
+        .ctx-menu-header {
+            background: #581c87;
+            padding: 8px 12px;
+            font-size: 0.82rem;
+            color: #f0abfc;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .ctx-client-info {
+            padding: 7px 12px;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            font-size: 0.78rem;
+            color: #9ca3af;
+            line-height: 1.5;
+        }
+
+        .ctx-client-info strong { color: #d6d3d1; }
+
+        .ctx-section-label {
+            padding: 5px 12px 3px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #6b7280;
+            border-top: 1px solid #1e293b;
+            background: #131c2e;
+        }
+
+        .ctx-menu-item {
+            padding: 8px 12px;
+            font-size: 0.82rem;
+            color: #d6d3d1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #0f172a;
+            transition: background 0.15s;
+        }
+
+        .ctx-menu-item:last-child { border-bottom: none; }
+        .ctx-menu-item:hover { background: #334155; }
+        .ctx-menu-item.danger { color: #f87171; }
+        .ctx-menu-item.danger:hover { background: #450a0a; }
+
+        /* Estados en menú contextual */
+        .ctx-estados {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 7px 12px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .ctx-estado-btn {
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+
+        .ctx-estado-btn:hover { opacity: 1; transform: scale(1.05); }
+        .ctx-estado-btn.active { opacity: 1; box-shadow: 0 0 0 2px #fff4; }
+        .ctx-estado-btn.s-solicitado  { background: #1d4ed8; color: #fff; }
+        .ctx-estado-btn.s-contactado  { background: #6b7280; color: #fff; }
+        .ctx-estado-btn.s-confirmado  { background: #16a34a; color: #fff; }
+        .ctx-estado-btn.s-cancelado   { background: #dc2626; color: #fff; }
+
+        /* Flyer en menú contextual */
+        .ctx-flyer-btns {
+            display: flex;
+            gap: 6px;
+            padding: 7px 12px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .ctx-flyer-btn {
+            flex: 1;
+            padding: 4px 6px;
+            border-radius: 5px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #a5b4fc;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.15s;
+        }
+
+        .ctx-flyer-btn:hover { background: #1e3a5f; }
+
+        /* Hora inicio en menú contextual */
+        .ctx-hora-row {
+            padding: 7px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #1e293b;
+            font-size: 0.82rem;
+            color: #d6d3d1;
+        }
+
+        .ctx-hora-value {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #a5b4fc;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: border-color 0.15s;
+        }
+
+        .ctx-hora-value:hover { border-color: #f0abfc; color: #f0abfc; }
+
+        /* ===== MODAL HORA ===== */
+        .hora-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hora-modal {
+            background: #1e293b;
+            border: 1px solid #581c87;
+            border-radius: 10px;
+            padding: 20px 24px;
+            width: 240px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+        }
+
+        .hora-modal h4 {
+            color: #f0abfc;
+            font-size: 0.9rem;
+            margin: 0 0 14px;
+        }
+
+        .hora-modal input[type="time"] {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid #581c87;
+            color: #d6d3d1;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 1rem;
+            margin-bottom: 14px;
+            box-sizing: border-box;
+        }
+
+        .hora-modal-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .hora-modal-btns button {
+            flex: 1;
+            padding: 7px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .hora-modal-btns .btn-ok  { background: #16a34a; color: #fff; }
+        .hora-modal-btns .btn-ok:hover  { background: #15803d; }
+        .hora-modal-btns .btn-nop { background: #374151; color: #d1d5db; }
+        .hora-modal-btns .btn-nop:hover { background: #4b5563; }
+
+        /* ===== RESPONSIVO ===== */
+        @media (max-width: 640px) {
+            .calendar-cell { min-height: 60px; }
+            .cell-number { font-size: 0.7rem; }
+            .event-chip { font-size: 0.62rem; }
+            .calendar-day-header { font-size: 0.65rem; padding: 5px 2px; }
+        }
     </style>
 </head>
 
@@ -25,9 +461,598 @@
             <div class="spacer"></div>
         </div>
 
+        <!-- FILTROS -->
+        <div class="agenda-filters">
+            <div>
+                <label>Mes</label>
+                <input type="month" id="filtroMes">
+            </div>
+            <div>
+                <label>Tipo</label>
+                <select id="filtroTipo">
+                    <option value="">Todos</option>
+                    <option value="ALQUILER_SALON">Alquiler Salón</option>
+                    <option value="BANDA">Bandas</option>
+                    <option value="SERVICIO">Servicio</option>
+                    <option value="TALLER">Taller</option>
+                </select>
+            </div>
+            <div>
+                <label>Estado</label>
+                <select id="filtroEstado">
+                    <option value="">Todos</option>
+                    <option value="Solicitado">Solicitado</option>
+                    <option value="Contactado">Contactado</option>
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+            </div>
+            <div style="margin-top:18px; display:flex; gap:6px;">
+                <button class="btn-nav" id="btnPrev"><i class="fas fa-chevron-left"></i></button>
+                <button class="btn-nav" id="btnHoy"><i class="fas fa-home"></i> Hoy</button>
+                <button class="btn-nav" id="btnNext"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+        <!-- CALENDARIO -->
+        <div class="calendar-wrapper">
+            <div class="calendar-month-title" id="calMonthTitle">-</div>
+            <div class="calendar-grid" id="calGrid"></div>
+        </div>
     </main>
-    <script> 
+
+    <!-- MENÚ CONTEXTUAL -->
+    <div class="ctx-menu" id="ctxMenu">
+        <div class="ctx-menu-header" id="ctxTitle">Evento</div>
+        <div class="ctx-client-info" id="ctxClientInfo"></div>
+
+        <div class="ctx-section-label">Estado</div>
+        <div class="ctx-estados" id="ctxEstados">
+            <button class="ctx-estado-btn s-solicitado"  data-estado="Solicitado">Solicitado</button>
+            <button class="ctx-estado-btn s-contactado"  data-estado="Contactado">Contactado</button>
+            <button class="ctx-estado-btn s-confirmado"  data-estado="Confirmado">Confirmado</button>
+            <button class="ctx-estado-btn s-cancelado"   data-estado="Cancelado">Cancelado</button>
+        </div>
+
+        <div class="ctx-section-label">Flyer</div>
+        <div class="ctx-flyer-btns" id="ctxFlyerBtns"></div>
+
+        <div class="ctx-section-label">Hora de inicio</div>
+        <div class="ctx-hora-row">
+            <span style="color:#9ca3af">Inicio:</span>
+            <span class="ctx-hora-value" id="ctxHoraValue" title="Clic para cambiar">-</span>
+        </div>
+
+        <div class="ctx-section-label" style="border-top:none"></div>
+        <div class="ctx-menu-item" id="ctxEdit"><i class="fas fa-pen"></i> Editar solicitud</div>
+        <div class="ctx-menu-item" id="ctxCopy"><i class="fas fa-copy"></i> Copiar ID</div>
+    </div>
+
+    <!-- SUBMENÚ TIPO DE EVENTO (nuevo día libre) -->
+    <div class="day-type-menu" id="dayTypeMenu">
+        <div class="day-type-header" id="dayTypeHeader">Nuevo evento</div>
+        <a class="day-type-item" id="dayTypeBandas" href="#">
+            <i class="fas fa-guitar"></i> Fecha para bandas
+        </a>
+        <a class="day-type-item" id="dayTypeAlquiler" href="#">
+            <i class="fas fa-building"></i> Alquiler de salón
+        </a>
+        <a class="day-type-item" id="dayTypeServicio" href="#">
+            <i class="fas fa-spa"></i> Servicio
+        </a>
+        <a class="day-type-item" id="dayTypeTaller" href="#">
+            <i class="fas fa-chalkboard-teacher"></i> Taller / Actividad
+        </a>
+    </div>
+
+    <!-- MODAL HORA -->
+    <div class="hora-modal-overlay" id="horaModalOverlay" style="display:none">
+        <div class="hora-modal">
+            <h4><i class="fas fa-clock"></i> Cambiar hora de inicio</h4>
+            <input type="time" id="horaModalInput" step="900">
+            <div class="hora-modal-btns">
+                <button class="btn-ok"  id="horaModalOk">Guardar</button>
+                <button class="btn-nop" id="horaModalCancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================================
+        // ESTADO DE LA AGENDA
+        // =====================================================================
+        const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+        let currentYear, currentMonth;       // mes visible (0-indexed)
+        let todosLosEventos = [];            // cache de la respuesta del API
+        let ctxCurrentEvent = null;          // evento activo en el menú contextual
+        let feriadosSet = new Set();         // fechas YYYY-MM-DD que son feriados
+        let feriadosNombre = {};             // fecha -> nombre del feriado
+
+        // =====================================================================
+        // INIT
+        // =====================================================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            const now = new Date();
+            currentYear  = now.getFullYear();
+            currentMonth = now.getMonth();
+
+            // Configurar input mes
+            const filtroMes = document.getElementById('filtroMes');
+            filtroMes.value = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            filtroMes.addEventListener('change', () => {
+                const [y, m] = filtroMes.value.split('-').map(Number);
+                currentYear = y;
+                currentMonth = m - 1;
+                renderCalendarSkeleton();
+                applyFiltersAndRender();
+            });
+
+            document.getElementById('btnPrev').addEventListener('click', () => navMes(-1));
+            document.getElementById('btnNext').addEventListener('click', () => navMes(+1));
+            document.getElementById('btnHoy').addEventListener('click', () => {
+                const n = new Date();
+                currentYear = n.getFullYear();
+                currentMonth = n.getMonth();
+                syncFiltroMes();
+                renderCalendarSkeleton();
+                applyFiltersAndRender();
+            });
+            document.getElementById('filtroTipo').addEventListener('change', applyFiltersAndRender);
+            document.getElementById('filtroEstado').addEventListener('change', applyFiltersAndRender);
+
+            // Cerrar menú contextual al hacer click fuera
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#ctxMenu')) closeCtxMenu();
+                if (!e.target.closest('#dayTypeMenu') && !e.target.closest('.cell-add-btn')) closeDayTypeMenu();
+            });
+
+            cargarFeriados(); // No await — se carga en paralelo, refreshea si llega tarde
+            await cargarEventos();
+        });
+
+        // =====================================================================
+        // CARGA DE FERIADOS
+        // =====================================================================
+        async function cargarFeriados() {
+            try {
+                const anio = new Date().getFullYear();
+                const [r1, r2] = await Promise.all([
+                    fetch(`https://api.argentinadatos.com/v1/feriados/${anio}`).then(r => r.json()).catch(() => []),
+                    fetch(`https://api.argentinadatos.com/v1/feriados/${anio + 1}`).then(r => r.json()).catch(() => [])
+                ]);
+                feriadosSet   = new Set();
+                feriadosNombre = {};
+                [...r1, ...r2].forEach(f => {
+                    const fecha = f.fecha.replace(/\//g, '-');
+                    feriadosSet.add(fecha);
+                    if (f.nombre) feriadosNombre[fecha] = f.nombre;
+                });
+                // Re-renderizar para que aparezcan los resaltados
+                applyFiltersAndRender();
+            } catch (err) {
+                console.warn('[AGENDA] No se pudieron cargar feriados:', err.message);
+            }
+        }
+
+        // =====================================================================
+        // CARGA DE DATOS
+        // =====================================================================
+        async function cargarEventos() {
+            renderCalendarSkeleton();
+            try {
+                const token = localStorage.getItem('authToken') || '';
+                const res = await fetch('/api/admin/solicitudes', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                todosLosEventos = await res.json();
+                applyFiltersAndRender();
+            } catch (err) {
+                console.error('[AGENDA] Error cargando eventos:', err);
+                applyFiltersAndRender(); // Renderizar vacío
+            }
+        }
+
+        // =====================================================================
+        // FILTRADO
+        // =====================================================================
+        function applyFiltersAndRender() {
+            const tipo   = document.getElementById('filtroTipo').value.toUpperCase();
+            const estado = document.getElementById('filtroEstado').value;
+
+            const filtrados = todosLosEventos.filter(ev => {
+                if (tipo && ev.categoria !== tipo && ev.tipoEventoId !== tipo) return false;
+                if (estado && ev.estado !== estado) return false;
+                return true;
+            });
+
+            renderCalendar(filtrados);
+        }
+
+        // =====================================================================
+        // NAVEGACIÓN
+        // =====================================================================
+        function navMes(delta) {
+            currentMonth += delta;
+            if (currentMonth > 11) { currentMonth = 0;  currentYear++; }
+            if (currentMonth < 0)  { currentMonth = 11; currentYear--; }
+            syncFiltroMes();
+            renderCalendarSkeleton();
+            applyFiltersAndRender();
+        }
+
+        function syncFiltroMes() {
+            document.getElementById('filtroMes').value =
+                `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+        }
+
+        // =====================================================================
+        // RENDERIZADO DEL ESQUELETO
+        // =====================================================================
+        function renderCalendarSkeleton() {
+            document.getElementById('calMonthTitle').textContent =
+                `${MESES[currentMonth]} ${currentYear}`;
+            const grid = document.getElementById('calGrid');
+            grid.innerHTML = '';
+            DIAS.forEach(d => {
+                const h = document.createElement('div');
+                h.className = 'calendar-day-header';
+                h.textContent = d;
+                grid.appendChild(h);
+            });
+        }
+
+        // =====================================================================
+        // RENDERIZADO DEL CALENDARIO CON EVENTOS
+        // =====================================================================
+        function renderCalendar(eventos) {
+            const grid = document.getElementById('calGrid');
+
+            // Limpiar celdas anteriores (mantener headers)
+            const headers = Array.from(grid.querySelectorAll('.calendar-day-header'));
+            grid.innerHTML = '';
+            headers.forEach(h => grid.appendChild(h));
+
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+            // Primer día del mes (0=Domingo ... 6=Sábado) → ajustamos a Lunes=0
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            let startDow = firstDay.getDay(); // 0=Dom
+            startDow = startDow === 0 ? 6 : startDow - 1; // convertir a Lun=0
+
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            // Agrupar eventos por fechaEvento
+            const byDate = {};
+            eventos.forEach(ev => {
+                if (!ev.fechaEvento) return;
+                const ymd = ev.fechaEvento.substring(0, 10);
+                if (!byDate[ymd]) byDate[ymd] = [];
+                byDate[ymd].push(ev);
+            });
+
+            // Celdas vacías iniciales
+            for (let i = 0; i < startDow; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'calendar-cell empty';
+                grid.appendChild(empty);
+            }
+
+            // Celdas de días
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                const dow = new Date(currentYear, currentMonth, day).getDay(); // 0=Dom, 6=Sáb
+                const esFinDeSemana = dow === 0 || dow === 6;
+                const esFeriado     = feriadosSet.has(dateStr);
+
+                const classes = ['calendar-cell'];
+                if (dateStr === todayStr) classes.push('today');
+                if (esFeriado)           classes.push('feriado');
+                else if (esFinDeSemana)  classes.push('weekend');
+
+                const cell = document.createElement('div');
+                cell.className = classes.join(' ');
+
+                const numSpan = document.createElement('span');
+                numSpan.className = 'cell-number';
+                numSpan.textContent = day;
+                cell.appendChild(numSpan);
+
+                // Etiqueta del nombre del feriado
+                if (esFeriado && feriadosNombre[dateStr]) {
+                    const lbl = document.createElement('span');
+                    lbl.className = 'cell-feriado-label';
+                    lbl.textContent = feriadosNombre[dateStr];
+                    lbl.title = feriadosNombre[dateStr];
+                    cell.appendChild(lbl);
+                }
+
+                const evtsHoy = byDate[dateStr] || [];
+                evtsHoy.forEach(ev => {
+                    const chip = createChip(ev);
+                    cell.appendChild(chip);
+                });
+
+                // Botón "+" agregar nuevo evento (visible al hover)
+                const addBtn = document.createElement('button');
+                addBtn.className = 'cell-add-btn';
+                addBtn.title = 'Agregar evento en esta fecha';
+                addBtn.textContent = '+';
+                addBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeCtxMenu();
+                    openDayTypeMenu(e, dateStr);
+                });
+                cell.appendChild(addBtn);
+
+                grid.appendChild(cell);
+            }
+        }
+
+        // =====================================================================
+        // CHIP DE EVENTO
+        // =====================================================================
+        function createChip(ev) {
+            const chip = document.createElement('div');
+            chip.className = 'event-chip ' + chipClass(ev.estado);
+
+            const hora = formatHora(ev.horaInicio);
+            const desc = ev.descripcionCorta || ev.tipoNombre || ev.nombreCliente || '';
+            const label = [hora, desc].filter(Boolean).join(' · ');
+            chip.textContent = label;
+            chip.title = `${ev.tipoNombre || ''} · ${ev.estado}\n${desc}${ev.nombreCliente ? ' — ' + ev.nombreCliente : ''}`;
+
+            // Click izquierdo → editar
+            chip.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeCtxMenu();
+                window.location.href = resolveEditorUrl(ev);
+            });
+
+            // Click derecho → menú contextual
+            chip.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openCtxMenu(e, ev);
+            });
+
+            return chip;
+        }
+
+        function chipClass(estado) {
+            const s = (estado || '').toLowerCase();
+            if (s === 'confirmado') return 'chip-confirmado';
+            if (s === 'cancelado')  return 'chip-cancelado';
+            if (s === 'contactado') return 'chip-contactado';
+            return 'chip-solicitado';
+        }
+
+        function formatHora(h) {
+            if (!h) return '';
+            const str = String(h).trim();
+            const m = str.match(/(\d{1,2}:\d{2})/);
+            return m ? m[1] : str.substring(0, 5);
+        }
+
+        // =====================================================================
+        // RESOLUCIÓN DE URL DE EDITOR SEGÚN TIPO
+        // =====================================================================
+        function resolveEditorUrl(ev) {
+            const id = ev.id;
+            const prefix = String(id).match(/^([a-z]+_)/)?.[1] || '';
+            if (prefix === 'alq_') return `editar_solicitud_alquiler.html?solicitudId=${id}`;
+            if (prefix === 'bnd_') return `editar_solicitud_fecha_bandas.html?solicitudId=${id}`;
+            if (prefix === 'srv_') return `editar_solicitud_servicios.html?solicitudId=${id}`;
+            if (prefix === 'tll_') return `editar_solicitud_talleres.html?solicitudId=${id}`;
+            if (prefix === 'ev_')  return `editar_solicitud_fecha_bandas.html?id=${id}`;
+            return `admin_solicitudes.html`;
+        }
+
+        // =====================================================================
+        // SUBMENÚ DE TIPO PARA DÍA LIBRE
+        // =====================================================================
+        function openDayTypeMenu(e, dateStr) {
+            const menu = document.getElementById('dayTypeMenu');
+
+            // Título con fecha formateada DD/MM/YYYY
+            const [yy, mm, dd] = dateStr.split('-');
+            document.getElementById('dayTypeHeader').textContent =
+                `Nuevo evento — ${dd}/${mm}/${yy}`;
+
+            // Setear href de cada opción
+            const base = encodeURIComponent(dateStr);
+            document.getElementById('dayTypeBandas').href   = `solicitud_fecha_bandas.html?fecha=${base}`;
+            document.getElementById('dayTypeAlquiler').href = `solicitud_alquiler.html?fecha=${base}`;
+            document.getElementById('dayTypeServicio').href = `solicitud_servicio.html?fecha=${base}`;
+            document.getElementById('dayTypeTaller').href   = `solicitud_taller_actividad.html?fecha=${base}`;
+
+            menu.classList.add('visible');
+            // Posición — evitar salir de pantalla
+            menu.style.left = '-9999px';
+            menu.style.top  = '-9999px';
+            requestAnimationFrame(() => {
+                const rect = menu.getBoundingClientRect();
+                const x = Math.min(e.clientX, window.innerWidth  - rect.width  - 8);
+                const y = Math.min(e.clientY, window.innerHeight - rect.height - 8);
+                menu.style.left = x + 'px';
+                menu.style.top  = y + 'px';
+            });
+
+            e.stopPropagation();
+        }
+
+        function closeDayTypeMenu() {
+            document.getElementById('dayTypeMenu').classList.remove('visible');
+        }
+
+        // =====================================================================
+        // MENÚ CONTEXTUAL
+        // =====================================================================
+        function openCtxMenu(e, ev) {
+            ctxCurrentEvent = ev;
+            const menu = document.getElementById('ctxMenu');
+
+            // Título
+            document.getElementById('ctxTitle').textContent =
+                `${ev.tipoNombre || 'Evento'} · ${(ev.descripcionCorta || '').substring(0, 40) || ev.id}`;
+
+            // Info cliente
+            const clientInfo = document.getElementById('ctxClientInfo');
+            const clientLines = [];
+            if (ev.nombreCliente) clientLines.push(`<strong>${escapeHtml(ev.nombreCliente)}</strong>`);
+            if (ev.telefonoCliente) clientLines.push(`<i class="fas fa-phone" style="font-size:0.7rem"></i> ${escapeHtml(ev.telefonoCliente)}`);
+            clientInfo.innerHTML = clientLines.length ? clientLines.join('<br>') : '<span style="color:#4b5563">Sin datos de cliente</span>';
+
+            // Botones de estado
+            const estadoActual = ev.estado || '';
+            document.querySelectorAll('.ctx-estado-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.estado === estadoActual);
+                btn.onclick = (evt) => {
+                    evt.stopPropagation();
+                    cambiarEstadoCtx(ev, btn.dataset.estado, btn);
+                };
+            });
+
+            // Flyer
+            const flyerDiv = document.getElementById('ctxFlyerBtns');
+            flyerDiv.innerHTML = '';
+            if (ev.url_flyer) {
+                const btnVer = document.createElement('button');
+                btnVer.className = 'ctx-flyer-btn';
+                btnVer.innerHTML = '<i class="fas fa-image"></i> Ver flyer';
+                btnVer.onclick = () => { window.open(ev.url_flyer, '_blank'); };
+                const btnCambiar = document.createElement('button');
+                btnCambiar.className = 'ctx-flyer-btn';
+                btnCambiar.innerHTML = '<i class="fas fa-upload"></i> Cambiar';
+                btnCambiar.onclick = () => { closeCtxMenu(); window.location.href = resolveEditorUrl(ev) + '#flyer'; };
+                flyerDiv.appendChild(btnVer);
+                flyerDiv.appendChild(btnCambiar);
+            } else {
+                const btnAgregar = document.createElement('button');
+                btnAgregar.className = 'ctx-flyer-btn';
+                btnAgregar.style.flex = '1';
+                btnAgregar.innerHTML = '<i class="fas fa-plus"></i> Agregar flyer';
+                btnAgregar.onclick = () => { closeCtxMenu(); window.location.href = resolveEditorUrl(ev) + '#flyer'; };
+                flyerDiv.appendChild(btnAgregar);
+            }
+
+            // Hora de inicio
+            const horaVal = document.getElementById('ctxHoraValue');
+            horaVal.textContent = formatHora(ev.horaInicio) || '-';
+            horaVal.onclick = () => { closeCtxMenu(); openHoraModal(ev); };
+
+            // Acciones base
+            document.getElementById('ctxEdit').onclick = () => {
+                closeCtxMenu();
+                window.location.href = resolveEditorUrl(ev);
+            };
+            document.getElementById('ctxCopy').onclick = () => {
+                navigator.clipboard.writeText(ev.id).catch(() => {});
+                closeCtxMenu();
+            };
+
+            // Posición — evitar salir de pantalla
+            menu.classList.add('visible');
+            const rect = menu.getBoundingClientRect();
+            const x = Math.min(e.clientX, window.innerWidth  - rect.width  - 8);
+            const y = Math.min(e.clientY, window.innerHeight - rect.height - 8);
+            menu.style.left = x + 'px';
+            menu.style.top  = y + 'px';
+        }
+
+        function closeCtxMenu() {
+            document.getElementById('ctxMenu').classList.remove('visible');
+            ctxCurrentEvent = null;
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, s =>
+                ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s]);
+        }
+
+        // =====================================================================
+        // CAMBIAR ESTADO DESDE MENÚ CONTEXTUAL
+        // =====================================================================
+        async function cambiarEstadoCtx(ev, nuevoEstado, btnEl) {
+            if (ev.estado === nuevoEstado) return;
+            const token = localStorage.getItem('authToken') || '';
+            try {
+                // Actualizar visualmente de inmediato
+                document.querySelectorAll('.ctx-estado-btn').forEach(b => b.classList.remove('active'));
+                btnEl.classList.add('active');
+
+                const res = await fetch(`/api/admin/solicitudes/${ev.id}/estado`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ estado: nuevoEstado })
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+
+                // Actualizar objeto local y título del menú
+                ev.estado = nuevoEstado;
+                document.getElementById('ctxTitle').textContent =
+                    `${ev.tipoNombre || 'Evento'} · ${nuevoEstado}`;
+
+                // Re-render del calendario para que el chip cambie de color
+                applyFiltersAndRender();
+            } catch (err) {
+                console.error('[AGENDA] Error cambiando estado:', err);
+                // Revertir botonera
+                document.querySelectorAll('.ctx-estado-btn').forEach(b =>
+                    b.classList.toggle('active', b.dataset.estado === ev.estado));
+            }
+        }
+
+        // =====================================================================
+        // MODAL DE HORA
+        // =====================================================================
+        function openHoraModal(ev) {
+            const overlay = document.getElementById('horaModalOverlay');
+            const input   = document.getElementById('horaModalInput');
+            const btnOk   = document.getElementById('horaModalOk');
+            const btnNop  = document.getElementById('horaModalCancel');
+
+            // Precargar hora actual
+            const horaActual = formatHora(ev.horaInicio);
+            input.value = horaActual || '21:00';
+            overlay.style.display = 'flex';
+
+            function cerrar() {
+                overlay.style.display = 'none';
+                btnOk.onclick  = null;
+                btnNop.onclick = null;
+            }
+
+            btnNop.onclick = cerrar;
+            overlay.onclick = (e) => { if (e.target === overlay) cerrar(); };
+
+            btnOk.onclick = async () => {
+                const nuevaHora = input.value;
+                if (!nuevaHora) return;
+                cerrar();
+                const token = localStorage.getItem('authToken') || '';
+                try {
+                    const res = await fetch(`/api/admin/solicitudes/${ev.id}/estado`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ hora_evento: nuevaHora })
+                    });
+                    if (res.ok) {
+                        ev.horaInicio = nuevaHora;
+                        applyFiltersAndRender();
+                    } else {
+                        const d = await res.json();
+                        alert('Error al cambiar hora: ' + (d.message || res.status));
+                    }
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                }
+            };
+        }
     </script>
-    </body>
+</body>
 
 </html>
