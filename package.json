@@ -4,9 +4,9 @@
   "description": "Scripts de utilidad para el proyecto TDC",
   "private": true,
   "scripts": {
-    "contexto": "node ./scripts/generar-contexto.js",
-    "crear-admin": "node ./scripts/crear-admin.js",
-    "optimize-images": "node ./scripts/optimize-images.js"
+    "contexto": "node ./scripts/herramientas/generar_contexto.js",
+    "crear-admin": "node ./scripts/herramientas/crear_admin.js",
+    "optimize-images": "node ./scripts/optimizacion/optimize_images.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

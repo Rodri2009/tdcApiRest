@@ -7,14 +7,14 @@ const router = express.Router();
  */
 router.get('/whatsapp-page', async (req, res) => {
     try {
-        const waPage = req.waPage;
+        const waPage = global.waPage || req.waPage;
         if (!waPage) {
             return res.status(503).json({ error: 'WhatsApp service not available' });
         }
 
         const html = await waPage.content();
         const url = waPage.url();
-        
+
         // Detectar estado de autenticación
         const authStatus = await waPage.evaluate(() => {
             return {
@@ -49,9 +49,9 @@ router.get('/whatsapp-page', async (req, res) => {
  */
 router.get('/whatsapp-status-simple', async (req, res) => {
     try {
-        const waPage = req.waPage;
+        const waPage = global.waPage || req.waPage;
         if (!waPage) {
-            return res.status(503).json({ 
+            return res.status(503).json({
                 available: false,
                 message: 'WhatsApp service not initialized'
             });
@@ -61,7 +61,7 @@ router.get('/whatsapp-status-simple', async (req, res) => {
             const hasQR = !!document.querySelector('canvas');
             const hasChatList = !!document.querySelector('#pane-side');
             const hasConversation = !!document.querySelector('[role="main"]');
-            
+
             // Lógica de estado
             if (hasQR) return { state: 'needs_authentication', hasQR: true, authenticated: false };
             if (hasChatList || hasConversation) return { state: 'authenticated', hasQR: false, authenticated: true };
@@ -73,6 +73,28 @@ router.get('/whatsapp-status-simple', async (req, res) => {
             url: waPage.url(),
             ...status
         });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.get('/whatsapp-qr', async (req, res) => {
+    try {
+        const waPage = global.waPage || req.waPage;
+        if (!waPage) {
+            return res.status(503).json({ error: 'WhatsApp service not available' });
+        }
+
+        const qrDataUrl = await waPage.evaluate(() => {
+            const canvas = document.querySelector('canvas');
+            return canvas ? canvas.toDataURL('image/png') : null;
+        });
+
+        if (!qrDataUrl) {
+            return res.status(404).json({ error: 'QR code not found' });
+        }
+
+        res.json({ qrDataUrl });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

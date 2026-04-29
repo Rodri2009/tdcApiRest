@@ -35,8 +35,11 @@
 
         /* Estilo para simular el brillo de los murales */
         .neon-glow-card {
+            background-color: rgba(28, 25, 23, 0.6); /* stone-900 con transparencia */
+            backdrop-filter: blur(8px); /* efecto vidrio (opcional, queda muy bien) */
+            -webkit-backdrop-filter: blur(8px); /* soporte Safari */
+
             box-shadow: 0 0 15px rgba(240, 171, 252, 0.5);
-            /* Sombra suave neón */
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
@@ -105,10 +108,12 @@
         }
 
         /* CARD */
-
         .agenda-card-passline {
             display: flex;
-            background: #1c1917;
+            background: rgba(28, 25, 23, 0.45); /* stone-900 con transparencia */
+            backdrop-filter: blur(8px);        /* opcional pero recomendado */
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(240, 171, 252, 0.2);
             border-radius: 12px;
             overflow: hidden;
             transition: .25s;
@@ -266,14 +271,19 @@
                 <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white mb-4">
                     <span class="block text-neon">El Templo de Claypole</span>
                 </h1>
-                <div
-                    class="max-w-4xl mx-auto mt-20 mb-20 text-center text-xl sm:text-2xl md:text-3xl font-light text-purple-300">
-                    Descubre este nuevo punto de encuentro.<br><br>
-
-                    Un espacio único donde la música, el movimiento y la buena onda se juntan. En nuestro salón suenan
-                    bandas en vivo y en el patio, la juntada sigue entre sillones y parrilla.<br><br>
-
-                    Tu lugar para tocar, bailar, celebrar y conectar.
+                <div>
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
+                            Próximos eventos
+                        </h2>
+                    </div>
+                    <div id="agenda-list" class="agenda-grid">
+                        <p class="text-center text-lg text-stone-500 col-span-full">
+                            Cargando agenda...
+                        </p>
+                    </div>
+                </div>
                 </div>
                 <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                     <a href="solicitud_alquiler.html"
@@ -302,34 +312,7 @@
                     </a>
                 </div>
             </div>
-        </section>
 
-
-        <!-- Sección 3: Agenda - Próximos eventos públicos -->
-        <section id="agenda" class="py-20 bg-stone-900">
-
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
-                        Próximos eventos
-                    </h2>
-                </div>
-
-                <div id="agenda-list" class="agenda-grid">
-                    <p class="text-center text-lg text-stone-500 col-span-full">
-                        Cargando agenda...
-                    </p>
-                </div>
-
-                <div class="text-center mt-10">
-                    <a href="seccion_agenda.html"
-                        class="bg-fuchsia-500 text-gray-900 font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
-                        Ver Agenda Completa
-                    </a>
-                </div>
-
-            </div>
 
         </section>
 

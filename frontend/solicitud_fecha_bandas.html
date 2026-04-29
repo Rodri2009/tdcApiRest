@@ -1015,10 +1015,7 @@
                 bandasSeleccionadas.splice(idx, 1);
             } else {
                 console.log('[TOGGLE BANDA] Agregando banda');
-                if (bandasSeleccionadas.length >= 5) {
-                    showNotification('Máximo 5 bandas seleccionadas', 'warning');
-                    return;
-                }
+                // Sin límite de bandas
                 // Guardar con bandaId para claridad
                 bandasSeleccionadas.push({
                     bandaId: bandaId,
@@ -1154,6 +1151,14 @@
             try {
                 const anioActual = new Date().getFullYear();
 
+                // Detectar si es admin para permitir fechas pasadas
+                const token = localStorage.getItem('authToken');
+                let isAdmin = false;
+                if (token) {
+                    const userData = parseJwt(token);
+                    isAdmin = userData && userData.role === 'admin';
+                }
+
                 // Cargar en paralelo: feriados (año actual y siguiente) + fechas ocupadas
                 const [feriadosAct, feriadosSig, ocupadasRaw] = await Promise.all([
                     fetch(`https://api.argentinadatos.com/v1/feriados/${anioActual}`).then(r => r.json()).catch(() => []),
@@ -1203,12 +1208,11 @@
                 }
 
                 // --- Calendario Fecha 1 ---
-                const cal1 = flatpickr(input1, {
+                const cal1Config = {
                     locale: 'es',
                     altInput: true,
                     altFormat: 'j \\de F, Y',
                     dateFormat: 'Y-m-d',
-                    minDate: 'today',
                     disable: [buildDisableFn(null)],
                     onChange: (selectedDates, dateStr) => {
                         fechasSeleccionadas[0] = dateStr || null;
@@ -1230,21 +1234,30 @@
                             setFecha2Disabled(true);
                         }
                     }
-                });
+                };
+                // Solo agregar minDate si no es admin
+                if (!isAdmin) {
+                    cal1Config.minDate = 'today';
+                }
+                const cal1 = flatpickr(input1, cal1Config);
                 calendarios[0] = cal1;
 
                 // --- Calendario Fecha 2 (inicia deshabilitado) ---
-                const cal2 = flatpickr(input2, {
+                const cal2Config = {
                     locale: 'es',
                     altInput: true,
                     altFormat: 'j \\de F, Y',
                     dateFormat: 'Y-m-d',
-                    minDate: 'today',
                     disable: [buildDisableFn(null)],
                     onChange: (selectedDates, dateStr) => {
                         fechasSeleccionadas[1] = dateStr || null;
                     }
-                });
+                };
+                // Solo agregar minDate si no es admin
+                if (!isAdmin) {
+                    cal2Config.minDate = 'today';
+                }
+                const cal2 = flatpickr(input2, cal2Config);
                 calendarios[1] = cal2;
 
                 // Deshabilitar Fecha 2 al inicio (requiere que Fecha 1 esté seleccionada)

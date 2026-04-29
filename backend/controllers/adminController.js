@@ -33,18 +33,18 @@ const getSolicitudes = async (req, res) => {
             UNION ALL
             SELECT
                 CONCAT('bnd_', s.id_solicitud) as id,
-                COALESCE(sol2.fecha_creacion, s.fecha_evento) as fechaSolicitud,
+                COALESCE(sol2.fecha_creacion, sol2.fecha_evento) as fechaSolicitud,
                 COALESCE(c2.nombre, '') as nombreCliente,
                 COALESCE(ot2.categoria, 'BANDA') as categoria,
                 COALESCE(ot2.nombre_para_mostrar, 'BANDA') as tipoNombre,
                 'BANDA' as tipoEventoId,
                 NULL as subtipo,
-                DATE_FORMAT(s.fecha_evento, '%Y-%m-%d') as fechaEvento,
+                DATE_FORMAT(sol2.fecha_evento, '%Y-%m-%d') as fechaEvento,
                 sol2.estado,
                 NULL as tipoServicioId,
                 0 AS tienePersonalAsignado,
                 'solicitud' as origen,
-                s.hora_evento as horaInicio,
+                sol2.hora_inicio as horaInicio,
                 COALESCE(sol2.es_publico, 0) as es_publico,
                 -- Usar la descripción corta como resumen; la larga se mantiene en la tabla si se necesita luego
                 COALESCE(sol2.descripcion_corta, '') as descripcionCorta,
@@ -786,7 +786,7 @@ const getOrdenDeTrabajo = async (req, res) => {
         if (!solicitud) {
             sqlSolicitud = `
                 SELECT
-                    s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, s.fecha_evento, s.hora_evento, s.duracion, sol.descripcion_larga AS descripcion,
+                    s.id_solicitud, COALESCE(c.nombre, '') as nombre_completo, sol.fecha_evento, sol.hora_inicio as hora_evento, sol.duracion_minutos as duracion, sol.descripcion_larga AS descripcion,
                     'BANDA' as id_tipo_evento,
                     'BANDA' as tipo_evento, 'BANDA' as tipo_evento_id
                 FROM solicitudes_fechas_bandas s
@@ -1093,31 +1093,31 @@ const cancelarEvento = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        
+
         // Primero obtener el id_solicitud del evento
         const eventoResult = await conn.query(
             "SELECT id_solicitud FROM eventos_confirmados WHERE id = ?",
             [eventId]
         );
-        
+
         if (eventoResult.length === 0) {
             return res.status(404).json({ message: 'Evento no encontrado.' });
         }
-        
+
         const idSolicitud = eventoResult[0].id_solicitud;
-        
+
         // Actualizar el evento como inactivo
         const updateEventoResult = await conn.query(
             "UPDATE eventos_confirmados SET activo = 0, cancelado_en = NOW() WHERE id = ?",
             [eventId]
         );
-        
+
         // Actualizar la solicitud padre a estado 'Cancelado'
         await conn.query(
             "UPDATE solicitudes SET estado = 'Cancelado' WHERE id_solicitud = ?",
             [idSolicitud]
         );
-        
+
         res.status(200).json({ success: true, message: 'Evento cancelado correctamente.' });
     } catch (err) {
         logError('Error al cancelar evento', err);

@@ -16,7 +16,10 @@
     <main class="wrap">
         <div class="page-header">
             <a href="/admin.html" class="btn-back">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
                 Volver al Panel
             </a>
             <h1><i class="fas fa-users"></i> Gestión de Clientes</h1>
@@ -36,7 +39,8 @@
                     <div class="filters-row">
                         <div class="filter-field">
                             <label>Buscar</label>
-                            <input type="text" id="search-clientes" placeholder="Buscar por nombre, email o teléfono..." oninput="filterClientes()">
+                            <input type="text" id="search-clientes" placeholder="Buscar por nombre, email o teléfono..."
+                                oninput="filterClientes()">
                         </div>
                     </div>
                 </div>
@@ -147,7 +151,11 @@
                 });
                 if (!res.ok) {
                     if (res.status === 401) {
-                        showBanner('No autorizado', 'error');
+                        showBanner('No autorizado - Debes iniciar sesión', 'error');
+                        return;
+                    }
+                    if (res.status === 403) {
+                        showBanner('Permisos insuficientes - Se requiere rol Admin para ver clientes', 'error');
                         return;
                     }
                     throw new Error('Error al obtener clientes');
@@ -172,7 +180,7 @@
             const searchTerm = normalizeSearch(document.getElementById('search-clientes').value);
             console.log('🔍 [DEBUG] filterClientes() - Término de búsqueda:', searchTerm);
             console.log('📌 Total de clientes ANTES de filtrar:', clientes.length);
-            
+
             clientesFiltrados = clientes.filter(c => {
                 const nombre = normalizeSearch(c.nombre || '');
                 const apellido = normalizeSearch(c.apellido || '');
@@ -184,7 +192,7 @@
                 }
                 return match;
             });
-            
+
             console.log('📌 Total de clientes DESPUÉS de filtrar:', clientesFiltrados.length);
             console.log('Clientes filtrados:', clientesFiltrados);
             renderClientes();
@@ -193,7 +201,7 @@
         // Renderizar tabla de clientes
         function renderClientes() {
             const tbody = document.getElementById('tbody-clientes');
-            
+
             console.log('🎨 [DEBUG] renderClientes() - Total a renderizar:', clientesFiltrados.length);
             console.log('Datos a renderizar:', clientesFiltrados);
 
@@ -205,8 +213,8 @@
 
             let html = '';
             clientesFiltrados.forEach(c => {
-                const usuarioIndicador = c.id_usuario 
-                    ? `<span title="Vinculado a usuario #${c.id_usuario} (${c.usuario_rol})" style="color:#10b981;font-weight:bold;">👤</span>` 
+                const usuarioIndicador = c.id_usuario
+                    ? `<span title="Vinculado a usuario #${c.id_usuario} (${c.usuario_rol})" style="color:#10b981;font-weight:bold;">👤</span>`
                     : '';
                 console.log(`✏️ Renderizando: ID=${c.id_cliente}, Nombre="${c.nombre}", Apellido="${c.apellido}"`);
                 html += `

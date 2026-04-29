@@ -63,53 +63,6 @@ cp .env.example .env   # Editar con tus variables
 - Frontend: http://localhost
 - API: http://localhost/api
 
-## Compartir profiles de Puppeteer/WhatsApp de forma segura
-
-Para mantener sesiones de `backend/profile/wa-profile` y `backend/profile/mp-profile` entre equipos sin usar Git, lo más seguro es crear un archivo comprimido cifrado y transferirlo a través de un túnel reverso.
-
-Si en casa ya tenés un servidor Linux con IP pública y puertos abiertos, podés usarlo como punto de encuentro:
-
-1. En tu equipo del trabajo (solo salida 80/443 disponible):
-
-```bash
-# Empaquetar el profile local
-cd /home/rodrigo/tdcApiRest
-tar czf /tmp/tdc-profile.tar.gz backend/profile/wa-profile backend/profile/mp-profile
-
-# Cifrar con contraseña
-gpg --symmetric --cipher-algo AES256 -o /tmp/tdc-profile.tar.gz.gpg /tmp/tdc-profile.tar.gz
-```
-
-2. Crear un túnel reverso SSH hacia el servidor público de casa:
-
-```bash
-ssh -p 443 -N -R 2222:localhost:22 user@HOME_SERVER_IP
-```
-
-3. Desde el servidor de casa o cualquier otro equipo autorizado, conectarse al túnel:
-
-```bash
-ssh -p 2222 work-user@localhost
-```
-
-4. Transferir el archivo cifrado desde el equipo del trabajo al servidor de casa:
-
-```bash
-scp -P 2222 user@HOME_SERVER_IP:/tmp/tdc-profile.tar.gz.gpg /ruta/local/
-```
-
-5. En el servidor de casa o en el equipo destino, descifrar y extraer:
-
-```bash
-gpg -o /tmp/tdc-profile.tar.gz -d /ruta/local/tdc-profile.tar.gz.gpg
-mkdir -p ~/tdcApiRest/backend/profile
-tar xzf /tmp/tdc-profile.tar.gz -C ~/tdcApiRest/backend/profile
-```
-
-> No subas los perfiles cifrados ni los originales a Git. Mantené `backend/profile/` en `.gitignore` y compartí solo el archivo cifrado cuando sea necesario.
->
-> Ver `scripts/persistencia_de_perfiles/QUICKSTART.md` para un flujo rápido con el script.
-
 ## Scripts Disponibles
 
 | Script | Descripción |
@@ -117,8 +70,7 @@ tar xzf /tmp/tdc-profile.tar.gz -C ~/tdcApiRest/backend/profile
 | `./scripts/up.sh` | Levanta todos los servicios. No aplica migraciones por defecto — usa `./scripts/up.sh --migrate` o `APPLY_MIGRATIONS=true ./scripts/up.sh` para aplicarlas desde `database/migrations` |
 | `./scripts/restart.sh` | Reinicia contenedores específicos (backend, frontend, db) con flags opcionales |
 | `./scripts/reset.sh` | Reinicia completamente (elimina datos y reconstruye) — **aplica** las migraciones SQL que estén en `database/migrations` después de recrear la BD |
-| `./scripts/recover-from-binlog.sh` | Recupera BD desde Binary Logs de MariaDB a un punto específico en tiempo (Point-in-Time Recovery) |
-| `./scripts/persistencia_de_perfiles/share_profile.sh` | Empaqueta, cifra y transfiere de forma segura los profiles de Puppeteer/WhatsApp entre equipos, incluyendo envío y restauración |
+| `./scripts/recover_from_binlog.sh` | Recupera BD desde Binary Logs de MariaDB a un punto específico en tiempo (Point-in-Time Recovery) |
 
 ## Estrategia de Backup: Binary Logs de MariaDB
 
@@ -155,7 +107,7 @@ Sigue estos pasos antes y después de aplicar cualquier migración o cambio estr
 
 2) Backup de la base de datos (opcional)
    - Los cambios están siendo grabados automáticamente en Binlog
-   - Si necesitas un snapshot específico: `./scripts/recover-from-binlog.sh -l`
+   - Si necesitas un snapshot específico: `./scripts/recover_from_binlog.sh -l`
 
 3) Comprobar archivos/migraciones pendientes
    - `ls database/migrations | sort`  — revisa los SQL a aplicar.
@@ -181,7 +133,7 @@ Sigue estos pasos antes y después de aplicar cualquier migración o cambio estr
 8) Logs y rollback
    - Revisa logs: `docker compose -f docker/docker-compose.yml logs --tail 200 backend`
    - Si algo falla, usa Binlog para recuperar:
-     `./scripts/recover-from-binlog.sh -t "TIMESTAMP_ANTES_DE_CAMBIO"`
+     `./scripts/recover_from_binlog.sh -t "TIMESTAMP_ANTES_DE_CAMBIO"`
 
 ### Crear usuario administrador
 

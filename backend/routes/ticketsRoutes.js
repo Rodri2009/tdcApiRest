@@ -23,8 +23,16 @@ router.post('/checkout/simulate', ticketsController.simulateCheckout);
 // POST /api/tickets/checkout/init - Crea el ticket PENDIENTE_PAGO y genera la preferencia de pago (MP).
 router.post('/checkout/init', ticketsController.initCheckout);
 
+// Webhook de MercadoPago — sin autenticación JWT (MP no envía token)
+router.post('/webhook', ticketsController.webhookHandler);
+
+// POST /api/tickets/process-payment — procesa el pago generado por el Brick
+router.post('/process-payment', ticketsController.processPayment);
+
+// GET /api/tickets/public-key — devuelve la public key de MP al frontend
+router.get('/public-key', ticketsController.getPublicKey);
+
 // RUTAS FUTURAS:
-// router.post('/webhook', ticketsController.webhookHandler); // Para recibir notificaciones de pago de MP
 // router.post('/validate', authMiddleware.isAdmin, ticketsController.validateTicket); // Para la app de scanner
 
 module.exports = router;

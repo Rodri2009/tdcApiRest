@@ -2,7 +2,7 @@
 const ticketsModel = require('../models/ticketsModel');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const pool = require('../db');
-// const mercadopagoService = require('../services/mercadopagoService'); // Necesario más adelante
+const mercadopagoPaymentService = require('../services/mercadopagoPaymentService');
 
 /**
  * GET /api/tickets/eventos
@@ -70,10 +70,9 @@ const simulateCheckout = async (req, res) => {
         let cuponAplicado = null;
         let descuentoAplicado = 0;
 
-        // 1. Verificar disponibilidad (aunque el modelo ya filtra, doble chequeo)
-        if (evento.tickets_disponibles <= 0 && precioFinal > 0) {
-            return res.status(409).json({ error: 'Tickets agotados para este evento.' });
-        }
+        // 1. Verificar disponibilidad
+        // tickets_disponibles fue reemplazado por tickets_vendidos (sin límite de aforo en DB)
+        // Si en el futuro se agrega un campo aforo, se lo compara aquí.
 
         // 2. Aplicar Cupón (si se proporciona)
         if (codigo_cupon) {
@@ -132,41 +131,47 @@ const initCheckout = async (req, res) => {
     }
 
     try {
-        // 1. (Opcional) Re-ejecutar simulación para validar precio_final en backend (alta seguridad)
-        // Por simplicidad, asumimos que el precio_final del frontend es correcto.
+        // 1. Obtener el evento para validar y obtener el FK real (eventos_confirmados.id)
+        const evento = await ticketsModel.getEventoById(evento_id);
+        if (!evento) {
+            return res.status(404).json({ error: 'Evento no encontrado.' });
+        }
 
         const cupon = codigo_cupon ? await ticketsModel.checkCupon(codigo_cupon) : null;
-        // Si el cupón no aplica al tipo de venta, lo consideramos nulo
-        const cuponId = (cupon && (cupon.aplica_a === 'TODAS' || cupon.aplica_a === tipo_venta)) ? cupon.id : null;
+        const codigoCuponAplicado = (cupon && (cupon.aplica_a === 'TODAS' || cupon.aplica_a === tipo_venta)) ? cupon.codigo : null;
 
-        // 2. Crear el ticket en la base de datos en estado PENDIENTE_PAGO
+        // 2. Crear el ticket con el ID real de eventos_confirmados (FK correcto)
         const ticketId = await ticketsModel.createPendingTicket(
-            evento_id,
+            evento.id,
             email,
             nombre_comprador,
-            cuponId,
+            codigoCuponAplicado,
             parseFloat(precio_final),
             tipo_venta
         );
 
         if (parseFloat(precio_final) > 0) {
-            // 3. Generar la preferencia de pago (MERCADOPAGO - Lógica Futura)
-            // const preference = await mercadopagoService.createPreference(ticketId, precio_final, email);
+            // 3. Generar la preferencia de pago con el SDK de MercadoPago
+            const nombreEvento = evento.nombreEvento || evento.nombre_banda || `Evento #${evento_id}`;
 
-            // Simulación de respuesta de Mercado Pago:
-            const preferenceId = `MP-${Date.now()}`;
+            const preference = await mercadopagoPaymentService.createPreference(
+                ticketId,
+                parseFloat(precio_final),
+                email,
+                nombreEvento
+            );
 
             res.status(201).json({
                 status: 'pending_payment',
                 ticket_id: ticketId,
-                preference_id: preferenceId, // ID que usa MP para redirigir
+                preference_id: preference.preference_id,
+                sandbox_init_point: preference.sandbox_init_point,
                 message: 'Ticket creado, procede al pago.'
             });
 
         } else {
-            // 4. Si es gratis (precio_final = 0), se marca como PAGADO inmediatamente.
-            // En un sistema real, haríamos una función para marcarlo como PAGADO
-            // await ticketsModel.updateTicketToPaid(ticketId, { free: true });
+            // 4. Si es gratis, marcar como PAGADO inmediatamente
+            await ticketsModel.updateTicketStatus(ticketId, 'PAGADO', null);
 
             res.status(201).json({
                 status: 'paid_free',
@@ -177,17 +182,121 @@ const initCheckout = async (req, res) => {
 
     } catch (error) {
         logError("Error al iniciar el checkout:", error);
+
+        // Detectar error de credenciales inválidas de MercadoPago
+        const mpStatus = error?.cause?.[0]?.status ?? error?.status;
+        const mpCode = error?.cause?.[0]?.code ?? '';
+        if (mpStatus === 403 || mpCode === 'PA_UNAUTHORIZED_RESULT_FROM_POLICIES') {
+            return res.status(502).json({ error: 'Credenciales de MercadoPago inválidas o no configuradas. Revisá MP_ACCESS_TOKEN en el servidor.' });
+        }
+
         res.status(500).json({ error: 'Error interno al procesar la solicitud.' });
     }
 };
 
 
-// Funciones futuras:
-// const webhookHandler = async (req, res) => { ... };
-// const validateTicket = async (req, res) => { ... };
+/**
+ * POST /api/tickets/webhook
+ * Recibe notificaciones de MercadoPago y actualiza el estado del ticket.
+ */
+const webhookHandler = async (req, res) => {
+    // Responder inmediatamente a MP para evitar reintentos
+    res.status(200).send('OK');
+
+    const { type, data } = req.body;
+
+    if (type !== 'payment' || !data?.id) {
+        logVerbose('[Webhook MP] Notificación ignorada — tipo:', type);
+        return;
+    }
+
+    const paymentId = data.id;
+    logVerbose('[Webhook MP] Procesando pago:', paymentId);
+
+    try {
+        const payment = await mercadopagoPaymentService.getPayment(paymentId);
+
+        const ticketId = parseInt(payment.external_reference, 10); // INT id del ticket
+        if (!ticketId) {
+            logWarning('[Webhook MP] external_reference vacío en pago', paymentId);
+            return;
+        }
+
+        const mpStatus = payment.status; // approved | pending | rejected
+        let nuevoEstado;
+
+        if (mpStatus === 'approved') {
+            nuevoEstado = 'PAGADO';
+        } else if (mpStatus === 'pending' || mpStatus === 'in_process') {
+            nuevoEstado = 'PENDIENTE_PAGO';
+        } else {
+            nuevoEstado = 'CANCELADO'; // rejected, cancelled, refunded, etc.
+        }
+
+        await ticketsModel.updateTicketStatus(ticketId, nuevoEstado, String(paymentId));
+        logSuccess(`[Webhook MP] Ticket ${ticketId} → ${nuevoEstado} (pago ${paymentId})`);
+
+    } catch (error) {
+        logError('[Webhook MP] Error al procesar pago', paymentId, error);
+    }
+};
+
+/**
+ * POST /api/tickets/process-payment
+ * Recibe el formData del Brick de MercadoPago y procesa el pago.
+ */
+const processPayment = async (req, res) => {
+    const { ticket_id, formData } = req.body;
+
+    if (!ticket_id || !formData) {
+        return res.status(400).json({ error: 'Faltan datos: ticket_id y formData requeridos.' });
+    }
+
+    try {
+        const payment = await mercadopagoPaymentService.createPayment(formData);
+
+        const mpStatus = payment.status;
+        let nuevoEstado;
+
+        if (mpStatus === 'approved') {
+            nuevoEstado = 'PAGADO';
+        } else if (mpStatus === 'pending' || mpStatus === 'in_process') {
+            nuevoEstado = 'PENDIENTE_PAGO';
+        } else {
+            nuevoEstado = 'CANCELADO';
+        }
+
+        await ticketsModel.updateTicketStatus(ticket_id, nuevoEstado, String(payment.id));
+
+        res.status(200).json({
+            payment_id: payment.id,
+            status: payment.status,
+            status_detail: payment.status_detail,
+        });
+
+    } catch (error) {
+        logError('Error al procesar pago con Brick:', error);
+        res.status(500).json({ error: 'Error al procesar el pago.' });
+    }
+};
+
+/**
+ * GET /api/tickets/public-key
+ * Devuelve la MP_PUBLIC_KEY para que el frontend pueda inicializar el Brick.
+ */
+const getPublicKey = (req, res) => {
+    const publicKey = process.env.MP_PUBLIC_KEY;
+    if (!publicKey) {
+        return res.status(503).json({ error: 'Clave pública de MercadoPago no configurada.' });
+    }
+    res.json({ public_key: publicKey });
+};
 
 module.exports = {
     getFechasBandasConfirmadas,
     simulateCheckout,
     initCheckout,
+    webhookHandler,
+    processPayment,
+    getPublicKey,
 };

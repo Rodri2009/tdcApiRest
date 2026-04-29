@@ -123,7 +123,7 @@ async function getMessagesHandler(req, res) {
     try {
         logRequest('GET', '/api/whatsapp/messages');
 
-        const { chatId } = req.query;
+        const { chatId } = req.params;
         if (!chatId) {
             return res.status(400).json({
                 success: false,
@@ -139,7 +139,13 @@ async function getMessagesHandler(req, res) {
         }
 
         const limit = parseInt(req.query.limit) || 50;
+        console.log(`[WhatsAppController] 📨 getMessages: chatId="${chatId}"`);
+
+        const t0 = Date.now();
         const messages = await whatsappService.getMessages(chatId, limit);
+        const elapsed = Date.now() - t0;
+
+        console.log(`[WhatsAppController] ✅ getMessages completado en ${elapsed}ms — ${messages ? messages.length : 0} mensajes`);
 
         return res.status(200).json({
             success: true,

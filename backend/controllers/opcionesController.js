@@ -223,7 +223,7 @@ const getFechasOcupadas = async (req, res) => {
                 SELECT DISTINCT fecha, hora FROM(
                     SELECT DATE_FORMAT(sa.fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(sa.hora_evento), 'hs', '') AS hora FROM solicitudes_alquiler sa JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud WHERE sol.estado = 'Confirmado'
                     UNION
-                    SELECT DATE_FORMAT(sfb.fecha_evento, '%Y-%m-%d') AS fecha, REPLACE(TRIM(sfb.hora_evento), 'hs', '') AS hora FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud WHERE sol.estado = 'Confirmado'
+                    SELECT DATE_FORMAT(sol.fecha_evento, '%Y-%m-%d') AS fecha, TIME_FORMAT(sol.hora_inicio, '%H:%i') AS hora FROM solicitudes sol WHERE sol.categoria = 'BANDAS' AND sol.estado = 'Confirmado'
                     UNION
                     SELECT DATE_FORMAT(ec.fecha_evento, '%Y-%m-%d') AS fecha, TIME_FORMAT(ec.hora_inicio, '%H:%i') AS hora FROM eventos_confirmados ec JOIN solicitudes sol ON ec.id_solicitud = sol.id_solicitud WHERE ec.activo = 1 AND sol.estado = 'Confirmado'
                 ) AS todas
@@ -258,7 +258,7 @@ const getFechasOcupadas = async (req, res) => {
             SELECT DISTINCT fecha FROM(
                 SELECT DATE_FORMAT(sa.fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_alquiler sa JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud WHERE sol.estado = 'Confirmado'
                 UNION
-                SELECT DATE_FORMAT(sfb.fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes_fechas_bandas sfb JOIN solicitudes sol ON sfb.id_solicitud = sol.id_solicitud WHERE sol.estado = 'Confirmado'
+                SELECT DATE_FORMAT(sol.fecha_evento, '%Y-%m-%d') AS fecha FROM solicitudes sol WHERE sol.categoria = 'BANDAS' AND sol.estado = 'Confirmado'
                 UNION
                 SELECT DATE_FORMAT(ec.fecha_evento, '%Y-%m-%d') AS fecha FROM eventos_confirmados ec JOIN solicitudes sol ON ec.id_solicitud = sol.id_solicitud WHERE ec.activo = 1 AND sol.estado = 'Confirmado'
             ) AS todas

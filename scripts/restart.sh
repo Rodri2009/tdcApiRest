@@ -90,6 +90,91 @@ EJEMPLOS:
 EOF
 }
 
+# Función para verificar si los contenedores levantaron correctamente
+check_containers_health() {
+  local sleep_time=5
+  echo ""
+  echo -e "${CYAN}[*] Verificando estado de contenedores en $sleep_time segundos...${NC}"
+  sleep $sleep_time
+  echo ""
+
+  local has_critical_errors=0
+  local has_warnings=0
+
+  # Arrays de contenedores a verificar
+  local check_containers=()
+  [ $RESTART_BACKEND -eq 1 ] && check_containers+=("docker-backend-1")
+  [ $RESTART_FRONTEND -eq 1 ] && check_containers+=("docker-nginx-1")
+  [ $RESTART_DB -eq 1 ] && check_containers+=("docker-mariadb-1")
+
+  for container in "${check_containers[@]}"; do
+    local status=$(docker inspect -f '{{.State.Status}}' "$container" 2>/dev/null || echo "missing")
+    
+    if [ "$status" = "running" ]; then
+      echo -e "  ${GREEN}✓${NC} $container: ${GREEN}running${NC}"
+      
+      # Revisar logs para errores críticos (ignorar warnings conocidas)
+      local critical_errors=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "(error|exception|failed|cannot|refused|fatal)" | grep -viE "(io_uring_queue_init|Chromium has locked|WhatsAppService|MercadoPagoService|PUPPETEER-WA|PUPPETEER-MP|BANDA-SYNC|FLYER-SYNC|Error al inicializar)" | head -2 || true)
+      
+      # Revisar warnings
+      local all_warnings=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "warning|warn" | head -2 || true)
+      
+      if [ -n "$critical_errors" ]; then
+        echo -e "    ${RED}✗ Errores críticos:${NC}"
+        echo "$critical_errors" | sed 's/^/      /'
+        has_critical_errors=1
+      elif [ -n "$all_warnings" ]; then
+        echo -e "    ${YELLOW}⚠ Advertencias:${NC}"
+        echo "$all_warnings" | sed 's/^/      /'
+        has_warnings=1
+      fi
+    else
+      echo -e "  ${RED}✗${NC} $container: ${RED}$status${NC}"
+      echo -e "    ${RED}Últimos logs:${NC}"
+      docker logs --tail 20 "$container" 2>&1 | tail -10 | sed 's/^/      /'
+      has_critical_errors=1
+    fi
+  done
+
+  echo ""
+  if [ $has_critical_errors -eq 0 ]; then
+    echo -e "${GREEN}════════════════════════════════════════════════════${NC}"
+    if [ $has_warnings -eq 0 ]; then
+      echo -e "${GREEN}  ✓ Todos los contenedores funcionan correctamente${NC}"
+    else
+      echo -e "${GREEN}  ✓ Contenedores en ejecución (con advertencias)${NC}"
+    fi
+    echo -e "${GREEN}════════════════════════════════════════════════════${NC}"
+    return 0
+  else
+    echo -e "${RED}════════════════════════════════════════════════════${NC}"
+    echo -e "${RED}  ✗ Se detectaron problemas críticos${NC}"
+    echo -e "${RED}════════════════════════════════════════════════════${NC}"
+    return 1
+  fi
+}
+
+check_backend_http() {
+  if [ $RESTART_BACKEND -eq 0 ]; then
+    return 0
+  fi
+
+  if ! command_exists curl; then
+    echo -e "${YELLOW}[*] curl no está instalado, omitiendo verificación HTTP del backend${NC}"
+    return 0
+  fi
+
+  echo ""
+  echo -e "${CYAN}[*] Verificando disponibilidad del backend HTTP...${NC}"
+  if curl -sS --max-time 5 http://localhost:3000/health >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✓ Backend HTTP responde correctamente en http://localhost:3000/health${NC}"
+  else
+    echo -e "  ${RED}✗ El backend no responde en http://localhost:3000/health${NC}"
+    echo -e "    ${YELLOW}Revisá los logs con: ./scripts/backend_logs.sh${NC}"
+    echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
+  fi
+}
+
 if [[ ${1:-} == "-h" || ${1:-} == "--help" ]]; then
   show_help
   exit 0
@@ -316,6 +401,10 @@ else
   fi
 fi
 
+# Verificar salud de contenedores
+check_containers_health
+check_backend_http
+
 # Mensaje final
 echo ""
 echo -e "${GREEN}======================================================${NC}"
@@ -336,7 +425,7 @@ if [ $SHOW_HELP_AT_END -eq 1 ]; then
   fi
   echo ""
   echo -e "${YELLOW}¿Cómo ver logs en vivo?${NC}"
-  echo -e "  Ejecuta: ${CYAN}./scripts/backend-logs.sh${NC}"
+  echo -e "  Ejecuta: ${CYAN}./scripts/backend_logs.sh${NC}"
   echo ""
   echo -e "${YELLOW}¿Cómo reiniciar?${NC}"
   echo -e "  Solo backend:   ${CYAN}./scripts/restart.sh --backend${NC}"

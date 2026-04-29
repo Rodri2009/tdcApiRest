@@ -45,7 +45,7 @@ INSERT INTO `bandas_artistas` (`id_banda`, `nombre`, `genero_musical`, `bio`, `i
   (11,'Territorio Caníbal','Hardcore / Metal','Banda de hardcore metal del circuito under del Gran Buenos Aires con presentaciones frecuentes en festivales independientes.','@territoriocanibal',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/uploads/bandas/logo_territorio_canibal.png',NULL,NULL,6,NULL,0,1,'2026-03-13 04:29:21','2026-03-18 01:20:40'),
   (12,'Ojo Animal','Stoner Rock / Hard Rock','Banda de stoner rock del circuito under argentino con influencias del hard rock clásico.','@ojoanimalband',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,6,NULL,0,1,'2026-03-13 04:29:21','2026-03-18 01:20:40'),
   (13,'Falsa Euforia','Punk','Proyecto independiente del conurbano bonaerense dentro de la escena alternativa.','@falsaeuforia',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/uploads/bandas/logo_falsa_euforia.jpg',NULL,NULL,6,NULL,0,1,'2026-03-13 04:29:21','2026-03-18 01:20:40'),
-  (14,'Cronorock','Rock Nacional','Banda independiente de rock nacional con presentaciones en bares y festivales under.','@cronorock',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/uploads/bandas/logo_cronorock.jpeg',NULL,NULL,6,2,0,1,'2026-03-13 04:29:21','2026-03-18 01:20:40'),
+  (14,'Devastación final','Metal','Banda independiente metal.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/uploads/bandas/logo_cronorock.jpeg',NULL,NULL,6,2,0,1,'2026-03-13 04:29:21','2026-03-18 01:20:40'),
   (15,'Ratucha','Punk Rock','Banda punk del circuito under del conurbano bonaerense con fuerte presencia en festivales autogestionados.','@ratuchapunk',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,6,NULL,0,1,'2026-03-13 04:29:21','2026-03-18 01:20:40'),
   (16,'La Monky','Rock / Funk Rock','Banda independiente del circuito rockero del conurbano con influencias funk y rock alternativo.','@lamonkybanda',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/uploads/bandas/logo_la_monky.jpg',NULL,NULL,6,NULL,0,1,'2026-03-13 04:29:21','2026-03-18 01:20:40'),
   (17,'Raros Ratones','Rock Alternativo','Banda emergente de rock alternativo dentro de la escena under del Gran Buenos Aires.','@rarosratones',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,6,NULL,0,1,'2026-03-13 04:29:21','2026-03-18 01:20:40'),
@@ -54,7 +54,7 @@ INSERT INTO `bandas_artistas` (`id_banda`, `nombre`, `genero_musical`, `bio`, `i
   (20,'Capitan',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/uploads/bandas/logo_capitan.png',NULL,NULL,6,NULL,0,1,'2026-03-13 13:11:50','2026-03-18 01:20:40'),
   (21,'El Centésimo Mono',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/uploads/bandas/logo_el_centesimo_mono.jpeg',NULL,NULL,6,NULL,0,1,'2026-03-13 13:15:16','2026-03-18 01:20:40'),
   (22,'Industria','Punk',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/uploads/bandas/logo_industria.jpg',NULL,NULL,6,NULL,0,1,'2026-03-13 13:17:24','2026-03-18 01:20:40'),
-  (23,'Guarilo',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,/sc  ,NULL,'/uploads/bandas/logo_guarilo.png',NULL,NULL,6,NULL,0,1,'2026-03-13 14:21:54','2026-03-18 01:20:40'),
+  (23,'Guarilo',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/sc',NULL,'/uploads/bandas/logo_guarilo.png',NULL,NULL,6,NULL,0,1,'2026-03-13 14:21:54','2026-03-18 01:20:40'),
   (24,'Le Debes Plata a la Banda','Rock',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/uploads/bandas/logo_le_debes_plata_a_la_banda.jpeg',NULL,NULL,6,NULL,0,1,'2026-03-13 14:23:24','2026-03-18 01:20:40'),
   (25,'Tricota','Rock',NULL,'@rocktricota',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/uploads/bandas/logo_tricota.jpeg',NULL,NULL,6,NULL,0,1,'2026-03-17 23:26:31','2026-03-17 23:43:14'),
   (26,'Clandestino','Rap',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,6,2,0,1,'2026-03-17 23:39:44','2026-03-17 23:43:14'),
@@ -122,24 +122,13 @@ INSERT INTO `catalogo_instrumentos` (`id_instrumento`, `nombre`, `categoria`, `i
   (4,'Bajo Acústico','Cuerdas',NULL),
   (5,'Bajo Eléctrico','Cuerdas',NULL),
   (6,'Teclados','Electrónico','fa-keyboard'),
-  (7,'Piano','Electrónico',NULL),
-  (8,'Batería','Percusión','fa-drum'),
-  (9,'Percusión Latina','Percusión',NULL),
-  (10,'Violín','Cuerdas',NULL),
-  (11,'Cello','Cuerdas',NULL),
-  (12,'Flauta','Vientos',NULL),
-  (13,'Saxofón','Vientos',NULL),
-  (14,'Trompeta','Vientos',NULL),
-  (15,'Trombón','Vientos',NULL),
-  (16,'Armónica','Vientos',NULL),
-  (17,'Acordeón','Electrónico',NULL),
-  (18,'Boongos','Percusión',NULL),
-  (19,'Congas','Percusión',NULL),
-  (20,'Djembe','Percusión',NULL),
-  (21,'Caja China','Percusión',NULL),
-  (22,'Shaker','Percusión',NULL),
-  (23,'Pandero','Percusión',NULL),
-  (24,'Arpa','Cuerdas',NULL);
+  (7,'Batería','Percusión','fa-drum'),
+  (8,'Tambores / Boongos / Cajon peruano','Percusión',NULL),
+  (9,'Guitarra y voz','Cuerdas','fa-microphone'),
+  (10,'Bajo y voz','Cuerdas','fa-microphone'),
+  (11,'Batería y voz','Vientos','fa-microphone'),
+  (12,'Saxofón / Trompeta / Trombón','Vientos',NULL);
+
 /*!40000 ALTER TABLE `catalogo_instrumentos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -167,25 +156,11 @@ UNLOCK TABLES;
 
 --
 -- Dumping data for table `clientes`
+-- NOTE: Data moved to 03_test_data.sql (test data)
 --
 
 LOCK TABLES `clientes` WRITE;
 /*!40000 ALTER TABLE `clientes` DISABLE KEYS */;
-INSERT INTO `clientes` (`id_cliente`, `id_usuario`, `nombre`, `apellido`, `telefono`, `email`, `notas`, `creado_por_id_usuario`, `activo`, `creado_en`, `actualizado_en`) VALUES
-
-  (1,NULL,'Juan','Pérez','+5491111111','juan@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (2,NULL,'María','González','+5491111112','maria@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (3,NULL,'Pedro','López','+5491111113','pedro@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (4,NULL,'Rodrigo','Rodríguez','+5491111114','villalbarodrigo2009@gmail.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (5,NULL,'Carlos','Martínez','+5491111115','carlos@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (6,NULL,'Bruno',NULL,NULL,NULL,NULL,NULL,1,'2026-03-17 23:43:07','2026-03-17 23:43:07'),
-  (7,1,'Templo','User',NULL,'temploclaypole@gmail.com',NULL,1,1,'2026-03-17 23:43:07','2026-03-17 23:43:07'),
-  (8,NULL,'Lucho','Reite','1155001122',NULL,'Rol en banda: Manager (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
-  (9,NULL,'Marco','Sández','1155003344','pateando.bares@gmail.com','Rol en banda: Productor (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
-  (10,NULL,'Sol','Rodríguez','1155005566','lasmentas@gmail.com','Rol en banda: Vocalista/Manager (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
-  (11,NULL,'Carlos','Mendoza','1144445566','cumbia.sudaka@gmail.com','Rol en banda: Líder (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
-  (12,NULL,'Test','Binlog',NULL,'test@binlog.com',NULL,NULL,1,'2026-03-31 17:09:25','2026-03-31 17:09:25'),
-  (13,NULL,'Seba',NULL,NULL,NULL,NULL,NULL,1,'2026-03-31 17:11:03','2026-03-31 17:11:03');
 /*!40000 ALTER TABLE `clientes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -351,19 +326,13 @@ INSERT INTO `opciones_adicionales` (`id_opciones_adicionales`, `nombre`, `precio
   (5,'Cama elástica',30000.00,'Cama elástica con red lateral para niños hasta 10 años','https://lh3.googleusercontent.com/pw/AP1GczMM-aZTEqkYM4KlsY5A79dD5IMy03IVXb0EgLUWVPlflvdfCikVlgkn3p6PVwELvS4qtBoD9HGf8LiIVAHNIuTzn3FxMxYcIecyqjeE1Ew-PZfl723Rt1kQGs-ClWpThLxG77uaRM153VQfVvD4O8fJ=w700-h933-s-no-gm?authuser=0'),
   (6,'Manteles negros con camino blanco',30000.00,'Manteles negros con camino blanco para todas las mesas','https://lh3.googleusercontent.com/pw/AP1GczPfoLiluF0pE9tFCtHRtuXpK0pFM3BQRZ97t81cE9aapbIAzlsJ5srLNeaJYfmI_2F247p2zH33ilH6oW3D-N_nM7BQKZL0CcrE49wNHZ1hQALYnGrsjMk3VsdwQ66In8Ub11R8bW8rD4Riyl6WJTjp=w999-h779-s-no-gm?authuser=0'),
   (7,'Manteles negros sólos',20000.00,'Manteles negros para todas las mesas','https://lh3.googleusercontent.com/pw/AP1GczOSpOTKTwuEAckvaWRc8thYEivYe0el_Fno_l6-ylS331QQaBD7L8zRVPQ1BVBXGdCjdyFbinue3OMV6BtZXpndGSbE4AuCCH710iGesDuGLotzH3gHsirHRral9vmMs-x8pG1S-rrSV0odj9BLrCSV=w800-h749-s-no-gm?authuser=0'),
-  (8,'Decoración HBD Completa',390000.00,'Decoración temática Happy Birthday con globos y accesorios','https://via.placeholder.com/400?text=Decoracion+HBD'),
-  (9,'Kit Números y Globos',950000.00,'Globos de números gigantes + decoraciones','https://via.placeholder.com/400?text=Globos+Numeros'),
-  (10,'Decoración Boho',969000.00,'Decoración temática boho con arco de globos y mesas','https://via.placeholder.com/400?text=Decoracion+Boho'),
-  (11,'Globos Comic (helio)',59000.00,'Pack de globos radionde con helio temático comic','https://via.placeholder.com/400?text=Globos+Comic'),
-  (12,'Gazebo 3x5m',20000.00,'Carpa/Gazebo para sombra y ambientación','https://i.imgur.com/0FhGJ1S.png'),
-  (13,'Sillas Plásticas (10 unidades)',15000.00,'Alquiler de 10 sillas plásticas para eventos','https://via.placeholder.com/400?text=Sillas+10pcs'),
-  (14,'Toldo/Carpa 3x5m',20000.00,'Carpa para sombra de 3x5 metros','https://via.placeholder.com/400?text=Carpa+3x5m'),
-  (15,'Cama Elástica (basica)',120000.00,'Cama elástica básica para niños','https://via.placeholder.com/400?text=Cama+Elastica'),
-  (16,'Livings Infantiles',40000.00,'Juego de livings infantiles para eventos','https://i.imgur.com/GnYzLQJ.png'),
-  (17,'Gazebo Decorativo',50000.00,'Gazebo para ambientación en fiestas','https://via.placeholder.com/400?text=Gazebo+Decorativo'),
-  (18,'Set Globos Helio (30 unidades)',8000.00,'Set de 30 globos con helio para decoración','https://via.placeholder.com/400?text=Globos+Helio+30'),
-  (19,'Centro de Mesa Elegante',10000.00,'Centro de mesa decorativo para eventos','https://via.placeholder.com/400?text=Centro+Mesa'),
-  (20,'Luces LED Ambientación',12000.00,'Luces LED para ambientación de eventos','https://via.placeholder.com/400?text=Luces+LED');
+  (8,'Decoración Combo 1',20000.00,'Banderín Feliz Cumple (Según variante elegida), Cortina metalizada (Según variante elegida),12 Globos de látex (Según variante elegida), 5 Globos Confeti (Según variante elegida), 3 Globos Corazón metalizado 45cm (Según variante elegida), 2 Globos Estrella metalizada 45cm (Según variante elegida), 1 Cinta para combo','https://lh3.googleusercontent.com/pw/AP1GczOYR3HA5KXB5AEVrE5vXwe37s7UwEVeH5b194oEKLHkU6MkD_9KlUqs-PWZlgJQDmrNP_k597cTf29j9G1TY6q3ek9c1T1LkiMGtwC-GhzbIMljHFRPe_HePRJq7SRbEHmFceXYmFZmCCaZRqDMk_BB=w933-h933-s-no-gm?authuser=0'),
+  (9,'Decoración Combo 2',23000.00,'50 globos de látex de 12 pulgadas en tonos combinados, 1 cinta para armado de arco de globos, 1 rollo de puntos adhesivos, 4 globos metalizados en forma de estrella de 18 pulgadas, 1 cortina metalizada de 1 x 2 metros, 1 banderín “Feliz Cumpleaños”, letra por letra','https://via.placeholder.com/400?text=Globos+Numeros'),
+  (10,'Cortina de luz',20000.00,'Cortina Luz Led Alambre 300 Luces Usb Control Remoto 3x3 Cálida','https://via.placeholder.com/400?text=Decoracion+Boho'),
+  (11,'40 Vasos descartables 300cc',6000.00,'40 Vasos descartables 300cc','https://lh3.googleusercontent.com/pw/AP1GczMlzpMGmigOATvDLgr5hWcSbKl1oMcKx7iXDBv4Z01hco6AnhbfK4wC22NBCvUp_GXGMPyl-u-BXdzoDBpOCuS-eP90IC9GdbI8vsOUv_32ncLaTzKXfJVZTgjqiK1_fSWkBZWQpO5dEp6m5FXP9392=w600-h600-s-no-gm?authuser=0'),
+  (12,'40 Vasos trago largo de acrilico',30000.00,'40 Vasos trago largo de acrilico','https://lh3.googleusercontent.com/pw/AP1GczPFlWd8y4tyd5SgbkZQzEhCJEzQAKW2bGUnPT9tnYDjZaKMh1gOk4_bgSqDxe8rh2fOKVKDA2d4jlvlZUoB-gxRBvYVZ8gFPkkk2BYRxDypVBvr1xonvA_Esd2EIx169j8JL6jKxSCfjoxKlipdP26n=w600-h600-s-no-gm?authuser=0'),
+  (13,'40 Vasos trago largo',25000.00,'40 Vasos trago largo','https://lh3.googleusercontent.com/pw/AP1GczPz7GF6OqAyXE5t3ugh38MOC6u4jlM6j-_Jcg1lkZtrEtMWPaAJqTE1RbZP8YQK1RAWN_YHeakwVg4AS5k9HjvNxO8kGTnwU7ODl3YvAyAOE5vEf3Xs_wCXRyon845y1teCoiyaEidp86_Fl5pJSQO0=w600-h600-s-no-gm?authuser=0');
+
 /*!40000 ALTER TABLE `opciones_adicionales` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -651,43 +620,21 @@ UNLOCK TABLES;
 
 --
 -- Dumping data for table `solicitudes`
+-- NOTE: Data moved to 03_test_data.sql (test/transactional data)
 --
 
 LOCK TABLES `solicitudes` WRITE;
 /*!40000 ALTER TABLE `solicitudes` DISABLE KEYS */;
-INSERT INTO `solicitudes` (`id_solicitud`, `categoria`, `id_cliente`, `id_usuario_creador`, `fecha_creacion`, `estado`, `es_publico`, `descripcion_corta`, `descripcion_larga`, `url_flyer`, `fecha_evento`, `hora_inicio`, `duracion_minutos`, `hora_fin`, `fecha_alternativa`, `actualizado_en`) VALUES
-
-  (1,'ALQUILER',1,NULL,'2026-03-13 04:29:21','Solicitado',0,'Cumpleaños infantil 50 personas','Cumpleaños infantil para una niña de 8 años. Necesitamos inflable, servicio de cocinero y setup básico.',NULL,NULL,NULL,NULL,NULL,NULL,'2026-03-13 04:29:21'),
-  (2,'ALQUILER',2,NULL,'2026-03-13 04:29:21','Confirmado',0,'Fiesta de 15 años - Servicio completo','Fiesta de 15 años. Contratamos servicio completo con meseras, bartender y sonido profesional.',NULL,NULL,NULL,NULL,NULL,NULL,'2026-03-13 04:29:21'),
-  (3,'ALQUILER',3,NULL,'2026-03-13 04:29:21','Solicitado',0,'Prueba de actualización',NULL,NULL,'2026-03-28','14:00:00',240,NULL,NULL,'2026-03-30 23:08:23'),
-  (4,'BANDAS',4,NULL,'2026-03-13 04:29:21','Confirmado',1,'Fecha Tributo','Fecha con bandas tributo, a jovenes pordioseros, a la renga y a los redondos','/uploads/flyers/solicitud_4.jpg','2026-05-09','22:00:00',390,'28:30:00',NULL,'2026-04-01 02:07:15'),
-  (5,'BANDAS',5,NULL,'2026-03-13 04:29:21','Confirmado',1,'Bandas tributo e invitadas','Tributo a La Renga y a Almafuerte, mas dos bandas invitadas','/uploads/flyers/solicitud_5.jpeg','2026-04-25','21:00:00',360,'06:00:00',NULL,'2026-04-01 02:39:32'),
-  (6,'BANDAS',4,NULL,'2026-03-13 04:29:21','Confirmado',1,'Termidor Fest','Rock nacional solicita fecha compartida con banda telonera. Esperan 200 personas.','/uploads/flyers/solicitud_6.jpeg','2026-04-18','21:00:00',450,'28:30:00',NULL,'2026-04-01 02:06:35'),
-  (7,'SERVICIOS',1,NULL,'2026-03-13 04:29:21','Solicitado',0,'Taller de Fotografía de Eventos','Taller teórico-práctico de fotografía profesional para eventos. 4 horas de instrucción.',NULL,NULL,NULL,NULL,NULL,NULL,'2026-03-13 04:29:21'),
-  (8,'TALLERES',2,NULL,'2026-03-13 04:29:21','Confirmado',1,'Taller de Masaje Descontracturante','Sesión grupal de masaje descontracturante para empleados.',NULL,'2026-04-22','10:00:00',90,NULL,NULL,'2026-03-13 04:29:21'),
-  (11,'ALQUILER',1,NULL,'2026-03-31 17:09:25','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:09:25'),
-  (12,'ALQUILER',2,NULL,'2026-03-31 17:11:03','Solicitado',0,'Este es un comentario',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:11:03'),
-  (13,'ALQUILER',3,NULL,'2026-03-31 17:12:07','Solicitado',0,'esto es un comentario',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:12:07'),
-  (14,'ALQUILER',4,NULL,'2026-03-31 17:16:55','Solicitado',0,'Prueba sin auth',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 17:17:00'),
-  (15,'ALQUILER',7,NULL,'2026-03-31 20:56:17','Solicitado',0,'Este es el comantario de prueba',NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 20:56:17'),
-  (16,'ALQUILER',5,NULL,'2026-03-31 22:12:55','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 22:12:55'),
-  (17,'ALQUILER',6,NULL,'2026-03-31 22:13:06','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 22:13:06'),
-  (18,'ALQUILER',6,NULL,'2026-03-31 22:16:11','Solicitado',0,NULL,NULL,NULL,'2026-04-05','12:00:00',180,NULL,NULL,'2026-03-31 22:16:11');
 /*!40000 ALTER TABLE `solicitudes` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
 -- Dumping data for table `solicitudes_adicionales`
+-- NOTE: Data moved to 03_test_data.sql (test/transactional data)
 --
 
 LOCK TABLES `solicitudes_adicionales` WRITE;
 /*!40000 ALTER TABLE `solicitudes_adicionales` DISABLE KEYS */;
-INSERT INTO `solicitudes_adicionales` (`id`, `id_solicitud_alquiler`, `adicional_nombre`, `adicional_precio`, `creado_en`) VALUES
-
-  (1,2,'Mesa extra',5000.00,'2026-03-13 04:29:21'),
-  (2,2,'Sillas extras (4)',1200.00,'2026-03-13 04:29:21'),
-  (3,2,'Servicio de fotografía',8000.00,'2026-03-13 04:29:21'),
-  (4,1,'Manteles personalizados',30000.00,'2026-03-13 04:29:21');
 /*!40000 ALTER TABLE `solicitudes_adicionales` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -697,33 +644,16 @@ UNLOCK TABLES;
 
 LOCK TABLES `solicitudes_alquiler` WRITE;
 /*!40000 ALTER TABLE `solicitudes_alquiler` DISABLE KEYS */;
-INSERT INTO `solicitudes_alquiler` (`id_solicitud_alquiler`, `id_solicitud`, `fecha_evento`, `hora_evento`, `id_tipo_evento`, `id_precio_vigencia`, `cantidad_personas`, `precio_basico`, `total_adicionales`, `monto_sena`, `monto_deposito`, `precio_final`, `comentarios`) VALUES
-
-  (1,1,'2026-03-15','14:00:00','INFANTILES',1,45,55000.00,0.00,0.00,0.00,55000.00,'Incluye inflable cocodrilo y cocinera'),
-  (2,2,'2026-03-22','18:00:00','CON_SERVICIO_DE_MESA',4,80,80000.00,0.00,0.00,0.00,80000.00,'Servicio completo: meseras, bartender, sonido'),
-  (3,3,'2026-03-28','14:00:00','BABY_SHOWERS',3,45,20000.00,0.00,0.00,0.00,20000.00,'Prueba de actualización'),
-  (4,11,'2026-04-05','12:00:00','INFANTILES',1,30,50000.00,0.00,0.00,0.00,50000.00,''),
-  (5,12,'2026-04-05','12:00:00','INFANTILES',1,1,150000.00,0.00,0.00,0.00,150000.00,'Este es un comentario'),
-  (6,13,'2026-04-05','12:00:00','INFANTILES',1,1,150000.00,0.00,0.00,0.00,150000.00,'esto es un comentario'),
-  (7,14,'2026-04-05','12:00:00','INFANTILES',1,30,50000.00,0.00,0.00,0.00,50000.00,'Prueba sin auth'),
-  (8,15,'2026-04-05','12:00:00','INFANTILES',1,1,150000.00,0.00,0.00,0.00,150000.00,'Este es el comantario de prueba'),
-  (9,16,'2026-04-05','12:00:00','INFANTILES',1,1,150000.00,0.00,0.00,0.00,150000.00,''),
-  (10,17,'2026-04-05','12:00:00','INFANTILES',1,1,150000.00,0.00,0.00,0.00,150000.00,''),
-  (11,18,'2026-04-05','12:00:00','INFANTILES',1,1,150000.00,0.00,0.00,0.00,150000.00,'');
 /*!40000 ALTER TABLE `solicitudes_alquiler` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
 -- Dumping data for table `solicitudes_fechas_bandas`
+-- NOTE: Data moved to 03_test_data.sql (test/transactional data)
 --
 
 LOCK TABLES `solicitudes_fechas_bandas` WRITE;
 /*!40000 ALTER TABLE `solicitudes_fechas_bandas` DISABLE KEYS */;
-INSERT INTO `solicitudes_fechas_bandas` (`id_solicitud`, `id_banda`, `fecha_evento`, `hora_evento`, `precio_basico`, `precio_final`, `precio_anticipada`, `precio_puerta`, `cantidad_bandas`, `expectativa_publico`, `bandas_json`, `fecha_alternativa`, `notas_admin`, `id_evento_generado`) VALUES
-
-  (4,1,'2026-05-09','22:00:00',100000.00,120000.00,8000.00,15000.00,3,'200','[{\"id_banda\":36,\"nombre\":\"Pánico\",\"orden_show\":0,\"es_principal\":true,\"hora_inicio\":\"23:00\"},{\"id_banda\":1,\"nombre\":\"Reite\",\"orden_show\":1,\"es_principal\":false,\"hora_inicio\":\"00:30\"},{\"id_banda\":35,\"nombre\":\"Cruz Diablo\",\"orden_show\":2,\"es_principal\":false,\"hora_inicio\":\"02:00\"}]',NULL,NULL,NULL),
-  (5,3,'2026-04-25','21:00:00',100000.00,120000.00,7000.00,7000.00,4,'200','[{\"id_banda\":34,\"nombre\":\"Clasicos Matados\",\"orden_show\":0,\"es_principal\":true,\"hora_inicio\":\"23:00\"},{\"id_banda\":24,\"nombre\":\"Le Debes Plata a la Banda\",\"orden_show\":1,\"es_principal\":false,\"hora_inicio\":\"12:00\"},{\"id_banda\":39,\"nombre\":\"Descanso Eterno\",\"orden_show\":2,\"es_principal\":false,\"hora_inicio\":\"01:00\"},{\"id_banda\":10,\"nombre\":\"Nomade 73\",\"orden_show\":3,\"es_principal\":false,\"hora_inicio\":\"03:00\"}]',NULL,NULL,NULL),
-  (6,2,'2026-04-18','21:00:00',120000.00,120000.00,5000.00,5000.00,3,'200','[{\"id_banda\":29,\"nombre\":\"India Madre\",\"orden_show\":0,\"es_principal\":true,\"hora_inicio\":\"22:00\"},{\"id_banda\":33,\"nombre\":\"KorGue\",\"orden_show\":1,\"es_principal\":false,\"hora_inicio\":\"23:00\"},{\"id_banda\":27,\"nombre\":\"Defensores de la fe\",\"orden_show\":2,\"es_principal\":false,\"hora_inicio\":\"12:00\"}]',NULL,NULL,5);
 /*!40000 ALTER TABLE `solicitudes_fechas_bandas` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -738,13 +668,11 @@ UNLOCK TABLES;
 
 --
 -- Dumping data for table `solicitudes_servicios`
+-- NOTE: Data moved to 03_test_data.sql (test data)
 --
 
 LOCK TABLES `solicitudes_servicios` WRITE;
 /*!40000 ALTER TABLE `solicitudes_servicios` DISABLE KEYS */;
-INSERT INTO `solicitudes_servicios` (`id_solicitud_servicio`, `id_solicitud`, `tipo_servicio`, `fecha_evento`, `hora_evento`, `precio`) VALUES
-
-  (1,7,'Taller Educativo','2026-03-15','15:00:00',3000.00);
 /*!40000 ALTER TABLE `solicitudes_servicios` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -752,13 +680,11 @@ UNLOCK TABLES;
 -- Dumping data for table `solicitudes_talleres`
 --
 
+-- TODO NOTE: Data moved to 03_test_data.sql (test data)
+--
+
 LOCK TABLES `solicitudes_talleres` WRITE;
 /*!40000 ALTER TABLE `solicitudes_talleres` DISABLE KEYS */;
-INSERT INTO `solicitudes_talleres` (`id_solicitud_taller`, `id_solicitud`, `nombre_taller`, `fecha_evento`, `hora_evento`, `precio`) VALUES
-
-  (1,8,'Masaje Descontracturante Grupal','2026-04-22','10:00:00',2500.00);
-/*!40000 ALTER TABLE `solicitudes_talleres` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Dumping data for table `talleres`
@@ -805,7 +731,8 @@ UNLOCK TABLES;
 -- Dumping data for table `turnos_servicios`
 --
 
-LOCK TABLES `turnos_servicios` WRITE;
+-- TODO NOTE: Data moved to 03_test_data.sql (test data)
+--CK TABLES `turnos_servicios` WRITE;
 /*!40000 ALTER TABLE `turnos_servicios` DISABLE KEYS */;
 /*!40000 ALTER TABLE `turnos_servicios` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -813,14 +740,11 @@ UNLOCK TABLES;
 --
 -- Dumping data for table `usuarios`
 --
+-- TODO NOTE: Data moved to 03_test_data.sql (test data)
+--
 
 LOCK TABLES `usuarios` WRITE;
 /*!40000 ALTER TABLE `usuarios` DISABLE KEYS */;
-INSERT INTO `usuarios` (`id_usuario`, `email`, `password_hash`, `nombre`, `rol`, `activo`, `proveedor_oauth`, `id_oauth`, `token_oauth`, `foto_url`, `creado_en`, `actualizado_en`) VALUES
-
-  (1,'temploclaypole@gmail.com','$2a$10$d3C9.uYqlJaofNGk3Nc0AuKm3KN9sWhIQhuZCv67j0F9Jc5VsMm2W','Templo User','staff',1,'google','107386203679475316318',NULL,'https://lh3.googleusercontent.com/a/ACg8ocK9dwZoBaeK4ng93n4rTE_TLWgqd-VSfex5hfKVObbt06w0oIHl=s96-c','2026-03-13 04:29:21','2026-03-13 12:25:56'),
-  (2,'villalbarodrigo2009@gmail.com','$2a$10$xT4ERvVKWABJlrrYPsJXWOZHTVsZtYp1uCm52pM23iHbdmAUlHlyu','Rodrigo Villalba','admin',1,'google','117318714094755139695',NULL,'https://lh3.googleusercontent.com/a/ACg8ocJGyiIz4tnQI40z1wg81HbfIeiPnmIl49oegEjoq5aFm0k-951Emg=s96-c','2026-03-13 04:29:21','2026-03-18 12:23:51');
-/*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

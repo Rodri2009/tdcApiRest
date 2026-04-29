@@ -35,7 +35,9 @@ const checkPermiso = (permisoRequerido) => {
         logWarning(`Acceso denegado: Usuario ${req.user.id} no tiene permiso '${permisoRequerido}'`);
         return res.status(403).json({
             message: 'No tienes permisos para realizar esta acción.',
-            permiso_requerido: permisoRequerido
+            permiso_requerido: permisoRequerido,
+            rol_usuario: req.user.role,
+            permisos_usuario: req.user.permisos || []
         });
     };
 };

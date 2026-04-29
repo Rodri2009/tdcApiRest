@@ -21,6 +21,7 @@ const obtenerRolYPermisos = (rol) => {
         staff: [
             'solicitudes.ver', 'solicitudes.editar', 'solicitudes.cambiar_estado',
             'configuracion.ver',
+            'config.talleres',
             'personal.ver',
             'reportes.ver'
         ],

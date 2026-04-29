@@ -1,0 +1,4 @@
+# Ignora cookies y cache pero mantiene la estructura
+*
+!.gitkeep
+!.gitignore

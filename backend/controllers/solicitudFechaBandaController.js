@@ -177,22 +177,18 @@ const crearSolicitudFechaBanda = async (req, res) => {
         const sqlFechaBanda = `
             INSERT INTO solicitudes_fechas_bandas (
                 id_solicitud,
-                fecha_evento,
                 fecha_alternativa,
-                hora_evento,
                 precio_basico,
                 precio_puerta,
                 expectativa_publico,
                 cantidad_bandas,
                 bandas_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
 
         const paramsFechaBanda = [
             solicitudId,
-            fecha_evento,
             fecha_alternativa || null,
-            hora_evento || '21:00',
             parseFloat(precio_basico) || 0,
             precio_puerta ? parseFloat(precio_puerta) : null,
             expectativa_publico || 150,  // aforo máximo templo
@@ -202,23 +198,26 @@ const crearSolicitudFechaBanda = async (req, res) => {
 
         await conn.query(sqlFechaBanda, paramsFechaBanda);
 
-        // Fase 2: Sincronizar campos de evento al padre solicitudes (fuente de verdad única)
+        // Fase 2: Calcular hora_fin y sincronizar campos de evento al padre solicitudes
+        let horaFin = null;
+        if (hora_evento && duracion) {
+            const [h, m] = (hora_evento || '21:00').split(':').map(x => parseInt(x, 10));
+            const totalMinutos = h * 60 + m + parseInt(duracion, 10);
+            const horaFinal = Math.floor(totalMinutos / 60) % 24;
+            const minutoFinal = totalMinutos % 60;
+            horaFin = `${String(horaFinal).padStart(2, '0')}:${String(minutoFinal).padStart(2, '0')}`;
+        }
+
         await conn.query(
             `UPDATE solicitudes
-             SET fecha_evento = ?, hora_inicio = ?, duracion_minutos = ?, fecha_alternativa = ?,
-                 hora_fin = CASE WHEN ? IS NOT NULL AND ? IS NOT NULL
-                                 THEN ADDTIME(?, SEC_TO_TIME(? * 60)) ELSE NULL END
+             SET fecha_evento = ?, hora_inicio = ?, duracion_minutos = ?, fecha_alternativa = ?, hora_fin = ?
              WHERE id_solicitud = ?`,
             [
                 fecha_evento,
                 hora_evento || '21:00',
                 parseInt(duracion, 10) || (8 * 60),
                 fecha_alternativa || null,
-                // para CASE
-                hora_evento || '21:00',
-                parseInt(duracion, 10) || (8 * 60),
-                hora_evento || '21:00',
-                parseInt(duracion, 10) || (8 * 60),
+                horaFin,
                 solicitudId
             ]
         );
@@ -236,8 +235,8 @@ const crearSolicitudFechaBanda = async (req, res) => {
             const [result] = await connParaComprobante.query(`
                 SELECT
                     sfb.id_solicitud,
-                    sfb.fecha_evento,
-                    sfb.hora_evento,
+                    s.fecha_evento,
+                    s.hora_inicio,
                     s.descripcion_larga AS descripcion,
                     sfb.bandas_json,
                     c.nombre as nombre_cliente,
@@ -308,6 +307,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
 
     } catch (err) {
         if (conn) await conn.rollback();
+        console.error('[FECHA_BANDA] Error completo:', err); // Log completo para debugging
         logError('[FECHA_BANDA] Error al crear solicitud:', err.message || err.sqlMessage || String(err));
         return res.status(500).json({ error: 'Error al crear solicitud de fecha.' });
     } finally {
@@ -339,8 +339,8 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
         const sql = `
             SELECT
                 sfb.id_solicitud,
-                sfb.fecha_evento,
-                sfb.hora_evento,
+                s.fecha_evento,
+                s.hora_inicio,
                 s.duracion_minutos AS duracion,
                 s.hora_fin,
                 s.descripcion_larga AS descripcion,
@@ -431,9 +431,9 @@ const listarSolicitudesFechasBandas = async (req, res) => {
             SELECT
                 sfb.id_solicitud,
                 sfb.id_banda,
-                sfb.fecha_evento,
+                s.fecha_evento,
                 sfb.fecha_alternativa,
-                sfb.hora_evento,
+                s.hora_inicio,
                 s.duracion_minutos AS duracion,
                 s.descripcion_larga AS descripcion,
                 sfb.precio_basico,
@@ -466,13 +466,13 @@ const listarSolicitudesFechasBandas = async (req, res) => {
             params.push(estado);
         }
 
-        // Filtro por rango de fechas
+        // Filtro por rango de fechas (desde solicitudes, no desde solicitudes_fechas_bandas)
         if (fecha_desde) {
-            sql += ' AND sfb.fecha_evento >= ?';
+            sql += ' AND s.fecha_evento >= ?';
             params.push(fecha_desde);
         }
         if (fecha_hasta) {
-            sql += ' AND sfb.fecha_evento <= ?';
+            sql += ' AND s.fecha_evento <= ?';
             params.push(fecha_hasta);
         }
 
@@ -628,8 +628,8 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             try {
                 const { id_cliente: nuevoClienteId, fkChanged } = await resolveContactUpdate(conn, {
                     currentClienteId: clienteId,
-                    ...(typeof contacto_nombre   !== 'undefined' ? { nombre: contacto_nombre }     : {}),
-                    ...(typeof contacto_email    !== 'undefined' ? { email: contacto_email }       : {}),
+                    ...(typeof contacto_nombre !== 'undefined' ? { nombre: contacto_nombre } : {}),
+                    ...(typeof contacto_email !== 'undefined' ? { email: contacto_email } : {}),
                     ...(typeof contacto_telefono !== 'undefined' ? { telefono: contacto_telefono } : {})
                 });
                 if (fkChanged || !clienteId) {
@@ -750,14 +750,9 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
             params.push(bandasActual.length);
         }
 
-        if (fecha_evento !== undefined) {
-            actualizaciones.push('fecha_evento = ?');
-            params.push(fecha_evento);
-        }
-        if (hora_evento !== undefined) {
-            actualizaciones.push('hora_evento = ?');
-            params.push(hora_evento);
-        }
+        // NOTA: fecha_evento y hora_evento se sincronizarán a la tabla padre más abajo
+        // No intentar actualizar aquí porque esas columnas ya no existen en solicitudes_fechas_bandas
+
         if (descripcion !== undefined) {
             // descripcion_larga vive en tabla padre solicitudes
             await conn.query('UPDATE solicitudes SET descripcion_larga = ? WHERE id_solicitud = ?', [descripcion, idNum]);
@@ -974,8 +969,8 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                     SELECT
                         sfb.id_solicitud,
                         sfb.id_banda,
-                        sfb.fecha_evento,
-                        sfb.hora_evento,
+                        s.fecha_evento,
+                        s.hora_inicio,
                         s.duracion_minutos AS duracion,
                         s.descripcion_larga AS descripcion,
                         sfb.precio_basico,
@@ -1079,15 +1074,13 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                 'SELECT descripcion_corta, url_flyer, es_publico, fecha_evento AS fecha_solicitud, hora_inicio AS hora_solicitud, duracion_minutos FROM solicitudes WHERE id_solicitud = ?',
                 [idNum]
             );
-            const [sfbRegistro] = await conn.query(
-                'SELECT fecha_evento, hora_evento FROM solicitudes_fechas_bandas WHERE id_solicitud = ?',
-                [idNum]
-            );
+            // NOTA: fecha_evento y hora_evento ya NO existen en solicitudes_fechas_bandas
+            // Usar solicitudes (tabla padre) como ÚNICA fuente de verdad
 
             const nombreEvento = solPadre && solPadre.descripcion_corta ? solPadre.descripcion_corta : null;
             const urlEventFlyer = solPadre ? solPadre.url_flyer : null;
-            const fechaEvento = (sfbRegistro && sfbRegistro.fecha_evento) ? sfbRegistro.fecha_evento : (solPadre ? solPadre.fecha_solicitud : null);
-            const horaInicio = (sfbRegistro && sfbRegistro.hora_evento) ? sfbRegistro.hora_evento : (solPadre ? solPadre.hora_solicitud : null);
+            const fechaEvento = solPadre ? solPadre.fecha_solicitud : null;
+            const horaInicio = solPadre ? solPadre.hora_solicitud : null;
             const duracionEstimada = solPadre ? solPadre.duracion_minutos : null;
             const esPublico = solPadre ? solPadre.es_publico : null;
 
@@ -1151,8 +1144,8 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
             SELECT
                 sfb.id_solicitud,
                 sfb.id_banda,
-                sfb.fecha_evento,
-                sfb.hora_evento,
+                s.fecha_evento,
+                s.hora_inicio,
                 s.duracion_minutos AS duracion,
                 s.descripcion_larga AS descripcion,
                 sfb.precio_basico,

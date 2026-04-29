@@ -394,7 +394,9 @@
         if (type === 'neutral') b.classList.add('neutral');
         else if (type === 'error') b.classList.add('error');
         if (bannerTimer) clearTimeout(bannerTimer);
-        bannerTimer = setTimeout(() => b.classList.add('hidden'), 8000);
+        if (!opts.persistent) {
+            bannerTimer = setTimeout(() => b.classList.add('hidden'), 8000);
+        }
     }
 
     /* --- data fetching --- */
@@ -514,19 +516,25 @@
         try {
             const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
             const res = await fetch(`${API}/health`, { headers });
+            let data = null;
+            try { data = await res.json(); } catch (_) { }
             if (!res.ok) {
+                // si el backend devolvió JSON con status, usarlo primero
+                if (data && data.status === 'disabled') {
+                    updateServiceStatus('disabled');
+                    return;
+                }
                 // solo degradar si ya no estamos ok ni reconectando
                 if (_currentServiceState !== 'ok' && _currentServiceState !== 'reconnecting') {
                     updateServiceStatus('api_error', 'sin respuesta del servidor');
                 }
                 return;
             }
-            const data = await res.json();
-            if (data.status === 'disabled') {
+            if (data && data.status === 'disabled') {
                 updateServiceStatus('disabled');
                 return;
             }
-            if (data.status === 'not_ready') {
+            if (data && data.status === 'not_ready') {
                 // solo degradar si el SSE no confirmó conexión
                 if (_currentServiceState !== 'ok' &&
                     _currentServiceState !== 'watch_stopped' &&
@@ -538,6 +546,7 @@
         } catch (e) {
             // error de red — el SSE ya gestiona la reconexión
         }
+        return _currentServiceState;
     }
 
     function startHealthPolling() {
@@ -826,6 +835,21 @@
                 }
                 return;
             }
+        }
+
+        // Chequear estado del servicio MP antes de auth y SSE
+        await pollHealth();
+        if (_currentServiceState === 'disabled') {
+            showBanner(
+                '⚠️ El servicio de Mercado Pago no está habilitado. ' +
+                'Para activarlo, reiniciar el backend con la opción <strong>--mp</strong>.',
+                'error',
+                { allowHtml: true, persistent: true }
+            );
+            document.getElementById('check-btn').disabled = true;
+            document.getElementById('toggle-balance-btn').disabled = true;
+            startHealthPolling();
+            return;
         }
 
         // Obtener token de autenticación primero

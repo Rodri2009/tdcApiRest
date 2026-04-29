@@ -195,7 +195,7 @@
         #notification-banner .banner-link {
             display: inline-block;
             margin-top: 8px;
-            color: rgba(255,255,255,0.95);
+            color: rgba(255, 255, 255, 0.95);
             text-decoration: underline;
             font-weight: 700;
         }
@@ -205,8 +205,15 @@
         }
 
         @keyframes fadeInScale {
-            from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
-            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.92);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
         }
 
         /* Overlay mientras está procesando */
@@ -214,10 +221,13 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.45);
+            background: rgba(0, 0, 0, 0.45);
             z-index: 1500;
         }
-        #form-overlay.active { display: block; }
+
+        #form-overlay.active {
+            display: block;
+        }
 
         .loading-spinner {
             display: inline-block;
@@ -404,12 +414,13 @@
 
                 <div class="footer">
                     <p>¿Olvidaste la contraseña? Contacta con el administrador.</p>
-                    <p style="margin-top:10px;">¿No tenés cuenta? <a href="/registro.html" style="color:var(--color-secondary,#f0abfc);font-weight:600;">Registrate aquí</a></p>
+                    <p style="margin-top:10px;">¿No tenés cuenta? <a href="/registro.html"
+                            style="color:var(--color-secondary,#f0abfc);font-weight:600;">Registrate aquí</a></p>
                 </div>
             </div>
         </div>
 
-<!-- Overlay de bloqueo -->
+        <!-- Overlay de bloqueo -->
         <div id="form-overlay"></div>
         <!-- Notification Banner -->
         <div id="notification-banner"></div>
@@ -657,7 +668,10 @@
                 fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                     headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
                 })
-                    .then(r => r.json())
+                    .then(r => {
+                        if (!r.ok) throw new Error('No se pudo obtener información del usuario de Google');
+                        return r.json();
+                    })
                     .then(user => {
                         const payload = {
                             proveedor_oauth: 'google',
@@ -673,7 +687,18 @@
                             body: JSON.stringify(payload)
                         });
                     })
-                    .then(r => r.json())
+                    .then(r => {
+                        if (!r.ok) {
+                            return r.text().then(text => {
+                                try {
+                                    return JSON.parse(text);
+                                } catch (e) {
+                                    throw new Error(`Servidor retornó ${r.status}: ${text}`);
+                                }
+                            });
+                        }
+                        return r.json();
+                    })
                     .then(result => {
                         if (result.token) {
                             localStorage.setItem('authToken', result.token);
@@ -692,7 +717,7 @@
                     .catch(err => {
                         console.error('Google OAuth error', err);
                         window.loginManagerInstance?.unlockForm();
-                        window.loginManagerInstance?.showNotification('Error en Google OAuth.', 'error');
+                        window.loginManagerInstance?.showNotification('Error en Google OAuth: ' + (err.message || 'Desconocido'), 'error');
                     });
             }
 
@@ -742,7 +767,18 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 })
-                    .then(r => r.json())
+                    .then(r => {
+                        if (!r.ok) {
+                            return r.text().then(text => {
+                                try {
+                                    return JSON.parse(text);
+                                } catch (e) {
+                                    throw new Error(`Servidor retornó ${r.status}: ${text}`);
+                                }
+                            });
+                        }
+                        return r.json();
+                    })
                     .then(result => {
                         if (result.user) {
                             localStorage.setItem('authToken', result.token);
@@ -832,7 +868,18 @@
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify(payload)
                                 })
-                                    .then(r => r.json())
+                                    .then(r => {
+                                        if (!r.ok) {
+                                            return r.text().then(text => {
+                                                try {
+                                                    return JSON.parse(text);
+                                                } catch (e) {
+                                                    throw new Error(`Servidor retornó ${r.status}: ${text}`);
+                                                }
+                                            });
+                                        }
+                                        return r.json();
+                                    })
                                     .then(result => {
                                         if (result.user) {
                                             localStorage.setItem('authToken', result.token);
