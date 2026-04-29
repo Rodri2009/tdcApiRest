@@ -14,7 +14,7 @@ router.get('/whatsapp-page', async (req, res) => {
 
         const html = await waPage.content();
         const url = waPage.url();
-        
+
         // Detectar estado de autenticación
         const authStatus = await waPage.evaluate(() => {
             return {
@@ -51,7 +51,7 @@ router.get('/whatsapp-status-simple', async (req, res) => {
     try {
         const waPage = req.waPage;
         if (!waPage) {
-            return res.status(503).json({ 
+            return res.status(503).json({
                 available: false,
                 message: 'WhatsApp service not initialized'
             });
@@ -61,7 +61,7 @@ router.get('/whatsapp-status-simple', async (req, res) => {
             const hasQR = !!document.querySelector('canvas');
             const hasChatList = !!document.querySelector('#pane-side');
             const hasConversation = !!document.querySelector('[role="main"]');
-            
+
             // Lógica de estado
             if (hasQR) return { state: 'needs_authentication', hasQR: true, authenticated: false };
             if (hasChatList || hasConversation) return { state: 'authenticated', hasQR: false, authenticated: true };

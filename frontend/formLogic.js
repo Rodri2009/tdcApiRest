@@ -1,6 +1,34 @@
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // =================================================================
+// FUNCIONES UTILITARIAS
+// =================================================================
+
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+            atob(base64)
+                .split('')
+                .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
+        );
+        return JSON.parse(jsonPayload);
+    } catch (err) {
+        console.warn('[parseJwt] Error decodificando token:', err);
+        return null;
+    }
+}
+
+function isUserAdmin() {
+    const token = localStorage.getItem('authToken');
+    if (!token) return false;
+    const decoded = parseJwt(token);
+    return decoded && decoded.role === 'admin';
+}
+
+// =================================================================
 // ARCHIVO DE LÓGICA COMPARTIDA: formLogic.js
 // Contiene el objeto App y la función de inicialización.
 // =================================================================
@@ -22,6 +50,7 @@ const App = {
     notificationTimer: null,
     loadAbortController: null, // Para cancelar requests pendientes
     elements: {},
+    parametroFechaDesdeURL: null, // Almacenar fecha del parámetro ?fecha
 
     // =================================================================
     // MÉTODOS
@@ -446,6 +475,13 @@ const App = {
         const params = new URLSearchParams(window.location.search);
         const idFromUrl = params.get('solicitudId');
 
+        // Capturar parámetro ?fecha para pre-carga (admin puede usar fechas pasadas)
+        const fechaParam = params.get('fecha');
+        if (fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam)) {
+            this.parametroFechaDesdeURL = fechaParam;
+            console.log('[FORM][URL] Parámetro fecha capturado:', fechaParam);
+        }
+
         if (this.config.mode === 'edit' && idFromUrl) {
             // MODO EDICIÓN
             this.solicitudId = idFromUrl;
@@ -488,7 +524,32 @@ const App = {
                 });
         } else {
             // MODO CREACIÓN
-            this.construirUI(); // Construimos la UI sin excepción de fecha
+            console.log('[FORM][INIT] Modo CREACIÓN iniciado');
+
+            // Si hay ?fecha y el usuario es admin, pasarla como fechaExcepcion para permitir fechas pasadas
+            let fechaExcepcionDesdeURL = null;
+            if (this.parametroFechaDesdeURL && isUserAdmin()) {
+                fechaExcepcionDesdeURL = this.parametroFechaDesdeURL;
+                console.log('[FORM][URL] ✓ Admin detectado - usando fecha como excepción:', fechaExcepcionDesdeURL);
+            }
+
+            this.construirUI(fechaExcepcionDesdeURL); // Construimos la UI con fecha si aplica
+
+            // ✨ MOSTRAR SECCIÓN DE FECHAS SI HAY PARÁMETRO ?fecha=
+            if (this.parametroFechaDesdeURL) {
+                setTimeout(() => {
+                    const seccionFechasHoras = document.getElementById('seccionFechasHoras');
+                    if (seccionFechasHoras) {
+                        seccionFechasHoras.style.display = 'block';
+                        console.log('[FORM][URL] ✓✓✓ seccionFechasHoras VISIBLE por parámetro ?fecha=', this.parametroFechaDesdeURL);
+                        console.log('[FORM][URL] Elemento encontrado:', seccionFechasHoras);
+                        console.log('[FORM][URL] Display actual:', window.getComputedStyle(seccionFechasHoras).display);
+                    } else {
+                        console.warn('[FORM][URL] ✗ seccionFechasHoras NO encontrado en el DOM');
+                    }
+                }, 100);
+            }
+
             // Procesar si se pasó un parámetro `tipo` en la URL (ej: page.html?tipo=BANDA)
             try { this.manejarParametroURL(); } catch (e) { console.warn('[FORM][URL] Error procesando parámetros:', e); }
             this.initFingerprint(); // Buscamos sesión por fingerprint
@@ -1165,9 +1226,14 @@ const App = {
             ? fechasOcupadas.filter(fecha => fecha !== fechaExcepcionNorm)
             : fechasOcupadas;
         try {
-            // Calcular minDate: por defecto 'today', pero si estamos en modo edición
-            // y la fechaExcepcion es anterior a hoy, permitimos esa fecha ajustando minDate
+            // Calcular minDate: por defecto 'today', pero:
+            // 1. Si estamos en modo edición y fechaExcepcion es anterior a hoy, permitimos esa fecha
+            // 2. Si es ADMIN y hay fechaExcepcion (incluso futura), permitimos cualquier fecha sin restricción
             let minDateVal = 'today';
+
+            // Detectar si el usuario es admin
+            const admin = isUserAdmin();
+
             try {
                 if (fechaExcepcion) {
                     // Manejar formatos: YYYY-MM-DD o ISO (contiene 'T') o Date
@@ -1185,13 +1251,19 @@ const App = {
                     }
 
                     if (!isNaN(excDate.getTime())) {
-                        const today = new Date();
-                        // Normalizar ambos a medianoche UTC para comparar solo la fecha
-                        const excNorm = new Date(Date.UTC(excDate.getFullYear(), excDate.getMonth(), excDate.getDate()));
-                        const todayNorm = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
-                        if (excNorm < todayNorm) {
-                            // Usar 'YYYY-MM-DD' como minDate si la excepción es pasada
-                            minDateVal = `${excDate.getFullYear()}-${String(excDate.getMonth() + 1).padStart(2, '0')}-${String(excDate.getDate()).padStart(2, '0')}`;
+                        // Si es ADMIN, no aplicar minDate (permitir cualquier fecha)
+                        if (admin) {
+                            minDateVal = null; // Sin restricción de minDate para admins
+                            console.log('[calendario] Admin detectado - sin restricción de minDate');
+                        } else {
+                            // Usuario regular: ajustar minDate solo si fecha es pasada
+                            const today = new Date();
+                            const excNorm = new Date(Date.UTC(excDate.getFullYear(), excDate.getMonth(), excDate.getDate()));
+                            const todayNorm = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+                            if (excNorm < todayNorm) {
+                                // Usar 'YYYY-MM-DD' como minDate si la excepción es pasada
+                                minDateVal = `${excDate.getFullYear()}-${String(excDate.getMonth() + 1).padStart(2, '0')}-${String(excDate.getDate()).padStart(2, '0')}`;
+                            }
                         }
                     }
                 }
@@ -1242,6 +1314,16 @@ const App = {
             };
 
             this.calendario = flatpickr(this.elements.fechaEventoInput, config);
+
+            // ✨ Pre-cargar fecha desde parámetro URL si existe
+            if (this.parametroFechaDesdeURL && this.calendario) {
+                try {
+                    this.calendario.setDate(this.parametroFechaDesdeURL, true);
+                    console.log('[calendario] Fecha pre-cargada desde URL:', this.parametroFechaDesdeURL);
+                } catch (err) {
+                    console.warn('[calendario] Error al pre-cargar fecha:', err);
+                }
+            }
 
             // Wrap flatpickr.setDate to prevent uncaught "Invalid date" exceptions from breaking the page
             try {

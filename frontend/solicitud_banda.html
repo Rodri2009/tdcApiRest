@@ -770,7 +770,8 @@
 
         <!-- Contador de bandas del usuario -->
         <div id="mis-bandas-counter" style="display:none;text-align:center;margin-bottom:18px;">
-            <span id="mis-bandas-badge" style="display:inline-block;background:#1e293b;border:1px solid #581c87;border-radius:8px;padding:8px 20px;font-size:0.95rem;color:#f0abfc;">
+            <span id="mis-bandas-badge"
+                style="display:inline-block;background:#1e293b;border:1px solid #581c87;border-radius:8px;padding:8px 20px;font-size:0.95rem;color:#f0abfc;">
                 <i class="fas fa-music"></i> <span id="mis-bandas-texto">Cargando...</span>
             </span>
         </div>
@@ -819,7 +820,9 @@
                             <select id="instrumento-select">
                                 <option value="">Seleccionar instrumento...</option>
                             </select>
-                            <div id="instrumento-toast" style="display:none;margin-top:6px;padding:5px 10px;background:#10b981;color:#fff;border-radius:6px;font-size:0.82rem;font-weight:600;transition:opacity 0.4s;"></div>
+                            <div id="instrumento-toast"
+                                style="display:none;margin-top:6px;padding:5px 10px;background:#10b981;color:#fff;border-radius:6px;font-size:0.82rem;font-weight:600;transition:opacity 0.4s;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -921,14 +924,14 @@
         // Estado mis-bandas
         let misBandas = []; // IDs de bandas propias del usuario
         let misBandasTotal = 0;
-        const LIMITE_BANDAS = 5;
+        // Sin límite de bandas por usuario
 
         // Helper: decodificar JWT sin verificar firma (solo UI)
         function getJwtPayload() {
             const token = localStorage.getItem('authToken');
             if (!token) return null;
             try { return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); }
-            catch(e) { return null; }
+            catch (e) { return null; }
         }
 
         // Cargar mis bandas para mostrar contador y detectar propiedad
@@ -949,16 +952,10 @@
                 const texto = document.getElementById('mis-bandas-texto');
                 if (counter && texto) {
                     counter.style.display = 'block';
-                    if (misBandasTotal >= LIMITE_BANDAS) {
-                        texto.textContent = `${misBandasTotal}/${LIMITE_BANDAS} bandas registradas — Límite alcanzado`;
-                        document.getElementById('mis-bandas-badge').style.borderColor = '#ef4444';
-                        document.getElementById('mis-bandas-badge').style.color = '#fca5a5';
-                    } else {
-                        texto.textContent = `${misBandasTotal}/${LIMITE_BANDAS} bandas registradas`;
-                    }
+                    texto.textContent = `${misBandasTotal} bandas registradas`;
                 }
                 updateSubmitBtnState();
-            } catch(e) {
+            } catch (e) {
                 console.warn('[MIS-BANDAS] Error:', e.message);
             }
         }
@@ -1191,13 +1188,6 @@
             const submitBtn = document.getElementById('submitBtn');
             if (!submitBtn) return;
             const requiredValid = hasRequiredFields();
-            // Bloquear si límite alcanzado y no es modo edición
-            const limiteAlcanzado = !isEditMode && misBandasTotal >= LIMITE_BANDAS;
-            if (limiteAlcanzado) {
-                submitBtn.disabled = true;
-                submitBtn.title = 'Límite de 5 bandas alcanzado';
-                return;
-            }
             if (isEditMode) {
                 submitBtn.disabled = !requiredValid || !isFormDirty();
             } else {

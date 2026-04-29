@@ -62,6 +62,8 @@ services:
       # Las cookies/sesión se persisten EN EL HOST, no en volúmenes Docker anónimos
       - ../backend/profile/mp-profile:/home/pptruser/mp-profile # Mercado Pago
       - ../backend/profile/wa-profile:/home/pptruser/wa-profile # WhatsApp
+      # Entrypoint montado como volumen: cambios al script no requieren rebuild de imagen
+      - ../scripts/infraestructura/docker_entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
 
   mariadb:
     image: mariadb:10.6

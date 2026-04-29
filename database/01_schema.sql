@@ -253,191 +253,18 @@ CREATE TABLE IF NOT EXISTS clientes (
     CONSTRAINT fk_clientes_creado_por FOREIGN KEY (creado_por_id_usuario) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Clientes con relación 1:1 a usuarios';
 
--- Tabla general para solicitudes (ahora referencia a clientes por id_cliente)
-CREATE TABLE IF NOT EXISTS solicitudes (
-    id_solicitud INT AUTO_INCREMENT PRIMARY KEY,
-    categoria ENUM('ALQUILER', 'BANDA', 'BANDAS', 'SERVICIOS', 'TALLERES') NOT NULL,
-    id_cliente INT NOT NULL COMMENT 'FK a clientes.id_cliente',
-    id_usuario_creador INT DEFAULT NULL COMMENT 'FK a usuarios.id_usuario - quién creó (admin/staff o el cliente)',
-    
-    -- Información
-    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    estado VARCHAR(50) DEFAULT 'Solicitado' COMMENT 'Estado global de la solicitud: fuente única de verdad',
-    es_publico TINYINT(1) DEFAULT 0 COMMENT 'Visibilidad pública de la solicitud',
-    descripcion_corta VARCHAR(255) DEFAULT NULL,
-    descripcion_larga TEXT DEFAULT NULL,
-    url_flyer MEDIUMTEXT DEFAULT NULL COMMENT 'URL del flyer/cartel/promocional',
-    -- NOTA: campo legacy `descripcion` eliminado en Fase 1 (27/03/2026); usar descripcion_larga
-
-    -- Campos de evento (agregados en Fase 2 - 27/03/2026)
-    -- Consolidan fecha/hora/duración de todas las tablas hijo en el padre
-    fecha_evento      DATE     DEFAULT NULL COMMENT 'Fecha principal del evento',
-    hora_inicio       TIME     DEFAULT NULL COMMENT 'Hora de inicio del evento',
-    duracion_minutos  INT      DEFAULT NULL COMMENT 'Duración en minutos',
-    hora_fin          TIME     DEFAULT NULL COMMENT 'Hora estimada de fin',
-    fecha_alternativa DATE     DEFAULT NULL COMMENT 'Fecha alternativa propuesta',
-    
-    -- Auditoría
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    INDEX idx_categoria (categoria),
-    INDEX idx_estado (estado),
-    INDEX idx_es_publico (es_publico),
-    INDEX idx_cliente_id (id_cliente),
-    INDEX idx_usuario_creador (id_usuario_creador),
-    CONSTRAINT fk_solicitudes_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE RESTRICT,
-    CONSTRAINT fk_solicitudes_usuario_creador FOREIGN KEY (id_usuario_creador) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Tabla específica para solicitudes de alquiler de salones
--- RELACIÓN 1:1 CON solicitudes (tabla padre)
--- Integridad verificada: 5 registros en solicitudes (ALQUILER) = 5 en solicitudes_alquiler ✓
--- 
--- CAMBIOS REALIZADOS (28/02/2026 - REFACTORIZACIÓN FASE 1):
--- ============================================================
--- ELIMINADOS:
---   - tipo_servicio VARCHAR(255): No existía información real, no se utiliza
---   - cantidad_de_personas VARCHAR(100): Ahora se obtiene de precios_vigencia.cantidad_min/max
--- 
--- RENOMBRADOS:
---   - tipo_de_evento → id_tipo_evento: Ahora es FK a opciones_tipos.id_tipo_evento
---   - descripcion → comentarios: Más descriptivo para campo de comentarios del cliente
--- 
--- CONVERTIDOS:
---   - hora_evento: VARCHAR(20) → TIME: Tipo correcto para horarios (ej: 14:30:00)
---   - duracion: VARCHAR(100) → INT: Almacena minutos (ej: 240 para 4 horas)
--- 
--- NUEVOS CAMPOS:
---   - id_precio_vigencia INT: FK a precios_vigencia(id) para obtener rango de cantidad
---   - total_adicionales DECIMAL(10,2): Suma de precios de adicionales seleccionados
---   - monto_sena DECIMAL(10,2): Monto de seña/adelanto requerido
---   - monto_deposito DECIMAL(10,2): Monto de depósito de garantía
---   - precio_final DECIMAL(10,2) GENERATED: Calculado como precio_basico + total_adicionales + monto_sena + monto_deposito
---   - creado_en TIMESTAMP: Auditoría - fecha de creación
---   - actualizado_en TIMESTAMP: Auditoría - fecha de última actualización
--- 
--- DATOS MIGRADOS: 5/5 registros (100% exitoso)
--- BACKUP: solicitudes_alquiler_backup_28feb2026 contiene datos anteriores
-CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
-    id_solicitud_alquiler INT AUTO_INCREMENT PRIMARY KEY COMMENT 'Identificador único del registro de alquiler',
-    
-    -- RELACIÓN CON TABLA PADRE
-    id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud - Referencia a solicitud padre (1:1)',
-    
-    -- DATOS DEL EVENTO - INFORMACIÓN BÁSICA
-    fecha_evento DATE NOT NULL COMMENT 'Fecha del evento (ej: 2026-03-15)',
-    hora_evento TIME NOT NULL COMMENT 'Hora de inicio del evento - CAMBIO: TEXT→TIME (ej: 14:30:00)',
-    -- REFERENCIA A TIPO DE EVENTO (CAMBIO: tipo_de_evento → id_tipo_evento como FK)
-    id_tipo_evento VARCHAR(255) NOT NULL COMMENT 'FK a opciones_tipos.id_tipo_evento (ej: INFANTILES, ADOLESCENTES, CON_SERVICIO_DE_MESA, BABY_SHOWERS)',
-    
-    -- REFERENCIA A RANGO DE CANTIDAD DE PERSONAS (NUEVO: obtiene de precios_vigencia)
-    id_precio_vigencia INT COMMENT 'NUEVO FK: precios_vigencia.id - Permite obtener cantidad_min, cantidad_max y precio_por_hora. NULL si no se puede determinar el rango',
-    
-    -- CANTIDAD DE PERSONAS (CAMPO DENORMALIZADO IMPORTANTE)
-    cantidad_personas INT COMMENT 'Cantidad de personas para el evento (deducida de id_precio_vigencia). Se denormaliza aquí para facilitar queries y búsqueda rápida',
-    -- PRECIOS Y MONTOS
-    precio_basico DECIMAL(10,2) COMMENT 'Precio base = precio_por_hora × duracion_horas. Capturado en momento de solicitud',
-    total_adicionales DECIMAL(10,2) DEFAULT 0 COMMENT 'NUEVO: Suma total de precios de adicionales seleccionados. Se actualiza en guardarAdicionales()',
-    monto_sena DECIMAL(10,2) DEFAULT 0 COMMENT 'NUEVO: Monto de seña (adelanto) requerido según opciones_tipos',
-    monto_deposito DECIMAL(10,2) DEFAULT 0 COMMENT 'NUEVO: Monto de depósito de garantía según opciones_tipos',
-    precio_final DECIMAL(10,2) GENERATED ALWAYS AS (precio_basico + COALESCE(total_adicionales, 0) + COALESCE(monto_sena, 0) + COALESCE(monto_deposito, 0)) STORED COMMENT 'NUEVO GENERADO: precio_basico + total_adicionales + monto_sena + monto_deposito (calculado automáticamente)',
-    
-    -- COMENTARIOS DEL CLIENTE (CAMBIO: descripcion → comentarios para mayor claridad)
-    comentarios TEXT COMMENT 'CAMBIO: Renombrado de descripcion. Comentarios/detalles del cliente capturados en campo "¿Algo más?" durante solicitud o finalización',
-    
-    -- AUDITORÍA Y ESTADO
-    -- NOTA: estado y timestamps (creado_en, actualizado_en) viven en la tabla padre `solicitudes`
-    -- No se duplican aquí para mantener una única fuente de verdad (Fase 1 normalización 27/03/2026)
-    
-    -- ÍNDICES Y CONSTRAINTS
-    -- FK a solicitudes: CASCADE → si se elimina solicitud padre, se elimina el alquiler
-    -- FK a opciones_tipos: RESTRICT → no se puede eliminar tipo si hay alquileres
-    -- FK a precios_vigencia: SET NULL → si se elimina precio, conserva el registro
-    INDEX idx_id_tipo_evento (id_tipo_evento),
-    INDEX idx_id_precio_vigencia (id_precio_vigencia),
-    INDEX idx_id_solicitud (id_solicitud),
-    CONSTRAINT fk_solicitudes_alquiler_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
-    CONSTRAINT fk_solicitudes_alquiler_tipo_evento FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT,
-    CONSTRAINT fk_solicitudes_alquiler_precio_vigencia FOREIGN KEY (id_precio_vigencia) REFERENCES precios_vigencia(id) ON DELETE SET NULL
-    
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Detalles específicos de solicitudes de alquiler de salones. Normalizado con FKs a opciones_tipos y precios_vigencia. Refactorización 28/02/2026'; 
-
--- Tabla específica para solicitudes de bandas
-
--- Tabla específica para solicitudes de servicios
--- FASE 2 (27/03/2026): hora_evento VARCHAR→TIME, duracion VARCHAR→INT (en minutos)
-CREATE TABLE IF NOT EXISTS solicitudes_servicios (
-    id_solicitud_servicio INT AUTO_INCREMENT PRIMARY KEY,
-    id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
-    tipo_servicio VARCHAR(255),
-    fecha_evento DATE,
-    hora_evento TIME DEFAULT NULL COMMENT 'Hora de inicio del evento',
-    precio DECIMAL(10,2),
-    CONSTRAINT fk_solicitudes_servicios_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Solicitudes de servicios';
-
--- Tabla específica para solicitudes de talleres
--- FASE 2 (27/03/2026): hora_evento VARCHAR→TIME, duracion VARCHAR→INT (en minutos)
-CREATE TABLE IF NOT EXISTS solicitudes_talleres (
-    id_solicitud_taller INT AUTO_INCREMENT PRIMARY KEY,
-    id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
-    nombre_taller VARCHAR(255),
-    fecha_evento DATE,
-    hora_evento TIME DEFAULT NULL COMMENT 'Hora de inicio del evento',
-    precio DECIMAL(10,2),
-    CONSTRAINT fk_solicitudes_talleres_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Solicitudes de talleres'; 
-
-
-
-
-
--- =============================================================================
--- TABLA UNIFICADA DE EVENTOS CONFIRMADOS
--- =============================================================================
-
-CREATE TABLE IF NOT EXISTS eventos_confirmados (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
-    tipo_evento ENUM('ALQUILER_SALON', 'BANDA', 'SERVICIO', 'TALLER') NOT NULL,
-    tabla_origen VARCHAR(50) NOT NULL COMMENT 'solicitudes_alquiler, solicitudes_fechas_bandas, solicitudes_servicios, solicitudes_talleres',
-
-    nombre_evento VARCHAR(255) DEFAULT NULL COMMENT 'De solicitudes.descripcion_corta',
-    descripcion_corta VARCHAR(255) DEFAULT NULL COMMENT 'De solicitudes.descripcion_corta',
-    descripcion TEXT DEFAULT NULL COMMENT 'Para compatibilidad; deberia leerse de solicitudes.descripcion_larga',
-
-    -- Información mínima y sincronizada directamente con solicitudes
-    fecha_evento DATE NOT NULL,
-    hora_inicio TIME NOT NULL,
-    duracion_minutos INT DEFAULT NULL COMMENT 'Duración en minutos (igual que solicitudes.duracion_minutos)',
-    url_flyer VARCHAR(500) DEFAULT NULL COMMENT 'De solicitudes.url_flyer',
-    es_publico TINYINT(1) DEFAULT 0 COMMENT 'De solicitudes.es_publico',
-    activo TINYINT(1) DEFAULT 1 COMMENT '1=Vigente, 0=Cancelado o archivado',
-
-    -- Información de contacto reducida
-    id_cliente INT DEFAULT NULL COMMENT 'FK a clientes.id_cliente',
-
-    -- Auditoría
-    confirmado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    cancelado_en TIMESTAMP NULL,
-
-    -- Índices
-    INDEX idx_tipo_evento (tipo_evento),
-    INDEX idx_fecha (fecha_evento),
-    INDEX idx_es_publico (es_publico),
-    INDEX idx_activo (activo),
-    INDEX idx_id_solicitud (id_solicitud),
-    INDEX idx_id_cliente (id_cliente),
-    UNIQUE KEY uk_solicitud_tipo (id_solicitud, tipo_evento),
-    CONSTRAINT fk_eventos_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
-    CONSTRAINT fk_eventos_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Eventos confirmados unificados';
 
 -- ===============================================================================
 -- CATÁLOGO DE BANDAS/ARTISTAS
--- =============================================================================
+-- ================================================================================
 
+-- Catálogo de instrumentos disponibles (para autocompletado)
+CREATE TABLE IF NOT EXISTS catalogo_instrumentos (
+    id_instrumento INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    categoria VARCHAR(50) DEFAULT NULL COMMENT 'Cuerdas, Percusión, Vientos, Electrónico, Voz',
+    icono VARCHAR(50) DEFAULT NULL COMMENT 'Nombre del icono (fa-guitar, etc.)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 -- Catálogo maestro de bandas/artistas (pueden registrarse solos o ser agregados por admin)
 CREATE TABLE IF NOT EXISTS bandas_artistas (
     id_banda INT AUTO_INCREMENT PRIMARY KEY,
@@ -479,43 +306,6 @@ CREATE TABLE IF NOT EXISTS bandas_artistas (
     CONSTRAINT fk_bandas_artistas_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE SET NULL,
     CONSTRAINT fk_bandas_registrado_por FOREIGN KEY (registrado_por_id_usuario) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-
--- =============================================================================
--- SOLICITUDES DE FECHAS PARA BANDAS
--- =============================================================================
-
-CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
-    id_solicitud INT PRIMARY KEY COMMENT 'FK a solicitudes.id_solicitud',
-    id_banda INT DEFAULT NULL COMMENT 'FK opcional a bandas_artistas: si el solicitante es una banda conocida, o para referencia a la banda principal',
-    fecha_evento DATE DEFAULT NULL,
-    -- FASE 1 (27/03/2026): descripcion, estado, creado_en, actualizado_en eliminados (viven en padre solicitudes)
-    -- FASE 2 (27/03/2026): hora_evento VARCHAR→TIME; duracion eliminado (vive en solicitudes.duracion_minutos)
-    hora_evento TIME DEFAULT NULL COMMENT 'Hora de inicio del evento',
-    precio_basico DECIMAL(10,2) DEFAULT NULL,
-    precio_final DECIMAL(10,2) DEFAULT NULL,
-    precio_anticipada DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de venta anticipada',
-    precio_puerta DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de puerta / venta en puerta',
-    cantidad_bandas INT DEFAULT 1,
-    expectativa_publico VARCHAR(100) DEFAULT NULL COMMENT 'Traducido en la UI como aforo_maximo; máximo templo 150 personas',
-    bandas_json LONGTEXT COMMENT 'JSON array de bandas: [{id_banda, nombre, orden_show, es_principal}] - ÚNICA FUENTE DE VERDAD',
-    fecha_alternativa DATE DEFAULT NULL,
-    notas_admin TEXT,
-    id_evento_generado INT DEFAULT NULL,
-    INDEX idx_fecha (fecha_evento),
-    INDEX idx_banda (id_banda),
-    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
-    FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Solicitudes de fechas/shows para bandas (3NF)';
-
--- Catálogo de instrumentos disponibles (para autocompletado)
-CREATE TABLE IF NOT EXISTS catalogo_instrumentos (
-    id_instrumento INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL UNIQUE,
-    categoria VARCHAR(50) DEFAULT NULL COMMENT 'Cuerdas, Percusión, Vientos, Electrónico, Voz',
-    icono VARCHAR(50) DEFAULT NULL COMMENT 'Nombre del icono (fa-guitar, etc.)'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 -- Formación/Integrantes de una banda (instrumentos y roles)
 CREATE TABLE IF NOT EXISTS bandas_formacion (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -528,6 +318,159 @@ CREATE TABLE IF NOT EXISTS bandas_formacion (
     INDEX idx_instrumento (id_instrumento),
     FOREIGN KEY (id_banda) REFERENCES bandas_artistas(id_banda) ON DELETE CASCADE,
     FOREIGN KEY (id_instrumento) REFERENCES catalogo_instrumentos(id_instrumento) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- =============================================================================
+-- SOLICITUDES Y VARIANTES
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS solicitudes (
+    id_solicitud INT AUTO_INCREMENT PRIMARY KEY,
+    categoria ENUM('ALQUILER', 'BANDA', 'BANDAS', 'SERVICIOS', 'TALLERES') NOT NULL,
+    id_cliente INT NOT NULL COMMENT 'FK a clientes.id_cliente',
+    id_usuario_creador INT DEFAULT NULL COMMENT 'FK a usuarios.id_usuario - quién creó (admin/staff o el cliente)',
+    
+    -- Información
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estado VARCHAR(50) DEFAULT 'Solicitado' COMMENT 'Estado global de la solicitud: fuente única de verdad',
+    es_publico TINYINT(1) DEFAULT 0 COMMENT 'Visibilidad pública de la solicitud',
+    descripcion_corta VARCHAR(255) DEFAULT NULL,
+    descripcion_larga TEXT DEFAULT NULL,
+    url_flyer MEDIUMTEXT DEFAULT NULL COMMENT 'URL del flyer/cartel/promocional',
+    fecha_evento      DATE     DEFAULT NULL COMMENT 'Fecha principal del evento',
+    hora_inicio       TIME     DEFAULT NULL COMMENT 'Hora de inicio del evento',
+    duracion_minutos  INT      DEFAULT NULL COMMENT 'Duración en minutos',
+    hora_fin          TIME     DEFAULT NULL COMMENT 'Hora estimada de fin',
+    fecha_alternativa DATE     DEFAULT NULL COMMENT 'Fecha alternativa propuesta',
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_categoria (categoria),
+    INDEX idx_estado (estado),
+    INDEX idx_es_publico (es_publico),
+    INDEX idx_cliente_id (id_cliente),
+    INDEX idx_usuario_creador (id_usuario_creador),
+    CONSTRAINT fk_solicitudes_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE RESTRICT,
+    CONSTRAINT fk_solicitudes_usuario_creador FOREIGN KEY (id_usuario_creador) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS solicitudes_alquiler (
+    id_solicitud_alquiler INT AUTO_INCREMENT PRIMARY KEY COMMENT 'Identificador único del registro de alquiler',
+    id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud - Referencia a solicitud padre (1:1)',
+    fecha_evento DATE NOT NULL COMMENT 'Fecha del evento (ej: 2026-03-15)',
+    hora_evento TIME NOT NULL COMMENT 'Hora de inicio del evento',
+    id_tipo_evento VARCHAR(255) NOT NULL COMMENT 'FK a opciones_tipos.id_tipo_evento',
+    id_precio_vigencia INT COMMENT 'FK: precios_vigencia.id',
+    cantidad_personas INT COMMENT 'Cantidad de personas para el evento',
+    precio_basico DECIMAL(10,2) COMMENT 'Precio base',
+    total_adicionales DECIMAL(10,2) DEFAULT 0 COMMENT 'Suma total de adicionales',
+    monto_sena DECIMAL(10,2) DEFAULT 0 COMMENT 'Monto de seña',
+    monto_deposito DECIMAL(10,2) DEFAULT 0 COMMENT 'Monto de depósito',
+    precio_final DECIMAL(10,2) GENERATED ALWAYS AS (precio_basico + COALESCE(total_adicionales, 0) + COALESCE(monto_sena, 0) + COALESCE(monto_deposito, 0)) STORED,
+    comentarios TEXT COMMENT 'Comentarios del cliente',
+    
+    INDEX idx_id_tipo_evento (id_tipo_evento),
+    INDEX idx_id_precio_vigencia (id_precio_vigencia),
+    INDEX idx_id_solicitud (id_solicitud),
+    CONSTRAINT fk_solicitudes_alquiler_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
+    CONSTRAINT fk_solicitudes_alquiler_tipo_evento FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT,
+    CONSTRAINT fk_solicitudes_alquiler_precio_vigencia FOREIGN KEY (id_precio_vigencia) REFERENCES precios_vigencia(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS solicitudes_servicios (
+    id_solicitud_servicio INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
+    tipo_servicio VARCHAR(255),
+    fecha_evento DATE,
+    hora_evento TIME DEFAULT NULL COMMENT 'Hora de inicio del evento',
+    precio DECIMAL(10,2),
+    CONSTRAINT fk_solicitudes_servicios_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS solicitudes_talleres (
+    id_solicitud_taller INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
+    nombre_taller VARCHAR(255),
+    fecha_evento DATE,
+    hora_evento TIME DEFAULT NULL COMMENT 'Hora de inicio del evento',
+    precio DECIMAL(10,2),
+    CONSTRAINT fk_solicitudes_talleres_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
+    id_solicitud INT PRIMARY KEY COMMENT 'FK a solicitudes.id_solicitud',
+    id_banda INT DEFAULT NULL COMMENT 'FK opcional a bandas_artistas',
+    precio_basico DECIMAL(10,2) DEFAULT NULL,
+    precio_final DECIMAL(10,2) DEFAULT NULL,
+    precio_anticipada DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de venta anticipada',
+    precio_puerta DECIMAL(10,2) NULL DEFAULT NULL COMMENT 'Precio de puerta',
+    cantidad_bandas INT DEFAULT 1,
+    expectativa_publico VARCHAR(100) DEFAULT NULL COMMENT 'Máximo aforo esperado',
+    bandas_json LONGTEXT COMMENT 'JSON array de bandas',
+    fecha_alternativa DATE DEFAULT NULL,
+    notas_admin TEXT,
+    id_evento_generado INT DEFAULT NULL,
+    INDEX idx_banda (id_banda),
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS solicitudes_personal (
+    id_solicitud_personal INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT NOT NULL,
+    id_personal VARCHAR(50) DEFAULT NULL,
+    rol_requerido VARCHAR(100) NOT NULL,
+    estado VARCHAR(50) DEFAULT 'asignado' COMMENT 'asignado, confirmado, cancelado',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_solicitud (id_solicitud),
+    INDEX idx_personal (id_personal),
+    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS solicitudes_adicionales (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud_alquiler INT NOT NULL COMMENT 'FK a solicitudes_alquiler.id_solicitud_alquiler',
+    adicional_nombre VARCHAR(255) NOT NULL,
+    adicional_precio DECIMAL(10,2) NOT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_solicitudes_adicionales_alquiler_id (id_solicitud_alquiler),
+    CONSTRAINT fk_solicitudes_adicionales_alquiler FOREIGN KEY (id_solicitud_alquiler) REFERENCES solicitudes_alquiler(id_solicitud_alquiler) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ===============================================================================
+-- =============================================================================
+
+
+-- =============================================================================
+-- EVENTOS CONFIRMADOS (Tabla maestra de eventos)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS eventos_confirmados (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
+    tipo_evento ENUM('ALQUILER_SALON', 'BANDA', 'SERVICIO', 'TALLER') NOT NULL,
+    tabla_origen VARCHAR(50) NOT NULL COMMENT 'solicitudes_alquiler, solicitudes_fechas_bandas, etc.',
+    nombre_evento VARCHAR(255) DEFAULT NULL,
+    descripcion_corta VARCHAR(255) DEFAULT NULL,
+    descripcion TEXT DEFAULT NULL,
+    fecha_evento DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    duracion_minutos INT DEFAULT NULL COMMENT 'Duración en minutos',
+    url_flyer VARCHAR(500) DEFAULT NULL,
+    es_publico TINYINT(1) DEFAULT 0,
+    activo TINYINT(1) DEFAULT 1,
+    id_cliente INT DEFAULT NULL,
+    confirmado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    cancelado_en TIMESTAMP NULL,
+    
+    INDEX idx_tipo_evento (tipo_evento),
+    INDEX idx_fecha (fecha_evento),
+    INDEX idx_es_publico (es_publico),
+    INDEX idx_activo (activo),
+    INDEX idx_id_solicitud (id_solicitud),
+    INDEX idx_id_cliente (id_cliente),
+    UNIQUE KEY uk_solicitud_tipo (id_solicitud, tipo_evento),
+    CONSTRAINT fk_eventos_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
+    CONSTRAINT fk_eventos_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================================
@@ -591,20 +534,6 @@ CREATE TABLE IF NOT EXISTS eventos_personal (
     INDEX idx_evento (id_evento),
     FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Personal asignado a solicitudes (antes de ser confirmadas como eventos)
-CREATE TABLE IF NOT EXISTS solicitudes_personal (
-    id_solicitud_personal INT AUTO_INCREMENT PRIMARY KEY,
-    id_solicitud INT NOT NULL,
-    id_personal VARCHAR(50) DEFAULT NULL,
-    rol_requerido VARCHAR(100) NOT NULL,
-    estado VARCHAR(50) DEFAULT 'asignado' COMMENT 'asignado, confirmado, cancelado',
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_solicitud (id_solicitud),
-    INDEX idx_personal (id_personal),
-    FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Asignaciones de personal a solicitudes antes de confirmarse como eventos';
 
 -- =============================================================================
 -- TABLAS DE TALLERES
@@ -801,17 +730,6 @@ CREATE TABLE IF NOT EXISTS turnos_servicios (
     FOREIGN KEY (profesional_id) REFERENCES profesionales_servicios(id),
     FOREIGN KEY (servicio_id) REFERENCES servicios_catalogo(id),
     FOREIGN KEY (precio_id) REFERENCES precios_servicios(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Tabla para almacenar los adicionales seleccionados por una solicitud de alquiler
-CREATE TABLE IF NOT EXISTS solicitudes_adicionales (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    id_solicitud_alquiler INT NOT NULL COMMENT 'FK a solicitudes_alquiler.id_solicitud_alquiler',
-    adicional_nombre VARCHAR(255) NOT NULL,
-    adicional_precio DECIMAL(10,2) NOT NULL,
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_solicitudes_adicionales_alquiler_id (id_solicitud_alquiler),
-    CONSTRAINT fk_solicitudes_adicionales_alquiler FOREIGN KEY (id_solicitud_alquiler) REFERENCES solicitudes_alquiler(id_solicitud_alquiler) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- FIN DEL SCHEMA

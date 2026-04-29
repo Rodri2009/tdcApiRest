@@ -1,4 +1,6 @@
 const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Lanza el navegador Chromium con Puppeteer
@@ -10,6 +12,14 @@ const puppeteer = require('puppeteer');
 async function launchBrowser(config) {
     try {
         console.log('[Browser Manager] Iniciando navegador Chromium...');
+
+        // Limpiar lock files stale para evitar "profile in use" entre reinicios
+        if (config.userDataDir) {
+            ['SingletonLock', 'SingletonCookie', 'SingletonSocket'].forEach(f => {
+                const fp = path.join(config.userDataDir, f);
+                try { fs.unlinkSync(fp); console.log(`[Browser Manager] 🔓 Lock eliminado: ${fp}`); } catch (e) { /* ignorar — no existe o ya fue eliminado */ }
+            });
+        }
 
         // Construir args para Chromium (controla fullscreen con BROWSER_FULLSCREEN=true)
         const chromiumArgs = [

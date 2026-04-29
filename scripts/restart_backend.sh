@@ -256,7 +256,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
   fi
   echo ""
   echo -e "${YELLOW}¿Cómo ver logs en vivo?${NC}"
-  echo -e "  Ejecuta: ${CYAN}./scripts/backend-logs.sh${NC}"
+  echo -e "  Ejecuta: ${CYAN}./scripts/backend_logs.sh${NC}"
   echo ""
   echo -e "${YELLOW}¿Cómo reiniciar o resetear?${NC}"
   echo -e "  Reiniciar backend: ${CYAN}./scripts/restart_backend.sh${NC}"
@@ -295,7 +295,7 @@ else
     fi
     echo ""
     echo -e "${YELLOW}¿Cómo ver logs en vivo?${NC}"
-    echo -e "  Ejecuta: ${CYAN}./scripts/backend-logs.sh${NC}"
+    echo -e "  Ejecuta: ${CYAN}./scripts/backend_logs.sh${NC}"
     echo ""
     echo -e "${YELLOW}¿Cómo reiniciar o resetear?${NC}"
     echo -e "  Reiniciar backend: ${CYAN}./scripts/restart_backend.sh${NC}"

@@ -25,6 +25,15 @@ class NavbarManager {
             localStorage.setItem('userEmail', this.userEmail);
             localStorage.setItem('userName', this.userName);
             localStorage.setItem('userNivel', this.userNivel);
+
+            // Detectar si estamos en página de admin pero el rol es bajo (JWT desactualizado)
+            const isStaffPage = /\/(admin\.html|admin_|editar_|config_)/.test(window.location.pathname);
+            if (isStaffPage && this.userNivel < 50) {
+                console.warn('⚠️ JWT desactualizado: nivel=' + this.userNivel + ' en página de admin');
+                console.log('🔄 Limpiando sesión y redirigiendo a login para regenerar JWT...');
+                this.clearAuth();
+                window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+            }
         }
     }
 

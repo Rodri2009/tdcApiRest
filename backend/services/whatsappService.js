@@ -74,14 +74,27 @@ class WhatsAppService {
     }
 
     /**
-     * Restaurar sesión de WhatsApp desde archivo de cookies
-     * (usado cuando se opera en contexto aislado compartiendo browser con MP)
+     * Normalizar texto para comparaciones de búsqueda robustas
+     */
+    _normalizeForSearch(text) {
+        if (!text) return "";
+        return text
+            .toString()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^0-9a-zA-Z\s]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLowerCase();
+    }
+
+    /**
+     * Restaurar sesión de WhatsApp desde cookies en archivo
      */
     async _restoreSession() {
-        const cookieFile = process.env.WA_COOKIES_FILE || '/home/pptruser/wa-session.json';
-        if (!fs.existsSync(cookieFile)) return;
+        const cookieFile = process.env.WA_COOKIES_FILE || "/home/pptruser/wa-session.json";
         try {
-            const session = JSON.parse(fs.readFileSync(cookieFile, 'utf-8'));
+            const session = JSON.parse(fs.readFileSync(cookieFile, "utf-8"));
             if (session.cookies && session.cookies.length > 0) {
                 await this.page.setCookie(...session.cookies);
                 console.log(`[WhatsAppService] 🍪 Sesión restaurada desde archivo (${session.cookies.length} cookies)`);
@@ -90,11 +103,6 @@ class WhatsAppService {
             console.warn('[WhatsAppService] No se pudo restaurar sesión desde archivo:', e.message);
         }
     }
-
-    /**
-     * Guardar cookies de sesión de WhatsApp en archivo
-     * (usado cuando se opera en contexto aislado)
-     */
     async _saveSession() {
         const cookieFile = process.env.WA_COOKIES_FILE || '/home/pptruser/wa-session.json';
         try {
@@ -135,7 +143,7 @@ class WhatsAppService {
                 const userDataDir = process.env.WA_USER_DATA_DIR || '/home/pptruser/wa-profile';
                 ['SingletonLock', 'SingletonCookie', 'SingletonSocket'].forEach(f => {
                     const fp = path.join(userDataDir, f);
-                    try { if (fs.existsSync(fp)) { fs.unlinkSync(fp); console.log(`[WhatsAppService] 🔓 Lock eliminado: ${fp}`); } } catch (e) { /* ignorar */ }
+                    try { fs.unlinkSync(fp); console.log(`[WhatsAppService] 🔓 Lock eliminado: ${fp}`); } catch (e) { /* ignorar — no existe o ya fue eliminado */ }
                 });
 
                 const chromiumArgs = [
@@ -371,10 +379,10 @@ class WhatsAppService {
                     const nameElement = element.querySelector('span[dir="auto"][title]');
                     const name = nameElement ? nameElement.getAttribute('title') : 'Unknown';
 
-                    // Obtener ID/número del chat (desde el atributo data o nombre)
-                    const chatId = element.getAttribute('data-id') ||
-                        element.getAttribute('data-chat') ||
-                        name.replace(/\s+/g, '_'); // Fallback
+                    // Obtener ID/número del chat (desde atributos únicos o fallback con índice)
+                    const rawId = element.getAttribute('data-id') || element.getAttribute('data-chat') || element.getAttribute('data-testid');
+                    const fallbackId = `${name.replace(/\s+/g, '_')}__row_${i}`;
+                    const chatId = rawId || fallbackId;
 
                     // Obtener último mensaje (último span con texto dentro del row)
                     const messageSpans = Array.from(element.querySelectorAll('span[dir="ltr"]'));
@@ -426,47 +434,62 @@ class WhatsAppService {
             throw new Error('Servicio de WhatsApp no está listo');
         }
 
+        const GLOBAL_TIMEOUT = 18000; // 18 segundos máximo total
+        let elapsedOpen = 0;
+        let elapsedWait = 0;
+
         try {
-            // Intentar abrir el chat y sólo marcar como visitado si realmente se abrió
-            const opened = await this._openChat(chatId);
-            if (opened) {
-                this.markChatAsVisited(chatId);
-            } else {
-                console.warn(`[WhatsAppService] No se pudo confirmar apertura del chat: ${chatId} — no marcaré como visitado`);
-            }
-
-            // Esperar a que se carguen los mensajes usando múltiples heurísticas (más robusto que sólo span[dir="ltr"]).
-            // Ahora acepta chatId para heurística basada en header.
-            await this.page.waitForFunction((chatId) => {
-                // Preferir texto dentro del panel principal del chat (ignorar #pane-side)
-                const main = document.querySelector('[role="main"]') || document.getElementById('main') || document.querySelector('[data-testid="conversation-panel"]');
-                if (main) {
-                    // Buscar nodos con texto significativo dentro del main
-                    const candidates = Array.from(main.querySelectorAll('div, span, p'))
-                        .map(n => (n.textContent || '').trim())
-                        .filter(t => t.length > 20 && !/^\d{1,2}[:\.]\d{2}$/.test(t));
-
-                    if (candidates.length > 0) return true;
-                }
-
-                // Indicadores alternativos globales (fallback mínimo)
-                if (document.querySelector('[data-pre-plain-text]')) return true;
-                if (document.querySelector('div.copyable-text, span.selectable-text, span[dir="ltr"], span[dir="auto"]')) return true;
-
-                // Heurística por header: si el header contiene el nombre del chat y hay contenido adyacente, consideramos que los mensajes están listos
-                if (chatId) {
-                    const search = chatId.replace(/[_-]/g, ' ').toLowerCase();
-                    const header = Array.from(document.querySelectorAll('header')).find(h => (h.textContent || '').toLowerCase().includes(search));
-                    if (header) {
-                        const sibling = header.nextElementSibling || Array.from(header.parentElement.children).find(e => e !== header && (e.textContent || '').trim().length > 20);
-                        if (sibling && (sibling.textContent || '').trim().length > 20) return true;
+            const t0 = Date.now();
+            
+            // Ejecutar toda la lógica dentro de un Promise.race con timeout global
+            const result = await Promise.race([
+                (async () => {
+                    // Intentar abrir el chat y sólo marcar como visitado si realmente se abrió
+                    const t1 = Date.now();
+                    const opened = await this._openChat(chatId);
+                    elapsedOpen = Date.now() - t1;
+                    console.log(`[WhatsAppService] _openChat took ${elapsedOpen}ms`);
+                    
+                    if (opened) {
+                        this.markChatAsVisited(chatId);
+                    } else {
+                        console.warn(`[WhatsAppService] No se pudo confirmar apertura del chat: ${chatId} — no marcaré como visitado`);
                     }
-                }
 
-                return false;
-            }, { timeout: 12000 }, chatId).catch(() => {
-                console.warn('[WhatsAppService] Timeout esperando mensajes (heurística extendida)');
-            });
+                    // Esperar a que se carguen los mensajes usando múltiples heurísticas (más robusto que sólo span[dir="ltr"]).
+                    // Ahora acepta chatId para heurística basada en header.
+                    const t2 = Date.now();
+                    await this.page.waitForFunction((chatId) => {
+                        // Preferir texto dentro del panel principal del chat (ignorar #pane-side)
+                        const main = document.querySelector('[role="main"]') || document.getElementById('main') || document.querySelector('[data-testid="conversation-panel-wrapper"]') || document.querySelector('[data-testid="conversation-panel"]');
+                        if (main) {
+                            // Buscar múltiples nodos con texto significativo (indicador de conversación cargada)
+                            const candidates = Array.from(main.querySelectorAll('div, span, p'))
+                                .map(n => (n.textContent || '').trim())
+                                .filter(t => t.length > 15 && !/^\d{1,2}[:\.]\d{2}$/.test(t) && t.length < 500);
+
+                            // Requerir al menos 3 candidatos para considerar que hay contenido
+                            if (candidates.length >= 3) return true;
+                        }
+
+                        // Indicador: al menos un elemento con data-pre-plain-text (mensaje real)
+                        const preElements = document.querySelectorAll('[data-pre-plain-text]');
+                        if (preElements.length >= 1) return true;
+
+                        return false;
+                    }, { timeout: 8000 }, chatId).catch(() => {
+                        console.log('[WhatsAppService] Timeout o chat sin muchos mensajes (timeout de 8s)');
+                    });
+                    elapsedWait = Date.now() - t2;
+                    console.log(`[WhatsAppService] waitForFunction took ${elapsedWait}ms`);
+                    
+                    return { success: true };
+                })(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('GLOBAL_TIMEOUT')), GLOBAL_TIMEOUT))
+            ]);
+            
+            
+            // Si llegamos aquí, fue exitoso o con timeout controlado
 
             // Guardar HTML para diagnóstico (etiqueta por chat)
             await this.htmlSaver.savePage(this.page, `mensaje-abierto-${chatId}`);
@@ -475,65 +498,85 @@ class WhatsAppService {
             const messages = await this.page.evaluate((chatId, msgLimit) => {
                 const result = [];
                 const isTimestamp = (t = '') => (/^\d{1,2}[:\.]\d{2}(\s?(AM|PM|am|pm))?$/.test(t) || /^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(t));
-
-                let main = document.querySelector('[role="main"]') || document.getElementById('main') || document.querySelector('[data-testid="conversation-panel"]');
-                const searchName = (chatId || '').replace(/[_-]/g, ' ').toLowerCase();
-
-                if (!main && searchName) {
-                    const headers = Array.from(document.querySelectorAll('header'));
-                    for (const h of headers) {
-                        if ((h.textContent || '').toLowerCase().includes(searchName)) {
-                            let candidate = h.nextElementSibling || Array.from(h.parentElement.children).find(e => e !== h && (e.textContent || '').trim().length > 50);
-                            if (!candidate) {
-                                let p = h.parentElement;
-                                while (p && p !== document.body) {
-                                    const sib = Array.from((p.parentElement && p.parentElement.children) || []).find(e => e !== p && (e.textContent || '').trim().length > 50);
-                                    if (sib) { candidate = sib; break; }
-                                    p = p.parentElement;
-                                }
-                            }
-                            if (candidate) { main = candidate; break; }
-                        }
+                const isSystemText = (txt = '') => {
+                    if (!txt) return true;
+                    const normalized = txt.toString().trim().toLowerCase();
+                    if (normalized.length < 2) return true;
+                    if (/^(hoy|ayer|lunes|martes|miércoles|jueves|viernes|sábado|domingo)$/i.test(normalized)) return true;
+                    if (/^tu empresa usa un servicio seguro de meta/i.test(normalized)) return true;
+                    if (/^leer más$/i.test(normalized)) return true;
+                    return false;
+                };
+                const cleanMessageText = (txt) => {
+                    if (!txt) return '';
+                    return txt.toString()
+                        .replace(/\s+/g, ' ')
+                        .replace(/\b(tail-out|tail-in|forward-refreshed|msg-dblcheck|msg-video|video-pip|media-play|ic-play-arrow-filled|msg-container|msg-meta|addon-bubble-container)\b/gi, '')
+                        .replace(/\b(Reenviad[ao]|forwarded|forward)\b/gi, '')
+                        .replace(/\s*\d{1,2}[:.]\d{2}\s?(a\.m\.|p\.m\.|AM|PM)?$/i, '')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                };
+                const messageTextFromNode = (node) => {
+                    const textNodes = Array.from(node.querySelectorAll('span[data-testid="selectable-text"], span[dir="ltr"], span[dir="auto"]'));
+                    if (textNodes.length > 0) {
+                        return textNodes.map(el => (el.textContent || '').trim()).filter(Boolean).join(' ');
                     }
-                }
-                if (!main) main = document.body;
+                    return (node.textContent || '').trim();
+                };
+                const addMessage = (text, isFromMe = false) => {
+                    const cleaned = cleanMessageText(text);
+                    if (!cleaned || isSystemText(cleaned) || isTimestamp(cleaned)) return;
+                    if (!result.find(m => m.text === cleaned)) {
+                        result.push({ text: cleaned, sender: '', isFromMe });
+                    }
+                };
 
-                // STRATEGY A
-                const nodesA = Array.from(main.querySelectorAll('[data-pre-plain-text]'));
-                if (nodesA.length > 0) {
-                    nodesA.forEach((node) => {
-                        const textEl = node.querySelector('span.selectable-text, div.copyable-text, span[dir="ltr"], span[dir="auto"]');
-                        const text = textEl ? textEl.textContent.trim() : node.textContent.replace(node.getAttribute('data-pre-plain-text') || '', '').trim();
-                        if (text) result.push({ text, sender: (node.getAttribute('data-pre-plain-text') || '').trim(), isFromMe: node.closest('[data-pre-plain-text]')?.classList?.contains('message-out') || false });
+                const main = document.querySelector('[role="main"]') || document.getElementById('main') || document.querySelector('[data-testid="conversation-panel-wrapper"]') || document.querySelector('[data-testid="conversation-panel"]') || document.body;
+                const conversationRoot = document.querySelector('#main [data-testid="conversation-panel-body"]')
+                    || document.querySelector('[data-testid="conversation-panel-body"]')
+                    || document.querySelector('[data-testid="conversation-panel-messages"]')
+                    || document.querySelector('div.x3psx0u.x12xbjc7.x1c1uobl.xrmvbpv.xh8yej3.xquzyny.xvc5jky.x11t971q')
+                    || main;
+
+                const groupBlocks = Array.from(conversationRoot.querySelectorAll('div[data-testid^="conv-msg-"], div[data-testid="msg-container"], div.message-out, div.message-in'));
+                if (groupBlocks.length > 0) {
+                    groupBlocks.forEach((block) => {
+                        const isFromMe = !!(block.className || '').toString().toLowerCase().includes('message-out')
+                            || !!block.querySelector('[data-testid="tail-out"]')
+                            || !!block.querySelector('[data-testid="msg-dblcheck"]');
+                        const textElements = Array.from(block.querySelectorAll('div.copyable-text, span[data-testid="selectable-text"], span[dir="ltr"], span[dir="auto"]'));
+                        if (textElements.length > 0) {
+                            textElements.forEach((el) => addMessage(messageTextFromNode(el), isFromMe));
+                        } else {
+                            addMessage(messageTextFromNode(block), isFromMe);
+                        }
                     });
-                    return result.slice(-msgLimit);
+                    if (result.length > 0) return result.slice(-msgLimit);
                 }
 
-                // STRATEGY B
-                const nodesB = Array.from(main.querySelectorAll('div.copyable-text, span.selectable-text, span[dir="ltr"], span[dir="auto"]'));
-                nodesB.forEach((el) => {
-                    const text = (el.textContent || '').trim();
-                    if (text && text.length > 1 && !isTimestamp(text)) result.push({ text, sender: '', isFromMe: false });
-                });
-                if (result.length > 0) {
-                    const unique = []; result.forEach(m => { if (!unique.find(u => u.text === m.text)) unique.push(m); });
-                    return unique.slice(-msgLimit);
+                const copyableNodes = Array.from(conversationRoot.querySelectorAll('div.copyable-text[data-pre-plain-text], div.copyable-text'));
+                if (copyableNodes.length > 0) {
+                    copyableNodes.forEach(node => {
+                        const text = messageTextFromNode(node);
+                        const isFromMe = !!node.closest('[data-testid="tail-out"], .message-out, [data-testid="msg-check"], [data-testid="msg-dblcheck"]');
+                        addMessage(text, isFromMe);
+                    });
+                    if (result.length > 0) return result.slice(-msgLimit);
                 }
 
-                // STRATEGY C — aria-labels
+                const selectableNodes = Array.from(conversationRoot.querySelectorAll('span[data-testid="selectable-text"], span[dir="ltr"], span[dir="auto"]'));
+                if (selectableNodes.length > 0) {
+                    selectableNodes.forEach(node => addMessage(messageTextFromNode(node), false));
+                    if (result.length > 0) return result.slice(-msgLimit);
+                }
+
                 const ariaNodes = Array.from(document.querySelectorAll('[aria-label*="message"], [aria-label*="mensaje"], [aria-label*="Message"]'));
                 if (ariaNodes.length > 0) {
-                    ariaNodes.forEach(n => {
-                        const t = (n.textContent || '').trim();
-                        if (t && t.length > 2 && !isTimestamp(t)) result.push({ text: t, sender: '', isFromMe: !!(n.getAttribute('data-testid') && n.getAttribute('data-testid').includes('out')) });
-                    });
-                    if (result.length) {
-                        const uniq = []; result.forEach(m => { if (!uniq.find(u => u.text === m.text)) uniq.push(m); });
-                        return uniq.slice(-msgLimit);
-                    }
+                    ariaNodes.forEach(n => addMessage((n.textContent || '').trim(), !!(n.getAttribute('data-testid') && n.getAttribute('data-testid').includes('out'))));
+                    if (result.length > 0) return result.slice(-msgLimit);
                 }
 
-                // STRATEGY D — escaneo amplio dentro del main (filtrar UI y timestamps)
                 const candidates = [];
                 const walker = document.createTreeWalker(main, NodeFilter.SHOW_ELEMENT, null, false);
                 let node;
@@ -560,7 +603,6 @@ class WhatsAppService {
                 });
                 if (deduped.length > 0) return deduped.slice(-msgLimit);
 
-                // STRATEGY E — geometry / right-pane scan (WhatsApp Business variant)
                 try {
                     const paneSide = document.querySelector('#pane-side');
                     let paneRight = null;
@@ -575,37 +617,28 @@ class WhatsAppService {
                         try {
                             const rect = el.getBoundingClientRect && el.getBoundingClientRect();
                             if (!rect || rect.width === 0 || rect.height === 0) continue;
-                            // if we have pane-side, only consider elements rendered to the right of it
                             if (paneRight && rect.left <= paneRight - 1) continue;
-                            // skip header/footer-like elements
                             if (el.closest('header') || el.closest('footer')) continue;
                             const text = (el.textContent || '').trim();
                             if (!text || text.length < 2) continue;
                             if (text.length > 2000) continue;
-                            // avoid chat-list snippets (they're usually inside #pane-side)
                             if (el.closest('#pane-side')) continue;
-                            // basic timestamp filter
                             if (/^\d{1,2}[:\.]\d{2}(\s?(AM|PM|am|pm))?$/.test(text)) continue;
                             const container = el.closest('div[role="row"], div[class*="message"], [data-testid*="message"]') || el.parentElement;
                             const fullText = container ? container.textContent.trim() : text;
                             if (!fullText || fullText.length < 3) continue;
                             const isFromMe = !!(container && (container.className || '').toString().toLowerCase().match(/out|message-out|_message_out/));
                             rightCandidates.push({ text: fullText, sender: '', isFromMe, source: 'geometry' });
-                        } catch (e) { /* ignore element-specific errors */ }
+                        } catch (e) { }
                     }
-
-                    // dedupe and return
                     const seenR = new Set(); const dedupR = [];
                     rightCandidates.forEach(m => {
                         const k = m.text.replace(/\s+/g, ' ').slice(0, 200);
                         if (!seenR.has(k)) { seenR.add(k); dedupR.push(m); }
                     });
                     if (dedupR.length > 0) return dedupR.slice(-msgLimit);
-                } catch (e) {
-                    // continue to other fallbacks
-                }
+                } catch (e) { }
 
-                // STRATEGY F — fallback: use chat-list preview (best-effort)
                 try {
                     const paneSide = document.querySelector('#pane-side');
                     if (paneSide && chatId) {
@@ -623,7 +656,7 @@ class WhatsAppService {
                             }
                         }
                     }
-                } catch (e) { /* noop */ }
+                } catch (e) { }
 
                 return [];
             }, chatId, limit);
@@ -634,66 +667,82 @@ class WhatsAppService {
             } else {
                 console.log('[WhatsAppService] getMessages: DOM extraction returned 0 messages.');
             }
-            if (!messages || messages.length === 0) {
-                console.log('[WhatsAppService] Mensajes no encontrados vía DOM — intentando fallback con window.Store');
 
-                const storeMessages = await this.page.evaluate((chatId, msgLimit) => {
-                    const out = [];
-                    try {
-                        const norm = (s = '') => s.toString().toLowerCase().replace(/\s+/g, '');
-                        const search = norm(chatId.replace(/_/g, ' ').replace(/-/g, ''));
-
-                        const S = window.Store || window.WAStore || window.Wap?.Store || null;
-                        if (!S) return out;
-
-                        // 1) Buscar en Chat models (si existen)
-                        const chatModels = (S.Chat && (S.Chat.models || S.Chat._models || [])) || [];
-                        for (const c of chatModels) {
-                            const title = (c?.name || c?.formattedTitle || c?.contact || '') || '';
-                            const ser = (c?.id && (c.id._serialized || c.id.__serialized || c.id)) || '';
-                            if ((title && norm(title).includes(search)) || (ser && ser.toString().toLowerCase().includes(search))) {
-                                const msgs = (c?.msgs && (c.msgs.models || c.msgs._models)) || [];
-                                for (const m of msgs.slice(-msgLimit)) {
-                                    const text = m?.body || m?._data?.body || m?.__x_body || '';
-                                    const from = m?.from || m?._data?.from || '';
-                                    const isFromMe = !!(m?.__x_isSent || m?.isSent || m?.fromMe || m?.__x_isMe);
-                                    if (text) out.push({ text: text.toString(), sender: from, isFromMe });
-                                }
-                                if (out.length) return out.slice(-msgLimit);
-                            }
-                        }
-
-                        // 2) Buscar en Msg.models global (filtrar por chat id)
-                        const msgModels = (S.Msg && (S.Msg.models || [])) || [];
-                        for (const m of msgModels) {
-                            const chatSer = (m?.chat && (m.chat.id?._serialized || m.chat.id?.__serialized)) || (m?.id && (m.id._serialized || m.id?.__serialized)) || '';
-                            if (chatSer && chatSer.toLowerCase().includes(search)) {
-                                const text = m?.body || m?._data?.body || m?.__x_body || '';
-                                const from = m?.from || '';
-                                const isFromMe = !!(m?.__x_isSent || m?.isSent || m?.fromMe || m?.__x_isMe);
-                                if (text) out.push({ text: text.toString(), sender: from, isFromMe });
-                            }
-                        }
-
-                        if (out.length) return out.slice(-msgLimit);
-                    } catch (e) {
-                        return out;
-                    }
-
-                    return out;
-                }, chatId, limit);
-
-                if (storeMessages && storeMessages.length > 0) {
-                    console.log('[WhatsAppService] ✅ Mensajes obtenidos desde window.Store (fallback)');
-                    return storeMessages;
-                }
-
-                // Si aún no hay mensajes, guardar snapshot de diagnóstico
-                await this.htmlSaver.savePage(this.page, `mensaje-abierto-empty-${chatId}`);
-            }
-
-            return messages;
+            const totalElapsed = Date.now() - t0;
+            console.log(`[WhatsAppService] getMessages TOTAL: ${totalElapsed}ms (open=${elapsedOpen}ms, wait=${elapsedWait}ms)`);
+            
+            return messages || [];
         } catch (error) {
+            if (error.message === 'GLOBAL_TIMEOUT') {
+                console.warn(`[WhatsAppService] GLOBAL_TIMEOUT alcanzado para chat ${chatId} — intentando extracción rápida del DOM`);
+                // Hacer extracción rápida pero completa de todo lo visible en el DOM
+                try {
+                    const quickMessages = await this.page.evaluate((chatId, msgLimit) => {
+                        const result = [];
+                        const isTimestamp = (t = '') => (/^\d{1,2}[:\.]\d{2}(\s?(AM|PM|am|pm))?$/.test(t) || /^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(t));
+
+                        // Buscar main panel (may not be fully loaded, but try what we can get)
+                        let main = document.querySelector('[role="main"]') || document.querySelector('[data-testid="conversation-panel-wrapper"]') || document.querySelector('[data-testid="conversation-panel"]') || document.body;
+                        
+                        // STRATEGY A: data-pre-plain-text (best quality messages)
+                        const nodesA = Array.from(main.querySelectorAll('[data-pre-plain-text]'));
+                        if (nodesA.length > 0) {
+                            nodesA.forEach((node) => {
+                                const textEl = node.querySelector('span.selectable-text, div.copyable-text, span[dir="ltr"], span[dir="auto"]');
+                                const text = textEl ? textEl.textContent.trim() : node.textContent.replace(node.getAttribute('data-pre-plain-text') || '', '').trim();
+                                if (text) result.push({ text, sender: '', isFromMe: false });
+                            });
+                            return result.slice(-msgLimit);
+                        }
+
+                        // STRATEGY B: copyable-text (fallback)
+                        const nodesB = Array.from(main.querySelectorAll('div.copyable-text, span[data-testid="selectable-text"], span[dir="ltr"], span[dir="auto"]'));
+                        const candidates = [];
+                        nodesB.forEach((el) => {
+                            const text = (el.textContent || '').trim();
+                            if (text && text.length > 2 && !isTimestamp(text) && text.length < 1000) {
+                                candidates.push({ text, sender: '', isFromMe: false });
+                            }
+                        });
+                        if (candidates.length >= 3) {
+                            const unique = []; candidates.forEach(m => { if (!unique.find(u => u.text === m.text)) unique.push(m); });
+                            return unique.slice(-msgLimit);
+                        }
+
+                        // STRATEGY C: Fallback a preview del sidebar
+                        try {
+                            const paneSide = document.querySelector('#pane-side');
+                            if (paneSide && chatId) {
+                                const rows = Array.from(paneSide.querySelectorAll('div[role="row"]'));
+                                const q = (chatId || '').toLowerCase().replace(/[_\-]/g, '').replace(/\s+/g, '');
+                                for (const row of rows) {
+                                    const nameEl = row.querySelector('span[dir="auto"][title]');
+                                    const candidateName = (nameEl && nameEl.getAttribute('title')) || '';
+                                    const normalized = (candidateName || '').toLowerCase().replace(/[_\-]/g, '').replace(/\s+/g, '');
+                                    if (!candidateName) continue;
+                                    if (normalized.includes(q) || q.includes(normalized)) {
+                                        const previewSpan = row.querySelector('span[dir="ltr"], span[dir="auto"]');
+                                        const preview = previewSpan ? previewSpan.textContent.trim() : '';
+                                        if (preview) return [{ text: preview, sender: '', isFromMe: false, preview: true }];
+                                    }
+                                }
+                            }
+                        } catch (e) {}
+                        
+                        return [];
+                    }, chatId, limit);
+                    
+                    if (quickMessages && quickMessages.length > 0) {
+                        console.log(`[WhatsAppService] Extracción rápida retornó ${quickMessages.length} mensaje(s) en timeout`);
+                        return quickMessages;
+                    }
+                } catch (e) {
+                    console.error('[WhatsAppService] Error en extracción rápida:', e.message);
+                }
+                // Si falla la extracción rápida, retornar vacío
+                return [];
+            }
+            
             console.error('[WhatsAppService] Error obteniendo mensajes:', error.message);
             throw error;
         }
@@ -705,31 +754,65 @@ class WhatsAppService {
      */
     async _openChat(chatId) {
         try {
-            // Convertir chatId a formato de búsqueda (espacios en lugar de guiones bajos)
-            const searchName = chatId.replace(/_/g, ' ').replace(/-/g, ' ');
+            // Extraer índice de fila del ID generado localmente o del ID de lista de chats
+            const indexMatch = chatId.match(/__(?:row|idx)_(\d+)$/);
+            const listItemMatch = chatId.match(/^list-item-(\d+)$/i);
+            const rowIndex = listItemMatch ? parseInt(listItemMatch[1], 10) : indexMatch ? parseInt(indexMatch[1], 10) : null;
+            const chatNameForSearch = rowIndex !== null
+                ? ''
+                : (indexMatch ? chatId.slice(0, indexMatch.index) : chatId.replace(/[_-]/g, ' '));
+            const searchName = chatNameForSearch ? this._normalizeForSearch(chatNameForSearch) : '';
 
-            console.log(`[WhatsAppService] Abriendo chat: ${chatId} (buscando: ${searchName})`);
+            console.log(`[WhatsAppService] Abriendo chat: ${chatId} (buscando: ${searchName} rowIndex=${rowIndex})`);
 
-            // Buscar y hacer clic en el chat — intentos con confirmación explícita
+            // Buscar y hacer clic en el chat — máximo 2 intentos (timelimited)
             let found = false;
+            const openChatStart = Date.now();
+            const openChatTimeout = 3000; // 3 segundos máximo para abrir el chat
 
-            for (let attempt = 0; attempt < 6; attempt++) {
+            for (let attempt = 0; attempt < 2; attempt++) {
+                if (Date.now() - openChatStart > openChatTimeout) {
+                    console.warn(`[WhatsAppService] Timeout para abrir chat ${chatId} (${Date.now() - openChatStart}ms)`);
+                    break;
+                }
+                
                 // Intentar localizar y hacer clic en el elemento del chat (desde la página)
-                found = await this.page.evaluate((search) => {
+                found = await this.page.evaluate((search, rowIndex) => {
+                    const normalize = (value) => (value || '').toString()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^0-9a-zA-Z\s]/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                        .toLowerCase();
+
                     const paneSide = document.querySelector('#pane-side');
                     if (!paneSide) return false;
 
                     const rows = Array.from(paneSide.querySelectorAll('div[role="row"]'));
+                    let targetRow = null;
+
+                    if (typeof rowIndex === 'number' && rowIndex >= 0) {
+                        targetRow = paneSide.querySelector(`div[data-testid="list-item-${rowIndex}"]`) || rows[rowIndex] || null;
+                    }
+
+                    if (targetRow) {
+                        const clickTarget = targetRow.querySelector('div[role="gridcell"][tabindex="0"], div[data-testid="cell-frame-container"], div._ak72, div._ak8o, div._ak8q, span[dir="auto"][title], span[dir="auto"]') || targetRow;
+                        clickTarget.scrollIntoView({ block: 'center', inline: 'center' });
+                        clickTarget.click();
+                        return true;
+                    }
+
+                    const query = normalize(search);
                     for (const row of rows) {
                         const nameEl = row.querySelector('span[dir="auto"][title]');
-                        const candidateName = (nameEl && nameEl.getAttribute('title')) || '';
-                        if (!candidateName) continue;
-                        const s = candidateName.toLowerCase().trim();
-                        const q = search.toLowerCase().trim();
-                        if (s === q || s.includes(q) || q.includes(s)) {
-                            // Asegurarnos de que el elemento esté visible y hacer click en el nombre exacto
-                            nameEl.scrollIntoView({ block: 'center', inline: 'center' });
-                            nameEl.click();
+                        const candidateName = (nameEl && nameEl.getAttribute('title')) || row.textContent || '';
+                        const normalizedName = normalize(candidateName);
+                        if (!normalizedName) continue;
+                        if (normalizedName === query || normalizedName.includes(query) || query.includes(normalizedName)) {
+                            const clickTarget = row.querySelector('div[role="gridcell"][tabindex="0"], div[data-testid="cell-frame-container"], div._ak72, div._ak8o, div._ak8q, span[dir="auto"][title], span[dir="auto"]') || row;
+                            clickTarget.scrollIntoView({ block: 'center', inline: 'center' });
+                            clickTarget.click();
                             return true;
                         }
                     }
@@ -737,24 +820,39 @@ class WhatsAppService {
                     // No encontrado => hacer scroll para cargar más elementos
                     paneSide.scrollBy(0, 300);
                     return false;
-                }, searchName);
+                }, searchName, rowIndex);
 
                 if (found) {
                     console.log(`[WhatsAppService] ✅ Click realizado en la lista de chats (intento ${attempt + 1})`);
 
-                    // Confirmación adicional: esperar que el panel principal muestre el header con el nombre
-                    const confirmed = await this.page.waitForFunction((search) => {
+                    // Confirmación adicional: esperar que el panel principal muestre el header, el panel de mensajes o el contenedor principal esperado
+                    const confirmed = await this.page.waitForFunction(({ search, rowIndex }) => {
                         const header = document.querySelector('header');
-                        if (!header) return false;
-                        const txt = (header.textContent || '').toLowerCase();
-                        if (txt.includes(search.toLowerCase())) return true;
+                        if (search && search.length > 0 && header) {
+                            const txt = (header.textContent || '').toLowerCase();
+                            if (txt.includes(search.toLowerCase())) return true;
+                        }
 
-                        // O bien, que exista el input de mensaje (footer) o cualquier indicador de conversación cargada
                         if (document.querySelector('footer [data-testid="msgInput"]')) return true;
                         if (document.querySelector('[data-pre-plain-text]')) return true;
+                        if (document.querySelector('[data-testid="conversation-panel-wrapper"]')) return true;
+                        if (document.querySelector('[data-testid="conversation-panel-body"]')) return true;
+                        if (document.querySelector('[data-testid="conversation-panel-messages"]')) return true;
                         if (document.querySelector('[data-testid="conversation-panel"]')) return true;
+                        if (document.querySelector('#main > div.x1n2onr6.x1vjfegm.x1cqoux5.x14yy4lh')) return true;
+                        if (document.querySelector('#main > div:nth-child(2)')) return true;
+
+                        if (typeof rowIndex === 'number' && rowIndex >= 0) {
+                            const paneSide = document.querySelector('#pane-side');
+                            if (paneSide) {
+                                const targetRow = paneSide.querySelector(`div[data-testid="list-item-${rowIndex}"]`);
+                                if (targetRow && targetRow.querySelector('[aria-selected="true"]')) return true;
+                                if (paneSide.querySelector('[aria-selected="true"]')) return true;
+                            }
+                        }
+
                         return false;
-                    }, { timeout: 4000 }, searchName).catch(() => false);
+                    }, { timeout: 1000 }, { search: searchName, rowIndex }).catch(() => false);
 
                     if (confirmed) {
                         // Chat realmente abierto y renderizado
@@ -765,69 +863,177 @@ class WhatsAppService {
                     // Si no se confirmó, intentamos distintos tipos de clic (DOM click + Puppeteer mouse click)
                     try {
                         // 1) Intento DOM: click en el row completo
-                        const clicked = await this.page.evaluate((search) => {
+                        const clicked = await this.page.evaluate((search, rowIndex) => {
+                            const normalize = (value) => (value || '').toString()
+                                .normalize('NFD')
+                                .replace(/[\u0300-\u036f]/g, '')
+                                .replace(/[^0-9a-zA-Z\s]/g, ' ')
+                                .replace(/\s+/g, ' ')
+                                .trim()
+                                .toLowerCase();
+
                             const paneSide = document.querySelector('#pane-side');
                             if (!paneSide) return false;
                             const rows = Array.from(paneSide.querySelectorAll('div[role="row"]'));
+                            let targetRow = null;
+                            if (typeof rowIndex === 'number' && rowIndex >= 0) {
+                                targetRow = paneSide.querySelector(`div[data-testid="list-item-${rowIndex}"]`) || rows[rowIndex] || null;
+                            }
+                            if (targetRow) {
+                                targetRow.scrollIntoView({ block: 'center' });
+                                targetRow.click();
+                                return true;
+                            }
                             for (const row of rows) {
                                 const nameEl = row.querySelector('span[dir="auto"][title]');
-                                const candidateName = (nameEl && nameEl.getAttribute('title')) || '';
-                                if (!candidateName) continue;
-                                const s = candidateName.toLowerCase().trim();
-                                const q = search.toLowerCase().trim();
-                                if (s === q || s.includes(q) || q.includes(s)) {
+                                const candidateName = (nameEl && nameEl.getAttribute('title')) || row.textContent || '';
+                                const normalizedName = normalize(candidateName);
+                                const query = normalize(search);
+                                if (!normalizedName) continue;
+                                if (normalizedName === query || normalizedName.includes(query) || query.includes(normalizedName)) {
                                     row.scrollIntoView({ block: 'center' });
                                     row.click();
                                     return true;
                                 }
                             }
                             return false;
-                        }, searchName);
+                        }, searchName, rowIndex);
 
                         if (clicked) {
-                            const ok = await this.page.waitForFunction((search) => {
+                            const ok = await this.page.waitForFunction(({ search, rowIndex }) => {
                                 const header = document.querySelector('header');
-                                if (!header) return false;
-                                const txt = (header.textContent || '').toLowerCase();
-                                if (txt.includes(search.toLowerCase())) return true;
+                                if (search && search.length > 0 && header) {
+                                    const txt = (header.textContent || '').toLowerCase();
+                                    if (txt.includes(search.toLowerCase())) return true;
+                                }
                                 if (document.querySelector('[data-pre-plain-text]')) return true;
                                 if (document.querySelector('footer [data-testid="msgInput"]')) return true;
+                                if (document.querySelector('[data-testid="conversation-panel-wrapper"]')) return true;
+                                if (document.querySelector('[data-testid="conversation-panel-body"]')) return true;
+                                if (document.querySelector('[data-testid="conversation-panel-messages"]')) return true;
+                                if (document.querySelector('[data-testid="conversation-panel"]')) return true;
+                                if (document.querySelector('#main > div.x1n2onr6.x1vjfegm.x1cqoux5.x14yy4lh')) return true;
+                                if (document.querySelector('#main > div:nth-child(2)')) return true;
+
+                                if (typeof rowIndex === 'number' && rowIndex >= 0) {
+                                    const paneSide = document.querySelector('#pane-side');
+                                    if (paneSide) {
+                                        const targetRow = paneSide.querySelector(`div[data-testid="list-item-${rowIndex}"]`);
+                                        if (targetRow && targetRow.querySelector('[aria-selected="true"]')) return true;
+                                        if (paneSide.querySelector('[aria-selected="true"]')) return true;
+                                    }
+                                }
+
                                 return false;
-                            }, { timeout: 3000 }, searchName).catch(() => false);
+                            }, { timeout: 1000 }, { search: searchName, rowIndex }).catch(() => false);
 
                             if (ok) return true;
                         }
 
-                        // 2) Intento Puppeteer: localizar el span por título y clickar con mouse (simula usuario)
-                        const xpath = `//span[@dir="auto" and @title=\"${searchName.replace(/"/g, '\\\"')}\"]`;
-                        const handles = await this.page.$x(xpath);
-                        if (handles && handles.length > 0) {
-                            const el = handles[0];
-                            // Buscar el ancestro más cercano con role="row" para un click más fiable
-                            const box = await this.page.evaluate((node) => {
-                                let p = node;
-                                while (p && p !== document.body) {
-                                    if (p.getAttribute && p.getAttribute('role') === 'row') return p.getBoundingClientRect();
-                                    p = p.parentElement;
-                                }
-                                return node.getBoundingClientRect();
-                            }, el);
-
-                            if (box && box.width && box.height) {
-                                await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-                                await this.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { delay: 50 });
-
-                                const ok2 = await this.page.waitForFunction((search) => {
+                        // 2) Intento con mouse sobre el row identificado por data-testid
+                        if (typeof rowIndex === 'number' && rowIndex >= 0) {
+                            const rowRect = await this.page.evaluate((targetIndex) => {
+                                const row = document.querySelector(`#pane-side div[data-testid="list-item-${targetIndex}"]`);
+                                if (!row) return null;
+                                row.scrollIntoView({ block: 'center' });
+                                const rect = row.getBoundingClientRect();
+                                return rect && rect.width > 0 && rect.height > 0 ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+                            }, rowIndex);
+                            if (rowRect) {
+                                await this.page.mouse.move(rowRect.x + rowRect.width / 2, rowRect.y + rowRect.height / 2);
+                                await this.page.mouse.click(rowRect.x + rowRect.width / 2, rowRect.y + rowRect.height / 2, { delay: 50 });
+                                const okMouse = await this.page.waitForFunction(({ search, rowIndex }) => {
                                     const header = document.querySelector('header');
-                                    if (!header) return false;
-                                    const txt = (header.textContent || '').toLowerCase();
-                                    if (txt.includes(search.toLowerCase())) return true;
+                                    if (search && search.length > 0 && header) {
+                                        const txt = (header.textContent || '').toLowerCase();
+                                        if (txt.includes(search.toLowerCase())) return true;
+                                    }
                                     if (document.querySelector('[data-pre-plain-text]')) return true;
                                     if (document.querySelector('footer [data-testid="msgInput"]')) return true;
-                                    return false;
-                                }, { timeout: 3000 }, searchName).catch(() => false);
+                                    if (document.querySelector('[data-testid="conversation-panel-wrapper"]')) return true;
+                                    if (document.querySelector('[data-testid="conversation-panel-body"]')) return true;
+                                    if (document.querySelector('[data-testid="conversation-panel-messages"]')) return true;
+                                    if (document.querySelector('[data-testid="conversation-panel"]')) return true;
+                                    if (document.querySelector('#main > div.x1n2onr6.x1vjfegm.x1cqoux5.x14yy4lh')) return true;
+                                    if (document.querySelector('#main > div:nth-child(2)')) return true;
 
-                                if (ok2) return true;
+                                    if (typeof rowIndex === 'number' && rowIndex >= 0) {
+                                        const paneSide = document.querySelector('#pane-side');
+                                        if (paneSide) {
+                                            const targetRow = paneSide.querySelector(`div[data-testid="list-item-${rowIndex}"]`);
+                                            if (targetRow && targetRow.querySelector('[aria-selected="true"]')) return true;
+                                            if (paneSide.querySelector('[aria-selected="true"]')) return true;
+                                        }
+                                    }
+
+                                    return false;
+                                }, { timeout: 1000 }, { search: searchName, rowIndex }).catch(() => false);
+                                if (okMouse) return true;
+                            }
+                        }
+
+                        // 3) Intento Puppeteer: localizar el span por título y clickar con mouse (simula usuario)
+                        const handles = await this.page.$x('//span[@dir="auto"]');
+                        if (handles && handles.length > 0) {
+                            for (const el of handles) {
+                                const matches = await this.page.evaluate((node, search) => {
+                                    const normalize = (value) => (value || '').toString()
+                                        .normalize('NFD')
+                                        .replace(/[\u0300-\u036f]/g, '')
+                                        .replace(/[^0-9a-zA-Z\s]/g, ' ')
+                                        .replace(/\s+/g, ' ')
+                                        .trim()
+                                        .toLowerCase();
+                                    const title = node.getAttribute('title') || node.textContent || '';
+                                    const normalizedTitle = normalize(title);
+                                    const normalizedSearch = normalize(search);
+                                    return normalizedTitle === normalizedSearch || normalizedTitle.includes(normalizedSearch) || normalizedSearch.includes(normalizedTitle);
+                                }, el, searchName);
+
+                                if (!matches) continue;
+
+                                const box = await this.page.evaluate((node) => {
+                                    let p = node;
+                                    while (p && p !== document.body) {
+                                        if (p.getAttribute && p.getAttribute('role') === 'row') return p.getBoundingClientRect();
+                                        p = p.parentElement;
+                                    }
+                                    return node.getBoundingClientRect();
+                                }, el);
+
+                                if (box && box.width && box.height) {
+                                    await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+                                    await this.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { delay: 50 });
+
+                                    const ok2 = await this.page.waitForFunction(({ search, rowIndex }) => {
+                                        const header = document.querySelector('header');
+                                        if (search && search.length > 0 && header) {
+                                            const txt = (header.textContent || '').toLowerCase();
+                                            if (txt.includes(search.toLowerCase())) return true;
+                                        }
+                                        if (document.querySelector('[data-pre-plain-text]')) return true;
+                                        if (document.querySelector('footer [data-testid="msgInput"]')) return true;
+                                        if (document.querySelector('[data-testid="conversation-panel-wrapper"]')) return true;
+                                        if (document.querySelector('[data-testid="conversation-panel-body"]')) return true;
+                                        if (document.querySelector('[data-testid="conversation-panel-messages"]')) return true;
+                                        if (document.querySelector('[data-testid="conversation-panel"]')) return true;
+                                        if (document.querySelector('#main > div.x1n2onr6.x1vjfegm.x1cqoux5.x14yy4lh')) return true;
+                                        if (document.querySelector('#main > div:nth-child(2)')) return true;
+
+                                        if (typeof rowIndex === 'number' && rowIndex >= 0) {
+                                            const paneSide = document.querySelector('#pane-side');
+                                            if (paneSide) {
+                                                const targetRow = paneSide.querySelector(`div[data-testid="list-item-${rowIndex}"]`);
+                                                if (targetRow && targetRow.querySelector('[aria-selected="true"]')) return true;
+                                                if (paneSide.querySelector('[aria-selected="true"]')) return true;
+                                            }
+                                        }
+
+                                        return false;
+                                    }, { timeout: 1000 }, { search: searchName, rowIndex }).catch(() => false);
+
+                                    if (ok2) return true;
+                                }
                             }
                         }
                     } catch (e) {
@@ -872,16 +1078,25 @@ class WhatsAppService {
                     await new Promise(r => setTimeout(r, 350));
                     const paneSide = document.querySelector('#pane-side');
                     if (!paneSide) return false;
+                    const normalize = (value) => (value || '').toString()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^0-9a-zA-Z\s]/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                        .toLowerCase();
+
                     const rows = Array.from(paneSide.querySelectorAll('div[role="row"]'));
                     for (const row of rows) {
                         const nameEl = row.querySelector('span[dir="auto"][title]');
-                        const candidateName = (nameEl && nameEl.getAttribute('title')) || '';
-                        if (!candidateName) continue;
-                        const s = candidateName.toLowerCase().trim();
-                        const q = search.toLowerCase().trim();
-                        if (s === q || s.includes(q) || q.includes(s)) {
-                            row.scrollIntoView({ block: 'center' });
-                            row.click();
+                        const candidateName = (nameEl && nameEl.getAttribute('title')) || row.textContent || '';
+                        const normalizedName = normalize(candidateName);
+                        const query = normalize(search);
+                        if (!normalizedName) continue;
+                        if (normalizedName === query || normalizedName.includes(query) || query.includes(normalizedName)) {
+                            const clickTarget = row.querySelector('div[role="gridcell"][tabindex="0"], div[data-testid="cell-frame-container"], div._ak72, div._ak8o, div._ak8q, span[dir="auto"][title], span[dir="auto"]') || row;
+                            clickTarget.scrollIntoView({ block: 'center' });
+                            clickTarget.click();
                             return true;
                         }
                     }
@@ -891,15 +1106,32 @@ class WhatsAppService {
 
                 if (openedViaSearch) {
                     // esperar confirmación
-                    const ok = await this.page.waitForFunction((search) => {
+                    const ok = await this.page.waitForFunction(({ search, rowIndex }) => {
                         const header = document.querySelector('header');
-                        if (!header) return false;
-                        const txt = (header.textContent || '').toLowerCase();
-                        if (txt.includes(search.toLowerCase())) return true;
+                        if (search && search.length > 0 && header) {
+                            const txt = (header.textContent || '').toLowerCase();
+                            if (txt.includes(search.toLowerCase())) return true;
+                        }
                         if (document.querySelector('[data-pre-plain-text]')) return true;
                         if (document.querySelector('footer [data-testid="msgInput"]')) return true;
+                        if (document.querySelector('[data-testid="conversation-panel-wrapper"]')) return true;
+                        if (document.querySelector('[data-testid="conversation-panel-body"]')) return true;
+                        if (document.querySelector('[data-testid="conversation-panel-messages"]')) return true;
+                        if (document.querySelector('[data-testid="conversation-panel"]')) return true;
+                        if (document.querySelector('#main > div.x1n2onr6.x1vjfegm.x1cqoux5.x14yy4lh')) return true;
+                        if (document.querySelector('#main > div:nth-child(2)')) return true;
+
+                        if (typeof rowIndex === 'number' && rowIndex >= 0) {
+                            const paneSide = document.querySelector('#pane-side');
+                            if (paneSide) {
+                                const targetRow = paneSide.querySelector(`div[data-testid="list-item-${rowIndex}"]`);
+                                if (targetRow && targetRow.querySelector('[aria-selected="true"]')) return true;
+                                if (paneSide.querySelector('[aria-selected="true"]')) return true;
+                            }
+                        }
+
                         return false;
-                    }, { timeout: 4000 }, searchName).catch(() => false);
+                    }, { timeout: 4000 }, { search: searchName, rowIndex }).catch(() => false);
 
                     if (ok) return true;
                 }
@@ -928,19 +1160,72 @@ class WhatsAppService {
         }
 
         try {
-            // Abrir el chat
             await this._openChat(chatId);
 
-            // Encontrar input de mensaje y escribir
-            const inputSelector = 'footer [data-testid="msgInput"]';
-            await this.page.click(inputSelector);
-            await this.page.type(inputSelector, message);
+            const typed = await this.page.evaluate((text) => {
+                const selectors = [
+                    'footer div[role="textbox"][testid="conversation-compose-box-input"]',
+                    'footer div[role="textbox"][aria-label^="Escribir un mensaje"]',
+                    '#main footer div.lexical-rich-text-input div[role="textbox"]',
+                    '#main footer div.lexical-rich-text-input div.x1hx0egp',
+                    '#main footer div.lexical-rich-text-input p',
+                    '#main footer div.lexical-rich-text-input p span',
+                    'footer [contenteditable="true"]',
+                    'footer [data-testid="msgInput"]',
+                    'footer input',
+                    'footer textarea'
+                ];
+                let input = null;
+                for (const sel of selectors) {
+                    input = document.querySelector(sel);
+                    if (input) break;
+                }
+                if (!input) return false;
 
-            // Encontrar y hacer clic en botón de envío
-            const sendButtonSelector = 'footer [data-testid="send"]';
-            await this.page.click(sendButtonSelector);
+                input.focus();
+                if (input.isContentEditable) {
+                    input.innerText = text;
+                    input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+                    return true;
+                }
+                if (input.tagName === 'INPUT' || input.tagName === 'TEXTAREA') {
+                    input.value = text;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    return true;
+                }
+                input.textContent = text;
+                input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+                return true;
+            }, message);
 
-            // Esperar a que se envíe
+            if (!typed) {
+                throw new Error('No se pudo escribir el mensaje en el input de WhatsApp');
+            }
+
+            await this.page.waitForTimeout(250);
+
+            const clickedSend = await this.page.evaluate(() => {
+                const sendSelectors = [
+                    'footer button[aria-label*="Enviar"]',
+                    'footer button[title*="Enviar"]',
+                    'footer [data-icon*="send"]',
+                    'footer button[data-testid="send"]',
+                    'footer [role="button"][aria-label*="Enviar"]'
+                ];
+                for (const sel of sendSelectors) {
+                    const button = document.querySelector(sel);
+                    if (button) {
+                        button.click();
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+            if (!clickedSend) {
+                await this.page.keyboard.press('Enter');
+            }
+
             await this.page.waitForTimeout(1000);
 
             return {

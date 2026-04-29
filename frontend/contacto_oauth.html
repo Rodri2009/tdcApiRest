@@ -1,48 +1,50 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TDC - Solicitar Alquiler</title>
-    
+
     <!-- Bootstrap -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Google SDK -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Facebook SDK -->
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/es_ES/sdk.js#xfbml=1&version=v18.0"></script>
-    
+    <script async defer crossorigin="anonymous"
+        src="https://connect.facebook.net/es_ES/sdk.js#xfbml=1&version=v18.0"></script>
+
     <!-- Configuración de la app -->
     <script src="config.js"></script>
-    
+
     <style>
         :root {
             --primary: #667eea;
             --secondary: #764ba2;
         }
-        
+
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         .container {
             max-width: 650px;
         }
-        
+
         .card {
             border: none;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
-        
+
         .card-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -50,29 +52,29 @@
             text-align: center;
             border: none;
         }
-        
+
         .card-header h1 {
             margin: 0;
             font-weight: 700;
             font-size: 36px;
         }
-        
+
         .card-header p {
             margin: 10px 0 0 0;
             opacity: 0.9;
             font-size: 14px;
         }
-        
+
         .card-body {
             padding: 40px;
         }
-        
+
         .oauth-section {
             margin-bottom: 30px;
             padding-bottom: 30px;
             border-bottom: 2px solid #f0f0f0;
         }
-        
+
         .oauth-section h5 {
             font-weight: 600;
             margin-bottom: 15px;
@@ -81,13 +83,13 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
         .oauth-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
         }
-        
+
         .oauth-btn {
             padding: 12px 15px;
             border: 2px solid #ddd;
@@ -105,52 +107,52 @@
             text-decoration: none;
             color: #333;
         }
-        
+
         .oauth-btn i {
             font-size: 20px;
         }
-        
+
         .oauth-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
-        
+
         .oauth-btn.google {
             border-color: #EA4335;
             color: #EA4335;
         }
-        
+
         .oauth-btn.google:hover {
             background: #EA4335;
             color: white;
         }
-        
+
         .oauth-btn.facebook {
             border-color: #1877F2;
             color: #1877F2;
         }
-        
+
         .oauth-btn.facebook:hover {
             background: #1877F2;
             color: white;
         }
-        
+
         .oauth-btn.instagram {
             border-color: #E1306C;
             color: #E1306C;
         }
-        
+
         .oauth-btn.instagram:hover {
             background: #E1306C;
             color: white;
         }
-        
+
         .divider {
             text-align: center;
             margin: 25px 0;
             position: relative;
         }
-        
+
         .divider::before {
             content: '';
             position: absolute;
@@ -160,7 +162,7 @@
             height: 1px;
             background: #ddd;
         }
-        
+
         .divider span {
             background: white;
             padding: 0 15px;
@@ -169,18 +171,18 @@
             font-size: 12px;
             font-weight: 600;
         }
-        
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-label {
             font-weight: 600;
             color: #333;
             margin-bottom: 8px;
             font-size: 14px;
         }
-        
+
         .form-control {
             border: 2px solid #e0e0e0;
             border-radius: 8px;
@@ -188,31 +190,31 @@
             font-size: 14px;
             transition: all 0.3s ease;
         }
-        
+
         .form-control:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        
+
         .form-control.error {
             border-color: #dc3545;
         }
-        
+
         .invalid-feedback {
             display: block;
             color: #dc3545;
             font-size: 12px;
             margin-top: 5px;
         }
-        
+
         .row {
             margin: -10px;
         }
-        
+
         .row [class*="col-"] {
             padding: 10px;
         }
-        
+
         .btn-continue {
             width: 100%;
             padding: 14px;
@@ -226,57 +228,58 @@
             transition: all 0.3s ease;
             margin-top: 10px;
         }
-        
+
         .btn-continue:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
             color: white;
             text-decoration: none;
         }
-        
+
         .btn-continue:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
-        
+
         .alert {
             border-radius: 8px;
             border: none;
             margin-bottom: 20px;
             font-size: 13px;
         }
-        
+
         .alert-info {
             background: #e7f3ff;
             color: #0066cc;
         }
-        
+
         .filled-field {
             background: #f8f9fa;
             color: #666;
             cursor: not-allowed !important;
         }
-        
+
         @media (max-width: 576px) {
             .oauth-buttons {
                 grid-template-columns: 1fr;
             }
-            
+
             .card-header {
                 padding: 25px 20px;
             }
-            
+
             .card-header h1 {
                 font-size: 28px;
             }
-            
+
             .card-body {
                 padding: 25px;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="card">
@@ -284,14 +287,15 @@
                 <h1>🎉 Alquiler del Salón</h1>
                 <p>Conecta tu cuenta para continuar</p>
             </div>
-            
+
             <div class="card-body">
                 <!-- Alert Info -->
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i>
-                    <strong>¡Conecta rápido!</strong> Usa tu cuenta de Google, Facebook o Instagram para llenar los datos automáticamente.
+                    <strong>¡Conecta rápido!</strong> Usa tu cuenta de Google, Facebook o Instagram para llenar los
+                    datos automáticamente.
                 </div>
-                
+
                 <!-- OAuth Section -->
                 <div class="oauth-section">
                     <h5><i class="fas fa-link"></i> Conectar Cuenta Social</h5>
@@ -300,86 +304,64 @@
                             <i class="fab fa-google"></i>
                             <span>Google</span>
                         </button>
-                        <button class="oauth-btn facebook" onclick="initiateFacebookLogin()" title="Conectar con Facebook">
+                        <button class="oauth-btn facebook" onclick="initiateFacebookLogin()"
+                            title="Conectar con Facebook">
                             <i class="fab fa-facebook"></i>
                             <span>Facebook</span>
                         </button>
-                        <button class="oauth-btn instagram" onclick="handleInstagramLogin()" title="Conectar con Instagram">
+                        <button class="oauth-btn instagram" onclick="handleInstagramLogin()"
+                            title="Conectar con Instagram">
                             <i class="fab fa-instagram"></i>
                             <span>Instagram</span>
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Divider -->
                 <div class="divider"><span>O continúa manualmente</span></div>
-                
+
                 <!-- Contact Form -->
                 <form id="contactForm" novalidate>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="form-label" for="nombre">Nombre *</label>
-                                <input 
-                                    type="text" 
-                                    class="form-control" 
-                                    id="nombre" 
-                                    name="nombre" 
-                                    placeholder="Tu nombre"
-                                    required
-                                >
+                                <input type="text" class="form-control" id="nombre" name="nombre"
+                                    placeholder="Tu nombre" required>
                                 <div class="invalid-feedback"></div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="form-label" for="apellido">Apellido *</label>
-                                <input 
-                                    type="text" 
-                                    class="form-control" 
-                                    id="apellido" 
-                                    name="apellido" 
-                                    placeholder="Tu apellido"
-                                    required
-                                >
+                                <input type="text" class="form-control" id="apellido" name="apellido"
+                                    placeholder="Tu apellido" required>
                                 <div class="invalid-feedback"></div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label" for="email">Email *</label>
-                        <input 
-                            type="email" 
-                            class="form-control" 
-                            id="email" 
-                            name="email" 
-                            placeholder="tu@email.com"
-                            required
-                        >
+                        <input type="email" class="form-control" id="email" name="email" placeholder="tu@email.com"
+                            required>
                         <div class="invalid-feedback"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label" for="telefono">Teléfono *</label>
-                        <input 
-                            type="tel" 
-                            class="form-control" 
-                            id="telefono" 
-                            name="telefono" 
-                            placeholder="+54 9 XXX XXX XXXX"
-                            required
-                        >
+                        <input type="tel" class="form-control" id="telefono" name="telefono"
+                            placeholder="+54 9 XXX XXX XXXX" required>
                         <div class="invalid-feedback"></div>
                     </div>
-                    
+
                     <button type="submit" class="btn-continue">
                         <i class="fas fa-arrow-right"></i> Continuar con la Solicitud
                     </button>
                 </form>
             </div>
         </div>
-        
+
         <!-- Footer -->
         <div style="text-align: center; margin-top: 20px; color: white; font-size: 12px;">
             <p>🔒 Tus datos están seguros. No compartimos información sin tu consentimiento.</p>
@@ -409,7 +391,7 @@
 
         function handleGoogleCallback(response) {
             const decoded = parseJwt(response.credential);
-            
+
             // Crear/encontrar usuario en backend
             fetch('/api/auth/oauth-callback', {
                 method: 'POST',
@@ -423,41 +405,52 @@
                     foto_url: decoded.picture || ''
                 })
             })
-            .then(r => r.json())
-            .then(result => {
-                // Llenar el formulario con datos verificados del usuario
-                oauthData = {
-                    nombre: result.user.nombre,
-                    apellido: result.user.apellido,
-                    email: result.user.email,
-                    proveedor: 'google',
-                    idOAuth: decoded.sub,
-                    id_usuario: result.user.id_usuario
-                };
-                populateForm();
-            })
-            .catch(err => {
-                console.error('OAuth error:', err);
-                // Fallback: llenar con datos disponibles localmente
-                oauthData = {
-                    nombre: decoded.given_name || '',
-                    apellido: decoded.family_name || '',
-                    email: decoded.email || '',
-                    proveedor: 'google',
-                    idOAuth: decoded.sub
-                };
-                populateForm();
-            });
+                .then(r => {
+                    if (!r.ok) {
+                        return r.text().then(text => {
+                            try {
+                                return JSON.parse(text);
+                            } catch (e) {
+                                throw new Error(`Servidor retornó ${r.status}: ${text}`);
+                            }
+                        });
+                    }
+                    return r.json();
+                })
+                .then(result => {
+                    // Llenar el formulario con datos verificados del usuario
+                    oauthData = {
+                        nombre: result.user.nombre,
+                        apellido: result.user.apellido,
+                        email: result.user.email,
+                        proveedor: 'google',
+                        idOAuth: decoded.sub,
+                        id_usuario: result.user.id_usuario
+                    };
+                    populateForm();
+                })
+                .catch(err => {
+                    console.error('OAuth error:', err);
+                    // Fallback: llenar con datos disponibles localmente
+                    oauthData = {
+                        nombre: decoded.given_name || '',
+                        apellido: decoded.family_name || '',
+                        email: decoded.email || '',
+                        proveedor: 'google',
+                        idOAuth: decoded.sub
+                    };
+                    populateForm();
+                });
         }
 
         // ============================================
         // FACEBOOK LOGIN
         // ============================================
         function initiateFacebookLogin() {
-            FB.login(function(response) {
+            FB.login(function (response) {
                 if (response.authResponse) {
-                    FB.api('/me?fields=id,first_name,last_name,email,picture', 
-                        function(userInfo) {
+                    FB.api('/me?fields=id,first_name,last_name,email,picture',
+                        function (userInfo) {
                             // Crear/encontrar usuario en backend
                             fetch('/api/auth/oauth-callback', {
                                 method: 'POST',
@@ -471,33 +464,44 @@
                                     foto_url: userInfo.picture?.data?.url || ''
                                 })
                             })
-                            .then(r => r.json())
-                            .then(result => {
-                                oauthData = {
-                                    nombre: result.user.nombre,
-                                    apellido: result.user.apellido,
-                                    email: result.user.email,
-                                    proveedor: 'facebook',
-                                    idOAuth: userInfo.id,
-                                    id_usuario: result.user.id_usuario
-                                };
-                                populateForm();
-                            })
-                            .catch(err => {
-                                console.error('OAuth error:', err);
-                                oauthData = {
-                                    nombre: userInfo.first_name || '',
-                                    apellido: userInfo.last_name || '',
-                                    email: userInfo.email || '',
-                                    proveedor: 'facebook',
-                                    idOAuth: userInfo.id
-                                };
-                                populateForm();
-                            });
+                                .then(r => {
+                                    if (!r.ok) {
+                                        return r.text().then(text => {
+                                            try {
+                                                return JSON.parse(text);
+                                            } catch (e) {
+                                                throw new Error(`Servidor retornó ${r.status}: ${text}`);
+                                            }
+                                        });
+                                    }
+                                    return r.json();
+                                })
+                                .then(result => {
+                                    oauthData = {
+                                        nombre: result.user.nombre,
+                                        apellido: result.user.apellido,
+                                        email: result.user.email,
+                                        proveedor: 'facebook',
+                                        idOAuth: userInfo.id,
+                                        id_usuario: result.user.id_usuario
+                                    };
+                                    populateForm();
+                                })
+                                .catch(err => {
+                                    console.error('OAuth error:', err);
+                                    oauthData = {
+                                        nombre: userInfo.first_name || '',
+                                        apellido: userInfo.last_name || '',
+                                        email: userInfo.email || '',
+                                        proveedor: 'facebook',
+                                        idOAuth: userInfo.id
+                                    };
+                                    populateForm();
+                                });
                         }
                     );
                 }
-            }, {scope: 'public_profile,email'});
+            }, { scope: 'public_profile,email' });
         }
 
         // ============================================
@@ -515,7 +519,7 @@
             document.getElementById('nombre').value = oauthData.nombre || '';
             document.getElementById('apellido').value = oauthData.apellido || '';
             document.getElementById('email').value = oauthData.email || '';
-            
+
             markFieldsAsAutofilled();
         }
 
@@ -535,9 +539,9 @@
         // ============================================
         document.getElementById('contactForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            
+
             if (!validateForm()) return;
-            
+
             const formData = {
                 nombre: document.getElementById('nombre').value,
                 apellido: document.getElementById('apellido').value,
@@ -546,10 +550,10 @@
                 proveedor_oauth: oauthData.proveedor,
                 id_oauth: oauthData.idOAuth
             };
-            
+
             // Guardar en localStorage
             sessionStorage.setItem('cliente_datos', JSON.stringify(formData));
-            
+
             // Redirigir a solicitud_alquiler.html
             window.location.href = 'solicitud_alquiler.html';
         });
@@ -557,12 +561,12 @@
         function validateForm() {
             clearErrors();
             let valid = true;
-            
+
             const nombre = document.getElementById('nombre').value.trim();
             const apellido = document.getElementById('apellido').value.trim();
             const email = document.getElementById('email').value.trim();
             const telefono = document.getElementById('telefono').value.trim();
-            
+
             if (!nombre) {
                 showError('nombre', 'El nombre es requerido');
                 valid = false;
@@ -579,7 +583,7 @@
                 showError('telefono', 'El teléfono es requerido');
                 valid = false;
             }
-            
+
             return valid;
         }
 
@@ -620,7 +624,7 @@
         }
 
         // Inicializar Facebook SDK
-        window.fbAsyncInit = function() {
+        window.fbAsyncInit = function () {
             FB.init({
                 appId: 'YOUR_FACEBOOK_APP_ID',
                 xfbml: true,
@@ -629,4 +633,5 @@
         };
     </script>
 </body>
+
 </html>

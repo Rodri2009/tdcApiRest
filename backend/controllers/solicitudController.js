@@ -281,8 +281,8 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
             SELECT
                 CONCAT('bnd_', sfb.id_solicitud) as solicitudId,
                 'BANDA' as tipoEvento,
-                sfb.fecha_evento as fechaEvento,
-                sfb.hora_evento as horaInicio,
+                sol.fecha_evento as fechaEvento,
+                sol.hora_inicio as horaInicio,
                 sol.duracion_minutos as duracionEvento,
                 sfb.cantidad_bandas as cantidadPersonas,
                 sfb.precio_basico as precioBase,
@@ -563,8 +563,8 @@ const getSolicitudPorId = async (req, res) => {
                 SELECT
                     CONCAT('bnd_', sfb.id_solicitud) as solicitudId,
                     'BANDA' as tipoEvento,
-                    sfb.fecha_evento as fechaEvento,
-                    sfb.hora_evento as horaInicio,
+                    sol.fecha_evento as fechaEvento,
+                    sol.hora_inicio as horaInicio,
                     sol.duracion_minutos as duracionEvento,
                     sfb.cantidad_bandas as cantidadPersonas,
                     sfb.precio_basico as precioBase,
@@ -1434,87 +1434,44 @@ const getSolicitudesPublicas = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        // Consultar fechas de bandas confirmadas desde la tabla padre donde es_publico = 1
-        const bandasQuery = `
+        // Consultar solicitudes públicas confirmadas - FUENTE ÚNICA: solicitudes tabla padre
+        const query = `
             SELECT
-                sb.id_solicitud as id,
-                'BANDA' as tipoEvento,
-                sb.fecha_evento as fechaEvento,
-                sb.hora_evento as horaEvento,
+                sol.id_solicitud as id,
+                sol.fecha_evento as fechaEvento,
+                sol.hora_inicio as horaEvento,
                 sol.duracion_minutos as duracion,
-                sb.cantidad_bandas as cantidad,
-                sb.precio_basico as precio,
-                sb.precio_anticipada as precio_anticipada,
-                sb.precio_puerta as precio_puerta,
-                -- Priorizar nombre de solicitud actualizada (corta/larga), luego nombre_banda, luego cliente
-                COALESCE(sol.descripcion_corta, b.nombre, sol.descripcion_larga, COALESCE(c.nombre, '')) AS nombreEvento,
+                COALESCE(sb.cantidad_bandas, NULL) as cantidad,
+                COALESCE(sb.precio_basico, NULL) as precio,
+                COALESCE(sb.precio_anticipada, NULL) as precio_anticipada,
+                COALESCE(sb.precio_puerta, NULL) as precio_puerta,
+                -- Determinar tipo de evento por estructura de tabla
+                CASE 
+                    WHEN sb.id_solicitud IS NOT NULL THEN 'BANDA'
+                    WHEN st.id_solicitud IS NOT NULL THEN 'TALLER'
+                    WHEN ss.id_solicitud IS NOT NULL THEN 'SERVICIO'
+                    ELSE 'EVENTO'
+                END as tipoEvento,
+                -- Nombre: usar descripción corta/larga de solicitud como fuente única
+                COALESCE(sol.descripcion_corta, sol.descripcion_larga, COALESCE(c.nombre, '')) AS nombreEvento,
                 COALESCE(c.nombre, '') as nombreCompleto,
                 sol.descripcion_larga as descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
                 COALESCE(sol.url_flyer, e.url_flyer) as url_flyer
-            FROM solicitudes_fechas_bandas sb
-            JOIN solicitudes sol ON sb.id_solicitud = sol.id_solicitud
+            FROM solicitudes sol
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+            LEFT JOIN solicitudes_fechas_bandas sb ON sb.id_solicitud = sol.id_solicitud
             LEFT JOIN bandas_artistas b ON sb.id_banda = b.id_banda
-            LEFT JOIN eventos_confirmados e ON e.id_solicitud = sb.id_solicitud AND e.tipo_evento = 'BANDA' AND e.activo = 1
+            LEFT JOIN solicitudes_talleres st ON st.id_solicitud = sol.id_solicitud
+            LEFT JOIN solicitudes_servicios ss ON ss.id_solicitud = sol.id_solicitud
+            LEFT JOIN eventos_confirmados e ON e.id_solicitud = sol.id_solicitud AND e.activo = 1
             WHERE sol.es_publico = 1
               AND sol.estado = 'Confirmado'
-              AND sb.fecha_evento >= CURDATE()
+              AND sol.fecha_evento >= CURDATE()
+            ORDER BY sol.fecha_evento, sol.hora_inicio
         `;
-        const bandas = await conn.query(bandasQuery);
+        const resultados = await conn.query(query);
 
-        // Consultar fechas de talleres/actividades confirmadas desde la tabla padre
-        const talleresQuery = `
-            SELECT
-                st.id_solicitud as id,
-                'TALLER' as tipoEvento,
-                st.fecha_evento as fechaEvento,
-                st.hora_evento as horaEvento,
-                sol.duracion_minutos as duracion,
-                NULL as cantidad,
-                st.precio as precio,
-                -- Preferir nombre de evento si existe, luego nombre del taller, luego cliente
-                COALESCE(e.nombre_evento, st.nombre_taller, COALESCE(c.nombre, '')) AS nombreEvento,
-                NULL as descripcion,
-                COALESCE(sol.es_publico, 0) as esPublico,
-                COALESCE(e.url_flyer, sol.url_flyer) as url_flyer
-            FROM solicitudes_talleres st
-            JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
-            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
-            LEFT JOIN eventos_confirmados e ON e.id_solicitud = st.id_solicitud AND e.tipo_evento = 'TALLER' AND e.activo = 1
-            WHERE sol.es_publico = 1
-              AND sol.estado = 'Confirmado'
-              AND st.fecha_evento >= CURDATE()
-        `;
-        const talleres = await conn.query(talleresQuery);
-
-        // Consultar fechas de servicios públicos confirmados desde la tabla padre
-        const serviciosQuery = `
-            SELECT
-                ss.id_solicitud as id,
-                'SERVICIO' as tipoEvento,
-                ss.fecha_evento as fechaEvento,
-                ss.hora_evento as horaEvento,
-                sol.duracion_minutos as duracion,
-                NULL as cantidad,
-                ss.precio as precio,
-                -- Preferir nombre de evento si existe, luego tipo_servicio, luego cliente
-                COALESCE(e.nombre_evento, ss.tipo_servicio, COALESCE(c.nombre, '')) AS nombreEvento,
-                NULL as descripcion,
-                COALESCE(sol.es_publico, 0) as esPublico,
-                COALESCE(e.url_flyer, sol.url_flyer) as url_flyer
-            FROM solicitudes_servicios ss
-            JOIN solicitudes sol ON ss.id_solicitud = sol.id_solicitud
-            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
-            LEFT JOIN eventos_confirmados e ON e.id_solicitud = ss.id_solicitud AND e.tipo_evento = 'SERVICIO' AND e.activo = 1
-            WHERE sol.es_publico = 1
-              AND sol.estado = 'Confirmado'
-              AND ss.fecha_evento >= CURDATE()
-        `;
-        const servicios = await conn.query(serviciosQuery);
-
-        // Combinar resultados
-        const resultados = [...bandas, ...talleres, ...servicios];
 
         // AUTO-RECUPERACIÓN: Si url_flyer es NULL, intentar recuperar del disco
         const { tryRecoverFlyerUrl } = require('./uploadsController');
@@ -1527,9 +1484,6 @@ const getSolicitudesPublicas = async (req, res) => {
                 }
             }
         }
-
-        // Ordenar por fecha
-        resultados.sort((a, b) => new Date(a.fechaEvento) - new Date(b.fechaEvento));
 
         return res.status(200).json(resultados);
     } catch (error) {
@@ -1720,8 +1674,8 @@ const getSolicitudPublicById = async (req, res) => {
                     SELECT
                         CONCAT('bnd_', sfb.id_solicitud) as solicitudId,
                         'BANDA' as tipoEvento,
-                        sfb.fecha_evento as fechaEvento,
-                        sfb.hora_evento as horaInicio,
+                        sol.fecha_evento as fechaEvento,
+                        sol.hora_inicio as horaInicio,
                         sol.duracion_minutos as duracionEvento,
                         sfb.cantidad_bandas as cantidadPersonas,
                         sfb.precio_basico as precioBase,
@@ -1857,8 +1811,8 @@ const getSolicitudPublicById = async (req, res) => {
                 SELECT
                     CONCAT('bnd_', sfb.id_solicitud) as solicitudId,
                     'BANDA' as tipoEvento,
-                    sfb.fecha_evento as fechaEvento,
-                    sfb.hora_evento as horaInicio,
+                    sol.fecha_evento as fechaEvento,
+                    sol.hora_inicio as horaInicio,
                     sol.duracion_minutos as duracionEvento,
                     sfb.cantidad_bandas as cantidadPersonas,
                     sfb.precio_basico as precioBase,

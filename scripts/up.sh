@@ -115,6 +115,65 @@ cleanup_old_backend_containers() {
     echo -e "${GREEN}✓${NC}"
 }
 
+# Función para verificar si los contenedores levantaron correctamente
+check_containers_health() {
+  local sleep_time=5
+  echo ""
+  echo -e "${CYAN}[*] Verificando estado de contenedores en $sleep_time segundos...${NC}"
+  sleep $sleep_time
+  echo ""
+
+  local has_critical_errors=0
+  local has_warnings=0
+  local check_containers=("docker-mariadb-1" "docker-backend-1" "docker-nginx-1")
+
+  for container in "${check_containers[@]}"; do
+    local status=$(docker inspect -f '{{.State.Status}}' "$container" 2>/dev/null || echo "missing")
+    
+    if [ "$status" = "running" ]; then
+      echo -e "  ${GREEN}✓${NC} $container: ${GREEN}running${NC}"
+      
+      # Revisar logs para errores críticos (ignorar warnings conocidas)
+      local critical_errors=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "(error|exception|failed|cannot|refused|fatal)" | grep -viE "(io_uring_queue_init|Chromium has locked|WhatsAppService|MercadoPagoService|PUPPETEER-WA|PUPPETEER-MP|BANDA-SYNC|FLYER-SYNC|Error al inicializar)" | head -2 || true)
+      
+      # Revisar warnings
+      local all_warnings=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "warning|warn" | head -2 || true)
+      
+      if [ -n "$critical_errors" ]; then
+        echo -e "    ${RED}✗ Errores críticos:${NC}"
+        echo "$critical_errors" | sed 's/^/      /'
+        has_critical_errors=1
+      elif [ -n "$all_warnings" ]; then
+        echo -e "    ${YELLOW}⚠ Advertencias:${NC}"
+        echo "$all_warnings" | sed 's/^/      /'
+        has_warnings=1
+      fi
+    else
+      echo -e "  ${RED}✗${NC} $container: ${RED}$status${NC}"
+      echo -e "    ${RED}Últimos logs:${NC}"
+      docker logs --tail 20 "$container" 2>&1 | tail -10 | sed 's/^/      /'
+      has_critical_errors=1
+    fi
+  done
+
+  echo ""
+  if [ $has_critical_errors -eq 0 ]; then
+    echo -e "${GREEN}════════════════════════════════════════════════════${NC}"
+    if [ $has_warnings -eq 0 ]; then
+      echo -e "${GREEN}  ✓ Todos los contenedores funcionan correctamente${NC}"
+    else
+      echo -e "${GREEN}  ✓ Contenedores en ejecución (con advertencias)${NC}"
+    fi
+    echo -e "${GREEN}════════════════════════════════════════════════════${NC}"
+    return 0
+  else
+    echo -e "${RED}════════════════════════════════════════════════════${NC}"
+    echo -e "${RED}  ✗ Se detectaron problemas críticos${NC}"
+    echo -e "${RED}════════════════════════════════════════════════════${NC}"
+    return 1
+  fi
+}
+
 echo -e "${BLUE}======================================================${NC}"
 echo -e "${BLUE}  TDC App - Levantamiento del Entorno${NC}"
 echo -e "${BLUE}======================================================${NC}"
@@ -254,6 +313,13 @@ create_env_override() {
         if ! grep -q "^ENABLE_VNC=" "$env_tmp"; then
             [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
             echo "ENABLE_VNC=true" >> "$env_tmp"
+        fi
+    else
+        # Si NO se usan --mp o --wa, asegurar que VNC está deshabilitado
+        sed -i 's/^ENABLE_VNC=.*/ENABLE_VNC=false/' "$env_tmp" || true
+        if ! grep -q "^ENABLE_VNC=" "$env_tmp"; then
+            [ -n "$(tail -c1 "$env_tmp")" ] && echo "" >> "$env_tmp"
+            echo "ENABLE_VNC=false" >> "$env_tmp"
         fi
     fi
 
@@ -478,6 +544,9 @@ if [ -n "$DEBUG_FLAGS" ]; then
     # ./scripts/backend-logs.sh si quiere ver la salida en vivo.
 
 fi
+
+# Verificar salud de contenedores
+check_containers_health
 
 # --- Mensaje Final Claro ---
 echo -e "${GREEN}======================================================${NC}"

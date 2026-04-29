@@ -450,9 +450,9 @@
 
             const container = document.getElementById('eventos-container');
             try {
-                // Usar el endpoint público de eventos confirmados (API unificada)
-                console.log('📤 Enviando solicitud a /api/eventos/publicos');
-                const res = await fetch('/api/eventos/publicos');
+                // Usar el endpoint de solicitudes públicas que incluye bandas
+                console.log('📤 Enviando solicitud a /api/solicitudes/publicas');
+                const res = await fetch('/api/solicitudes/publicas');
                 console.log('📥 Respuesta recibida, status:', res.status);
                 if (!res.ok) throw new Error('Error al cargar eventos, status:' + res.status);
 
@@ -461,28 +461,29 @@
                 console.log('Total:', eventosRaw.length);
                 console.table(eventosRaw.slice(0, 3).map(e => ({
                     id: e.id,
-                    nombre: e.nombre_evento || e.banda_nombre,
-                    fecha_evento: e.fecha_evento,
-                    fecha_hora: e.fecha_hora,
-                    hora_inicio: e.hora_inicio
+                    nombre: e.nombreEvento || e.nombre_banda,
+                    fechaEvento: e.fechaEvento,
+                    horaEvento: e.horaEvento,
+                    tipoEvento: e.tipoEvento
                 })));
                 console.groupEnd();
 
                 // Mapear al formato esperado por generateEventCard (normalizar campos)
                 console.group('🔄 Procesamiento y mapeo de eventos');
                 const mapped = eventosRaw.map(e => {
-                    const fechaHoraRaw = e.fecha_evento || e.fecha_hora || e.fecha;
-                    const horaRaw = e.hora_inicio || e.hora || null;
+                    const fechaHoraRaw = e.fechaEvento || e.fecha_evento || e.fecha;
+                    const horaRaw = e.horaEvento || e.hora_inicio || e.hora || null;
                     let _fechaObj = parseFecha(fechaHoraRaw, horaRaw);
                     const resultado = {
                         ...e,
                         _fechaObj,
-                        nombre_banda: e.nombre_evento || e.nombre_banda || e.banda_nombre,
-                        precio_base: e.precio_base || e.precio_final || null,
+                        nombre_banda: e.nombreEvento || e.nombre_banda || e.banda_nombre,
+                        precio_base: e.precio || e.precio_base || e.precio_final || null,
                         precio_puerta: e.precio_puerta || null,
                         fecha_hora: fechaHoraRaw,
                         hora_inicio: horaRaw,
-                        es_publico: typeof e.es_publico !== 'undefined' ? e.es_publico : 1
+                        es_publico: typeof e.esPublico !== 'undefined' ? e.esPublico : (typeof e.es_publico !== 'undefined' ? e.es_publico : 1),
+                        tipo_evento: e.tipoEvento || e.tipo_evento || 'BANDA'
                     };
                     if (e.id <= 6) {
                         console.log(`📅 Evento ${e.id}:`, {

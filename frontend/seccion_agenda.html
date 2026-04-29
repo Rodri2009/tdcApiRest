@@ -300,7 +300,7 @@
 
             const flyer = event.url_flyer || event.flyer_url || '/img/hero.jpg';
             const nombre = event.nombre_evento || event.nombre_banda || event.nombreCliente || event.nombreCompleto || event.nombre_completo || event.descripcion || 'Evento';
-            const hora = event.hora || event.hora_evento || null;
+            const hora = event.hora || event.hora_inicio || event.hora_evento || null;
             const precio = event.precio_base || event.precio_basico || event.precio || null;
             const precioText = precio ? `$${formatPrecioAR(precio)}` : '';
 
@@ -405,7 +405,7 @@
                         source: 'solicitud',
                         id: s.id,
                         fecha: s.fecha_evento || s.fechaEvento,
-                        hora_evento: s.hora_evento || s.horaEvento,
+                        hora_evento: s.hora_inicio || s.horaInicio || s.hora_evento || s.horaEvento,
                         nombre_evento: s.nombreEvento || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda,
                         nombreCliente: s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda,
                         tipo: s.tipo_de_evento || s.tipoEvento || s.tipo || null,

@@ -264,18 +264,7 @@ const crearBanda = async (req, res) => {
             });
         }
 
-        // Validar límite de bandas por usuario (máx. 5 para usuarios regulares)
-        const esAdmin = req.user && req.user.nivel >= 50;
-        if (!esAdmin && req.user && req.user.id_usuario) {
-            const [{ total }] = await conn.query(
-                'SELECT COUNT(*) as total FROM bandas_artistas WHERE registrado_por_id_usuario = ?',
-                [req.user.id_usuario]
-            );
-            if (Number(total) >= 5) {
-                await conn.rollback();
-                return res.status(403).json({ error: 'Límite alcanzado. No podés registrar más de 5 bandas.' });
-            }
-        }
+        // Sin límite de bandas por usuario (restricción removida)
 
         // 1. Insertar banda
         const sqlBanda = `
@@ -374,9 +363,9 @@ const crearBanda = async (req, res) => {
             solicitante_nombre: req.user?.nombre || null,
             solicitante_email: req.user?.email || null,
         };
-        sendBandaNotificacionAdmin(emailData).catch(() => {});
+        sendBandaNotificacionAdmin(emailData).catch(() => { });
         if (req.user?.email) {
-            sendBandaConfirmacion(req.user.email, emailData).catch(() => {});
+            sendBandaConfirmacion(req.user.email, emailData).catch(() => { });
         }
 
         return res.status(201).json({
@@ -537,8 +526,8 @@ const actualizarBanda = async (req, res) => {
             try {
                 const { id_cliente: nuevoClienteId, fkChanged } = await resolveContactUpdate(conn, {
                     currentClienteId: bandaData && bandaData.id_cliente ? bandaData.id_cliente : null,
-                    ...(contacto_nombre   !== undefined ? { nombre: contacto_nombre }     : {}),
-                    ...(contacto_email    !== undefined ? { email: contacto_email }       : {}),
+                    ...(contacto_nombre !== undefined ? { nombre: contacto_nombre } : {}),
+                    ...(contacto_email !== undefined ? { email: contacto_email } : {}),
                     ...(contacto_telefono !== undefined ? { telefono: contacto_telefono } : {}),
                     creado_por_id_usuario: req.user ? req.user.id_usuario : null
                 });

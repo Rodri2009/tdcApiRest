@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Admin — Mensajes</title>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <link rel="stylesheet" href="admin_balance.css?v=10">
+    <link rel="stylesheet" href="admin_mensajes.css?v=1">
+</head>
+
+<body>
+    <script src="/navbar.js"></script>
+    <main class="wrap">
+        <div class="page-header">
+            <a href="admin.html" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <div class="header-title-row">
+                <h1>Admin — Mensajes</h1>
+                <div id="service-status" class="service-status ss-connecting" title="Estado del servicio WhatsApp">
+                    <span class="ss-dot"></span>
+                    <span id="ss-text">conectando…</span>
+                </div>
+            </div>
+            <div class="spacer"></div>
+        </div>
+
+        <!-- Banner de notificación -->
+        <div id="banner" class="banner hidden" role="status" aria-live="polite"></div>
+
+        <!-- Layout principal de chat -->
+        <div class="chat-layout">
+
+            <!-- Panel izquierdo: lista de contactos -->
+            <aside class="chat-sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-search-wrap">
+                        <i class="fas fa-search sidebar-search-icon"></i>
+                        <input id="search-input" type="text" class="sidebar-search" placeholder="Buscar contacto…"
+                            autocomplete="off">
+                    </div>
+                    <button id="refresh-chats-btn" class="btn btn-icon" title="Actualizar chats">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <ul id="chat-list" class="chat-list" role="listbox" aria-label="Conversaciones">
+                    <li class="chat-list-empty">Cargando conversaciones…</li>
+                </ul>
+            </aside>
+
+            <!-- Panel derecho: conversación -->
+            <section class="chat-main">
+                <!-- Header del chat activo -->
+                <div id="chat-header" class="chat-header">
+                    <div class="chat-header-avatar" id="chat-avatar">?</div>
+                    <div class="chat-header-info">
+                        <div id="chat-name" class="chat-header-name">Seleccioná una conversación</div>
+                        <div id="chat-id-display" class="chat-header-id"></div>
+                    </div>
+                </div>
+
+                <!-- Mensajes -->
+                <div id="messages-container" class="messages-container" aria-live="polite" aria-label="Mensajes">
+                    <div class="messages-empty">
+                        <i class="fas fa-comments"></i>
+                        <p>Seleccioná un chat para ver la conversación</p>
+                    </div>
+                </div>
+
+                <!-- Área de respuesta -->
+                <div class="reply-area">
+                    <textarea id="reply-input" class="reply-input" placeholder="Escribí un mensaje…" rows="2"
+                        disabled></textarea>
+                    <button id="send-btn" class="btn btn-green send-btn" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Enviar</span>
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="admin_mensajes.js?v=1"></script>
+</body>
+
+</html>

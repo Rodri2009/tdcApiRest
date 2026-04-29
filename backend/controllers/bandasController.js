@@ -821,24 +821,25 @@ const updateSolicitud = async (req, res) => {
                 }
             }
 
-            // Mapear campos legacy -> columnas de `solicitudes_fechas_bandas`
+            // Mapear campos legacy -> columnas de `solicitudes_fechas_bandas` y padre `solicitudes`
             const columnMap = {
-                'fecha_preferida': 'fecha_evento',
-                'hora_preferida': 'hora_evento',
                 'mensaje': 'descripcion',
                 'precio_anticipada_propuesto': 'precio_basico',
+                'fecha_evento': 'fecha_evento',  // ← Va al padre solicitudes
+                'hora_evento': 'hora_inicio',    // ← Va al padre solicitudes como hora_inicio
                 // campos que ya coinciden: fecha_alternativa, invitadas_json, cantidad_bandas, precio_puerta_propuesto, expectativa_publico
+                // NOTA: fecha_evento y hora_evento se actualizan en solicitudes padre (NO en solicitudes_fechas_bandas)
             };
 
             // Filtrar setClauses para actualizar solo columnas válidas en solicitudes_fechas_bandas
             // FASE 1: 'descripcion' y 'estado' ya no existen en sfb (viven en solicitudes padre)
             // FASE 2: 'descripcion_corta', 'descripcion_larga' van a solicitudes padre
             const validChildCols = new Set([
-                'id_banda', 'fecha_evento', 'hora_evento', 'duracion', 'precio_basico', 'precio_final', 'precio_puerta_propuesto', 'cantidad_bandas', 'expectativa_publico', 'invitadas_json', 'fecha_alternativa', 'notas_admin', 'id_evento_generado'
+                'id_banda', 'duracion', 'precio_basico', 'precio_final', 'precio_puerta_propuesto', 'cantidad_bandas', 'expectativa_publico', 'invitadas_json', 'fecha_alternativa', 'notas_admin', 'id_evento_generado'
             ]);
             // Columnas que van al padre solicitudes
             const validParentCols = new Set([
-                'estado', 'descripcion_corta', 'descripcion_larga', 'es_publico', 'url_flyer'
+                'estado', 'descripcion_corta', 'descripcion_larga', 'es_publico', 'url_flyer', 'fecha_evento', 'hora_inicio'
             ]);
 
             const childSet = [];
@@ -871,15 +872,14 @@ const updateSolicitud = async (req, res) => {
                 await conn.query(`UPDATE solicitudes SET ${parentSet.join(', ')} WHERE id_solicitud = ?`, parentParams);
             }
 
-            // Fase 2: Sincronizar fecha/hora/duracion al padre solicitudes
+            // Fase 2: Sincronizar duracion y fecha_alternativa al padre solicitudes
+            // NOTA: hora_inicio y fecha_evento ya se actualizan en parentSet arriba (van a solicitudes padre directamente)
             {
                 const syncPadre = [];
                 const syncValores = [];
                 for (let i = 0; i < setClauses.length; i++) {
                     const campo = setClauses[i].split('=')[0].trim();
                     const mapped = columnMap[campo] || campo;
-                    if (mapped === 'fecha_evento') { syncPadre.push('fecha_evento = ?'); syncValores.push(params[i]); }
-                    if (mapped === 'hora_evento') { syncPadre.push('hora_inicio = ?'); syncValores.push(params[i]); }
                     if (mapped === 'duracion') {
                         syncPadre.push('duracion_minutos = ?');
                         syncValores.push(params[i] !== null ? (parseInt(params[i], 10) || null) : null);
@@ -889,14 +889,15 @@ const updateSolicitud = async (req, res) => {
                 if (syncPadre.length > 0) {
                     syncValores.push(id);
                     await conn.query(`UPDATE solicitudes SET ${syncPadre.join(', ')} WHERE id_solicitud = ?`, syncValores);
-                    if (syncPadre.some(f => f.startsWith('hora_inicio') || f.startsWith('duracion_minutos'))) {
-                        await conn.query(
-                            `UPDATE solicitudes SET hora_fin = ADDTIME(hora_inicio, SEC_TO_TIME(duracion_minutos * 60))
-                             WHERE id_solicitud = ? AND hora_inicio IS NOT NULL AND duracion_minutos IS NOT NULL`,
-                            [id]
-                        );
-                    }
                 }
+
+                // Calcular hora_fin basada en hora_inicio + duracion_minutos
+                // (esto se ejecuta incluso si solo cambió duracion, para recalcular hora_fin)
+                await conn.query(
+                    `UPDATE solicitudes SET hora_fin = ADDTIME(hora_inicio, SEC_TO_TIME(duracion_minutos * 60))
+                     WHERE id_solicitud = ? AND hora_inicio IS NOT NULL AND duracion_minutos IS NOT NULL`,
+                    [id]
+                );
             }
 
             // Si vienen campos relacionados con la banda y la solicitud tiene id_banda, actualizar bandas_artistas
@@ -963,6 +964,7 @@ const aprobarSolicitud = async (req, res) => {
         // Obtener la solicitud (normalizada)
         const [solicitud] = await pool.query(
             `SELECT sfb.*, s.id_cliente, s.estado AS estado, s.descripcion_larga AS descripcion,
+                    s.fecha_evento AS fecha_evento_padre, s.hora_inicio AS hora_inicio_padre, s.fecha_alternativa,
                     b.nombre AS banda_nombre, b.id_banda AS banda_id, b.genero_musical AS banda_genero
              FROM solicitudes_fechas_bandas sfb
              JOIN solicitudes s ON sfb.id_solicitud = s.id_solicitud
@@ -979,8 +981,8 @@ const aprobarSolicitud = async (req, res) => {
             return res.status(400).json({ error: 'La solicitud ya fue aprobada' });
         }
 
-        // Determinar fecha final
-        const fechaFinal = fecha_evento || solicitud.fecha_evento || solicitud.fecha_alternativa;
+        // Determinar fecha final (desde param o de solicitudes padre)
+        const fechaFinal = fecha_evento || solicitud.fecha_evento_padre || solicitud.fecha_alternativa;
         if (!fechaFinal) {
             return res.status(400).json({ error: 'Se requiere una fecha para el evento' });
         }
@@ -1023,7 +1025,7 @@ const aprobarSolicitud = async (req, res) => {
             solicitud.banda_nombre || solicitud.descripcion || 'Sin nombre',
             descripcion || solicitud.descripcion || '',
             fechaFinal,
-            hora_inicio || solicitud.hora_evento || '21:00:00',
+            hora_inicio || solicitud.hora_inicio_padre || '21:00:00',
             hora_fin || null,
             solicitud.cliente_id || null,
             solicitud.banda_genero || solicitud.genero_musical || null,

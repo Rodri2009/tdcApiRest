@@ -70,7 +70,7 @@ cp .env.example .env   # Editar con tus variables
 | `./scripts/up.sh` | Levanta todos los servicios. No aplica migraciones por defecto — usa `./scripts/up.sh --migrate` o `APPLY_MIGRATIONS=true ./scripts/up.sh` para aplicarlas desde `database/migrations` |
 | `./scripts/restart.sh` | Reinicia contenedores específicos (backend, frontend, db) con flags opcionales |
 | `./scripts/reset.sh` | Reinicia completamente (elimina datos y reconstruye) — **aplica** las migraciones SQL que estén en `database/migrations` después de recrear la BD |
-| `./scripts/recover-from-binlog.sh` | Recupera BD desde Binary Logs de MariaDB a un punto específico en tiempo (Point-in-Time Recovery) |
+| `./scripts/recover_from_binlog.sh` | Recupera BD desde Binary Logs de MariaDB a un punto específico en tiempo (Point-in-Time Recovery) |
 
 ## Estrategia de Backup: Binary Logs de MariaDB
 
@@ -107,7 +107,7 @@ Sigue estos pasos antes y después de aplicar cualquier migración o cambio estr
 
 2) Backup de la base de datos (opcional)
    - Los cambios están siendo grabados automáticamente en Binlog
-   - Si necesitas un snapshot específico: `./scripts/recover-from-binlog.sh -l`
+   - Si necesitas un snapshot específico: `./scripts/recover_from_binlog.sh -l`
 
 3) Comprobar archivos/migraciones pendientes
    - `ls database/migrations | sort`  — revisa los SQL a aplicar.
@@ -133,7 +133,7 @@ Sigue estos pasos antes y después de aplicar cualquier migración o cambio estr
 8) Logs y rollback
    - Revisa logs: `docker compose -f docker/docker-compose.yml logs --tail 200 backend`
    - Si algo falla, usa Binlog para recuperar:
-     `./scripts/recover-from-binlog.sh -t "TIMESTAMP_ANTES_DE_CAMBIO"`
+     `./scripts/recover_from_binlog.sh -t "TIMESTAMP_ANTES_DE_CAMBIO"`
 
 ### Crear usuario administrador
 

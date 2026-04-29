@@ -482,7 +482,7 @@
     <main class="wrap">
         <div class="container" id="mainContainer">
             <div class="header-row">
-                <a href="admin_solicitudes.html" class="back-btn">
+                <a href="admin_solicitudes.html" id="backBtn" class="back-btn">
                     <i class="fas fa-arrow-left"></i> Volver a Solicitudes
                 </a>
                 <h2 style="margin: 0;"><i class="fas fa-concierge-bell"></i> Editor de Solicitud de Servicio</h2>
@@ -778,6 +778,40 @@
                 console.error('[ESTADO] Error al cambiar estado:', err);
             }
         }
+
+        // Configurar botón volver dinámico
+        function setupBackButton() {
+            const backBtn = document.getElementById('backBtn');
+            if (!backBtn) return;
+
+            // 1. Intentar leer parámetro returnTo de la URL
+            const params = new URLSearchParams(window.location.search);
+            let returnTo = params.get('returnTo');
+
+            // 2. Si no existe, intentar usar document.referrer
+            if (!returnTo && document.referrer) {
+                const referrerUrl = new URL(document.referrer);
+                returnTo = referrerUrl.pathname.split('/').pop() || '';
+            }
+
+            // 3. Si aún no tenemos destino, usar admin_solicitudes.html por defecto
+            if (!returnTo) {
+                returnTo = 'admin_solicitudes.html';
+            }
+
+            // Asegurar que sea un archivo válido dentro de admin/
+            const validPages = ['admin_solicitudes.html', 'admin_agenda.html', 'admin_clientes.html', 'admin_balance.html', 'admin_orden_de_trabajo.html', 'admin_asignar_personal.html', 'admin_eventos_confirmados.html'];
+            if (!validPages.includes(returnTo) && !returnTo.startsWith('admin_')) {
+                returnTo = 'admin_solicitudes.html';
+            }
+
+            backBtn.href = returnTo;
+        }
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            setupBackButton();
+        });
     </script>
 </body>
 

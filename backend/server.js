@@ -165,10 +165,10 @@ app.get('/health', (req, res) => {
 // Health check de Mercado Pago (si está habilitado)
 app.get('/api/mercadopago/health', (req, res) => {
     if (!ENABLE_PUPPETEER_MP) {
-        return res.status(503).json({
+        return res.status(200).json({
             status: 'disabled',
             service: 'mercadopago',
-            message: 'Servicio de Puppeteer para Mercado Pago está deshabilitado'
+            message: 'Servicio de Mercado Pago no está habilitado. Reiniciar con --mp para activarlo.'
         });
     }
 
@@ -180,7 +180,7 @@ app.get('/api/mercadopago/health', (req, res) => {
         timestamp: new Date().toISOString()
     };
 
-    res.status(mpPage ? 200 : 503).json(mpStatus);
+    res.status(200).json(mpStatus);
 });
 
 // Endpoint de login automático para MP (SIN PROTECCIÓN)
@@ -217,10 +217,10 @@ app.post('/api/mercadopago/auth/login', (req, res) => {
 // Health check de WhatsApp (si está habilitado)
 app.get('/api/whatsapp/health', (req, res) => {
     if (!ENABLE_PUPPETEER_WA) {
-        return res.status(503).json({
+        return res.status(200).json({
             status: 'disabled',
             service: 'whatsapp',
-            message: 'Servicio de Puppeteer para WhatsApp está deshabilitado'
+            message: 'Servicio de WhatsApp no está habilitado. Reiniciar con --wa para activarlo.'
         });
     }
 
@@ -232,7 +232,7 @@ app.get('/api/whatsapp/health', (req, res) => {
         timestamp: new Date().toISOString()
     };
 
-    res.status(waPage ? 200 : 503).json(waStatus);
+    res.status(200).json(waStatus);
 });
 
 // --- Rutas de la API ---
