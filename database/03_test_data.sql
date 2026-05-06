@@ -123,7 +123,7 @@ LOCK TABLES `turnos_servicios` WRITE;
 UNLOCK TABLES;
 
 --
--- Dumping data for table `eventos_confirmados`
+-- Dumping data for table `solicitudes`
 --
 
 LOCK TABLES `eventos_confirmados` WRITE;
