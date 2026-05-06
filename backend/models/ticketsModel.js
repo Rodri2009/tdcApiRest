@@ -45,7 +45,7 @@ const getEventosActivos = async () => {
         LEFT JOIN solicitudes_fechas_bandas sfb
                ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
         LEFT JOIN tickets t
-               ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
+               ON e.id = t.id_evento AND t.estado IN ('pagado', 'pendiente')
         WHERE e.activo = TRUE AND e.tipo_evento = 'BANDA'
           AND e.fecha_evento >= CURDATE()
         GROUP BY e.id
@@ -77,7 +77,7 @@ const getEventoById = async (solicitudId) => {
         LEFT JOIN solicitudes_fechas_bandas sfb
                ON e.id_solicitud = sfb.id_solicitud
         LEFT JOIN tickets t
-               ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
+               ON e.id = t.id_evento AND t.estado IN ('pagado', 'pendiente')
         WHERE e.id_solicitud = ? AND e.activo = TRUE AND e.tipo_evento = 'BANDA'
         GROUP BY e.id
     `;
@@ -112,10 +112,16 @@ const checkCupon = async (codigo) => {
  * @returns {Promise<number>} ID entero del ticket creado
  */
 const createPendingTicket = async (eventoId, email, nombre, codigoCupon, precioPagado, tipoPrecio = 'ANTICIPADA') => {
+    // Generar código de confirmación único (máximo 20 caracteres)
+    // Usar: primeras 3 caracteres de ticket + timestamp en base36 + random
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.floor(Math.random() * 10000).toString(36).toUpperCase();
+    const codigoConfirmacion = ('TKT' + timestamp + random).substring(0, 20);
+
     const result = await pool.query(
-        `INSERT INTO tickets (id_evento, email, nombre_comprador, codigo_cupon, total, tipo_precio, estado)
-         VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE_PAGO')`,
-        [eventoId, email, nombre, codigoCupon || null, precioPagado, tipoPrecio]
+        `INSERT INTO tickets (id_evento, email, nombre_comprador, codigo_cupon, total, tipo_precio, estado, codigo_confirmacion)
+         VALUES (?, ?, ?, ?, ?, ?, 'pendiente', ?)`,
+        [eventoId, email, nombre, codigoCupon || null, precioPagado, tipoPrecio, codigoConfirmacion]
     );
 
     return Number(result.insertId);

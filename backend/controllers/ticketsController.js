@@ -3,6 +3,7 @@ const ticketsModel = require('../models/ticketsModel');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const pool = require('../db');
 const mercadopagoPaymentService = require('../services/mercadopagoPaymentService');
+const crypto = require('crypto');
 
 /**
  * GET /api/tickets/eventos
@@ -158,20 +159,30 @@ const initCheckout = async (req, res) => {
                 ticketId,
                 parseFloat(precio_final),
                 email,
-                nombreEvento
+                nombreEvento,
+                nombre_comprador
             );
+
+            logVerbose('[initCheckout] Preferencia creada:', {
+                preference_id: preference.preference_id,
+                unit_price: parseFloat(precio_final),
+                payer_email: email,
+                payer_name: nombre_comprador,
+                evento: nombreEvento
+            });
 
             res.status(201).json({
                 status: 'pending_payment',
                 ticket_id: ticketId,
                 preference_id: preference.preference_id,
                 sandbox_init_point: preference.sandbox_init_point,
+                init_point: preference.init_point,
                 message: 'Ticket creado, procede al pago.'
             });
 
         } else {
             // 4. Si es gratis, marcar como PAGADO inmediatamente
-            await ticketsModel.updateTicketStatus(ticketId, 'PAGADO', null);
+            await ticketsModel.updateTicketStatus(ticketId, 'pagado', null);
 
             res.status(201).json({
                 status: 'paid_free',
@@ -198,10 +209,60 @@ const initCheckout = async (req, res) => {
 /**
  * POST /api/tickets/webhook
  * Recibe notificaciones de MercadoPago y actualiza el estado del ticket.
+ * 
+ * Validación de firma HMAC (opcional si MP_WEBHOOK_SECRET está configurado)
+ * Docs: https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/additional-content/notifications
  */
 const webhookHandler = async (req, res) => {
     // Responder inmediatamente a MP para evitar reintentos
     res.status(200).send('OK');
+
+    // VALIDACIÓN HMAC (opcional)
+    const mpWebhookSecret = process.env.MP_WEBHOOK_SECRET;
+    if (mpWebhookSecret) {
+        const xSignature = req.headers['x-signature'];
+        const xRequestId = req.headers['x-request-id'];
+
+        if (!xSignature || !xRequestId) {
+            logWarning('[Webhook MP] Headers de firma faltantes — posible notificación inválida');
+            return;
+        }
+
+        // Extraer ts y hash del header x-signature
+        const parts = xSignature.split(',');
+        let ts, hash;
+
+        parts.forEach(part => {
+            const [key, value] = part.split('=');
+            if (key?.trim() === 'ts') ts = value?.trim();
+            if (key?.trim() === 'v1') hash = value?.trim();
+        });
+
+        if (!ts || !hash) {
+            logWarning('[Webhook MP] No se pudo extraer ts/hash del header x-signature');
+            return;
+        }
+
+        // Construir el template para validación
+        const dataId = req.query['data.id'] || req.body?.data?.id;
+        const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+
+        // Generar firma esperada usando HMAC-SHA256
+        const expectedHash = crypto
+            .createHmac('sha256', mpWebhookSecret)
+            .update(manifest)
+            .digest('hex');
+
+        // Comparar firmas
+        if (hash !== expectedHash) {
+            logError('[Webhook MP] Firma HMAC inválida — webhook rechazado');
+            logVerbose('  Hash esperado:', expectedHash);
+            logVerbose('  Hash recibido:', hash);
+            return;
+        }
+
+        logSuccess('[Webhook MP] Firma HMAC validada ✓');
+    }
 
     const { type, data } = req.body;
 
@@ -226,11 +287,11 @@ const webhookHandler = async (req, res) => {
         let nuevoEstado;
 
         if (mpStatus === 'approved') {
-            nuevoEstado = 'PAGADO';
+            nuevoEstado = 'pagado';
         } else if (mpStatus === 'pending' || mpStatus === 'in_process') {
-            nuevoEstado = 'PENDIENTE_PAGO';
+            nuevoEstado = 'pendiente';
         } else {
-            nuevoEstado = 'CANCELADO'; // rejected, cancelled, refunded, etc.
+            nuevoEstado = 'cancelado'; // rejected, cancelled, refunded, etc.
         }
 
         await ticketsModel.updateTicketStatus(ticketId, nuevoEstado, String(paymentId));
@@ -259,11 +320,11 @@ const processPayment = async (req, res) => {
         let nuevoEstado;
 
         if (mpStatus === 'approved') {
-            nuevoEstado = 'PAGADO';
+            nuevoEstado = 'pagado';
         } else if (mpStatus === 'pending' || mpStatus === 'in_process') {
-            nuevoEstado = 'PENDIENTE_PAGO';
+            nuevoEstado = 'pendiente';
         } else {
-            nuevoEstado = 'CANCELADO';
+            nuevoEstado = 'cancelado';
         }
 
         await ticketsModel.updateTicketStatus(ticket_id, nuevoEstado, String(payment.id));

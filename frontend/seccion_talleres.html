@@ -7,90 +7,34 @@
     <title>Talleres y Clases - El Templo de Claypole</title>
     <!-- Carga de Tailwind CSS -->
     <link rel="stylesheet" href="/css/tailwind.min.css">
-    <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-        }
-
-        .text-neon {
-            color: var(--color-secondary);
-            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-        }
-
-        .bg-rustic {
-            background-color: var(--color-rustic);
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0c0a09;
-            color: #d6d3d1;
-        }
-
-        .neon-glow-img {
-            box-shadow: 0 0 15px rgba(240, 171, 252, 0.4);
-            transition: transform 0.3s ease;
-        }
-
-        .neon-glow-img:hover {
-            transform: scale(1.05);
-        }
-
-        /* Menú responsivo */
-        @media (min-width: 768px) {
-            nav.hidden.md\:flex {
-                display: flex !important;
-            }
-
-            #mobile-menu-button.md\:hidden {
-                display: none !important;
-            }
-        }
-
-        @media (max-width: 767px) {
-            #mobile-menu-button.md\:hidden {
-                display: block;
-            }
-
-            nav.hidden.md\:flex {
-                display: none;
-            }
-        }
-    </style>
+    <!-- Estilos unificados de secciones -->
+    <link rel="stylesheet" href="/css/secciones.css">
 </head>
 
 <body>
 
     <!-- Navegación -->
+    <!-- Navegación -->
     <header class="bg-rustic sticky top-0 z-50 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <!-- Logo/Título -->
                 <a href="index.html" class="flex items-center space-x-3">
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
                     <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver a inicio</span>
                 </a>
 
-                <!-- Menú Desktop -->
                 <nav class="hidden md:flex space-x-8 items-center">
                     <a href="seccion_bandas.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
                         Vivo</a>
-                    <a href="seccion_servicios.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
                     <a href="seccion_alquiler.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
                         Salón</a>
-                    <a href="solicitud_taller_actividad.html"
-                        class="px-4 py-2 text-sm rounded-lg font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-200 ease-in-out">Quiero
-                        dar un Taller</a>
-                    <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
                     <div id="auth-menu-desktop"></div>
                 </nav>
 
-                <!-- Botón de Menú Móvil -->
                 <button id="mobile-menu-button"
                     class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
                     <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -100,18 +44,16 @@
                 </button>
             </div>
         </div>
-        <!-- Menú Móvil Desplegable -->
         <div id="mobile-menu" class="hidden md:hidden">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
-                <a href="agenda_de_bandas.html"
+                <a href="seccion_bandas.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
                     en Vivo</a>
-                <a href="index.html#fotos"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Fotos</a>
-                <a href="solicitud_taller_actividad.html"
-                    class="block px-4 py-2 rounded-lg text-base font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-200 ease-in-out">Quiero
-                    dar un Taller</a>
-                <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
+                <a href="seccion_alquiler.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
+                    del Salón</a>
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
                 <div id="auth-menu-mobile"></div>
             </div>
         </div>
@@ -120,24 +62,26 @@
     <main>
         <section class="py-20 md:py-32 bg-stone-950 text-center">
             <div class="max-w-4xl mx-auto px-4">
-                <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
-                    <span class="block text-neon">Talleres y Actividades</span>
+                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-6">
+                    <span class="block text-neon"><i class="fas fa-graduation-cap mr-3"></i>Talleres y
+                        Actividades</span>
                 </h1>
                 <p class="mt-4 text-2xl text-stone-300 font-medium">
-                    Estamos preparando el espacio y coordinando con profesores y talleristas para el año que viene
-                    (2026) arrancar con todo!
+                    Estamos preparando el espacio y coordinando con profesores y talleristas para arrancar con todo el
+                    año que viene!
                 </p>
                 <p class="mt-6 text-xl text-fuchsia-400">
-                    ¡Sé el primero en enterarte! Síguenos en nuestras redes sociales para las novedades.
+                    Síguenos en nuestras redes sociales para las novedades.
                 </p>
             </div>
         </section>
 
         <section class="py-16 bg-stone-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl font-bold text-center text-neon mb-10">Actividades Realizadas Anteriormente</h2>
-                <p class="text-center text-stone-400 mb-8">Aquí te mostramos algunas de las vibras que tuvimos en El
-                    Templo. ¡Inspírate!</p>
+                <h2 class="text-3xl font-bold text-center text-neon mb-10">Talleres y Actividades realizados
+                    Anteriormente</h2>
+                <!-- <p class="text-center text-stone-400 mb-8">Aquí te mostramos algunas de las vibras que tuvimos en El
+                    Templo. ¡Inspírate!</p> -->
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
 
@@ -177,8 +121,6 @@
                     </div>
 
                 </div>
-                <p class="text-center text-sm text-stone-500 mt-10">Recuerda subir las imágenes a la carpeta `img/` con
-                    los nombres correspondientes para verlas.</p>
             </div>
         </section>
 

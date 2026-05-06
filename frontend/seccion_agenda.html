@@ -7,120 +7,8 @@
     <title>Agenda Completa - El Templo de Claypole</title>
     <!-- Carga de Tailwind CSS -->
     <link rel="stylesheet" href="/css/tailwind.min.css">
-    <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-        }
-
-        .text-neon {
-            color: var(--color-secondary);
-            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-        }
-
-        .bg-rustic {
-            background-color: var(--color-rustic);
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0c0a09;
-            color: #d6d3d1;
-        }
-
-        /* CARD passline */
-        .agenda-card-passline {
-            display: flex;
-            background: #1c1917;
-            border-radius: 12px;
-            overflow: hidden;
-            transition: .25s;
-            cursor: pointer;
-            text-decoration: none;
-        }
-
-        .agenda-card-passline:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 0 20px rgba(240, 171, 252, 0.45);
-        }
-
-        .agenda-flyer-passline {
-            width: 150px;
-            height: 220px;
-            flex-shrink: 0;
-        }
-
-        .agenda-flyer-passline img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .agenda-info-passline {
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            flex: 1;
-        }
-
-        .agenda-title-passline {
-            font-size: 16px;
-            font-weight: 700;
-            color: white;
-            line-height: 1.25;
-            margin-bottom: 6px;
-        }
-
-        .agenda-date-passline {
-            font-size: 20px;
-            font-weight: 800;
-            color: #f0abfc;
-            letter-spacing: .5px;
-        }
-
-        .agenda-hour-passline {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e9d5ff;
-            margin-top: 4px;
-        }
-
-        .agenda-price-passline {
-            font-size: 14px;
-            color: #f0abfc;
-            font-weight: 600;
-            margin-top: 6px;
-        }
-
-        .agenda-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 18px;
-        }
-
-        /* Menú responsivo */
-        @media (min-width: 768px) {
-            nav.hidden.md:flex {
-                display: flex !important;
-            }
-
-            #mobile-menu-button.md:hidden {
-                display: none !important;
-            }
-        }
-
-        @media (max-width: 767px) {
-            #mobile-menu-button.md:hidden {
-                display: block;
-            }
-
-            nav.hidden.md:flex {
-                display: none;
-            }
-        }
-    </style>
+    <!-- Estilos unificados de secciones -->
+    <link rel="stylesheet" href="/css/secciones.css">
 </head>
 
 <body>
@@ -129,30 +17,23 @@
     <header class="bg-rustic sticky top-0 z-50 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <!-- Logo/Título -->
                 <a href="index.html" class="flex items-center space-x-3">
                     <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
-                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver al
-                        Inicio</span>
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver a inicio</span>
                 </a>
 
-                <!-- Menú Desktop -->
                 <nav class="hidden md:flex space-x-8 items-center">
-                    <a href="seccion_talleres.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
                     <a href="seccion_bandas.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
                         Vivo</a>
-                    <a href="seccion_servicios.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
                     <a href="seccion_alquiler.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
                         Salón</a>
-                    <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
                     <div id="auth-menu-desktop"></div>
                 </nav>
 
-                <!-- Botón de Menú Móvil -->
                 <button id="mobile-menu-button"
                     class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
                     <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -162,23 +43,50 @@
                 </button>
             </div>
         </div>
-        <!-- Menú Móvil Desplegable -->
         <div id="mobile-menu" class="hidden md:hidden">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
-                <a href="seccion_talleres.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
                 <a href="seccion_bandas.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
                     en Vivo</a>
-                <a href="seccion_servicios.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
                 <a href="seccion_alquiler.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
                     del Salón</a>
-                <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
                 <div id="auth-menu-mobile"></div>
             </div>
         </div>
+    </header>
+    <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
+    <div id="auth-menu-desktop"></div>
+    </nav>
+
+    <!-- Botón de Menú Móvil -->
+    <button id="mobile-menu-button"
+        class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+        <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
+    </div>
+    </div>
+    <!-- Menú Móvil Desplegable -->
+    <div id="mobile-menu" class="hidden md:hidden">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+            <a href="seccion_talleres.html"
+                class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+            <a href="seccion_bandas.html"
+                class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
+                en Vivo</a>
+            <a href="seccion_servicios.html"
+                class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
+            <a href="seccion_alquiler.html"
+                class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
+                del Salón</a>
+            <!-- Menú dinámico móvil: se reemplaza con Admin si está logueado -->
+            <div id="auth-menu-mobile"></div>
+        </div>
+    </div>
     </header>
 
     <main>
@@ -186,8 +94,8 @@
         <section id="agenda" class="py-20 md:py-16 bg-stone-950">
             <div class="max-w-7xl mx-auto px-4">
                 <div class="text-center mb-12">
-                    <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-3">
-                        <span class="block text-neon">Agenda Completa</span>
+                    <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-3">
+                        <span class="block text-neon"><i class="fas fa-calendar mr-3"></i>Agenda Completa</span>
                     </h1>
                     <p class="text-xl text-stone-300 font-medium">
                         Todos los eventos públicos: bandas, talleres, servicios y alquileres

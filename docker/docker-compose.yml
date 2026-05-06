@@ -6,8 +6,10 @@ services:
       dockerfile: docker/Dockerfile.nginx
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ../frontend:/usr/share/nginx/html
+      - ../docker/certs:/etc/nginx/certs:ro
     depends_on:
       - backend
     #networks:

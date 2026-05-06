@@ -13,16 +13,50 @@ const preferenceClient = new Preference(mpClient);
 const paymentClient = new Payment(mpClient);
 
 /**
- * Crea una preferencia de pago en MercadoPago.
- * @param {number} ticketId - ID del ticket en la base de datos local
- * @param {number} precioFinal - Monto a cobrar
- * @param {string} email - Email del comprador
- * @param {string} nombreEvento - Título del evento para mostrar en MP
- * @returns {Promise<{ preference_id: string, init_point: string }>}
+ * PARÁMETROS QUE DEVUELVE MERCADOPAGO
+ * 
+ * En las URLs de retorno (back_urls), MP envía estos parámetros como GET query:
+ * - collection_id: ID único del pago en MP
+ * - status: "approved", "rejected", o "pending"
+ * - external_reference: ticket_id (sincronización local)
+ * - payment_id: ID de la transacción
+ * - merchant_order_id: ID de la orden en MP
+ * - preference_id: ID de la preferencia
+ * 
+ * Ejemplo:
+ * GET /frontend/comprobante.html?collection_id=123&status=approved&external_reference=456&...
+ * 
+ * El webhook (POST /api/tickets/webhook) se encarga de actualizar el estado en BD.
+ * El frontend (comprobante.html) debe mostrar información al usuario basándose en estos parámetros.
  */
-async function createPreference(ticketId, precioFinal, email, nombreEvento) {
-    const appUrl = process.env.APP_URL || 'http://localhost';
 
+/**
+ * Crea una preferencia de pago en MercadoPago para Checkout Pro.
+ * 
+ * Flujo:
+ * 1. El usuario completa datos y se redirige a sandbox_init_point
+ * 2. MP muestra Checkout Pro (formulario de pago)
+ * 3. Después del pago, MP redirige a back_urls con parámetros:
+ *    - collection_id: ID del pago en MP
+ *    - status: "approved", "rejected", o "pending"
+ *    - external_reference: ticket_id (para sincronizar con la BD)
+ *    - payment_id: ID de la transacción
+ *    - merchant_order_id: ID de la orden en MP
+ * 4. Si auto_return=approved, redirecciona automáticamente ~40 seg después
+ * 5. Se reciben webhooks para actualizar estado en tiempo real
+ * 
+ * @param {number} ticketId - ID del ticket en la BD local
+ * @param {number} precioFinal - Monto a cobrar (ARS)
+ * @param {string} email - Email del comprador
+ * @param {string} nombreEvento - Título del evento (mostrado en MP)
+ * @param {string} nombreComprador - Nombre del comprador
+ * @returns {Promise<{ preference_id: string, init_point: string, sandbox_init_point: string }>}
+ */
+async function createPreference(ticketId, precioFinal, email, nombreEvento, nombreComprador) {
+    const appUrl = process.env.APP_URL || 'http://localhost';
+    const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+
+    // Configuración minimal pero completa para Checkout Pro
     const body = {
         items: [
             {
@@ -36,22 +70,33 @@ async function createPreference(ticketId, precioFinal, email, nombreEvento) {
         payer: {
             email: email,
         },
-        back_urls: {
-            success: `${appUrl}/frontend/comprobante.html?status=approved&ticket_id=${ticketId}`,
-            failure: `${appUrl}/frontend/checkout_form.html?status=failure&ticket_id=${ticketId}`,
-            pending: `${appUrl}/frontend/comprobante.html?status=pending&ticket_id=${ticketId}`,
-        },
-        auto_return: 'approved',
-        notification_url: `${appUrl}/api/tickets/webhook`,
-        external_reference: String(ticketId),
-        statement_descriptor: 'TDC EVENTOS',
     };
 
-    logVerbose('[MP] Creando preferencia para ticket', ticketId, 'monto:', precioFinal);
+    // En producción, incluir back_urls. En localhost (testing), omitir
+    // porque MercadoPago rechaza URLs locales
+    if (!isLocalhost) {
+        // back_urls: URLs a las que redirecciona MP después del pago
+        // Los parámetros devueltos (collection_id, status, etc.) se envían como query params
+        body.back_urls = {
+            success: `${appUrl}/frontend/comprobante.html`,
+            failure: `${appUrl}/frontend/checkout_form.html`,
+            pending: `${appUrl}/frontend/comprobante.html`,
+        };
+        // auto_return: "approved" - Redirecciona automáticamente ~40 segundos después de pago aprobado
+        body.auto_return = 'approved';
+        // Notificaciones del servidor: MP notificará cambios de estado del pago
+        body.notification_url = `${appUrl}/api/tickets/webhook`;
+    }
+
+    // external_reference: Sincroniza con el sistema local (ticket_id en este caso)
+    // Se devuelve en back_urls y webhooks para identificar la orden
+    body.external_reference = String(ticketId);
+
+    logVerbose('[MP] Creando preferencia para Checkout Pro. Ticket:', ticketId, 'Monto:', precioFinal, 'AppUrl:', appUrl);
 
     const response = await preferenceClient.create({ body });
 
-    logSuccess('[MP] Preferencia creada:', response.id);
+    logSuccess('[MP] Preferencia creada:', response.id, 'Init Point:', response.init_point);
 
     return {
         preference_id: response.id,

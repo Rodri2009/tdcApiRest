@@ -123,6 +123,43 @@ LOCK TABLES `turnos_servicios` WRITE;
 UNLOCK TABLES;
 
 --
+-- Dumping data for table `solicitudes`
+--
+
+LOCK TABLES `eventos_confirmados` WRITE;
+/*!40000 ALTER TABLE `eventos_confirmados` DISABLE KEYS */;
+INSERT INTO `eventos_confirmados` (`id`, `id_solicitud`, `tipo_evento`, `tabla_origen`, `nombre_evento`, `descripcion_corta`, `descripcion`, `fecha_evento`, `hora_inicio`, `duracion_minutos`, `url_flyer`, `es_publico`, `activo`, `id_cliente`, `confirmado_en`) VALUES
+(1,4,'BANDA','solicitudes_fechas_bandas','Fecha Tributo','Fecha con bandas tributo, a jovenes pordioseros, a la renga y a los redondos','Fecha con bandas tributo, a jovenes pordioseros, a la renga y a los redondos','2026-05-09','21:00:00',390,'/uploads/flyers/solicitud_4.jpg',1,1,4,'2026-04-01 02:07:15'),
+(2,5,'BANDA','solicitudes_fechas_bandas','Bandas de rock, produce Mati','2 bandas de rock','2 bandas de rock','2026-05-02','21:00:00',360,'/uploads/flyers/solicitud_5.jpeg',1,1,5,'2026-04-01 02:39:32'),
+(3,6,'BANDA','solicitudes_fechas_bandas','Termidor Fest, produce Seba','Bandas Metaleras con tributo a Judas.','Bandas Metaleras con tributo a Judas.','2026-04-18','21:00:00',450,'/uploads/flyers/solicitud_6.jpeg',1,1,4,'2026-04-01 02:06:35'),
+(4,8,'TALLER','solicitudes_talleres','Taller de Dibujo','Dibujos y arte en mesas.','Dibujos y arte en mesas.','2026-04-22','10:00:00',90,NULL,1,1,2,'2026-03-13 04:29:21');
+/*!40000 ALTER TABLE `eventos_confirmados` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Dumping data for table `eventos_lineup`
+--
+
+LOCK TABLES `eventos_lineup` WRITE;
+/*!40000 ALTER TABLE `eventos_lineup` DISABLE KEYS */;
+INSERT INTO `eventos_lineup` (`id_evento_confirmado`, `id_banda`, `nombre_banda`, `orden_show`, `es_principal`, `es_solicitante`, `hora_inicio`, `hora_fin`, `duracion_minutos`, `estado`) VALUES
+-- Evento 1: Fecha Tributo (Solicitud 4)
+(1,36,'Pánico',0,1,1,'23:00:00','00:30:00',90,'confirmada'),
+(1,1,'Reite',1,0,0,'00:30:00','02:00:00',90,'confirmada'),
+(1,35,'Cruz Diablo',2,0,0,'02:00:00','04:30:00',150,'confirmada'),
+-- Evento 2: Bandas de rock, produce Mati (Solicitud 5)
+(2,34,'Clasicos Matados',0,1,1,'23:00:00','00:30:00',90,'confirmada'),
+(2,24,'Le Debes Plata a la Banda',1,0,0,'00:30:00','01:00:00',30,'confirmada'),
+(2,39,'Descanso Eterno',2,0,0,'01:00:00','03:00:00',120,'confirmada'),
+(2,10,'Nomade 73',3,0,0,'03:00:00','04:00:00',60,'confirmada'),
+-- Evento 3: Termidor Fest (Solicitud 6)
+(3,29,'India Madre',0,1,1,'22:00:00','23:00:00',60,'confirmada'),
+(3,33,'KorGue',1,0,0,'23:00:00','12:00:00',780,'confirmada'),
+(3,27,'Defensores de la fe',2,0,0,'12:00:00','13:30:00',90,'confirmada');
+/*!40000 ALTER TABLE `eventos_lineup` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Dumping data for table `usuarios`
 --
 

@@ -7,74 +7,13 @@
     <title>Servicios de Cuidado Personal - El Templo de Claypole</title>
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
-    <style>
-        :root {
-            --color-primary: #581c87;
-            --color-secondary: #f0abfc;
-            --color-rustic: #44403c;
-        }
-
-        .text-neon {
-            color: var(--color-secondary);
-            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-        }
-
-        .bg-rustic {
-            background-color: var(--color-rustic);
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0c0a09;
-            color: #d6d3d1;
-        }
-
-        .service-card {
-            background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
-            border: 1px solid var(--color-rustic);
-            border-radius: 12px;
-            padding: 24px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .service-card:hover {
-            border-color: var(--color-secondary);
-            box-shadow: 0 0 20px rgba(240, 171, 252, 0.2);
-            transform: translateY(-5px);
-        }
-
-        .service-card i {
-            font-size: 3rem;
-            color: var(--color-secondary);
-            margin-bottom: 16px;
-        }
-
-        /* Menú responsivo */
-        @media (min-width: 768px) {
-            nav.hidden.md\:flex {
-                display: flex !important;
-            }
-
-            #mobile-menu-button.md\:hidden {
-                display: none !important;
-            }
-        }
-
-        @media (max-width: 767px) {
-            #mobile-menu-button.md\:hidden {
-                display: block;
-            }
-
-            nav.hidden.md\:flex {
-                display: none;
-            }
-        }
-    </style>
+    <!-- Estilos unificados de secciones -->
+    <link rel="stylesheet" href="/css/secciones.css">
 </head>
 
 <body>
 
+    <!-- Navegación -->
     <!-- Navegación -->
     <header class="bg-rustic sticky top-0 z-50 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -85,18 +24,14 @@
                 </a>
 
                 <nav class="hidden md:flex space-x-8 items-center">
-                    <a href="seccion_talleres.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
                     <a href="seccion_bandas.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
                         Vivo</a>
                     <a href="seccion_alquiler.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
                         Salón</a>
-                    <a href="solicitud_servicio.html"
-                        class="px-4 py-2 text-sm rounded-lg font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-200 ease-in-out">
-                        <i class="fas fa-calendar-plus mr-1"></i> Reservar Turno
-                    </a>
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
                     <div id="auth-menu-desktop"></div>
                 </nav>
 
@@ -111,15 +46,14 @@
         </div>
         <div id="mobile-menu" class="hidden md:hidden">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
-                <a href="seccion_talleres.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
                 <a href="seccion_bandas.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
                     en Vivo</a>
-                <a href="solicitud_servicio.html"
-                    class="block px-4 py-2 rounded-lg text-base font-semibold bg-fuchsia-500 text-gray-900 hover:bg-fuchsia-400 transition duration-200 ease-in-out">
-                    <i class="fas fa-calendar-plus mr-1"></i> Reservar Turno
-                </a>
+                <a href="seccion_alquiler.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
+                    del Salón</a>
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
                 <div id="auth-menu-mobile"></div>
             </div>
         </div>
@@ -129,7 +63,7 @@
         <!-- Hero Section -->
         <section class="py-20 md:py-32 bg-stone-950 text-center">
             <div class="max-w-4xl mx-auto px-4">
-                <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
+                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-6">
                     <span class="block text-neon"><i class="fas fa-spa mr-3"></i>Cuidado Personal</span>
                 </h1>
                 <p class="mt-4 text-2xl text-stone-300 font-medium">
@@ -178,6 +112,42 @@
                         <p class="text-stone-400 text-sm">Consultá por otros servicios disponibles</p>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Depilación definitiva -->
+        <section class="py-16 bg-stone-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center text-neon mb-10">Servicios de Depilación</h2>
+                <p class="text-center text-stone-400 mb-8">A continuación mostramos algunas zonas tratadas y ejemplos
+                    de sesiones. Cada tratamiento requiere turno y valoración previa.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_cuidado_personal_1.jpg" alt="foto cuidado personal 1"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto+cuidado+personal+1';">
+                        <p class="text-center text-white font-semibold">Depilación definitiva — Piernas</p>
+                    </div>
+
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_cuidado_personal_2.jpg" alt="foto cuidado personal 2"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto+cuidado+personal+2';">
+                        <p class="text-center text-white font-semibold">Depilación definitiva — Axilas</p>
+                    </div>
+
+                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
+                        <img src="./img/foto_cuidado_personal_3.jpg" alt="foto cuidado personal 3"
+                            class="w-full h-64 object-cover rounded-lg mb-4"
+                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto+cuidado+personal+3';">
+                        <p class="text-center text-white font-semibold">Depilación definitiva — Bikini</p>
+                    </div>
+
+                </div>
+                <p class="text-center text-sm text-stone-500 mt-10">Para reservar turno: comunicarse por teléfono o
+                    completar el formulario de contacto. Las sesiones son mensuales según el plan indicado.</p>
             </div>
         </section>
 
