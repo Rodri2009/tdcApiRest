@@ -226,7 +226,7 @@
                 }
 
                 renderPrices();
-                prefillUserData();
+                collectUserDataAndAutoInit();
             } catch (err) {
                 elName.textContent = 'Error cargando evento';
                 showNotification(err.message, 'error', 0);
@@ -257,11 +257,52 @@
                 const elEmail = document.getElementById('email');
                 if (nombre && !elNombre.value) elNombre.value = nombre;
                 if (email && !elEmail.value) elEmail.value = email;
-                if (nombre || email) {
-                    showNotification('Datos completados con tu cuenta.', 'info', 3000);
-                }
             } catch (e) {
                 // Token malformado — ignorar silenciosamente
+            }
+        }
+
+        function collectUserDataAndAutoInit() {
+            prefillUserData();
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                try {
+                    const payload = JSON.parse(
+                        decodeURIComponent(
+                            atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
+                                .split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+                        )
+                    );
+                    const nombre = payload.nombre || '';
+                    const email = payload.email || '';
+                    
+                    // Si está autenticado: ocultar formulario y auto-iniciar checkout
+                    if (nombre && email && currentEvent) {
+                        autoInitCheckoutForAuthenticatedUser();
+                    }
+                } catch (e) {
+                    console.error('Error al parsear token:', e);
+                }
+            }
+        }
+
+        function autoInitCheckoutForAuthenticatedUser() {
+            try {
+                // Ocultar los campos del formulario (el usuario ya está logueado)
+                const formContainer = document.querySelector('.bg-stone-900');
+                if (formContainer) formContainer.classList.add('hidden');
+
+                // Auto-rellenar datos y lanzar el flujo de checkout
+                showNotification('Iniciando flujo de compra con tus datos registrados…', 'info', 2000);
+                
+                // Simular que el usuario completó los datos — dispara onUserDataChanged()
+                setTimeout(() => {
+                    if (currentEvent) {
+                        onUserDataChanged();
+                    }
+                }, 500);
+            } catch (e) {
+                console.error('Error al auto-inicializar checkout:', e);
             }
         }
 
@@ -446,6 +487,10 @@
          */
         async function renderWalletBrick(preferenceId) {
             try {
+                // Mostrar el contenedor del Brick inmediatamente
+                elWalletContainer.classList.remove('hidden');
+                console.log('[Wallet Brick] Contenedor visible:', elWalletContainer.offsetParent !== null);
+
                 const bricksBuilder = mp.bricks();
 
                 // Crear y mostrar el Wallet Brick
@@ -472,7 +517,7 @@
                                 timestamp: new Date().toISOString()
                             });
                             document.getElementById('brick-loading').classList.add('hidden');
-                            elWalletContainer.classList.remove('hidden');
+                            console.log('[Wallet Brick] Contenedor después de onReady:', elWalletContainer.offsetParent !== null);
                         }
                     }
                 });

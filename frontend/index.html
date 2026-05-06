@@ -760,10 +760,20 @@
 
             const flyer = item.url_flyer || '/img/hero.jpg';
 
-            const precio =
-                item.precio_anticipada
-                    ? `$${formatPrecioAR(item.precio_anticipada)}`
-                    : (item.precio ? `$${formatPrecioAR(item.precio)}` : '');
+            const precioAnticipada = item.precio_anticipada ? `$${formatPrecioAR(item.precio_anticipada)}` : null;
+            const precioPuerta = item.precio_puerta ? `$${formatPrecioAR(item.precio_puerta)}` : null;
+            const precioFallback = item.precio ? `$${formatPrecioAR(item.precio)}` : null;
+
+            let precio = '';
+            if (precioAnticipada && precioPuerta) {
+                precio = `Anticipada ${precioAnticipada} <br>Puerta ${precioPuerta}`;
+            } else if (precioAnticipada) {
+                precio = precioAnticipada;
+            } else if (precioPuerta) {
+                precio = `Puerta ${precioPuerta}`;
+            } else if (precioFallback) {
+                precio = precioFallback;
+            }
 
             let link = "#";
 
