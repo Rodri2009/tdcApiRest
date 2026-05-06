@@ -286,7 +286,7 @@
         async function onUserDataChanged() {
             const nombre = document.getElementById('nombre').value.trim();
             const email = document.getElementById('email').value.trim();
-            
+
             // Solo renderizar si ambos campos están completos y no está en proceso
             if (nombre && email && !walletBrickInitialized && !isCreatingPreference) {
                 isCreatingPreference = true;
@@ -296,7 +296,7 @@
                     const codigo_cupon = document.getElementById('coupon').value.trim() || null;
 
                     showNotification('Creando preferencia de pago…', 'info', 0);
-                    
+
                     const requestBody = {
                         evento_id: currentEvent.id_solicitud,
                         email,
@@ -305,28 +305,28 @@
                         precio_final: sim.precio_final,
                         tipo_venta
                     };
-                    
+
                     console.log('[CheckoutForm] Enviando request:', requestBody);
-                    
+
                     const res = await fetch(API_BASE_URL + '/api/tickets/checkout/init', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(requestBody)
                     });
                     const json = await res.json();
-                    
+
                     console.log('[CheckoutForm] Respuesta del servidor:', {
                         status: res.status,
                         ok: res.ok,
                         data: json
                     });
-                    
+
                     if (!res.ok) throw new Error(json.error || json.message || 'Error al crear preferencia');
 
                     if (json.status === 'pending_payment') {
                         currentTicketId = json.ticket_id;
                         currentPreferenceId = json.preference_id;
-                        
+
                         console.log('[CheckoutForm] ✅ Preferencia creada correctamente:', {
                             preference_id: json.preference_id,
                             ticket_id: json.ticket_id,
@@ -336,7 +336,7 @@
                         // Mostrar loading y renderizar Wallet Brick
                         document.getElementById('brick-loading').classList.remove('hidden');
                         showNotification('Formulario de pago cargado. Completa tu pago en MercadoPago.', 'success', 3000);
-                        
+
                         await renderWalletBrick(json.preference_id);
                     } else if (json.status === 'paid_free') {
                         showNotification('¡Reserva gratuita completada!', 'success', 3000);
@@ -417,18 +417,18 @@
                     if (!prefId) {
                         throw new Error('No se recibió el preference_id de MercadoPago');
                     }
-                    
+
                     currentTicketId = json.ticket_id;
                     currentPreferenceId = prefId;
 
                     showNotification('Cargando formulario de pago…', 'success', 0);
                     await renderWalletBrick(prefId);
-                    
+
                     // Ocultar botón de compra y mostrar Wallet Brick
                     elBuyBtn.style.display = 'none';
                     elWalletContainer.classList.remove('hidden');
                     showNotification('Formulario de pago listo. Completa el pago con MercadoPago.', 'info', 3000);
-                    
+
                 } else if (json.status === 'paid_free') {
                     showNotification('¡Reserva gratuita completada!', 'success', 3000);
                     setTimeout(() => {
@@ -447,7 +447,7 @@
         async function renderWalletBrick(preferenceId) {
             try {
                 const bricksBuilder = mp.bricks();
-                
+
                 // Crear y mostrar el Wallet Brick
                 await bricksBuilder.create('wallet', 'wallet-brick-container', {
                     initialization: {

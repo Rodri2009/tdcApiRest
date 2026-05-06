@@ -222,7 +222,7 @@ const webhookHandler = async (req, res) => {
     if (mpWebhookSecret) {
         const xSignature = req.headers['x-signature'];
         const xRequestId = req.headers['x-request-id'];
-        
+
         if (!xSignature || !xRequestId) {
             logWarning('[Webhook MP] Headers de firma faltantes — posible notificación inválida');
             return;
@@ -231,7 +231,7 @@ const webhookHandler = async (req, res) => {
         // Extraer ts y hash del header x-signature
         const parts = xSignature.split(',');
         let ts, hash;
-        
+
         parts.forEach(part => {
             const [key, value] = part.split('=');
             if (key?.trim() === 'ts') ts = value?.trim();

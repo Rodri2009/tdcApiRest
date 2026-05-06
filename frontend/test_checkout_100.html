@@ -155,7 +155,8 @@
             <div class="subtitle">Test con $100 ARS</div>
 
             <div class="info">
-                ℹ️ Este formulario crea un ticket de $100 ARS para probar el flujo completo con MercadoPago Sandbox usando Wallet Brick.
+                ℹ️ Este formulario crea un ticket de $100 ARS para probar el flujo completo con MercadoPago Sandbox
+                usando Wallet Brick.
             </div>
 
             <div id="formSection">
@@ -236,7 +237,7 @@
         async function onUserDataChanged() {
             const nombre = document.getElementById('nombre').value.trim();
             const email = document.getElementById('email').value.trim();
-            
+
             // Solo renderizar si ambos campos están completos y no está en proceso
             if (nombre && email && !walletBrickInitialized && !isCreatingPreference) {
                 isCreatingPreference = true;
@@ -257,7 +258,7 @@
                         precio_final: MONTO,
                         tipo_venta: 'ANTICIPADA'
                     };
-                    
+
                     console.log('[test_checkout_100] Enviando request:', requestBody);
 
                     const response = await fetch(`${API_BASE_URL}/api/tickets/checkout/init`, {
@@ -267,13 +268,13 @@
                     });
 
                     const data = await response.json();
-                    
+
                     console.log('[test_checkout_100] Respuesta del servidor:', {
                         status: response.status,
                         ok: response.ok,
                         data: data
                     });
-                    
+
                     // Log completo de la preferencia para debugging
                     console.log('[test_checkout_100] Datos completos de preferencia:', JSON.stringify(data, null, 2));
 
@@ -286,7 +287,7 @@
                         if (!currentPreferenceId) {
                             throw new Error('No se recibió el preference_id de MercadoPago');
                         }
-                        
+
                         console.log('[test_checkout_100] ✅ Preferencia creada:', {
                             preference_id: data.preference_id,
                             ticket_id: data.ticket_id
@@ -295,7 +296,7 @@
                         mensaje.innerHTML = '✅ Cargando formulario de pago...';
                         await renderWalletBrick(currentPreferenceId);
                         mensaje.innerHTML = '✅ Formulario de pago listo.';
-                        
+
                     } else if (data.status === 'paid_free') {
                         mensaje.innerHTML = '✅ ¡Reserva gratuita completada!';
                         setTimeout(() => {
@@ -320,10 +321,10 @@
             try {
                 console.log('[Wallet Brick] Iniciando renderizado con preference:', preferenceId);
                 console.log('[Wallet Brick] SDK disponible:', typeof mp !== 'undefined');
-                
+
                 const bricksBuilder = mp.bricks();
                 console.log('[Wallet Brick] Bricks builder creado');
-                
+
                 // Crear y mostrar el Wallet Brick
                 await bricksBuilder.create('wallet', 'wallet-brick-container', {
                     initialization: {
@@ -345,12 +346,12 @@
                         onReady: () => {
                             console.log('[Wallet Brick] ✅ Listo para pagar');
                             console.log('[Wallet Brick] Contenedor HTML:', document.getElementById('wallet-brick-container').innerHTML.substring(0, 200));
-                            
+
                             // Inspeccionar el estado del botón
                             setTimeout(() => {
-                                const button = document.querySelector('[data-testid="wallet-button-submit"]') || 
-                                              document.querySelector('button[type="submit"]') ||
-                                              document.querySelector('[role="button"]');
+                                const button = document.querySelector('[data-testid="wallet-button-submit"]') ||
+                                    document.querySelector('button[type="submit"]') ||
+                                    document.querySelector('[role="button"]');
                                 if (button) {
                                     console.log('[Wallet Brick] Estado del botón:', {
                                         disabled: button.disabled,
@@ -362,7 +363,7 @@
                                     console.log('[Wallet Brick] No se encontró el botón en el DOM');
                                 }
                             }, 500);
-                            
+
                             document.getElementById('brick-loading').classList.add('hidden');
                         },
                         onSubmit: (formData) => {
