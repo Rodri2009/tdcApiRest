@@ -154,6 +154,7 @@ check_containers_health() {
   fi
 }
 
+<<<<<<< Updated upstream
 check_backend_http() {
   if [ $RESTART_BACKEND -eq 0 ]; then
     return 0
@@ -175,6 +176,8 @@ check_backend_http() {
   fi
 }
 
+=======
+>>>>>>> Stashed changes
 if [[ ${1:-} == "-h" || ${1:-} == "--help" ]]; then
   show_help
   exit 0

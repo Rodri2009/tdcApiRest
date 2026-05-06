@@ -346,7 +346,6 @@ check_backend_http() {
     echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
   fi
 }
-
 create_env_override() {
     # Crea un archivo .env.tmp con overrides de variables
     # Copia el .env original y sobrescribe ENABLE_PUPPETEER_MP y ENABLE_PUPPETEER_WA
