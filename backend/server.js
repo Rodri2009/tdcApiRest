@@ -483,7 +483,7 @@ async function startServer() {
     }
 
     // 3. Iniciar Express solo después de conectar a la DB
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0', () => {
         logSuccess(`SERVIDOR LISTO: Backend escuchando en el puerto ${port}`);
         logSuccess(`📊 Servicios habilitados:`);
         logSuccess(`   ✓ tdcApiRest API (eventos, bandas, usuarios, etc.)`);

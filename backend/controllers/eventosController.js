@@ -30,6 +30,7 @@ const getPublicEvents = async (req, res) => {
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
             WHERE e.es_publico = 1 AND e.activo = 1
+              AND COALESCE(sol.fecha_evento, e.fecha_evento) >= CURDATE()
             ORDER BY e.fecha_evento, e.hora_inicio
             LIMIT 100
         `;

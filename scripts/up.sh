@@ -19,9 +19,11 @@
 # FLAGS DE SERVICIOS (Puppeteer):
 #   --mp              : Habilita Mercado Pago (ENABLE_PUPPETEER_MP=true)
 #   --wa              : Habilita WhatsApp (ENABLE_PUPPETEER_WA=true)
+#   --rebuild         : Fuerza reconstrucción de imágenes Docker
 #
 # EJEMPLOS:
-#   ./up.sh              # Levanta todo con logs en vivo
+#   ./up.sh              # Levanta todo (sin reconstruir imágenes)
+#   ./up.sh --rebuild    # Levanta y reconstruye imágenes (lento ~30min)
 #   ./up.sh -d           # Levanta con debug detallado
 #   ./up.sh --migrate -d # Levanta, aplica migraciones y muestra debug
 #   ./up.sh --mp --wa    # Levanta con Mercado Pago y WhatsApp habilitados
@@ -70,10 +72,12 @@ DEBUG_FLAGS=""
 ENABLE_MP=false
 ENABLE_WA=false
 RESET_DB=false
+FORCE_REBUILD=false
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --reset-db) RESET_DB=true; shift;;
+        --rebuild) FORCE_REBUILD=true; shift;;
         --migrate|--apply-migrations) APPLY_MIGRATIONS_CLI=1; shift;;
         --mp) ENABLE_MP=true; shift;;
         --wa) ENABLE_WA=true; shift;;
@@ -83,7 +87,7 @@ while [ $# -gt 0 ]; do
           shift
           ;;
         -h|--help)
-          echo "Usage: $0 [--migrate] [--mp] [--wa] [-v|-e|-d|-h]"
+          echo "Usage: $0 [--migrate] [--rebuild] [--mp] [--wa] [-v|-e|-d|-h]"
           echo "Flags de depuración:"
           echo "  -v, --verbose    : muestra procesamiento detallado"
           echo "  -e, --error      : muestra solo errores"
@@ -92,6 +96,7 @@ while [ $# -gt 0 ]; do
           echo "Flags de servicios:"
           echo "  --mp             : habilita Mercado Pago"
           echo "  --wa             : habilita WhatsApp"
+          echo "  --rebuild        : fuerza rebuild de imágenes Docker"
           exit 0
           ;;
         *) echo "Unknown arg: $1"; exit 1;;
@@ -407,19 +412,26 @@ echo ""
 
 # --- Comprobación: si backend ya está corriendo, sugerir restart_backend.sh ---
 BACKEND_RUNNING=$(docker ps --filter "name=docker-backend" --filter "status=running" -q 2>/dev/null | wc -l)
-if [ "$BACKEND_RUNNING" -gt 0 ]; then
-    if [ "$RESET_DB" = true ]; then
-        echo -e "${YELLOW}[⚠]  El backend ya está en ejecución, pero se solicitó --reset-db.${NC}"
-        echo -e "${CYAN}[*]  Procediendo a reiniciar el stack y limpiar la base de datos.${NC}"
-    else
-        echo -e "${YELLOW}[⚠]  El backend ya está en ejecución.${NC}"
-        echo -e "${CYAN}[*]  Para reiniciarlo sin perder la sesión de Mercado Pago:${NC}"
+NGINX_RUNNING=$(docker ps --filter "name=docker-nginx" --filter "status=running" -q 2>/dev/null | wc -l)
+MARIADB_RUNNING=$(docker ps --filter "name=docker-mariadb" --filter "status=running" -q 2>/dev/null | wc -l)
+
+if [ "$BACKEND_RUNNING" -gt 0 ] && [ "$NGINX_RUNNING" -gt 0 ] && [ "$MARIADB_RUNNING" -gt 0 ]; then
+    if [ "$RESET_DB" = false ]; then
+        echo -e "${YELLOW}[⚠]  Todos los contenedores ya están en ejecución.${NC}"
+        echo -e "${CYAN}[*]  Para reiniciar el backend sin perder sesión de Mercado Pago:${NC}"
         echo -e "       ./scripts/restart_backend.sh"
         echo ""
         echo -e "${CYAN}[*]  Para reiniciar COMPLETAMENTE (limpiar BD):${NC}"
         echo -e "       ./scripts/up.sh --reset-db${NC}"
         echo ""
         exit 0
+    fi
+fi
+
+# Si RESET_DB está solicitado o si algún contenedor no está corriendo, continuar
+if [ "$BACKEND_RUNNING" -gt 0 ] && [ "$RESET_DB" = false ]; then
+    if [ "$NGINX_RUNNING" -eq 0 ] || [ "$MARIADB_RUNNING" -eq 0 ]; then
+        echo -e "${YELLOW}[*]  Algunos contenedores no están corriendo. Levantándolos...${NC}"
     fi
 fi
 
@@ -455,11 +467,18 @@ echo -ne "  → Levantando contenedores... "
 # debugging output of compose invocation
 printf '\n[debug] COMPOSE_CMD=(%s)\n' "${COMPOSE_CMD[@]}"
 printf '[debug] COMPOSE_FILE=%s ENV_FILE_TO_USE=%s\n' "$COMPOSE_FILE" "$ENV_FILE_TO_USE"
+
+# Construir comando up con o sin --build
+BUILD_FLAG=""
+if [ "$FORCE_REBUILD" = true ]; then
+    BUILD_FLAG="--build"
+fi
+
 if [ -n "$DEBUG_FLAGS" ]; then
     echo ""
-    "${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" up --build -d mariadb
+    "${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" up $BUILD_FLAG -d mariadb
 else
-    "${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" up --build -d
+    "${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" up $BUILD_FLAG -d
 fi
 
 if [ $? -ne 0 ]; then

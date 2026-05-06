@@ -1,92 +1,88 @@
 // backend/models/ticketsModel.js
-// Soporte flexible para 'uuid': intentaremos cargarlo con require (CommonJS)
-// y, si falla por ser un módulo ESM (ERR_REQUIRE_ESM), usaremos import() dinámico.
-let uuidv4;
-const loadUuid = async () => {
-    if (uuidv4) return uuidv4;
-
-    try {
-        // Intentamos require para compatibilidad con uuid@8 (CommonJS)
-        // Si la instalación es uuid@9+ este require lanzará ERR_REQUIRE_ESM.
-        // eslint-disable-next-line global-require
-        const uuid = require('uuid');
-        uuidv4 = uuid.v4 || uuid;
-        return uuidv4;
-    } catch (err) {
-        // Si el paquete existe pero es ESM, hacemos import dinámico
-        if (err && err.code === 'ERR_REQUIRE_ESM') {
-            try {
-                const mod = await import('uuid');
-                uuidv4 = mod.v4;
-                return uuidv4;
-            } catch (impErr) {
-                logError("Error al importar 'uuid' como ESM:", impErr);
-                throw impErr;
-            }
-        }
-
-        // Si no se encuentra el paquete, dejamos un mensaje claro
-        logError("Paquete 'uuid' no encontrado. Instala con 'npm install uuid' o 'npm install uuid@8' para compatibilidad CommonJS.", err);
-        throw err;
-    }
-};
-
 const pool = require('../db');
+
+/** Convierte BigInt y Decimal strings a tipos JS nativos. */
+function sanitizeRow(row) {
+    if (!row) return row;
+    const out = {};
+    for (const key of Object.keys(row)) {
+        const v = row[key];
+        if (typeof v === 'bigint') {
+            out[key] = Number(v);
+        } else if (v instanceof Date) {
+            out[key] = v;
+        } else if (typeof v === 'string' && /^-?\d+\.\d+$/.test(v)) {
+            // Decimal fields come as strings like '5000.00'
+            out[key] = parseFloat(v);
+        } else {
+            out[key] = v;
+        }
+    }
+    return out;
+}
 
 /**
  * Obtiene todos los eventos activos y disponibles para la venta.
  * La tabla eventos usa columnas separadas: fecha DATE + hora_inicio TIME
  */
 const getEventosActivos = async () => {
-    // ✅ Opción B3: Obtener precios desde solicitudes_fechas_bandas
     const query = `
         SELECT 
-            e.id, 
-            e.nombre_evento AS nombre_banda, 
-            CONCAT(e.fecha_evento, ' ', COALESCE(e.hora_inicio, '00:00:00')) as fecha_hora,
-            sfb.precio_basico as precio_base,
-            sfb.precio_anticipada,
-            sfb.precio_puerta as precio_puerta,
-            e.cantidad_personas as aforo_maximo, 
-            e.activo, 
+            e.id,
+            e.id_solicitud,
+            e.nombre_evento AS nombre_banda,
+            e.nombre_evento AS nombreEvento,
+            e.fecha_evento  AS fechaEvento,
+            e.hora_inicio   AS horaEvento,
+            e.url_flyer,
             e.descripcion,
-            CAST((e.cantidad_personas - COUNT(t.id_evento)) AS SIGNED) as tickets_disponibles
+            e.activo,
+            sfb.precio_basico    AS precio_base,
+            sfb.precio_anticipada,
+            sfb.precio_puerta,
+            CAST(COUNT(t.id) AS SIGNED) AS tickets_vendidos
         FROM eventos_confirmados e
-        LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
-        LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
+        LEFT JOIN solicitudes_fechas_bandas sfb
+               ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
+        LEFT JOIN tickets t
+               ON e.id = t.id_evento AND t.estado IN ('pagado', 'pendiente')
         WHERE e.activo = TRUE AND e.tipo_evento = 'BANDA'
+          AND e.fecha_evento >= CURDATE()
         GROUP BY e.id
-        HAVING tickets_disponibles > 0 OR sfb.precio_basico = 0.00 OR sfb.precio_puerta = 0.00
         ORDER BY e.fecha_evento ASC, e.hora_inicio ASC;
     `;
     const rows = await pool.query(query);
-    return rows;
+    return rows.map(sanitizeRow);
 };
 
 /**
  * Obtiene los detalles de un evento por su ID.
  */
-const getEventoById = async (id) => {
-    // ✅ Opción B3: Obtener precios desde solicitudes_fechas_bandas
+const getEventoById = async (solicitudId) => {
     const query = `
         SELECT 
-            e.id, 
-            e.nombre_evento AS nombre_banda, 
-            CONCAT(e.fecha_evento, ' ', COALESCE(e.hora_inicio, '00:00:00')) as fecha_hora,
-            sfb.precio_basico as precio_base,
-            sfb.precio_anticipada,
-            sfb.precio_puerta as precio_puerta,
-            e.cantidad_personas as aforo_maximo, 
+            e.id,
+            e.id_solicitud,
+            e.nombre_evento  AS nombre_banda,
+            e.nombre_evento  AS nombreEvento,
+            e.fecha_evento   AS fechaEvento,
+            e.hora_inicio    AS horaEvento,
+            e.url_flyer,
             e.descripcion,
-            (e.cantidad_personas - COUNT(t.id_evento)) as tickets_disponibles
+            sfb.precio_basico    AS precio_base,
+            sfb.precio_anticipada,
+            sfb.precio_puerta,
+            CAST(COUNT(t.id) AS SIGNED) AS tickets_vendidos
         FROM eventos_confirmados e
-        LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
-        LEFT JOIN tickets t ON e.id = t.id_evento AND t.estado IN ('PAGADO', 'PENDIENTE_PAGO')
-        WHERE e.id = ? AND e.activo = TRUE
+        LEFT JOIN solicitudes_fechas_bandas sfb
+               ON e.id_solicitud = sfb.id_solicitud
+        LEFT JOIN tickets t
+               ON e.id = t.id_evento AND t.estado IN ('pagado', 'pendiente')
+        WHERE e.id_solicitud = ? AND e.activo = TRUE AND e.tipo_evento = 'BANDA'
         GROUP BY e.id
     `;
-    const rows = await pool.query(query, [id]);
-    return rows[0];
+    const rows = await pool.query(query, [solicitudId]);
+    return sanitizeRow(rows[0]);
 };
 
 /**
@@ -101,39 +97,64 @@ const checkCupon = async (codigo) => {
           AND (usos_maximos IS NULL OR usos_actuales < usos_maximos)
           AND (fecha_expiracion IS NULL OR fecha_expiracion >= CURDATE());
     `;
-    const [rows] = await pool.query(query, [codigo]);
+    const rows = await pool.query(query, [codigo]);
     return rows[0];
 };
 
 /**
  * Inicia el proceso de checkout creando un ticket en estado PENDIENTE_PAGO.
- * Retorna el ID único del ticket.
+ * @param {number} eventoId
+ * @param {string} email
+ * @param {string} nombre
+ * @param {string|null} codigoCupon - Código de cupón aplicado (puede ser null)
+ * @param {number} precioPagado
+ * @param {string} tipoPrecio - 'ANTICIPADA' | 'PUERTA'
+ * @returns {Promise<number>} ID entero del ticket creado
  */
-const createPendingTicket = async (eventoId, email, nombre, cuponId, precioPagado, tipoPrecio = 'ANTICIPADA') => {
-    const getUuid = await loadUuid();
-    if (!getUuid) {
-        throw new Error("Dependencia 'uuid' no está disponible. Instala 'uuid' en dependencias.");
-    }
-    const ticketId = getUuid();
+const createPendingTicket = async (eventoId, email, nombre, codigoCupon, precioPagado, tipoPrecio = 'ANTICIPADA') => {
+    // Generar código de confirmación único (máximo 20 caracteres)
+    // Usar: primeras 3 caracteres de ticket + timestamp en base36 + random
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.floor(Math.random() * 10000).toString(36).toUpperCase();
+    const codigoConfirmacion = ('TKT' + timestamp + random).substring(0, 20);
 
-    const query = `
-        INSERT INTO tickets (id_unico, id_evento, email_comprador, nombre_comprador, cupon_id, precio_pagado, tipo_precio, estado)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE_PAGO');
-    `;
+    const result = await pool.query(
+        `INSERT INTO tickets (id_evento, email, nombre_comprador, codigo_cupon, total, tipo_precio, estado, codigo_confirmacion)
+         VALUES (?, ?, ?, ?, ?, ?, 'pendiente', ?)`,
+        [eventoId, email, nombre, codigoCupon || null, precioPagado, tipoPrecio, codigoConfirmacion]
+    );
 
-    await pool.query(query, [ticketId, eventoId, email, nombre, cuponId, precioPagado, tipoPrecio]);
-
-    return ticketId;
+    return Number(result.insertId);
 };
 
 
 // Funciones futuras:
-// const updateTicketToPaid = async (ticketId, paymentDetails) => { ... };
 // const updateTicketToScanned = async (ticketId) => { ... };
+
+/**
+ * Actualiza el estado de un ticket y opcionalmente guarda el ID de pago de MP.
+ * @param {number} ticketId - ID entero del ticket (columna id)
+ * @param {string} estado   - Nuevo estado ('PAGADO', 'PENDIENTE_PAGO', 'CANCELADO')
+ * @param {string|null} mpPaymentId - ID de pago de MercadoPago
+ */
+const updateTicketStatus = async (ticketId, estado, mpPaymentId = null) => {
+    if (mpPaymentId) {
+        await pool.query(
+            'UPDATE tickets SET estado = ?, mp_payment_id = ? WHERE id = ?',
+            [estado, mpPaymentId, ticketId]
+        );
+    } else {
+        await pool.query(
+            'UPDATE tickets SET estado = ? WHERE id = ?',
+            [estado, ticketId]
+        );
+    }
+};
 
 module.exports = {
     getEventosActivos,
     getEventoById,
     checkCupon,
     createPendingTicket,
+    updateTicketStatus,
 };

@@ -25,8 +25,177 @@
             text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
         }
 
+        .hero-title-alt {
+            position: relative;
+            display: inline-block;
+            color: transparent;
+            background-image: linear-gradient(110deg, #f8f7ff 0%, #d8b4fe 20%, #f0abfc 35%, #d946ef 50%, #f0abfc 65%, #d8b4fe 80%, #f8f7ff 100%);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            font-weight: 900;
+            text-shadow:
+                0 0 8px rgba(240, 171, 252, 0.35),
+                0 0 16px rgba(217, 70, 239, 0.28),
+                0 0 32px rgba(192, 132, 252, 0.18),
+                0 0 50px rgba(168, 85, 247, 0.12),
+                0 0 80px rgba(240, 171, 252, 0.08);
+            animation: titleGlow 3.5s ease-in-out infinite, titleFloat 4s ease-in-out infinite, colorShift 5s ease-in-out infinite;
+        }
+
+        @keyframes colorShift {
+
+            0%,
+            100% {
+                background-position: 0% center;
+            }
+
+            50% {
+                background-position: 100% center;
+            }
+        }
+
+        @keyframes titleGlow {
+
+            0%,
+            100% {
+                text-shadow:
+                    0 0 8px rgba(240, 171, 252, 0.35),
+                    0 0 16px rgba(217, 70, 239, 0.28),
+                    0 0 32px rgba(192, 132, 252, 0.18),
+                    0 0 50px rgba(168, 85, 247, 0.12),
+                    0 0 80px rgba(240, 171, 252, 0.08);
+            }
+
+            50% {
+                text-shadow:
+                    0 0 12px rgba(240, 171, 252, 0.55),
+                    0 0 24px rgba(217, 70, 239, 0.42),
+                    0 0 48px rgba(192, 132, 252, 0.32),
+                    0 0 80px rgba(168, 85, 247, 0.22),
+                    0 0 120px rgba(240, 171, 252, 0.15);
+            }
+        }
+
+        @keyframes titleFloat {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        .hero-title-alt::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent 50%);
+            transform: skewY(-6deg);
+            opacity: 0.45;
+            border-radius: 1rem;
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(6px);
+            animation: reflectionPulse 3.5s ease-in-out infinite;
+        }
+
+        @keyframes reflectionPulse {
+
+            0%,
+            100% {
+                opacity: 0.35;
+            }
+
+            50% {
+                opacity: 0.65;
+            }
+        }
+
+        .hero-title-alt::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -1rem;
+            transform: translateX(-50%);
+            width: 68%;
+            height: 0.3rem;
+            background: radial-gradient(circle, rgba(240, 171, 252, 0.3), transparent 70%);
+            filter: blur(10px);
+            border-radius: 999px;
+            z-index: -1;
+            animation: haloPulse 3.5s ease-in-out infinite;
+        }
+
+        @keyframes haloPulse {
+
+            0%,
+            100% {
+                background: radial-gradient(circle, rgba(240, 171, 252, 0.2), transparent 70%);
+                filter: blur(8px);
+            }
+
+            50% {
+                background: radial-gradient(circle, rgba(240, 171, 252, 0.45), transparent 60%);
+                filter: blur(14px);
+            }
+        }
+
+        .hero-title-outline {
+            color: #f8fafc;
+            text-shadow: 0 0 6px rgba(240, 171, 252, 0.6), 0 0 10px rgba(148, 163, 184, 0.4);
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.35);
+        }
+
+        .hero-title-block {
+            background: rgba(15, 23, 42, 0.55);
+            display: inline-flex;
+            padding: 0.35rem 1rem;
+            border-radius: 999px;
+            box-shadow: 0 0 30px rgba(240, 171, 252, 0.18);
+        }
+
         .bg-rustic {
             background-color: var(--color-rustic);
+        }
+
+        .cta-button {
+            position: relative;
+            background-image: linear-gradient(90deg, rgba(240, 171, 252, 0.6), rgba(217, 70, 239, 0.1), rgba(240, 171, 252, 0.6));
+            background-size: 200% 100%;
+            background-position: 0% center;
+            animation: colorShift 5s ease-in-out infinite;
+            padding: 2px;
+            border-radius: 0.5rem;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            background-color: rgba(28, 25, 23, 0.20);
+            border-radius: calc(0.5rem - 2px);
+            z-index: 1;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .cta-button span {
+            position: relative;
+            z-index: 2;
+            display: block;
+        }
+
+        .cta-button:hover {
+            background-image: linear-gradient(90deg, rgba(240, 171, 252, 0.6), rgba(217, 70, 239, 0.1), rgba(240, 171, 252, 0.6));
+        }
+
+        .cta-button:hover::before {
+            background-color: rgba(217, 70, 239, 0.05);
         }
 
         .border-neon {
@@ -35,8 +204,14 @@
 
         /* Estilo para simular el brillo de los murales */
         .neon-glow-card {
+            background-color: rgba(28, 25, 23, 0.6);
+            /* stone-900 con transparencia */
+            backdrop-filter: blur(8px);
+            /* efecto vidrio (opcional, queda muy bien) */
+            -webkit-backdrop-filter: blur(8px);
+            /* soporte Safari */
+
             box-shadow: 0 0 15px rgba(240, 171, 252, 0.5);
-            /* Sombra suave neón */
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
@@ -105,10 +280,14 @@
         }
 
         /* CARD */
-
         .agenda-card-passline {
             display: flex;
-            background: #1c1917;
+            background: rgba(28, 25, 23, 0.45);
+            /* stone-900 con transparencia */
+            backdrop-filter: blur(8px);
+            /* opcional pero recomendado */
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(240, 171, 252, 0.2);
             border-radius: 12px;
             overflow: hidden;
             transition: .25s;
@@ -207,16 +386,16 @@
 
                 <!-- Menú Desktop -->
                 <nav class="flex space-x-8 items-center">
-                    <a href="seccion_talleres.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
                     <a href="seccion_bandas.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
                         Vivo</a>
-                    <a href="seccion_servicios.html"
-                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a>
                     <a href="seccion_alquiler.html"
                         class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
                         Salón</a>
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <!-- <a href="seccion_servicios.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Servicios</a> -->
                     <!-- Menú dinámico: se reemplaza con Admin si está logueado -->
                     <div id="auth-menu-desktop"></div>
                 </nav>
@@ -263,73 +442,47 @@
                 </div>
             </div>
             <div class="relative z-10 max-w-4xl mx-auto px-4">
-                <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white mb-4">
-                    <span class="block text-neon">El Templo de Claypole</span>
+                <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight hero-title-alt mb-4 mx-auto">
+                    <span class="block">El Templo de Claypole</span>
                 </h1>
-                <div
-                    class="max-w-4xl mx-auto mt-20 mb-20 text-center text-xl sm:text-2xl md:text-3xl font-light text-purple-300">
-                    Descubre este nuevo punto de encuentro.<br><br>
-
-                    Un espacio único donde la música, el movimiento y la buena onda se juntan. En nuestro salón suenan
-                    bandas en vivo y en el patio, la juntada sigue entre sillones y parrilla.<br><br>
-
-                    Tu lugar para tocar, bailar, celebrar y conectar.
+                <div>
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="text-center mt-18 mb-10">
+                            <h2 class="text-lg sm:text-2xl font-semibold text-white/70 tracking-wide uppercase">
+                                Próximos eventos
+                            </h2>
+                        </div>
+                        <div id="agenda-list" class="agenda-grid mt-16">
+                            <p class="text-center text-lg text-stone-500 col-span-full">
+                                Cargando agenda...
+                            </p>
+                        </div>
+                    </div>
                 </div>
                 <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                     <a href="solicitud_alquiler.html"
-                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Alquilar el Salón
+                        class="cta-button font-bold py-9 px-8 text-neon hover:scale-105 transition duration-300">
+                        <span>Alquilar el Salón</span>
                     </a>
                     <a href="seccion_bandas.html"
-                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Ver Bandas en Vivo
+                        class="cta-button font-bold py-9 px-8 text-neon hover:scale-105 transition duration-300">
+                        <span>Ver Bandas en Vivo</span>
                     </a>
                     <a href="solicitud_fecha_bandas.html"
-                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Producir una fecha
+                        class="cta-button font-bold py-9 px-8 text-neon hover:scale-105 transition duration-300">
+                        <span>Producir una fecha</span>
                     </a>
                     <a href="solicitud_banda.html"
-                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Registrar banda o artista
+                        class="cta-button font-bold py-9 px-8 text-neon hover:scale-105 transition duration-300">
+                        <span>Registrar banda o artista</span>
                     </a>
                     <a href="solicitud_taller_actividad.html"
-                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Dar un taller o clase
-                    </a>
-                    <a href="seccion_servicios.html"
-                        class="bg-stone-800/60 border-2 border-neon text-neon font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-900 hover:bg-opacity-20 transition duration-300 transform hover:scale-105">
-                        Depilación Definitiva
+                        class="cta-button font-bold py-9 px-8 text-neon hover:scale-105 transition duration-300">
+                        <span>Dar un taller o clase</span>
                     </a>
                 </div>
             </div>
-        </section>
 
-
-        <!-- Sección 3: Agenda - Próximos eventos públicos -->
-        <section id="agenda" class="py-20 bg-stone-900">
-
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-extrabold text-neon sm:text-4xl">
-                        Próximos eventos
-                    </h2>
-                </div>
-
-                <div id="agenda-list" class="agenda-grid">
-                    <p class="text-center text-lg text-stone-500 col-span-full">
-                        Cargando agenda...
-                    </p>
-                </div>
-
-                <div class="text-center mt-10">
-                    <a href="seccion_agenda.html"
-                        class="bg-fuchsia-500 text-gray-900 font-bold py-3 px-8 rounded-lg hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
-                        Ver Agenda Completa
-                    </a>
-                </div>
-
-            </div>
 
         </section>
 
@@ -348,27 +501,34 @@
     </footer>
 
     <!-- Panel de Logs de Depuración -->
-    <div id="debug-console" class="fixed bottom-4 right-4 w-96 max-h-80 bg-black border-2 border-neon rounded-lg shadow-lg z-50 flex flex-col hidden">
+    <div id="debug-console"
+        class="fixed bottom-4 right-4 w-96 max-h-80 bg-black border-2 border-neon rounded-lg shadow-lg z-50 flex flex-col hidden">
         <div class="flex justify-between items-center bg-stone-900 p-3 border-b border-neon rounded-t-lg">
             <span class="text-neon text-sm font-bold">🔧 DEBUG CONSOLE</span>
             <div class="flex gap-2">
-                <button onclick="clearDebugLogs()" class="text-xs bg-stone-700 hover:bg-stone-600 text-white px-2 py-1 rounded">Limpiar</button>
-                <button onclick="toggleDebugConsole()" class="text-xs bg-red-700 hover:bg-red-600 text-white px-2 py-1 rounded">✕</button>
+                <button onclick="clearDebugLogs()"
+                    class="text-xs bg-stone-700 hover:bg-stone-600 text-white px-2 py-1 rounded">Limpiar</button>
+                <button onclick="toggleDebugConsole()"
+                    class="text-xs bg-red-700 hover:bg-red-600 text-white px-2 py-1 rounded">✕</button>
             </div>
         </div>
-        <div id="debug-logs" class="flex-1 overflow-y-auto p-2 text-xs font-mono bg-black text-green-400 space-y-1"></div>
+        <div id="debug-logs" class="flex-1 overflow-y-auto p-2 text-xs font-mono bg-black text-green-400 space-y-1">
+        </div>
         <div class="bg-stone-900 p-2 border-t border-neon text-xs text-neon">
-            <button onclick="testServerConnection()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded mr-2">Probar Servidor</button>
-            <button onclick="testAPIEndpoints()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded">Probar APIs</button>
+            <button onclick="testServerConnection()"
+                class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded mr-2">Probar Servidor</button>
+            <button onclick="testAPIEndpoints()"
+                class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded">Probar APIs</button>
         </div>
     </div>
 
     <!-- Botón flotante para abrir debug console -->
-    <button id="debug-toggle-btn" onclick="toggleDebugConsole()" class="fixed bottom-4 right-4 w-12 h-12 bg-neon text-black rounded-full font-bold text-lg hover:scale-110 transition z-40 shadow-lg hidden">🔧</button>
+    <button id="debug-toggle-btn" onclick="toggleDebugConsole()"
+        class="fixed bottom-4 right-4 w-12 h-12 bg-neon text-black rounded-full font-bold text-lg hover:scale-110 transition z-40 shadow-lg hidden">🔧</button>
 
     <script>
         // ========== SISTEMA DE LOGS DE DEPURACIÓN ==========
-        
+
         // Detectar si estamos en desarrollo (localhost, 127.0.0.1, etc)
         const isDev = () => {
             const h = window.location.hostname;
@@ -401,11 +561,11 @@
         function addDebugLog(message, type = 'log') {
             const logsContainer = document.getElementById('debug-logs');
             const timestamp = new Date().toLocaleTimeString();
-            
+
             let prefix = '';
             let color = 'text-green-400';
-            
-            switch(type) {
+
+            switch (type) {
                 case 'error':
                     prefix = '❌';
                     color = 'text-red-400';
@@ -426,15 +586,15 @@
                     prefix = '📝';
                     break;
             }
-            
+
             const logEntry = document.createElement('div');
             logEntry.className = `${color}`;
             logEntry.textContent = `[${timestamp}] ${prefix} ${message}`;
             logsContainer.appendChild(logEntry);
-            
+
             // Auto-scroll al final
             logsContainer.scrollTop = logsContainer.scrollHeight;
-            
+
             // También mostrar en consola navegador
             console.log(`[${type.toUpperCase()}] ${message}`);
         }
@@ -461,9 +621,9 @@
                 '/api/eventos/publicos',
                 '/api/solicitudes/publicas'
             ];
-            
+
             addDebugLog('Probando endpoints de API...', 'info');
-            
+
             for (const endpoint of endpoints) {
                 try {
                     addDebugLog(`Testando ${endpoint}...`, 'info');
@@ -648,7 +808,7 @@
                 // 1) Cargar eventos confirmados publicados
                 console.debug('[AGENDA-INDEX] Fetching public events from', `${API_BASE_URL}/api/eventos/publicos`);
                 if (isDev()) addDebugLog('Obteniendo eventos públicos...', 'info');
-                
+
                 const resEventos = await fetch(`${API_BASE_URL}/api/eventos/publicos`);
                 let eventos = [];
                 if (resEventos.ok) {
@@ -683,7 +843,7 @@
                 // 2) Cargar solicitudes públicas confirmadas
                 console.debug('[AGENDA-INDEX] Fetching public solicitudes from', `${API_BASE_URL}/api/solicitudes/publicas`);
                 if (isDev()) addDebugLog('Obteniendo solicitudes públicas...', 'info');
-                
+
                 const resPublicas = await fetch(`${API_BASE_URL}/api/solicitudes/publicas`);
                 let solicitudes = [];
                 if (resPublicas.ok) {
@@ -737,7 +897,7 @@
 
                 console.debug('[AGENDA-INDEX] combined items ->', allItems);
                 const proximosItems = allItems
-                    .filter(item => item._fechaObj && item._fechaObj > hoy)
+                    .filter(item => item._fechaObj && item._fechaObj >= hoy)
                     .sort((a, b) => a._fechaObj - b._fechaObj);
 
                 // DEV helper: inyectar un flyer de demo si se quiere forzar la vista.
@@ -783,7 +943,7 @@
 
         function renderAgenda(items, totalCount) {
             agendaListContainer.innerHTML = '';
-            
+
             if (isDev()) addDebugLog(`Renderizando agenda con ${items.length} eventos`, 'info');
 
             if (!items || items.length === 0) {
@@ -800,7 +960,7 @@
             items.forEach(item => {
                 agendaListContainer.insertAdjacentHTML('beforeend', generateAgendaCard(item));
             });
-            
+
             if (isDev()) addDebugLog(`✅ Agenda renderizada correctamente`, 'success');
 
         }
@@ -818,7 +978,7 @@
             const token = localStorage.getItem('authToken');
             const desktopMenu = document.getElementById('auth-menu-desktop');
             const mobileMenu = document.getElementById('auth-menu-mobile');
-            
+
             if (isDev()) addDebugLog(token ? '🔐 Token encontrado en localStorage' : '🔓 Sin autenticación', 'info');
 
             // Si el token existe pero está vencido, limpiar y mostrar Login
@@ -890,7 +1050,7 @@
             }
             // 1. Actualizar menú de autenticación
             updateAuthMenu();
-            
+
             if (isDev()) addDebugLog('Iniciando carga de agenda pública...', 'info');
             // 2. Inicia la carga de la agenda pública
             fetchAgenda();

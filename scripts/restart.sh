@@ -154,6 +154,27 @@ check_containers_health() {
   fi
 }
 
+check_backend_http() {
+  if [ $RESTART_BACKEND -eq 0 ]; then
+    return 0
+  fi
+
+  if ! command_exists curl; then
+    echo -e "${YELLOW}[*] curl no está instalado, omitiendo verificación HTTP del backend${NC}"
+    return 0
+  fi
+
+  echo ""
+  echo -e "${CYAN}[*] Verificando disponibilidad del backend HTTP...${NC}"
+  if curl -sS --max-time 5 http://localhost:3000/health >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✓ Backend HTTP responde correctamente en http://localhost:3000/health${NC}"
+  else
+    echo -e "  ${RED}✗ El backend no responde en http://localhost:3000/health${NC}"
+    echo -e "    ${YELLOW}Revisá los logs con: ./scripts/backend_logs.sh${NC}"
+    echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
+  fi
+}
+
 if [[ ${1:-} == "-h" || ${1:-} == "--help" ]]; then
   show_help
   exit 0
@@ -382,6 +403,7 @@ fi
 
 # Verificar salud de contenedores
 check_containers_health
+check_backend_http
 
 # Mensaje final
 echo ""

@@ -32,6 +32,14 @@
 
     /* ─── Banner ────────────────────────────────────────────── */
     let bannerTimer = null;
+    let authPollingInterval = null;
+    const AUTH_POLL_MS = 7000;
+
+    function hideBanner() {
+        const b = document.getElementById('banner');
+        if (!b) return;
+        b.classList.add('hidden');
+    }
 
     function showBanner(msg, type = 'success', opts = {}) {
         const b = document.getElementById('banner');
@@ -48,6 +56,34 @@
         if (!opts.persistent) {
             bannerTimer = setTimeout(() => b.classList.add('hidden'), 6000);
         }
+    }
+
+    function stopAuthPolling() {
+        if (authPollingInterval) {
+            clearInterval(authPollingInterval);
+            authPollingInterval = null;
+        }
+    }
+
+    async function pollAuthStatus() {
+        const state = await checkWhatsAppAuthStatus();
+        if (state === 'authenticated') {
+            stopAuthPolling();
+            hideBanner();
+            updateServiceStatus('ok');
+            await loadChats();
+            pollInterval = setInterval(async () => {
+                await loadChats();
+                if (currentChatId) {
+                    await loadMessages(currentChatId);
+                }
+            }, 15000);
+        }
+    }
+
+    function startAuthPolling() {
+        if (authPollingInterval) return;
+        authPollingInterval = setInterval(pollAuthStatus, AUTH_POLL_MS);
     }
 
     /* ─── Health check ──────────────────────────────────────── */
@@ -72,6 +108,69 @@
         } catch (e) {
             updateServiceStatus('api_error', 'sin respuesta del servidor');
             return 'error';
+        }
+    }
+
+    async function fetchWhatsAppQr() {
+        try {
+            const res = await fetch('/api/diagnostic/whatsapp-qr');
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data.qrDataUrl || null;
+        } catch (e) {
+            console.warn('[admin_mensajes] fetchWhatsAppQr error', e);
+            return null;
+        }
+    }
+
+    async function checkWhatsAppAuthStatus() {
+        try {
+            const res = await fetch('/api/diagnostic/whatsapp-status-simple');
+            if (!res.ok) {
+                return null;
+            }
+
+            const data = await res.json();
+            if (!data || !data.state) return null;
+
+            if (data.state === 'needs_authentication') {
+                updateServiceStatus('auth_error');
+
+                const qrDataUrl = await fetchWhatsAppQr();
+                let message =
+                    '⚠️ La sesión de WhatsApp no está iniciada.<br>' +
+                    'Escanea el QR o hazlo por VNC <strong>localhost:5901</strong>';
+
+                if (qrDataUrl) {
+                    message +=
+                        '<div style="margin-top:0.75rem;text-align:center;">' +
+                        `<img src="${qrDataUrl}" alt="WhatsApp QR" style="max-width:240px;max-height:240px;border:1px solid #ffffff33;border-radius:12px;" />` +
+                        '</div>';
+                }
+
+                showBanner(message, 'error', { allowHtml: true, persistent: true });
+                return 'needs_authentication';
+            }
+
+            if (data.state === 'authenticated') {
+                return 'authenticated';
+            }
+
+            if (data.state === 'unknown') {
+                updateServiceStatus('not_ready');
+                showBanner(
+                    'WhatsApp no pudo determinar el estado de la sesión. ' +
+                    'Revisá la ventana del contenedor o reiniciá el servicio si es necesario.',
+                    'neutral',
+                    { persistent: true }
+                );
+                return 'unknown';
+            }
+
+            return null;
+        } catch (e) {
+            console.warn('[admin_mensajes] checkWhatsAppAuthStatus error', e);
+            return null;
         }
     }
 
@@ -377,6 +476,14 @@
 
         if (health === 'error') {
             showBanner('No se puede conectar con el servidor', 'error');
+            return;
+        }
+
+        const authState = await checkWhatsAppAuthStatus();
+        if (authState === 'needs_authentication' || authState === 'unknown') {
+            document.getElementById('chat-list').innerHTML =
+                '<li class="chat-list-empty">WhatsApp no está autenticado. Escaneá el QR en la pantalla del contenedor.</li>';
+            startAuthPolling();
             return;
         }
 

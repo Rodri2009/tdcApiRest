@@ -7,7 +7,7 @@ COPY frontend/ /usr/share/nginx/html
 # Copia la configuración personalizada de Nginx
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expone el puerto 80, que Nginx usará para servir las solicitudes web
-EXPOSE 80
+# Expone los puertos 80 (HTTP) y 443 (HTTPS)
+EXPOSE 80 443
 
 # Nginx se iniciará por defecto, no necesitamos un CMD explícito aquí

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Comprar Entrada - Checkout</title>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <!-- SDK de MercadoPago -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <style>
+        #notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.5s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.warning {
+            background-color: #fbbf24;
+            color: #1e293b;
+        }
+
+        #notification-banner.error {
+            background-color: #ef4444;
+        }
+
+        #notification-banner.success {
+            background-color: #10b981;
+        }
+
+        #notification-banner.info {
+            background-color: #3b82f6;
+        }
+    </style>
+</head>
+
+<body class="bg-stone-900 text-stone-100">
+    <script src="/navbar.js"></script>
+
+    <!-- Banner de notificaciones -->
+    <div id="notification-banner"></div>
+
+    <main class="wrap" style="padding-top: 1rem">
+        <div class="page-header">
+            <a href="index.html" class="btn-back">
+                <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver
+            </a>
+            <h1>Comprar Entrada</h1>
+            <div class="spacer"></div>
+        </div>
+
+        <div class="max-w-4xl mx-auto p-4">
+            <div id="content" class="p-6 bg-stone-800 rounded-xl shadow-lg">
+
+                <!-- Layout: flyer izquierda | datos+form derecha -->
+                <div class="flex gap-6 items-start">
+
+                    <!-- COLUMNA IZQUIERDA: Flyer -->
+                    <div id="flyer-block" class="hidden flex-shrink-0" style="width:260px">
+                        <img id="event-flyer" class="w-full rounded-xl shadow-lg object-cover" alt="Flyer del evento" />
+                    </div>
+
+                    <!-- COLUMNA DERECHA: todo el contenido -->
+                    <div class="flex-1 min-w-0 space-y-4">
+
+                        <div>
+                            <h2 id="event-name" class="text-2xl font-bold text-white mb-1">Cargando evento...</h2>
+                            <p id="event-desc" class="text-sm text-stone-400"></p>
+                            <p id="event-datetime" class="text-sm text-stone-300 mt-1"></p>
+                        </div>
+
+                        <div class="bg-stone-900 p-4 rounded-xl border border-stone-700 space-y-4">
+
+                            <div class="flex items-center justify-between">
+                                <p id="prices" class="text-lg font-bold text-neon"></p>
+                                <span class="text-xs text-stone-400 bg-stone-700 px-2 py-1 rounded">Anticipada</span>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-stone-400 mb-1">Tu nombre</label>
+                                <input id="nombre" class="w-full px-3 py-2 rounded bg-stone-700 text-white text-sm"
+                                    placeholder="Nombre completo" />
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-stone-400 mb-1">Tu email</label>
+                                <input id="email" type="email"
+                                    class="w-full px-3 py-2 rounded bg-stone-700 text-white text-sm"
+                                    placeholder="correo@ejemplo.com" />
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-stone-400 mb-1">Cupón (opcional)</label>
+                                <input id="coupon" class="w-full px-3 py-2 rounded bg-stone-700 text-white text-sm"
+                                    placeholder="Código de cupón" />
+                            </div>
+
+                            <div class="flex flex-wrap gap-3 pt-1">
+                                <button id="btn-buy"
+                                    class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-semibold rounded text-sm">Pagar
+                                    con MercadoPago</button>
+                            </div>
+                        </div>
+
+                        <!-- Brick de MercadoPago -->
+                        <div id="mp-brick-section" class="hidden">
+                            <div class="border border-stone-600 rounded-xl p-4 bg-stone-900">
+                                <h3 class="text-base font-semibold text-white mb-3">Completa el pago</h3>
+                                <div id="mp-brick-container"></div>
+                            </div>
+                        </div>
+
+                    </div><!-- /columna derecha -->
+                </div><!-- /flex -->
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const currentHost = window.location.host;
+        let API_BASE_URL = '';
+        if (currentHost.includes('localhost')) {
+            API_BASE_URL = 'http://localhost';
+        } else if (currentHost.includes('192.168.1.10')) {
+            API_BASE_URL = 'http://192.168.1.10';
+        } else {
+            API_BASE_URL = window.location.protocol + '//' + currentHost;
+        }
+        const API_URL = API_BASE_URL + '/api/tickets/eventos_confirmados';
+
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get('event_id');
+
+        const elName = document.getElementById('event-name');
+        const elDesc = document.getElementById('event-desc');
+        const elDatetime = document.getElementById('event-datetime');
+        const elPrices = document.getElementById('prices');
+        const elBanner = document.getElementById('notification-banner');
+
+        let currentEvent = null;
+        let currentTicketId = null;
+        let mpBrickController = null;
+        let notificationTimer = null;
+
+        // ── Banner (mismo estilo que solicitud_alquiler.html) ────────────────
+        function showNotification(message, type = 'error', duration = 4000) {
+            clearTimeout(notificationTimer);
+            elBanner.textContent = message;
+            elBanner.className = 'show ' + type;
+            if (duration > 0) {
+                notificationTimer = setTimeout(() => { elBanner.className = ''; }, duration);
+            }
+        }
+        // ────────────────────────────────────────────────────────────────────
+
+        async function loadEvent() {
+            try {
+                const res = await fetch(API_URL);
+                if (!res.ok) throw new Error('No se pudo cargar la API');
+                const data = await res.json();
+                currentEvent = data.find(e => String(e.id_solicitud) === String(eventId));
+                if (!currentEvent) {
+                    elName.textContent = 'Evento no disponible';
+                    showNotification('Este evento no está disponible para la venta o aún no fue confirmado.', 'warning', 0);
+                    return;
+                }
+
+                elName.textContent = currentEvent.nombreEvento || currentEvent.nombre_banda || '';
+                elDesc.textContent = currentEvent.descripcion || '';
+
+                // Flyer
+                const flyerBlock = document.getElementById('flyer-block');
+                const flyerImage = document.getElementById('event-flyer');
+                if (currentEvent.url_flyer) {
+                    flyerImage.src = currentEvent.url_flyer;
+                    flyerImage.alt = `Flyer de ${elName.textContent}`;
+                    flyerBlock.classList.remove('hidden');
+                }
+
+                // Fecha y hora — parsear solo la parte de fecha para evitar
+                // el desfase UTC→local (ej: 2026-05-02T00:00Z → 2026-05-01)
+                if (currentEvent.fechaEvento) {
+                    const datePart = currentEvent.fechaEvento.split('T')[0]; // 'YYYY-MM-DD'
+                    const [y, mo, d] = datePart.split('-').map(Number);
+                    const fecha = new Date(y, mo - 1, d); // sin conversión de zona
+                    const fechaFmt = fecha.toLocaleDateString('es-AR', {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                    });
+                    const hora = currentEvent.horaEvento
+                        ? currentEvent.horaEvento.substring(0, 5) // 'HH:MM'
+                        : null;
+                    elDatetime.innerHTML =
+                        `<strong>Fecha:</strong> ${fechaFmt}` +
+                        (hora ? ` &nbsp;·&nbsp; <strong>Hora:</strong> ${hora}` : '');
+                }
+
+                renderPrices();
+                prefillUserData();
+            } catch (err) {
+                elName.textContent = 'Error cargando evento';
+                showNotification(err.message, 'error', 0);
+            }
+        }
+
+        function prefillUserData() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+            try {
+                const payload = JSON.parse(
+                    decodeURIComponent(
+                        atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
+                            .split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+                    )
+                );
+                const nombre = payload.nombre || payload.name || '';
+                const email = payload.email || '';
+                const elNombre = document.getElementById('nombre');
+                const elEmail = document.getElementById('email');
+                if (nombre && !elNombre.value) elNombre.value = nombre;
+                if (email && !elEmail.value) elEmail.value = email;
+                if (nombre || email) {
+                    showNotification('Datos completados con tu cuenta.', 'info', 3000);
+                }
+            } catch (e) {
+                // Token malformado — ignorar silenciosamente
+            }
+        }
+
+        function renderPrices() {
+            const anticipada = currentEvent.precio_anticipada != null ? parseFloat(currentEvent.precio_anticipada) : null;
+            const base = currentEvent.precio_base != null ? parseFloat(currentEvent.precio_base) : null;
+            if (anticipada !== null) {
+                elPrices.textContent = `Anticipada: $ ${anticipada.toLocaleString('es-AR')} ARS`;
+            } else if (base !== null) {
+                elPrices.textContent = `Precio: $ ${base.toLocaleString('es-AR')} ARS`;
+            } else {
+                elPrices.textContent = 'Precio no disponible';
+            }
+        }
+
+        function getTipoVenta() { return 'ANTICIPADA'; }
+
+        async function simulate() {
+            if (!currentEvent) return;
+            showNotification('Calculando precio…', 'info', 0);
+            try {
+                const res = await fetch(API_BASE_URL + '/api/tickets/checkout/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        evento_id: currentEvent.id_solicitud,
+                        codigo_cupon: document.getElementById('coupon').value.trim() || null,
+                        tipo_venta: getTipoVenta()
+                    })
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || json.message || 'Error en simulación');
+
+                const pf = parseFloat(json.precio_final);
+                const desc = parseFloat(json.descuento);
+                const msg = json.es_gratis
+                    ? '¡Entrada gratuita!'
+                    : `Precio final: $ ${pf.toLocaleString('es-AR')} ARS` +
+                    (desc > 0 ? ` (descuento: $ ${desc.toLocaleString('es-AR')})` : '');
+                showNotification(msg, json.es_gratis ? 'success' : 'info', 6000);
+                return json;
+            } catch (err) {
+                showNotification(err.message, 'error', 0);
+                throw err;
+            }
+        }
+
+        async function initCheckout() {
+            const nombre = document.getElementById('nombre').value.trim();
+            const email = document.getElementById('email').value.trim();
+            if (!nombre || !email) {
+                showNotification('Completá tu nombre y email antes de continuar.', 'warning', 4000);
+                return;
+            }
+            try {
+                const sim = await simulate();
+                const tipo_venta = getTipoVenta();
+                const codigo_cupon = document.getElementById('coupon').value.trim() || null;
+
+                showNotification('Creando reserva…', 'info', 0);
+                const res = await fetch(API_BASE_URL + '/api/tickets/checkout/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        evento_id: currentEvent.id_solicitud,
+                        email,
+                        nombre_comprador: nombre,
+                        codigo_cupon,
+                        precio_final: sim.precio_final,
+                        tipo_venta
+                    })
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || json.message || 'Error al iniciar pago');
+
+                if (json.status === 'pending_payment') {
+                    currentTicketId = json.ticket_id;
+                    const emailUsuario = document.getElementById('email').value.trim();
+                    showNotification('Reserva creada. Cargando formulario de pago…', 'success', 4000);
+                    await initMercadoPagoBrick(json.preference_id, sim.precio_final, emailUsuario);
+                } else if (json.status === 'paid_free') {
+                    showNotification('¡Reserva gratuita completada!', 'success', 3000);
+                    setTimeout(() => {
+                        window.location.href = `${API_BASE_URL}/frontend/comprobante.html?status=approved&ticket_id=${json.ticket_id}`;
+                    }, 1500);
+                }
+            } catch (err) {
+                showNotification(err.message, 'error', 0);
+            }
+        }
+
+        document.getElementById('btn-buy').addEventListener('click', e => { e.preventDefault(); initCheckout(); });
+
+        async function initMercadoPagoBrick(preferenceId, precioFinal, emailUsuario) {
+            const pkRes = await fetch(API_BASE_URL + '/api/tickets/public-key');
+            const pkData = await pkRes.json();
+            if (!pkData.public_key) {
+                showNotification('Error: clave pública de MercadoPago no configurada en el servidor.', 'error', 0);
+                return;
+            }
+
+            if (mpBrickController) {
+                await mpBrickController.unmount();
+                mpBrickController = null;
+            }
+
+            const mp = new MercadoPago(pkData.public_key, { locale: 'es-AR' });
+            const bricksBuilder = mp.bricks();
+
+            document.getElementById('mp-brick-section').classList.remove('hidden');
+            document.getElementById('mp-brick-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            mpBrickController = await bricksBuilder.create('payment', 'mp-brick-container', {
+                initialization: {
+                    amount: parseFloat(precioFinal),
+                    preferenceId: preferenceId,
+                    payer: {
+                        email: emailUsuario
+                    }
+                },
+                customization: {
+                    paymentMethods: {
+                        creditCard: 'all',
+                        debitCard: 'all',
+                        ticket: 'all',
+                        bankTransfer: 'all',
+                    },
+                    visual: { style: { theme: 'dark' } },
+                },
+                callbacks: {
+                    onReady: () => { elBanner.className = ''; },
+                    onSubmit: ({ formData }) => {
+                        showNotification('Procesando pago…', 'info', 0);
+                        return fetch(API_BASE_URL + '/api/tickets/process-payment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ticket_id: currentTicketId, formData }),
+                        })
+                            .then(r => r.json())
+                            .then(d => {
+                                if (d.status === 'approved') {
+                                    showNotification('¡Pago aprobado! Redirigiendo…', 'success', 3000);
+                                    setTimeout(() => {
+                                        window.location.href = `${API_BASE_URL}/frontend/comprobante.html?status=approved&ticket_id=${currentTicketId}&payment_id=${d.payment_id}`;
+                                    }, 1200);
+                                } else if (d.status === 'pending' || d.status === 'in_process') {
+                                    showNotification('Pago pendiente de acreditación. Te avisaremos por email.', 'warning', 0);
+                                    setTimeout(() => {
+                                        window.location.href = `${API_BASE_URL}/frontend/comprobante.html?status=pending&ticket_id=${currentTicketId}`;
+                                    }, 2000);
+                                } else {
+                                    showNotification(`Pago rechazado: ${d.status_detail || d.status}. Verificá tus datos e intentá de nuevo.`, 'error', 0);
+                                }
+                            })
+                            .catch(() => showNotification('Error al procesar el pago. Intentá nuevamente.', 'error', 0));
+                    },
+                    onError: err => {
+                        console.error('[MP Brick]', err);
+                        showNotification(`Error en el formulario de pago: ${err?.message || 'intentá nuevamente'}.`, 'error', 0);
+                    },
+                },
+            });
+        }
+
+        loadEvent();
+    </script>
+</body>
+
+</html>

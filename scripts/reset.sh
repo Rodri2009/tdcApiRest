@@ -330,6 +330,23 @@ check_containers_health() {
   fi
 }
 
+check_backend_http() {
+  if ! command -v curl >/dev/null 2>&1; then
+    echo -e "${YELLOW}[*] curl no está instalado, omitiendo verificación HTTP del backend${NC}"
+    return 0
+  fi
+
+  echo ""
+  echo -e "${CYAN}[*] Verificando disponibilidad del backend HTTP...${NC}"
+  if curl -sS --max-time 5 http://localhost:3000/health >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✓ Backend HTTP responde correctamente en http://localhost:3000/health${NC}"
+  else
+    echo -e "  ${RED}✗ El backend no responde en http://localhost:3000/health${NC}"
+    echo -e "    ${YELLOW}Revisá los logs con: ./scripts/backend_logs.sh${NC}"
+    echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
+  fi
+}
+
 create_env_override() {
     # Crea un archivo .env.tmp con overrides de variables
     # Copia el .env original y sobrescribe ENABLE_PUPPETEER_MP y ENABLE_PUPPETEER_WA
@@ -812,6 +829,7 @@ echo ""
 # Verificar salud de contenedores si se usó Docker
 if [ "$USE_DOCKER" = true ]; then
     check_containers_health
+    check_backend_http
 fi
 
 # --- Mensaje Final Claro ---

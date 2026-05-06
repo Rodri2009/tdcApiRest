@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Prueba Checkout Pro - $100 ARS</title>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1c1917;
+            color: #f5f5f4;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 60px auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: #292524;
+            border: 1px solid #44403c;
+            border-radius: 12px;
+            padding: 40px;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #a8a29e;
+            margin-bottom: 30px;
+        }
+
+        .amount {
+            font-size: 48px;
+            font-weight: bold;
+            color: #22c55e;
+            margin: 30px 0;
+        }
+
+        .divider {
+            height: 1px;
+            background: #44403c;
+            margin: 20px 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: #a8a29e;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #1c1917;
+            border: 1px solid #44403c;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #22c55e;
+            color: #1c1917;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background: #16a34a;
+        }
+
+        .btn:disabled {
+            background: #78716c;
+            cursor: not-allowed;
+        }
+
+        .info {
+            background: #1f2937;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #44403c;
+            border-top-color: #22c55e;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #wallet-brick-container {
+            margin-top: 20px;
+            min-height: 200px;
+        }
+
+        #formSection {
+            display: block;
+        }
+
+        #formSection.hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- SDK de MercadoPago v2 -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+
+    <div class="container">
+        <div class="card">
+            <div class="title">🧪 Prueba Checkout Pro</div>
+            <div class="subtitle">Test con $100 ARS</div>
+
+            <div class="info">
+                ℹ️ Este formulario crea un ticket de $100 ARS para probar el flujo completo con MercadoPago Sandbox usando Wallet Brick.
+            </div>
+
+            <div id="formSection">
+                <div style="text-align: center;">
+                    <div class="divider"></div>
+                    <div style="font-size: 12px; color: #a8a29e; margin-bottom: 10px;">Monto a cobrar</div>
+                    <div class="amount">$100</div>
+                    <div class="divider"></div>
+                </div>
+
+                <form id="testForm" onsubmit="event.preventDefault()">
+                    <div class="form-group">
+                        <label for="nombre">Tu nombre</label>
+                        <input type="text" id="nombre" name="nombre" placeholder="Ej: Juan Pérez" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Tu email</label>
+                        <input type="email" id="email" name="email" placeholder="Ej: juan@example.com" required />
+                    </div>
+
+                    <button type="submit" class="btn" id="btnPagar">
+                        <span class="spinner" id="spinner"></span>
+                        <span id="btnText">Proceder al pago</span>
+                    </button>
+                </form>
+
+                <div id="brick-loading" class="hidden" style="text-align: center; margin-top: 20px; color: #a8a29e;">
+                    ⏳ Cargando formulario de pago...
+                </div>
+                <div id="mensaje" style="text-align: center; margin-top: 20px; font-size: 13px;"></div>
+            </div>
+
+            <!-- Contenedor del Wallet Brick -->
+            <div id="wallet-brick-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.protocol + '//' + window.location.host;
+        const EVENTO_ID = 4;
+        const MONTO = '100.00';
+
+        // Public Key de MercadoPago (TEST)
+        const MP_PUBLIC_KEY = 'TEST-7502cd2c-2aea-4ece-befa-7cf059b2b45c';
+
+        // Inicializar SDK de MercadoPago
+        const mp = new MercadoPago(MP_PUBLIC_KEY);
+
+        let currentPreferenceId = null;
+        let walletBrickInitialized = false;
+        let isCreatingPreference = false;
+
+        // Detectar si hay usuario logeado y pre-llenar
+        function prefillData() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+            try {
+                const payload = JSON.parse(
+                    decodeURIComponent(
+                        atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
+                            .split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+                    )
+                );
+                if (payload.nombre) document.getElementById('nombre').value = payload.nombre;
+                if (payload.email) document.getElementById('email').value = payload.email;
+                // Trigger automático de Wallet Brick si ambos campos se rellenaron
+                setTimeout(() => onUserDataChanged(), 100);
+            } catch (e) {
+                console.log('No auth token');
+            }
+        }
+
+        /**
+         * Se ejecuta automáticamente cuando se completan nombre y email
+         * Crea la preferencia y renderiza el Wallet Brick
+         */
+        async function onUserDataChanged() {
+            const nombre = document.getElementById('nombre').value.trim();
+            const email = document.getElementById('email').value.trim();
+            
+            // Solo renderizar si ambos campos están completos y no está en proceso
+            if (nombre && email && !walletBrickInitialized && !isCreatingPreference) {
+                isCreatingPreference = true;
+                const btn = document.getElementById('btnPagar');
+                const brickLoading = document.getElementById('brick-loading');
+                const mensaje = document.getElementById('mensaje');
+
+                try {
+                    btn.style.display = 'none';
+                    brickLoading.classList.remove('hidden');
+                    mensaje.innerHTML = '';
+
+                    const requestBody = {
+                        evento_id: EVENTO_ID,
+                        email: email,
+                        nombre_comprador: nombre,
+                        codigo_cupon: null,
+                        precio_final: MONTO,
+                        tipo_venta: 'ANTICIPADA'
+                    };
+                    
+                    console.log('[test_checkout_100] Enviando request:', requestBody);
+
+                    const response = await fetch(`${API_BASE_URL}/api/tickets/checkout/init`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    const data = await response.json();
+                    
+                    console.log('[test_checkout_100] Respuesta del servidor:', {
+                        status: response.status,
+                        ok: response.ok,
+                        data: data
+                    });
+                    
+                    // Log completo de la preferencia para debugging
+                    console.log('[test_checkout_100] Datos completos de preferencia:', JSON.stringify(data, null, 2));
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Error en el servidor');
+                    }
+
+                    if (data.status === 'pending_payment') {
+                        currentPreferenceId = data.preference_id;
+                        if (!currentPreferenceId) {
+                            throw new Error('No se recibió el preference_id de MercadoPago');
+                        }
+                        
+                        console.log('[test_checkout_100] ✅ Preferencia creada:', {
+                            preference_id: data.preference_id,
+                            ticket_id: data.ticket_id
+                        });
+
+                        mensaje.innerHTML = '✅ Cargando formulario de pago...';
+                        await renderWalletBrick(currentPreferenceId);
+                        mensaje.innerHTML = '✅ Formulario de pago listo.';
+                        
+                    } else if (data.status === 'paid_free') {
+                        mensaje.innerHTML = '✅ ¡Reserva gratuita completada!';
+                        setTimeout(() => {
+                            window.location.href = `${API_BASE_URL}/frontend/comprobante.html?status=approved&external_reference=${data.ticket_id}`;
+                        }, 1500);
+                    }
+                } catch (err) {
+                    console.error('Error:', err);
+                    mensaje.innerHTML = `❌ ${err.message}`;
+                    btn.style.display = 'block';
+                    brickLoading.classList.add('hidden');
+                    isCreatingPreference = false;
+                    walletBrickInitialized = false;
+                }
+            }
+        }
+
+        /**
+         * Renderiza el Wallet Brick de MercadoPago
+         */
+        async function renderWalletBrick(preferenceId) {
+            try {
+                console.log('[Wallet Brick] Iniciando renderizado con preference:', preferenceId);
+                console.log('[Wallet Brick] SDK disponible:', typeof mp !== 'undefined');
+                
+                const bricksBuilder = mp.bricks();
+                console.log('[Wallet Brick] Bricks builder creado');
+                
+                // Crear y mostrar el Wallet Brick
+                await bricksBuilder.create('wallet', 'wallet-brick-container', {
+                    initialization: {
+                        preferenceId: preferenceId,
+                    },
+                    callbacks: {
+                        onError: (error) => {
+                            console.error('[Wallet Brick] ❌ Error callback:', {
+                                message: error?.message,
+                                status: error?.status,
+                                details: error
+                            });
+                            const mensaje = document.getElementById('mensaje');
+                            mensaje.innerHTML = `❌ Error en el formulario de pago: ${error?.message || 'Error desconocido'}`;
+                            document.getElementById('brick-loading').classList.add('hidden');
+                            isCreatingPreference = false;
+                            walletBrickInitialized = false;
+                        },
+                        onReady: () => {
+                            console.log('[Wallet Brick] ✅ Listo para pagar');
+                            console.log('[Wallet Brick] Contenedor HTML:', document.getElementById('wallet-brick-container').innerHTML.substring(0, 200));
+                            
+                            // Inspeccionar el estado del botón
+                            setTimeout(() => {
+                                const button = document.querySelector('[data-testid="wallet-button-submit"]') || 
+                                              document.querySelector('button[type="submit"]') ||
+                                              document.querySelector('[role="button"]');
+                                if (button) {
+                                    console.log('[Wallet Brick] Estado del botón:', {
+                                        disabled: button.disabled,
+                                        ariaDisabled: button.getAttribute('aria-disabled'),
+                                        classes: button.className,
+                                        visible: button.offsetParent !== null
+                                    });
+                                } else {
+                                    console.log('[Wallet Brick] No se encontró el botón en el DOM');
+                                }
+                            }, 500);
+                            
+                            document.getElementById('brick-loading').classList.add('hidden');
+                        },
+                        onSubmit: (formData) => {
+                            console.log('[Wallet Brick] ✅ Form submitted:', formData);
+                        },
+                        onChange: (data) => {
+                            console.log('[Wallet Brick] onChange evento:', data);
+                        }
+                    }
+                });
+
+                walletBrickInitialized = true;
+                console.log('[Wallet Brick] ✅ Renderizado exitosamente');
+            } catch (error) {
+                console.error('[Wallet Brick] ❌ Error al crear:', {
+                    message: error?.message,
+                    stack: error?.stack,
+                    fullError: error
+                });
+                const mensaje = document.getElementById('mensaje');
+                mensaje.innerHTML = `❌ No se pudo cargar el formulario de pago: ${error?.message || error}`;
+                document.getElementById('brick-loading').classList.add('hidden');
+                isCreatingPreference = false;
+                walletBrickInitialized = false;
+            }
+        }
+
+        // Event listeners para renderizar automáticamente
+        document.getElementById('email').addEventListener('change', onUserDataChanged);
+        document.getElementById('email').addEventListener('blur', onUserDataChanged);
+        document.getElementById('nombre').addEventListener('change', onUserDataChanged);
+        document.getElementById('nombre').addEventListener('blur', onUserDataChanged);
+
+        // Pre-llenar si hay sesión
+        prefillData();
+    </script>
+</body>
+
+</html>
