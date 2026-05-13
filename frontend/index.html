@@ -483,7 +483,25 @@
                 </div>
             </div>
 
+        </section>
 
+        <!-- Sección 2: Galería de Eventos Anteriores -->
+        <section class="py-16 bg-stone-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center text-neon mb-2">
+                    <i class="fas fa-images mr-2"></i>Imágenes de Eventos Anteriores
+                </h2>
+                <p class="text-center text-stone-400 mb-10">Shows, talleres y eventos destacados</p>
+
+                <!-- Contenedor dinámico para galería -->
+                <div id="previous-events-gallery" class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-6">
+                    <!-- Las imágenes se cargan dinámicamente aquí -->
+                    <div class="col-span-full text-center py-10">
+                        <i class="fas fa-spinner fa-spin text-4xl text-neon mb-4"></i>
+                        <p class="text-stone-400 mt-2">Cargando galería...</p>
+                    </div>
+                </div>
+            </div>
         </section>
 
     </main>
@@ -810,6 +828,81 @@
             `;
         }
 
+        /**
+         * Carga imágenes de eventos anteriores (shows, talleres, eventos)
+         * Máximo 3 por categoría, ordenadas por fecha descendente
+         */
+        async function loadPreviousEventsGallery() {
+            const container = document.getElementById('previous-events-gallery');
+            if (!container) return;
+
+            try {
+                const API_BASE_URL = window.location.origin;
+                const categories = ['shows', 'workshops', 'events'];
+                let allImages = [];
+
+                // Cargar imágenes de cada categoría
+                for (const category of categories) {
+                    const res = await fetch(`${API_BASE_URL}/api/gallery/${category}`);
+                    if (!res.ok) continue;
+                    
+                    const data = await res.json();
+                    const images = data.images || [];
+                    
+                    // Tomar máximo 3 por categoría y agregar etiqueta de categoría
+                    const topImages = images.slice(0, 3).map(img => ({
+                        ...img,
+                        category: category
+                    }));
+                    
+                    allImages = allImages.concat(topImages);
+                }
+
+                if (allImages.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-10">
+                            <i class="fas fa-images text-4xl text-stone-500 mb-4"></i>
+                            <p class="text-stone-400">No hay fotos disponibles aún.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Renderizar imágenes
+                container.innerHTML = allImages.map((image, idx) => {
+                    const categoryLabel = {
+                        'shows': '🎸 Show',
+                        'workshops': '🎨 Taller',
+                        'events': '🎉 Evento'
+                    }[image.category] || 'Evento';
+                    
+                    return `
+                        <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition duration-300 cursor-pointer neon-glow-img">
+                            <img src="${image.url}" 
+                                 alt="${categoryLabel}"
+                                 class="w-full h-56 object-cover hover:scale-110 transition duration-300"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/400x300/581c87/f0abfc?text=${categoryLabel}';">
+                            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition duration-300 flex items-end">
+                                <div class="p-3 w-full">
+                                    <p class="text-white font-semibold text-sm">${categoryLabel}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                if (isDev()) addDebugLog(`✓ Galería cargada: ${allImages.length} imágenes`, 'success');
+            } catch (error) {
+                console.error('✗ Error al cargar galería de eventos anteriores:', error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-10">
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                        <p class="text-red-400">Error al cargar la galería</p>
+                    </div>
+                `;
+            }
+        }
+
         async function fetchAgenda() {
             try {
                 console.debug('[AGENDA-INDEX] API base URL', API_BASE_URL);
@@ -1064,6 +1157,10 @@
             if (isDev()) addDebugLog('Iniciando carga de agenda pública...', 'info');
             // 2. Inicia la carga de la agenda pública
             fetchAgenda();
+            
+            // 3. Cargar galería de eventos anteriores
+            loadPreviousEventsGallery();
+            
             if (isDev()) addDebugLog('🚀 Aplicación lista', 'success');
             // El resto de la lógica de desplazamiento y menú móvil ya está integrada.
         });
