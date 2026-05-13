@@ -257,6 +257,9 @@
                 const elEmail = document.getElementById('email');
                 if (nombre && !elNombre.value) elNombre.value = nombre;
                 if (email && !elEmail.value) elEmail.value = email;
+                if (nombre || email) {
+                    showNotification('Datos completados con tu cuenta.', 'info', 3000);
+                }
             } catch (e) {
                 // Token malformado — ignorar silenciosamente
             }
@@ -517,6 +520,7 @@
                                 timestamp: new Date().toISOString()
                             });
                             document.getElementById('brick-loading').classList.add('hidden');
+                            elWalletContainer.classList.remove('hidden');
                             console.log('[Wallet Brick] Contenedor después de onReady:', elWalletContainer.offsetParent !== null);
                         }
                     }
