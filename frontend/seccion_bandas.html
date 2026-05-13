@@ -60,28 +60,7 @@
     </header>
 
     <main>
-        <!-- Hero Section -->
-        <!-- <section class="py-20 md:py-32 bg-stone-950 text-center">
-            <div class="max-w-4xl mx-auto px-4">
-                <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
-                    <span class="block text-neon"><i class="fas fa-music mr-3"></i>Bandas en Vivo</span>
-                </h1>
-                 <p class="mt-4 text-2xl text-stone-300 font-medium">
-                    El escenario donde las bandas independientes hacen vibrar Claypole
-                </p>
-                <p class="mt-6 text-xl text-fuchsia-400">
-                    ¿Tenés una banda? ¡Proponé tu fecha y tocá en El Templo!
-                </p>
-                <div class="mt-8">
-                    <a href="solicitud_fecha_bandas.html"
-                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
-                        <i class="fas fa-music mr-2"></i> Solicitar nueva fecha da banda o artistas en vivo
-                    </a>
-                </div> 
-            </div>
-        </section> -->
-
-        <!-- Próximos Eventos -->
+        <!-- Fotos de shows anteriores  -->
         <section class="py-16 bg-stone-950">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h2 class="text-4xl md:text-5xl font-bold text-center text-neon mb-10">
@@ -130,37 +109,27 @@
                 <div class="mt-8">
                     <a href="solicitud_fecha_bandas.html"
                         class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
-                        <i class="fas fa-music mr-2"></i> Solicitar nueva fecha da banda o artistas en vivo
+                        <i class="fas fa-music mr-2"></i> Solicitar nueva fecha de banda o artistas en vivo
                     </a>
                 </div>
             </div>
         </section>
 
-        <!-- Galería de Fotos -->
+        <!-- Fotos de Shows Anteriores -->
         <section class="py-16 bg-stone-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h2 class="text-3xl font-bold text-center text-neon mb-10">
                     <i class="fas fa-camera mr-2"></i> Shows Anteriores
                 </h2>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_banda_1.jpg" alt="Show en vivo"
-                            class="w-full h-64 object-cover rounded-lg mb-4"
-                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=Show+en+Vivo';">
-                        <p class="text-center text-white font-semibold">Noche de Rock</p>
-                    </div>
-                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_banda_2.jpg" alt="Público disfrutando"
-                            class="w-full h-64 object-cover rounded-lg mb-4"
-                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=El+P%C3%BAblico';">
-                        <p class="text-center text-white font-semibold">La energía del público</p>
-                    </div>
-                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_banda_3.jpg" alt="Escenario"
-                            class="w-full h-64 object-cover rounded-lg mb-4"
-                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=El+Escenario';">
-                        <p class="text-center text-white font-semibold">Nuestro escenario</p>
+                <!-- Contenedor dinámico para galería -->
+                <div id="gallery-shows-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Las imágenes se cargan dinámicamente aquí -->
+                    <div class="col-span-full text-center py-10">
+                        <div class="inline-block">
+                            <i class="fas fa-spinner fa-spin text-4xl text-neon mb-4"></i>
+                            <p class="text-stone-400 mt-2">Cargando galería...</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -322,6 +291,63 @@
             `;
         }
 
+        /**
+         * Carga las imágenes de la galería dinámicamente desde el backend
+         * @param {string} category - Categoría de galería ('shows', 'workshops', 'events')
+         */
+        async function loadGallery(category = 'shows') {
+            const container = document.getElementById('gallery-shows-container');
+            if (!container) return;
+
+            try {
+                const API_BASE_URL = window.location.origin;
+                const res = await fetch(`${API_BASE_URL}/api/gallery/${category}`);
+                
+                if (!res.ok) {
+                    throw new Error(`Error ${res.status} al cargar galería`);
+                }
+
+                const data = await res.json();
+                const { images = [] } = data;
+
+                if (images.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-10">
+                            <i class="fas fa-images text-4xl text-stone-500 mb-4"></i>
+                            <p class="text-stone-400">No hay fotos disponibles en esta galería.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Renderizar galería
+                container.innerHTML = images.map((image, idx) => {
+                    const placeholderText = `Foto+${idx + 1}`;
+                    return `
+                        <div class="p-4 bg-rustic rounded-xl neon-glow-img cursor-zoom-in" 
+                             onclick="openLightbox(this)">
+                            <img src="${image.url}" 
+                                 alt="Foto ${idx + 1} de ${category}"
+                                 class="w-full h-64 object-cover rounded-lg mb-4 gallery-image"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=${placeholderText}';">
+                            <p class="text-center text-white font-semibold">Foto ${idx + 1}</p>
+                        </div>
+                    `;
+                }).join('');
+
+                console.log(`✓ Galería ${category} cargada: ${images.length} imágenes`);
+            } catch (error) {
+                console.error(`✗ Error al cargar galería ${category}:`, error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-10">
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                        <p class="text-red-400">Error al cargar la galería</p>
+                        <p class="text-stone-400 text-sm mt-2">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
         // Cargar eventos y renderizar próximos 4
         async function loadEventos() {
             console.group('🎵 [BANDAS] Carga de eventos - ENTRADA');
@@ -406,6 +432,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadEventos();
+            loadGallery('shows');  // Cargar galería de shows
         });
 
         // Lightbox functionality for images inside the grid
@@ -468,6 +495,23 @@
                 if (e.key === 'ArrowRight') next();
             });
         })();
+
+        /**
+         * Abre el lightbox desde la galería dinámica
+         * @param {HTMLElement} element - El elemento div con la imagen
+         */
+        function openLightbox(element) {
+            const img = element.querySelector('img.gallery-image');
+            if (!img) return;
+
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            
+            lightboxImg.src = img.src;
+            lightboxImg.alt = img.alt || '';
+            lightbox.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
     </script>
     <script src="/navbar.js"></script>
 </body>

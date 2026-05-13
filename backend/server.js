@@ -254,6 +254,7 @@ try {
     const usuariosRoutes = require('./routes/usuariosRoutes');
     const eventosRoutes = require('./routes/eventosRoutes');
     const uploadsRoutes = require('./routes/uploadsRoutes');
+    const galleryRoutes = require('./routes/galleryRoutes');
 
     // NUEVO: Rutas de Integración con Puppeteer (cargar condicionalmente con try/catch)
     let mercadopagoRoutes = null;
@@ -291,6 +292,7 @@ try {
     app.use('/api/usuarios', usuariosRoutes);
     app.use('/api/eventos', eventosRoutes);
     app.use('/api/uploads', uploadsRoutes);
+    app.use('/api', galleryRoutes);
 
     // NUEVAS INTEGRACIONES - Servicios Puppeteer (solo si se cargaron correctamente)
     if (mercadopagoRoutes) {
