@@ -743,7 +743,7 @@
                                 ${b.cliente_nombre
                     ? `<span style="color:#4ade80;">👤 ${b.cliente_nombre}${b.cliente_apellido ? ' ' + b.cliente_apellido : ''}</span><br>
                                    <span style="color:#9ca3af;">${b.cliente_email || b.cliente_telefono || ''}</span>`
-                    : `${b.contacto_nombre || '<span style="color:#6b7280;">Sin contacto</span>'}<br><span style="color:#9ca3af;">${b.contacto_email || ''}</span>`
+                    : `${((b.contacto_nombre || '') + (b.contacto_apellido ? ' ' + b.contacto_apellido : '')) || '<span style="color:#6b7280;">Sin contacto</span>'}<br><span style="color:#9ca3af;">${b.contacto_email || ''}</span>`
                 }
                             </div>
                             <button class="btn btn-icon btn-sm" onclick="editContactoBanda(${b.id_banda}, ${b.id_cliente || 'null'})" title="Editar contacto" style="flex-shrink:0;color:#a78bfa;">
@@ -812,7 +812,7 @@
                 }
 
                 // Contacto
-                const contactoNombre = e.contacto_nombre || (e.id_cliente ? `Cliente #${e.id_cliente}` : null);
+                const contactoNombre = ((e.contacto_nombre || '') + (e.contacto_apellido ? ' ' + e.contacto_apellido : '')) || (e.id_cliente ? `Cliente #${e.id_cliente}` : null);
                 const contactoSub = e.contacto_email || e.contacto_telefono || '';
                 const contactoHtml = `<div style="display:flex;align-items:flex-start;gap:6px;">
                     <div style="font-size:0.85rem;flex:1;">

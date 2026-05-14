@@ -164,15 +164,30 @@ check_backend_http() {
     return 0
   fi
 
+  local health_url="http://localhost:3000/health"
+  local max_wait=30
+  local interval=2
+  local waited=0
+
   echo ""
   echo -e "${CYAN}[*] Verificando disponibilidad del backend HTTP...${NC}"
-  if curl -sS --max-time 5 http://localhost:3000/health >/dev/null 2>&1; then
-    echo -e "  ${GREEN}✓ Backend HTTP responde correctamente en http://localhost:3000/health${NC}"
-  else
-    echo -e "  ${RED}✗ El backend no responde en http://localhost:3000/health${NC}"
-    echo -e "    ${YELLOW}Revisá los logs con: ./scripts/backend_logs.sh${NC}"
-    echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
-  fi
+  echo -e "${CYAN}    Esperando respuesta en $health_url hasta ${max_wait}s...${NC}"
+
+  while [ $waited -lt $max_wait ]; do
+    if curl -sS --max-time 3 "$health_url" >/dev/null 2>&1; then
+      echo -e "  ${GREEN}✓ Backend HTTP responde correctamente en $health_url${NC}"
+      return 0
+    fi
+
+    sleep $interval
+    waited=$((waited + interval))
+    echo -e "  ${YELLOW}...esperando ${waited}/${max_wait}s${NC}"
+  done
+
+  echo -e "  ${RED}✗ El backend no responde en $health_url después de ${max_wait} segundos${NC}"
+  echo -e "    ${YELLOW}Revisá los logs con: ./scripts/backend_logs.sh${NC}"
+  echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
+  return 1
 }
 
 if [[ ${1:-} == "-h" || ${1:-} == "--help" ]]; then
