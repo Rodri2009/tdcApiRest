@@ -927,20 +927,56 @@
 
         function autoSelectClienteByCurrentUser() {
             // Si el usuario actual coincide con un cliente, seleccionarlo automáticamente
-            if (!navbarManager || !navbarManager.userName) return;
+            if (!navbarManager || !navbarManager.userName) {
+                console.log('[CLIENTE_AUTO] No hay navbarManager o userName disponible');
+                return;
+            }
             
             const currentUserName = navbarManager.userName.trim().toLowerCase();
+            const currentUserEmail = navbarManager.userEmail ? navbarManager.userEmail.trim().toLowerCase() : null;
             const select = document.getElementById('evento-cliente-select');
             
-            // Buscar opción que coincida con el nombre del usuario
-            for (let i = 0; i < select.options.length; i++) {
+            console.log('[CLIENTE_AUTO] =========================');
+            console.log('[CLIENTE_AUTO] Buscando coincidencia para usuario:');
+            console.log('[CLIENTE_AUTO]   - userName:', navbarManager.userName);
+            console.log('[CLIENTE_AUTO]   - userEmail:', navbarManager.userEmail);
+            console.log('[CLIENTE_AUTO]   - userName normalizado:', currentUserName);
+            console.log('[CLIENTE_AUTO]   - userEmail normalizado:', currentUserEmail);
+            console.log('[CLIENTE_AUTO] Clientes disponibles:');
+            
+            // Mostrar todos los clientes disponibles
+            for (let i = 1; i < select.options.length; i++) {
+                const optionText = select.options[i].textContent.trim();
+                const optionValue = select.options[i].value;
+                console.log(`[CLIENTE_AUTO]   [${i}] "${optionText}" (id: ${optionValue})`);
+            }
+            
+            // Búsqueda exacta por nombre o email
+            for (let i = 1; i < select.options.length; i++) {
                 const optionText = select.options[i].textContent.trim().toLowerCase();
-                if (optionText === currentUserName && select.options[i].value) {
-                    select.value = select.options[i].value;
-                    console.log(`[EVENTOS] ✓ Cliente auto-seleccionado: ${select.options[i].textContent}`);
+                const optionValue = select.options[i].value;
+                
+                // Coincidencia exacta con nombre
+                if (optionText === currentUserName || optionText === currentUserEmail) {
+                    select.value = optionValue;
+                    console.log(`[CLIENTE_AUTO] ✓ Cliente auto-seleccionado (coincidencia exacta): "${select.options[i].textContent}"`);
                     return;
                 }
             }
+            
+            // Búsqueda parcial: nombre contenido en opción
+            for (let i = 1; i < select.options.length; i++) {
+                const optionText = select.options[i].textContent.trim().toLowerCase();
+                const optionValue = select.options[i].value;
+                
+                if (optionText.includes(currentUserName) && currentUserName.length > 3) {
+                    select.value = optionValue;
+                    console.log(`[CLIENTE_AUTO] ✓ Cliente auto-seleccionado (coincidencia parcial): "${select.options[i].textContent}"`);
+                    return;
+                }
+            }
+            
+            console.log('[CLIENTE_AUTO] ✗ No se encontró cliente que coincida con el usuario');
         }
 
         function openEventoModal() {
