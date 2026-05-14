@@ -945,11 +945,13 @@
                 
                 if (optionValue === clientId) {
                     select.value = clientId;
-                    console.log(`[CLIENTE_AUTO] ✓ Cliente auto-seleccionado: "${optionText}" (id: ${clientId})`);\n                    return;
+                    console.log(`[CLIENTE_AUTO] ✓ Cliente auto-seleccionado: "${optionText}" (id: ${clientId})`);
+                    return;
                 }
             }
             
-            console.log(`[CLIENTE_AUTO] ✗ Cliente no encontrado: id=${clientId}`);\n        }
+            console.log(`[CLIENTE_AUTO] ✗ Cliente no encontrado: id=${clientId}`);
+        }
 
         function openEventoModal() {
             // Abrir modal para nuevo evento
