@@ -282,7 +282,8 @@
                 document.getElementById('duracion').textContent = '3 hora(s)'; // Duración promedio
                 document.getElementById('cantidad_de_personas').textContent = 'A determinar';
 
-                document.getElementById('nombre_cliente').textContent = cliente.nombre;
+                const nombreCompletoCliente = (cliente.nombre || '') + (cliente.apellido ? ' ' + cliente.apellido : '');
+                document.getElementById('nombre_cliente').textContent = nombreCompletoCliente;
                 document.getElementById('email').textContent = cliente.email;
                 document.getElementById('telefono').textContent = cliente.telefono;
 

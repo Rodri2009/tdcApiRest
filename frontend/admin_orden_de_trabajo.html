@@ -202,9 +202,10 @@
                     const container = document.getElementById('main-container');
                     let tableRows = '';
                     data.assignedStaff.forEach(person => {
+                        const nombreCompleto = (person.nombre || '') + (person.apellido ? ' ' + person.apellido : '');
                         tableRows += `
                 <tr>
-                    <td>${person.nombre}</td>
+                    <td>${nombreCompleto}</td>
                     <td>${person.rol}</td>
                     <td class="number">$ ${person.costoPorHora.toLocaleString('es-AR')}</td>
                     <td class="number">${data.duracionTotalPersonalEnHoras} hs</td>

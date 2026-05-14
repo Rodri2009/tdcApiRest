@@ -173,7 +173,8 @@
                         let opcionesHtml = '<option value="">-- Seleccionar --</option>';
                         personalParaEsteRol.forEach(persona => {
                             const esSeleccionado = persona.id === valorSeleccionado ? 'selected' : '';
-                            opcionesHtml += `<option value="${persona.id}" ${esSeleccionado}>${persona.nombre}</option>`;
+                            const nombreCompleto = (persona.nombre || '') + (persona.apellido ? ' ' + persona.apellido : '');
+                            opcionesHtml += `<option value="${persona.id}" ${esSeleccionado}>${nombreCompleto}</option>`;
                         });
                         formHtml += `<select name="${rol.rol}">${opcionesHtml}</select>`;
                     }

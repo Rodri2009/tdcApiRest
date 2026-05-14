@@ -555,9 +555,10 @@
             }
             tbody.innerHTML = filtered.map(p => {
                 const horario = p.horaInicio && p.horaFin ? `${p.horaInicio} - ${p.horaFin}` : '-';
+                const nombreCompleto = (p.nombre || '') + (p.apellido ? ' ' + p.apellido : '');
                 return `
                 <tr>
-                    <td><strong>${p.nombre}</strong></td>
+                    <td><strong>${nombreCompleto}</strong></td>
                     <td>${p.especialidad || '-'}</td>
                     <td>${p.telefono || '-'}</td>
                     <td>${p.diasTrabaja || '-'}</td>

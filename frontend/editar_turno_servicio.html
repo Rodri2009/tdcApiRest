@@ -768,7 +768,8 @@
             // Por ahora mostrar todos - en producción filtrar por especialidad
             profSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
             profesionales.forEach(p => {
-                profSelect.innerHTML += `<option value="${p.id}">${p.nombre} - ${p.especialidad || 'General'}</option>`;
+                const nombreCompleto = (p.nombre || '') + (p.apellido ? ' ' + p.apellido : '');
+                profSelect.innerHTML += `<option value="${p.id}">${nombreCompleto} - ${p.especialidad || 'General'}</option>`;
             });
 
             // Filtrar precios del servicio
@@ -791,8 +792,9 @@
 
             const prof = profesionales.find(p => p.id == profId);
             if (prof) {
-                document.getElementById('profAvatar').textContent = prof.nombre.charAt(0).toUpperCase();
-                document.getElementById('profNombre').textContent = prof.nombre;
+                const nombreCompleto = (prof.nombre || '') + (prof.apellido ? ' ' + prof.apellido : '');
+                document.getElementById('profAvatar').textContent = nombreCompleto.charAt(0).toUpperCase();
+                document.getElementById('profNombre').textContent = nombreCompleto;
                 document.getElementById('profEspecialidad').textContent = prof.especialidad || 'Especialidad no especificada';
                 infoDiv.style.display = 'flex';
             }

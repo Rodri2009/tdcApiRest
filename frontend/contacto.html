@@ -559,13 +559,14 @@
       container.style.display = 'block';
     }
 
-    function selectCliente(id, nombre, telefono, email) {
-      selectedClient = { id, nombre, telefono, email };
-      document.getElementById('nombreCompleto').value = nombre;
+    function selectCliente(id, nombre, apellido, telefono, email) {
+      selectedClient = { id, nombre, apellido, telefono, email };
+      const nombreCompleto = nombre + (apellido ? ' ' + apellido : '');
+      document.getElementById('nombreCompleto').value = nombreCompleto;
       document.getElementById('celular').value = telefono;
       document.getElementById('email').value = email;
       document.getElementById('client-suggestions').style.display = 'none';
-      showClientBadge(nombre, id);
+      showClientBadge(nombreCompleto, id);
     }
 
     function showClientBadge(nombre, id) {
