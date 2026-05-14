@@ -451,6 +451,7 @@
                     <!-- Datos de contacto (compacto, editar desde tabla) -->
                     <input type="hidden" id="evento-cliente-id">
                     <input type="hidden" id="evento-contacto-nombre">
+                    <input type="hidden" id="evento-contacto-apellido">
                     <input type="hidden" id="evento-contacto-email">
                     <input type="hidden" id="evento-contacto-whatsapp">
                     <div style="margin-top:4px;padding:6px 10px;background:#1a1025;border-left:3px solid #6d28d9;border-radius:0 4px 4px 0;font-size:0.8rem;display:flex;align-items:center;gap:8px;">
@@ -612,6 +613,7 @@
                             id_cliente: it.id_cliente || null,
                             nombre_evento: it.nombre_evento || '',
                             contacto_nombre: it.contacto_nombre || null,
+                            contacto_apellido: it.contacto_apellido || null,
                             contacto_email: it.contacto_email || null,
                             contacto_telefono: it.contacto_telefono || it.contacto_whatsapp || null,
                             fecha: it.fecha_evento || it.fecha || null,
@@ -917,6 +919,7 @@
             document.getElementById('evento-cliente-select').value = evento.id_cliente || ''; // Actualizar selector de cliente (o auto-seleccionar si coincide)
             if (!evento.id_cliente) autoSelectClienteByCurrentUser();
             document.getElementById('evento-contacto-nombre').value = '';
+            document.getElementById('evento-contacto-apellido').value = '';
             document.getElementById('evento-contacto-whatsapp').value = '';
             document.getElementById('evento-contacto-email').value = '';
             _updateEventoContactoResumen();
@@ -1028,6 +1031,7 @@
                 expectativa_publico: document.getElementById('evento-aforo').value ? String(document.getElementById('evento-aforo').value) : null,
                 es_publico: document.getElementById('evento-publico').value === '1' ? 1 : 0,
                 contacto_nombre: document.getElementById('evento-contacto-nombre').value || null,
+                contacto_apellido: document.getElementById('evento-contacto-apellido').value || null,
                 contacto_email: document.getElementById('evento-contacto-email').value || null,
                 contacto_telefono: document.getElementById('evento-contacto-whatsapp').value || null,
                 id_cliente: clienteSelectValue ? parseInt(clienteSelectValue) : null,
@@ -1268,9 +1272,11 @@
 
         function _updateEventoContactoResumen() {
             var nombre = document.getElementById('evento-contacto-nombre').value || '';
+            var apellido = document.getElementById('evento-contacto-apellido').value || '';
+            var nombreCompleto = (nombre + (apellido ? ' ' + apellido : '')).trim();
             var email  = document.getElementById('evento-contacto-email').value  || '';
             var tel    = document.getElementById('evento-contacto-whatsapp').value || '';
-            var partes = [nombre, email, tel].filter(Boolean);
+            var partes = [nombreCompleto || null, email, tel].filter(Boolean);
             var el = document.getElementById('evento-contacto-resumen');
             if (el) el.textContent = partes.length ? partes.join(' · ') : 'Sin contacto asignado';
         }
@@ -1506,7 +1512,7 @@
         }
 
         function _clearEventoClienteModal() {
-            ['eventoModalClienteId','eventoModalClienteNombre','eventoModalClienteEmail','eventoModalClienteTelefono'].forEach(id => {
+            ['eventoModalClienteId','eventoModalClienteNombre','eventoModalClienteApellido','eventoModalClienteEmail','eventoModalClienteTelefono'].forEach(id => {
                 document.getElementById(id).value = '';
             });
             document.getElementById('eventoModalClienteIdDisplay').textContent = '-';
@@ -1576,9 +1582,10 @@
         async function saveEventoClienteModal() {
             var id = document.getElementById('eventoModalClienteId').value;
             var nombre = document.getElementById('eventoModalClienteNombre').value.trim();
+            var apellido = document.getElementById('eventoModalClienteApellido').value.trim();
             var email = document.getElementById('eventoModalClienteEmail').value.trim();
             var telefono = document.getElementById('eventoModalClienteTelefono').value.trim();
-            if (!nombre && !email && !telefono) { showBanner('Completá al menos un campo.', 'error'); return; }
+            if (!nombre && !apellido && !email && !telefono) { showBanner('Completá al menos un campo.', 'error'); return; }
             try {
                 var token = localStorage.getItem('authToken');
                 // ── Caso: llamado desde icono de fila de eventos
@@ -1588,7 +1595,7 @@
                     var res = await fetch('/api/solicitudes-fechas-bandas/' + idEvento, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                        body: JSON.stringify({ contacto_nombre: nombre, contacto_email: email, contacto_telefono: telefono })
+                        body: JSON.stringify({ contacto_nombre: nombre, contacto_apellido: apellido, contacto_email: email, contacto_telefono: telefono })
                     });
                     var data = await res.json().catch(function() { return {}; });
                     if (!res.ok) { showBanner(data.error || 'Error al guardar contacto', 'error'); return; }
@@ -1603,7 +1610,7 @@
                 var res = await fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ nombre: nombre, email: email, telefono: telefono })
+                    body: JSON.stringify({ nombre: nombre, apellido: apellido, email: email, telefono: telefono })
                 });
                 var data = await res.json().catch(function() { return {}; });
                 if (!res.ok) { showBanner(data.error || 'Error al guardar contacto', 'error'); return; }
@@ -1612,6 +1619,7 @@
                 document.getElementById('eventoModalClienteId').value = nuevoId;
                 document.getElementById('eventoModalClienteIdDisplay').textContent = nuevoId || '-';
                 document.getElementById('evento-contacto-nombre').value = nombre;
+                document.getElementById('evento-contacto-apellido').value = apellido;
                 document.getElementById('evento-contacto-email').value = email;
                 document.getElementById('evento-contacto-whatsapp').value = telefono;
                 _updateEventoContactoResumen();
@@ -1635,6 +1643,8 @@
             + '<div style="margin-bottom:8px;font-size:0.82rem;color:#9ca3af;">ID Cliente: <span id="eventoModalClienteIdDisplay">-</span></div>'
             + '<div style="margin-bottom:10px;"><label>Nombre</label>'
             + '<input type="text" id="eventoModalClienteNombre" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;"></div>'
+            + '<div style="margin-bottom:10px;"><label>Apellido</label>'
+            + '<input type="text" id="eventoModalClienteApellido" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;"></div>'
             + '<div style="margin-bottom:10px;"><label>Email</label>'
             + '<input type="email" id="eventoModalClienteEmail" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;"></div>'
             + '<div style="margin-bottom:16px;"><label>Teléfono / WhatsApp</label>'
