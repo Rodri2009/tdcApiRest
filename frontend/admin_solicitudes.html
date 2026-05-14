@@ -797,7 +797,7 @@
                         tr.innerHTML = `<td data-label="Creado" title="ID: ${solicitud.id}">${fechaSolicitud}</td>
                         <td data-label="Fecha Solicitud" style="display:none;">${fechaSolicitud}</td>
                         <td data-label="Tipo">${solicitud.tipoNombre || tipoLegible}</td>
-                        <td data-label="Cliente">${solicitud.nombreCliente || '<em>No completado</em>'}</td>
+                        <td data-label="Cliente">${(solicitud.nombreCliente || '') + (solicitud.apellidoCliente ? '<br>' + solicitud.apellidoCliente : '') || '<em>No completado</em>'}</td>
                         <td data-label="Fecha Evento">${fechaEvento}</td>
                         <td data-label="Hora Inicio">${horaInicio}</td>
                         <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer" onerror="handleFlyerError(this)">' : '<span class="flyer-missing" style="flex-direction:column;">📄<span class="flyer-missing-text">Sin flyer</span><button type="button" class="btn-upload-flyer" data-solicitud-id="' + solicitud.id + '">＋ Subir imagen</button></span>'}</td>

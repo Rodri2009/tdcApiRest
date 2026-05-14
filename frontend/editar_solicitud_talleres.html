@@ -514,6 +514,23 @@
                 </div>
             </div>
 
+            <!-- Contacto (COMPACTO) -->
+            <div
+                style="padding:8px 12px;background:#1a1025;border-left:3px solid #f0abfc;border-radius:0 4px 4px 0;font-size:0.85rem;display:flex;align-items:center;gap:10px;margin-bottom:15px;">
+                <i class="fas fa-address-book" style="color:#f0abfc;flex-shrink:0;"></i>
+                <span id="contactDataInfo"
+                    style="color:#d6d3d1;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cargando
+                    datos de contacto...</span>
+                <button type="button" class="btn btn-secondary" id="btnEditCliente" onclick="openEditClienteModal()"
+                    style="padding:5px 10px;font-size:0.85rem;flex-shrink:0;display:none;"><i class="fas fa-edit"></i>
+                    Editar</button>
+            </div>
+            <!-- Campos ocultos para datos de contacto (compatibilidad) -->
+            <input type="hidden" id="clienteId" value="" />
+            <input type="hidden" id="nombreContacto" />
+            <input type="hidden" id="emailContacto" />
+            <input type="hidden" id="telefonoContacto" />
+
             <fieldset id="edit-fieldset">
                 <input type="hidden" id="precioBase" name="precioBase">
 
@@ -606,6 +623,50 @@
     <script src="/formLogic.js"></script>
     <script>
         // ============================================================
+        // CARGA DE CLIENTE Y ACTUALIZACIÓN DE CONTACTO COMPACTO
+        // ============================================================
+        function loadClienteData(idCliente) {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken || !idCliente) return;
+
+            fetch(`/api/admin/clientes/${idCliente}`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            }).then(r => r.ok ? r.json() : null).then(cliente => {
+                if (!cliente) return;
+                console.log('[TALLERES] 📋 Datos del cliente cargados:', cliente);
+
+                // Llenar campos de contacto
+                const nombreContactoInput = document.getElementById('nombreContacto');
+                const emailContactoInput = document.getElementById('emailContacto');
+                const telefonoContactoInput = document.getElementById('telefonoContacto');
+                const clienteIdInput = document.getElementById('clienteId');
+
+                if (nombreContactoInput) nombreContactoInput.value = cliente.nombre || '';
+                if (emailContactoInput) emailContactoInput.value = cliente.email || '';
+                if (telefonoContactoInput) telefonoContactoInput.value = cliente.telefono || '';
+                if (clienteIdInput) clienteIdInput.value = cliente.id_cliente || '';
+
+                // ✓ ACTUALIZAR ELEMENTO COMPACTO contactDataInfo
+                updateContactDataInfo(cliente.nombre, cliente.email, cliente.telefono, cliente.apellido);
+            }).catch(err => console.error('[TALLERES] Error cargando cliente:', err));
+        }
+
+        function updateContactDataInfo(nombre, email, telefono, apellido = '') {
+            const contactDataInfo = document.getElementById('contactDataInfo');
+            if (contactDataInfo) {
+                const nombreCompleto = (nombre || '') + (apellido ? ' ' + apellido : '');
+                const parts = [nombreCompleto, email, telefono].filter(Boolean);
+                const summary = parts.length > 0 ? parts.join(' | ') : 'Sin información de contacto';
+                contactDataInfo.textContent = summary;
+                console.log('[TALLERES] contactDataInfo actualizado:', summary);
+            }
+        }
+
+        function openEditClienteModal() {
+            alert('Edición de cliente no disponible en talleres. Contacte con administración.');
+        }
+
+        // ============================================================
         // INICIALIZACIÓN
         // ============================================================
         document.addEventListener('DOMContentLoaded', () => {
@@ -642,6 +703,17 @@
                     console.log('[ESTADO] Estado inicial cargado:', estadoActual);
                 }
             }, 500);
+
+            // Cargar datos del cliente con apellido (COMPACTO)
+            setTimeout(() => {
+                if (window.currentSolicitud && window.currentSolicitud.idCliente) {
+                    loadClienteData(window.currentSolicitud.idCliente);
+                } else if (window.currentSolicitud && window.currentSolicitud.id_cliente) {
+                    loadClienteData(window.currentSolicitud.id_cliente);
+                }
+            }, 1500);
+
+            setupEstadoDropdown();
         });
 
         // Estado anterior para revertir si cancela

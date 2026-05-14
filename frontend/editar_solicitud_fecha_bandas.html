@@ -1519,7 +1519,8 @@
                         // ✓ ACTUALIZAR ELEMENTO COMPACTO contactDataInfo
                         const contactDataInfo = document.getElementById('contactDataInfo');
                         if (contactDataInfo) {
-                            const parts = [cliente.nombre, cliente.email, cliente.telefono].filter(Boolean);
+                            const nombreCompleto = (cliente.nombre || '') + (cliente.apellido ? ' ' + cliente.apellido : '');
+                            const parts = [nombreCompleto, cliente.email, cliente.telefono].filter(Boolean);
                             const summary = parts.length > 0 ? parts.join(' | ') : 'Sin información de contacto';
                             contactDataInfo.textContent = summary;
                             console.log('[BANDAS] Contacto summary actualizado:', summary);
@@ -2092,10 +2093,11 @@
 
         /* ================ MODAL DE EDICIÓN DE CLIENTE ================ */
 
-        function updateContactDataInfo(nombre, email, telefono) {
+        function updateContactDataInfo(nombre, email, telefono, apellido = '') {
             const contactDataInfo = document.getElementById('contactDataInfo');
             if (contactDataInfo) {
-                const parts = [nombre, email, telefono].filter(Boolean);
+                const nombreCompleto = (nombre || '') + (apellido ? ' ' + apellido : '');
+                const parts = [nombreCompleto, email, telefono].filter(Boolean);
                 const summary = parts.length > 0 ? parts.join(' | ') : 'Sin información de contacto';
                 contactDataInfo.textContent = summary;
                 console.log('[BANDAS] contactDataInfo actualizado:', summary);
@@ -2218,7 +2220,7 @@
             document.getElementById('emailContacto').value = email;
             document.getElementById('telefonoContacto').value = telefono;
             // ✓ Actualizar contactDataInfo
-            updateContactDataInfo(nombre, email, telefono);
+            updateContactDataInfo(nombre, email, telefono, apellido);
             // Limpiar búsqueda
             document.getElementById('modalBuscadorClienteInput').value = '';
             document.getElementById('modalBuscadorResultados').innerHTML = '';
@@ -2235,6 +2237,7 @@
         async function saveClienteModal() {
             const id = document.getElementById('clienteId').value;
             const nombre = document.getElementById('modalClienteNombre').value.trim();
+            const apellido = document.getElementById('modalClienteApellido') ? document.getElementById('modalClienteApellido').value.trim() : '';
             const email = document.getElementById('modalClienteEmail').value.trim();
             const telefono = document.getElementById('modalClienteTelefono').value.trim();
 
@@ -2259,7 +2262,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ nombre, email, telefono })
+                    body: JSON.stringify({ nombre, apellido, email, telefono })
                 });
 
                 const data = await res.json();
@@ -2285,7 +2288,7 @@
                 document.getElementById('telefonoContacto').value = telefono;
 
                 // ✓ Actualizar contactDataInfo
-                updateContactDataInfo(nombre, email, telefono);
+                updateContactDataInfo(nombre, email, telefono, apellido);
 
                 // Ahora actualizar la solicitud con el id_cliente (si existe solicitud abierta)
                 if (eventoId) {

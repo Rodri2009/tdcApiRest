@@ -484,7 +484,9 @@ const App = {
 
         if (this.config.mode === 'edit' && idFromUrl) {
             // MODO EDICIÓN
+            // Mantener el ID original con su prefijo (tll_, srv_, alq_, ev_, etc)
             this.solicitudId = idFromUrl;
+            console.log('[FORM-INIT] Parámetro URL:', idFromUrl, '→ usando con prefijo');
 
             // Cancelar cualquier request anterior pendiente
             if (this.loadAbortController) {
@@ -502,7 +504,12 @@ const App = {
                 signal: this.loadAbortController.signal,
                 headers: headers
             })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                    }
+                    return res.json();
+                })
                 .then(solicitudData => {
                     console.debug('[SOLICITUD][GET] respuesta:', solicitudData);
                     if (!solicitudData) throw new Error("Solicitud no encontrada");

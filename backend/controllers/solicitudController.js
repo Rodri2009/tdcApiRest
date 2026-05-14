@@ -672,12 +672,17 @@ const getSolicitudPorId = async (req, res) => {
                     NULL as cantidadPersonas,
                     st.precio as precioBase,
                     COALESCE(c.nombre, '') as nombreCompleto,
-                    c.telefono as telefono,
-                    c.email as email,
+                    COALESCE(c.apellido, '') as apellidoCliente,
+                    COALESCE(c.telefono, '') as telefono,
+                    COALESCE(c.email, '') as email,
                     sol.descripcion,
                     sol.estado,
                     st.nombre_taller as nombreTaller,
-                    COALESCE(sol.es_publico, 0) as esPublico
+                    COALESCE(sol.es_publico, 0) as esPublico,
+                    COALESCE(sol.descripcion_corta, '') as descripcion_corta,
+                    COALESCE(sol.descripcion_larga, '') as descripcion_larga,
+                    sol.fecha_creacion as fecha_creacion,
+                    COALESCE(c.id_cliente, '') as id_cliente
                 FROM solicitudes_talleres st
                 JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
@@ -697,6 +702,7 @@ const getSolicitudPorId = async (req, res) => {
             };
 
             logVerbose(`[SOLICITUD][GET] Taller obtenido: ${taller.nombreCompleto}`);
+            console.log(`[SOLICITUD][GET] Respuesta JSON taller tll_${tallerId}:`, JSON.stringify(respuesta, null, 2));
             return res.status(200).json(respuesta);
         }
 
