@@ -355,6 +355,15 @@
                 <form id="form-evento">
                     <input type="hidden" id="evento-id">
 
+                    <!-- Cliente (quien solicita/organiza) -->
+                    <div class="form-group">
+                        <label><i class="fas fa-user-tie"></i> Cliente / Organizador *</label>
+                        <select id="evento-cliente-select" style="width: 100%;" required>
+                            <option value="">-- Seleccionar cliente --</option>
+                        </select>
+                        <p style="margin: 6px 0 0 0; font-size: 0.8rem; color: #9ca3af;">El cliente vinculado a esta solicitud de evento</p>
+                    </div>
+
                     <!-- Nombre del evento -->
                     <div class="form-group">
                         <label><i class="fas fa-tag"></i> Nombre del evento <span style="font-size:0.78rem;color:#9ca3af;">(descripción corta)</span></label>
@@ -375,15 +384,6 @@
                             <label><i class="fas fa-clock"></i> Hora de Fin</label>
                             <input type="time" id="evento-hora-fin" value="02:00">
                         </div>
-                    </div>
-
-                    <!-- Cliente (quien solicita/organiza) -->
-                    <div class="form-group">
-                        <label><i class="fas fa-user-tie"></i> Cliente / Organizador</label>
-                        <select id="evento-cliente-select" style="width: 100%;">
-                            <option value="">-- Seleccionar cliente --</option>
-                        </select>
-                        <p style="margin: 6px 0 0 0; font-size: 0.8rem; color: #9ca3af;">El cliente vinculado a esta solicitud de evento</p>
                     </div>
 
                     <!-- Banda principal y Género -->
@@ -912,8 +912,9 @@
             document.getElementById('evento-estado').value = evento.estado || 'Solicitado';
             document.getElementById('evento-publico').value = evento.es_publico ? '1' : '0';
             document.getElementById('evento-cliente-id').value = evento.id_cliente || '';
-            document.getElementById('evento-cliente-select').value = evento.id_cliente || ''; // Actualizar selector de cliente
-            document.getElementById('evento-contacto-nombre').value = '';
+            document.getElementById('evento-cliente-select').value = evento.id_cliente || ''; // Actualizar selector de cliente (o auto-seleccionar si coincide)
+            if (!evento.id_cliente) autoSelectClienteByCurrentUser();
+            document.getElementById('evento-contacto-nombre').value = '';}
             document.getElementById('evento-contacto-whatsapp').value = '';
             document.getElementById('evento-contacto-email').value = '';
             _updateEventoContactoResumen();
@@ -924,6 +925,24 @@
             openModal('modal-evento');
         }
 
+        function autoSelectClienteByCurrentUser() {
+            // Si el usuario actual coincide con un cliente, seleccionarlo automáticamente
+            if (!navbarManager || !navbarManager.userName) return;
+            
+            const currentUserName = navbarManager.userName.trim().toLowerCase();
+            const select = document.getElementById('evento-cliente-select');
+            
+            // Buscar opción que coincida con el nombre del usuario
+            for (let i = 0; i < select.options.length; i++) {
+                const optionText = select.options[i].textContent.trim().toLowerCase();
+                if (optionText === currentUserName && select.options[i].value) {
+                    select.value = select.options[i].value;
+                    console.log(`[EVENTOS] ✓ Cliente auto-seleccionado: ${select.options[i].textContent}`);
+                    return;
+                }
+            }
+        }
+
         function openEventoModal() {
             // Abrir modal para nuevo evento
             document.getElementById('modal-evento-title').textContent = 'Nuevo Evento';
@@ -931,7 +950,7 @@
             document.getElementById('evento-id').value = '';
             document.getElementById('evento-estado').value = 'Solicitado';
             document.getElementById('evento-publico').value = '1';
-            document.getElementById('evento-cliente-select').value = ''; // Reset cliente
+            autoSelectClienteByCurrentUser(); // Auto-seleccionar cliente si coincide con usuario actual
             openModal('modal-evento');
         }
 
