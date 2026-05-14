@@ -302,8 +302,9 @@ const oauthCallback = async (req, res) => {
         // 1. Buscar usuario existente por (proveedor_oauth, id_oauth) - LOGIN OAUTH CONOCIDO
         console.log('[OAUTH-CALLBACK] Buscando por proveedor_oauth + id_oauth...');
         const [existingOAuthUser] = await conn.query(
-            "SELECT id_usuario, email, nombre, rol FROM usuarios " +
-            "WHERE proveedor_oauth = ? AND id_oauth = ?",
+            "SELECT u.id_usuario, u.email, u.nombre, u.rol, c.id_cliente FROM usuarios u " +
+            "LEFT JOIN clientes c ON u.id_usuario = c.id_usuario " +
+            "WHERE u.proveedor_oauth = ? AND u.id_oauth = ?",
             [proveedor_oauth, id_oauth]
         );
 
@@ -333,7 +334,8 @@ const oauthCallback = async (req, res) => {
 
         // 2. Buscar usuario existente por EMAIL - LINKEAR OAUTH A CUENTA EXISTENTE
         const [existingEmailUser] = await conn.query(
-            "SELECT id_usuario, email, nombre, rol FROM usuarios WHERE email = ?",
+            "SELECT u.id_usuario, u.email, u.nombre, u.rol, c.id_cliente FROM usuarios u " +
+            "LEFT JOIN clientes c ON u.id_usuario = c.id_usuario WHERE u.email = ?",
             [email]
         );
 
@@ -398,7 +400,8 @@ const oauthCallback = async (req, res) => {
 
             // Obtener datos completos del usuario
             const [nuevoUsuario] = await conn.query(
-                "SELECT id_usuario, email, nombre, rol FROM usuarios WHERE id_usuario = ?",
+                "SELECT u.id_usuario, u.email, u.nombre, u.rol, c.id_cliente FROM usuarios u " +
+                "LEFT JOIN clientes c ON u.id_usuario = c.id_usuario WHERE u.id_usuario = ?",
                 [id_usuario]
             );
 
