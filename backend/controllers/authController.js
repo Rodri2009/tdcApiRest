@@ -54,6 +54,25 @@ const obtenerRolYPermisos = (rol) => {
  * Genera un JWT token
  */
 const generarToken = (usuario) => {
+    // Console.log directamente (siempre se muestra, sin depender de DEBUG_VERBOSE)
+    console.log('========== [GENERAR_TOKEN] DEBUG INFO ==========');
+    console.log('[GENERAR_TOKEN] usuario.id_usuario:', usuario.id_usuario);
+    console.log('[GENERAR_TOKEN] usuario.id_cliente:', usuario.id_cliente);
+    console.log('[GENERAR_TOKEN] usuario.nombre:', usuario.nombre);
+    console.log('[GENERAR_TOKEN] usuario.email:', usuario.email);
+    console.log('[GENERAR_TOKEN] usuario.rol:', usuario.rol);
+    console.log('[GENERAR_TOKEN] Object.keys(usuario):', Object.keys(usuario));
+    console.log('[GENERAR_TOKEN] usuario completo:', JSON.stringify(usuario));
+    console.log('=== Fin DEBUG ===');
+    
+    logVerbose('[GENERAR_TOKEN] ========== INICIO ==========');
+    logVerbose('[GENERAR_TOKEN] Usuario recibido:', JSON.stringify(usuario));
+    logVerbose('[GENERAR_TOKEN] Keys del usuario:', Object.keys(usuario));
+    logVerbose('[GENERAR_TOKEN] id_usuario:', usuario.id_usuario);
+    logVerbose('[GENERAR_TOKEN] id_cliente:', usuario.id_cliente);
+    logVerbose('[GENERAR_TOKEN] nombre:', usuario.nombre);
+    logVerbose('[GENERAR_TOKEN] rol:', usuario.rol);
+    
     const { roles, permisos, nivel } = obtenerRolYPermisos(usuario.rol);
 
     const payload = {
@@ -66,6 +85,8 @@ const generarToken = (usuario) => {
         permisos: permisos,
         nivel: nivel
     };
+    
+    logVerbose('[GENERAR_TOKEN] Payload JWT:', JSON.stringify(payload));
 
     return {
         token: jwt.sign(payload, process.env.JWT_SECRET || 'secret', { expiresIn: '8h' }),
@@ -149,6 +170,12 @@ const register = async (req, res) => {
                 [id_usuario]
             );
 
+            // DEBUG: Log obtenido después del query
+            console.log('[REGISTER-QUERY] nuevoUsuario object after query:');
+            console.log('[REGISTER-QUERY] Object.keys:', Object.keys(nuevoUsuario));
+            console.log('[REGISTER-QUERY] nuevoUsuario.id_cliente:', nuevoUsuario.id_cliente);
+            console.log('[REGISTER-QUERY] nuevoUsuario completo:', JSON.stringify(nuevoUsuario));
+
             // Generar token
             const { token, user } = generarToken(nuevoUsuario);
 
@@ -196,6 +223,12 @@ const login = async (req, res) => {
             "SELECT u.id_usuario, u.email, u.password_hash, u.nombre, u.rol, u.activo, c.id_cliente FROM usuarios u LEFT JOIN clientes c ON u.id_usuario = c.id_usuario WHERE u.email = ?",
             [email]
         );
+
+        // DEBUG: Log obtenido después del query
+        console.log('[LOGIN-QUERY] user object after query:');
+        console.log('[LOGIN-QUERY] Object.keys:', Object.keys(user));
+        console.log('[LOGIN-QUERY] user.id_cliente:', user.id_cliente);
+        console.log('[LOGIN-QUERY] user completo:', JSON.stringify(user));
 
         if (!user) {
             return res.status(401).json({ message: 'Credenciales inválidas.' });

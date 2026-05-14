@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpiar Autenticación</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+        }
+        h1 { color: #333; margin-bottom: 20px; }
+        p { color: #666; line-height: 1.6; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .info {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Limpiar Autenticación</h1>
+        
+        <div class="info">
+            <strong>Esto va a:</strong>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Limpiar localStorage</li>
+                <li>Limpiar sessionStorage</li>
+                <li>Eliminar cookies</li>
+                <li>Limpiar cache del navegador</li>
+            </ul>
+        </div>
+
+        <p>Después deberás hacer login de nuevo para obtener un token actualizado.</p>
+        
+        <button onclick="cleanAndLogout()">Limpiar y Logout</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        function cleanAndLogout() {
+            console.log('%c=== LIMPIEZA DE AUTENTICACIÓN INICIADA ===', 'color: blue; font-size: 14px; font-weight: bold;');
+            
+            // 1. Limpiar localStorage
+            console.log('1. Limpiando localStorage...');
+            localStorage.clear();
+            console.log('   ✓ localStorage limpiado');
+            
+            // 2. Limpiar sessionStorage
+            console.log('2. Limpiando sessionStorage...');
+            sessionStorage.clear();
+            console.log('   ✓ sessionStorage limpiado');
+            
+            // 3. Eliminar todas las cookies
+            console.log('3. Eliminando cookies...');
+            document.cookie.split(";").forEach((c) => {
+                document.cookie = c
+                    .replace(/^ +/, "")
+                    .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+            });
+            console.log('   ✓ cookies eliminadas');
+            
+            // 4. Intentar limpiar IndexedDB
+            console.log('4. Limpiando IndexedDB...');
+            if (window.indexedDB) {
+                const dbs = await indexedDB.databases?.() || [];
+                dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+            }
+            console.log('   ✓ IndexedDB limpiado');
+            
+            // 5. Mostrar status
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<div class="success">✓ Autenticación limpiada completamente</div>';
+            
+            console.log('%c=== LIMPIEZA COMPLETADA ===', 'color: green; font-size: 14px; font-weight: bold;');
+            console.log('Redirigiendo a login en 2 segundos...');
+            
+            // Redirigir al login después de 2 segundos
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 2000);
+        }
+
+        // Auto-iniciar la limpieza al cargar
+        window.addEventListener('load', () => {
+            console.log('Página de limpieza cargada. Haz click en "Limpiar y Logout" para proceder.');
+        });
+    </script>
+</body>
+</html>
