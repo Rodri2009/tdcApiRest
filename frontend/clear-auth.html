@@ -62,7 +62,7 @@
                 <li>Limpiar localStorage</li>
                 <li>Limpiar sessionStorage</li>
                 <li>Eliminar cookies</li>
-                <li>Limpiar cache del navegador</li>
+                <li>Limpiar IndexedDB</li>
             </ul>
         </div>
 
@@ -74,7 +74,7 @@
     </div>
 
     <script>
-        function cleanAndLogout() {
+        async function cleanAndLogout() {
             console.log('%c=== LIMPIEZA DE AUTENTICACIÓN INICIADA ===', 'color: blue; font-size: 14px; font-weight: bold;');
             
             // 1. Limpiar localStorage
@@ -98,9 +98,13 @@
             
             // 4. Intentar limpiar IndexedDB
             console.log('4. Limpiando IndexedDB...');
-            if (window.indexedDB) {
-                const dbs = await indexedDB.databases?.() || [];
-                dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+            try {
+                if (window.indexedDB && typeof indexedDB.databases === 'function') {
+                    const dbs = await indexedDB.databases();
+                    dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+                }
+            } catch (e) {
+                console.warn('IndexedDB cleanup error:', e.message);
             }
             console.log('   ✓ IndexedDB limpiado');
             
@@ -116,11 +120,6 @@
                 window.location.href = '/login.html';
             }, 2000);
         }
-
-        // Auto-iniciar la limpieza al cargar
-        window.addEventListener('load', () => {
-            console.log('Página de limpieza cargada. Haz click en "Limpiar y Logout" para proceder.');
-        });
     </script>
 </body>
 </html>
