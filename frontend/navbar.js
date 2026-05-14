@@ -56,11 +56,14 @@ class NavbarManager {
             this.clientId = payload.id_cliente || null;
             this.userRole = payload.role || 'user';
             
-            console.log('[NAVBAR_JWT] JWT Payload:');
-            console.log('[NAVBAR_JWT]   - id_usuario:', payload.id_usuario);
-            console.log('[NAVBAR_JWT]   - id_cliente:', payload.id_cliente);
-            console.log('[NAVBAR_JWT]   - nombre:', payload.nombre);
-            console.log('[NAVBAR_JWT]   - email:', payload.email);
+            console.log('[JWT_DECODE] ===== DECODIFICACION JWT =====');
+            console.log('[JWT_DECODE] Payload completo:', JSON.stringify(payload));
+            console.log('[JWT_DECODE] id_usuario:', payload.id_usuario);
+            console.log('[JWT_DECODE] id_cliente (del JWT):', payload.id_cliente);
+            console.log('[JWT_DECODE] id_cliente (asignado this.clientId):', this.clientId);
+            console.log('[JWT_DECODE] nombre:', payload.nombre);
+            console.log('[JWT_DECODE] email:', payload.email);
+            
             this.userRoles = payload.roles || [];
             this.userPermisos = payload.permisos || [];
             this.userNivel = payload.nivel || 0;

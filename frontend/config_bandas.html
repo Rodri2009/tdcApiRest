@@ -927,30 +927,50 @@
 
         function autoSelectClienteByCurrentUser() {
             // Si el usuario actual tiene un cliente vinculado (desde JWT), seleccionarlo automáticamente
-            if (!navbarManager || !navbarManager.clientId) {
-                console.log('[CLIENTE_AUTO] No hay clientId disponible en navbarManager (usuario no vinculado a cliente)');
+            if (!navbarManager) {
+                console.log('[CLIENTE_AUTO] navbarManager no existe');
+                return;
+            }
+            
+            console.log('[CLIENTE_AUTO] =========================');
+            console.log('[CLIENTE_AUTO] Datos de navbarManager:');
+            console.log('[CLIENTE_AUTO]   - clientId:', navbarManager.clientId);
+            console.log('[CLIENTE_AUTO]   - userName:', navbarManager.userName);
+            console.log('[CLIENTE_AUTO]   - userEmail:', navbarManager.userEmail);
+            console.log('[CLIENTE_AUTO] typeof clientId:', typeof navbarManager.clientId);
+            
+            if (!navbarManager.clientId) {
+                console.log('[CLIENTE_AUTO] clientId es falsy (null, undefined, 0, false)');
+                console.log('[CLIENTE_AUTO] ✗ No hay clientId disponible');
                 return;
             }
             
             const clientId = navbarManager.clientId;
             const select = document.getElementById('evento-cliente-select');
             
-            console.log('[CLIENTE_AUTO] Buscando cliente vinculado al usuario:');
-            console.log('[CLIENTE_AUTO]   - clientId (del JWT):', clientId);
+            if (!select) {
+                console.log('[CLIENTE_AUTO] ✗ No se encontró el selector evento-cliente-select');
+                return;
+            }
+            
+            console.log('[CLIENTE_AUTO] Searching for clientId:', clientId);
+            console.log('[CLIENTE_AUTO] Total options:', select.options.length);
             
             // Buscar opción con este ID
             for (let i = 1; i < select.options.length; i++) {
                 const optionValue = parseInt(select.options[i].value, 10);
                 const optionText = select.options[i].textContent.trim();
                 
+                console.log(`[CLIENTE_AUTO]   Option[${i}]: value=${optionValue}, text="${optionText}"`);
+                
                 if (optionValue === clientId) {
                     select.value = clientId;
-                    console.log(`[CLIENTE_AUTO] ✓ Cliente auto-seleccionado: "${optionText}" (id: ${clientId})`);
+                    console.log(`[CLIENTE_AUTO] ✓ ¡ÉXITO! Cliente auto-seleccionado: "${optionText}" (id: ${clientId})`);
                     return;
                 }
             }
             
-            console.log(`[CLIENTE_AUTO] ✗ Cliente no encontrado: id=${clientId}`);
+            console.log(`[CLIENTE_AUTO] ✗ Cliente NO encontrado: id=${clientId}`);
         }
 
         function openEventoModal() {
