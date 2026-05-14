@@ -701,7 +701,9 @@
                 .forEach(cliente => {
                     const option = document.createElement('option');
                     option.value = cliente.id_cliente;
-                    option.textContent = cliente.nombre || 'Sin nombre';
+                    // Mostrar nombre completo (Nombre + Apellido)
+                    const nombreCompleto = (cliente.nombre || '') + (cliente.apellido ? ' ' + cliente.apellido : '');
+                    option.textContent = nombreCompleto || 'Sin nombre';
                     select.appendChild(option);
                 });
         }
