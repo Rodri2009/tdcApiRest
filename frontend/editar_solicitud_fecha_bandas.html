@@ -2181,16 +2181,18 @@
                         return;
                     }
 
-                    container.innerHTML = clientes.map(cliente => `
+                    container.innerHTML = clientes.map(cliente => {
+                        var nombreCompleto = (cliente.nombre || '') + (cliente.apellido ? ' ' + cliente.apellido : '');
+                        return `
                         <div style="padding:8px;border-bottom:1px solid #374151;cursor:pointer;transition:background 0.2s;" 
                              onmouseover="this.style.background='#2a2a2a'" 
                              onmouseout="this.style.background='transparent'"
-                             onclick="seleccionarClienteExistente(${cliente.id_cliente}, '${escapeHtml(cliente.nombre || '')}', '${escapeHtml(cliente.email || '')}', '${escapeHtml(cliente.telefono || '')}')">
-                            <div style="font-weight:bold;color:var(--color-secondary);">${escapeHtml(cliente.nombre || 'Sin nombre')}</div>
+                             onclick="seleccionarClienteExistente(${cliente.id_cliente}, '${escapeHtml(cliente.nombre || '')}', '${escapeHtml(cliente.apellido || '')}', '${escapeHtml(cliente.email || '')}', '${escapeHtml(cliente.telefono || '')}')">
+                            <div style="font-weight:bold;color:var(--color-secondary);">${escapeHtml(nombreCompleto || 'Sin nombre')}</div>
                             ${cliente.email ? `<div style="font-size:0.85rem;color:#9ca3af;">${escapeHtml(cliente.email)}</div>` : ''}
                             ${cliente.telefono ? `<div style="font-size:0.85rem;color:#9ca3af;">${escapeHtml(cliente.telefono)}</div>` : ''}
                         </div>
-                    `).join('');
+                    `;}).join('');
                 } else {
                     console.error('Error searching clientes:', res.status);
                 }
@@ -2199,11 +2201,14 @@
             }
         }
 
-        function seleccionarClienteExistente(idCliente, nombre, email, telefono) {
+        function seleccionarClienteExistente(idCliente, nombre, apellido, email, telefono) {
             // Actualizar campos del modal
             document.getElementById('modalClienteId').value = idCliente;
             document.getElementById('modalClienteIdDisplay').textContent = idCliente;
             document.getElementById('modalClienteNombre').value = nombre;
+            // Intentar guardar apellido si existe el campo
+            var fieldApellido = document.getElementById('modalClienteApellido');
+            if (fieldApellido) fieldApellido.value = apellido;
             document.getElementById('modalClienteEmail').value = email;
             document.getElementById('modalClienteTelefono').value = telefono;
             // Actualizar el ID del cliente actual

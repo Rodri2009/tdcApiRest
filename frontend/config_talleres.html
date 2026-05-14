@@ -521,10 +521,13 @@
 
         function renderClientSuggestions(matches, container) {
             if (!matches || matches.length === 0) { container.innerHTML = ''; return; }
-            container.innerHTML = '<div class="suggestions-list">' + matches.map(m => `
-                <div class="suggestion" data-id="${m.id}" data-nombre="${m.nombre}" data-telefono="${m.telefono || ''}" data-email="${m.email || ''}">
-                    <strong>${m.nombre}</strong> <small style="color:#6b7280">${m.email || m.telefono || ''}</small>
-                </div>`).join('') + '</div>';
+            container.innerHTML = '<div class="suggestions-list">' + matches.map(m => {
+                var nombreCompleto = (m.nombre || '') + (m.apellido ? ' ' + m.apellido : '');
+                return `
+                <div class="suggestion" data-id="${m.id_cliente}" data-nombre="${m.nombre || ''}" data-apellido="${m.apellido || ''}" data-telefono="${m.telefono || ''}" data-email="${m.email || ''}">
+                    <strong>${nombreCompleto}</strong> <small style="color:#6b7280">${m.email || m.telefono || ''}</small>
+                </div>`;
+            }).join('') + '</div>';
 
             const suggestions = Array.from(container.querySelectorAll('.suggestion'));
             if (suggestions.length > 0) {
@@ -535,7 +538,8 @@
             // Attach handlers for click and hover (mouse)
             suggestions.forEach(el => {
                 el.addEventListener('click', () => {
-                    selectClientFromSuggestion(el.dataset.id, el.dataset.nombre, el.dataset.telefono, el.dataset.email);
+                    var nombreCompleto = el.dataset.nombre + (el.dataset.apellido ? ' ' + el.dataset.apellido : '');
+                    selectClientFromSuggestion(el.dataset.id, nombreCompleto, el.dataset.telefono, el.dataset.email);
                 });
                 el.addEventListener('mouseenter', () => {
                     container.querySelectorAll('.suggestion').forEach(s => s.classList.remove('active'));
