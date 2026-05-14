@@ -377,6 +377,15 @@
                         </div>
                     </div>
 
+                    <!-- Cliente (quien solicita/organiza) -->
+                    <div class="form-group">
+                        <label><i class="fas fa-user-tie"></i> Cliente / Organizador</label>
+                        <select id="evento-cliente-select" style="width: 100%;">
+                            <option value="">-- Seleccionar cliente --</option>
+                        </select>
+                        <p style="margin: 6px 0 0 0; font-size: 0.8rem; color: #9ca3af;">El cliente vinculado a esta solicitud de evento</p>
+                    </div>
+
                     <!-- Banda principal y Género -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                         <div class="form-group">
@@ -474,6 +483,7 @@
         let bandas = [];
         let eventos = [];
         let instrumentos = [];
+        let clientes = [];
         let generos = [];
         let currentSection = 'catalogo';
 
@@ -656,6 +666,44 @@
                 console.error('Error cargando instrumentos:', err);
                 showBanner(`Error de conexión al cargar instrumentos: ${err.message}`, 'error');
             }
+        }
+
+        async function loadClientes() {
+            try {
+                const res = await fetch('/api/admin/clientes', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                });
+                if (res.ok) {
+                    clientes = await res.json();
+                    populateClienteDropdown();
+                    console.log('[CLIENTES] Cargados:', clientes.length);
+                } else if (res.status === 401) {
+                    console.warn('[CLIENTES] No autorizado para cargar clientes');
+                } else {
+                    console.warn('[CLIENTES] Error al cargar clientes:', res.status);
+                }
+            } catch (err) {
+                console.error('[CLIENTES] Error de conexión:', err);
+            }
+        }
+
+        function populateClienteDropdown() {
+            const select = document.getElementById('evento-cliente-select');
+            if (!select) return;
+            
+            // Limpiar opciones existentes (excepto la primera)
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // Agregar clientes ordenados por nombre
+            clientes.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+                .forEach(cliente => {
+                    const option = document.createElement('option');
+                    option.value = cliente.id_cliente;
+                    option.textContent = cliente.nombre || 'Sin nombre';
+                    select.appendChild(option);
+                });
         }
 
         // ============================================================
@@ -864,6 +912,7 @@
             document.getElementById('evento-estado').value = evento.estado || 'Solicitado';
             document.getElementById('evento-publico').value = evento.es_publico ? '1' : '0';
             document.getElementById('evento-cliente-id').value = evento.id_cliente || '';
+            document.getElementById('evento-cliente-select').value = evento.id_cliente || ''; // Actualizar selector de cliente
             document.getElementById('evento-contacto-nombre').value = '';
             document.getElementById('evento-contacto-whatsapp').value = '';
             document.getElementById('evento-contacto-email').value = '';
@@ -882,6 +931,7 @@
             document.getElementById('evento-id').value = '';
             document.getElementById('evento-estado').value = 'Solicitado';
             document.getElementById('evento-publico').value = '1';
+            document.getElementById('evento-cliente-select').value = ''; // Reset cliente
             openModal('modal-evento');
         }
 
@@ -912,6 +962,7 @@
 
             // Preparar datos y mapear a la API de `solicitudes_fechas_bandas` (backend espera claves como fecha_evento, hora_evento, precio_basico, etc.)
             const invitadasRaw = (document.getElementById('evento-invitadas').value || '').split(',').map(s => s.trim()).filter(Boolean);
+            const clienteSelectValue = document.getElementById('evento-cliente-select').value;
             const payload = {
                 // Si el administrador no selecciona un id_banda, enviamos nombre_banda para que el backend cree/la vincule
                 nombre_evento: document.getElementById('evento-nombre').value || null,
@@ -928,7 +979,7 @@
                 contacto_nombre: document.getElementById('evento-contacto-nombre').value || null,
                 contacto_email: document.getElementById('evento-contacto-email').value || null,
                 contacto_telefono: document.getElementById('evento-contacto-whatsapp').value || null,
-                id_cliente: document.getElementById('evento-cliente-id').value ? parseInt(document.getElementById('evento-cliente-id').value) : null,
+                id_cliente: clienteSelectValue ? parseInt(clienteSelectValue) : null,
                 url_flyer: document.getElementById('evento-flyer-url').value || null,
                 invitadas_json: invitadasRaw.length ? invitadasRaw.map(n => ({ nombre: n })) : null
             };
@@ -1684,6 +1735,7 @@
             loadBandas();
             loadEventos();
             loadInstrumentos();
+            loadClientes();
             _populateGeneroDatalist();
         });
     </script>
