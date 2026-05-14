@@ -1479,7 +1479,8 @@
                 });
                 if (res.ok) {
                     const c = await res.json();
-                    document.getElementById('evento-contacto-nombre').value = [c.nombre, c.apellido].filter(Boolean).join(' ') || '';
+                    document.getElementById('evento-contacto-nombre').value = c.nombre || '';
+                    document.getElementById('evento-contacto-apellido').value = c.apellido || '';
                     document.getElementById('evento-contacto-email').value = c.email || '';
                     document.getElementById('evento-contacto-whatsapp').value = c.telefono || '';
                     _updateEventoContactoResumen();
