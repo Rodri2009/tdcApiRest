@@ -240,6 +240,7 @@ const crearSolicitudFechaBanda = async (req, res) => {
                     s.descripcion_larga AS descripcion,
                     sfb.bandas_json,
                     c.nombre as nombre_cliente,
+                    c.apellido as apellido_cliente,
                     c.email as email_cliente,
                     c.telefono as telefono_cliente
                 FROM solicitudes_fechas_bandas sfb
@@ -360,6 +361,7 @@ const obtenerSolicitudFechaBanda = async (req, res) => {
                 sfb.precio_puerta,
                 sfb.bandas_json,
                 c.nombre as nombre_cliente,
+                c.apellido as apellido_cliente,
                 c.email as email_cliente,
                 c.telefono as telefono_cliente
             FROM solicitudes_fechas_bandas sfb
@@ -448,6 +450,7 @@ const listarSolicitudesFechasBandas = async (req, res) => {
                 s.descripcion_corta AS nombre_evento,
                 s.id_cliente,
                 c.nombre  AS contacto_nombre,
+                c.apellido AS contacto_apellido,
                 c.email   AS contacto_email,
                 c.telefono AS contacto_telefono,
                 s.fecha_creacion AS creado_en
@@ -579,6 +582,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
         id_cliente,  // ← Agregar id_cliente para actualizar tabla padre
         // contacto_*: permitir actualizar datos de cliente desde el formulario
         contacto_nombre,
+        contacto_apellido,
         contacto_email,
         contacto_telefono
     } = req.body;
@@ -620,7 +624,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
         }
 
         // Si vienen campos de contacto, actualizarlos en `clientes` (o crearlos) y propagar a eventos_confirmados
-        if (typeof contacto_nombre !== 'undefined' || typeof contacto_email !== 'undefined' || typeof contacto_telefono !== 'undefined') {
+        if (typeof contacto_nombre !== 'undefined' || typeof contacto_apellido !== 'undefined' || typeof contacto_email !== 'undefined' || typeof contacto_telefono !== 'undefined') {
             // Obtener id_cliente desde la tabla padre `solicitudes`
             const [parentRow] = await conn.query('SELECT id_cliente FROM solicitudes WHERE id_solicitud = ?', [idNum]);
             const clienteId = parentRow && parentRow.id_cliente ? parentRow.id_cliente : null;
@@ -629,6 +633,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                 const { id_cliente: nuevoClienteId, fkChanged } = await resolveContactUpdate(conn, {
                     currentClienteId: clienteId,
                     ...(typeof contacto_nombre !== 'undefined' ? { nombre: contacto_nombre } : {}),
+                    ...(typeof contacto_apellido !== 'undefined' ? { apellido: contacto_apellido } : {}),
                     ...(typeof contacto_email !== 'undefined' ? { email: contacto_email } : {}),
                     ...(typeof contacto_telefono !== 'undefined' ? { telefono: contacto_telefono } : {})
                 });
@@ -981,6 +986,7 @@ const actualizarSolicitudFechaBanda = async (req, res) => {
                         ba.nombre as banda_nombre,
                         ba.genero_musical,
                         c.nombre as cliente_nombre,
+                        c.apellido as cliente_apellido,
                         c.email as cliente_email,
                         c.telefono as cliente_telefono
                     FROM solicitudes_fechas_bandas sfb
@@ -1153,6 +1159,7 @@ const confirmarSolicitudFechaBanda = async (req, res) => {
                 ba.nombre AS banda_nombre,
                 s.id_cliente AS cliente_id,
                 c.nombre AS cliente_nombre,
+                c.apellido AS cliente_apellido,
                 c.email AS cliente_email,
                 c.telefono AS cliente_telefono
             FROM solicitudes_fechas_bandas sfb
