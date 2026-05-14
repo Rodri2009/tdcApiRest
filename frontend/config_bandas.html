@@ -1525,15 +1525,18 @@
                 }
                 container.innerHTML = clientes.map(function(c, idx) {
                     var nombre = c.nombre || '';
+                    var apellido = c.apellido || '';
                     var email = c.email || '';
                     var telefono = c.telefono || '';
                     var nombreDisplay = nombre ? nombre.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Sin nombre';
+                    var apellidoDisplay = apellido ? apellido.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
                     var emailDisplay = email.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     var telefonoDisplay = telefono.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    var nombreCompleto = nombreDisplay + (apellidoDisplay ? ' ' + apellidoDisplay : '');
                     return '<div style="padding:8px;border-bottom:1px solid #374151;cursor:pointer;"'
                         + ' data-idx="' + idx + '"'
                         + ' onmouseover="this.style.background=\'#2a2a2a\'" onmouseout="this.style.background=\'transparent\'">' 
-                        + '<div style="font-weight:bold;color:#f0abfc;">' + nombreDisplay + '</div>'
+                        + '<div style="font-weight:bold;color:#f0abfc;">' + nombreCompleto + '</div>'
                         + (email ? '<div style="font-size:0.82rem;color:#9ca3af;">' + emailDisplay + '</div>' : '')
                         + (telefono ? '<div style="font-size:0.82rem;color:#9ca3af;">' + telefonoDisplay + '</div>' : '')
                         + '</div>';
@@ -1542,21 +1545,25 @@
                     var idx = parseInt(el.dataset.idx, 10);
                     var c = clientes[idx];
                     el.addEventListener('click', function() {
-                        _seleccionarClienteEvento(c.id_cliente, c.nombre || '', c.email || '', c.telefono || '');
+                        _seleccionarClienteEvento(c.id_cliente, c.nombre || '', c.apellido || '', c.email || '', c.telefono || '');
                     });
                 });
             } catch (e) { console.error('[CLIENTES-EVENTO]', e); }
         }
 
-        function _seleccionarClienteEvento(id, nombre, email, telefono) {
+        function _seleccionarClienteEvento(id, nombre, apellido, email, telefono) {
             document.getElementById('eventoModalClienteId').value = id;
             document.getElementById('eventoModalClienteIdDisplay').textContent = id;
             document.getElementById('eventoModalClienteNombre').value = nombre;
+            // Intentar guardar apellido si existe el campo
+            var fieldApellido = document.getElementById('eventoModalClienteApellido');
+            if (fieldApellido) fieldApellido.value = apellido;
             document.getElementById('eventoModalClienteEmail').value = email;
             document.getElementById('eventoModalClienteTelefono').value = telefono;
             document.getElementById('eventoModalClienteInput').value = '';
             document.getElementById('eventoModalClienteResultados').innerHTML = '';
-            showBanner('Cliente seleccionado: ' + nombre, 'success');
+            var nombreCompleto = nombre + (apellido ? ' ' + apellido : '');
+            showBanner('Cliente seleccionado: ' + nombreCompleto, 'success');
         }
 
         function closeEventoClienteModal() {
