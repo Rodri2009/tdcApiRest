@@ -53,6 +53,7 @@ class NavbarManager {
             const payload = JSON.parse(jsonPayload);
             this.userEmail = payload.email || payload.id || 'Usuario';
             this.userName = payload.nombre || payload.email || 'Usuario';
+            this.clientId = payload.id_cliente || null;
             this.userRole = payload.role || 'user';
             this.userRoles = payload.roles || [];
             this.userPermisos = payload.permisos || [];

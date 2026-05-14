@@ -926,58 +926,30 @@
         }
 
         function autoSelectClienteByCurrentUser() {
-            // Si el usuario actual coincide con un cliente, seleccionarlo automáticamente
-            if (!navbarManager || !navbarManager.userName) {
-                console.log('[CLIENTE_AUTO] No hay navbarManager o userName disponible');
+            // Si el usuario actual tiene un cliente vinculado (desde JWT), seleccionarlo automáticamente
+            if (!navbarManager || !navbarManager.clientId) {
+                console.log('[CLIENTE_AUTO] No hay clientId disponible en navbarManager (usuario no vinculado a cliente)');
                 return;
             }
             
-            const currentUserName = navbarManager.userName.trim().toLowerCase();
-            const currentUserEmail = navbarManager.userEmail ? navbarManager.userEmail.trim().toLowerCase() : null;
+            const clientId = navbarManager.clientId;
             const select = document.getElementById('evento-cliente-select');
             
-            console.log('[CLIENTE_AUTO] =========================');
-            console.log('[CLIENTE_AUTO] Buscando coincidencia para usuario:');
-            console.log('[CLIENTE_AUTO]   - userName:', navbarManager.userName);
-            console.log('[CLIENTE_AUTO]   - userEmail:', navbarManager.userEmail);
-            console.log('[CLIENTE_AUTO]   - userName normalizado:', currentUserName);
-            console.log('[CLIENTE_AUTO]   - userEmail normalizado:', currentUserEmail);
-            console.log('[CLIENTE_AUTO] Clientes disponibles:');
+            console.log('[CLIENTE_AUTO] Buscando cliente vinculado al usuario:');
+            console.log('[CLIENTE_AUTO]   - clientId (del JWT):', clientId);
             
-            // Mostrar todos los clientes disponibles
+            // Buscar opción con este ID
             for (let i = 1; i < select.options.length; i++) {
+                const optionValue = parseInt(select.options[i].value, 10);
                 const optionText = select.options[i].textContent.trim();
-                const optionValue = select.options[i].value;
-                console.log(`[CLIENTE_AUTO]   [${i}] "${optionText}" (id: ${optionValue})`);
-            }
-            
-            // Búsqueda exacta por nombre o email
-            for (let i = 1; i < select.options.length; i++) {
-                const optionText = select.options[i].textContent.trim().toLowerCase();
-                const optionValue = select.options[i].value;
                 
-                // Coincidencia exacta con nombre
-                if (optionText === currentUserName || optionText === currentUserEmail) {
-                    select.value = optionValue;
-                    console.log(`[CLIENTE_AUTO] ✓ Cliente auto-seleccionado (coincidencia exacta): "${select.options[i].textContent}"`);
-                    return;
+                if (optionValue === clientId) {
+                    select.value = clientId;
+                    console.log(`[CLIENTE_AUTO] ✓ Cliente auto-seleccionado: "${optionText}" (id: ${clientId})`);\n                    return;
                 }
             }
             
-            // Búsqueda parcial: nombre contenido en opción
-            for (let i = 1; i < select.options.length; i++) {
-                const optionText = select.options[i].textContent.trim().toLowerCase();
-                const optionValue = select.options[i].value;
-                
-                if (optionText.includes(currentUserName) && currentUserName.length > 3) {
-                    select.value = optionValue;
-                    console.log(`[CLIENTE_AUTO] ✓ Cliente auto-seleccionado (coincidencia parcial): "${select.options[i].textContent}"`);
-                    return;
-                }
-            }
-            
-            console.log('[CLIENTE_AUTO] ✗ No se encontró cliente que coincida con el usuario');
-        }
+            console.log(`[CLIENTE_AUTO] ✗ Cliente no encontrado: id=${clientId}`);\n        }
 
         function openEventoModal() {
             // Abrir modal para nuevo evento

@@ -58,6 +58,7 @@ const generarToken = (usuario) => {
 
     const payload = {
         id_usuario: usuario.id_usuario,
+        id_cliente: usuario.id_cliente || null,
         nombre: usuario.nombre || '',
         email: usuario.email,
         role: usuario.rol,
@@ -70,6 +71,7 @@ const generarToken = (usuario) => {
         token: jwt.sign(payload, process.env.JWT_SECRET || 'secret', { expiresIn: '8h' }),
         user: {
             id_usuario: usuario.id_usuario,
+            id_cliente: usuario.id_cliente || null,
             nombre: usuario.nombre,
             email: usuario.email,
             rol: usuario.rol,
@@ -141,9 +143,9 @@ const register = async (req, res) => {
             await conn.commit();
             logSuccess(`Usuario registrado: ${email} (id_usuario: ${id_usuario})`);
 
-            // Obtener datos completos del usuario
+            // Obtener datos completos del usuario + cliente
             const [nuevoUsuario] = await conn.query(
-                "SELECT id_usuario, email, nombre, rol FROM usuarios WHERE id_usuario = ?",
+                "SELECT u.id_usuario, u.email, u.nombre, u.rol, c.id_cliente FROM usuarios u LEFT JOIN clientes c ON u.id_usuario = c.id_usuario WHERE u.id_usuario = ?",
                 [id_usuario]
             );
 
@@ -191,7 +193,7 @@ const login = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const [user] = await conn.query(
-            "SELECT id_usuario, email, password_hash, nombre, rol, activo FROM usuarios WHERE email = ?",
+            "SELECT u.id_usuario, u.email, u.password_hash, u.nombre, u.rol, u.activo, c.id_cliente FROM usuarios u LEFT JOIN clientes c ON u.id_usuario = c.id_usuario WHERE u.email = ?",
             [email]
         );
 
