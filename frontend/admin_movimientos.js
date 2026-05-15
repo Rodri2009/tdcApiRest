@@ -241,13 +241,22 @@
     function formatDateTime(dt) {
         if (!dt) return { date: '—', time: '—' };
         const d = new Date(dt);
-        if (isNaN(d)) return { date: '—', time: '—' };
+        if (isNaN(d)) {
+            console.warn('[formatDateTime] Fecha inválida:', dt);
+            return { date: '—', time: '—' };
+        }
+        
+        // DEBUG: Loguear entrada y conversión
+        console.log('[formatDateTime] INPUT dt:', dt);
+        console.log('[formatDateTime] Date object:', d);
+        console.log('[formatDateTime] ISO String:', d.toISOString());
+        console.log('[formatDateTime] getHours() (UTC):', d.getHours());
+        
         const shortMonths = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
         const mon = shortMonths[d.getMonth()] || '';
         const dd = String(d.getDate());
         
         // Usar toLocaleString para obtener la hora en zona horaria local (Argentina)
-        // Esto asegura que la hora sea correcta incluso si viene en UTC desde el servidor
         const localTime = d.toLocaleString('es-AR', {
             year: 'numeric',
             month: '2-digit',
@@ -258,13 +267,19 @@
             timeZone: 'America/Argentina/Buenos_Aires'
         });
         
+        console.log('[formatDateTime] toLocaleString (es-AR, Buenos Aires):', localTime);
+        
         // Extraer hora y minuto del formato "DD/MM/YYYY, HH:mm"
         const parts = localTime.split(', ');
         const timeParts = parts[1] ? parts[1].split(':') : ['00', '00'];
         const hh = timeParts[0];
         const mi = timeParts[1];
         
-        return { date: `${dd} ${mon}`, time: `${hh}:${mi}` };
+        const result = { date: `${dd} ${mon}`, time: `${hh}:${mi}` };
+        console.log('[formatDateTime] RESULTADO:', result);
+        console.log('---');
+        
+        return result;
     }
 
     /* --- util --- */
@@ -350,6 +365,10 @@
             name = escapeHtml(name || '—');
             desc = escapeHtml(desc || '—');
 
+            // DEBUG: Loguear objeto transacción
+            console.log('[renderTransactions] Transacción completa:', tx);
+            console.log('[renderTransactions] dateTime:', tx.dateTime, '| name:', tx.name, '| amount:', tx.amount);
+
             // formato fecha/hora uniforme
             const dt = formatDateTime(tx.dateTime);
             const date = escapeHtml(dt.date);
@@ -387,6 +406,8 @@
 
     function addTransactionToTop(tx) {
         // Agregar nueva transacción al pool de allTransactions
+        console.log('[addTransactionToTop] Agregando:', tx);
+        console.log('[addTransactionToTop] dateTime:', tx.dateTime);
         allTransactions.unshift(tx);
 
         // Re-renderizar con la nueva transacción
@@ -461,6 +482,7 @@
 
                 allTransactions = json.data.transactions;
                 console.log('[UI] fetchTransactions -> tx count', allTransactions.length);
+                console.log('[DEBUG] Primeras 2 transacciones:', allTransactions.slice(0, 2));
 
                 // detectar si el primer elemento cambió y, si es ingreso, notificar
                 if (allTransactions.length > 0) {
@@ -487,6 +509,7 @@
             if (json && json.transactions) {
                 allTransactions = json.transactions;
                 console.log('[UI] fetchTransactions (legacy) -> tx count', allTransactions.length);
+                console.log('[DEBUG] Primeras 2 transacciones (legacy):', allTransactions.slice(0, 2));
                 renderTransactions(allTransactions);
                 return allTransactions;
             }
@@ -602,6 +625,7 @@
             if (msg && msg.type === 'new_transaction' && msg.transaction) {
                 const tx = msg.transaction;
                 console.log('[SSE] 🔄 Nueva transacción:', tx.name, '|', tx.amount);
+                console.log('[SSE] Transacción completa:', tx);
                 logTransactionOnChange(tx, msg);
                 addTransactionToTop(tx);
                 const amt = parseAmount(tx.amount);
