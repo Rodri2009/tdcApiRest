@@ -6,6 +6,7 @@
     let MAX_ITEMS = MAX_ITEMS_DEFAULT;
     let viewAllMode = false;
     let cajaAbierta = false;  // Estado de caja abierta (true = limpiar tabla, false = mostrar transacciones)
+    let cajaMovimientos = [];  // Movimientos registrados desde apertura de caja
     // mostrar todos los movimientos por defecto (ingresos y egresos)
     let filterIncome = false;
     let allTransactions = [];
@@ -333,6 +334,12 @@
         const tbody = document.getElementById('tx-list');
         tbody.innerHTML = '';
 
+        // Si caja está abierta, mostrar solo cajaMovimientos
+        if (cajaAbierta) {
+            list = cajaMovimientos;
+            console.log('[renderTransactions] Modo caja abierta: mostrando', list.length, 'movimientos');
+        }
+
         // aplicar filtro por montos positivos SOLO cuando no estamos en modo ‘ver todas’
         let filtered = list;
         if (!viewAllMode && filterIncome) {
@@ -410,6 +417,12 @@
         console.log('[addTransactionToTop] Agregando:', tx);
         console.log('[addTransactionToTop] dateTime:', tx.dateTime);
         allTransactions.unshift(tx);
+        
+        // Si caja está abierta, agregar a cajaMovimientos también
+        if (cajaAbierta) {
+            cajaMovimientos.unshift(tx);
+            console.log('[addTransactionToTop] Agregada a cajaMovimientos. Total:', cajaMovimientos.length);
+        }
 
         // Re-renderizar con la nueva transacción
         renderTransactions(allTransactions);
@@ -932,14 +945,15 @@
         
         btnAbrirCaja.addEventListener('click', () => {
             cajaAbierta = true;
+            cajaMovimientos = [];  // Inicializar lista de movimientos de caja
             btnAbrirCaja.classList.add('hidden');
             btnCerrarCaja.classList.remove('hidden');
             
-            // Limpiar la tabla
+            // Limpiar la tabla (no mostrar movimientos previos)
             const tbody = document.getElementById('tx-list');
             tbody.innerHTML = '';
-            showBanner('✅ Caja abierta - Movimientos limpiados', 'success');
-            console.log('[CajaAbierta] Tabla limpiada');
+            showBanner('✅ Caja abierta - Registrando movimientos desde ahora', 'success');
+            console.log('[CajaAbierta] Tabla limpiada. cajaMovimientos inicializado:', cajaMovimientos);
         });
         
         btnCerrarCaja.addEventListener('click', () => {
@@ -947,10 +961,11 @@
             btnAbrirCaja.classList.remove('hidden');
             btnCerrarCaja.classList.add('hidden');
             
-            // Mostrar transacciones nuevamente
+            // Mostrar transacciones del período de caja
+            const movimientosDelPeriodo = cajaMovimientos.length;
             renderTransactions(allTransactions);
-            showBanner('✅ Caja cerrada - Movimientos visibles', 'success');
-            console.log('[CajaCerrada] Transacciones mostradas nuevamente');
+            showBanner(`✅ Caja cerrada - ${movimientosDelPeriodo} movimientos registrados en este período`, 'success');
+            console.log('[CajaCerrada] Período cerrado con', movimientosDelPeriodo, 'movimientos');
         });
 
         // botón especiales
