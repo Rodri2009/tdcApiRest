@@ -41,11 +41,14 @@ class MercadopagoClient {
 
       const response = await axios.get(url, { headers, timeout: 30000 });
       
+      console.log(`[MercadopagoClient] getActivity: ${response.data.transactions?.length || 0} transacciones recibidas`);
+      
       // ⚠️ FIX: serverMP envía timestamps con horas locales etiquetadas como UTC
       // Necesitamos convertir: si creationDate es "2026-05-14T06:55:00.000Z"
       // realmente significa 06:55 ART (UTC-3), así que debe ser "2026-05-14T09:55:00.000Z"
       if (response.data.transactions && Array.isArray(response.data.transactions)) {
-        response.data.transactions = response.data.transactions.map(tx => {
+        console.log(`[TIMESTAMP_FIX] Procesando ${response.data.transactions.length} transacciones...`);
+        response.data.transactions = response.data.transactions.map((tx, idx) => {
           if (tx.creationDate) {
             tx.creationDate = this._fixTimestampUTC(tx.creationDate);
           }
@@ -54,6 +57,7 @@ class MercadopagoClient {
           }
           return tx;
         });
+        console.log(`[TIMESTAMP_FIX] ✅ Todas las transacciones procesadas`);
       }
       
       logVerbose('[MercadopagoClient] getActivity success', { count: response.data.count });
@@ -82,12 +86,17 @@ class MercadopagoClient {
     try {
       // Parsear timestamp como UTC (por la Z al final)
       const date = new Date(timestamp);
+      const originalHours = date.getUTCHours();
       
+      // ⚠️ IMPORTANTE: usar setUTCHours() no setHours()
+      // setHours() usa zona horaria LOCAL, setUTCHours() usa UTC
       // Sumar 3 horas (180 minutos) para compensar offset ART
-      date.setHours(date.getUTCHours() + 3);
+      date.setUTCHours(date.getUTCHours() + 3);
       
       // Retornar en formato ISO con Z (UTC)
-      return date.toISOString();
+      const fixed = date.toISOString();
+      console.log(`[TIMESTAMP_FIX] ${timestamp} (${originalHours}h UTC) → ${fixed} (${date.getUTCHours()}h UTC)`);
+      return fixed;
     } catch (e) {
       logWarning('[MercadopagoClient] Error fijando timestamp:', timestamp);
       return timestamp;
