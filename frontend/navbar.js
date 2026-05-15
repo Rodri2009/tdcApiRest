@@ -787,7 +787,7 @@ const STAFF_ROUTES = [
     '/editar_',
     '/config_',
     '/admin.html',
-    '/admin_balance.html' // acceso restringido al balance también
+    '/admin_movimientos.html' // acceso restringido a movimientos también
 ];
 
 /**

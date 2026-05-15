@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Admin — Gestión de Caja</title>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <link rel="stylesheet" href="admin_movimientos.css?v=10">
+</head>
+
+<body>
+    <script src="/navbar.js"></script>
+    <main class="wrap">
+        <div class="page-header">
+            <a href="admin.html" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al Panel
+            </a>
+            <div class="header-title-row">
+                <h1>Gestión de Caja</h1>
+                <div id="caja-status" class="service-status ss-connecting" title="Estado de la caja">
+                    <span class="ss-dot"></span>
+                    <span id="status-text">verificando…</span>
+                </div>
+            </div>
+            <div class="spacer"></div>
+        </div>
+
+        <!-- Notificación -->
+        <div id="banner" class="banner hidden" role="status" aria-live="polite"></div>
+
+        <!-- PANEL DE APERTURA DE CAJA -->
+        <section id="panel-apertura" class="balance-section">
+            <h2>Abrir Caja</h2>
+            <p class="text-stone-400 mb-4">Inicia un nuevo período de caja. Los movimientos quedarán registrados en este período.</p>
+            
+            <div class="form-group">
+                <label for="saldo-inicial">Saldo Inicial (dinero en caja)</label>
+                <input type="number" id="saldo-inicial" min="0" step="0.01" value="0" placeholder="0.00">
+            </div>
+            
+            <div class="form-group">
+                <label for="notas-apertura">Notas (opcional)</label>
+                <textarea id="notas-apertura" placeholder="Ej: Efectivo de ayer, Bill de $5000, etc."></textarea>
+            </div>
+
+            <div class="controls">
+                <button id="btn-abrir-caja" class="btn btn-green">
+                    <i class="fas fa-lock-open mr-2"></i> Abrir Caja
+                </button>
+            </div>
+        </section>
+
+        <!-- PANEL DE MOVIMIENTOS (cuando caja está abierta) -->
+        <section id="panel-movimientos" class="balance-section hidden">
+            <h2>Registrar Movimientos</h2>
+            
+            <div class="controls small gap-2 my-4">
+                <button id="btn-ingreso" class="btn btn-green">
+                    <i class="fas fa-arrow-down mr-1"></i> Agregar Ingreso
+                </button>
+                <button id="btn-egreso" class="btn btn-red">
+                    <i class="fas fa-arrow-up mr-1"></i> Agregar Egreso
+                </button>
+                <button id="btn-cerrar-caja" class="btn btn-orange">
+                    <i class="fas fa-lock mr-1"></i> Cerrar Caja
+                </button>
+            </div>
+
+            <table class="tx-table">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Categoría</th>
+                        <th>Descripción</th>
+                        <th>Monto</th>
+                        <th>Hora</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="movimientos-list"></tbody>
+            </table>
+
+            <div class="my-4 p-4 bg-stone-800 rounded">
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-stone-400 text-sm">Total Ingresos</p>
+                        <p id="total-ingresos" class="text-2xl font-bold text-green-400">$0.00</p>
+                    </div>
+                    <div>
+                        <p class="text-stone-400 text-sm">Total Egresos</p>
+                        <p id="total-egresos" class="text-2xl font-bold text-red-400">$0.00</p>
+                    </div>
+                    <div>
+                        <p class="text-stone-400 text-sm">Saldo Esperado</p>
+                        <p id="saldo-esperado" class="text-2xl font-bold text-yellow-400">$0.00</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODAL: Nuevo Movimiento -->
+        <div id="modal-movimiento" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Nuevo Movimiento</h3>
+                    <button class="btn-close" onclick="closeModal('modal-movimiento')">&times;</button>
+                </div>
+
+                <form id="form-movimiento">
+                    <div class="form-group">
+                        <label for="mov-tipo">Tipo</label>
+                        <select id="mov-tipo" required>
+                            <option value="">-- Selecciona --</option>
+                            <option value="ingreso">Ingreso</option>
+                            <option value="egreso">Egreso</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mov-categoria">Categoría</label>
+                        <select id="mov-categoria" required>
+                            <option value="">-- Selecciona --</option>
+                            <option value="BANDAS">Bandas en Vivo</option>
+                            <option value="ALQUILER">Alquiler del Salón</option>
+                            <option value="TALLERES">Talleres</option>
+                            <option value="SERVICIOS">Servicios</option>
+                            <option value="OTROS">Otros</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mov-subcategoria">Detalle</label>
+                        <select id="mov-subcategoria">
+                            <option value="">-- Selecciona --</option>
+                            <option value="entrada_anticipada">Entrada Anticipada</option>
+                            <option value="entrada_puerta">Entrada Puerta</option>
+                            <option value="sonido">Cobro Sonido/PA</option>
+                            <option value="bufet">Bebidas/Comidas</option>
+                            <option value="alquiler_base">Alquiler Base</option>
+                            <option value="adicional">Servicios Adicionales</option>
+                            <option value="comida">Catering</option>
+                            <option value="espacio">Espacio Taller</option>
+                            <option value="concurrencia">Porcentaje Concurrencia</option>
+                            <option value="pago_personal">Pago a Personal</option>
+                            <option value="suministros">Suministros</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mov-descripcion">Descripción</label>
+                        <input type="text" id="mov-descripcion" required placeholder="Ej: Venta de 50 entradas anticipadas">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mov-monto">Monto ($)</label>
+                        <input type="number" id="mov-monto" min="0" step="0.01" required placeholder="0.00">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mov-metodo">Método de Pago</label>
+                        <select id="mov-metodo">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="transferencia">Transferencia</option>
+                            <option value="tarjeta">Tarjeta</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mov-comprobante">Comprobante/Referencia (opcional)</label>
+                        <input type="text" id="mov-comprobante" placeholder="Ej: Recibo #123, Transferencia ABC123">
+                    </div>
+
+                    <div class="controls">
+                        <button type="submit" class="btn btn-green">Guardar Movimiento</button>
+                        <button type="button" class="btn" onclick="closeModal('modal-movimiento')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL: Cerrar Caja -->
+        <div id="modal-cerrar" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Cerrar Caja</h3>
+                    <button class="btn-close" onclick="closeModal('modal-cerrar')">&times;</button>
+                </div>
+
+                <form id="form-cerrar-caja">
+                    <div class="form-group">
+                        <label for="saldo-final">Saldo Final Contado ($)</label>
+                        <input type="number" id="saldo-final" min="0" step="0.01" required placeholder="0.00">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notas-cierre">Notas del Cierre (opcional)</label>
+                        <textarea id="notas-cierre" placeholder="Ej: Faltó revisar caja, hay diferencia por..."></textarea>
+                    </div>
+
+                    <div id="resumen-cierre" class="bg-stone-800 p-4 rounded my-4 hidden">
+                        <h4 class="text-lg font-bold mb-2">Resumen</h4>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>Saldo Inicial: <span id="cierre-inicial" class="font-bold">$0.00</span></div>
+                            <div>Total Ingresos: <span id="cierre-ingresos" class="font-bold">$0.00</span></div>
+                            <div>Total Egresos: <span id="cierre-egresos" class="font-bold">$0.00</span></div>
+                            <div>Esperado: <span id="cierre-esperado" class="font-bold">$0.00</span></div>
+                            <div class="col-span-2">Contado: <span id="cierre-contado" class="font-bold">$0.00</span></div>
+                            <div class="col-span-2">Diferencia: <span id="cierre-diferencia" class="font-bold text-yellow-400">$0.00</span></div>
+                        </div>
+                    </div>
+
+                    <div class="controls">
+                        <button type="submit" class="btn btn-orange">Cerrar Caja y Generar Informe</button>
+                        <button type="button" class="btn" onclick="closeModal('modal-cerrar')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- INFORME DE CIERRE -->
+        <section id="panel-informe" class="balance-section hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2>Informe de Cierre de Caja</h2>
+                <button id="btn-descargar-pdf" class="btn">
+                    <i class="fas fa-download mr-1"></i> Descargar PDF
+                </button>
+            </div>
+            
+            <div id="contenido-informe"></div>
+
+            <div class="controls my-4">
+                <button id="btn-nueva-caja" class="btn btn-green">
+                    <i class="fas fa-plus mr-1"></i> Abrir Nueva Caja
+                </button>
+                <a href="/admin.html" class="btn">Volver al Panel</a>
+            </div>
+        </section>
+    </main>
+
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: #292524;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid #44403c;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #f0abfc;
+            font-size: 1.25rem;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            color: #f0abfc;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #d1d5db;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            background: #1c1917;
+            border: 1px solid #44403c;
+            border-radius: 4px;
+            color: #f0abfc;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #f0abfc;
+            box-shadow: 0 0 0 2px rgba(240, 171, 252, 0.1);
+        }
+    </style>
+
+    <script src="admin_caja.js"></script>
+</body>
+
+</html>
