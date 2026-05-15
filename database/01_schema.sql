@@ -732,5 +732,77 @@ CREATE TABLE IF NOT EXISTS turnos_servicios (
     FOREIGN KEY (precio_id) REFERENCES precios_servicios(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- =============================================================================
+-- SISTEMA DE GESTIÓN DE CAJA
+-- =============================================================================
+
+-- Catálogo de tipos de movimientos (ingresos y egresos)
+-- Define todas las categorías y subcategorías posibles
+CREATE TABLE IF NOT EXISTS tipos_movimientos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE COMMENT 'Código corto: BAND_ENTRADA, ALQ_BASE, etc.',
+    nombre VARCHAR(100) NOT NULL COMMENT 'Nombre visible: Entrada Anticipada Bandas',
+    tipo ENUM('ingreso', 'egreso') NOT NULL COMMENT 'Clasificación principal',
+    categoria VARCHAR(50) NOT NULL COMMENT 'BANDAS, ALQUILER, TALLERES, SERVICIOS, OTROS',
+    subcategoria VARCHAR(100) COMMENT 'Subcategoría: entrada_anticipada, alquiler_base, buffet, etc.',
+    descripcion TEXT COMMENT 'Descripción detallada del movimiento',
+    requiere_comprobante TINYINT(1) DEFAULT 0 COMMENT '1=Requiere referencia de comprobante',
+    activo TINYINT(1) DEFAULT 1 COMMENT '1=Activo en sistema',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_tipo (tipo),
+    INDEX idx_categoria (categoria),
+    INDEX idx_activo (activo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Períodos de caja (apertura y cierre)
+-- Registra cuándo se abre y cierra la caja, por quién, y qué saldos hay
+CREATE TABLE IF NOT EXISTS cajas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    numero_caja INT NOT NULL UNIQUE COMMENT 'Número secuencial de caja',
+    fecha_apertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha/hora de apertura',
+    fecha_cierre TIMESTAMP NULL COMMENT 'Fecha/hora de cierre (NULL si abierta)',
+    estado ENUM('abierta', 'cerrada') DEFAULT 'abierta' COMMENT 'Estado actual',
+    usuario_apertura_id INT NOT NULL COMMENT 'Usuario que abrió la caja',
+    usuario_cierre_id INT COMMENT 'Usuario que cerró la caja (NULL si abierta)',
+    saldo_inicial DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT 'Saldo con el que se abrió',
+    saldo_final DECIMAL(12,2) COMMENT 'Saldo real contado al cerrar (NULL si abierta)',
+    notas_apertura TEXT COMMENT 'Notas al abrir',
+    notas_cierre TEXT COMMENT 'Notas al cerrar',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_apertura_id) REFERENCES usuarios(id_usuario),
+    INDEX idx_estado (estado),
+    INDEX idx_fecha_apertura (fecha_apertura),
+    INDEX idx_usuario_apertura (usuario_apertura_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Movimientos individuales dentro de cada caja
+-- Registra cada ingreso/egreso asociado a una caja abierta
+CREATE TABLE IF NOT EXISTS movimientos_caja (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_caja INT NOT NULL COMMENT 'FK a cajas.id - Caja a la que pertenece',
+    id_tipo_movimiento INT COMMENT 'FK a tipos_movimientos.id (opcional)',
+    tipo ENUM('ingreso', 'egreso') NOT NULL COMMENT 'Clasificación',
+    categoria VARCHAR(50) NOT NULL COMMENT 'BANDAS, ALQUILER, TALLERES, SERVICIOS, OTROS',
+    subcategoria VARCHAR(100) COMMENT 'Subcategoría específica',
+    descripcion VARCHAR(255) NOT NULL COMMENT 'Descripción del movimiento',
+    monto DECIMAL(12,2) NOT NULL COMMENT 'Monto de dinero',
+    metodo_pago ENUM('efectivo', 'transferencia', 'tarjeta', 'cheque', 'otro') NOT NULL DEFAULT 'efectivo',
+    comprobante_ref VARCHAR(100) COMMENT 'Referencia a comprobante (factura, DNI, etc.)',
+    id_evento_confirmado INT COMMENT 'FK a eventos_confirmados.id (si aplica)',
+    id_solicitud INT COMMENT 'FK a solicitudes.id (si aplica)',
+    usuario_id INT NOT NULL COMMENT 'Usuario que registró el movimiento',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_caja) REFERENCES cajas(id) ON DELETE RESTRICT,
+    FOREIGN KEY (id_tipo_movimiento) REFERENCES tipos_movimientos(id) ON DELETE SET NULL,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id_usuario),
+    INDEX idx_id_caja (id_caja),
+    INDEX idx_tipo (tipo),
+    INDEX idx_categoria (categoria),
+    INDEX idx_fecha (creado_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- FIN DEL SCHEMA
 -- =============================================================================
