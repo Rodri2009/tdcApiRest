@@ -39,26 +39,35 @@ class MercadopagoClient {
       let url = `${MP_API_URL}/api/activity?fresh=${fresh}&limit=${limit}`;
       if (since) url += `&since=${since}`;
 
+      console.log(`\n========== [MERCADO_PAGO] Obteniendo transacciones ==========`);
       const response = await axios.get(url, { headers, timeout: 30000 });
       
-      console.log(`[MercadopagoClient] getActivity: ${response.data.transactions?.length || 0} transacciones recibidas`);
+      const txCount = response.data.transactions?.length || 0;
+      console.log(`[MERCADO_PAGO] ✓ ${txCount} transacciones recibidas del API`);
       
-      // ⚠️ FIX: serverMP envía timestamps con horas locales etiquetadas como UTC
-      // Necesitamos convertir: si creationDate es "2026-05-14T06:55:00.000Z"
-      // realmente significa 06:55 ART (UTC-3), así que debe ser "2026-05-14T09:55:00.000Z"
-      if (response.data.transactions && Array.isArray(response.data.transactions)) {
-        console.log(`[TIMESTAMP_FIX] Procesando ${response.data.transactions.length} transacciones...`);
-        response.data.transactions = response.data.transactions.map((tx, idx) => {
-          if (tx.creationDate) {
-            tx.creationDate = this._fixTimestampUTC(tx.creationDate);
-          }
-          if (tx.dateTime) {
-            tx.dateTime = this._fixTimestampUTC(tx.dateTime);
-          }
-          return tx;
-        });
-        console.log(`[TIMESTAMP_FIX] ✅ Todas las transacciones procesadas`);
+      if (!response.data.transactions || !Array.isArray(response.data.transactions)) {
+        console.log(`[MERCADO_PAGO] ⚠️  No hay transacciones o no es array`);
+        return response.data;
       }
+
+      console.log(`[TIMESTAMP_FIX] Iniciando corrección de timestamps...`);
+      
+      // CORREGIR CADA TRANSACCIÓN
+      response.data.transactions.forEach((tx, idx) => {
+        if (tx.dateTime) {
+          const original = tx.dateTime;
+          tx.dateTime = this._fixTimestampUTC(tx.dateTime);
+          console.log(`  [${idx}] ${original} → ${tx.dateTime}`);
+        }
+        if (tx.creationDate) {
+          const original = tx.creationDate;
+          tx.creationDate = this._fixTimestampUTC(tx.creationDate);
+          console.log(`  [${idx}] creation: ${original} → ${tx.creationDate}`);
+        }
+      });
+      
+      console.log(`[TIMESTAMP_FIX] ✅ Corrección completada para ${txCount} transacciones`);
+      console.log(`========================================================\n`);
       
       logVerbose('[MercadopagoClient] getActivity success', { count: response.data.count });
       return response.data;
