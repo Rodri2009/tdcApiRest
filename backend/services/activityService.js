@@ -603,6 +603,23 @@ async function scrapeActivity(page) {
         }
 
         console.log(`[ActivityService] Scraped ${transactions.length} transactions, ${withAmount.length} with significant amount, deduplicated to ${deduplicated.length}`);
+        
+        // Aplicar fix de zona horaria a timestamps
+        console.log(`[TIMESTAMP_FIX] Aplicando corrección de zona horaria a ${deduplicated.length} transacciones...`);
+        deduplicated.forEach((tx, idx) => {
+            if (tx.dateTime) {
+                const original = tx.dateTime;
+                tx.dateTime = _fixTimestampUTC(tx.dateTime);
+                console.log(`  [${idx}] dateTime: ${original} → ${tx.dateTime}`);
+            }
+            if (tx.creationDate) {
+                const original = tx.creationDate;
+                tx.creationDate = _fixTimestampUTC(tx.creationDate);
+                console.log(`  [${idx}] creationDate: ${original} → ${tx.creationDate}`);
+            }
+        });
+        console.log(`[TIMESTAMP_FIX] ✅ Corrección completada\n`);
+        
         return {
             transactions: deduplicated,
             count: deduplicated.length,
@@ -743,6 +760,30 @@ async function warmupCache(page) {
         console.warn('[ActivityService] ⚠️ Warmup falló (best-effort):', err.message);
     }
     return null;
+}
+
+/**
+ * Corrige timestamps que vienen de serverMP
+ * serverMP envía hora local de Argentina pero con tag UTC (Z)
+ * Esto causa un offset de -3 horas en la visualización
+ */
+function _fixTimestampUTC(timestamp) {
+    if (!timestamp || typeof timestamp !== 'string') return timestamp;
+    
+    try {
+        const date = new Date(timestamp);
+        const originalHours = date.getUTCHours();
+        
+        // Sumar 3 horas (180 minutos) para compensar offset ART
+        date.setUTCHours(date.getUTCHours() + 3);
+        
+        const fixed = date.toISOString();
+        console.log(`[TIMESTAMP_FIX] ${timestamp} (${originalHours}h UTC) → ${fixed} (${date.getUTCHours()}h UTC) ✓`);
+        return fixed;
+    } catch (e) {
+        console.warn(`[TIMESTAMP_FIX] ❌ Error: ${e.message}`);
+        return timestamp;
+    }
 }
 
 module.exports = {
