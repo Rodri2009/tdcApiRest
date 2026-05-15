@@ -1,5 +1,4 @@
 const db = require('../db');
-const { logActivity } = require('../services/ActivityService');
 
 /**
  * Verificar si hay una caja abierta actualmente
@@ -117,7 +116,7 @@ async function crearCaja(req, res) {
                     const cajaId = result.insertId;
 
                     // Log de actividad
-                    logActivity('CAJA_ABIERTA', {
+                    console.log('[CAJA_ABIERTA]', {
                         caja_id: cajaId,
                         numero_caja: numeroCaja,
                         saldo_inicial: saldoInicial,
@@ -254,7 +253,7 @@ async function agregarMovimiento(req, res) {
                     }
 
                     // Log de actividad
-                    logActivity('MOVIMIENTO_CAJA_AGREGADO', {
+                    console.log('[MOVIMIENTO_CAJA_AGREGADO]', {
                         caja_id: cajaId,
                         movimiento_id: result.insertId,
                         tipo,
@@ -321,7 +320,7 @@ async function eliminarMovimiento(req, res) {
                         return res.status(500).json({ error: 'Error eliminando movimiento' });
                     }
 
-                    logActivity('MOVIMIENTO_CAJA_ELIMINADO', {
+                    console.log('[MOVIMIENTO_CAJA_ELIMINADO]', {
                         movimiento_id: movimientoId,
                         caja_id: cajaId,
                         usuario_id: usuarioId
@@ -399,7 +398,7 @@ async function cerrarCaja(req, res) {
                         return res.status(500).json({ error: 'Error cerrando caja' });
                     }
 
-                    logActivity('CAJA_CERRADA', {
+                    console.log('[CAJA_CERRADA]', {
                         caja_id: cajaId,
                         numero_caja: caja.numero_caja,
                         saldo_inicial: caja.saldo_inicial,
