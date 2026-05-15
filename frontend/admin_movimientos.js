@@ -244,9 +244,26 @@
         if (isNaN(d)) return { date: '—', time: '—' };
         const shortMonths = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
         const mon = shortMonths[d.getMonth()] || '';
-        const dd = String(d.getDate());              // no leading zero
-        const hh = String(d.getHours()).padStart(2, '0');
-        const mi = String(d.getMinutes()).padStart(2, '0');
+        const dd = String(d.getDate());
+        
+        // Usar toLocaleString para obtener la hora en zona horaria local (Argentina)
+        // Esto asegura que la hora sea correcta incluso si viene en UTC desde el servidor
+        const localTime = d.toLocaleString('es-AR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'America/Argentina/Buenos_Aires'
+        });
+        
+        // Extraer hora y minuto del formato "DD/MM/YYYY, HH:mm"
+        const parts = localTime.split(', ');
+        const timeParts = parts[1] ? parts[1].split(':') : ['00', '00'];
+        const hh = timeParts[0];
+        const mi = timeParts[1];
+        
         return { date: `${dd} ${mon}`, time: `${hh}:${mi}` };
     }
 
