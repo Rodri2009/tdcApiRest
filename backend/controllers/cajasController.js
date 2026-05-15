@@ -19,7 +19,7 @@ async function verificarCajaActiva(req, res) {
             ORDER BY c.fecha_apertura DESC
             LIMIT 1
         `;
-        
+
         db.query(query, async (err, results) => {
             if (err) {
                 console.error('[cajasController] Error verificando caja:', err);

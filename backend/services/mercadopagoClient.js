@@ -41,17 +41,17 @@ class MercadopagoClient {
 
       console.log(`\n========== [MERCADO_PAGO] Obteniendo transacciones ==========`);
       const response = await axios.get(url, { headers, timeout: 30000 });
-      
+
       const txCount = response.data.transactions?.length || 0;
       console.log(`[MERCADO_PAGO] ✓ ${txCount} transacciones recibidas del API`);
-      
+
       if (!response.data.transactions || !Array.isArray(response.data.transactions)) {
         console.log(`[MERCADO_PAGO] ⚠️  No hay transacciones o no es array`);
         return response.data;
       }
 
       console.log(`[TIMESTAMP_FIX] Iniciando corrección de timestamps...`);
-      
+
       // CORREGIR CADA TRANSACCIÓN
       response.data.transactions.forEach((tx, idx) => {
         if (tx.dateTime) {
@@ -65,10 +65,10 @@ class MercadopagoClient {
           console.log(`  [${idx}] creation: ${original} → ${tx.creationDate}`);
         }
       });
-      
+
       console.log(`[TIMESTAMP_FIX] ✅ Corrección completada para ${txCount} transacciones`);
       console.log(`========================================================\n`);
-      
+
       logVerbose('[MercadopagoClient] getActivity success', { count: response.data.count });
       return response.data;
     } catch (error) {
@@ -91,17 +91,17 @@ class MercadopagoClient {
    */
   _fixTimestampUTC(timestamp) {
     if (!timestamp || typeof timestamp !== 'string') return timestamp;
-    
+
     try {
       // Parsear timestamp como UTC (por la Z al final)
       const date = new Date(timestamp);
       const originalHours = date.getUTCHours();
-      
+
       // ⚠️ IMPORTANTE: usar setUTCHours() no setHours()
       // setHours() usa zona horaria LOCAL, setUTCHours() usa UTC
       // Sumar 3 horas (180 minutos) para compensar offset ART
       date.setUTCHours(date.getUTCHours() + 3);
-      
+
       // Retornar en formato ISO con Z (UTC)
       const fixed = date.toISOString();
       console.log(`[TIMESTAMP_FIX] ${timestamp} (${originalHours}h UTC) → ${fixed} (${date.getUTCHours()}h UTC)`);

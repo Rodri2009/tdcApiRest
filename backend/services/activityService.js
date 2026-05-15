@@ -603,7 +603,7 @@ async function scrapeActivity(page) {
         }
 
         console.log(`[ActivityService] Scraped ${transactions.length} transactions, ${withAmount.length} with significant amount, deduplicated to ${deduplicated.length}`);
-        
+
         // Aplicar fix de zona horaria a timestamps
         console.log(`[TIMESTAMP_FIX] Aplicando corrección de zona horaria a ${deduplicated.length} transacciones...`);
         deduplicated.forEach((tx, idx) => {
@@ -619,7 +619,7 @@ async function scrapeActivity(page) {
             }
         });
         console.log(`[TIMESTAMP_FIX] ✅ Corrección completada\n`);
-        
+
         return {
             transactions: deduplicated,
             count: deduplicated.length,
@@ -769,14 +769,14 @@ async function warmupCache(page) {
  */
 function _fixTimestampUTC(timestamp) {
     if (!timestamp || typeof timestamp !== 'string') return timestamp;
-    
+
     try {
         const date = new Date(timestamp);
         const originalHours = date.getUTCHours();
-        
+
         // Sumar 3 horas (180 minutos) para compensar offset ART
         date.setUTCHours(date.getUTCHours() + 3);
-        
+
         const fixed = date.toISOString();
         console.log(`[TIMESTAMP_FIX] ${timestamp} (${originalHours}h UTC) → ${fixed} (${date.getUTCHours()}h UTC) ✓`);
         return fixed;

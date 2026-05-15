@@ -5,8 +5,9 @@
     // Estado global para tracking
     let MAX_ITEMS = MAX_ITEMS_DEFAULT;
     let viewAllMode = false;
-    // show only positive (income) transactions by default
-    let filterIncome = true;
+    let cajaAbierta = false;  // Estado de caja abierta (true = limpiar tabla, false = mostrar transacciones)
+    // mostrar todos los movimientos por defecto (ingresos y egresos)
+    let filterIncome = false;
     let allTransactions = [];
     let authToken = null;  // Token JWT para autenticación
     let lastTransactionState = null;  // Para loguear solo si cambian los datos de transacción
@@ -245,17 +246,17 @@
             console.warn('[formatDateTime] Fecha inválida:', dt);
             return { date: '—', time: '—' };
         }
-        
+
         // DEBUG: Loguear entrada y conversión
         console.log('[formatDateTime] INPUT dt:', dt);
         console.log('[formatDateTime] Date object:', d);
         console.log('[formatDateTime] ISO String:', d.toISOString());
         console.log('[formatDateTime] getHours() (UTC):', d.getHours());
-        
+
         const shortMonths = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
         const mon = shortMonths[d.getMonth()] || '';
         const dd = String(d.getDate());
-        
+
         // Usar toLocaleString para obtener la hora en zona horaria local (Argentina)
         const localTime = d.toLocaleString('es-AR', {
             year: 'numeric',
@@ -266,19 +267,19 @@
             hour12: false,
             timeZone: 'America/Argentina/Buenos_Aires'
         });
-        
+
         console.log('[formatDateTime] toLocaleString (es-AR, Buenos Aires):', localTime);
-        
+
         // Extraer hora y minuto del formato "DD/MM/YYYY, HH:mm"
         const parts = localTime.split(', ');
         const timeParts = parts[1] ? parts[1].split(':') : ['00', '00'];
         const hh = timeParts[0];
         const mi = timeParts[1];
-        
+
         const result = { date: `${dd} ${mon}`, time: `${hh}:${mi}` };
         console.log('[formatDateTime] RESULTADO:', result);
         console.log('---');
-        
+
         return result;
     }
 
@@ -925,10 +926,31 @@
             setTimeout(() => statusEl.textContent = '', 2500);
         });
 
-        // Botón "Ver todas las transacciones"
-        document.getElementById('view-all-btn').addEventListener('click', () => {
-            viewAllMode = !viewAllMode;
+        // Botones de Abrir/Cerrar Caja
+        const btnAbrirCaja = document.getElementById('btn-abrir-caja');
+        const btnCerrarCaja = document.getElementById('btn-cerrar-caja');
+        
+        btnAbrirCaja.addEventListener('click', () => {
+            cajaAbierta = true;
+            btnAbrirCaja.classList.add('hidden');
+            btnCerrarCaja.classList.remove('hidden');
+            
+            // Limpiar la tabla
+            const tbody = document.getElementById('tx-list');
+            tbody.innerHTML = '';
+            showBanner('✅ Caja abierta - Movimientos limpiados', 'success');
+            console.log('[CajaAbierta] Tabla limpiada');
+        });
+        
+        btnCerrarCaja.addEventListener('click', () => {
+            cajaAbierta = false;
+            btnAbrirCaja.classList.remove('hidden');
+            btnCerrarCaja.classList.add('hidden');
+            
+            // Mostrar transacciones nuevamente
             renderTransactions(allTransactions);
+            showBanner('✅ Caja cerrada - Movimientos visibles', 'success');
+            console.log('[CajaCerrada] Transacciones mostradas nuevamente');
         });
 
         // botón especiales
@@ -972,7 +994,7 @@
         // filtro por defecto y botón para desactivarlo
         const filterBtn = document.getElementById('filter-btn');
         function updateFilterButton() {
-            filterBtn.textContent = filterIncome ? 'Sin filtro' : 'Filtrar ingresos';
+            filterBtn.textContent = filterIncome ? 'Ver todos (Ingresos y Egresos)' : 'Filtrar solo ingresos';
         }
         filterBtn.addEventListener('click', () => {
             filterIncome = !filterIncome;

@@ -43,7 +43,7 @@ async function verificarCajaActiva() {
         const res = await fetch(`${API_BASE}/api/cajas/activa`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
         });
-        
+
         if (res.ok) {
             const data = await res.json();
             cajaActual = data;

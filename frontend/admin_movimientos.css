@@ -214,17 +214,21 @@ h1 {
     .tx-col-name {
         min-width: 120px;
     }
+
     .tx-col-desc {
         min-width: 100px;
     }
+
     .tx-col-amount {
         min-width: 80px;
         font-size: 0.85rem;
     }
+
     .tx-col-date {
         min-width: 70px;
         font-size: 0.85rem;
     }
+
     .tx-col-time {
         min-width: 55px;
         font-size: 0.85rem;
@@ -235,20 +239,25 @@ h1 {
     .tx-table {
         font-size: 0.8rem;
     }
+
     .tx-col-name {
         min-width: 80px;
     }
+
     .tx-col-desc {
         min-width: 70px;
     }
+
     .tx-col-amount {
         min-width: 70px;
         font-size: 0.75rem;
     }
+
     .tx-col-date {
         min-width: 60px;
         font-size: 0.75rem;
     }
+
     .tx-col-time {
         min-width: 50px;
         font-size: 0.75rem;

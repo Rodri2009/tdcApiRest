@@ -34,13 +34,14 @@
         <!-- PANEL DE APERTURA DE CAJA -->
         <section id="panel-apertura" class="balance-section">
             <h2>Abrir Caja</h2>
-            <p class="text-stone-400 mb-4">Inicia un nuevo período de caja. Los movimientos quedarán registrados en este período.</p>
-            
+            <p class="text-stone-400 mb-4">Inicia un nuevo período de caja. Los movimientos quedarán registrados en este
+                período.</p>
+
             <div class="form-group">
                 <label for="saldo-inicial">Saldo Inicial (dinero en caja)</label>
                 <input type="number" id="saldo-inicial" min="0" step="0.01" value="0" placeholder="0.00">
             </div>
-            
+
             <div class="form-group">
                 <label for="notas-apertura">Notas (opcional)</label>
                 <textarea id="notas-apertura" placeholder="Ej: Efectivo de ayer, Bill de $5000, etc."></textarea>
@@ -56,7 +57,7 @@
         <!-- PANEL DE MOVIMIENTOS (cuando caja está abierta) -->
         <section id="panel-movimientos" class="balance-section hidden">
             <h2>Registrar Movimientos</h2>
-            
+
             <div class="controls small gap-2 my-4">
                 <button id="btn-ingreso" class="btn btn-green">
                     <i class="fas fa-arrow-down mr-1"></i> Agregar Ingreso
@@ -152,7 +153,8 @@
 
                     <div class="form-group">
                         <label for="mov-descripcion">Descripción</label>
-                        <input type="text" id="mov-descripcion" required placeholder="Ej: Venta de 50 entradas anticipadas">
+                        <input type="text" id="mov-descripcion" required
+                            placeholder="Ej: Venta de 50 entradas anticipadas">
                     </div>
 
                     <div class="form-group">
@@ -200,7 +202,8 @@
 
                     <div class="form-group">
                         <label for="notas-cierre">Notas del Cierre (opcional)</label>
-                        <textarea id="notas-cierre" placeholder="Ej: Faltó revisar caja, hay diferencia por..."></textarea>
+                        <textarea id="notas-cierre"
+                            placeholder="Ej: Faltó revisar caja, hay diferencia por..."></textarea>
                     </div>
 
                     <div id="resumen-cierre" class="bg-stone-800 p-4 rounded my-4 hidden">
@@ -210,8 +213,10 @@
                             <div>Total Ingresos: <span id="cierre-ingresos" class="font-bold">$0.00</span></div>
                             <div>Total Egresos: <span id="cierre-egresos" class="font-bold">$0.00</span></div>
                             <div>Esperado: <span id="cierre-esperado" class="font-bold">$0.00</span></div>
-                            <div class="col-span-2">Contado: <span id="cierre-contado" class="font-bold">$0.00</span></div>
-                            <div class="col-span-2">Diferencia: <span id="cierre-diferencia" class="font-bold text-yellow-400">$0.00</span></div>
+                            <div class="col-span-2">Contado: <span id="cierre-contado" class="font-bold">$0.00</span>
+                            </div>
+                            <div class="col-span-2">Diferencia: <span id="cierre-diferencia"
+                                    class="font-bold text-yellow-400">$0.00</span></div>
                         </div>
                     </div>
 
@@ -231,7 +236,7 @@
                     <i class="fas fa-download mr-1"></i> Descargar PDF
                 </button>
             </div>
-            
+
             <div id="contenido-informe"></div>
 
             <div class="controls my-4">
