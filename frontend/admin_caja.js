@@ -48,18 +48,21 @@ function calcularDuracion(inicio, fin) {
     return `${horas}h ${minutos}m`;
 }
 
-// Autentica y obtiene token
+// Obtiene token de localStorage o intenta hacer login
 async function authenticateAndGetToken() {
     try {
-        const loginData = {
-            email: 'testadmin@tdcclub.local',
-            password: 'test123456'
-        };
+        // Primero intenta obtener token de localStorage (del navbar)
+        const storedToken = localStorage.getItem('authToken');
+        if (storedToken) {
+            token = storedToken;
+            console.log('[admin_caja.js] ✅ Token obtenido de localStorage');
+            return token;
+        }
 
-        const loginResponse = await fetch('/api/auth/login', {
+        // Si no hay token guardado, intenta login sin credenciales (endpoint especial MP)
+        const loginResponse = await fetch('/api/mercadopago/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(loginData)
+            headers: { 'Content-Type': 'application/json' }
         });
 
         if (!loginResponse.ok) {
@@ -67,7 +70,8 @@ async function authenticateAndGetToken() {
         }
 
         const loginResult = await loginResponse.json();
-        token = loginResult.accessToken || loginResult.token;
+        token = loginResult.accessToken;
+        console.log('[admin_caja.js] ✅ Token obtenido por login');
         return token;
     } catch (err) {
         console.error('[admin_caja.js] Error autenticando:', err);
@@ -77,7 +81,16 @@ async function authenticateAndGetToken() {
 
 // Cargar cajas cerradas
 async function cargarCajas() {
-    if (!token) await authenticateAndGetToken();
+    if (!token) {
+        await authenticateAndGetToken();
+        if (!token) {
+            mostrarBanner('No se pudo autenticar', 'error');
+            console.error('[admin_caja.js] No hay token disponible');
+            return;
+        }
+    }
+
+    console.log('[admin_caja.js] Token a usar:', token.substring(0, 20) + '...');
 
     try {
         const response = await fetch('/api/cajas/history', {
@@ -85,6 +98,8 @@ async function cargarCajas() {
         });
 
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[admin_caja.js] Error HTTP:', response.status, errorText);
             throw new Error('Error cargando cajas');
         }
 
