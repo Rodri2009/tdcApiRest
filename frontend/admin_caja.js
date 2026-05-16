@@ -1,449 +1,331 @@
-/**
- * admin_caja.js - Gestión de Caja
- * Maneja apertura/cierre de caja y registro de movimientos
- */
-
-const API_BASE = window.location.origin;
+// Estados de vista
 let cajaActual = null;
-let movimientos = [];
+let token = null;
 
 // Elementos del DOM
-const panelApertura = document.getElementById('panel-apertura');
-const panelMovimientos = document.getElementById('panel-movimientos');
-const panelInforme = document.getElementById('panel-informe');
-const cajaStatus = document.getElementById('caja-status');
-const statusText = document.getElementById('status-text');
+const viewListado = document.getElementById('view-listado');
+const viewDetalle = document.getElementById('view-detalle');
+const viewAbrir = document.getElementById('view-abrir');
+const cajasList = document.getElementById('cajas-list');
+const sinCajas = document.getElementById('sin-cajas');
+const banner = document.getElementById('banner');
+const btnNuevaCaja = document.getElementById('btn-nueva-caja');
+const btnVolver = document.getElementById('btn-volver');
+const btnGuardarNombre = document.getElementById('btn-guardar-nombre');
+const formAbrirCaja = document.getElementById('form-abrir-caja');
 
-// Inicializar
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('[admin_caja.js] Iniciando...');
-    verificarCajaActiva();
-    setupEventListeners();
-});
-
-/**
- * Configurar event listeners
- */
-function setupEventListeners() {
-    document.getElementById('btn-abrir-caja').addEventListener('click', abrirCaja);
-    document.getElementById('btn-ingreso').addEventListener('click', () => abrirModalMovimiento('ingreso'));
-    document.getElementById('btn-egreso').addEventListener('click', () => abrirModalMovimiento('egreso'));
-    document.getElementById('btn-cerrar-caja').addEventListener('click', abrirModalCierre);
-    document.getElementById('form-movimiento').addEventListener('submit', guardarMovimiento);
-    document.getElementById('form-cerrar-caja').addEventListener('submit', cerrarCaja);
-    document.getElementById('btn-nueva-caja').addEventListener('click', iniciarNuevaCaja);
-    document.getElementById('btn-descargar-pdf').addEventListener('click', descargarInformePDF);
+// Formatea fecha a formato legible
+function formatearFecha(fecha) {
+    if (!fecha) return '-';
+    const d = new Date(fecha);
+    return d.toLocaleString('es-AR', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
-/**
- * Verificar si hay caja abierta
- */
-async function verificarCajaActiva() {
+// Formatea dinero
+function formatearDinero(monto) {
+    if (!monto) return '$0.00';
+    return '$' + parseFloat(monto).toLocaleString('es-AR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+// Calcula duración entre dos fechas
+function calcularDuracion(inicio, fin) {
+    if (!inicio || !fin) return '-';
+    const start = new Date(inicio);
+    const end = new Date(fin);
+    const diff = Math.floor((end - start) / 1000 / 60); // en minutos
+    const horas = Math.floor(diff / 60);
+    const minutos = diff % 60;
+    return `${horas}h ${minutos}m`;
+}
+
+// Autentica y obtiene token
+async function authenticateAndGetToken() {
     try {
-        const res = await fetch(`${API_BASE}/api/cajas/activa`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        const loginData = {
+            email: 'testadmin@tdcclub.local',
+            password: 'test123456'
+        };
+
+        const loginResponse = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(loginData)
         });
 
-        if (res.ok) {
-            const data = await res.json();
-            cajaActual = data;
-            movimientos = data.movimientos || [];
-            mostrarPanelMovimientos();
-            actualizarTotales();
-            setCajaStatus('abierta');
-        } else {
-            mostrarPanelApertura();
-            setCajaStatus('cerrada');
+        if (!loginResponse.ok) {
+            throw new Error('Error en login');
         }
+
+        const loginResult = await loginResponse.json();
+        token = loginResult.accessToken || loginResult.token;
+        return token;
     } catch (err) {
-        console.error('Error verificando caja:', err);
-        mostrarPanelApertura();
-        setCajaStatus('error');
+        console.error('[admin_caja.js] Error autenticando:', err);
+        return null;
     }
 }
 
-/**
- * Abrir nueva caja
- */
-async function abrirCaja() {
-    const saldoInicial = parseFloat(document.getElementById('saldo-inicial').value) || 0;
-    const notas = document.getElementById('notas-apertura').value;
+// Cargar cajas cerradas
+async function cargarCajas() {
+    if (!token) await authenticateAndGetToken();
 
-    if (saldoInicial < 0) {
-        mostrarBanner('El saldo inicial no puede ser negativo', 'error');
+    try {
+        const response = await fetch('/api/cajas/history', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error('Error cargando cajas');
+        }
+
+        const cajas = await response.json();
+
+        if (cajas.length === 0) {
+            cajasList.innerHTML = '';
+            sinCajas.classList.remove('hidden');
+            return;
+        }
+
+        sinCajas.classList.add('hidden');
+        cajasList.innerHTML = cajas.map(caja => `
+            <div class="caja-card" onclick="verDetalle(${caja.id})">
+                <div class="caja-card-header">
+                    <div>
+                        <div class="caja-card-title">${caja.nombre || 'Caja sin nombre'}</div>
+                        <div class="text-stone-400 text-sm mt-1">${formatearFecha(caja.fecha_apertura)}</div>
+                    </div>
+                    <div class="caja-card-number">Caja #${caja.numero_caja}</div>
+                </div>
+                <div class="caja-card-body">
+                    <div class="caja-card-item">
+                        <span class="caja-card-label">Saldo Inicial</span>
+                        <span class="caja-card-value">${formatearDinero(caja.saldo_inicial)}</span>
+                    </div>
+                    <div class="caja-card-item">
+                        <span class="caja-card-label">Saldo Final</span>
+                        <span class="caja-card-value">${formatearDinero(caja.saldo_final)}</span>
+                    </div>
+                    <div class="caja-card-item">
+                        <span class="caja-card-label">Total Movimientos</span>
+                        <span class="caja-card-value">${formatearDinero(caja.total_movimientos || 0)}</span>
+                    </div>
+                    <div class="caja-card-item">
+                        <span class="caja-card-label">Diferencia</span>
+                        <span class="caja-card-value ${(caja.saldo_final - caja.saldo_inicial - (caja.total_movimientos || 0)) === 0 ? 'text-green-400' : 'text-yellow-400'}">
+                            ${formatearDinero(caja.saldo_final - caja.saldo_inicial - (caja.total_movimientos || 0))}
+                        </span>
+                    </div>
+                </div>
+                <div class="caja-card-footer">
+                    <span>Cierre: ${formatearFecha(caja.fecha_cierre)}</span>
+                    <span>${caja.usuario_cierre || '-'}</span>
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error('[admin_caja.js] Error cargando cajas:', err);
+        mostrarBanner('Error cargando cajas: ' + err.message, 'error');
+    }
+}
+
+// Ver detalle de caja
+async function verDetalle(cajaId) {
+    if (!token) await authenticateAndGetToken();
+
+    try {
+        const [cajaResponse, movResponse] = await Promise.all([
+            fetch(`/api/cajas/${cajaId}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`/api/cajas/${cajaId}/movimientos`, { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+
+        if (!cajaResponse.ok || !movResponse.ok) {
+            throw new Error('Error cargando detalles');
+        }
+
+        const caja = await cajaResponse.json();
+        const movimientos = await movResponse.json();
+
+        cajaActual = { ...caja, movimientos };
+
+        // Llenar información de la caja
+        document.getElementById('detalle-titulo').textContent = caja.nombre || `Caja #${caja.numero_caja}`;
+        document.getElementById('detalle-numero').textContent = `#${caja.numero_caja}`;
+        document.getElementById('detalle-apertura').textContent = formatearFecha(caja.fecha_apertura);
+        document.getElementById('detalle-cierre').textContent = formatearFecha(caja.fecha_cierre);
+        document.getElementById('detalle-duracion').textContent = calcularDuracion(caja.fecha_apertura, caja.fecha_cierre);
+        document.getElementById('detalle-nombre').value = caja.nombre || '';
+
+        // Separar ingresos y egresos
+        const ingresos = movimientos.filter(m => m.tipo === 'ingreso');
+        const egresos = movimientos.filter(m => m.tipo === 'egreso');
+
+        const totalIngresos = ingresos.reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
+        const totalEgresos = egresos.reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
+        const saldoEsperado = parseFloat(caja.saldo_inicial) + totalIngresos - totalEgresos;
+        const diferencia = parseFloat(caja.saldo_final) - saldoEsperado;
+
+        // Llenar tablas
+        document.getElementById('detalle-ingresos').innerHTML = ingresos.map(m => `
+            <tr>
+                <td>${m.descripcion}</td>
+                <td>${m.categoria}</td>
+                <td class="text-green-400">${formatearDinero(m.monto)}</td>
+                <td>${new Date(m.creado_en).toLocaleTimeString('es-AR')}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('detalle-egresos').innerHTML = egresos.map(m => `
+            <tr>
+                <td>${m.descripcion}</td>
+                <td>${m.categoria}</td>
+                <td class="text-red-400">${formatearDinero(m.monto)}</td>
+                <td>${new Date(m.creado_en).toLocaleTimeString('es-AR')}</td>
+            </tr>
+        `).join('');
+
+        // Llenar totales
+        document.getElementById('detalle-saldo-inicial').textContent = formatearDinero(caja.saldo_inicial);
+        document.getElementById('detalle-total-ingresos').textContent = formatearDinero(totalIngresos);
+        document.getElementById('detalle-total-egresos').textContent = formatearDinero(totalEgresos);
+        document.getElementById('detalle-saldo-esperado').textContent = formatearDinero(saldoEsperado);
+        document.getElementById('detalle-saldo-final').textContent = formatearDinero(caja.saldo_final);
+        document.getElementById('detalle-diferencia').textContent = formatearDinero(diferencia);
+
+        // Color de diferencia
+        const diferenciEl = document.getElementById('detalle-diferencia');
+        if (diferencia === 0) {
+            diferenciEl.className = 'text-2xl font-bold text-green-400';
+        } else if (diferencia < 0) {
+            diferenciEl.className = 'text-2xl font-bold text-red-400';
+        } else {
+            diferenciEl.className = 'text-2xl font-bold text-yellow-400';
+        }
+
+        mostrarVista('detalle');
+    } catch (err) {
+        console.error('[admin_caja.js] Error en verDetalle:', err);
+        mostrarBanner('Error cargando detalles: ' + err.message, 'error');
+    }
+}
+
+// Guardar nombre de caja
+async function guardarNombre() {
+    if (!cajaActual) return;
+
+    const nombre = document.getElementById('detalle-nombre').value.trim();
+    if (!nombre) {
+        mostrarBanner('El nombre no puede estar vacío', 'error');
         return;
     }
 
+    if (!token) await authenticateAndGetToken();
+
     try {
-        const res = await fetch(`${API_BASE}/api/cajas`, {
-            method: 'POST',
+        const response = await fetch(`/api/cajas/${cajaActual.id}/nombre`, {
+            method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ saldoInicial, notas })
+            body: JSON.stringify({ nombre })
         });
 
-        if (!res.ok) throw new Error(`Error ${res.status}`);
+        if (!response.ok) {
+            throw new Error('Error guardando nombre');
+        }
 
-        const data = await res.json();
-        cajaActual = data;
-        movimientos = [];
-        mostrarPanelMovimientos();
-        mostrarBanner(`✅ Caja #${data.numero_caja} abierta exitosamente`, 'success');
-        setCajaStatus('abierta');
+        cajaActual.nombre = nombre;
+        document.getElementById('detalle-titulo').textContent = nombre;
+        mostrarBanner('Nombre guardado correctamente', 'success');
+        cargarCajas();
     } catch (err) {
-        console.error('Error abriendo caja:', err);
-        mostrarBanner(`❌ Error al abrir caja: ${err.message}`, 'error');
+        console.error('[admin_caja.js] Error guardando nombre:', err);
+        mostrarBanner('Error: ' + err.message, 'error');
     }
 }
 
-/**
- * Abrir modal para nuevo movimiento
- */
-function abrirModalMovimiento(tipo) {
-    document.getElementById('mov-tipo').value = tipo;
-    if (tipo === 'ingreso') {
-        document.getElementById('modal-title').textContent = 'Nuevo Ingreso';
-    } else {
-        document.getElementById('modal-title').textContent = 'Nuevo Egreso';
-    }
-    document.getElementById('modal-movimiento').classList.remove('hidden');
+// Mostrar vista específica
+function mostrarVista(vista) {
+    viewListado.classList.add('hidden');
+    viewDetalle.classList.add('hidden');
+    viewAbrir.classList.add('hidden');
+
+    if (vista === 'listado') viewListado.classList.remove('hidden');
+    else if (vista === 'detalle') viewDetalle.classList.remove('hidden');
+    else if (vista === 'abrir') viewAbrir.classList.remove('hidden');
 }
 
-/**
- * Guardar movimiento
- */
-async function guardarMovimiento(e) {
+function mostrarListado() {
+    mostrarVista('listado');
+}
+
+// Mostrar banner
+function mostrarBanner(mensaje, tipo = 'info') {
+    banner.textContent = mensaje;
+    banner.className = `banner ${tipo === 'error' ? 'bg-red-900 text-red-100' : tipo === 'success' ? 'bg-green-900 text-green-100' : 'bg-blue-900 text-blue-100'}`;
+    banner.classList.remove('hidden');
+
+    setTimeout(() => {
+        banner.classList.add('hidden');
+    }, 4000);
+}
+
+// Abrir nueva caja
+formAbrirCaja.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const tipo = document.getElementById('mov-tipo').value;
-    const categoria = document.getElementById('mov-categoria').value;
-    const subcategoria = document.getElementById('mov-subcategoria').value;
-    const descripcion = document.getElementById('mov-descripcion').value;
-    const monto = parseFloat(document.getElementById('mov-monto').value);
-    const metodo = document.getElementById('mov-metodo').value;
-    const comprobante = document.getElementById('mov-comprobante').value;
+    const saldoInicial = document.getElementById('saldo-inicial').value;
+    const notas = document.getElementById('notas-apertura').value;
 
-    if (!tipo || !categoria || !descripcion || monto <= 0) {
-        mostrarBanner('⚠️ Completa todos los campos requeridos', 'error');
-        return;
-    }
+    if (!token) await authenticateAndGetToken();
 
     try {
-        const res = await fetch(`${API_BASE}/api/cajas/${cajaActual.id}/movimientos`, {
+        const response = await fetch('/api/cajas', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                tipo,
-                categoria,
-                subcategoria,
-                descripcion,
-                monto,
-                metodo,
-                comprobante
+                saldoInicial: parseFloat(saldoInicial),
+                notas
             })
         });
 
-        if (!res.ok) throw new Error(`Error ${res.status}`);
+        if (!response.ok) {
+            throw new Error('Error abriendo caja');
+        }
 
-        const movimiento = await res.json();
-        movimientos.push(movimiento);
-        actualizarTotales();
-        closeModal('modal-movimiento');
-        document.getElementById('form-movimiento').reset();
-        mostrarBanner(`✅ Movimiento registrado: ${descripcion}`, 'success');
+        mostrarBanner('Caja abierta correctamente', 'success');
+        formAbrirCaja.reset();
+        setTimeout(() => {
+            cargarCajas();
+            mostrarListado();
+        }, 1000);
     } catch (err) {
-        console.error('Error guardando movimiento:', err);
-        mostrarBanner(`❌ Error: ${err.message}`, 'error');
+        console.error('[admin_caja.js] Error abriendo caja:', err);
+        mostrarBanner('Error: ' + err.message, 'error');
     }
-}
+});
 
-/**
- * Abrir modal de cierre
- */
-function abrirModalCierre() {
-    document.getElementById('resumen-cierre').classList.remove('hidden');
-    actualizarResumenCierre();
-    document.getElementById('modal-cerrar').classList.remove('hidden');
-}
+// Event listeners
+btnNuevaCaja.addEventListener('click', () => mostrarVista('abrir'));
+btnVolver.addEventListener('click', mostrarListado);
+btnGuardarNombre.addEventListener('click', guardarNombre);
 
-/**
- * Actualizar resumen en modal de cierre
- */
-function actualizarResumenCierre() {
-    const totalIngresos = movimientos
-        .filter(m => m.tipo === 'ingreso')
-        .reduce((sum, m) => sum + m.monto, 0);
-    const totalEgresos = movimientos
-        .filter(m => m.tipo === 'egreso')
-        .reduce((sum, m) => sum + m.monto, 0);
-    const esperado = cajaActual.saldo_inicial + totalIngresos - totalEgresos;
-
-    document.getElementById('cierre-inicial').textContent = `$${cajaActual.saldo_inicial.toFixed(2)}`;
-    document.getElementById('cierre-ingresos').textContent = `$${totalIngresos.toFixed(2)}`;
-    document.getElementById('cierre-egresos').textContent = `$${totalEgresos.toFixed(2)}`;
-    document.getElementById('cierre-esperado').textContent = `$${esperado.toFixed(2)}`;
-}
-
-/**
- * Cerrar caja
- */
-async function cerrarCaja(e) {
-    e.preventDefault();
-
-    const saldoFinal = parseFloat(document.getElementById('saldo-final').value);
-    const notas = document.getElementById('notas-cierre').value;
-
-    if (isNaN(saldoFinal) || saldoFinal < 0) {
-        mostrarBanner('Ingresa un saldo final válido', 'error');
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/api/cajas/${cajaActual.id}/cerrar`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-            },
-            body: JSON.stringify({ saldoFinal, notas })
-        });
-
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-
-        const data = await res.json();
-        cajaActual = data;
-        mostrarInformeCierre();
-        closeModal('modal-cerrar');
-        mostrarBanner('✅ Caja cerrada exitosamente', 'success');
-        setCajaStatus('cerrada');
-    } catch (err) {
-        console.error('Error cerrando caja:', err);
-        mostrarBanner(`❌ Error: ${err.message}`, 'error');
-    }
-}
-
-/**
- * Mostrar informe de cierre
- */
-function mostrarInformeCierre() {
-    panelMovimientos.classList.add('hidden');
-    panelInforme.classList.remove('hidden');
-
-    const totalIngresos = movimientos
-        .filter(m => m.tipo === 'ingreso')
-        .reduce((sum, m) => sum + m.monto, 0);
-    const totalEgresos = movimientos
-        .filter(m => m.tipo === 'egreso')
-        .reduce((sum, m) => sum + m.monto, 0);
-
-    const ingresosDetalle = movimientos.filter(m => m.tipo === 'ingreso');
-    const egresosDetalle = movimientos.filter(m => m.tipo === 'egreso');
-
-    let html = `
-        <div class="bg-stone-800 p-6 rounded border border-stone-700">
-            <h3 class="text-xl font-bold text-neon mb-4">Caja #${cajaActual.numero_caja} - ${new Date(cajaActual.fecha_apertura).toLocaleDateString('es-AR')}</h3>
-            
-            <h4 class="text-lg font-bold text-green-400 mt-6 mb-3">INGRESOS</h4>
-            <table class="w-full text-sm mb-4">
-                <tbody>
-    `;
-
-    ingresosDetalle.forEach(m => {
-        html += `
-            <tr class="border-b border-stone-600">
-                <td class="py-2">${m.descripcion}</td>
-                <td class="py-2 text-right font-bold">$${m.monto.toFixed(2)}</td>
-            </tr>
-        `;
-    });
-
-    html += `
-                </tbody>
-            </table>
-            <div class="text-right mb-4 p-2 bg-stone-700 rounded">
-                <p class="text-green-400">TOTAL INGRESOS: <span class="text-xl font-bold">$${totalIngresos.toFixed(2)}</span></p>
-            </div>
-
-            <h4 class="text-lg font-bold text-red-400 mt-6 mb-3">EGRESOS</h4>
-            <table class="w-full text-sm mb-4">
-                <tbody>
-    `;
-
-    egresosDetalle.forEach(m => {
-        html += `
-            <tr class="border-b border-stone-600">
-                <td class="py-2">${m.descripcion}</td>
-                <td class="py-2 text-right font-bold">$${m.monto.toFixed(2)}</td>
-            </tr>
-        `;
-    });
-
-    const esperado = cajaActual.saldo_inicial + totalIngresos - totalEgresos;
-    const diferencia = cajaActual.saldo_final - esperado;
-    const diferenciaCls = diferencia === 0 ? 'text-green-400' : 'text-yellow-400';
-
-    html += `
-                </tbody>
-            </table>
-            <div class="text-right mb-4 p-2 bg-stone-700 rounded">
-                <p class="text-red-400">TOTAL EGRESOS: <span class="text-xl font-bold">$${totalEgresos.toFixed(2)}</span></p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4 mt-6 p-4 bg-stone-900 rounded border border-stone-600">
-                <div>Saldo Inicial</div>
-                <div class="text-right font-bold">$${cajaActual.saldo_inicial.toFixed(2)}</div>
-                <div>(+) Ingresos</div>
-                <div class="text-right font-bold">$${totalIngresos.toFixed(2)}</div>
-                <div>(-) Egresos</div>
-                <div class="text-right font-bold">-$${totalEgresos.toFixed(2)}</div>
-                <div class="font-bold border-t border-stone-600 pt-2">Esperado en caja</div>
-                <div class="text-right font-bold border-t border-stone-600 pt-2">$${esperado.toFixed(2)}</div>
-                <div class="font-bold">Saldo Final (Contado)</div>
-                <div class="text-right font-bold">$${cajaActual.saldo_final.toFixed(2)}</div>
-                <div class="font-bold">Diferencia</div>
-                <div class="text-right font-bold ${diferenciaCls}">$${diferencia.toFixed(2)}</div>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('contenido-informe').innerHTML = html;
-}
-
-/**
- * Actualizar totales
- */
-function actualizarTotales() {
-    const totalIngresos = movimientos
-        .filter(m => m.tipo === 'ingreso')
-        .reduce((sum, m) => sum + m.monto, 0);
-    const totalEgresos = movimientos
-        .filter(m => m.tipo === 'egreso')
-        .reduce((sum, m) => sum + m.monto, 0);
-    const saldoEsperado = cajaActual.saldo_inicial + totalIngresos - totalEgresos;
-
-    document.getElementById('total-ingresos').textContent = `$${totalIngresos.toFixed(2)}`;
-    document.getElementById('total-egresos').textContent = `$${totalEgresos.toFixed(2)}`;
-    document.getElementById('saldo-esperado').textContent = `$${saldoEsperado.toFixed(2)}`;
-
-    // Actualizar tabla de movimientos
-    renderizarMovimientos();
-}
-
-/**
- * Renderizar tabla de movimientos
- */
-function renderizarMovimientos() {
-    const tbody = document.getElementById('movimientos-list');
-    tbody.innerHTML = '';
-
-    movimientos.forEach((m, idx) => {
-        const row = tbody.insertRow();
-        const tipoCls = m.tipo === 'ingreso' ? 'text-green-400' : 'text-red-400';
-        const montoCls = m.tipo === 'ingreso' ? '+' : '-';
-
-        row.innerHTML = `
-            <td><span class="px-2 py-1 rounded text-xs font-bold ${tipoCls}">${m.tipo.toUpperCase()}</span></td>
-            <td>${m.categoria}</td>
-            <td>${m.descripcion}</td>
-            <td class="text-right font-bold">${montoCls}$${m.monto.toFixed(2)}</td>
-            <td class="text-sm text-stone-400">${new Date(m.creado_en).toLocaleTimeString('es-AR')}</td>
-            <td>
-                <button class="btn-small" onclick="eliminarMovimiento(${m.id})">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </td>
-        `;
-    });
-}
-
-/**
- * Eliminar movimiento
- */
-async function eliminarMovimiento(id) {
-    if (!confirm('¿Estás seguro de que quieres eliminar este movimiento?')) return;
-
-    try {
-        const res = await fetch(`${API_BASE}/api/cajas/movimientos/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-        });
-
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-
-        movimientos = movimientos.filter(m => m.id !== id);
-        actualizarTotales();
-        mostrarBanner('✅ Movimiento eliminado', 'success');
-    } catch (err) {
-        console.error('Error eliminando movimiento:', err);
-        mostrarBanner(`❌ Error: ${err.message}`, 'error');
-    }
-}
-
-/**
- * Descargar informe en PDF
- */
-function descargarInformePDF() {
-    // TODO: Implementar descarga de PDF con librería como jsPDF
-    mostrarBanner('📄 Función de PDF en desarrollo', 'info');
-}
-
-/**
- * Iniciar nueva caja
- */
-function iniciarNuevaCaja() {
-    cajaActual = null;
-    movimientos = [];
-    panelInforme.classList.add('hidden');
-    mostrarPanelApertura();
-    setCajaStatus('cerrada');
-}
-
-// Utilidades UI
-function mostrarPanelApertura() {
-    panelApertura.classList.remove('hidden');
-    panelMovimientos.classList.add('hidden');
-    panelInforme.classList.add('hidden');
-}
-
-function mostrarPanelMovimientos() {
-    panelApertura.classList.add('hidden');
-    panelMovimientos.classList.remove('hidden');
-    panelInforme.classList.add('hidden');
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-}
-
-function mostrarBanner(mensaje, tipo) {
-    const banner = document.getElementById('banner');
-    banner.textContent = mensaje;
-    banner.className = `banner ${tipo === 'error' ? 'error' : tipo === 'success' ? 'success' : 'info'}`;
-    banner.classList.remove('hidden');
-    setTimeout(() => banner.classList.add('hidden'), 4000);
-}
-
-function setCajaStatus(estado) {
-    const status = document.getElementById('caja-status');
-    const text = document.getElementById('status-text');
-    if (estado === 'abierta') {
-        status.classList.remove('ss-connecting', 'ss-error');
-        status.classList.add('ss-connected');
-        text.textContent = 'Caja Abierta';
-    } else if (estado === 'cerrada') {
-        status.classList.remove('ss-connected', 'ss-error');
-        status.classList.add('ss-connecting');
-        text.textContent = 'Sin caja abierta';
-    } else {
-        status.classList.remove('ss-connected');
-        status.classList.add('ss-error');
-        text.textContent = 'Error';
-    }
-}
-
-console.log('[admin_caja.js] Cargado');
+// Inicializar
+document.addEventListener('DOMContentLoaded', async () => {
+    await authenticateAndGetToken();
+    await cargarCajas();
+    mostrarListado();
+});

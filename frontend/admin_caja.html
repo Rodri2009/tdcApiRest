@@ -22,7 +22,7 @@
                 <h1>Gestión de Caja</h1>
                 <div id="caja-status" class="service-status ss-connecting" title="Estado de la caja">
                     <span class="ss-dot"></span>
-                    <span id="status-text">verificando…</span>
+                    <span id="status-text">cargando…</span>
                 </div>
             </div>
             <div class="spacer"></div>
@@ -31,274 +31,230 @@
         <!-- Notificación -->
         <div id="banner" class="banner hidden" role="status" aria-live="polite"></div>
 
-        <!-- PANEL DE APERTURA DE CAJA -->
-        <section id="panel-apertura" class="balance-section">
-            <h2>Abrir Caja</h2>
-            <p class="text-stone-400 mb-4">Inicia un nuevo período de caja. Los movimientos quedarán registrados en este
-                período.</p>
-
-            <div class="form-group">
-                <label for="saldo-inicial">Saldo Inicial (dinero en caja)</label>
-                <input type="number" id="saldo-inicial" min="0" step="0.01" value="0" placeholder="0.00">
-            </div>
-
-            <div class="form-group">
-                <label for="notas-apertura">Notas (opcional)</label>
-                <textarea id="notas-apertura" placeholder="Ej: Efectivo de ayer, Bill de $5000, etc."></textarea>
-            </div>
-
-            <div class="controls">
-                <button id="btn-abrir-caja" class="btn btn-green">
-                    <i class="fas fa-lock-open mr-2"></i> Abrir Caja
+        <!-- VISTA: LISTADO DE CAJAS -->
+        <section id="view-listado" class="balance-section">
+            <div class="flex justify-between items-center mb-4">
+                <h2>Histórico de Cajas</h2>
+                <button id="btn-nueva-caja" class="btn btn-green">
+                    <i class="fas fa-plus mr-2"></i> Abrir Nueva Caja
                 </button>
+            </div>
+
+            <div id="cajas-list" class="grid gap-3">
+                <!-- Se llena con JS -->
+            </div>
+
+            <div id="sin-cajas" class="text-center py-8 text-stone-400">
+                <i class="fas fa-inbox text-4xl mb-2"></i>
+                <p>No hay cajas cerradas aún</p>
             </div>
         </section>
 
-        <!-- PANEL DE MOVIMIENTOS (cuando caja está abierta) -->
-        <section id="panel-movimientos" class="balance-section hidden">
-            <h2>Registrar Movimientos</h2>
-
-            <div class="controls small gap-2 my-4">
-                <button id="btn-ingreso" class="btn btn-green">
-                    <i class="fas fa-arrow-down mr-1"></i> Agregar Ingreso
+        <!-- VISTA: DETALLE DE CAJA -->
+        <section id="view-detalle" class="balance-section hidden">
+            <div class="flex items-center justify-between mb-4">
+                <button id="btn-volver" class="btn btn-sm">
+                    <i class="fas fa-arrow-left mr-1"></i> Volver
                 </button>
-                <button id="btn-egreso" class="btn btn-red">
-                    <i class="fas fa-arrow-up mr-1"></i> Agregar Egreso
-                </button>
-                <button id="btn-cerrar-caja" class="btn btn-orange">
-                    <i class="fas fa-lock mr-1"></i> Cerrar Caja
-                </button>
+                <h2 id="detalle-titulo">Detalle de Caja</h2>
+                <div style="width: 100px;"></div>
             </div>
 
-            <table class="tx-table">
-                <thead>
-                    <tr>
-                        <th>Tipo</th>
-                        <th>Categoría</th>
-                        <th>Descripción</th>
-                        <th>Monto</th>
-                        <th>Hora</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="movimientos-list"></tbody>
-            </table>
+            <!-- Info de la caja -->
+            <div class="bg-stone-800 p-4 rounded mb-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                        <p class="text-stone-400">Número</p>
+                        <p id="detalle-numero" class="font-bold text-lg">-</p>
+                    </div>
+                    <div>
+                        <p class="text-stone-400">Apertura</p>
+                        <p id="detalle-apertura" class="font-bold">-</p>
+                    </div>
+                    <div>
+                        <p class="text-stone-400">Cierre</p>
+                        <p id="detalle-cierre" class="font-bold">-</p>
+                    </div>
+                    <div>
+                        <p class="text-stone-400">Duración</p>
+                        <p id="detalle-duracion" class="font-bold">-</p>
+                    </div>
+                </div>
+            </div>
 
-            <div class="my-4 p-4 bg-stone-800 rounded">
+            <!-- Nombre personalizado -->
+            <div class="mb-4">
+                <label class="text-sm text-stone-400">Nombre de la Caja (opcional)</label>
+                <div class="flex gap-2">
+                    <input type="text" id="detalle-nombre" placeholder="Ej: Caja Viernes Noche"
+                        class="flex-1 px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
+                    <button id="btn-guardar-nombre" class="btn btn-sm btn-green">Guardar</button>
+                </div>
+            </div>
+
+            <!-- Movimientos -->
+            <div class="mb-4">
+                <h3 class="text-lg font-bold mb-2">Ingresos</h3>
+                <table class="tx-table mb-4">
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Monto</th>
+                            <th>Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detalle-ingresos"></tbody>
+                </table>
+            </div>
+
+            <div class="mb-4">
+                <h3 class="text-lg font-bold mb-2">Egresos</h3>
+                <table class="tx-table mb-4">
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Monto</th>
+                            <th>Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detalle-egresos"></tbody>
+                </table>
+            </div>
+
+            <!-- Totales -->
+            <div class="bg-stone-800 p-4 rounded">
                 <div class="grid grid-cols-3 gap-4">
                     <div>
+                        <p class="text-stone-400 text-sm">Saldo Inicial</p>
+                        <p id="detalle-saldo-inicial" class="text-2xl font-bold">$0.00</p>
+                    </div>
+                    <div>
                         <p class="text-stone-400 text-sm">Total Ingresos</p>
-                        <p id="total-ingresos" class="text-2xl font-bold text-green-400">$0.00</p>
+                        <p id="detalle-total-ingresos" class="text-2xl font-bold text-green-400">$0.00</p>
                     </div>
                     <div>
                         <p class="text-stone-400 text-sm">Total Egresos</p>
-                        <p id="total-egresos" class="text-2xl font-bold text-red-400">$0.00</p>
+                        <p id="detalle-total-egresos" class="text-2xl font-bold text-red-400">$0.00</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-stone-700">
+                    <div>
+                        <p class="text-stone-400 text-sm">Esperado</p>
+                        <p id="detalle-saldo-esperado" class="text-2xl font-bold text-yellow-400">$0.00</p>
                     </div>
                     <div>
-                        <p class="text-stone-400 text-sm">Saldo Esperado</p>
-                        <p id="saldo-esperado" class="text-2xl font-bold text-yellow-400">$0.00</p>
+                        <p class="text-stone-400 text-sm">Contado</p>
+                        <p id="detalle-saldo-final" class="text-2xl font-bold">$0.00</p>
+                    </div>
+                    <div>
+                        <p class="text-stone-400 text-sm">Diferencia</p>
+                        <p id="detalle-diferencia" class="text-2xl font-bold">$0.00</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- MODAL: Nuevo Movimiento -->
-        <div id="modal-movimiento" class="modal hidden">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="modal-title">Nuevo Movimiento</h3>
-                    <button class="btn-close" onclick="closeModal('modal-movimiento')">&times;</button>
+        <!-- VISTA: ABRIR CAJA -->
+        <section id="view-abrir" class="balance-section hidden">
+            <h2>Abrir Nueva Caja</h2>
+            <p class="text-stone-400 mb-4">Inicia un nuevo período de caja. Los movimientos quedarán registrados en este período.</p>
+
+            <form id="form-abrir-caja">
+                <div class="form-group">
+                    <label for="saldo-inicial">Saldo Inicial (dinero en caja)</label>
+                    <input type="number" id="saldo-inicial" min="0" step="0.01" value="0" placeholder="0.00" required>
                 </div>
 
-                <form id="form-movimiento">
-                    <div class="form-group">
-                        <label for="mov-tipo">Tipo</label>
-                        <select id="mov-tipo" required>
-                            <option value="">-- Selecciona --</option>
-                            <option value="ingreso">Ingreso</option>
-                            <option value="egreso">Egreso</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="mov-categoria">Categoría</label>
-                        <select id="mov-categoria" required>
-                            <option value="">-- Selecciona --</option>
-                            <option value="BANDAS">Bandas en Vivo</option>
-                            <option value="ALQUILER">Alquiler del Salón</option>
-                            <option value="TALLERES">Talleres</option>
-                            <option value="SERVICIOS">Servicios</option>
-                            <option value="OTROS">Otros</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="mov-subcategoria">Detalle</label>
-                        <select id="mov-subcategoria">
-                            <option value="">-- Selecciona --</option>
-                            <option value="entrada_anticipada">Entrada Anticipada</option>
-                            <option value="entrada_puerta">Entrada Puerta</option>
-                            <option value="sonido">Cobro Sonido/PA</option>
-                            <option value="bufet">Bebidas/Comidas</option>
-                            <option value="alquiler_base">Alquiler Base</option>
-                            <option value="adicional">Servicios Adicionales</option>
-                            <option value="comida">Catering</option>
-                            <option value="espacio">Espacio Taller</option>
-                            <option value="concurrencia">Porcentaje Concurrencia</option>
-                            <option value="pago_personal">Pago a Personal</option>
-                            <option value="suministros">Suministros</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="mov-descripcion">Descripción</label>
-                        <input type="text" id="mov-descripcion" required
-                            placeholder="Ej: Venta de 50 entradas anticipadas">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="mov-monto">Monto ($)</label>
-                        <input type="number" id="mov-monto" min="0" step="0.01" required placeholder="0.00">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="mov-metodo">Método de Pago</label>
-                        <select id="mov-metodo">
-                            <option value="efectivo">Efectivo</option>
-                            <option value="transferencia">Transferencia</option>
-                            <option value="tarjeta">Tarjeta</option>
-                            <option value="cheque">Cheque</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="mov-comprobante">Comprobante/Referencia (opcional)</label>
-                        <input type="text" id="mov-comprobante" placeholder="Ej: Recibo #123, Transferencia ABC123">
-                    </div>
-
-                    <div class="controls">
-                        <button type="submit" class="btn btn-green">Guardar Movimiento</button>
-                        <button type="button" class="btn" onclick="closeModal('modal-movimiento')">Cancelar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- MODAL: Cerrar Caja -->
-        <div id="modal-cerrar" class="modal hidden">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Cerrar Caja</h3>
-                    <button class="btn-close" onclick="closeModal('modal-cerrar')">&times;</button>
+                <div class="form-group">
+                    <label for="notas-apertura">Notas (opcional)</label>
+                    <textarea id="notas-apertura" placeholder="Ej: Efectivo de ayer, Bill de $5000, etc."></textarea>
                 </div>
 
-                <form id="form-cerrar-caja">
-                    <div class="form-group">
-                        <label for="saldo-final">Saldo Final Contado ($)</label>
-                        <input type="number" id="saldo-final" min="0" step="0.01" required placeholder="0.00">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="notas-cierre">Notas del Cierre (opcional)</label>
-                        <textarea id="notas-cierre"
-                            placeholder="Ej: Faltó revisar caja, hay diferencia por..."></textarea>
-                    </div>
-
-                    <div id="resumen-cierre" class="bg-stone-800 p-4 rounded my-4 hidden">
-                        <h4 class="text-lg font-bold mb-2">Resumen</h4>
-                        <div class="grid grid-cols-2 gap-2 text-sm">
-                            <div>Saldo Inicial: <span id="cierre-inicial" class="font-bold">$0.00</span></div>
-                            <div>Total Ingresos: <span id="cierre-ingresos" class="font-bold">$0.00</span></div>
-                            <div>Total Egresos: <span id="cierre-egresos" class="font-bold">$0.00</span></div>
-                            <div>Esperado: <span id="cierre-esperado" class="font-bold">$0.00</span></div>
-                            <div class="col-span-2">Contado: <span id="cierre-contado" class="font-bold">$0.00</span>
-                            </div>
-                            <div class="col-span-2">Diferencia: <span id="cierre-diferencia"
-                                    class="font-bold text-yellow-400">$0.00</span></div>
-                        </div>
-                    </div>
-
-                    <div class="controls">
-                        <button type="submit" class="btn btn-orange">Cerrar Caja y Generar Informe</button>
-                        <button type="button" class="btn" onclick="closeModal('modal-cerrar')">Cancelar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- INFORME DE CIERRE -->
-        <section id="panel-informe" class="balance-section hidden">
-            <div class="flex justify-between items-center mb-4">
-                <h2>Informe de Cierre de Caja</h2>
-                <button id="btn-descargar-pdf" class="btn">
-                    <i class="fas fa-download mr-1"></i> Descargar PDF
-                </button>
-            </div>
-
-            <div id="contenido-informe"></div>
-
-            <div class="controls my-4">
-                <button id="btn-nueva-caja" class="btn btn-green">
-                    <i class="fas fa-plus mr-1"></i> Abrir Nueva Caja
-                </button>
-                <a href="/admin.html" class="btn">Volver al Panel</a>
-            </div>
+                <div class="controls">
+                    <button type="submit" class="btn btn-green">
+                        <i class="fas fa-lock-open mr-2"></i> Abrir Caja
+                    </button>
+                    <button type="button" class="btn" onclick="mostrarListado()">Cancelar</button>
+                </div>
+            </form>
         </section>
     </main>
 
+    <script src="admin_caja.js?v=2"></script>
+
     <style>
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 0.875rem;
         }
 
-        .modal.hidden {
-            display: none;
-        }
-
-        .modal-content {
-            background: #292524;
+        .caja-card {
+            background: #44403c;
+            border: 1px solid #78716b;
             border-radius: 8px;
-            padding: 24px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            border: 1px solid #44403c;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
-        .modal-header {
+        .caja-card:hover {
+            background: #52504b;
+            border-color: #f0abfc;
+            box-shadow: 0 0 10px rgba(240, 171, 252, 0.2);
+        }
+
+        .caja-card-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+            align-items: flex-start;
+            margin-bottom: 12px;
         }
 
-        .modal-header h3 {
-            margin: 0;
+        .caja-card-title {
+            font-size: 1.125rem;
+            font-weight: bold;
             color: #f0abfc;
-            font-size: 1.25rem;
         }
 
-        .btn-close {
-            background: none;
-            border: none;
-            color: #f0abfc;
-            font-size: 28px;
-            cursor: pointer;
-            padding: 0;
-            width: 32px;
-            height: 32px;
+        .caja-card-number {
+            font-size: 0.875rem;
+            color: #d4d4d8;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .caja-card-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            font-size: 0.875rem;
+            margin-bottom: 12px;
+        }
+
+        .caja-card-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .caja-card-label {
+            color: #a1a1aa;
+        }
+
+        .caja-card-value {
+            font-weight: bold;
+            color: #e4e4e7;
+        }
+
+        .caja-card-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #71717a;
+            border-top: 1px solid #52504b;
+            padding-top: 8px;
         }
 
         .form-group {
@@ -314,7 +270,6 @@
         }
 
         .form-group input,
-        .form-group select,
         .form-group textarea {
             width: 100%;
             padding: 8px 12px;
@@ -331,15 +286,12 @@
         }
 
         .form-group input:focus,
-        .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
             border-color: #f0abfc;
             box-shadow: 0 0 0 2px rgba(240, 171, 252, 0.1);
         }
     </style>
-
-    <script src="admin_caja.js"></script>
 </body>
 
 </html>

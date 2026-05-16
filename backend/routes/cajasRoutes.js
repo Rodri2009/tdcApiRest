@@ -8,7 +8,8 @@ const {
     eliminarMovimiento,
     cerrarCaja,
     obtenerHistorialCajas,
-    obtenerMovimientosCaja
+    obtenerMovimientosCaja,
+    actualizarNombreCaja
 } = require('../controllers/cajasController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -69,5 +70,12 @@ router.delete('/movimientos/:movimientoId', eliminarMovimiento);
  * Body: { saldoFinal, notas }
  */
 router.put('/:id/cerrar', cerrarCaja);
+
+/**
+ * PUT /api/cajas/:id/nombre
+ * Actualizar nombre de una caja
+ * Body: { nombre }
+ */
+router.put('/:id/nombre', actualizarNombreCaja);
 
 module.exports = router;

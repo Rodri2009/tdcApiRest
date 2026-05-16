@@ -468,6 +468,43 @@ async function obtenerHistorialCajas(req, res) {
     }
 }
 
+/**
+ * Actualizar nombre de una caja
+ */
+async function actualizarNombreCaja(req, res) {
+    try {
+        const cajaId = req.params.id;
+        const { nombre } = req.body;
+
+        if (!nombre || nombre.trim().length === 0) {
+            return res.status(400).json({ error: 'Nombre inválido' });
+        }
+
+        // Actualizar nombre
+        const updateQuery = `
+            UPDATE cajas
+            SET nombre = ?
+            WHERE id = ?
+        `;
+
+        db.query(updateQuery, [nombre.trim(), cajaId], (err) => {
+            if (err) {
+                console.error('[cajasController] Error actualizando nombre:', err);
+                return res.status(500).json({ error: 'Error actualizando nombre' });
+            }
+
+            return res.json({
+                id: cajaId,
+                nombre: nombre.trim(),
+                mensaje: 'Nombre actualizado correctamente'
+            });
+        });
+    } catch (err) {
+        console.error('[cajasController] Error:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+}
+
 module.exports = {
     verificarCajaActiva,
     crearCaja,
@@ -476,5 +513,6 @@ module.exports = {
     agregarMovimiento,
     eliminarMovimiento,
     cerrarCaja,
-    obtenerHistorialCajas
+    obtenerHistorialCajas,
+    actualizarNombreCaja
 };

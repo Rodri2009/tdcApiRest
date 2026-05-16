@@ -574,14 +574,15 @@ async function scrapeActivity(page) {
 
             // Extraer nombre/descripción significativa (primeras palabras antes de símbolos)
             const nameMatch = raw.match(/^([a-záéíóú\s]+)/i);
-            const name = (nameMatch && nameMatch[1]) ? nameMatch[1].trim().substring(0, 20) : '';
+            const name = (nameMatch && nameMatch[1]) ? nameMatch[1].trim().substring(0, 50) : '';
 
-            // Crear clave: tipo + nombre + monto (sin hora ni fragmentos menores)
-            // Esto agrupa "Ingreso de dinero 1.500 Con transferencia 19:00" 
-            // con "Ingreso de dinero 1.500" y "Con transferencia 19:00"
+            // Crear clave: tipo + nombre + monto + timestamp
+            // Incluir más caracteres del nombre y el timestamp para evitar falsos duplicados
+            // cuando hay múltiples transferencias del mismo monto de diferentes personas
             const typePattern = keywords.join('|') || 'OTHER';
             const amountRounded = Math.abs(tx.amount);
-            const key = `${typePattern}|${name}|${amountRounded}`;
+            const timestamp = (tx.dateTime || tx.creationDate || '').substring(0, 19); // YYYY-MM-DDTHH:MM:SS
+            const key = `${typePattern}|${name}|${amountRounded}|${timestamp}`;
 
             if (!seen.has(key)) {
                 seen.set(key, tx);
