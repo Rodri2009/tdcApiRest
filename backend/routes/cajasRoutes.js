@@ -9,7 +9,12 @@ const {
     cerrarCaja,
     obtenerHistorialCajas,
     obtenerMovimientosCaja,
-    actualizarNombreCaja
+    actualizarNombreCaja,
+    importarMovimientosMPCaja,
+    importarMovimientosRetroactivos,
+    importarRetroactivosStream,
+    importarAutoStream,
+    pausarRefreshMP
 } = require('../controllers/cajasController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -31,6 +36,14 @@ router.get('/activa', verificarCajaActiva);
  * Obtener historial de todas las cajas cerradas
  */
 router.get('/history', obtenerHistorialCajas);
+
+/**
+ * GET /api/cajas/importar-auto-stream?fechaDesde=&fechaHasta=&maxPaginas=&token=
+ * SSE — Crea una caja automáticamente, importa movimientos de MP, y cierra la caja
+ * No requiere caja preexistente
+ * IMPORTANTE: Debe estar ANTES de /:id para que Express lo matchee primero
+ */
+router.get('/importar-auto-stream', importarAutoStream);
 
 /**
  * POST /api/cajas
@@ -77,5 +90,32 @@ router.put('/:id/cerrar', cerrarCaja);
  * Body: { nombre }
  */
 router.put('/:id/nombre', actualizarNombreCaja);
+
+/**
+ * POST /api/cajas/:id/importar-mp
+ * Importar movimientos de Mercado Pago a la caja
+ * Se abre Puppeteer, pagina por todas las transacciones y las importa
+ */
+router.post('/:id/importar-mp', importarMovimientosMPCaja);
+
+/**
+ * POST /api/cajas/:id/importar-retroactivos
+ * Importar movimientos de MP para un período específico (para debugging visual)
+ * Body: { fechaDesde, fechaHasta, maxPaginas }
+ */
+router.post('/:id/importar-retroactivos', importarMovimientosRetroactivos);
+
+/**
+ * GET /api/cajas/:id/importar-retroactivos-stream?fechaDesde=&fechaHasta=&maxPaginas=
+ * SSE endpoint — streaming en tiempo real de scraping
+ */
+router.get('/:id/importar-retroactivos-stream', importarRetroactivosStream);
+
+/**
+ * POST /api/cajas/pausar-refresh
+ * Pausar el refresh automático de MP en Puppeteer
+ * Ejecuta congelamiento agresivo de timers y listeners
+ */
+router.post('/pausar-refresh', pausarRefreshMP);
 
 module.exports = router;

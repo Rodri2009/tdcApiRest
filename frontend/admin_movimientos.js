@@ -417,7 +417,7 @@
         console.log('[addTransactionToTop] Agregando:', tx);
         console.log('[addTransactionToTop] dateTime:', tx.dateTime);
         allTransactions.unshift(tx);
-        
+
         // Si caja está abierta, agregar a cajaMovimientos también
         if (cajaAbierta) {
             cajaMovimientos.unshift(tx);
@@ -939,33 +939,66 @@
             setTimeout(() => statusEl.textContent = '', 2500);
         });
 
-        // Botones de Abrir/Cerrar Caja
+        // Botones de Abrir/Cerrar Caja — conectados al backend real
         const btnAbrirCaja = document.getElementById('btn-abrir-caja');
         const btnCerrarCaja = document.getElementById('btn-cerrar-caja');
-        
+
+        // Verificar si hay caja abierta al cargar la página
+        async function verificarCajaAbiertaReal() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+            try {
+                const res = await fetch('/api/cajas/activa', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const caja = await res.json();
+                    window._cajaAbiertaId = caja.id;
+                    btnAbrirCaja.classList.add('hidden');
+                    btnCerrarCaja.classList.remove('hidden');
+                    console.log('[admin_movimientos] Caja abierta encontrada:', caja.id);
+                } else {
+                    window._cajaAbiertaId = null;
+                    btnAbrirCaja.classList.remove('hidden');
+                    btnCerrarCaja.classList.add('hidden');
+                }
+            } catch (e) {
+                console.warn('[admin_movimientos] No se pudo verificar caja:', e.message);
+            }
+        }
+        verificarCajaAbiertaReal();
+
         btnAbrirCaja.addEventListener('click', () => {
-            cajaAbierta = true;
-            cajaMovimientos = [];  // Inicializar lista de movimientos de caja
-            btnAbrirCaja.classList.add('hidden');
-            btnCerrarCaja.classList.remove('hidden');
-            
-            // Limpiar la tabla (no mostrar movimientos previos)
-            const tbody = document.getElementById('tx-list');
-            tbody.innerHTML = '';
-            showBanner('✅ Caja abierta - Registrando movimientos desde ahora', 'success');
-            console.log('[CajaAbierta] Tabla limpiada. cajaMovimientos inicializado:', cajaMovimientos);
+            // Redirigir a la página de cajas para abrir una
+            window.location.href = 'admin_caja.html';
         });
-        
-        btnCerrarCaja.addEventListener('click', () => {
-            cajaAbierta = false;
-            btnAbrirCaja.classList.remove('hidden');
-            btnCerrarCaja.classList.add('hidden');
-            
-            // Mostrar transacciones del período de caja
-            const movimientosDelPeriodo = cajaMovimientos.length;
-            renderTransactions(allTransactions);
-            showBanner(`✅ Caja cerrada - ${movimientosDelPeriodo} movimientos registrados en este período`, 'success');
-            console.log('[CajaCerrada] Período cerrado con', movimientosDelPeriodo, 'movimientos');
+
+        btnCerrarCaja.addEventListener('click', async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token || !window._cajaAbiertaId) {
+                showBanner('No hay caja abierta o no estás autenticado', 'error');
+                return;
+            }
+            if (!confirm('¿Cerrar la caja actual? Se calculará el saldo automáticamente.')) return;
+
+            try {
+                const res = await fetch(`/api/cajas/${window._cajaAbiertaId}/cerrar`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ saldoFinal: 0, notas: 'Cerrada desde admin_movimientos' })
+                });
+                if (res.ok) {
+                    window._cajaAbiertaId = null;
+                    btnAbrirCaja.classList.remove('hidden');
+                    btnCerrarCaja.classList.add('hidden');
+                    showBanner('✅ Caja cerrada correctamente', 'success');
+                } else {
+                    const err = await res.json();
+                    showBanner(`Error: ${err.error || 'No se pudo cerrar la caja'}`, 'error');
+                }
+            } catch (e) {
+                showBanner(`Error: ${e.message}`, 'error');
+            }
         });
 
         // botón especiales

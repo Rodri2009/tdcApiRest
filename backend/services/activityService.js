@@ -621,6 +621,12 @@ async function scrapeActivity(page) {
         });
         console.log(`[TIMESTAMP_FIX] ✅ Corrección completada\n`);
 
+        // Log first 10 transactions for debugging
+        console.log(`[ActivityService] 📋 MUESTRA DE TRANSACCIONES EXTRAÍDAS (primeras 10):`);
+        deduplicated.slice(0, 10).forEach((tx, idx) => {
+            console.log(`  [${idx}] ${tx.dateTime || tx.creationDate} | ${(tx.title || 'sin título').substring(0, 50)} | $${tx.amount}`);
+        });
+
         return {
             transactions: deduplicated,
             count: deduplicated.length,
@@ -631,6 +637,405 @@ async function scrapeActivity(page) {
     } catch (err) {
         console.error('[ActivityService] Scrape error:', err.message);
         throw err;
+    }
+}
+
+/**
+ * Pagina a través de TODAS las actividades/transacciones en MP
+ * Usa el botón "Página siguiente" (#_R_2nll2e_) para avanzar
+ * Acumula todas las transacciones de todas las páginas
+ * 
+ * @param {Object} page - Página de Puppeteer
+ * @param {number} maxPages - Máximo de páginas a paginar (default: 20)
+ * @returns {Object} {transactions: [], totalPages: number, totalCount: number}
+ */
+async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
+    const emit = (data) => {
+        if (onProgress) onProgress(data);
+    };
+
+    // ── PAUSAR EL WATCH SERVICE ──────────────────────────────────────────────
+    // TransactionWatchService llama a page.goto('/activities') cada 3-7s en el
+    // MISMO mpPage. Eso resetea la paginación desde Node.js, fuera del browser.
+    // El freeze de JS del browser no puede detener esto. Pausamos el watcher.
+    let watchService = null;
+    let watchWasActive = false;
+    try {
+        const { getWatchService } = require('../controllers/watchController');
+        watchService = getWatchService();
+        if (watchService && watchService.isActive) {
+            watchWasActive = true;
+            watchService.stop();
+            console.log('[ActivityService] ⏸️  TransactionWatchService pausado para scraping');
+            emit({ type: 'status', message: '⏸️ Watch service pausado (evita resets de página)' });
+        }
+    } catch (e) {
+        console.warn('[ActivityService] ⚠️  No se pudo pausar watch service:', e.message);
+    }
+
+    try {
+        console.log('[ActivityService] 🔄 Iniciando scraping paginado de todas las actividades...');
+        emit({ type: 'status', message: '🔄 Iniciando scraping...' });
+
+        // Validar que estamos en la página correcta
+        const urlValidation = await validateCurrentUrl(page, '/activities');
+        if (!urlValidation.valid) {
+            throw new Error(`URL validation failed: ${urlValidation.reason}`);
+        }
+
+        // 🔒 PROTECCIÓN: Intentar pausar refresh automático de MP con reintentos
+        console.log('[ActivityService] 🔒 Intentando congelar timers de MP...');
+        emit({ type: 'status', message: '🔒 Pausando refresh automático de MP...' });
+
+        let freezeSuccess = false;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                // Timeout corto para evitar que el contexto se destruya
+                await page.evaluate(() => {
+                    // Congelar timers simples (lo más crítico)
+                    const origSetTimeout = window.setTimeout;
+                    const origSetInterval = window.setInterval;
+                    window.setTimeout = () => -1;
+                    window.setInterval = () => -1;
+
+                    // Cancelar timers existentes
+                    try {
+                        const highId = origSetInterval(() => { }, 99999999);
+                        for (let i = 1; i <= Math.min(highId, 10000); i++) {
+                            clearTimeout(i);
+                            clearInterval(i);
+                        }
+                    } catch (e) { }
+
+                    console.log('✅ Timers básicos congelados');
+                }).catch(err => {
+                    // Ignora errores de contexto - continúa de todas formas
+                    if (err.message.includes('context')) {
+                        console.warn('[ActivityService] Contexto destruido durante freeze, continuando...');
+                    } else {
+                        throw err;
+                    }
+                });
+
+                freezeSuccess = true;
+                break;
+            } catch (err) {
+                if (attempt < 2) {
+                    await page.waitForTimeout(300);
+                }
+            }
+        }
+
+        if (freezeSuccess) {
+            console.log('[ActivityService] ✅ Congelamiento ejecutado');
+            emit({ type: 'status', message: '✅ Refresh de MP pausado' });
+        } else {
+            console.warn('[ActivityService] ⚠️ Congelamiento incompleto');
+            emit({ type: 'warning', message: '⚠️ Congelamiento parcial - puede haber interferencias' });
+        }
+
+        let allTransactions = [];
+        let pageCount = 0;
+        let hasNextPage = true;
+        let domRefreshCount = 0;
+        let navigationErrors = 0;
+        let prevPageFingerprint = null; // Para detectar redirección a página anterior
+
+        while (hasNextPage && pageCount < maxPages) {
+            pageCount++;
+            console.log(`\n[ActivityService] 📄 PÁGINA ${pageCount}:`);
+            console.log(`[ActivityService] ───────────────────────────────────────`);
+            emit({ type: 'page_start', page: pageCount, maxPages });
+
+            // ANTES: Obtener count de elementos para detectar si se refrescan
+            let countBefore = 0;
+            try {
+                countBefore = await page.evaluate(() => {
+                    return document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]').length;
+                }).catch(err => {
+                    console.warn('[ActivityService] Contexto destruido al contar elementos');
+                    return 0;
+                });
+            } catch (err) {
+                if (err.message.includes('Execution context was destroyed')) {
+                    console.warn('[ActivityService] 🔄 ALERTA: Refresh detectado ANTES del scraping');
+                    await page.waitForTimeout(2000);
+                    countBefore = 0;
+                } else {
+                    throw err;
+                }
+            }
+
+            console.log(`[ActivityService] ↳ Elementos detectados antes: ${countBefore}`);
+
+            // Extraer transacciones de la página actual
+            try {
+                const pageResult = await scrapeActivity(page);
+                if (pageResult && pageResult.transactions && Array.isArray(pageResult.transactions)) {
+                    // ── DETECCIÓN DE PÁGINA DUPLICADA ────────────────────────────────
+                    // Si la página tiene el mismo contenido que la anterior, MP nos
+                    // redirigió al inicio (el freeze no pudo evitar la navegación).
+                    const fingerprint = pageResult.transactions
+                        .slice(0, 5)
+                        .map(tx => `${tx.dateTime || tx.creationDate || ''}|${tx.title || tx.description || ''}|${tx.amount}`)
+                        .join(';');
+
+                    if (prevPageFingerprint !== null && fingerprint === prevPageFingerprint) {
+                        console.warn(`[ActivityService] 🔁 PÁGINA DUPLICADA detectada en página ${pageCount} — MP redirigió al inicio. Abortando.`);
+                        emit({
+                            type: 'page_duplicate',
+                            page: pageCount,
+                            message: `🔁 Página ${pageCount} = Página ${pageCount - 1}: MP redirigió al inicio. Scraping detenido para evitar datos incorrectos.`
+                        });
+                        hasNextPage = false;
+                        // Quitar las transacciones de esta página (son duplicadas)
+                        // NO las agregamos a allTransactions
+                    } else {
+                        prevPageFingerprint = fingerprint;
+                        allTransactions = allTransactions.concat(pageResult.transactions);
+                        console.log(`[ActivityService] ✅ Extraídas ${pageResult.transactions.length} transacciones (total acumulado: ${allTransactions.length})`);
+                        emit({
+                            type: 'page_done',
+                            page: pageCount,
+                            count: pageResult.transactions.length,
+                            total: allTransactions.length,
+                            transactions: pageResult.transactions.map(tx => ({
+                                id: tx.id,
+                                title: tx.title || tx.description || '',
+                                amount: tx.amount,
+                                dateTime: tx.dateTime || tx.creationDate || null,
+                                category: tx.category || ''
+                            }))
+                        });
+                    }
+                    // ── FIN DETECCIÓN ─────────────────────────────────────────────────
+                }
+            } catch (err) {
+                if (err.message.includes('Execution context was destroyed')) {
+                    console.warn(`[ActivityService] 🔄 ALERTA: Refresh durante scraping en página ${pageCount}`);
+                    navigationErrors++;
+                    emit({ type: 'warning', message: `⚠️ Página ${pageCount}: refresh detectado, reintentando...` });
+                    await page.waitForTimeout(2000);
+                } else {
+                    console.warn(`[ActivityService] ⚠️  Error extrayendo página ${pageCount}:`, err.message);
+                    emit({ type: 'warning', message: `⚠️ Página ${pageCount}: ${err.message}` });
+                }
+            }
+
+            // DESPUÉS: Verificar si DOM se refrescó
+            let countAfter = 0;
+            try {
+                countAfter = await page.evaluate(() => {
+                    return document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]').length;
+                });
+            } catch (err) {
+                if (err.message.includes('Execution context was destroyed')) {
+                    console.warn('[ActivityService] 🔄 ALERTA: Refresh detectado DESPUÉS del scraping');
+                    navigationErrors++;
+                    await page.waitForTimeout(2000);
+                    countAfter = 0;
+                } else {
+                    throw err;
+                }
+            }
+
+            console.log(`[ActivityService] ↳ Elementos detectados después: ${countAfter}`);
+
+            if (countAfter < countBefore && countAfter > 0) {
+                console.warn(`[ActivityService] ⚠️  REFRESH DETECTADO: ${countBefore} → ${countAfter} elementos`);
+                domRefreshCount++;
+            }
+
+            // Clickear botón "Página siguiente"
+            let clickSuccessful = false;
+            let retryCount = 0;
+            const maxRetries = 3;
+
+            while (!clickSuccessful && retryCount < maxRetries) {
+                try {
+                    // Buscar el botón
+                    let nextButton = await page.$('#_R_2nll2e_');
+
+                    if (!nextButton) {
+                        nextButton = await page.$('button[aria-label*="siguiente"]');
+                    }
+                    if (!nextButton) {
+                        nextButton = await page.$('button[aria-label*="Siguiente"]');
+                    }
+
+                    if (nextButton) {
+                        // Verificar si está deshabilitado
+                        let isDisabled = false;
+                        try {
+                            isDisabled = await nextButton.evaluate(btn => btn.disabled || btn.getAttribute('aria-disabled') === 'true');
+                        } catch (err) {
+                            if (err.message.includes('Execution context was destroyed')) {
+                                console.warn('[ActivityService] 🔄 Refresh antes de evaluar botón');
+                                navigationErrors++;
+                                await page.waitForTimeout(2000);
+                                retryCount++;
+                                continue;
+                            }
+                            throw err;
+                        }
+
+                        if (isDisabled) {
+                            console.log('[ActivityService] ⏹️  Botón DESHABILITADO → última página alcanzada');
+                            hasNextPage = false;
+                            clickSuccessful = true;
+                        } else {
+                            console.log(`[ActivityService] ➡️  Clickeando "Siguiente" (intento ${retryCount + 1}/${maxRetries})...`);
+
+                            // Guardar primer item ANTES del click
+                            let firstItemBefore = null;
+                            try {
+                                firstItemBefore = await page.evaluate(() => {
+                                    const items = document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]');
+                                    return items.length > 0 ? items[0].textContent.slice(0, 40) : null;
+                                });
+                            } catch (err) {
+                                if (!err.message.includes('Execution context was destroyed')) throw err;
+                            }
+
+                            // Hacer el click
+                            await nextButton.click();
+
+                            // Esperar (AUMENTADO a 3 segundos para que MPs refresh completo se termine)
+                            console.log('[ActivityService] ⏳ Esperando 3s para estabilización...');
+                            await page.waitForTimeout(3000);
+
+                            // Verificar si el contenido cambió
+                            let firstItemAfter = null;
+                            let contentChanged = true;
+                            try {
+                                firstItemAfter = await page.evaluate(() => {
+                                    const items = document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]');
+                                    return items.length > 0 ? items[0].textContent.slice(0, 40) : null;
+                                });
+
+                                if (firstItemBefore === firstItemAfter && firstItemBefore) {
+                                    console.warn(`[ActivityService] ⚠️  Contenido NO cambió (mismo primer item)`);
+                                    contentChanged = false;
+                                    retryCount++;
+                                } else {
+                                    console.log(`[ActivityService] ✓ Contenido CAMBIÓ, nueva página cargada`);
+                                    clickSuccessful = true;
+                                }
+                            } catch (err) {
+                                if (err.message.includes('Execution context was destroyed')) {
+                                    console.warn('[ActivityService] 🔄 Refresh después del click, reintentando...');
+                                    navigationErrors++;
+                                    await page.waitForTimeout(2000);
+                                    retryCount++;
+                                } else {
+                                    throw err;
+                                }
+                            }
+
+                            // Esperar a que DOM se actualice
+                            if (contentChanged) {
+                                try {
+                                    await page.waitForFunction(
+                                        () => document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]').length > 0,
+                                        { timeout: 3000 }
+                                    );
+                                } catch (e) {
+                                    console.warn('[ActivityService] ⚠️  Timeout esperando DOM');
+                                }
+                            }
+                        }
+                    } else {
+                        console.log('[ActivityService] ⏹️  Botón SIGUIENTE NO ENCONTRADO → fin de paginación');
+                        hasNextPage = false;
+                        clickSuccessful = true;
+                    }
+                } catch (err) {
+                    if (err.message.includes('Execution context was destroyed')) {
+                        console.warn(`[ActivityService] 🔄 Execution context destroyed (reintentos: ${retryCount + 1}/${maxRetries})`);
+                        navigationErrors++;
+                        await page.waitForTimeout(2000);
+                        retryCount++;
+                    } else {
+                        console.warn(`[ActivityService] ⚠️  Error paginando:`, err.message);
+                        hasNextPage = false;
+                        clickSuccessful = true;
+                    }
+                }
+            }
+
+            if (retryCount >= maxRetries) {
+                console.warn(`[ActivityService] ⚠️  MAX REINTENTOS alcanzados en página ${pageCount} → deteniendo`);
+                hasNextPage = false;
+            }
+
+            // Límite de páginas
+            if (pageCount >= maxPages) {
+                console.log(`[ActivityService] ⚠️  LÍMITE de ${maxPages} páginas alcanzado`);
+                hasNextPage = false;
+            }
+        }
+
+        console.log(`\n[ActivityService] ═══════════════════════════════════════════`);
+        console.log(`[ActivityService] ✅ SCRAPING COMPLETADO`);
+        console.log(`[ActivityService] ═══════════════════════════════════════════`);
+        console.log(`[ActivityService] • Transacciones extraídas: ${allTransactions.length}`);
+        console.log(`[ActivityService] • Páginas paginadas: ${pageCount}`);
+        emit({
+            type: 'scraping_done',
+            total: allTransactions.length,
+            pages: pageCount,
+            navigationErrors
+        });
+        if (domRefreshCount > 0) {
+            console.warn(`[ActivityService] • Refreshes detectados: ${domRefreshCount}`);
+        }
+        if (navigationErrors > 0) {
+            console.warn(`[ActivityService] • Errores de navegación: ${navigationErrors}`);
+        }
+
+        // 🔓 RESTAURAR timers/listeners después del scraping
+        console.log('[ActivityService] 🔓 Restaurando timers/listeners de MP...');
+        try {
+            await page.evaluate(() => {
+                if (window._origSetInterval) window.setInterval = window._origSetInterval;
+                if (window._origSetTimeout) window.setTimeout = window._origSetTimeout;
+                if (window._origRAF) window.requestAnimationFrame = window._origRAF;
+                if (window._origRIC) window.requestIdleCallback = window._origRIC;
+                if (window._origAEL) EventTarget.prototype.addEventListener = window._origAEL;
+                if (window._origFetch) window.fetch = window._origFetch;
+                if (window._OrigWS) window.WebSocket = window._OrigWS;
+                if (window._OrigES) window.EventSource = window._OrigES;
+                console.log('✓ Timers/listeners restaurados');
+            });
+        } catch (e) {
+            console.warn('[ActivityService] ⚠️  No se pudo restaurar timers:', e.message);
+        }
+
+        return {
+            transactions: allTransactions,
+            totalPages: pageCount,
+            totalCount: allTransactions.length,
+            refreshsDetected: domRefreshCount,
+            navigationErrors,
+            source: 'manual-pagination'
+        };
+
+    } catch (err) {
+        console.error('[ActivityService] ❌ Error en scraping paginado:', err.message);
+        throw err;
+    } finally {
+        // ── REANUDAR EL WATCH SERVICE ────────────────────────────────────────
+        // Siempre intentar reiniciar, independiente de si estaba activo antes.
+        // start() es idempotente (ignora si ya está activo).
+        if (watchService) {
+            try {
+                watchService.start();
+                console.log('[ActivityService] ▶️  TransactionWatchService reanudado');
+                emit({ type: 'status', message: '▶️ Watch service reanudado' });
+            } catch (e) {
+                console.warn('[ActivityService] ⚠️  No se pudo reanudar watch service:', e.message);
+            }
+        }
     }
 }
 
@@ -790,6 +1195,7 @@ function _fixTimestampUTC(timestamp) {
 module.exports = {
     getActivity,
     scrapeActivity,
+    scrapeActivityAllPages,
     refreshActivityPage,
     warmupCache
 };

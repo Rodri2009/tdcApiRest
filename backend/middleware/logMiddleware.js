@@ -29,6 +29,9 @@ function logMiddleware(req, res, next) {
     const endpoint = req.path;
     const userInfo = req.user ? ` [user:${req.user.id}]` : '';
 
+    if (req.path === '/api/cajas/history') {
+        console.log(`[logMiddleware] 📝 LOG MIDDLEWARE for /api/cajas/history`);
+    }
     console.log(`[${timestamp}] ${service} → ${method} ${endpoint}${userInfo}`);
 
     // Interceptar el método res.json para loguear la respuesta

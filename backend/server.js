@@ -188,10 +188,12 @@ app.post('/api/mercadopago/auth/login', (req, res) => {
     try {
         logSuccess('[mercadopago-auth] Generando token de autenticación automática');
 
+        // Usar ID de usuario real en base de datos (admin)
+        // En producción, esto debería validar credenciales reales
         const userData = {
-            id: 'admin-mp',
+            id: 2,  // ID de "Rodrigo Villalba" en usuarios table
             role: 'admin',
-            email: 'admin-mp@localhost',
+            email: 'villalbarodrigo2009@gmail.com',
             permissions: ['read:balance', 'read:activity', 'write:refresh']
         };
 
@@ -399,11 +401,11 @@ async function startServer() {
 
                     logSuccess('[PUPPETEER-MP] ✓ Browser y page inicializados');
 
-                    // Warmup de caché
-                    Promise.allSettled([
-                        warmupBalance(mpPage),
-                        warmupActivity(mpPage)
-                    ]).catch(() => { /* silent fail */ });
+                    // Warmup de caché (comentado temporalmente para diagnosticar timeout)
+                    // Promise.allSettled([
+                    //     warmupBalance(mpPage),
+                    //     warmupActivity(mpPage)
+                    // ]).catch(() => { /* silent fail */ });
 
                     // Inicializar watch service
                     const transactionWatch = initializeWatch(mpPage);

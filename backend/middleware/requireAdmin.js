@@ -5,6 +5,7 @@
 const { logWarning } = require('../lib/debugFlags');
 
 module.exports = (req, res, next) => {
+    console.log('[requireAdmin] 🛡️  requireAdmin middleware CALLED for', req.path);
     if (!req.user) {
         return res.status(401).json({ message: 'No autorizado.' });
     }
@@ -14,11 +15,13 @@ module.exports = (req, res, next) => {
     const rol = req.user.role || (req.user.roles && req.user.roles[0]);
 
     if (rol === 'admin' || rol === 'staff' || rol === 'staff_readonly') {
+        console.log('[requireAdmin] ✅ Admin access granted, calling next()');
         return next();
     }
 
     // Verificar por nivel (admin=100, staff=50, staff_readonly=50)
     if (req.user.nivel && req.user.nivel >= 50) {
+        console.log('[requireAdmin] ✅ Level-based access granted, calling next()');
         return next();
     }
 

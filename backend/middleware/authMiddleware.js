@@ -9,6 +9,7 @@ const { logWarning, logSuccess } = require('../lib/debugFlags');
  * - Soporta token desde Authorization header, cookies, o query strings (para EventSource/SSE)
  */
 const protect = (req, res, next) => {
+    console.log('[authMiddleware] 🔐 protect middleware CALLED for', req.path);
     try {
         // Extraer token (primero desde extractToken estándar)
         let token = tokenManager.extractToken(req);
@@ -39,6 +40,7 @@ const protect = (req, res, next) => {
         req.user = decoded;
         req.token = token;
 
+        console.log('[authMiddleware] ✅ User autenticado:', decoded.id, 'calling next()');
         logSuccess(`[authMiddleware] ✅ User autenticado: ${decoded.id} (${decoded.role})`);
         next();
     } catch (error) {

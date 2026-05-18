@@ -77,6 +77,24 @@ h1 {
     background: linear-gradient(135deg, #1e7e34 0%, #58c16e 100%);
 }
 
+.btn-red {
+    background: linear-gradient(135deg, #dc2626 0%, #f87171 100%);
+    color: #fef2f2;
+}
+
+.btn-red:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+}
+
+.btn-purple {
+    background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+    color: #f5f3ff;
+}
+
+.btn-purple:hover {
+    background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
+}
+
 /* simple spinner inside button */
 .btn .spinner {
     display: inline-block;

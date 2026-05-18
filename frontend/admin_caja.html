@@ -31,22 +31,95 @@
         <!-- Notificación -->
         <div id="banner" class="banner hidden" role="status" aria-live="polite"></div>
 
-        <!-- VISTA: LISTADO DE CAJAS -->
+        <!-- BANNER: Caja abierta (visible sobre cualquier vista cuando existe) -->
+        <div id="banner-caja-abierta" class="hidden mb-4">
+            <div class="bg-gradient-to-r from-blue-900 to-blue-800 p-4 rounded border-2 border-blue-500">
+                <div class="flex flex-wrap justify-between items-center gap-3">
+                    <div>
+                        <p class="text-blue-100 font-bold text-lg">
+                            <i class="fas fa-lock-open mr-2 text-green-400"></i>
+                            <span id="caja-abierta-titulo">Caja Abierta</span>
+                        </p>
+                        <p class="text-blue-300 text-sm mt-1">
+                            <i class="fas fa-clock mr-1"></i>
+                            Abierta desde: <span id="caja-abierta-apertura">-</span>
+                            &nbsp;·&nbsp;
+                            Saldo inicial: <span id="caja-abierta-saldo-inicial">$0</span>
+                        </p>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <a href="admin_movimientos.html" class="btn btn-sm" style="background:#1e40af;color:#bfdbfe">
+                            <i class="fas fa-list mr-1"></i> Ver movimientos
+                        </a>
+                        <button id="btn-cerrar-caja-abierta" class="btn btn-red btn-sm">
+                            <i class="fas fa-lock mr-1"></i> Cerrar Caja
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: LISTADO DE CAJAS (default) -->
         <section id="view-listado" class="balance-section">
-            <div class="flex justify-between items-center mb-4">
-                <h2>Histórico de Cajas</h2>
-                <button id="btn-nueva-caja" class="btn btn-green">
-                    <i class="fas fa-plus mr-2"></i> Abrir Nueva Caja
-                </button>
+            <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                <h2>Historial de Cajas</h2>
+                <div class="flex gap-2">
+                    <button id="btn-toggle-importar" class="btn btn-purple btn-sm">
+                        <i class="fas fa-download mr-1"></i> Importar desde MP
+                    </button>
+                    <button id="btn-nueva-caja" class="btn btn-green btn-sm">
+                        <i class="fas fa-plus mr-1"></i> Abrir Caja Manual
+                    </button>
+                </div>
             </div>
 
-            <div id="cajas-list" class="grid gap-3">
-                <!-- Se llena con JS -->
+            <!-- Panel de Importación (colapsable) -->
+            <div id="panel-importar-mp"
+                class="hidden bg-gradient-to-r from-purple-900 to-purple-800 p-4 rounded mb-4 border border-purple-600">
+                <h3 class="text-purple-100 font-bold mb-2">
+                    <i class="fas fa-history mr-2"></i> Importar movimientos de Mercado Pago
+                </h3>
+                <p class="text-purple-300 text-sm mb-3">
+                    Se creará una caja automáticamente para el período seleccionado, se importarán los movimientos y se
+                    cerrará la caja.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end mb-3">
+                    <div>
+                        <label class="text-sm text-stone-400">Desde</label>
+                        <input type="datetime-local" id="retroactivo-fecha-desde" value="2026-05-16T00:00"
+                            class="w-full px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
+                    </div>
+                    <div>
+                        <label class="text-sm text-stone-400">Hasta</label>
+                        <input type="datetime-local" id="retroactivo-fecha-hasta" value="2026-05-17T23:59"
+                            class="w-full px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
+                    </div>
+                    <div>
+                        <label class="text-sm text-stone-400">Máx Páginas</label>
+                        <input type="number" id="retroactivo-max-paginas" min="1" max="50" value="20"
+                            class="w-full px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="btn-importar-retroactivos" class="btn btn-purple btn-sm flex-1">
+                        <i class="fas fa-download mr-1"></i> Iniciar Importación
+                    </button>
+                    <button id="btn-pausar-refresh-mp" class="btn btn-red btn-sm px-3"
+                        title="Pausar/Reanudar refresh automático de MP">
+                        <i class="fas fa-pause" id="icon-pausar-refresh"></i>
+                        <span id="label-pausar-refresh" class="ml-1">Pausar</span>
+                    </button>
+                </div>
+                <div id="retroactivo-logs"
+                    class="hidden mt-3 bg-stone-950 p-2 rounded text-xs font-mono text-purple-300 max-h-80 overflow-y-auto leading-relaxed">
+                </div>
             </div>
 
-            <div id="sin-cajas" class="text-center py-8 text-stone-400">
+            <!-- Lista de cajas -->
+            <div id="cajas-list" class="grid gap-3"></div>
+            <div id="sin-cajas" class="text-center py-8 text-stone-400 hidden">
                 <i class="fas fa-inbox text-4xl mb-2"></i>
-                <p>No hay cajas cerradas aún</p>
+                <p>No hay cajas registradas aún</p>
             </div>
         </section>
 
@@ -159,7 +232,8 @@
         <!-- VISTA: ABRIR CAJA -->
         <section id="view-abrir" class="balance-section hidden">
             <h2>Abrir Nueva Caja</h2>
-            <p class="text-stone-400 mb-4">Inicia un nuevo período de caja. Los movimientos quedarán registrados en este período.</p>
+            <p class="text-stone-400 mb-4">Inicia un nuevo período de caja. Los movimientos quedarán registrados en este
+                período.</p>
 
             <form id="form-abrir-caja">
                 <div class="form-group">
@@ -182,7 +256,7 @@
         </section>
     </main>
 
-    <script src="admin_caja.js?v=3"></script>
+    <script src="admin_caja.js?v=4"></script>
 
     <style>
         .btn-sm {
@@ -255,6 +329,16 @@
             color: #71717a;
             border-top: 1px solid #52504b;
             padding-top: 8px;
+        }
+
+        .caja-card-abierta {
+            border-color: #22c55e !important;
+            background: #1a2e1a !important;
+        }
+
+        .caja-card-abierta:hover {
+            background: #1e3a1e !important;
+            border-color: #4ade80 !important;
         }
 
         .form-group {
