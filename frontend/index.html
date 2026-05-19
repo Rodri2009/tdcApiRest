@@ -8,6 +8,9 @@
     <!-- Carga de Tailwind CSS -->
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/request-forms.css">
     <style>
         /* Configuración de fuentes y colores personalizados para el tema */
@@ -29,24 +32,37 @@
             position: relative;
             display: inline-block;
             color: transparent;
-            background-image: linear-gradient(110deg, #f8f7ff 0%, #d8b4fe 20%, #f0abfc 35%, #d946ef 50%, #f0abfc 65%, #d8b4fe 80%, #f8f7ff 100%);
-            background-size: 200% 100%;
+            font-family: 'Cinzel Decorative', Georgia, serif;
+            background-image: linear-gradient(120deg, #ffffff 0%, #f8d7ff 15%, #d67bff 33%, #9148ff 50%, #c026d3 68%, #f472b6 84%, #ffffff 100%);
+            background-size: 320% 320%;
             -webkit-background-clip: text;
             background-clip: text;
-            letter-spacing: 0.18em;
+            -webkit-text-fill-color: transparent;
+            /* letter-spacing controla la separación entre letras */
+            letter-spacing: 0.1em;
             text-transform: uppercase;
             font-weight: 900;
+            /* font-size usa clamp(min, responsive, max): móvil mínimo, responsive con viewport, escritorio máximo */
+            font-size: clamp(3.6rem, 7vw, 6.2rem);
+            /* line-height controla el alto de línea / espacio vertical del encabezado */
+            line-height: 1;
+            padding: 0 0.1em;
             text-shadow:
-                0 0 8px rgba(240, 171, 252, 0.35),
-                0 0 16px rgba(217, 70, 239, 0.28),
-                0 0 32px rgba(192, 132, 252, 0.18),
-                0 0 50px rgba(168, 85, 247, 0.12),
-                0 0 80px rgba(240, 171, 252, 0.08);
-            animation: titleGlow 3.5s ease-in-out infinite, titleFloat 4s ease-in-out infinite, colorShift 5s ease-in-out infinite;
+                0 0 16px rgba(236, 72, 153, 0.32),
+                0 0 30px rgba(168, 85, 247, 0.4),
+                0 0 60px rgba(168, 85, 247, 0.28),
+                0 0 110px rgba(217, 70, 239, 0.2);
+            filter: drop-shadow(0 0 2rem rgba(168, 85, 247, 0.24));
+            animation: colorShift 8s ease-in-out infinite, titleGlow 4.2s ease-in-out infinite, titleFloat 5.5s ease-in-out infinite;
+            transition: transform 0.25s ease, filter 0.25s ease;
+        }
+
+        .hero-title-alt:hover {
+            transform: translateY(-6px) scale(1.02);
+            filter: drop-shadow(0 0 1.8rem rgba(168, 85, 247, 0.32));
         }
 
         @keyframes colorShift {
-
             0%,
             100% {
                 background-position: 0% center;
@@ -58,36 +74,32 @@
         }
 
         @keyframes titleGlow {
-
             0%,
             100% {
                 text-shadow:
-                    0 0 8px rgba(240, 171, 252, 0.35),
-                    0 0 16px rgba(217, 70, 239, 0.28),
-                    0 0 32px rgba(192, 132, 252, 0.18),
-                    0 0 50px rgba(168, 85, 247, 0.12),
-                    0 0 80px rgba(240, 171, 252, 0.08);
+                    0 0 10px rgba(240, 171, 252, 0.45),
+                    0 0 22px rgba(217, 70, 239, 0.35),
+                    0 0 42px rgba(192, 132, 252, 0.25),
+                    0 0 76px rgba(168, 85, 247, 0.18);
             }
 
             50% {
                 text-shadow:
-                    0 0 12px rgba(240, 171, 252, 0.55),
-                    0 0 24px rgba(217, 70, 239, 0.42),
-                    0 0 48px rgba(192, 132, 252, 0.32),
-                    0 0 80px rgba(168, 85, 247, 0.22),
-                    0 0 120px rgba(240, 171, 252, 0.15);
+                    0 0 14px rgba(240, 171, 252, 0.65),
+                    0 0 32px rgba(217, 70, 239, 0.48),
+                    0 0 58px rgba(192, 132, 252, 0.36),
+                    0 0 100px rgba(168, 85, 247, 0.26);
             }
         }
 
         @keyframes titleFloat {
-
             0%,
             100% {
                 transform: translateY(0px);
             }
 
             50% {
-                transform: translateY(-3px);
+                transform: translateY(-6px);
             }
         }
 
@@ -95,25 +107,24 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent 50%);
-            transform: skewY(-6deg);
-            opacity: 0.45;
+            background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.45), transparent 35%);
+            transform: skewY(-8deg) scale(1.05);
+            opacity: 0.55;
             border-radius: 1rem;
             z-index: -1;
             pointer-events: none;
             filter: blur(6px);
-            animation: reflectionPulse 3.5s ease-in-out infinite;
+            animation: reflectionPulse 4.2s ease-in-out infinite;
         }
 
         @keyframes reflectionPulse {
-
             0%,
             100% {
-                opacity: 0.35;
+                opacity: 0.25;
             }
 
             50% {
-                opacity: 0.65;
+                opacity: 0.75;
             }
         }
 
@@ -121,28 +132,27 @@
             content: '';
             position: absolute;
             left: 50%;
-            bottom: -1rem;
+            bottom: -1.2rem;
             transform: translateX(-50%);
-            width: 68%;
-            height: 0.3rem;
-            background: radial-gradient(circle, rgba(240, 171, 252, 0.3), transparent 70%);
-            filter: blur(10px);
+            width: 78%;
+            height: 0.4rem;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.55), transparent 65%);
+            filter: blur(14px);
             border-radius: 999px;
             z-index: -1;
-            animation: haloPulse 3.5s ease-in-out infinite;
+            animation: haloPulse 4.2s ease-in-out infinite;
         }
 
         @keyframes haloPulse {
-
             0%,
             100% {
-                background: radial-gradient(circle, rgba(240, 171, 252, 0.2), transparent 70%);
+                background: radial-gradient(circle, rgba(240, 171, 252, 0.22), transparent 70%);
                 filter: blur(8px);
             }
 
             50% {
-                background: radial-gradient(circle, rgba(240, 171, 252, 0.45), transparent 60%);
-                filter: blur(14px);
+                background: radial-gradient(circle, rgba(240, 171, 252, 0.52), transparent 58%);
+                filter: blur(16px);
             }
         }
 
@@ -172,6 +182,7 @@
             animation: colorShift 5s ease-in-out infinite;
             padding: 2px;
             border-radius: 0.5rem;
+            padding: 0.5rem 0.5rem;
         }
 
         .cta-button::before {
@@ -272,7 +283,6 @@
         }
 
         /* GRID estilo PASSLINE */
-
         .agenda-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -418,8 +428,6 @@
                 <a href="seccion_bandas.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
                     en Vivo</a>
-                <a href="seccion_servicios.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Servicios</a>
                 <a href="seccion_alquiler.html"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
                     del Salón</a>
@@ -432,7 +440,7 @@
     <main>
         <!-- Sección 1: Hero / Introducción con imagen de fondo -->
         <section id="inicio"
-            class="relative overflow-hidden min-h-screen pt-16 pb-24 md:pt-32 md:pb-40 text-center hero-background">
+            class="relative overflow-hidden min-h-screen pt-4 pb-10 md:pt-20 md:pb-28 text-center hero-background">
             <!-- Capa de superposición para mejorar la legibilidad del texto -->
             <div class="absolute inset-0 bg-black opacity-60"></div>
             <!-- Elemento visual para representar la fluorescencia (mantenido) -->
@@ -442,17 +450,28 @@
                 </div>
             </div>
             <div class="relative z-10 max-w-4xl mx-auto px-4">
-                <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight hero-title-alt mb-4 mx-auto">
-                    <span class="block">El Templo de Claypole</span>
+                <!-- Ajusta aquí los márgenes del título principal -->
+                <!-- mb-6 controla el espacio debajo del título en mobile -->
+                <!-- sm:mb-8 controla el espacio debajo del título en pantallas sm y superiores -->
+                <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight hero-title-alt mb-4 sm:mb-6 mx-auto  mt-6 sm:mt-10"
+                    style="margin-bottom: 1.5rem;">
+                    <span class="block" style="white-space: pre-wrap;">El  Templo  de  Claypole</span>
                 </h1>
                 <div>
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div class="text-center mt-18 mb-10">
+                        <!-- Ajusta aquí el espaciado del subtítulo "Próximos eventos" -->
+                        <!-- mt-4 controla el espacio superior en mobile -->
+                        <!-- sm:mt-6 controla el espacio superior en sm+ -->
+                        <!-- mb-3 controla el espacio inferior en mobile -->
+                        <!-- sm:mb-4 controla el espacio inferior en sm+ -->
+                        <div class="text-center mt-2 sm:mt-4 mb-3 sm:mb-4"
+                             style="margin-top: 1rem; margin-bottom: 1rem;">
                             <h2 class="text-lg sm:text-2xl font-semibold text-white/70 tracking-wide uppercase">
                                 Próximos eventos
                             </h2>
                         </div>
-                        <div id="agenda-list" class="agenda-grid mt-16">
+                        <!-- mt-4 controla la separación entre el subtítulo y la grid de flyers -->
+                        <div id="agenda-list" class="agenda-grid mt-4 sm:mt-6">
                             <p class="text-center text-lg text-stone-500 col-span-full">
                                 Cargando agenda...
                             </p>
@@ -461,23 +480,23 @@
                 </div>
                 <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                     <a href="solicitud_alquiler.html"
-                        class="cta-button font-bold py-9 px-8 text-neon hover:scale-105 transition duration-300">
+                        class="cta-button font-bold py-18 px-8 text-neon hover:scale-105 transition duration-300">
                         <span>Alquilar el Salón</span>
                     </a>
                     <a href="seccion_bandas.html"
-                        class="cta-button font-bold py-9 px-8 text-neon hover:scale-105 transition duration-300">
+                        class="cta-button font-bold py-18 px-8 text-neon hover:scale-105 transition duration-300">
                         <span>Ver Bandas en Vivo</span>
                     </a>
                     <a href="solicitud_fecha_bandas.html"
-                        class="cta-button font-bold py-9 px-8 text-neon hover:scale-105 transition duration-300">
+                        class="cta-button font-bold py-18 px-8 text-neon hover:scale-105 transition duration-300">
                         <span>Producir una fecha</span>
                     </a>
                     <a href="solicitud_banda.html"
-                        class="cta-button font-bold py-9 px-8 text-neon hover:scale-105 transition duration-300">
+                        class="cta-button font-bold py-18 px-8 text-neon hover:scale-105 transition duration-300">
                         <span>Registrar banda o artista</span>
                     </a>
                     <a href="solicitud_taller_actividad.html"
-                        class="cta-button font-bold py-9 px-8 text-neon hover:scale-105 transition duration-300">
+                        class="cta-button font-bold py-18 px-8 text-neon hover:scale-105 transition duration-300">
                         <span>Dar un taller o clase</span>
                     </a>
                 </div>
