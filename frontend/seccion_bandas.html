@@ -140,11 +140,19 @@
     <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
         <div class="relative max-w-4xl w-full px-4">
             <button id="lightbox-close"
-                class="absolute top-2 right-2 bg-white text-black rounded-full p-2 shadow-md">✕</button>
-            <img id="lightbox-img" src="" alt="" class="mx-auto rounded-lg shadow-lg max-h-[80vh] w-auto" />
-            <div class="flex justify-between mt-4">
-                <button id="lightbox-prev" class="px-4 py-2 bg-white text-black rounded shadow">Anterior</button>
-                <button id="lightbox-next" class="px-4 py-2 bg-white text-black rounded shadow">Siguiente</button>
+                class="absolute top-3 right-3 w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-600 via-purple-700 to-violet-500 text-white shadow-2xl shadow-fuchsia-800/40 ring-1 ring-white/20 hover:scale-105 transition transform">
+                <i class="fas fa-times"></i>
+            </button>
+            <img id="lightbox-img" src="" alt="" class="mx-auto rounded-3xl shadow-2xl shadow-black/50 max-h-[80vh] w-auto" />
+            <div class="flex justify-between mt-4 gap-4">
+                <button id="lightbox-prev" class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Anterior</span>
+                </button>
+                <button id="lightbox-next" class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
+                    <span>Siguiente</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -324,16 +332,17 @@
                 container.innerHTML = images.map((image, idx) => {
                     const placeholderText = `Foto+${idx + 1}`;
                     return `
-                        <div class="p-4 bg-rustic rounded-xl neon-glow-img cursor-zoom-in" 
+                        <div class="p-4 bg-rustic rounded-xl neon-glow-img cursor-pointer" 
                              onclick="openLightbox(this)">
                             <img src="${image.url}" 
                                  alt="Foto ${idx + 1} de ${category}"
-                                 class="w-full h-64 object-cover rounded-lg mb-4 gallery-image"
+                                 class="w-full h-64 object-cover rounded-lg mb-4 gallery-image cursor-pointer"
                                  onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=${placeholderText}';">
                         </div>
                     `;
                 }).join('');
 
+                initBandLightbox();
                 console.log(`✓ Galería ${category} cargada: ${images.length} imágenes`);
             } catch (error) {
                 console.error(`✗ Error al cargar galería ${category}:`, error);
@@ -434,83 +443,85 @@
             loadGallery('shows');  // Cargar galería de shows
         });
 
-        // Lightbox functionality for images inside the grid
-        (function () {
-            const imgs = Array.from(document.querySelectorAll('.grid img'));
-            if (!imgs.length) return;
+        let bandLightboxImages = [];
+        let bandLightboxCurrentIndex = 0;
 
-            const lightbox = document.getElementById('lightbox');
-            const lightboxImg = document.getElementById('lightbox-img');
-            const btnPrev = document.getElementById('lightbox-prev');
-            const btnNext = document.getElementById('lightbox-next');
-            const btnClose = document.getElementById('lightbox-close');
-            let currentIndex = 0;
+        function initBandLightbox() {
+            bandLightboxImages = Array.from(document.querySelectorAll('#gallery-shows-container img.gallery-image'));
+            bandLightboxImages.forEach((img, idx) => img.dataset.index = idx);
+        }
 
-            imgs.forEach((img, idx) => {
-                img.style.cursor = 'zoom-in';
-                img.addEventListener('click', () => open(idx));
-            });
-
-            function open(index) {
-                currentIndex = index;
-                lightboxImg.src = imgs[currentIndex].src;
-                lightboxImg.alt = imgs[currentIndex].alt || '';
-                lightbox.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            }
-
-            function close() {
-                lightbox.classList.add('hidden');
-                lightboxImg.src = '';
-                document.body.style.overflow = '';
-            }
-
-            function prev() {
-                currentIndex = (currentIndex - 1 + imgs.length) % imgs.length;
-                lightboxImg.src = imgs[currentIndex].src;
-                lightboxImg.alt = imgs[currentIndex].alt || '';
-            }
-
-            function next() {
-                currentIndex = (currentIndex + 1) % imgs.length;
-                lightboxImg.src = imgs[currentIndex].src;
-                lightboxImg.alt = imgs[currentIndex].alt || '';
-            }
-
-            btnPrev.addEventListener('click', prev);
-            btnNext.addEventListener('click', next);
-            btnClose.addEventListener('click', close);
-
-            // close when clicking outside image
-            lightbox.addEventListener('click', (e) => {
-                if (e.target === lightbox) close();
-            });
-
-            // keyboard support
-            document.addEventListener('keydown', (e) => {
-                if (lightbox.classList.contains('hidden')) return;
-                if (e.key === 'Escape') close();
-                if (e.key === 'ArrowLeft') prev();
-                if (e.key === 'ArrowRight') next();
-            });
-        })();
-
-        /**
-         * Abre el lightbox desde la galería dinámica
-         * @param {HTMLElement} element - El elemento div con la imagen
-         */
         function openLightbox(element) {
             const img = element.querySelector('img.gallery-image');
             if (!img) return;
 
             const lightbox = document.getElementById('lightbox');
             const lightboxImg = document.getElementById('lightbox-img');
-            
+            const galleryImages = Array.from(document.querySelectorAll('#gallery-shows-container img.gallery-image'));
+            bandLightboxImages = galleryImages;
+            bandLightboxCurrentIndex = galleryImages.indexOf(img);
+            if (bandLightboxCurrentIndex < 0) bandLightboxCurrentIndex = 0;
+
+            if (!lightbox || !lightboxImg) return;
             lightboxImg.src = img.src;
             lightboxImg.alt = img.alt || '';
             lightbox.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            if (!lightbox || !lightboxImg) return;
+            lightbox.classList.add('hidden');
+            lightboxImg.src = '';
+            document.body.style.overflow = '';
+        }
+
+        function lightboxPrev() {
+            if (!bandLightboxImages.length) bandLightboxImages = Array.from(document.querySelectorAll('#gallery-shows-container img.gallery-image'));
+            if (!bandLightboxImages.length) return;
+            bandLightboxCurrentIndex = (bandLightboxCurrentIndex - 1 + bandLightboxImages.length) % bandLightboxImages.length;
+            const img = bandLightboxImages[bandLightboxCurrentIndex];
+            const lightboxImg = document.getElementById('lightbox-img');
+            if (!img || !lightboxImg) return;
+            lightboxImg.src = img.src;
+            lightboxImg.alt = img.alt || '';
+        }
+
+        function lightboxNext() {
+            if (!bandLightboxImages.length) bandLightboxImages = Array.from(document.querySelectorAll('#gallery-shows-container img.gallery-image'));
+            if (!bandLightboxImages.length) return;
+            bandLightboxCurrentIndex = (bandLightboxCurrentIndex + 1) % bandLightboxImages.length;
+            const img = bandLightboxImages[bandLightboxCurrentIndex];
+            const lightboxImg = document.getElementById('lightbox-img');
+            if (!img || !lightboxImg) return;
+            lightboxImg.src = img.src;
+            lightboxImg.alt = img.alt || '';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const lightbox = document.getElementById('lightbox');
+            const btnPrev = document.getElementById('lightbox-prev');
+            const btnNext = document.getElementById('lightbox-next');
+            const btnClose = document.getElementById('lightbox-close');
+
+            if (btnPrev) btnPrev.addEventListener('click', lightboxPrev);
+            if (btnNext) btnNext.addEventListener('click', lightboxNext);
+            if (btnClose) btnClose.addEventListener('click', closeLightbox);
+            if (lightbox) {
+                lightbox.addEventListener('click', (e) => {
+                    if (e.target === lightbox) closeLightbox();
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (!lightbox || lightbox.classList.contains('hidden')) return;
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft') lightboxPrev();
+                if (e.key === 'ArrowRight') lightboxNext();
+            });
+        });
     </script>
     <script src="/navbar.js"></script>
 </body>

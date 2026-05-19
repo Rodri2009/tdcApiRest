@@ -506,6 +506,27 @@
 
     </main>
 
+    <!-- Lightbox modal para galería de eventos anteriores -->
+    <div id="previous-events-lightbox" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="relative max-w-4xl w-full px-4">
+            <button id="previous-events-lightbox-close"
+                class="absolute top-3 right-3 w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-600 via-purple-700 to-violet-500 text-white shadow-2xl shadow-fuchsia-800/40 ring-1 ring-white/20 hover:scale-105 transition transform">
+                <i class="fas fa-times"></i>
+            </button>
+            <img id="previous-events-lightbox-img" src="" alt="" class="mx-auto rounded-3xl shadow-2xl shadow-black/50 max-h-[80vh] w-auto" />
+            <div class="flex justify-between mt-4 gap-4">
+                <button id="previous-events-lightbox-prev" class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Anterior</span>
+                </button>
+                <button id="previous-events-lightbox-next" class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
+                    <span>Siguiente</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="bg-rustic border-t border-stone-700 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -875,14 +896,17 @@
                         'workshops': '🎨 Taller',
                         'events': '🎉 Evento'
                     }[image.category] || 'Evento';
-                    
+                    const titleText = image.title || image.descripcion || categoryLabel;
+                    const placeholderText = `Foto+${idx + 1}`;
+
                     return `
-                        <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition duration-300 cursor-pointer neon-glow-img">
-                            <img src="${image.url}" 
-                                 alt="${categoryLabel}"
-                                 class="w-full h-56 object-cover hover:scale-110 transition duration-300"
-                                 onerror="this.onerror=null; this.src='https://placehold.co/400x300/581c87/f0abfc?text=${categoryLabel}';">
-                            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition duration-300 flex items-end">
+                        <div class="group p-4 bg-rustic rounded-xl neon-glow-img">
+                            <img src="${image.url}"
+                                 alt="${titleText}"
+                                 class="w-full h-56 object-cover rounded-lg mb-4 gallery-image cursor-pointer"
+                                 onclick="openPreviousEventsLightbox(this)"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/400x300/581c87/f0abfc?text=${placeholderText}';">
+                            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition duration-300 flex items-end pointer-events-none">
                                 <div class="p-3 w-full">
                                     <p class="text-white font-semibold text-sm">${categoryLabel}</p>
                                 </div>
@@ -890,6 +914,8 @@
                         </div>
                     `;
                 }).join('');
+
+                initPreviousEventsLightbox();
 
                 if (isDev()) addDebugLog(`✓ Galería cargada: ${allImages.length} imágenes`, 'success');
             } catch (error) {
@@ -902,6 +928,88 @@
                 `;
             }
         }
+
+        function initPreviousEventsLightbox() {
+            const galleryImages = Array.from(document.querySelectorAll('#previous-events-gallery img.gallery-image'));
+            galleryImages.forEach((img, idx) => {
+                img.dataset.index = idx;
+            });
+        }
+
+        let previousEventsCurrentIndex = 0;
+
+        function openPreviousEventsLightbox(element) {
+            const img = element.tagName === 'IMG' ? element : element.querySelector('img.gallery-image');
+            if (!img) return;
+
+            const galleryImages = Array.from(document.querySelectorAll('#previous-events-gallery img.gallery-image'));
+            previousEventsCurrentIndex = galleryImages.indexOf(img);
+            if (previousEventsCurrentIndex < 0) previousEventsCurrentIndex = 0;
+
+            const lightbox = document.getElementById('previous-events-lightbox');
+            const lightboxImg = document.getElementById('previous-events-lightbox-img');
+            if (!lightbox || !lightboxImg) return;
+
+            lightboxImg.src = img.src;
+            lightboxImg.alt = img.alt || '';
+            lightbox.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePreviousEventsLightbox() {
+            const lightbox = document.getElementById('previous-events-lightbox');
+            const lightboxImg = document.getElementById('previous-events-lightbox-img');
+            if (!lightbox || !lightboxImg) return;
+
+            lightbox.classList.add('hidden');
+            lightboxImg.src = '';
+            document.body.style.overflow = '';
+        }
+
+        function previousEventsLightboxPrev() {
+            const galleryImages = Array.from(document.querySelectorAll('#previous-events-gallery img.gallery-image'));
+            if (!galleryImages.length) return;
+            previousEventsCurrentIndex = (previousEventsCurrentIndex - 1 + galleryImages.length) % galleryImages.length;
+            const img = galleryImages[previousEventsCurrentIndex];
+            const lightboxImg = document.getElementById('previous-events-lightbox-img');
+            if (!img || !lightboxImg) return;
+            lightboxImg.src = img.src;
+            lightboxImg.alt = img.alt || '';
+        }
+
+        function previousEventsLightboxNext() {
+            const galleryImages = Array.from(document.querySelectorAll('#previous-events-gallery img.gallery-image'));
+            if (!galleryImages.length) return;
+            previousEventsCurrentIndex = (previousEventsCurrentIndex + 1) % galleryImages.length;
+            const img = galleryImages[previousEventsCurrentIndex];
+            const lightboxImg = document.getElementById('previous-events-lightbox-img');
+            if (!img || !lightboxImg) return;
+            lightboxImg.src = img.src;
+            lightboxImg.alt = img.alt || '';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const prevBtn = document.getElementById('previous-events-lightbox-prev');
+            const nextBtn = document.getElementById('previous-events-lightbox-next');
+            const closeBtn = document.getElementById('previous-events-lightbox-close');
+            const lightbox = document.getElementById('previous-events-lightbox');
+
+            if (prevBtn) prevBtn.addEventListener('click', previousEventsLightboxPrev);
+            if (nextBtn) nextBtn.addEventListener('click', previousEventsLightboxNext);
+            if (closeBtn) closeBtn.addEventListener('click', closePreviousEventsLightbox);
+            if (lightbox) {
+                lightbox.addEventListener('click', (e) => {
+                    if (e.target === lightbox) closePreviousEventsLightbox();
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (!lightbox || lightbox.classList.contains('hidden')) return;
+                if (e.key === 'Escape') closePreviousEventsLightbox();
+                if (e.key === 'ArrowLeft') previousEventsLightboxPrev();
+                if (e.key === 'ArrowRight') previousEventsLightboxNext();
+            });
+        });
 
         async function fetchAgenda() {
             try {
