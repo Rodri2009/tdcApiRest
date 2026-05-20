@@ -495,10 +495,11 @@ wait_for_backend_ready() {
     fi
     
     if [ "$has_mp" = true ] || [ "$has_wa" = true ]; then
-        # Primera inicialización de WA/MP puede tomar 90-120s (descarga browser, etc)
-        max_wait=120
+        # Primera inicialización de WA/MP puede tomar 120-180s (descarga browser, autenticación y VNC)
+        max_wait=180
     fi
     
+    echo -e "    ${CYAN}[INFO]${NC} Backend wait timeout configurado en ${max_wait}s (ENABLE_PUPPETEER_MP=${has_mp}, ENABLE_PUPPETEER_WA=${has_wa})"
     local elapsed=0
     echo -ne "    Esperando backend... "
     
