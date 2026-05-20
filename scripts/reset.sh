@@ -474,7 +474,27 @@ wait_for_backend_ready() {
     # Espera hasta que el backend HTTP responda correctamente
     # Aumenta espera si hay MP o WA habilitado (toman más tiempo para iniciar)
     local max_wait=30
-    if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+    
+    # Detectar MP/WA desde banderas o desde .env
+    local has_mp=false
+    local has_wa=false
+    
+    if [ "$ENABLE_MP" = true ]; then
+        has_mp=true
+    fi
+    if [ "$ENABLE_WA" = true ]; then
+        has_wa=true
+    fi
+    
+    # Si no estaban seteados por banderas, revisar .env
+    if [ "$has_mp" = false ] && [ "$has_wa" = false ]; then
+        if [ -f "$PROJECT_DIR/.env" ]; then
+            grep -q "^ENABLE_PUPPETEER_MP=true" "$PROJECT_DIR/.env" && has_mp=true
+            grep -q "^ENABLE_PUPPETEER_WA=true" "$PROJECT_DIR/.env" && has_wa=true
+        fi
+    fi
+    
+    if [ "$has_mp" = true ] || [ "$has_wa" = true ]; then
         max_wait=60
     fi
     
@@ -495,6 +515,21 @@ wait_for_backend_ready() {
     echo -e " ${YELLOW}⚠${NC}"
     echo -e "    ${YELLOW}[!] Backend no respondió en ${max_wait}s (podría estar inicializando MP/WA)${NC}"
     return 1
+}
+
+# Función para ocultar credenciales sensibles en outputs de debug
+mask_sensitive_values() {
+    # Oculta valores sensibles en el .env para debug seguro
+    # Reemplaza contraseñas, tokens y secretos con ****
+    sed -E \
+        -e 's/(DB_PASSWORD=).+/\1****/' \
+        -e 's/(DB_ADMIN_PASSWORD=).+/\1****/' \
+        -e 's/(EMAIL_PASS=).+/\1****/' \
+        -e 's/(JWT_SECRET=).+/\1****/' \
+        -e 's/(MARIADB_ROOT_PASSWORD=).+/\1****/' \
+        -e 's/(EMAIL_USER=).+/\1***@.../' \
+        -e 's/(MP_SERVER_URL=).+/\1***/' \
+        -e 's/(WA_SERVER_URL=).+/\1***/'
 }
 
 reset_docker_containers() {
@@ -527,8 +562,8 @@ reset_docker_containers() {
     # DEBUG: mostrar ruta que usará docker-compose y su contenido
     echo -e "${CYAN}[DEBUG]${NC} env_file_to_use = $env_file_to_use"
     if [ -f "$env_file_to_use" ]; then
-        echo -e "${CYAN}[DEBUG]${NC} Contenido de $env_file_to_use:";
-        sed -n '1,40p' "$env_file_to_use";
+        echo -e "${CYAN}[DEBUG]${NC} Contenido de $env_file_to_use (credenciales ocultas):";
+        sed -n '1,40p' "$env_file_to_use" | mask_sensitive_values;
     else
         echo -e "${CYAN}[DEBUG]${NC} Archivo $env_file_to_use no existe";
     fi
