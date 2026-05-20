@@ -1281,6 +1281,35 @@
             abrirModalCatalogo();
         });
 
+        // Guardar bandas seleccionadas en localStorage antes de navegar
+        function guardarBandasEnLocalStorage() {
+            if (bandasSeleccionadas.length > 0) {
+                localStorage.setItem('bandasSeleccionadasTemp', JSON.stringify(bandasSeleccionadas));
+            }
+        }
+
+        // Restaurar bandas seleccionadas desde localStorage
+        function restaurarBandasDesdeLocalStorage() {
+            try {
+                const saved = localStorage.getItem('bandasSeleccionadasTemp');
+                if (saved) {
+                    const bandaGuardadas = JSON.parse(saved);
+                    if (Array.isArray(bandaGuardadas) && bandaGuardadas.length > 0) {
+                        bandasSeleccionadas = bandaGuardadas;
+                        renderBandasLista();
+                        renderBandasSeleccionadas();
+                        localStorage.removeItem('bandasSeleccionadasTemp');
+                        return true;
+                    }
+                    localStorage.removeItem('bandasSeleccionadasTemp');
+                }
+            } catch (err) {
+                console.error('Error restaurando bandas desde localStorage:', err);
+                localStorage.removeItem('bandasSeleccionadasTemp');
+            }
+            return false;
+        }
+
         let modalListenersSetup = false;
         function setupModalListeners() {
             if (modalListenersSetup) return;
@@ -1292,6 +1321,8 @@
                 renderBandasLista();
             });
             document.getElementById('btnRegistrarBanda').addEventListener('click', () => {
+                // Guardar bandas seleccionadas antes de navegar a solicitud_banda.html
+                guardarBandasEnLocalStorage();
                 window.location.href = '/solicitud_banda.html?returnTo=solicitud_fecha_bandas.html';
             });
             modalListenersSetup = true;
@@ -1467,6 +1498,9 @@
             updateAuthMenu();
             initFingerprint();
             loadBandas().then(() => {
+                // Primero, restaurar bandas guardadas si existen (desde localStorage)
+                const bandasRestauradas = restaurarBandasDesdeLocalStorage();
+                
                 const params = new URLSearchParams(window.location.search);
                 const nuevaBandaId = params.get('nuevaBanda');
                 if (nuevaBandaId) {
@@ -1475,7 +1509,7 @@
                     const bandaRegistrada = bandasDisponibles.find(b => (b.id_banda || b.id) === bandaId);
                     
                     if (bandaRegistrada) {
-                        // Seleccionar la banda automáticamente
+                        // Seleccionar la banda automáticamente (se suma a las ya restauradas)
                         toggleBanda(bandaRegistrada);
                         
                         // Abrir el modal con el catálogo
@@ -1492,6 +1526,11 @@
                     }
                     
                     window.history.replaceState({}, '', window.location.pathname);
+                } else if (bandasRestauradas) {
+                    // Si se restauraron bandas pero no hay nuevaBanda, abrir el modal
+                    setTimeout(() => {
+                        abrirModalCatalogo();
+                    }, 50);
                 }
             });
             initCalendarios();
