@@ -673,6 +673,55 @@
             opacity: 0;
             margin-top: 0;
         }
+
+        /* FLYER PREVIEW */
+        .flyer-form-container {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            margin-top: 15px;
+        }
+
+        .flyer-preview-side {
+            flex-shrink: 0;
+        }
+
+        #flyerPreview {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            border: 2px dashed #581c87;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        #flyerPreview:hover {
+            border-color: var(--color-secondary);
+        }
+
+        #flyerPreview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        #flyerPreview .preview-placeholder {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .flyer-input-side {
+            flex: 1;
+        }
+
+        .flyer-input-side .form-group {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 
@@ -808,6 +857,29 @@
                 <div class="date-slot">
                     <label class="label-inline">Fecha 2 (Opcional):</label>
                     <input type="text" class="fechaEvento" data-fecha-index="1" placeholder="Selecciona fecha">
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN FLYER -->
+        <h3><i class="fas fa-image"></i> Flyer del Evento (Opcional)</h3>
+        <div class="flyer-form-container">
+            <div class="flyer-preview-side">
+                <div id="flyerPreview" onclick="document.getElementById('flyerFile').click()">
+                    <div class="preview-placeholder">
+                        <i class="fas fa-cloud-arrow-up" style="font-size: 2rem; margin-bottom: 5px;"></i>
+                        <div>Click para subir</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flyer-input-side">
+                <div class="form-group">
+                    <label for="urlFlyer">Flyer (URL o subir)</label>
+                    <p class="hint" style="font-size: 0.9rem; color: #9ca3af; margin-top: 5px;">Pegá la URL del flyer o hacé click en la imagen para subir (JPG o PNG, máx 3MB):</p>
+                    <input type="text" id="urlFlyer" placeholder="https://..." onchange="updateFlyerPreview()"
+                        oninput="updateFlyerPreview()" style="margin-top: 5px;">
+                    <input type="file" id="flyerFile" accept="image/png,image/jpeg" style="display: none;"
+                        onchange="handleFlyerUpload()" />
                 </div>
             </div>
         </div>
@@ -1052,6 +1124,99 @@
             if (textarea && !textarea.value.trim()) {
                 textarea.value = computeDefaultComments();
             }
+        }
+
+        // Actualizar preview del flyer
+        function updateFlyerPreview() {
+            try {
+                const urlInput = document.getElementById('urlFlyer');
+                const previewContainer = document.getElementById('flyerPreview');
+
+                if (!urlInput || !previewContainer) return;
+
+                const url = urlInput.value.trim();
+
+                if (!url) {
+                    previewContainer.innerHTML = '<div class="preview-placeholder"><i class="fas fa-image" style="font-size:2rem;margin-bottom:6px;display:block;"></i><p style="margin:0;font-size:0.75rem;">Sin<br>flyer</p></div>';
+                    return;
+                }
+
+                // Mostrar loading mientras carga
+                previewContainer.innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;"><i class="fas fa-spinner fa-pulse" style="font-size:1.4rem"></i><div style="font-size:0.8rem;margin-top:6px;">Cargando preview...</div></div>';
+
+                // Crear imagen y asignar listeners ANTES de establecer src
+                const img = document.createElement('img');
+                img.alt = 'Flyer preview';
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '100%';
+
+                img.onload = function () {
+                    previewContainer.innerHTML = '';
+                    previewContainer.appendChild(img);
+                };
+
+                img.onerror = function () {
+                    previewContainer.innerHTML = '<div class="preview-placeholder"><i class="fas fa-exclamation-circle" style="font-size:2rem;margin-bottom:6px;display:block;"></i><p style="margin:0;font-size:0.75rem;">Error al<br>cargar img</p></div>';
+                };
+
+                img.src = url;
+            } catch (err) {
+                console.error('[FLYER] Error en updateFlyerPreview:', err.message);
+            }
+        }
+
+        // Manejar subida de archivo de flyer
+        function handleFlyerUpload() {
+            const fileInput = document.getElementById('flyerFile');
+            const urlInput = document.getElementById('urlFlyer');
+            const file = fileInput.files[0];
+
+            if (!file) return;
+
+            // Validar tipo y tamaño (máx 3MB)
+            const allowed = ['image/png', 'image/jpeg'];
+            const maxSize = 3 * 1024 * 1024;
+            if (!allowed.includes(file.type)) {
+                showNotification('Formato no soportado. Use JPG o PNG.', 'error');
+                fileInput.value = '';
+                return;
+            }
+            if (file.size > maxSize) {
+                showNotification('La imagen no puede superar 3 MB', 'error');
+                fileInput.value = '';
+                return;
+            }
+
+            // Estado UI: mostrar carga
+            showNotification('Subiendo flyer...', 'info');
+            document.getElementById('flyerPreview').innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;"><i class="fas fa-spinner fa-pulse" style="font-size:1.4rem"></i><div style="font-size:0.8rem;margin-top:6px;">Subiendo...</div></div>';
+
+            const form = new FormData();
+            form.append('flyer', file);
+
+            fetch('/api/uploads/flyers', {
+                method: 'POST',
+                body: form
+            }).then(async res => {
+                if (!res.ok) {
+                    const txt = await res.text().catch(() => '');
+                    throw new Error((res.status ? res.status + ' ' : '') + (txt || res.statusText || 'Error al subir'));
+                }
+                return res.json();
+            }).then(json => {
+                if (json && json.url) {
+                    urlInput.value = json.url;
+                    updateFlyerPreview();
+                    showNotification('Flyer subido correctamente', 'success');
+                } else {
+                    throw new Error('Respuesta inválida del servidor');
+                }
+            }).catch(err => {
+                console.error('Error subiendo flyer:', err);
+                showNotification('Error al subir el flyer: ' + (err.message || ''), 'error');
+                document.getElementById('flyerPreview').innerHTML = '<div class="preview-placeholder"><i class="fas fa-image" style="font-size:2rem;margin-bottom:6px;display:block;"></i><p style="margin:0;font-size:0.75rem;">Sin<br>flyer</p></div>';
+                fileInput.value = '';
+            });
         }
 
         // Renderizar bandas seleccionadas
@@ -1381,6 +1546,7 @@
                 fecha_alternativa: fechasSeleccionadas[1] || null,
                 descripcion: document.getElementById('comentariosEspeciales').value || computeDefaultComments(),
                 expectativa_publico: 150,       // aforo máximo del templo
+                url_flyer: document.getElementById('urlFlyer').value.trim(),
                 bandas_json: bandasSeleccionadas.map((b, idx) => ({
                     id_banda: b.bandaId,
                     nombre: b.nombre,
