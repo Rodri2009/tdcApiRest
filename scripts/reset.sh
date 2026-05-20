@@ -470,6 +470,33 @@ wait_for_mysql_ready() {
     echo -e " ${GREEN}✓${NC}"
 }
 
+wait_for_backend_ready() {
+    # Espera hasta que el backend HTTP responda correctamente
+    # Aumenta espera si hay MP o WA habilitado (toman más tiempo para iniciar)
+    local max_wait=30
+    if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
+        max_wait=60
+    fi
+    
+    local elapsed=0
+    echo -ne "    Esperando backend... "
+    
+    while [ $elapsed -lt $max_wait ]; do
+        if curl -sS --max-time 2 http://localhost:3000/health >/dev/null 2>&1; then
+            echo -e "${GREEN}✓${NC}"
+            return 0
+        fi
+        echo -n "."
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    
+    # Si llegamos acá, el backend no respondió en tiempo
+    echo -e " ${YELLOW}⚠${NC}"
+    echo -e "    ${YELLOW}[!] Backend no respondió en ${max_wait}s (podría estar inicializando MP/WA)${NC}"
+    return 1
+}
+
 reset_docker_containers() {
     if [ "$USE_DOCKER" = false ]; then
         return 0
@@ -551,6 +578,9 @@ reset_docker_containers() {
         
         # Esperar a que MariaDB esté listo (poll hasta responder)
         wait_for_mysql_ready
+        
+        # Esperar a que el backend esté listo (puede tomar más tiempo si hay MP/WA)
+        wait_for_backend_ready
 
         # Restaurar perfiles si correspondía
         if [ "$SAVE_ALL_SESSION" = true ] || [ "$SAVE_MP_SESSION" = true ] || [ "$SAVE_WA_SESSION" = true ]; then
@@ -583,11 +613,34 @@ reset_docker_containers() {
             echo -ne "    Reiniciando backend... "
             $compose_cmd up -d backend 2>&1 | grep -E '(Creating|Starting|Started)' || true
             echo -e "${GREEN}✓${NC}"
-            sleep 2
+            
+            # Esperar a que el backend esté listo (puede tomar más tiempo si hay MP/WA)
+            wait_for_backend_ready
         fi
         
         if [[ " $CONTAINERS_TO_RESET " =~ " backend " ]]; then
             echo -e "${YELLOW}  → Reseteando solo Backend${NC}"
+            
+            # Primero asegurar que MariaDB está listo
+            echo -ne "    Verificando MariaDB... "
+            if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "mariadb"; then
+                # MariaDB existe, verificar que responde
+                if docker exec "$(docker ps -f 'name=mariadb' -q)" mysqladmin ping -h 127.0.0.1 -u"$DB_ADMIN_USER" -p"$DB_ADMIN_PASSWORD" --silent &>/dev/null; then
+                    echo -e "${GREEN}✓${NC}"
+                else
+                    # MariaDB no responde, intentar levantar
+                    echo -ne "${YELLOW}no responde${NC}, levantando... "
+                    $compose_cmd up -d mariadb 2>&1 | grep -E '(Starting)' || true
+                    wait_for_mysql_ready
+                fi
+            else
+                # MariaDB no existe, levantar
+                echo -ne "${YELLOW}no corre${NC}, levantando... "
+                $compose_cmd up -d mariadb 2>&1 | grep -E '(Creating|Starting)' || true
+                wait_for_mysql_ready
+            fi
+            
+            # Ahora detener y levantar backend
             echo -ne "    Deteniendo backend... "
             $compose_cmd stop backend 2>/dev/null || true
             echo -e "${GREEN}✓${NC}"
@@ -596,7 +649,8 @@ reset_docker_containers() {
             $compose_cmd up $build_flag -d backend 2>&1 | grep -E '(Creating|Starting)' || true
             echo -e "${GREEN}✓${NC}"
             
-            sleep 2
+            # Esperar a que el backend esté listo (incluye MP/WA si está habilitado)
+            wait_for_backend_ready
         fi
         
         if [[ " $CONTAINERS_TO_RESET " =~ " frontend " ]]; then
