@@ -839,7 +839,12 @@ if [ "$USE_DOCKER" = true ]; then
 fi
 
 # Paso 2: Reset de base de datos (SQL)
-if [ "$SKIP_SQL" = false ] && [ "$USE_DOCKER" = true ]; then
+SHOULD_RESET_DB=false
+if [[ " $CONTAINERS_TO_RESET " =~ " all " ]] || [[ " $CONTAINERS_TO_RESET " =~ " db " ]]; then
+    SHOULD_RESET_DB=true
+fi
+
+if [ "$SKIP_SQL" = false ] && [ "$USE_DOCKER" = true ] && [ "$SHOULD_RESET_DB" = true ]; then
     verify_sql_files
     
     # Drop & Create DB
