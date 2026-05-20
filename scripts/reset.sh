@@ -290,7 +290,7 @@ check_containers_health() {
       echo -e "  ${GREEN}✓${NC} $container: ${GREEN}running${NC}"
       
       # Revisar logs para errores críticos (ignorar warnings conocidas)
-      local critical_errors=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "(error|exception|failed|cannot|refused|fatal)" | grep -viE "(io_uring_queue_init|Chromium has locked|WhatsAppService|MercadoPagoService|PUPPETEER-WA|PUPPETEER-MP|BANDA-SYNC|FLYER-SYNC|Error al inicializar)" | head -2 || true)
+      local critical_errors=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "(error|exception|failed|cannot|refused|fatal)" | grep -viE "(io_uring_queue_init|Chromium has locked|WhatsAppService|MercadoPagoService|PUPPETEER-WA|PUPPETEER-MP|BANDA-SYNC|FLYER-SYNC|Error al inicializar|Aborted connection|Got an error reading communication packets|reading communication packets)" | head -2 || true)
       
       # Revisar warnings
       local all_warnings=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "warning|warn" | head -2 || true)
