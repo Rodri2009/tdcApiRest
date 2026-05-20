@@ -619,34 +619,9 @@ reset_docker_containers() {
         echo -ne "    Levantando contenedores $build_flag... "
         if [ "$DEBUG" = true ]; then
             echo ""
-            $compose_cmd up $build_flag -d 2>&1
-        else
-            $compose_cmd up $build_flag -d 2>&1 | grep -E '(Creating|Created|Starting|Started|Pulling)' || true
-        fi
-        echo -e "${GREEN}✓${NC}"
-        
-        # Esperar a que MariaDB esté listo (poll hasta responder)
-        wait_for_mysql_ready
-        
-        # Esperar a que el backend esté listo (puede tomar más tiempo si hay MP/WA)
-        wait_for_backend_ready
-
-        # Restaurar perfiles si correspondía
-        if [ "$SAVE_ALL_SESSION" = true ] || [ "$SAVE_MP_SESSION" = true ] || [ "$SAVE_WA_SESSION" = true ]; then
-            echo -e "${YELLOW}[*]${NC} Restaurando perfiles de Puppeteer..."
-            restore_profiles
-            echo -e "${GREEN}✓${NC}"
-        fi
-    else
-        # Resetear contenedores específicos
-        cd "$DOCKER_DIR"
-        
-        if [[ " $CONTAINERS_TO_RESET " =~ " db " ]]; then
-            echo -e "${YELLOW}  → Reseteando solo MariaDB${NC}"
-            echo -ne "    Deteniendo mariadb... "
-            $compose_cmd stop mariadb 2>/dev/null || true
-            echo -e "${GREEN}✓${NC}"
-            
+                $compose_cmd up $build_flag -d --force-recreate 2>&1
+            else
+                $compose_cmd up $build_flag -d --force-recreate 2>&1 | grep -E '(Creating|Created|Starting|Started|Pulling)' || true
             echo -ne "    Eliminando volumen... "
             docker volume rm docker_mariadb_data 2>/dev/null || true
             echo -e "${GREEN}✓${NC}"
@@ -660,7 +635,7 @@ reset_docker_containers() {
 
             # Reiniciar backend para que reconecte a la nueva instancia de MariaDB
             echo -ne "    Reiniciando backend... "
-            $compose_cmd up -d backend 2>&1 | grep -E '(Creating|Starting|Started)' || true
+            $compose_cmd up $build_flag -d --force-recreate backend 2>&1 | grep -E '(Creating|Starting|Started)' || true
             echo -e "${GREEN}✓${NC}"
             
             # Esperar a que el backend esté listo (puede tomar más tiempo si hay MP/WA)
@@ -695,7 +670,7 @@ reset_docker_containers() {
             echo -e "${GREEN}✓${NC}"
             
             echo -ne "    Levantando backend $build_flag... "
-            $compose_cmd up $build_flag -d backend 2>&1 | grep -E '(Creating|Starting)' || true
+            $compose_cmd up $build_flag -d --force-recreate backend 2>&1 | grep -E '(Creating|Starting)' || true
             echo -e "${GREEN}✓${NC}"
             
             # Esperar a que el backend esté listo (incluye MP/WA si está habilitado)
