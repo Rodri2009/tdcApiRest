@@ -1470,7 +1470,27 @@
                 const params = new URLSearchParams(window.location.search);
                 const nuevaBandaId = params.get('nuevaBanda');
                 if (nuevaBandaId) {
-                    highlightNuevaBanda(parseInt(nuevaBandaId, 10));
+                    const bandaId = parseInt(nuevaBandaId, 10);
+                    // Encontrar la banda registrada en el listado disponible
+                    const bandaRegistrada = bandasDisponibles.find(b => (b.id_banda || b.id) === bandaId);
+                    
+                    if (bandaRegistrada) {
+                        // Seleccionar la banda automáticamente
+                        toggleBanda(bandaRegistrada);
+                        
+                        // Abrir el modal con el catálogo
+                        setTimeout(() => {
+                            abrirModalCatalogo();
+                            // Después de un pequeño delay, scroll al item y highlight visual
+                            setTimeout(() => {
+                                highlightNuevaBanda(bandaId);
+                            }, 100);
+                        }, 50);
+                    } else {
+                        // Si no se encuentra, solo hacer highlight
+                        highlightNuevaBanda(bandaId);
+                    }
+                    
                     window.history.replaceState({}, '', window.location.pathname);
                 }
             });
