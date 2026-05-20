@@ -472,7 +472,7 @@ wait_for_mysql_ready() {
 
 wait_for_backend_ready() {
     # Espera hasta que el backend HTTP responda correctamente
-    # Aumenta espera si hay MP o WA habilitado (toman más tiempo para iniciar)
+    # Aumenta espera si hay MP o WA habilitado (toman mucho más tiempo para iniciar)
     local max_wait=30
     
     # Detectar MP/WA desde banderas o desde .env
@@ -495,7 +495,8 @@ wait_for_backend_ready() {
     fi
     
     if [ "$has_mp" = true ] || [ "$has_wa" = true ]; then
-        max_wait=60
+        # Primera inicialización de WA/MP puede tomar 90-120s (descarga browser, etc)
+        max_wait=120
     fi
     
     local elapsed=0
@@ -513,7 +514,19 @@ wait_for_backend_ready() {
     
     # Si llegamos acá, el backend no respondió en tiempo
     echo -e " ${YELLOW}⚠${NC}"
-    echo -e "    ${YELLOW}[!] Backend no respondió en ${max_wait}s (podría estar inicializando MP/WA)${NC}"
+    
+    # Verificar si el contenedor sigue corriendo
+    local backend_status=$(docker inspect -f '{{.State.Status}}' "docker-backend-1" 2>/dev/null || echo "missing")
+    if [ "$backend_status" != "running" ]; then
+        echo -e "    ${RED}✗ ERROR: Backend no está corriendo (estado: $backend_status)${NC}"
+        echo -e "    ${YELLOW}Últimos logs del backend:${NC}"
+        docker logs --tail 30 "docker-backend-1" 2>&1 | tail -15 | sed 's/^/      /'
+        return 1
+    fi
+    
+    echo -e "    ${YELLOW}[!] Backend no respondió en ${max_wait}s pero el contenedor está corriendo${NC}"
+    echo -e "    ${YELLOW}Podría estar inicializando Puppeteer (MP/WA). Último logs:${NC}"
+    docker logs --tail 20 "docker-backend-1" 2>&1 | tail -10 | sed 's/^/      /'
     return 1
 }
 
