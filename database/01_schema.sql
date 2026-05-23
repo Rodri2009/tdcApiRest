@@ -760,6 +760,7 @@ CREATE TABLE IF NOT EXISTS tipos_movimientos (
 CREATE TABLE IF NOT EXISTS cajas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     numero_caja INT NOT NULL UNIQUE COMMENT 'Número secuencial de caja',
+    nombre VARCHAR(100) COMMENT 'Nombre descriptivo de la caja',
     fecha_apertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha/hora de apertura',
     fecha_cierre TIMESTAMP NULL COMMENT 'Fecha/hora de cierre (NULL si abierta)',
     estado ENUM('abierta', 'cerrada') DEFAULT 'abierta' COMMENT 'Estado actual',
