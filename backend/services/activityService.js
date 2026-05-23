@@ -133,9 +133,22 @@ async function scrapeActivity(page, verbose = true) {
                         if (flat.length > 0) {
                             // El JSON de window._n NO incluye la hora de cada movimiento.
                             // La hora real está en <time class="fuji-activities__date"> del DOM.
-                            // MEJOR: Mapear por índice de grupo + índice en grupo, o por ID de transacción
+                            // CRITICAL FIX: Detectar la zona horaria del navegador para conversiones correctas
                             const timeMap = {};
                             try {
+                                // Detectar offset de zona horaria del navegador (en minutos)
+                                // getTimezoneOffset() devuelve -(hours from UTC) * 60
+                                // Ej: UTC-3 (Argentina) → devuelve 180 (positivo)
+                                // Ej: UTC+3 (Moscú) → devuelve -180 (negativo)
+                                const browserTzOffsetMinutes = new Date().getTimezoneOffset();
+                                const browserTzOffsetHours = browserTzOffsetMinutes / 60;  // Positivo = west of UTC, Negativo = east
+                                
+                                // El HTML siempre muestra en zona horaria local del navegador
+                                // Para convertir a UTC: restar el offset del navegador
+                                // Ej si navegador es UTC+3: offset = -180min = -3h
+                                //   Restar -3 = sumar 3, para pasar de UTC+3 a UTC
+                                const correctionHours = -browserTzOffsetHours;
+                                
                                 // Mapa: data-transaction-id → datetime
                                 document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]').forEach(timeEl => {
                                     const li = timeEl.closest('li[data-transaction-id]');
@@ -147,14 +160,14 @@ async function scrapeActivity(page, verbose = true) {
                                         let creationDate = null;
                                         if (iso && tm) {
                                             try {
-                                                // iso format: "2026-05-22" (Argentina date)
-                                                // tm: ["17:42", "17", "42"] (Argentina time)
-                                                // Create UTC date and set UTC hours (iso date at midnight UTC)
+                                                // iso format: "2026-05-22" (fecha del navegador)
+                                                // tm: ["17:42", "17", "42"] (hora del navegador)
+                                                // Crear fecha UTC y aplicar corrección para pasar a UTC
                                                 const d = new Date(iso + 'T00:00:00Z');
-                                                // Set UTC hours = Argentina time + 3 hour offset (UTC-3)
-                                                const argHour = Number(tm[1]) + 3;
-                                                const argMin = Number(tm[2]);
-                                                d.setUTCHours(argHour, argMin, 0, 0);
+                                                const displayHour = Number(tm[1]);
+                                                const displayMin = Number(tm[2]);
+                                                const utcHour = displayHour + correctionHours;
+                                                d.setUTCHours(utcHour, displayMin, 0, 0);
                                                 creationDate = d.toISOString();
                                             } catch (e) { }
                                         } else if (iso) {
@@ -167,6 +180,8 @@ async function scrapeActivity(page, verbose = true) {
                                 });
                                 // Fallback: si no encontramos por ID, busca por posición
                                 if (Object.keys(timeMap).length === 0) {
+                                    const browserTzOffsetMinutes = new Date().getTimezoneOffset();
+                                    const correctionHours = -(browserTzOffsetMinutes / 60);
                                     document.querySelectorAll('time.fuji-activities__date, time[datetime]').forEach((timeEl, idx) => {
                                         const iso = timeEl.getAttribute('datetime');
                                         const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
@@ -175,9 +190,10 @@ async function scrapeActivity(page, verbose = true) {
                                         if (iso && tm) {
                                             try {
                                                 const d = new Date(iso + 'T00:00:00Z');
-                                                const argHour = Number(tm[1]) + 3;
-                                                const argMin = Number(tm[2]);
-                                                d.setUTCHours(argHour, argMin, 0, 0);
+                                                const displayHour = Number(tm[1]);
+                                                const displayMin = Number(tm[2]);
+                                                const utcHour = displayHour + correctionHours;
+                                                d.setUTCHours(utcHour, displayMin, 0, 0);
                                                 creationDate = d.toISOString();
                                             } catch (e) { }
                                         } else if (iso) {
