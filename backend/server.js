@@ -442,32 +442,40 @@ async function startServer() {
 
                     // Inicializar watch service
                     console.log('[PUPPETEER-MP] 🔧 Inicializando watch service...');
-                    const transactionWatch = initializeWatch(mpPage);
-                    console.log('[PUPPETEER-MP] ✓ Watch service creado');
-                    
-                    transactionWatch.start();
-                    console.log('[PUPPETEER-MP] ✓ Watch service iniciado');
-                    logSuccess('[PUPPETEER-MP] ✓ Watch service iniciado');
+                    try {
+                        const transactionWatch = initializeWatch(mpPage);
+                        console.log('[PUPPETEER-MP] ✓ Watch service creado');
+                        
+                        transactionWatch.start();
+                        console.log('[PUPPETEER-MP] ✓ Watch service iniciado');
+                        logSuccess('[PUPPETEER-MP] ✓ Watch service iniciado');
+                    } catch (watchErr) {
+                        console.log('[PUPPETEER-MP] ⚠️  Watch service failed, continuing:', watchErr.message);
+                    }
 
                     // Inicializar session monitor
                     console.log('[PUPPETEER-MP] 🔧 Inicializando session monitor...');
-                    const mpSessionMonitor = new SessionMonitor(mpPage);
-                    console.log('[PUPPETEER-MP] ✓ Session monitor creado');
-                    
-                    global.mpSessionMonitor = mpSessionMonitor;
-                    mpSessionMonitor.start();
-                    console.log('[PUPPETEER-MP] ✓ Session monitor iniciado');
-                    logSuccess('[PUPPETEER-MP] ✓ Session monitor iniciado');
+                    try {
+                        const mpSessionMonitor = new SessionMonitor(mpPage);
+                        console.log('[PUPPETEER-MP] ✓ Session monitor creado');
+                        
+                        global.mpSessionMonitor = mpSessionMonitor;
+                        mpSessionMonitor.start();
+                        console.log('[PUPPETEER-MP] ✓ Session monitor iniciado');
+                        logSuccess('[PUPPETEER-MP] ✓ Session monitor iniciado');
 
-                    // Conectar session monitor → watch service para propagar eventos por SSE
-                    mpSessionMonitor.setOnSessionEvent((type, msg) => {
-                        try {
-                            const { getWatchService } = require('./controllers/watchController');
-                            const svc = getWatchService();
-                            if (svc) svc.broadcastServiceEvent(type, msg);
-                        } catch (e) { /* silenciar para no romper el flujo de inicio */ }
-                    });
-                    console.log('[PUPPETEER-MP] ✓ Session monitor event handler conectado');
+                        // Conectar session monitor → watch service para propagar eventos por SSE
+                        mpSessionMonitor.setOnSessionEvent((type, msg) => {
+                            try {
+                                const { getWatchService } = require('./controllers/watchController');
+                                const svc = getWatchService();
+                                if (svc) svc.broadcastServiceEvent(type, msg);
+                            } catch (e) { /* silenciar para no romper el flujo de inicio */ }
+                        });
+                        console.log('[PUPPETEER-MP] ✓ Session monitor event handler conectado');
+                    } catch (monitorErr) {
+                        console.log('[PUPPETEER-MP] ⚠️  Session monitor failed, continuing:', monitorErr.message);
+                    }
 
                     // PEQUEÑO DELAY: Si también va a haber WA, dejar que MP se estabilice primero
                     if (ENABLE_PUPPETEER_WA) {
