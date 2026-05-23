@@ -175,12 +175,7 @@ apply_filters() {
     
     # Si FILTER_IMPORT está activo, mostrar solo escrapeo para importaciones (en vivo, sin caché)
     if [ "$FILTER_IMPORT" = "1" ]; then
-        awk '
-            /INICIO DEL SCRAPING PARA IMPORTACIÓN/ { flag_import=1; print; next }
-            /EN VIVO desde MP/ { flag_vivo=1; print; next }
-            (flag_import || flag_vivo) { print }
-            /FIN DE ESCRAPEADO PARA IMPORTACIÓN/ { print; flag_import=0; flag_vivo=0; next }
-        '
+        sed -n '/EN VIVO desde MP/,/FIN DE ESCRAPEADO PARA IMPORTACIÓN/p'
         return
     fi
     
