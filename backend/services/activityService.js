@@ -590,8 +590,11 @@ async function scrapeActivity(page, verbose = true) {
             function parseDateTimeFromText(dateStr, timeStr, creationDate) {
                 // Priority: creationDate (ISO) > grouperDate → dateTime > fallback
                 if (creationDate && /^\d{4}-\d{2}-\d{2}T/.test(creationDate)) {
+                    console.log(`[ActivityService] DEBUG: Using creationDate from param: ${creationDate}`);
                     return creationDate;
                 }
+                
+                console.log(`[ActivityService] DEBUG: creationDate not returned (creationDate=${creationDate}, match=${creationDate && /^\d{4}-\d{2}-\d{2}T/.test(creationDate)})`);
 
                 const monthMap = {
                     enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
