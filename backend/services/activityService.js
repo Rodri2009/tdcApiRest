@@ -605,21 +605,15 @@ async function scrapeActivity(page) {
 
         console.log(`[ActivityService] Scraped ${transactions.length} transactions, ${withAmount.length} with significant amount, deduplicated to ${deduplicated.length}`);
 
-        // Aplicar fix de zona horaria a timestamps
-        console.log(`[TIMESTAMP_FIX] Aplicando corrección de zona horaria a ${deduplicated.length} transacciones...`);
-        deduplicated.forEach((tx, idx) => {
+        // Aplicar fix de zona horaria a timestamps (sin logs detallados - muy ruidoso)
+        deduplicated.forEach((tx) => {
             if (tx.dateTime) {
-                const original = tx.dateTime;
                 tx.dateTime = _fixTimestampUTC(tx.dateTime);
-                console.log(`  [${idx}] dateTime: ${original} → ${tx.dateTime}`);
             }
             if (tx.creationDate) {
-                const original = tx.creationDate;
                 tx.creationDate = _fixTimestampUTC(tx.creationDate);
-                console.log(`  [${idx}] creationDate: ${original} → ${tx.creationDate}`);
             }
         });
-        console.log(`[TIMESTAMP_FIX] ✅ Corrección completada\n`);
 
         // Log first 10 transactions for debugging
         console.log(`[ActivityService] 📋 MUESTRA DE TRANSACCIONES EXTRAÍDAS (primeras 10):`);
@@ -980,11 +974,37 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
         console.log(`[ActivityService] ═══════════════════════════════════════════`);
         console.log(`[ActivityService] • Transacciones extraídas: ${allTransactions.length}`);
         console.log(`[ActivityService] • Páginas paginadas: ${pageCount}`);
+        
+        // ── DEDUPLICACIÓN GLOBAL ─────────────────────────────────────────────
+        // Mercado Pago puede devolver transacciones duplicadas entre páginas
+        // Usar timestamp + monto como clave para detectar duplicados
+        const seenTransactions = new Map();
+        const dedupedTransactions = [];
+        let duplicateCount = 0;
+        
+        allTransactions.forEach(tx => {
+            const timestamp = tx.dateTime || tx.creationDate || 'unknown';
+            const amount = tx.amount || 0;
+            const key = `${timestamp}|${amount}`;
+            
+            if (!seenTransactions.has(key)) {
+                seenTransactions.set(key, true);
+                dedupedTransactions.push(tx);
+            } else {
+                duplicateCount++;
+            }
+        });
+        
+        if (duplicateCount > 0) {
+            console.log(`[ActivityService] 🔄 Deduplicación: ${allTransactions.length} → ${dedupedTransactions.length} (eliminados ${duplicateCount} duplicados entre páginas)`);
+        }
+        
         emit({
             type: 'scraping_done',
-            total: allTransactions.length,
+            total: dedupedTransactions.length,
             pages: pageCount,
-            navigationErrors
+            navigationErrors,
+            duplicatesRemoved: duplicateCount
         });
         if (domRefreshCount > 0) {
             console.warn(`[ActivityService] • Refreshes detectados: ${domRefreshCount}`);
@@ -1012,11 +1032,12 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
         }
 
         return {
-            transactions: allTransactions,
+            transactions: dedupedTransactions,
             totalPages: pageCount,
-            totalCount: allTransactions.length,
+            totalCount: dedupedTransactions.length,
             refreshsDetected: domRefreshCount,
             navigationErrors,
+            duplicatesRemoved: duplicateCount,
             source: 'manual-pagination'
         };
 
@@ -1178,14 +1199,9 @@ function _fixTimestampUTC(timestamp) {
 
     try {
         const date = new Date(timestamp);
-        const originalHours = date.getUTCHours();
-
         // Sumar 3 horas (180 minutos) para compensar offset ART
         date.setUTCHours(date.getUTCHours() + 3);
-
-        const fixed = date.toISOString();
-        console.log(`[TIMESTAMP_FIX] ${timestamp} (${originalHours}h UTC) → ${fixed} (${date.getUTCHours()}h UTC) ✓`);
-        return fixed;
+        return date.toISOString();
     } catch (e) {
         console.warn(`[TIMESTAMP_FIX] ❌ Error: ${e.message}`);
         return timestamp;

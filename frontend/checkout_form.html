@@ -278,7 +278,7 @@
                     );
                     const nombre = payload.nombre || '';
                     const email = payload.email || '';
-                    
+
                     // Si está autenticado: ocultar formulario y auto-iniciar checkout
                     if (nombre && email && currentEvent) {
                         autoInitCheckoutForAuthenticatedUser();
@@ -291,21 +291,40 @@
 
         function autoInitCheckoutForAuthenticatedUser() {
             try {
-                // Ocultar los campos del formulario (el usuario ya está logueado)
-                const formContainer = document.querySelector('.bg-stone-900');
-                if (formContainer) formContainer.classList.add('hidden');
+                console.log('[CheckoutForm] Autenticado - iniciando checkout automático');
+
+                // Ocultar SOLO los inputs del formulario (el usuario ya está logueado)
+                // NO ocultamos el contenedor padre para que el Wallet Brick pueda verse
+                const nombreInput = document.getElementById('nombre');
+                const emailInput = document.getElementById('email');
+                const couponInput = document.getElementById('coupon');
+                const pricesDiv = document.getElementById('prices').parentElement;
+
+                if (nombreInput) nombreInput.parentElement.classList.add('hidden');
+                if (emailInput) emailInput.parentElement.classList.add('hidden');
+                if (couponInput) couponInput.parentElement.classList.add('hidden');
+                if (pricesDiv) pricesDiv.classList.add('hidden');
+
+                console.log('[CheckoutForm] Inputs del formulario ocultados');
 
                 // Auto-rellenar datos y lanzar el flujo de checkout
                 showNotification('Iniciando flujo de compra con tus datos registrados…', 'info', 2000);
-                
+
+                // Asegurar que el contenedor del Wallet Brick sea visible
+                elWalletContainer.classList.remove('hidden');
+                document.getElementById('brick-loading').classList.remove('hidden');
+                console.log('[CheckoutForm] Contenedores del Wallet preparados');
+
                 // Simular que el usuario completó los datos — dispara onUserDataChanged()
                 setTimeout(() => {
                     if (currentEvent) {
+                        console.log('[CheckoutForm] Disparando onUserDataChanged para usuario autenticado');
                         onUserDataChanged();
                     }
-                }, 500);
+                }, 300);
             } catch (e) {
                 console.error('Error al auto-inicializar checkout:', e);
+                showNotification('Error al iniciar checkout: ' + e.message, 'error', 0);
             }
         }
 
@@ -490,11 +509,24 @@
          */
         async function renderWalletBrick(preferenceId) {
             try {
+                console.log('[Wallet Brick] Iniciando renderizado...');
+
                 // Mostrar el contenedor del Brick inmediatamente
                 elWalletContainer.classList.remove('hidden');
-                console.log('[Wallet Brick] Contenedor visible:', elWalletContainer.offsetParent !== null);
+                elWalletContainer.style.display = 'block';
+
+                // Forzar reflow para asegurar que el navegador registre el cambio
+                void elWalletContainer.offsetHeight;
+
+                console.log('[Wallet Brick] Contenedor después de remove hidden:', {
+                    hidden_class: elWalletContainer.classList.contains('hidden'),
+                    display_style: elWalletContainer.style.display,
+                    offsetParent_visible: elWalletContainer.offsetParent !== null,
+                    computed_display: window.getComputedStyle(elWalletContainer).display
+                });
 
                 const bricksBuilder = mp.bricks();
+                let walletBrickCreated = false;
 
                 // Crear y mostrar el Wallet Brick
                 await bricksBuilder.create('wallet', 'wallet-brick-container', {
@@ -507,13 +539,19 @@
                             console.error('[Wallet Brick] Error details:', {
                                 message: error.message,
                                 type: error.type,
-                                preference_id: preferenceId
+                                preference_id: preferenceId,
+                                full_error: error
                             });
-                            showNotification('Error en el formulario de pago. Recarga la página e intenta de nuevo.', 'error', 0);
+
+                            // FALLBACK: Si el Wallet Brick falla, usar Checkout Pro
+                            console.log('[Wallet Brick] Intentando fallback a Checkout Pro...');
+                            fallbackToCheckoutPro(preferenceId);
+
                             document.getElementById('brick-loading').classList.add('hidden');
                         },
                         onReady: () => {
                             console.log('[Wallet Brick] ✅ Listo para pagar');
+                            walletBrickCreated = true;
                             console.log('[Wallet Brick] Detalles:', {
                                 preference_id: preferenceId,
                                 ticket_id: currentTicketId,
@@ -521,7 +559,28 @@
                             });
                             document.getElementById('brick-loading').classList.add('hidden');
                             elWalletContainer.classList.remove('hidden');
-                            console.log('[Wallet Brick] Contenedor después de onReady:', elWalletContainer.offsetParent !== null);
+                            elWalletContainer.style.display = 'block';
+                            console.log('[Wallet Brick] Estado después de onReady:', {
+                                visible: elWalletContainer.offsetParent !== null,
+                                display: window.getComputedStyle(elWalletContainer).display
+                            });
+
+                            // Timeout de 5 minutos como backup - normalmente el usuario debe hacer clic en pagar
+                            setTimeout(() => {
+                                if (!walletBrickCreated) {
+                                    console.log('[Wallet Brick] Timeout de 5min - redireccionando a comprobante...');
+                                    window.location.href = `/ticket-receipt.html?ticket_id=${currentTicketId}`;
+                                }
+                            }, 300000);
+                        },
+                        onSubmit: async (data) => {
+                            console.log('[Wallet Brick] ✅ onSubmit disparado:', data);
+                            try {
+                                showNotification('Procesando pago…', 'info', 0);
+                                // El pago se procesa automáticamente vía webhook de MercadoPago
+                            } catch (err) {
+                                console.error('[Wallet Brick] Error en onSubmit:', err);
+                            }
                         }
                     }
                 });
@@ -530,9 +589,33 @@
                 console.log('[Wallet Brick] ✅ Componente creado exitosamente');
             } catch (error) {
                 console.error('[Wallet Brick] ❌ Error al crear:', error);
+                console.error('[Wallet Brick] Stack:', error.stack);
                 document.getElementById('brick-loading').classList.add('hidden');
-                throw new Error('No se pudo cargar el formulario de pago: ' + error.message);
+
+                // Fallback a Checkout Pro
+                console.log('[Wallet Brick] Usando fallback a Checkout Pro por error:', error.message);
+                fallbackToCheckoutPro(preferenceId);
             }
+        }
+
+        /**
+         * Fallback a Checkout Pro si Wallet Brick falla
+         */
+        function fallbackToCheckoutPro(preferenceId) {
+            console.log('[Checkout Pro] Iniciando fallback con preference_id:', preferenceId);
+            showNotification('Redireccionando al formulario de pago seguro de MercadoPago...', 'info', 2000);
+
+            // Usar sandbox_init_point para redirigir a MP
+            setTimeout(() => {
+                // Obtener init_point desde la respuesta anterior (ya está en currentPreferenceId)
+                const mpClient = new MercadoPago(MP_PUBLIC_KEY);
+
+                // Hacer una consulta para obtener los puntos de inicio correctos
+                // Pero como ya tenemos la preferencia_id, podemos construir directamente la URL
+                const sandboxUrl = `https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=${preferenceId}`;
+                console.log('[Checkout Pro] Redireccionando a:', sandboxUrl);
+                window.location.href = sandboxUrl;
+            }, 1000);
         }
 
         // Event listeners para renderizar Wallet Brick automáticamente

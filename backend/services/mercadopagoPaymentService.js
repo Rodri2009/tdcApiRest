@@ -68,32 +68,39 @@ async function createPreference(ticketId, precioFinal, email, nombreEvento, nomb
             },
         ],
         payer: {
-            email: email,
+            // En TEST: usar email genérico de prueba
+            // En PROD: usar email real del usuario
+            email: isLocalhost ? 'test_comprador@prueba.com' : email
         },
     };
 
-    // En producción, incluir back_urls. En localhost (testing), omitir
-    // porque MercadoPago rechaza URLs locales
+    // En producción, incluir back_urls y auto_return
+    // En localhost (testing), OMITIR back_urls porque MP rechaza localhost con auto_return
     if (!isLocalhost) {
         // back_urls: URLs a las que redirecciona MP después del pago
         // Los parámetros devueltos (collection_id, status, etc.) se envían como query params
         body.back_urls = {
-            success: `${appUrl}/frontend/comprobante.html`,
+            success: `${appUrl}/ticket-receipt.html`,
             failure: `${appUrl}/frontend/checkout_form.html`,
-            pending: `${appUrl}/frontend/comprobante.html`,
+            pending: `${appUrl}/ticket-receipt.html`,
         };
         // auto_return: "approved" - Redirecciona automáticamente ~40 segundos después de pago aprobado
         body.auto_return = 'approved';
-        // Notificaciones del servidor: MP notificará cambios de estado del pago
-        body.notification_url = `${appUrl}/api/tickets/webhook`;
     }
+
+    // Notification URL siempre (sin validar localhost - MP lo ignorará si es localhost)
+    body.notification_url = `${appUrl}/api/tickets/webhook`;
 
     // external_reference: Sincroniza con el sistema local (ticket_id en este caso)
     // Se devuelve en back_urls y webhooks para identificar la orden
     body.external_reference = String(ticketId);
 
     logVerbose('[MP] Creando preferencia para Checkout Pro. Ticket:', ticketId, 'Monto:', precioFinal, 'AppUrl:', appUrl);
-
+    logVerbose('[MP] Email del comprador:', email);
+    console.log('═══════════════════════════════════════');
+    console.log('EMAIL ENVIADO A MERCADOPAGO:', email);
+    console.log('BODY COMPLETO:', JSON.stringify(body, null, 2));
+    console.log('═══════════════════════════════════════');
     const response = await preferenceClient.create({ body });
 
     logSuccess('[MP] Preferencia creada:', response.id, 'Init Point:', response.init_point);

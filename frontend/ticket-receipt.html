@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante de Entrada</title>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .receipt-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .receipt-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .receipt-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .receipt-header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .checkmark {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .receipt-body {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+            align-items: center;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .confirmation-code {
+            background: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .confirmation-code-label {
+            color: #64748b;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .confirmation-code-value {
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            font-weight: bold;
+            color: #10b981;
+            word-break: break-all;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #059669;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .alert-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .price-highlight {
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .price-highlight .info-row {
+            border-bottom: none;
+            padding: 8px 0;
+        }
+
+        .total-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #10b981;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="receipt-container" id="receipt-container">
+        <!-- Contenido dinámico será insertado aquí -->
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.protocol + '//' + window.location.host;
+        const params = new URLSearchParams(window.location.search);
+        const ticketId = params.get('ticket_id');
+        const status = params.get('status');
+
+        async function loadTicket() {
+            if (!ticketId) {
+                showError('Falta el ID del ticket');
+                return;
+            }
+
+            const container = document.getElementById('receipt-container');
+
+            try {
+                container.innerHTML = `
+                    <div class="receipt-body">
+                        <div class="loading">
+                            <div class="loading-spinner"></div>
+                            <p style="margin-top: 15px; color: #64748b;">Cargando comprobante...</p>
+                        </div>
+                    </div>
+                `;
+
+                const res = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}`);
+                if (!res.ok) {
+                    if (res.status === 404) {
+                        showError('Comprobante no encontrado');
+                    } else {
+                        showError('Error al cargar el comprobante');
+                    }
+                    return;
+                }
+
+                const ticket = await res.json();
+                renderReceipt(ticket);
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Error al cargar el comprobante: ' + error.message);
+            }
+        }
+
+        function showError(message) {
+            const container = document.getElementById('receipt-container');
+            container.innerHTML = `
+                <div class="receipt-header" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%)">
+                    <div class="checkmark">❌</div>
+                    <h1>Problema al Cargar</h1>
+                    <p>No pudimos recuperar tu comprobante</p>
+                </div>
+                <div class="receipt-body">
+                    <div class="alert alert-error">
+                        <strong>¿Qué pasó?</strong> ${message}
+                    </div>
+                    <div class="section">
+                        <div class="section-title">Opciones</div>
+                        <div style="padding: 15px; background: #f8fafc; border-radius: 8px; margin-bottom: 20px;">
+                            <p style="margin: 0 0 10px; color: #1e293b; font-size: 14px;">Intenta las siguientes opciones:</p>
+                            <ul style="margin: 10px 0; padding-left: 20px; color: #64748b; font-size: 13px;">
+                                <li>Recarga la página</li>
+                                <li>Verifica que el ID del ticket sea correcto en la URL</li>
+                                <li>Intenta con una ventana de navegación privada</li>
+                                <li>Si persiste, contacta a soporte</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button onclick="window.location.reload()" class="btn btn-primary">Recargar</button>
+                        <a href="/index.html" class="btn btn-secondary">Volver al inicio</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderReceipt(ticket) {
+            const container = document.getElementById('receipt-container');
+
+            const isPaid = ticket.estado === 'pagado';
+            const headerColor = isPaid ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+            const headerIcon = isPaid ? '✅' : '⏳';
+            const headerTitle = isPaid ? 'Entrada Confirmada' : 'Compra en Proceso';
+            const headerSubtitle = isPaid ? 'Tu entrada ha sido confirmada' : 'Tu pago se está procesando';
+
+            const formattedPrice = (price) => {
+                return new Intl.NumberFormat('es-AR', {
+                    style: 'currency',
+                    currency: 'ARS'
+                }).format(price);
+            };
+
+            const formatDate = (dateStr) => {
+                if (!dateStr) return '-';
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('es-AR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            };
+
+            const formatTime = (timeStr) => {
+                if (!timeStr) return '-';
+                // timeStr es como '21:30:00'
+                return timeStr.substring(0, 5);
+            };
+
+            container.innerHTML = `
+                <div class="receipt-header" style="background: ${headerColor}">
+                    <div class="checkmark">${headerIcon}</div>
+                    <h1>${headerTitle}</h1>
+                    <p>${headerSubtitle}</p>
+                </div>
+
+                <div class="receipt-body">
+                    ${!isPaid ? `<div class="alert alert-warning">
+                        <strong>⏳ Pago Pendiente</strong><br>
+                        <span style="font-size: 13px; margin-top: 8px; display: block;">
+                            Tu pago aún no ha sido confirmado. Esta página se actualiza automáticamente cada 5 segundos.
+                            Si ya completaste el pago en MercadoPago, puede tardar algunos minutos en reflejarse.
+                        </span>
+                    </div>` : ''}
+
+                    <div class="section">
+                        <div class="section-title">Información del Evento</div>
+                        <div class="info-row">
+                            <span class="info-label">Evento:</span>
+                            <span class="info-value">${ticket.nombre_evento || 'Evento'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Fecha:</span>
+                            <span class="info-value">${formatDate(ticket.fecha_evento)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Hora:</span>
+                            <span class="info-value">${formatTime(ticket.hora_inicio)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Tipo de Entrada:</span>
+                            <span class="info-value">${ticket.tipo_precio === 'ANTICIPADA' ? 'Anticipada' : 'Puerta'}</span>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">Información de la Compra</div>
+                        <div class="info-row">
+                            <span class="info-label">Nombre:</span>
+                            <span class="info-value">${ticket.nombre_comprador}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Email:</span>
+                            <span class="info-value" style="font-size: 12px;">${ticket.email}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Estado del Pago:</span>
+                            <span class="info-value" style="color: ${isPaid ? '#10b981' : '#f59e0b'}">
+                                ${isPaid ? 'Pagado ✅' : 'Pendiente ⏳'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="price-highlight">
+                        <div class="info-row">
+                            <span class="info-label">Monto Total:</span>
+                            <span class="info-value total-price">${formattedPrice(ticket.total)}</span>
+                        </div>
+                    </div>
+
+                    <div class="confirmation-code">
+                        <div class="confirmation-code-label">Código de Confirmación</div>
+                        <div class="confirmation-code-value">${ticket.codigo_confirmacion}</div>
+                        <p style="margin-top: 10px; font-size: 12px; color: #64748b;">
+                            Guarda este código para escanear en la entrada
+                        </p>
+                    </div>
+
+                    <div class="action-buttons">
+                        <a href="javascript:window.print()" class="btn btn-secondary">Imprimir</a>
+                        <a href="/index.html" class="btn btn-primary">Volver al Inicio</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Cargar comprobante cuando se carga la página
+        document.addEventListener('DOMContentLoaded', loadTicket);
+
+        // Polling: verificar cada 5 segundos si el ticket fue pagado (solo si está pendiente)
+        setInterval(async () => {
+            if (!ticketId) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}`);
+                if (res.ok) {
+                    const ticket = await res.json();
+                    // Si cambió de pendiente a pagado, recargar el comprobante
+                    const currentStatus = document.querySelector('.info-value')?.textContent;
+                    if (ticket.estado === 'pagado' && currentStatus?.includes('Pendiente')) {
+                        console.log('[TicketReceipt] Pago confirmado, actualizando comprobante...');
+                        renderReceipt(ticket);
+                    }
+                }
+            } catch (error) {
+                // Silenciosamente ignorar errores de polling
+            }
+        }, 5000);
+    </script>
+</body>
+
+</html>

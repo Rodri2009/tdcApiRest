@@ -32,6 +32,9 @@ router.post('/process-payment', ticketsController.processPayment);
 // GET /api/tickets/public-key — devuelve la public key de MP al frontend
 router.get('/public-key', ticketsController.getPublicKey);
 
+// GET /api/tickets/:ticketId — obtiene detalles del ticket para el comprobante
+router.get('/:ticketId', ticketsController.getTicketDetails);
+
 // RUTAS FUTURAS:
 // router.post('/validate', authMiddleware.isAdmin, ticketsController.validateTicket); // Para la app de scanner
 

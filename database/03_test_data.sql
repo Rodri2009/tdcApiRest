@@ -34,7 +34,7 @@ INSERT INTO `solicitudes` (`id_solicitud`, `categoria`, `id_cliente`, `id_usuari
 (7,'SERVICIOS',1,NULL,'2026-03-13 04:29:21','Solicitado',0,'Servicio de Fotografía para Eventos','Servicio de Fotografía para Eventos. 4 horas mínimo.',NULL,NULL,NULL,NULL,NULL,NULL,'2026-03-13 04:29:21'),
 (8,'TALLERES',2,NULL,'2026-03-13 04:29:21','Confirmado',1,'Taller de Dibujo','Dibujos y arte en mesas.',NULL,'2026-04-22','10:00:00',90,NULL,NULL,'2026-03-13 04:29:21'),
 (9,'BANDAS',4,2,'2026-05-20 10:30:15','Confirmado',1,'Mounster of Claypole','Festival Metalero 7 bandas',NULL,'2026-05-16','21:00:00',480,'05:00:00',NULL,'2026-05-20 10:30:15'),
-(10,'BANDAS',4,2,'2026-05-20 11:15:30','Confirmado',1,'DOMINGO METALERO','Festival metalero 6 bandas',NULL,'2026-05-24','18:00:00',600,'04:00:00',NULL,'2026-05-20 11:15:30'),
+(10,'BANDAS',4,2,'2026-05-20 11:15:30','Confirmado',1,'DOMINGO METÁLICO','Festival metalero 6 bandas',NULL,'2026-05-24','18:00:00',600,'04:00:00',NULL,'2026-05-20 11:15:30'),
 (11,'BANDAS',4,2,'2026-05-20 12:45:00','Confirmado',1,'CONURTRASH','Festival metalero 5 bandas',NULL,'2026-06-06','20:00:00',540,'05:00:00',NULL,'2026-05-20 12:45:00');
 /*!40000 ALTER TABLE `solicitudes` ENABLE KEYS */;
 UNLOCK TABLES;

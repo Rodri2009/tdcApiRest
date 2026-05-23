@@ -353,6 +353,64 @@ const getPublicKey = (req, res) => {
     res.json({ public_key: publicKey });
 };
 
+/**
+ * GET /api/tickets/:ticketId
+ * Obtiene los detalles de un ticket para mostrar el comprobante.
+ */
+const getTicketDetails = async (req, res) => {
+    const { ticketId } = req.params;
+
+    if (!ticketId || isNaN(ticketId)) {
+        return res.status(400).json({ error: 'ID de ticket inválido.' });
+    }
+
+    try {
+        const query = `
+            SELECT 
+                t.id,
+                t.id_evento,
+                t.email,
+                t.nombre_comprador,
+                t.codigo_cupon,
+                t.total,
+                t.tipo_precio,
+                t.estado,
+                t.codigo_confirmacion,
+                t.mp_payment_id,
+                t.created_at,
+                e.id_solicitud,
+                e.nombre_evento,
+                e.fecha_evento,
+                e.hora_inicio,
+                e.descripcion,
+                sfb.precio_anticipada,
+                sfb.precio_puerta,
+                sfb.precio_basico
+            FROM tickets t
+            LEFT JOIN eventos_confirmados e ON t.id_evento = e.id
+            LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud
+            WHERE t.id = ?
+        `;
+
+        const [ticket] = await pool.query(query, [ticketId]);
+
+        if (!ticket) {
+            return res.status(404).json({ error: 'Ticket no encontrado.' });
+        }
+
+        logVerbose('[getTicketDetails] Ticket encontrado:', {
+            ticket_id: ticket.id,
+            estado: ticket.estado,
+            evento: ticket.nombre_evento
+        });
+
+        res.status(200).json(ticket);
+    } catch (error) {
+        logError('Error al obtener detalles del ticket:', error);
+        res.status(500).json({ error: 'Error interno al obtener detalles del ticket.' });
+    }
+};
+
 module.exports = {
     getFechasBandasConfirmadas,
     simulateCheckout,
@@ -360,4 +418,5 @@ module.exports = {
     webhookHandler,
     processPayment,
     getPublicKey,
+    getTicketDetails,
 };

@@ -1,5 +1,6 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const fs = require('fs');
 const path = require('path');
 // NOTA: Asegúrate de haber eliminado la línea: require('dotenv').config();
 // como hablamos antes, para evitar conflictos con las variables de Docker.
@@ -115,6 +116,27 @@ app.use((req, res, next) => {
 
 // Servir archivos estáticos del frontend
 app.use(express.static('frontend'));
+
+// Asegurar carpetas de uploads y galería antes de servir los archivos estáticos
+const ensureUploadsFolders = () => {
+    const uploadsBase = path.join(__dirname, 'uploads');
+    const galleryBase = path.join(uploadsBase, 'gallery');
+    const categories = ['shows', 'workshops', 'events'];
+
+    const dirsToCreate = [uploadsBase, galleryBase, ...categories.map(category => path.join(galleryBase, category))];
+    dirsToCreate.forEach(dir => {
+        try {
+            fs.mkdirSync(dir, { recursive: true });
+        } catch (err) {
+            logWarning(`[INIT] No se pudo crear la carpeta ${dir}: ${err.message}`);
+        }
+    });
+
+    logSuccess('[INIT] ✓ Carpetas de uploads creadas o existentes: /uploads, /uploads/gallery, /uploads/gallery/shows, /uploads/gallery/workshops, /uploads/gallery/events');
+};
+
+ensureUploadsFolders();
+
 // Servir uploads (logos, fotos) desde /uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
