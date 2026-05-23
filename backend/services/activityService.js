@@ -964,7 +964,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
             let countBefore = 0;
             try {
                 countBefore = await page.evaluate(() => {
-                    return document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]').length;
+                    return document.querySelectorAll('li[data-transaction-id]').length;
                 }).catch(err => {
                     console.warn('[ActivityService] Contexto destruido al contar elementos');
                     return 0;
@@ -1057,7 +1057,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
             let countAfter = 0;
             try {
                 countAfter = await page.evaluate(() => {
-                    return document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]').length;
+                    return document.querySelectorAll('li[data-transaction-id]').length;
                 });
             } catch (err) {
                 if (err.message.includes('Execution context was destroyed')) {
@@ -1121,7 +1121,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                             let firstItemBefore = null;
                             try {
                                 firstItemBefore = await page.evaluate(() => {
-                                    const items = document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]');
+                                    const items = document.querySelectorAll('li[data-transaction-id]');
                                     return items.length > 0 ? items[0].textContent.slice(0, 40) : null;
                                 });
                             } catch (err) {
@@ -1141,7 +1141,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                             let contentChanged = false;
                             try {
                                 firstItemAfter = await page.evaluate(() => {
-                                    const items = document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]');
+                                    const items = document.querySelectorAll('li[data-transaction-id]');
                                     return items.length > 0 ? items[0].textContent.slice(0, 40) : null;
                                 });
 
@@ -1178,7 +1178,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                             if (contentChanged) {
                                 try {
                                     await page.waitForFunction(
-                                        () => document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]').length > 0,
+                                        () => document.querySelectorAll('li[data-transaction-id]').length > 0,
                                         { timeout: 3000 }
                                     );
                                 } catch (e) {
