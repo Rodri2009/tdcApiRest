@@ -424,8 +424,13 @@ async function startServer() {
                     mpPage = mpPages.length > 0 ? mpPages[0] : await mpBrowser.newPage();
                     console.log('[PUPPETEER-MP] ✓ Page obtenida');
                     
-                    await mpPage.setViewport({ width: 1920, height: 1080 });
-                    console.log('[PUPPETEER-MP] ✓ Viewport seteado');
+                    // Try setViewport, but don't fail if it doesn't work
+                    try {
+                        await mpPage.setViewport({ width: 1920, height: 1080 });
+                        console.log('[PUPPETEER-MP] ✓ Viewport seteado');
+                    } catch (vpErr) {
+                        console.log('[PUPPETEER-MP] ⚠️  Viewport set failed, continuing:', vpErr.message);
+                    }
 
                     logSuccess('[PUPPETEER-MP] ✓ Browser y page inicializados');
 
