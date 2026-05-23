@@ -373,18 +373,21 @@ async function scrapeActivity(page, verbose = true) {
             };
 
             const logTransactions = (txList, label) => {
-                console.log(`[🕷️  SCRAPER] ┌── ${label}: ${txList.length} transacciones ──`);
+                console.log(`[🕷️  SCRAPER] ┌── ${label}: ${txList.length} transacciones (RAW) ──`);
                 txList.forEach((tx, idx) => {
-                    // tx.amount is a STRING in Argentine format: "-31.507" means $-31,507
-                    // (period = thousands separator in es-AR). Display it as-is.
-                    const rawStr = String(tx.amount || '0').trim();
-                    const isNeg = rawStr.startsWith('-');
-                    const sign = isNeg ? '-' : '+';
-                    const absStr = isNeg ? rawStr.slice(1) : rawStr;
-                    const amt = `$${sign}${absStr}`;
-                    const argTime = toArgTime(tx.creationDate);
-                    const name = (tx.title || tx.description || 'sin nombre').substring(0, 32);
-                    console.log(`[🕷️  SCRAPER] │[${String(idx+1).padStart(2)}] ${argTime} | ${name.padEnd(32)} | ${amt}`);
+                    // Imprime los campos clave en formato string crudo, sin parseo
+                    console.log(
+                        `[🕷️  SCRAPER] [${String(idx+1).padStart(2)}]` +
+                        ` id=${tx.transactionId || tx.id || '?'}` +
+                        ` | title="${tx.title || ''}"` +
+                        ` | amount=${JSON.stringify(tx.amount)}` +
+                        ` | creationDate="${tx.creationDate || ''}"` +
+                        ` | dateTime="${tx.dateTime || ''}"` +
+                        ` | date="${tx.date || ''}"` +
+                        ` | time="${tx.time || ''}"` +
+                        ` | type="${tx.type || tx.category || ''}"` +
+                        ` | _src=${tx._source || (tx._isStructured ? 'structured' : 'raw')}`
+                    );
                 });
                 console.log(`[🕷️  SCRAPER] └── ${txList.length} txs ──────────────────────`);
             };
