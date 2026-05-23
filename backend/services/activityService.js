@@ -207,44 +207,48 @@ async function scrapeActivity(page, verbose = true) {
                                 console.log(`[🕷️  SCRAPER] ❌ Time mapping error: ${e.message}`);
                             }
 
-                            return flat.map((item, idx) => {
-                                // Derive a sign-aware category for the normalizer:
-                                // subCategory "in" => income (positive), "out" / category "pays" => payment/transfer (negative)
-                                const sub = (item.subCategory || '').toLowerCase();
-                                const cat = (item.category || '').toLowerCase();
-                                let normCategory;
-                                if (sub === 'in') normCategory = 'income';
-                                else if (sub === 'out') normCategory = 'out';
-                                else if (cat === 'pays') normCategory = 'pays';
-                                else normCategory = cat || sub;
+                            return {
+                                items: flat.map((item, idx) => {
+                                    // Derive a sign-aware category for the normalizer:
+                                    // subCategory "in" => income (positive), "out" / category "pays" => payment/transfer (negative)
+                                    const sub = (item.subCategory || '').toLowerCase();
+                                    const cat = (item.category || '').toLowerCase();
+                                    let normCategory;
+                                    if (sub === 'in') normCategory = 'income';
+                                    else if (sub === 'out') normCategory = 'out';
+                                    else if (cat === 'pays') normCategory = 'pays';
+                                    else normCategory = cat || sub;
 
-                                // Try to get creationDate by ID first, then by index
-                                const timeByIdOrIdx = timeMap[item.id] || timeMap[idx] || null;
-                                
-                                if (idx < 3) {
-                                    console.log(`[🕷️  SCRAPER] 🔍 Item ${idx}: ID=${item.id.slice(0, 30)} creationDate=${timeByIdOrIdx}`);
-                                }
+                                    // Try to get creationDate by ID first, then by index
+                                    const timeByIdOrIdx = timeMap[item.id] || timeMap[idx] || null;
 
-                                return {
-                                    id: item.id || `activity-${idx}`,
-                                    title: item.title || item.description || '',
-                                    category: normCategory,
-                                    description: item.description || '',
-                                    amount: item.amount ? item.amount.fraction : null,
-                                    currency: (item.amount && item.amount.currency_id) || 'ARS',
-                                    symbol: (item.amount && item.amount.symbol) || '$',
-                                    dateTime: item._groupDate || null,
-                                    // ISO datetime preciso del DOM (fecha + hora)
-                                    creationDate: timeByIdOrIdx,
-                                    type: sub === 'in' ? 'income'
-                                        : cat === 'pays' ? 'payment'
-                                            : sub === 'out' ? 'transfer'
-                                                : (cat || 'unknown'),
-                                    raw: JSON.stringify(item).slice(0, 300),
-                                    _isStructured: true,
-                                    _source: 'in-page-json'
-                                };
-                            });
+                                    return {
+                                        id: item.id || `activity-${idx}`,
+                                        title: item.title || item.description || '',
+                                        category: normCategory,
+                                        description: item.description || '',
+                                        amount: item.amount ? item.amount.fraction : null,
+                                        currency: (item.amount && item.amount.currency_id) || 'ARS',
+                                        symbol: (item.amount && item.amount.symbol) || '$',
+                                        dateTime: item._groupDate || null,
+                                        // ISO datetime preciso del DOM (fecha + hora)
+                                        creationDate: timeByIdOrIdx,
+                                        type: sub === 'in' ? 'income'
+                                            : cat === 'pays' ? 'payment'
+                                                : sub === 'out' ? 'transfer'
+                                                    : (cat || 'unknown'),
+                                        raw: JSON.stringify(item).slice(0, 300),
+                                        _isStructured: true,
+                                        _source: 'in-page-json'
+                                    };
+                                }),
+                                _debugTimeMapSize: Object.keys(timeMap).length,
+                                _debugTimeSamples: Object.entries(timeMap).slice(0, 2).map(([k, v]) => `${k.slice(0, 20)}→${v}`)
+                            };
+                        });
+                        
+                        if (transactions && transactions.items) {
+                            transactions = transactions.items;
                         }
                     }
 
@@ -273,7 +277,28 @@ async function scrapeActivity(page, verbose = true) {
                 return null;
             });
 
-            if (transactions && transactions.length > 0) {
+            if (transactions && Array.isArray(transactions.items)) {
+                // Extract debug info before processing
+                const debugInfo = {
+                    timeMapSize: transactions._debugTimeMapSize,
+                    timeSamples: transactions._debugTimeSamples
+                };
+                transactions = transactions.items;
+                
+                console.info('[ActivityService] ✅ STRATEGY 1 exitosa: Extracted %d structured activities from in-page object', transactions.length);
+                // Log sample transactions with their timestamps
+                console.log('[🕷️  SCRAPER] 📊 Sample de transacciones extraídas:');
+                transactions.slice(0, 5).forEach((tx, idx) => {
+                    console.log(`  [${idx}] ID: ${tx.id} | Tipo: ${tx.type} | Monto: ${tx.amount} | dateTime: ${tx.dateTime} | creationDate: ${tx.creationDate}`);
+                });
+                console.log(`[🕷️  SCRAPER] 📊 Total extracted: ${transactions.length} (first 5 shown above)`);
+                
+                // DEBUG: Log time mapping status
+                console.log(`[🕷️  SCRAPER] 🐛 DEBUG timeMap size: ${debugInfo.timeMapSize}`);
+                if (debugInfo.timeSamples && debugInfo.timeSamples.length > 0) {
+                    console.log(`[🕷️  SCRAPER] 🐛 DEBUG samples: ${debugInfo.timeSamples.join(', ')}`);
+                }
+            } else if (transactions && transactions.length > 0) {
                 console.info('[ActivityService] ✅ STRATEGY 1 exitosa: Extracted %d structured activities from in-page object', transactions.length);
                 // Log sample transactions with their timestamps
                 console.log('[🕷️  SCRAPER] 📊 Sample de transacciones extraídas:');
