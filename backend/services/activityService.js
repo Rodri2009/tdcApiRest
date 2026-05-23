@@ -277,6 +277,8 @@ async function scrapeActivity(page, verbose = true) {
                 return null;
             });
 
+            console.log(`[🕷️  SCRAPER] 🐛 Page evaluation result type: ${Array.isArray(transactions) ? 'array' : typeof transactions}, has items: ${transactions?.items ? 'yes' : 'no'}`);
+
             if (transactions && Array.isArray(transactions.items)) {
                 // Extract debug info before processing
                 const debugInfo = {
