@@ -863,7 +863,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
                                 id: tx.id,
                                 title: tx.title || tx.description || '',
                                 amount: tx.amount,
-                                dateTime: tx.dateTime || tx.creationDate || null,
+                                dateTime: tx.creationDate || tx.dateTime || null,
                                 category: tx.category || ''
                             }))
                         });
