@@ -373,14 +373,17 @@ async function scrapeActivity(page, verbose = true) {
             };
 
             const logTransactions = (txList, label) => {
-                console.log(`[🕷️  SCRAPER] ━━━ ${label}: ${txList.length} transacciones en pantalla ━━━`);
+                console.log(`[🕷️  SCRAPER] ┌── ${label}: ${txList.length} transacciones ──`);
                 txList.forEach((tx, idx) => {
-                    const sign = tx.amount < 0 ? '' : '+';
-                    const amt = tx.amount !== null ? `$${sign}${Number(tx.amount).toLocaleString('es-AR')}` : '$?';
+                    const absAmt = Math.abs(tx.amount || 0);
+                    const sign = (tx.amount || 0) >= 0 ? '+' : '-';
+                    const formatted = absAmt.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    const amt = `$${sign}${formatted}`;
                     const argTime = toArgTime(tx.creationDate);
-                    const name = (tx.title || tx.description || 'sin nombre').substring(0, 35);
-                    console.log(`[🕷️  SCRAPER]  [${String(idx+1).padStart(2)}] ${argTime} | ${name.padEnd(35)} | ${amt}`);
+                    const name = (tx.title || tx.description || 'sin nombre').substring(0, 32);
+                    console.log(`[🕷️  SCRAPER] │[${String(idx+1).padStart(2)}] ${argTime} | ${name.padEnd(32)} | ${amt}`);
                 });
+                console.log(`[🕷️  SCRAPER] └── ${txList.length} txs ──────────────────────`);
             };
 
             if (transactions && Array.isArray(transactions.items)) {
@@ -818,9 +821,12 @@ async function scrapeActivity(page, verbose = true) {
             };
             console.log(`[🕷️  SCRAPER] ┌── RESULTADO FINAL (hora Argentina = lo que ves en MP) ──`);
             deduplicated.forEach((tx, idx) => {
-                const sign = tx.amount < 0 ? '' : '+';
-                const amt = tx.amount !== null ? `$${sign}${Number(tx.amount).toLocaleString('es-AR')}` : '$?';
-                console.log(`[🕷️  SCRAPER] │ [${String(idx+1).padStart(2)}] ${toArg(tx.creationDate || tx.dateTime)} | ${(tx.title || 'sin título').substring(0, 35).padEnd(35)} | ${amt}`);
+                const absAmt = Math.abs(tx.amount || 0);
+                const sign = (tx.amount || 0) >= 0 ? '+' : '-';
+                const formatted = absAmt.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                const amt = `$${sign}${formatted}`;
+                const name = (tx.title || 'sin título').substring(0, 32);
+                console.log(`[🕷️  SCRAPER] │ [${String(idx+1).padStart(2)}] ${toArg(tx.creationDate || tx.dateTime)} | ${name.padEnd(32)} | ${amt}`);
             });
             console.log(`[🕷️  SCRAPER] └── ${deduplicated.length} transacciones totales ───────────────`);
         }
