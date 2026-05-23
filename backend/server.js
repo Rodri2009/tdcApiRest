@@ -416,10 +416,16 @@ async function startServer() {
                     };
 
                     // Lanzar browser
+                    console.log('[PUPPETEER-MP] 🔧 Lanzando browser...');
                     mpBrowser = await browserManager.launchBrowser(mpConfig);
+                    console.log('[PUPPETEER-MP] ✓ Browser lanzado');
+                    
                     const mpPages = await mpBrowser.pages();
                     mpPage = mpPages.length > 0 ? mpPages[0] : await mpBrowser.newPage();
+                    console.log('[PUPPETEER-MP] ✓ Page obtenida');
+                    
                     await mpPage.setViewport({ width: 1920, height: 1080 });
+                    console.log('[PUPPETEER-MP] ✓ Viewport seteado');
 
                     logSuccess('[PUPPETEER-MP] ✓ Browser y page inicializados');
 
@@ -430,14 +436,22 @@ async function startServer() {
                     // ]).catch(() => { /* silent fail */ });
 
                     // Inicializar watch service
+                    console.log('[PUPPETEER-MP] 🔧 Inicializando watch service...');
                     const transactionWatch = initializeWatch(mpPage);
+                    console.log('[PUPPETEER-MP] ✓ Watch service creado');
+                    
                     transactionWatch.start();
+                    console.log('[PUPPETEER-MP] ✓ Watch service iniciado');
                     logSuccess('[PUPPETEER-MP] ✓ Watch service iniciado');
 
                     // Inicializar session monitor
+                    console.log('[PUPPETEER-MP] 🔧 Inicializando session monitor...');
                     const mpSessionMonitor = new SessionMonitor(mpPage);
+                    console.log('[PUPPETEER-MP] ✓ Session monitor creado');
+                    
                     global.mpSessionMonitor = mpSessionMonitor;
                     mpSessionMonitor.start();
+                    console.log('[PUPPETEER-MP] ✓ Session monitor iniciado');
                     logSuccess('[PUPPETEER-MP] ✓ Session monitor iniciado');
 
                     // Conectar session monitor → watch service para propagar eventos por SSE
@@ -448,12 +462,15 @@ async function startServer() {
                             if (svc) svc.broadcastServiceEvent(type, msg);
                         } catch (e) { /* silenciar para no romper el flujo de inicio */ }
                     });
+                    console.log('[PUPPETEER-MP] ✓ Session monitor event handler conectado');
 
                     // PEQUEÑO DELAY: Si también va a haber WA, dejar que MP se estabilice primero
                     if (ENABLE_PUPPETEER_WA) {
                         logVerbose('[PUPPETEER-MP] ⏳ Esperando a que MP se estabilice antes de iniciar WA (3s)...');
                         await new Promise(r => setTimeout(r, 3000));
                     }
+                    
+                    console.log('[PUPPETEER-MP] ✅ INICIALIZACIÓN COMPLETADA');
 
                 } catch (err) {
                     logError('[PUPPETEER-MP] Error al inicializar:', err.message);
