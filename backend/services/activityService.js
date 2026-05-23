@@ -732,7 +732,7 @@ async function scrapeActivity(page, verbose = true) {
             // Eliminar amounts muy pequeños (<30 ARS) que probablemente son fragmentos
             const absAmount = Math.abs(tx.amount);
             if (absAmount < 30 && absAmount > 0) {
-                console.debug('[ActivityService] Filtering out small fragment: %d (raw: %s)', tx.amount, tx.raw.substring(0, 40));
+                // Fragmento descartado (silencioso en logs normales)
                 return false;
             }
             return true;
@@ -770,18 +770,17 @@ async function scrapeActivity(page, verbose = true) {
             if (!seen.has(key)) {
                 seen.set(key, tx);
                 deduplicated.push(tx);
-                console.debug('[ActivityService] Keeping tx: %s (raw: %s)', key, tx.raw.substring(0, 40));
+                // Deduplicación detectada (silencioso en logs normales)
             } else {
                 // Esta es duplicada - comparar cuál tiene más información
                 const existing = seen.get(key);
                 if ((tx.raw || '').length > (existing.raw || '').length) {
                     // El nuevo tiene más info, reemplazar
-                    console.debug('[ActivityService] Replacing with more complete: %s', key);
                     const idx = deduplicated.indexOf(existing);
                     if (idx >= 0) deduplicated[idx] = tx;
                     seen.set(key, tx);
                 } else {
-                    console.debug('[ActivityService] Duplicate (keeping existing): %s', key);
+                    // Duplicate descartado, manteniendo existente
                 }
             }
         }

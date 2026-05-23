@@ -14,6 +14,9 @@
 # FLAGS DE SERVICIOS (filtrado de logs):
 #   --mp              : filtra solo logs de Mercado Pago
 #   --wa              : filtra solo logs de WhatsApp
+#   --scraper, --spider : filtra solo logs de scraper ([🕷️  SCRAPER])
+#   --activity        : filtra solo logs de [ActivityService]
+#   --debug           : filtra solo logs de DEBUG ([DEBUG])
 #
 # FLAGS DE VISUALIZACIÓN:
 #   -f, --follow      : sigue los logs en tiempo real (default para todos)
@@ -62,6 +65,9 @@ SHOW_FRONTEND=0
 SHOW_ALL=1
 FILTER_MP=0
 FILTER_WA=0
+FILTER_SCRAPER=0
+FILTER_ACTIVITY=0
+FILTER_DEBUG_LOGS=0
 FOLLOW_LOGS=1
 TAIL_LINES=100
 SHOW_TIMESTAMPS=0
@@ -85,6 +91,9 @@ ${BOLD}FLAGS DE CONTENEDORES:${NC}
 ${BOLD}FLAGS DE FILTRADO:${NC}
   --mp              filtra solo logs de Mercado Pago
   --wa              filtra solo logs de WhatsApp
+  --scraper, --spider filtra solo logs del scraper ([🕷️  SCRAPER])
+  --activity        filtra solo logs de [ActivityService]
+  --debug           filtra solo logs de DEBUG
 
 ${BOLD}FLAGS DE VISUALIZACIÓN:${NC}
   -f, --follow      sigue los logs en tiempo real (defecto)
@@ -97,11 +106,15 @@ ${BOLD}FLAGS DE DEPURACIÓN:${NC}
   -h, --help        muestra esta ayuda
 
 ${BOLD}EJEMPLOS:${NC}
-  $0                          # Todos los logs en tiempo real
-  $0 --backend                # Logs del backend
-  $0 --backend --mp           # Logs del backend filtrados solo MP
-  $0 --mariadb --tail 50      # Últimas 50 líneas de MariaDB
-  $0 --frontend -f            # Logs de nginx en vivo
+  $0                              # Todos los logs en tiempo real
+  $0 --backend                    # Logs del backend
+  $0 --backend --mp               # Logs del backend filtrados solo MP
+  $0 --backend --scraper          # Logs de scraping del backend
+  $0 --backend --activity         # Logs de [ActivityService]
+  $0 --backend --scraper --activity # Logs de SCRAPER y ActivityService
+  $0 --mariadb --tail 50          # Últimas 50 líneas de MariaDB
+  $0 --frontend -f                # Logs de nginx en vivo
+  $0 --backend --debug            # Logs del backend solo DEBUG
 
 EOF
 }
@@ -150,15 +163,39 @@ check_container() {
 
 # Aplica filtros a los logs
 apply_filters() {
-    if [ "$FILTER_MP" = "1" ] && [ "$FILTER_WA" = "0" ]; then
-        grep -i "MP\|Mercado\|mercado-pago\|mercadopago" || true
-    elif [ "$FILTER_WA" = "1" ] && [ "$FILTER_MP" = "0" ]; then
-        grep -i "WA\|WhatsApp\|whatsapp" || true
-    elif [ "$FILTER_MP" = "1" ] && [ "$FILTER_WA" = "1" ]; then
-        grep -iE "MP\|Mercado|mercado-pago|mercadopago|WA|WhatsApp|whatsapp" || true
-    else
+    # Si no hay filtros, mostrar todo
+    if [ "$FILTER_MP" = "0" ] && [ "$FILTER_WA" = "0" ] && [ "$FILTER_SCRAPER" = "0" ] && [ "$FILTER_ACTIVITY" = "0" ] && [ "$FILTER_DEBUG_LOGS" = "0" ]; then
         cat
+        return
     fi
+    
+    # Construir patrón de grep con los filtros activos
+    local patterns=()
+    
+    if [ "$FILTER_SCRAPER" = "1" ]; then
+        patterns+=("SCRAPER|🕷️")
+    fi
+    
+    if [ "$FILTER_ACTIVITY" = "1" ]; then
+        patterns+=("ActivityService")
+    fi
+    
+    if [ "$FILTER_MP" = "1" ]; then
+        patterns+=("MP|Mercado|mercado-pago|mercadopago")
+    fi
+    
+    if [ "$FILTER_WA" = "1" ]; then
+        patterns+=("WA|WhatsApp|whatsapp")
+    fi
+    
+    if [ "$FILTER_DEBUG_LOGS" = "1" ]; then
+        patterns+=("\[DEBUG\]|debug")
+    fi
+    
+    # Unir todos los patrones con OR
+    local combined_pattern=$(IFS='|'; echo "${patterns[*]}")
+    
+    grep -iE "$combined_pattern" || true
 }
 
 # Muestra logs de un contenedor específico
@@ -267,6 +304,18 @@ while [ $# -gt 0 ]; do
             ;;
         --wa)
             FILTER_WA=1
+            shift
+            ;;
+        --scraper|--spider)
+            FILTER_SCRAPER=1
+            shift
+            ;;
+        --activity)
+            FILTER_ACTIVITY=1
+            shift
+            ;;
+        --debug)
+            FILTER_DEBUG_LOGS=1
             shift
             ;;
         -f|--follow)
