@@ -374,16 +374,14 @@ async function scrapeActivity(page, verbose = true) {
 
             const logTransactions = (txList, label) => {
                 console.log(`[🕷️  SCRAPER] ┌── ${label}: ${txList.length} transacciones ──`);
-                // Debug first tx to see raw amount format
-                if (txList.length > 0) {
-                    const t0 = txList[0];
-                    console.log(`[🕷️  SCRAPER] DEBUG raw amount[0]: ${JSON.stringify(t0.amount)} (type: ${typeof t0.amount})`);
-                }
                 txList.forEach((tx, idx) => {
-                    const absAmt = Math.abs(tx.amount || 0);
-                    const sign = (tx.amount || 0) >= 0 ? '+' : '-';
-                    const formatted = absAmt.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                    const amt = `$${sign}${formatted}`;
+                    // tx.amount is a STRING in Argentine format: "-31.507" means $-31,507
+                    // (period = thousands separator in es-AR). Display it as-is.
+                    const rawStr = String(tx.amount || '0').trim();
+                    const isNeg = rawStr.startsWith('-');
+                    const sign = isNeg ? '-' : '+';
+                    const absStr = isNeg ? rawStr.slice(1) : rawStr;
+                    const amt = `$${sign}${absStr}`;
                     const argTime = toArgTime(tx.creationDate);
                     const name = (tx.title || tx.description || 'sin nombre').substring(0, 32);
                     console.log(`[🕷️  SCRAPER] │[${String(idx+1).padStart(2)}] ${argTime} | ${name.padEnd(32)} | ${amt}`);
