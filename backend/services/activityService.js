@@ -374,6 +374,11 @@ async function scrapeActivity(page, verbose = true) {
 
             const logTransactions = (txList, label) => {
                 console.log(`[🕷️  SCRAPER] ┌── ${label}: ${txList.length} transacciones ──`);
+                // Debug first tx to see raw amount format
+                if (txList.length > 0) {
+                    const t0 = txList[0];
+                    console.log(`[🕷️  SCRAPER] DEBUG raw amount[0]: ${JSON.stringify(t0.amount)} (type: ${typeof t0.amount})`);
+                }
                 txList.forEach((tx, idx) => {
                     const absAmt = Math.abs(tx.amount || 0);
                     const sign = (tx.amount || 0) >= 0 ? '+' : '-';
