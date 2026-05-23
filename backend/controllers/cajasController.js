@@ -1138,7 +1138,9 @@ async function importarAutoStream(req, res) {
         console.log(`[cajasController] Período: ${dateFrom.toISOString()} → ${dateTo.toISOString()}`);
 
         const filteredTransactions = transactions.filter(tx => {
-            const rawDate = tx.dateTime || tx.creationDate || tx.grouperDate?.value;
+            // PRIORITY: creationDate (ISO precise) > grouperDate > dateTime (group date only)
+            // creationDate has the precise hour extracted from DOM <time> element
+            const rawDate = tx.creationDate || tx.grouperDate?.value || tx.dateTime;
             if (!rawDate) return false;
             const txDateTime = new Date(rawDate);
             if (isNaN(txDateTime)) return false;
