@@ -95,11 +95,16 @@ async function scrapeActivity(page, verbose = true) {
                                             
                                             // ✅ ENRICH WITH CREATION DATE FROM DOM immediately while page is still available
                                             try {
-                                                const timeMapFromDom = await page.evaluate(() => {
+                                                console.log('[ActivityService] 🔍 Iniciando enriquecimiento: buscando elementos time en DOM...');
+                                                const domData = await page.evaluate(() => {
                                                     const ARGENTINA_UTC_OFFSET = 3;
-                                                    const timeMap = {};
+                                                    const allTimeElements = Array.from(document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]'));
+                                                    console.log('[DOM] Total time elements encontrados:', allTimeElements.length);
                                                     
-                                                    document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]').forEach(timeEl => {
+                                                    const timeMap = {};
+                                                    const debugInfo = [];
+                                                    
+                                                    allTimeElements.forEach(timeEl => {
                                                         const li = timeEl.closest('li[data-transaction-id]');
                                                         if (li) {
                                                             const txId = li.getAttribute('data-transaction-id');
@@ -107,6 +112,13 @@ async function scrapeActivity(page, verbose = true) {
                                                             const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
                                                             const tm = raw.match(/(\d{1,2}):(\d{2})/);
                                                             let creationDate = null;
+                                                            
+                                                            debugInfo.push({
+                                                                txId: txId ? txId.slice(0, 20) : 'NO-ID',
+                                                                iso: iso ? iso.slice(0, 10) : 'NO-ISO',
+                                                                raw: raw.slice(0, 20),
+                                                                tm: tm ? `${tm[1]}:${tm[2]}` : 'NO-MATCH'
+                                                            });
                                                             
                                                             if (iso && tm) {
                                                                 try {
@@ -127,22 +139,29 @@ async function scrapeActivity(page, verbose = true) {
                                                         }
                                                     });
                                                     
-                                                    return timeMap;
+                                                    return { timeMap, debugInfo };
+                                                });
+                                                
+                                                console.log('[ActivityService] 🔍 DOM data encontrado:', {
+                                                    mappedCount: Object.keys(domData.timeMap).length,
+                                                    debugSample: domData.debugInfo.slice(0, 3)
                                                 });
                                                 
                                                 // Update transactions with creationDate from DOM
+                                                let enrichedCount = 0;
                                                 transactions.forEach(tx => {
-                                                    if (tx.id && timeMapFromDom[tx.id]) {
-                                                        tx.creationDate = timeMapFromDom[tx.id];
+                                                    const originalCreation = tx.creationDate;
+                                                    if (tx.id && domData.timeMap[tx.id]) {
+                                                        tx.creationDate = domData.timeMap[tx.id];
+                                                        enrichedCount++;
+                                                        console.log(`[ActivityService] ✅ TX[${tx.id.slice(0, 20)}]: ${originalCreation} → ${tx.creationDate}`);
                                                     }
                                                 });
                                                 
-                                                const enrichedCount = Object.keys(timeMapFromDom).length;
-                                                if (enrichedCount > 0) {
-                                                    console.log(`[ActivityService] ✅ Enriquecidas ${enrichedCount}/${transactions.length} transacciones con creationDate del DOM`);
-                                                }
+                                                console.log(`[ActivityService] ✅ Enriquecidas ${enrichedCount}/${transactions.length} transacciones`);
                                             } catch (enrichErr) {
-                                                console.log(`[ActivityService] ⚠️  Error enriqueciendo creationDate: ${enrichErr.message}`);
+                                                console.log(`[ActivityService] ⚠️  Error enriqueciendo: ${enrichErr.message}`);
+                                                console.log('[ActivityService] Stack:', enrichErr.stack ? enrichErr.stack.slice(0, 200) : 'N/A');
                                             }
                                         }
                                     } catch (parseErr) {
