@@ -176,10 +176,10 @@ apply_filters() {
     # Si FILTER_IMPORT está activo, mostrar solo escrapeo para importaciones (en vivo, sin caché)
     if [ "$FILTER_IMPORT" = "1" ]; then
         awk '
-            /EN VIVO desde MP/ { flag_vivo=1 }
-            /INICIO DEL SCRAPING PARA IMPORTACIÓN/ { flag_import=1 }
-            (flag_import || flag_vivo) && /SCRAPER|PERÍODO BUSCADO|FIN DE ESCRAPEADO PARA IMPORTACIÓN|Petición:|ActivityService.*SCRAPER/ { print }
-            /FIN DE ESCRAPEADO PARA IMPORTACIÓN/ { flag_vivo=0; flag_import=0 }
+            /INICIO DEL SCRAPING PARA IMPORTACIÓN/ { flag_import=1; print; next }
+            /EN VIVO desde MP/ { flag_vivo=1; print; next }
+            (flag_import || flag_vivo) { print }
+            /FIN DE ESCRAPEADO PARA IMPORTACIÓN/ { print; flag_import=0; flag_vivo=0; next }
         '
         return
     fi
