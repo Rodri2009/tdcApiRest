@@ -15,6 +15,7 @@
 #   --mp              : filtra solo logs de Mercado Pago
 #   --wa              : filtra solo logs de WhatsApp
 #   --scraper, --spider : filtra solo logs de scraper ([🕷️  SCRAPER])
+#   --import          : filtra SOLO escrapeo para importaciones (EN VIVO + período)
 #   --activity        : filtra solo logs de [ActivityService]
 #   --debug           : filtra solo logs de DEBUG ([DEBUG])
 #
@@ -33,11 +34,11 @@
 #   ./log.sh --backend                 # Logs del backend en vivo
 #   ./log.sh --backend --follow        # Logs del backend (explícito follow)
 #   ./log.sh --backend --tail 50       # Últimas 50 líneas del backend
-#   ./log.sh --mariadb --no-follow     # Histórico de BD sin seguimiento
+#   ./log.sh --backend --import        # SOLO escrapeo para importaciones (en vivo)
+#   ./log.sh --backend --scraper       # Logs de scraping completos
+#   ./log.sh --backend --activity      # Logs de [ActivityService]
 #   ./log.sh --backend --mp            # Logs del backend filtrados solo MP
-#   ./log.sh --backend --wa            # Logs del backend filtrados solo WA
-#   ./log.sh --backend --mp --wa       # Logs de MP y WA juntos
-#   ./log.sh --backend -d              # Con debug (muestra comandos)
+#   ./log.sh --mariadb --no-follow     # Histórico de BD sin seguimiento
 #   ./log.sh --frontend --timestamps   # Logs nginx con timestamps
 ###############################################################################
 
@@ -66,6 +67,7 @@ SHOW_ALL=1
 FILTER_MP=0
 FILTER_WA=0
 FILTER_SCRAPER=0
+FILTER_IMPORT=0
 FILTER_ACTIVITY=0
 FILTER_DEBUG_LOGS=0
 FOLLOW_LOGS=1
@@ -92,6 +94,7 @@ ${BOLD}FLAGS DE FILTRADO:${NC}
   --mp              filtra solo logs de Mercado Pago
   --wa              filtra solo logs de WhatsApp
   --scraper, --spider filtra solo logs del scraper ([🕷️  SCRAPER])
+  --import          filtra SOLO escrapeo para importaciones (en vivo sin cache)
   --activity        filtra solo logs de [ActivityService]
   --debug           filtra solo logs de DEBUG
 
@@ -110,6 +113,7 @@ ${BOLD}EJEMPLOS:${NC}
   $0 --backend                    # Logs del backend
   $0 --backend --mp               # Logs del backend filtrados solo MP
   $0 --backend --scraper          # Logs de scraping del backend
+  $0 --backend --import           # SOLO escrapeo para importaciones (en vivo)
   $0 --backend --activity         # Logs de [ActivityService]
   $0 --backend --scraper --activity # Logs de SCRAPER y ActivityService
   $0 --mariadb --tail 50          # Últimas 50 líneas de MariaDB
@@ -164,8 +168,19 @@ check_container() {
 # Aplica filtros a los logs
 apply_filters() {
     # Si no hay filtros, mostrar todo
-    if [ "$FILTER_MP" = "0" ] && [ "$FILTER_WA" = "0" ] && [ "$FILTER_SCRAPER" = "0" ] && [ "$FILTER_ACTIVITY" = "0" ] && [ "$FILTER_DEBUG_LOGS" = "0" ]; then
+    if [ "$FILTER_MP" = "0" ] && [ "$FILTER_WA" = "0" ] && [ "$FILTER_SCRAPER" = "0" ] && [ "$FILTER_IMPORT" = "0" ] && [ "$FILTER_ACTIVITY" = "0" ] && [ "$FILTER_DEBUG_LOGS" = "0" ]; then
         cat
+        return
+    fi
+    
+    # Si FILTER_IMPORT está activo, mostrar solo escrapeo para importaciones (en vivo, sin caché)
+    if [ "$FILTER_IMPORT" = "1" ]; then
+        awk '
+            /EN VIVO desde MP/ { flag_vivo=1 }
+            /INICIO DEL SCRAPING PARA IMPORTACIÓN/ { flag_import=1 }
+            (flag_import || flag_vivo) && /SCRAPER|PERÍODO BUSCADO|FIN DE ESCRAPEADO PARA IMPORTACIÓN|Petición:|ActivityService.*SCRAPER/ { print }
+            /FIN DE ESCRAPEADO PARA IMPORTACIÓN/ { flag_vivo=0; flag_import=0 }
+        '
         return
     fi
     
@@ -308,6 +323,10 @@ while [ $# -gt 0 ]; do
             ;;
         --scraper|--spider)
             FILTER_SCRAPER=1
+            shift
+            ;;
+        --import)
+            FILTER_IMPORT=1
             shift
             ;;
         --activity)
