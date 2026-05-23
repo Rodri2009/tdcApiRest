@@ -133,25 +133,59 @@ async function scrapeActivity(page, verbose = true) {
                         if (flat.length > 0) {
                             // El JSON de window._n NO incluye la hora de cada movimiento.
                             // La hora real está en <time class="fuji-activities__date"> del DOM.
-                            // Extraemos todas en orden para cruzarlas por índice con los items.
-                            const domTimes = [];
+                            // MEJOR: Mapear por índice de grupo + índice en grupo, o por ID de transacción
+                            const timeMap = {};
                             try {
-                                document.querySelectorAll('time.fuji-activities__date').forEach(el => {
-                                    const iso = el.getAttribute('datetime'); // e.g. "2026-04-21"
-                                    const raw = (el.getAttribute('title') || el.textContent || '').trim(); // e.g. "10:28 hs"
-                                    const tm = raw.match(/(\d{1,2}):(\d{2})/);
-                                    let creationDate = null;
-                                    if (iso && tm) {
-                                        try {
-                                            const d = new Date(iso + 'T00:00:00');
-                                            d.setHours(Number(tm[1]), Number(tm[2]), 0, 0);
-                                            creationDate = d.toISOString();
-                                        } catch (e) { }
-                                    } else if (iso) {
-                                        creationDate = iso + 'T00:00:00.000Z';
+                                // Mapa: data-transaction-id → datetime
+                                document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]').forEach(timeEl => {
+                                    const li = timeEl.closest('li[data-transaction-id]');
+                                    if (li) {
+                                        const txId = li.getAttribute('data-transaction-id');
+                                        const iso = timeEl.getAttribute('datetime');
+                                        const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
+                                        const tm = raw.match(/(\d{1,2}):(\d{2})/);
+                                        let creationDate = null;
+                                        if (iso && tm) {
+                                            try {
+                                                // iso format: "2026-05-22" (Argentina date)
+                                                // tm: ["17:42", "17", "42"] (Argentina time)
+                                                // Create UTC date and set UTC hours (iso date at midnight UTC)
+                                                const d = new Date(iso + 'T00:00:00Z');
+                                                // Set UTC hours = Argentina time + 3 hour offset (UTC-3)
+                                                const argHour = Number(tm[1]) + 3;
+                                                const argMin = Number(tm[2]);
+                                                d.setUTCHours(argHour, argMin, 0, 0);
+                                                creationDate = d.toISOString();
+                                            } catch (e) { }
+                                        } else if (iso) {
+                                            creationDate = iso + 'T00:00:00.000Z';
+                                        }
+                                        if (txId && creationDate) {
+                                            timeMap[txId] = creationDate;
+                                        }
                                     }
-                                    domTimes.push(creationDate);
                                 });
+                                // Fallback: si no encontramos por ID, busca por posición
+                                if (Object.keys(timeMap).length === 0) {
+                                    document.querySelectorAll('time.fuji-activities__date, time[datetime]').forEach((timeEl, idx) => {
+                                        const iso = timeEl.getAttribute('datetime');
+                                        const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
+                                        const tm = raw.match(/(\d{1,2}):(\d{2})/);
+                                        let creationDate = null;
+                                        if (iso && tm) {
+                                            try {
+                                                const d = new Date(iso + 'T00:00:00Z');
+                                                const argHour = Number(tm[1]) + 3;
+                                                const argMin = Number(tm[2]);
+                                                d.setUTCHours(argHour, argMin, 0, 0);
+                                                creationDate = d.toISOString();
+                                            } catch (e) { }
+                                        } else if (iso) {
+                                            creationDate = iso + 'T00:00:00.000Z';
+                                        }
+                                        timeMap[idx] = creationDate;
+                                    });
+                                }
                             } catch (e) { }
 
                             return flat.map((item, idx) => {
@@ -165,6 +199,9 @@ async function scrapeActivity(page, verbose = true) {
                                 else if (cat === 'pays') normCategory = 'pays';
                                 else normCategory = cat || sub;
 
+                                // Try to get creationDate by ID first, then by index
+                                const timeByIdOrIdx = timeMap[item.id] || timeMap[idx] || null;
+
                                 return {
                                     id: item.id || `activity-${idx}`,
                                     title: item.title || item.description || '',
@@ -174,9 +211,8 @@ async function scrapeActivity(page, verbose = true) {
                                     currency: (item.amount && item.amount.currency_id) || 'ARS',
                                     symbol: (item.amount && item.amount.symbol) || '$',
                                     dateTime: item._groupDate || null,
-                                    // ISO datetime preciso del DOM (fecha + hora);
-                                    // parseDateTimeFromText lo usa con prioridad máxima
-                                    creationDate: domTimes[idx] || null,
+                                    // ISO datetime preciso del DOM (fecha + hora)
+                                    creationDate: timeByIdOrIdx,
                                     type: sub === 'in' ? 'income'
                                         : cat === 'pays' ? 'payment'
                                             : sub === 'out' ? 'transfer'
@@ -216,6 +252,11 @@ async function scrapeActivity(page, verbose = true) {
 
             if (transactions && transactions.length > 0) {
                 console.info('[ActivityService] Extracted %d structured activities from in-page object', transactions.length);
+                // Log sample transactions with their timestamps
+                console.log('[🕷️  SCRAPER] 📊 Sample de transacciones extraídas:');
+                transactions.slice(0, 5).forEach((tx, idx) => {
+                    console.log(`  [${idx}] ID: ${tx.id} | Tipo: ${tx.type} | Monto: ${tx.amount} | dateTime: ${tx.dateTime} | creationDate: ${tx.creationDate}`);
+                });
             } else {
                 // 2) STRATEGY 2: Fallback a DOM scraping (menos confiable pero parseable)
                 // Improved: be more selective to avoid date/filter selectors
@@ -976,19 +1017,19 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
         console.log(`[ActivityService] ═══════════════════════════════════════════`);
         console.log(`[ActivityService] • Transacciones extraídas: ${allTransactions.length}`);
         console.log(`[ActivityService] • Páginas paginadas: ${pageCount}`);
-        
+
         // ── DEDUPLICACIÓN GLOBAL ─────────────────────────────────────────────
         // Mercado Pago puede devolver transacciones duplicadas entre páginas
         // Usar timestamp + monto como clave para detectar duplicados
         const seenTransactions = new Map();
         const dedupedTransactions = [];
         let duplicateCount = 0;
-        
+
         allTransactions.forEach(tx => {
             const timestamp = tx.dateTime || tx.creationDate || 'unknown';
             const amount = tx.amount || 0;
             const key = `${timestamp}|${amount}`;
-            
+
             if (!seenTransactions.has(key)) {
                 seenTransactions.set(key, true);
                 dedupedTransactions.push(tx);
@@ -996,11 +1037,11 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
                 duplicateCount++;
             }
         });
-        
+
         if (duplicateCount > 0) {
             console.log(`[ActivityService] 🔄 Deduplicación: ${allTransactions.length} → ${dedupedTransactions.length} (eliminados ${duplicateCount} duplicados entre páginas)`);
         }
-        
+
         emit({
             type: 'scraping_done',
             total: dedupedTransactions.length,
