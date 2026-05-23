@@ -70,7 +70,7 @@ async function scrapeActivity(page, verbose = true) {
                                     ) + ']}';  // Close the array
 
                                     try {
-                                        // Parse as array of objects
+                        // Parse as array of objects
                                         const fullJson = '[' + chunk.substring(resultsStartIdx + 11, resultsEndIdx) + ']';
                                         const results = JSON.parse(fullJson);
 
@@ -92,6 +92,58 @@ async function scrapeActivity(page, verbose = true) {
                                             }));
                                             usedPlantilla = true;
                                             console.info('[ActivityService] Extracted %d structured activities from plantilla', transactions.length);
+                                            
+                                            // ✅ ENRICH WITH CREATION DATE FROM DOM immediately while page is still available
+                                            try {
+                                                const timeMapFromDom = await page.evaluate(() => {
+                                                    const ARGENTINA_UTC_OFFSET = 3;
+                                                    const timeMap = {};
+                                                    
+                                                    document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]').forEach(timeEl => {
+                                                        const li = timeEl.closest('li[data-transaction-id]');
+                                                        if (li) {
+                                                            const txId = li.getAttribute('data-transaction-id');
+                                                            const iso = timeEl.getAttribute('datetime');
+                                                            const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
+                                                            const tm = raw.match(/(\d{1,2}):(\d{2})/);
+                                                            let creationDate = null;
+                                                            
+                                                            if (iso && tm) {
+                                                                try {
+                                                                    const d = new Date(iso + 'T00:00:00Z');
+                                                                    const displayHour = Number(tm[1]);
+                                                                    const displayMin = Number(tm[2]);
+                                                                    const utcHour = displayHour + ARGENTINA_UTC_OFFSET;
+                                                                    d.setUTCHours(utcHour, displayMin, 0, 0);
+                                                                    creationDate = d.toISOString();
+                                                                } catch (e) { }
+                                                            } else if (iso) {
+                                                                creationDate = iso + 'T00:00:00.000Z';
+                                                            }
+                                                            
+                                                            if (txId && creationDate) {
+                                                                timeMap[txId] = creationDate;
+                                                            }
+                                                        }
+                                                    });
+                                                    
+                                                    return timeMap;
+                                                });
+                                                
+                                                // Update transactions with creationDate from DOM
+                                                transactions.forEach(tx => {
+                                                    if (tx.id && timeMapFromDom[tx.id]) {
+                                                        tx.creationDate = timeMapFromDom[tx.id];
+                                                    }
+                                                });
+                                                
+                                                const enrichedCount = Object.keys(timeMapFromDom).length;
+                                                if (enrichedCount > 0) {
+                                                    console.log(`[ActivityService] ✅ Enriquecidas ${enrichedCount}/${transactions.length} transacciones con creationDate del DOM`);
+                                                }
+                                            } catch (enrichErr) {
+                                                console.log(`[ActivityService] ⚠️  Error enriqueciendo creationDate: ${enrichErr.message}`);
+                                            }
                                         }
                                     } catch (parseErr) {
                                         console.debug('[ActivityService] Failed to parse plantilla results:', parseErr.message);
@@ -706,58 +758,8 @@ async function scrapeActivity(page, verbose = true) {
 
         // If we used plantilla (STRATEGY 0), enrich with creationDate from DOM
         // since plantilla doesn't have precise timestamps
-        if (usedPlantilla && transactions && Array.isArray(transactions)) {
-            console.log('[🕷️  SCRAPER] 🔧 Enriqueciendo transacciones de plantilla con creationDate del DOM...');
-            try {
-                const timeMapFromDom = await page.evaluate(() => {
-                    const ARGENTINA_UTC_OFFSET = 3;
-                    const timeMap = {};
-                    
-                    // Extract time from DOM for each transaction
-                    document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]').forEach(timeEl => {
-                        const li = timeEl.closest('li[data-transaction-id]');
-                        if (li) {
-                            const txId = li.getAttribute('data-transaction-id');
-                            const iso = timeEl.getAttribute('datetime');
-                            const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
-                            const tm = raw.match(/(\d{1,2}):(\d{2})/);
-                            let creationDate = null;
-                            
-                            if (iso && tm) {
-                                try {
-                                    const d = new Date(iso + 'T00:00:00Z');
-                                    const displayHour = Number(tm[1]);
-                                    const displayMin = Number(tm[2]);
-                                    const utcHour = displayHour + ARGENTINA_UTC_OFFSET;
-                                    d.setUTCHours(utcHour, displayMin, 0, 0);
-                                    creationDate = d.toISOString();
-                                } catch (e) { }
-                            } else if (iso) {
-                                creationDate = iso + 'T00:00:00.000Z';
-                            }
-                            
-                            if (txId && creationDate) {
-                                timeMap[txId] = creationDate;
-                            }
-                        }
-                    });
-                    
-                    return timeMap;
-                });
-                
-                // Enrich transactions with creationDate from DOM
-                transactions.forEach(tx => {
-                    if (tx.id && timeMapFromDom[tx.id] && !tx.creationDate) {
-                        tx.creationDate = timeMapFromDom[tx.id];
-                        console.log(`[🕷️  SCRAPER] ✅ Enriquecido TX ${tx.id.slice(0, 20)}: creationDate = ${tx.creationDate}`);
-                    }
-                });
-                
-                console.log(`[🕷️  SCRAPER] 🔧 Enriquecimiento completado: ${Object.keys(timeMapFromDom).length} timestamps del DOM`);
-            } catch (e) {
-                console.log(`[🕷️  SCRAPER] ⚠️  Error enriqueciendo con creationDate: ${e.message}`);
-            }
-        }
+        // NOTE: This enrichment happens INSIDE page.evaluate() via STRATEGY 0 modification
+        // The transactions object should already have creationDate if DOM extraction was successful
 
         console.log(`[ActivityService] Scraped ${transactions.length} transactions, ${withAmount.length} with significant amount, deduplicated to ${deduplicated.length}`);
 
