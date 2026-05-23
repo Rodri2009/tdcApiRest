@@ -19,14 +19,19 @@ async function scrapeActivity(page, verbose = true) {
             throw new Error(`URL validation failed: ${urlValidation.reason}`);
         }
 
-        // STRATEGY 0: Intenta plantilla PRIMERO (datos más confiables cuando las plantillas están well-formed)
+        // STRATEGY 0: Try reading cached plantilla file (DISABLED)
+        // ⚠️  DISABLED: Plantilla has stale/incorrect timestamps and requires complex enrichment
+        // STRATEGY 1 (page.evaluate) provides correct Argentina timezone conversion via DOM extraction
         let transactions = null;
         let usedPlantilla = false;
+        
+        const ENABLE_PLANTILLA_STRATEGY = false; // Disabled - use STRATEGY 1 instead for accurate timestamps
 
-        try {
-            const fs = require('fs');
-            const path = require('path');
-            const plantillaDir = path.resolve(__dirname, '..', '..', 'plantillas');
+        if (ENABLE_PLANTILLA_STRATEGY) {
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const plantillaDir = path.resolve(__dirname, '..', '..', 'plantillas');
 
             if (fs.existsSync(plantillaDir)) {
                 const files = await fs.promises.readdir(plantillaDir);
@@ -182,6 +187,7 @@ async function scrapeActivity(page, verbose = true) {
         } catch (e) {
             console.debug('[ActivityService] Plantilla strategy failed:', e.message);
         }
+        } // END ENABLE_PLANTILLA_STRATEGY if block
 
         // STRATEGY 1: If plantilla failed, try window._n in-page structured data
         // Supports both new API (pageProps.listData.groups) and old API (pageProps.activities.results)
