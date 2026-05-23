@@ -301,8 +301,8 @@ try {
 
     app.use('/api/solicitudes', solicitudesRoutes);
     app.use('/api/test', testRoutes);
-    app.use('/api/auth', authRoutes);
-    app.use('/api/auth/oauth', oauthRoutes); // NUEVO: OAuth endpoint
+    app.use('/api/auth', authRoutes);  // ⚠️ IMPORTANTE: Registrar ANTES de /api/auth/oauth
+    app.use('/api/auth/oauth', oauthRoutes); // NUEVO: OAuth endpoint - Registrar DESPUÉS de /api/auth
     app.use('/api/admin', adminRoutes);
 
     // NUEVAS RUTAS (refactored 3NF)
