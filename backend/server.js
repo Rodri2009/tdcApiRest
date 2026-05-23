@@ -457,6 +457,7 @@ async function startServer() {
 
                 } catch (err) {
                     logError('[PUPPETEER-MP] Error al inicializar:', err.message);
+                    logError('[PUPPETEER-MP] Stack trace:', err.stack);
                     logWarning('[PUPPETEER-MP] ⚠️  Mercado Pago continuará deshabilitado hasta reinicio');
                     mpBrowser = null;
                     mpPage = null;
