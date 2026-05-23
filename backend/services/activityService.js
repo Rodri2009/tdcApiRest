@@ -173,6 +173,12 @@ async function scrapeActivity(page, verbose = true) {
                                     }
                                 });
                                 console.log(`[🕷️  SCRAPER] ⏰ Times found by ID: ${Object.keys(timeMap).length}`);
+                                if (Object.keys(timeMap).length > 0) {
+                                    const samples = Object.entries(timeMap).slice(0, 3);
+                                    samples.forEach(([id, dt]) => {
+                                        console.log(`[🕷️  SCRAPER]   Sample: ID=${id.slice(0, 20)} → ${dt}`);
+                                    });
+                                }
                                 // Fallback: si no encontramos por ID, busca por posición
                                 if (Object.keys(timeMap).length === 0) {
                                     console.log(`[🕷️  SCRAPER] ⏰ Fallback to position-based mapping...`);
@@ -214,6 +220,10 @@ async function scrapeActivity(page, verbose = true) {
 
                                 // Try to get creationDate by ID first, then by index
                                 const timeByIdOrIdx = timeMap[item.id] || timeMap[idx] || null;
+                                
+                                if (idx < 3) {
+                                    console.log(`[🕷️  SCRAPER] 🔍 Item ${idx}: ID=${item.id.slice(0, 30)} creationDate=${timeByIdOrIdx}`);
+                                }
 
                                 return {
                                     id: item.id || `activity-${idx}`,
