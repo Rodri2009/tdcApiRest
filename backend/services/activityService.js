@@ -115,6 +115,7 @@ async function scrapeActivity(page, verbose = true) {
         // STRATEGY 1: If plantilla failed, try window._n in-page structured data
         // Supports both new API (pageProps.listData.groups) and old API (pageProps.activities.results)
         if (!transactions || transactions.length === 0) {
+            console.log('[🕷️  SCRAPER] 🔍 Iniciando STRATEGY 1: Extracción en-page JSON...');
             transactions = await page.evaluate(() => {
                 try {
                     const appProps = window._n?.ctx?.r?.appProps;
@@ -134,6 +135,7 @@ async function scrapeActivity(page, verbose = true) {
                             // El JSON de window._n NO incluye la hora de cada movimiento.
                             // La hora real está en <time class="fuji-activities__date"> del DOM.
                             // CRITICAL FIX: Detectar la zona horaria del navegador para conversiones correctas
+                            console.log(`[🕷️  SCRAPER] 📊 Flat items from JSON: ${flat.length}, mapping times...`);
                             const timeMap = {};
                             try {
                                 // Detectar offset de zona horaria del navegador (en minutos)
@@ -173,10 +175,12 @@ async function scrapeActivity(page, verbose = true) {
                                         }
                                     }
                                 });
+                                console.log(`[🕷️  SCRAPER] ⏰ Times found by ID: ${Object.keys(timeMap).length}`);
                                 // Fallback: si no encontramos por ID, busca por posición
                                 if (Object.keys(timeMap).length === 0) {
                                     const browserTzOffsetMinutes = new Date().getTimezoneOffset();
                                     const tzCorrectionHours = browserTzOffsetMinutes / 60;
+                                    console.log(`[🕷️  SCRAPER] ⏰ Fallback to position-based mapping...`);
                                     document.querySelectorAll('time.fuji-activities__date, time[datetime]').forEach((timeEl, idx) => {
                                         const iso = timeEl.getAttribute('datetime');
                                         const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
@@ -196,8 +200,11 @@ async function scrapeActivity(page, verbose = true) {
                                         }
                                         timeMap[idx] = creationDate;
                                     });
+                                    console.log(`[🕷️  SCRAPER] ⏰ Times found by position: ${Object.keys(timeMap).length}`);
                                 }
-                            } catch (e) { }
+                            } catch (e) { 
+                                console.log(`[🕷️  SCRAPER] ❌ Time mapping error: ${e.message}`);
+                            }
 
                             return flat.map((item, idx) => {
                                 // Derive a sign-aware category for the normalizer:
@@ -262,13 +269,15 @@ async function scrapeActivity(page, verbose = true) {
             });
 
             if (transactions && transactions.length > 0) {
-                console.info('[ActivityService] Extracted %d structured activities from in-page object', transactions.length);
+                console.info('[ActivityService] ✅ STRATEGY 1 exitosa: Extracted %d structured activities from in-page object', transactions.length);
                 // Log sample transactions with their timestamps
                 console.log('[🕷️  SCRAPER] 📊 Sample de transacciones extraídas:');
                 transactions.slice(0, 5).forEach((tx, idx) => {
                     console.log(`  [${idx}] ID: ${tx.id} | Tipo: ${tx.type} | Monto: ${tx.amount} | dateTime: ${tx.dateTime} | creationDate: ${tx.creationDate}`);
                 });
+                console.log(`[🕷️  SCRAPER] 📊 Total extracted: ${transactions.length} (first 5 shown above)`);
             } else {
+                console.log('[🕷️  SCRAPER] ⚠️  Strategy 1 (in-page JSON) returned 0 transactions, trying fallback...');
                 // 2) STRATEGY 2: Fallback a DOM scraping (menos confiable pero parseable)
                 // Improved: be more selective to avoid date/filter selectors
                 transactions = await page.evaluate(() => {
@@ -372,8 +381,16 @@ async function scrapeActivity(page, verbose = true) {
                     return items;
                 });
 
-                if (transactions.length > 0) {
-                    console.info('[ActivityService] Extracted %d transactions from DOM (fallback)', transactions.length);
+                if (transactions && transactions.length > 0) {
+                    console.info('[ActivityService] ✅ STRATEGY 2 exitosa: Extracted %d transactions from DOM (fallback)', transactions.length);
+                    console.log('[🕷️  SCRAPER] 📊 Sample de transacciones extraídas (DOM):');
+                    transactions.slice(0, 5).forEach((tx, idx) => {
+                        console.log(`  [${idx}] ID: ${tx.id} | Tipo: ${tx.type} | Monto: ${tx.amount}`);
+                    });
+                    console.log(`[🕷️  SCRAPER] 📊 Total extracted: ${transactions.length} (first 5 shown above)`);
+                } else {
+                    console.log('[🕷️  SCRAPER] ❌ Strategy 2 también falló: 0 transacciones extraídas');
+                    transactions = [];
                 }
             }
         }
