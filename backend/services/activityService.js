@@ -366,7 +366,7 @@ async function scrapeActivity(page, verbose = true) {
                     // Adjust date if hour went negative
                     if (d.getUTCHours() < 3) {
                         const prev = new Date(d.getTime() - 3 * 60 * 60 * 1000);
-                        return `${String(prev.getUTCDate()).padStart(2,'0')}/${String(prev.getUTCMonth()+1).padStart(2,'0')} ${argH}:${argM} ARG`;
+                        return `${String(prev.getUTCDate()).padStart(2, '0')}/${String(prev.getUTCMonth() + 1).padStart(2, '0')} ${argH}:${argM} ARG`;
                     }
                     return `${argD}/${argMo} ${argH}:${argM} ARG`;
                 } catch (e) { return isoUtc; }
@@ -380,7 +380,7 @@ async function scrapeActivity(page, verbose = true) {
                     const type = tx.type || tx.category || '';
                     const typeStr = type ? ` (${type})` : '';
                     const sign = (tx.amount || 0) < 0 ? '' : '+';
-                    const absAmt = Math.abs(tx.amount || 0).toLocaleString('es-AR', {minimumFractionDigits: 0});
+                    const absAmt = Math.abs(tx.amount || 0).toLocaleString('es-AR', { minimumFractionDigits: 0 });
                     console.log(`[🕷️  SCRAPER] ${idx + 1} ${dateStr} ${(tx.title || 'sin nombre').substring(0, 40).padEnd(40)} ${typeStr}  $${sign}${absAmt}`);
                 });
             };
@@ -814,7 +814,7 @@ async function scrapeActivity(page, verbose = true) {
                     const d = new Date(iso);
                     const h = (d.getUTCHours() - 3 + 24) % 24;
                     const adjusted = d.getUTCHours() < 3 ? new Date(d.getTime() - 3 * 3600000) : d;
-                    return `${String(adjusted.getUTCDate()).padStart(2,'0')}/${String(adjusted.getUTCMonth()+1).padStart(2,'0')} ${String(h).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')} ARG`;
+                    return `${String(adjusted.getUTCDate()).padStart(2, '0')}/${String(adjusted.getUTCMonth() + 1).padStart(2, '0')} ${String(h).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} ARG`;
                 } catch (e) { return iso; }
             };
             console.log(`[🕷️  SCRAPER] ┌── RESULTADO FINAL (hora Argentina = lo que ves en MP) ──`);
@@ -824,7 +824,7 @@ async function scrapeActivity(page, verbose = true) {
                 const formatted = absAmt.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
                 const amt = `$${sign}${formatted}`;
                 const name = (tx.title || 'sin título').substring(0, 32);
-                console.log(`[🕷️  SCRAPER] │ [${String(idx+1).padStart(2)}] ${toArg(tx.creationDate || tx.dateTime)} | ${name.padEnd(32)} | ${amt}`);
+                console.log(`[🕷️  SCRAPER] │ [${String(idx + 1).padStart(2)}] ${toArg(tx.creationDate || tx.dateTime)} | ${name.padEnd(32)} | ${amt}`);
             });
             console.log(`[🕷️  SCRAPER] └── ${deduplicated.length} transacciones totales ───────────────`);
         }
@@ -957,7 +957,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
 
         while (hasNextPage && pageCount < maxPages) {
             pageCount++;
-            console.log(`\n[🕷️  SCRAPER] Página ${pageCount}`);
+            console.log(`\n[🕷️  SCRAPER] ═══ INICIO DE EXTRACCIÓN PÁGINA ${pageCount} ═══`);
             emit({ type: 'page_start', page: pageCount, maxPages });
 
             // ANTES: Obtener count de elementos para detectar si se refrescan
@@ -988,10 +988,13 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                     // ── DETECCIÓN DE PÁGINA DUPLICADA ────────────────────────────────
                     // Si la página tiene el mismo contenido que la anterior, MP nos
                     // redirigió al inicio (el freeze no pudo evitar la navegación).
+                    // Usar 10 primeros items para fingerprint más robusta
                     const fingerprint = pageResult.transactions
-                        .slice(0, 5)
+                        .slice(0, 10)
                         .map(tx => `${tx.dateTime || tx.creationDate || ''}|${tx.title || tx.description || ''}|${tx.amount}`)
                         .join(';');
+
+                    console.log(`[ActivityService] 🔍 Fingerprint de página ${pageCount}: ${fingerprint.slice(0, 80)}...`);
 
                     if (prevPageFingerprint !== null && fingerprint === prevPageFingerprint) {
                         console.warn(`[ActivityService] 🔁 PÁGINA DUPLICADA detectada en página ${pageCount} — MP redirigió al inicio. Abortando.`);
@@ -1004,6 +1007,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                         // Quitar las transacciones de esta página (son duplicadas)
                         // NO las agregamos a allTransactions
                     } else {
+                        console.log(`[ActivityService] ✅ Página ${pageCount} contiene datos NUEVOS (diferentes a anterior)`);
                         prevPageFingerprint = fingerprint;
                         allTransactions = allTransactions.concat(pageResult.transactions);
                         // Verificar si el período buscado está en esta página
@@ -1125,27 +1129,38 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                             }
 
                             // Hacer el click
+                            console.log(`[ActivityService] 🖱️  Click en "Siguiente" ejecutado`);
                             await nextButton.click();
 
                             // Esperar (AUMENTADO a 3 segundos para que MPs refresh completo se termine)
-                            console.log('[ActivityService] ⏳ Esperando 3s para estabilización...');
+                            console.log('[ActivityService] ⏳ Esperando 3s para estabilización de página...');
                             await page.waitForTimeout(3000);
 
                             // Verificar si el contenido cambió
                             let firstItemAfter = null;
-                            let contentChanged = true;
+                            let contentChanged = false;
                             try {
                                 firstItemAfter = await page.evaluate(() => {
                                     const items = document.querySelectorAll('li.ui-rowfeed-container, [data-testid="transaction-item"]');
                                     return items.length > 0 ? items[0].textContent.slice(0, 40) : null;
                                 });
 
-                                if (firstItemBefore === firstItemAfter && firstItemBefore) {
-                                    console.warn(`[ActivityService] ⚠️  Contenido NO cambió (mismo primer item)`);
+                                // Verificar si realmente cambió el contenido
+                                if (firstItemBefore === firstItemAfter) {
+                                    // Contenido no cambió
+                                    if (firstItemBefore === null && firstItemAfter === null) {
+                                        console.warn(`[ActivityService] ⚠️  Ambos NULL en intento ${retryCount + 1}: página probablemente no cargó`);
+                                    } else {
+                                        console.warn(`[ActivityService] ⚠️  CONTENIDO NO CAMBIÓ en intento ${retryCount + 1}: "${firstItemBefore.slice(0, 20)}"`);
+                                    }
                                     contentChanged = false;
                                     retryCount++;
                                 } else {
-                                    console.log(`[ActivityService] ✓ Contenido CAMBIÓ, nueva página cargada`);
+                                    // Contenido cambió
+                                    console.log(`[ActivityService] ✅ CONTENIDO CAMBIÓ detectado:`);
+                                    console.log(`[ActivityService]    ANTES: "${firstItemBefore ? firstItemBefore.slice(0, 20) : 'NULL'}"`);
+                                    console.log(`[ActivityService]    DESPUÉS: "${firstItemAfter ? firstItemAfter.slice(0, 20) : 'NULL'}"`);
+                                    contentChanged = true;
                                     clickSuccessful = true;
                                 }
                             } catch (err) {
@@ -1191,7 +1206,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
             }
 
             if (retryCount >= maxRetries) {
-                console.warn(`[ActivityService] ⚠️  MAX REINTENTOS alcanzados en página ${pageCount} → deteniendo`);
+                console.warn(`[ActivityService] ⚠️  MAX REINTENTOS (${maxRetries}) alcanzados en página ${pageCount} → deteniendo`);
                 hasNextPage = false;
             }
 
@@ -1200,6 +1215,8 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                 console.log(`[ActivityService] ⚠️  LÍMITE de ${maxPages} páginas alcanzado`);
                 hasNextPage = false;
             }
+
+            console.log(`[🕷️  SCRAPER] ═══ FIN DE EXTRACCIÓN PÁGINA ${pageCount} ═══\n`);
         }
 
         console.log(`\n[🕷️  SCRAPER] ╔════════════════════════════════════════╗`);
