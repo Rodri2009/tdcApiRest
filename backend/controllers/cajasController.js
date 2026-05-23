@@ -1117,17 +1117,7 @@ async function importarAutoStream(req, res) {
             send(event);
             // Loguear las transacciones en el backend también (no sólo enviarlas al cliente)
             if (event.type === 'page_done' && event.transactions && Array.isArray(event.transactions)) {
-                console.log(`[🕷️  SCRAPER] ━━━ Página ${event.page}/${event.total || '?'} ━━━`);
-                console.log(`[🕷️  SCRAPER] 📄 Página ${event.page}: ${event.count} transacciones (total: ${event.total})`);
-                event.transactions.forEach(tx => {
-                    if (tx) {
-                        const fecha = tx.dateTime ? new Date(tx.dateTime).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) : '?';
-                        const hora = tx.dateTime ? new Date(tx.dateTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: true }) : '?';
-                        const monto = typeof tx.amount === 'string' ? tx.amount : (tx.amount ? `$${tx.amount}` : '?');
-                        const title = (tx.title || 'sin descripción').substring(0, 40);
-                        console.log(`[🕷️  SCRAPER] ↳ ${fecha}, ${hora} | ${title} | ${monto}`);
-                    }
-                });
+                console.log(`[🕷️  SCRAPER] ━━━ Página ${event.page} completada: ${event.count} txs (total acumulado: ${event.total}) ━━━`);
             }
         });
 

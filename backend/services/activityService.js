@@ -24,7 +24,7 @@ async function scrapeActivity(page, verbose = true) {
         // STRATEGY 1 (page.evaluate) provides correct Argentina timezone conversion via DOM extraction
         let transactions = null;
         let usedPlantilla = false;
-        
+
         const ENABLE_PLANTILLA_STRATEGY = false; // Disabled - use STRATEGY 1 instead for accurate timestamps
 
         if (ENABLE_PLANTILLA_STRATEGY) {
@@ -33,160 +33,160 @@ async function scrapeActivity(page, verbose = true) {
                 const path = require('path');
                 const plantillaDir = path.resolve(__dirname, '..', '..', 'plantillas');
 
-            if (fs.existsSync(plantillaDir)) {
-                const files = await fs.promises.readdir(plantillaDir);
-                const candidates = files.filter(f => /activities/i.test(f));
+                if (fs.existsSync(plantillaDir)) {
+                    const files = await fs.promises.readdir(plantillaDir);
+                    const candidates = files.filter(f => /activities/i.test(f));
 
-                if (candidates.length > 0) {
-                    // elegir el más reciente
-                    let chosen = candidates[0];
-                    let chosenMtime = 0;
-                    for (const fname of candidates) {
-                        try {
-                            const st = await fs.promises.stat(path.join(plantillaDir, fname));
-                            if ((st.mtimeMs || 0) > chosenMtime) {
-                                chosen = fname;
-                                chosenMtime = st.mtimeMs || 0;
-                            }
-                        } catch (e) { }
-                    }
-
-                    try {
-                        const content = await fs.promises.readFile(path.join(plantillaDir, chosen), 'utf8');
-
-                        // Simple approach: find activities object start and extract large chunk
-                        const activStart = content.indexOf('{"isFetching":false');
-                        if (activStart >= 0) {
+                    if (candidates.length > 0) {
+                        // elegir el más reciente
+                        let chosen = candidates[0];
+                        let chosenMtime = 0;
+                        for (const fname of candidates) {
                             try {
-                                // Extract a very large chunk
-                                const chunkSize = 300000;
-                                const chunk = content.substring(activStart, Math.min(activStart + chunkSize, content.length));
+                                const st = await fs.promises.stat(path.join(plantillaDir, fname));
+                                if ((st.mtimeMs || 0) > chosenMtime) {
+                                    chosen = fname;
+                                    chosenMtime = st.mtimeMs || 0;
+                                }
+                            } catch (e) { }
+                        }
 
-                                // Simple regex to find results wrap: just match "results":[... and get everything u until ]}
-                                // Use a more lenient regex that captures multiple objects
-                                const resultsStartIdx = chunk.indexOf('"results":[');
-                                const resultsEndIdx = chunk.lastIndexOf(']}'); // Get the LAST ]} which closes the array
+                        try {
+                            const content = await fs.promises.readFile(path.join(plantillaDir, chosen), 'utf8');
 
-                                if (resultsStartIdx >= 0 && resultsEndIdx > resultsStartIdx) {
-                                    // Extract from results to ]}
-                                    const resultsStr = chunk.substring(
-                                        resultsStartIdx + 11,  // Skip '"results":[' 
-                                        resultsEndIdx         // Up to ]}
-                                    ) + ']}';  // Close the array
+                            // Simple approach: find activities object start and extract large chunk
+                            const activStart = content.indexOf('{"isFetching":false');
+                            if (activStart >= 0) {
+                                try {
+                                    // Extract a very large chunk
+                                    const chunkSize = 300000;
+                                    const chunk = content.substring(activStart, Math.min(activStart + chunkSize, content.length));
 
-                                    try {
-                        // Parse as array of objects
-                                        const fullJson = '[' + chunk.substring(resultsStartIdx + 11, resultsEndIdx) + ']';
-                                        const results = JSON.parse(fullJson);
+                                    // Simple regex to find results wrap: just match "results":[... and get everything u until ]}
+                                    // Use a more lenient regex that captures multiple objects
+                                    const resultsStartIdx = chunk.indexOf('"results":[');
+                                    const resultsEndIdx = chunk.lastIndexOf(']}'); // Get the LAST ]} which closes the array
 
-                                        if (Array.isArray(results) && results.length > 0) {
-                                            transactions = results.map((item, idx) => ({
-                                                id: item.id || `activity-${idx}`,
-                                                title: item.title || item.description || '',
-                                                category: item.category || item.subCategory || '',
-                                                description: item.description || '',
-                                                amount: item.amount ? item.amount.fraction : null,
-                                                currency: item.amount ? item.amount.currency_id : 'ARS',
-                                                symbol: item.amount ? item.amount.symbol : '$',
-                                                dateTime: item.grouperDate?.value || item.creationDate || null,
-                                                creationDate: item.creationDate || null,
-                                                type: item.entity || (item.category === 'transfers' ? 'transfer' : item.category),
-                                                raw: JSON.stringify(item).slice(0, 300),
-                                                _isStructured: true,
-                                                _source: 'plantilla'
-                                            }));
-                                            usedPlantilla = true;
-                                            console.info('[ActivityService] Extracted %d structured activities from plantilla', transactions.length);
-                                            
-                                            // ✅ ENRICH WITH CREATION DATE FROM DOM immediately while page is still available
-                                            try {
-                                                console.log('[ActivityService] 🔍 Iniciando enriquecimiento: buscando elementos time en DOM...');
-                                                const domData = await page.evaluate(() => {
-                                                    const ARGENTINA_UTC_OFFSET = 3;
-                                                    const allTimeElements = Array.from(document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]'));
-                                                    console.log('[DOM] Total time elements encontrados:', allTimeElements.length);
-                                                    
-                                                    const timeMap = {};
-                                                    const debugInfo = [];
-                                                    
-                                                    allTimeElements.forEach(timeEl => {
-                                                        const li = timeEl.closest('li[data-transaction-id]');
-                                                        if (li) {
-                                                            const txId = li.getAttribute('data-transaction-id');
-                                                            const iso = timeEl.getAttribute('datetime');
-                                                            const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
-                                                            const tm = raw.match(/(\d{1,2}):(\d{2})/);
-                                                            let creationDate = null;
-                                                            
-                                                            debugInfo.push({
-                                                                txId: txId ? txId.slice(0, 20) : 'NO-ID',
-                                                                iso: iso ? iso.slice(0, 10) : 'NO-ISO',
-                                                                raw: raw.slice(0, 20),
-                                                                tm: tm ? `${tm[1]}:${tm[2]}` : 'NO-MATCH'
-                                                            });
-                                                            
-                                                            if (iso && tm) {
-                                                                try {
-                                                                    const d = new Date(iso + 'T00:00:00Z');
-                                                                    const displayHour = Number(tm[1]);
-                                                                    const displayMin = Number(tm[2]);
-                                                                    const utcHour = displayHour + ARGENTINA_UTC_OFFSET;
-                                                                    d.setUTCHours(utcHour, displayMin, 0, 0);
-                                                                    creationDate = d.toISOString();
-                                                                } catch (e) { }
-                                                            } else if (iso) {
-                                                                creationDate = iso + 'T00:00:00.000Z';
+                                    if (resultsStartIdx >= 0 && resultsEndIdx > resultsStartIdx) {
+                                        // Extract from results to ]}
+                                        const resultsStr = chunk.substring(
+                                            resultsStartIdx + 11,  // Skip '"results":[' 
+                                            resultsEndIdx         // Up to ]}
+                                        ) + ']}';  // Close the array
+
+                                        try {
+                                            // Parse as array of objects
+                                            const fullJson = '[' + chunk.substring(resultsStartIdx + 11, resultsEndIdx) + ']';
+                                            const results = JSON.parse(fullJson);
+
+                                            if (Array.isArray(results) && results.length > 0) {
+                                                transactions = results.map((item, idx) => ({
+                                                    id: item.id || `activity-${idx}`,
+                                                    title: item.title || item.description || '',
+                                                    category: item.category || item.subCategory || '',
+                                                    description: item.description || '',
+                                                    amount: item.amount ? item.amount.fraction : null,
+                                                    currency: item.amount ? item.amount.currency_id : 'ARS',
+                                                    symbol: item.amount ? item.amount.symbol : '$',
+                                                    dateTime: item.grouperDate?.value || item.creationDate || null,
+                                                    creationDate: item.creationDate || null,
+                                                    type: item.entity || (item.category === 'transfers' ? 'transfer' : item.category),
+                                                    raw: JSON.stringify(item).slice(0, 300),
+                                                    _isStructured: true,
+                                                    _source: 'plantilla'
+                                                }));
+                                                usedPlantilla = true;
+                                                console.info('[ActivityService] Extracted %d structured activities from plantilla', transactions.length);
+
+                                                // ✅ ENRICH WITH CREATION DATE FROM DOM immediately while page is still available
+                                                try {
+                                                    console.log('[ActivityService] 🔍 Iniciando enriquecimiento: buscando elementos time en DOM...');
+                                                    const domData = await page.evaluate(() => {
+                                                        const ARGENTINA_UTC_OFFSET = 3;
+                                                        const allTimeElements = Array.from(document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]'));
+                                                        console.log('[DOM] Total time elements encontrados:', allTimeElements.length);
+
+                                                        const timeMap = {};
+                                                        const debugInfo = [];
+
+                                                        allTimeElements.forEach(timeEl => {
+                                                            const li = timeEl.closest('li[data-transaction-id]');
+                                                            if (li) {
+                                                                const txId = li.getAttribute('data-transaction-id');
+                                                                const iso = timeEl.getAttribute('datetime');
+                                                                const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
+                                                                const tm = raw.match(/(\d{1,2}):(\d{2})/);
+                                                                let creationDate = null;
+
+                                                                debugInfo.push({
+                                                                    txId: txId ? txId.slice(0, 20) : 'NO-ID',
+                                                                    iso: iso ? iso.slice(0, 10) : 'NO-ISO',
+                                                                    raw: raw.slice(0, 20),
+                                                                    tm: tm ? `${tm[1]}:${tm[2]}` : 'NO-MATCH'
+                                                                });
+
+                                                                if (iso && tm) {
+                                                                    try {
+                                                                        const d = new Date(iso + 'T00:00:00Z');
+                                                                        const displayHour = Number(tm[1]);
+                                                                        const displayMin = Number(tm[2]);
+                                                                        const utcHour = displayHour + ARGENTINA_UTC_OFFSET;
+                                                                        d.setUTCHours(utcHour, displayMin, 0, 0);
+                                                                        creationDate = d.toISOString();
+                                                                    } catch (e) { }
+                                                                } else if (iso) {
+                                                                    creationDate = iso + 'T00:00:00.000Z';
+                                                                }
+
+                                                                if (txId && creationDate) {
+                                                                    timeMap[txId] = creationDate;
+                                                                }
                                                             }
-                                                            
-                                                            if (txId && creationDate) {
-                                                                timeMap[txId] = creationDate;
-                                                            }
+                                                        });
+
+                                                        return { timeMap, debugInfo };
+                                                    });
+
+                                                    console.log('[ActivityService] 🔍 DOM data encontrado:', {
+                                                        mappedCount: Object.keys(domData.timeMap).length,
+                                                        debugSample: domData.debugInfo.slice(0, 3)
+                                                    });
+
+                                                    // Update transactions with creationDate from DOM
+                                                    let enrichedCount = 0;
+                                                    transactions.forEach(tx => {
+                                                        const originalCreation = tx.creationDate;
+                                                        if (tx.id && domData.timeMap[tx.id]) {
+                                                            tx.creationDate = domData.timeMap[tx.id];
+                                                            enrichedCount++;
+                                                            console.log(`[ActivityService] ✅ TX[${tx.id.slice(0, 20)}]: ${originalCreation} → ${tx.creationDate}`);
                                                         }
                                                     });
-                                                    
-                                                    return { timeMap, debugInfo };
-                                                });
-                                                
-                                                console.log('[ActivityService] 🔍 DOM data encontrado:', {
-                                                    mappedCount: Object.keys(domData.timeMap).length,
-                                                    debugSample: domData.debugInfo.slice(0, 3)
-                                                });
-                                                
-                                                // Update transactions with creationDate from DOM
-                                                let enrichedCount = 0;
-                                                transactions.forEach(tx => {
-                                                    const originalCreation = tx.creationDate;
-                                                    if (tx.id && domData.timeMap[tx.id]) {
-                                                        tx.creationDate = domData.timeMap[tx.id];
-                                                        enrichedCount++;
-                                                        console.log(`[ActivityService] ✅ TX[${tx.id.slice(0, 20)}]: ${originalCreation} → ${tx.creationDate}`);
-                                                    }
-                                                });
-                                                
-                                                console.log(`[ActivityService] ✅ Enriquecidas ${enrichedCount}/${transactions.length} transacciones`);
-                                            } catch (enrichErr) {
-                                                console.log(`[ActivityService] ⚠️  Error enriqueciendo: ${enrichErr.message}`);
-                                                console.log('[ActivityService] Stack:', enrichErr.stack ? enrichErr.stack.slice(0, 200) : 'N/A');
+
+                                                    console.log(`[ActivityService] ✅ Enriquecidas ${enrichedCount}/${transactions.length} transacciones`);
+                                                } catch (enrichErr) {
+                                                    console.log(`[ActivityService] ⚠️  Error enriqueciendo: ${enrichErr.message}`);
+                                                    console.log('[ActivityService] Stack:', enrichErr.stack ? enrichErr.stack.slice(0, 200) : 'N/A');
+                                                }
                                             }
+                                        } catch (parseErr) {
+                                            console.debug('[ActivityService] Failed to parse plantilla results:', parseErr.message);
                                         }
-                                    } catch (parseErr) {
-                                        console.debug('[ActivityService] Failed to parse plantilla results:', parseErr.message);
+                                    } else {
+                                        console.debug('[ActivityService] Could not find results array bounds in plantilla');
                                     }
-                                } else {
-                                    console.debug('[ActivityService] Could not find results array bounds in plantilla');
+                                } catch (e) {
+                                    console.debug('[ActivityService] Plantilla extraction failed:', e.message);
                                 }
-                            } catch (e) {
-                                console.debug('[ActivityService] Plantilla extraction failed:', e.message);
                             }
+                        } catch (e) {
+                            console.debug('[ActivityService] Plantilla read failed:', e.message);
                         }
-                    } catch (e) {
-                        console.debug('[ActivityService] Plantilla read failed:', e.message);
                     }
                 }
+            } catch (e) {
+                console.debug('[ActivityService] Plantilla strategy failed:', e.message);
             }
-        } catch (e) {
-            console.debug('[ActivityService] Plantilla strategy failed:', e.message);
-        }
         } // END ENABLE_PLANTILLA_STRATEGY if block
 
         // STRATEGY 1: If plantilla failed, try window._n in-page structured data
@@ -219,7 +219,7 @@ async function scrapeActivity(page, verbose = true) {
                                 // Mercado Pago displays time in Argentina timezone (UTC-3)
                                 // HTML time: 17:42 (Argentina) = 20:42 UTC (add 3 hours)
                                 const ARGENTINA_UTC_OFFSET = 3; // Argentina is UTC-3, so add 3 to get UTC
-                                
+
                                 // Mapa: data-transaction-id → datetime
                                 document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]').forEach(timeEl => {
                                     const li = timeEl.closest('li[data-transaction-id]');
@@ -280,7 +280,7 @@ async function scrapeActivity(page, verbose = true) {
                                     });
                                     console.log(`[🕷️  SCRAPER] ⏰ Times found by position: ${Object.keys(timeMap).length}`);
                                 }
-                            } catch (e) { 
+                            } catch (e) {
                                 console.log(`[🕷️  SCRAPER] ❌ Time mapping error: ${e.message}`);
                             }
 
@@ -323,7 +323,7 @@ async function scrapeActivity(page, verbose = true) {
                                 _debugTimeSamples: Object.entries(timeMap).slice(0, 2).map(([k, v]) => `${k.slice(0, 20)}→${v}`)
                             };
                         }
-                        
+
                         if (transactions && transactions.items) {
                             transactions = transactions.items;
                         }
@@ -354,37 +354,40 @@ async function scrapeActivity(page, verbose = true) {
                 return null;
             });
 
-            console.log(`[🕷️  SCRAPER] 🐛 Page evaluation result type: ${Array.isArray(transactions) ? 'array' : typeof transactions}, has items: ${transactions?.items ? 'yes' : 'no'}`);
+            // Helper: muestra hora argentina (UTC-3) para comparar con lo que se ve en la web
+            const toArgTime = (isoUtc) => {
+                if (!isoUtc) return '??:??';
+                try {
+                    const d = new Date(isoUtc);
+                    const argH = String((d.getUTCHours() - 3 + 24) % 24).padStart(2, '0');
+                    const argM = String(d.getUTCMinutes()).padStart(2, '0');
+                    const argD = String(d.getUTCDate()).padStart(2, '0');
+                    const argMo = String(d.getUTCMonth() + 1).padStart(2, '0');
+                    // Adjust date if hour went negative
+                    if (d.getUTCHours() < 3) {
+                        const prev = new Date(d.getTime() - 3 * 60 * 60 * 1000);
+                        return `${String(prev.getUTCDate()).padStart(2,'0')}/${String(prev.getUTCMonth()+1).padStart(2,'0')} ${argH}:${argM} ARG`;
+                    }
+                    return `${argD}/${argMo} ${argH}:${argM} ARG`;
+                } catch (e) { return isoUtc; }
+            };
+
+            const logTransactions = (txList, label) => {
+                console.log(`[🕷️  SCRAPER] ━━━ ${label}: ${txList.length} transacciones en pantalla ━━━`);
+                txList.forEach((tx, idx) => {
+                    const sign = tx.amount < 0 ? '' : '+';
+                    const amt = tx.amount !== null ? `$${sign}${Number(tx.amount).toLocaleString('es-AR')}` : '$?';
+                    const argTime = toArgTime(tx.creationDate);
+                    const name = (tx.title || tx.description || 'sin nombre').substring(0, 35);
+                    console.log(`[🕷️  SCRAPER]  [${String(idx+1).padStart(2)}] ${argTime} | ${name.padEnd(35)} | ${amt}`);
+                });
+            };
 
             if (transactions && Array.isArray(transactions.items)) {
-                // Extract debug info before processing
-                const debugInfo = {
-                    timeMapSize: transactions._debugTimeMapSize,
-                    timeSamples: transactions._debugTimeSamples
-                };
                 transactions = transactions.items;
-                
-                console.info('[ActivityService] ✅ STRATEGY 1 exitosa: Extracted %d structured activities from in-page object', transactions.length);
-                // Log sample transactions with their timestamps
-                console.log('[🕷️  SCRAPER] 📊 Sample de transacciones extraídas:');
-                transactions.slice(0, 5).forEach((tx, idx) => {
-                    console.log(`  [${idx}] ID: ${tx.id} | Tipo: ${tx.type} | Monto: ${tx.amount} | dateTime: ${tx.dateTime} | creationDate: ${tx.creationDate}`);
-                });
-                console.log(`[🕷️  SCRAPER] 📊 Total extracted: ${transactions.length} (first 5 shown above)`);
-                
-                // DEBUG: Log time mapping status
-                console.log(`[🕷️  SCRAPER] 🐛 DEBUG timeMap size: ${debugInfo.timeMapSize}`);
-                if (debugInfo.timeSamples && debugInfo.timeSamples.length > 0) {
-                    console.log(`[🕷️  SCRAPER] 🐛 DEBUG samples: ${debugInfo.timeSamples.join(', ')}`);
-                }
+                logTransactions(transactions, 'EN VIVO desde MP');
             } else if (transactions && transactions.length > 0) {
-                console.info('[ActivityService] ✅ STRATEGY 1 exitosa: Extracted %d structured activities from in-page object', transactions.length);
-                // Log sample transactions with their timestamps
-                console.log('[🕷️  SCRAPER] 📊 Sample de transacciones extraídas:');
-                transactions.slice(0, 5).forEach((tx, idx) => {
-                    console.log(`  [${idx}] ID: ${tx.id} | Tipo: ${tx.type} | Monto: ${tx.amount} | dateTime: ${tx.dateTime} | creationDate: ${tx.creationDate}`);
-                });
-                console.log(`[🕷️  SCRAPER] 📊 Total extracted: ${transactions.length} (first 5 shown above)`);
+                logTransactions(transactions, 'EN VIVO desde MP');
             } else {
                 console.log('[🕷️  SCRAPER] ⚠️  Strategy 1 (in-page JSON) returned 0 transactions, trying fallback...');
                 // 2) STRATEGY 2: Fallback a DOM scraping (menos confiable pero parseable)
@@ -802,12 +805,24 @@ async function scrapeActivity(page, verbose = true) {
         //     }
         // });
 
-        // Log first 10 transactions for debugging (only if verbose)
+        // Log after normalization – show Argentina time to match what's on the MP page
         if (verbose) {
-            console.log(`[ActivityService] 📋 MUESTRA DE TRANSACCIONES EXTRAÍDAS (primeras 10):`);
-            deduplicated.slice(0, 10).forEach((tx, idx) => {
-                console.log(`  [${idx}] ${tx.dateTime || tx.creationDate} | ${(tx.title || 'sin título').substring(0, 50)} | $${tx.amount}`);
+            const toArg = (iso) => {
+                if (!iso) return '??:??';
+                try {
+                    const d = new Date(iso);
+                    const h = (d.getUTCHours() - 3 + 24) % 24;
+                    const adjusted = d.getUTCHours() < 3 ? new Date(d.getTime() - 3 * 3600000) : d;
+                    return `${String(adjusted.getUTCDate()).padStart(2,'0')}/${String(adjusted.getUTCMonth()+1).padStart(2,'0')} ${String(h).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')} ARG`;
+                } catch (e) { return iso; }
+            };
+            console.log(`[🕷️  SCRAPER] ┌── RESULTADO FINAL (hora Argentina = lo que ves en MP) ──`);
+            deduplicated.forEach((tx, idx) => {
+                const sign = tx.amount < 0 ? '' : '+';
+                const amt = tx.amount !== null ? `$${sign}${Number(tx.amount).toLocaleString('es-AR')}` : '$?';
+                console.log(`[🕷️  SCRAPER] │ [${String(idx+1).padStart(2)}] ${toArg(tx.creationDate || tx.dateTime)} | ${(tx.title || 'sin título').substring(0, 35).padEnd(35)} | ${amt}`);
             });
+            console.log(`[🕷️  SCRAPER] └── ${deduplicated.length} transacciones totales ───────────────`);
         }
 
         return {
