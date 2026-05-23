@@ -791,15 +791,19 @@ async function scrapeActivity(page, verbose = true) {
 
         console.log(`[ActivityService] Scraped ${transactions.length} transactions, ${withAmount.length} with significant amount, deduplicated to ${deduplicated.length}`);
 
-        // Aplicar fix de zona horaria a timestamps (sin logs detallados - muy ruidoso)
-        deduplicated.forEach((tx) => {
-            if (tx.dateTime) {
-                tx.dateTime = _fixTimestampUTC(tx.dateTime);
-            }
-            if (tx.creationDate) {
-                tx.creationDate = _fixTimestampUTC(tx.creationDate);
-            }
-        });
+        // ✅ REMOVED: _fixTimestampUTC was adding +3 hours again to already-correct UTC timestamps
+        // STRATEGY 1 already converts Argentina time to UTC correctly: display_hour + 3 = UTC hour
+        // Example: 17:42 Argentina → 20:42 UTC (already correct)
+        // _fixTimestampUTC was making it: 20:42 UTC + 3 hours → 23:42 UTC (WRONG)
+        //
+        // deduplicated.forEach((tx) => {
+        //     if (tx.dateTime) {
+        //         tx.dateTime = _fixTimestampUTC(tx.dateTime);
+        //     }
+        //     if (tx.creationDate) {
+        //         tx.creationDate = _fixTimestampUTC(tx.creationDate);
+        //     }
+        // });
 
         // Log first 10 transactions for debugging (only if verbose)
         if (verbose) {
