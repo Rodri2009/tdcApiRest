@@ -245,7 +245,7 @@ async function scrapeActivity(page, verbose = true) {
                                 _debugTimeMapSize: Object.keys(timeMap).length,
                                 _debugTimeSamples: Object.entries(timeMap).slice(0, 2).map(([k, v]) => `${k.slice(0, 20)}→${v}`)
                             };
-                        });
+                        }
                         
                         if (transactions && transactions.items) {
                             transactions = transactions.items;
