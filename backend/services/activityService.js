@@ -134,17 +134,14 @@ async function scrapeActivity(page, verbose = true) {
                         if (flat.length > 0) {
                             // El JSON de window._n NO incluye la hora de cada movimiento.
                             // La hora real está en <time class="fuji-activities__date"> del DOM.
-                            // CRITICAL FIX: Detectar la zona horaria del navegador para conversiones correctas
-                            console.log(`[🕷️  SCRAPER] 📊 Flat items from JSON: ${flat.length}, mapping times...`);
+                            // IMPORTANT: Mercado Pago ALWAYS displays times in Argentine timezone (UTC-3)
+                            // regardless of browser timezone. So we always add 3 hours to convert to UTC.
+                            console.log(`[🕷️  SCRAPER] 📊 Flat items from JSON: ${flat.length}, mapping times from Argentina (UTC-3)...`);
                             const timeMap = {};
                             try {
-                                // Detectar offset de zona horaria del navegador (en minutos)
-                                // getTimezoneOffset() devuelve UTC - local_time (en minutos)
-                                // Ej: Argentina UTC-3 → devuelve 180 (porque UTC está 3h adelante)
-                                // Ej: Moscú UTC+3 → devuelve -180 (porque UTC está 3h atrás)
-                                // Para convertir local → UTC: UTC_hour = local_hour + (offset_minutes / 60)
-                                const browserTzOffsetMinutes = new Date().getTimezoneOffset();
-                                const tzCorrectionHours = browserTzOffsetMinutes / 60;
+                                // Mercado Pago displays time in Argentina timezone (UTC-3)
+                                // HTML time: 17:42 (Argentina) = 20:42 UTC (add 3 hours)
+                                const ARGENTINA_UTC_OFFSET = 3; // Argentina is UTC-3, so add 3 to get UTC
                                 
                                 // Mapa: data-transaction-id → datetime
                                 document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]').forEach(timeEl => {
@@ -157,13 +154,13 @@ async function scrapeActivity(page, verbose = true) {
                                         let creationDate = null;
                                         if (iso && tm) {
                                             try {
-                                                // iso format: "2026-05-22" (fecha del navegador)
-                                                // tm: ["17:42", "17", "42"] (hora del navegador, zona horaria local)
+                                                // iso format: "2026-05-22" (Argentina date)
+                                                // tm: ["17:42", "17", "42"] (Argentina time)
                                                 const d = new Date(iso + 'T00:00:00Z');
                                                 const displayHour = Number(tm[1]);
                                                 const displayMin = Number(tm[2]);
-                                                // Convertir hour local a UTC
-                                                const utcHour = displayHour + tzCorrectionHours;
+                                                // Convert Argentine time to UTC by adding 3 hours
+                                                const utcHour = displayHour + ARGENTINA_UTC_OFFSET;
                                                 d.setUTCHours(utcHour, displayMin, 0, 0);
                                                 creationDate = d.toISOString();
                                             } catch (e) { }
@@ -178,8 +175,6 @@ async function scrapeActivity(page, verbose = true) {
                                 console.log(`[🕷️  SCRAPER] ⏰ Times found by ID: ${Object.keys(timeMap).length}`);
                                 // Fallback: si no encontramos por ID, busca por posición
                                 if (Object.keys(timeMap).length === 0) {
-                                    const browserTzOffsetMinutes = new Date().getTimezoneOffset();
-                                    const tzCorrectionHours = browserTzOffsetMinutes / 60;
                                     console.log(`[🕷️  SCRAPER] ⏰ Fallback to position-based mapping...`);
                                     document.querySelectorAll('time.fuji-activities__date, time[datetime]').forEach((timeEl, idx) => {
                                         const iso = timeEl.getAttribute('datetime');
@@ -191,7 +186,7 @@ async function scrapeActivity(page, verbose = true) {
                                                 const d = new Date(iso + 'T00:00:00Z');
                                                 const displayHour = Number(tm[1]);
                                                 const displayMin = Number(tm[2]);
-                                                const utcHour = displayHour + tzCorrectionHours;
+                                                const utcHour = displayHour + ARGENTINA_UTC_OFFSET;
                                                 d.setUTCHours(utcHour, displayMin, 0, 0);
                                                 creationDate = d.toISOString();
                                             } catch (e) { }
