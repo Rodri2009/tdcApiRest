@@ -1057,6 +1057,14 @@ async function importarAutoStream(req, res) {
     const send = (data) => { try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch (e) { } };
     const end = (data) => { try { send(data); res.end(); } catch (e) { } };
 
+    // Keep-alive cada 30 segundos para prevenir timeout de conexión
+    const keepAliveInterval = setInterval(() => {
+        send({ type: 'keep-alive', timestamp: Date.now() });
+    }, 30000);
+
+    // Limpiar el intervalo cuando se cierre la conexión
+    res.on('close', () => clearInterval(keepAliveInterval));
+
     let cajaId = null;
 
     try {
@@ -1107,6 +1115,20 @@ async function importarAutoStream(req, res) {
 
         const scrapingResult = await scrapeActivityAllPages(mpPage, parseInt(maxPaginas), (event) => {
             send(event);
+            // Loguear las transacciones en el backend también (no sólo enviarlas al cliente)
+            if (event.type === 'page_done' && event.transactions && Array.isArray(event.transactions)) {
+                console.log(`[🕷️  SCRAPER] ━━━ Página ${event.page}/${event.total || '?'} ━━━`);
+                console.log(`[🕷️  SCRAPER] 📄 Página ${event.page}: ${event.count} transacciones (total: ${event.total})`);
+                event.transactions.forEach(tx => {
+                    if (tx) {
+                        const fecha = tx.dateTime ? new Date(tx.dateTime).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) : '?';
+                        const hora = tx.dateTime ? new Date(tx.dateTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: true }) : '?';
+                        const monto = typeof tx.amount === 'string' ? tx.amount : (tx.amount ? `$${tx.amount}` : '?');
+                        const title = (tx.title || 'sin descripción').substring(0, 40);
+                        console.log(`[🕷️  SCRAPER] ↳ ${fecha}, ${hora} | ${title} | ${monto}`);
+                    }
+                });
+            }
         });
 
         const { transactions, totalPages, totalCount } = scrapingResult;
