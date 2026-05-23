@@ -11,7 +11,7 @@ const ACTIVITY_TTL_MS = 10 * 1000; // 5-10s recomendado
  * Extrae la lista de transacciones de la página /activities
  * Intenta primero extraer desde el objeto in-page (más limpio), después DOM, luego plantilla
  */
-async function scrapeActivity(page) {
+async function scrapeActivity(page, verbose = true) {
     try {
         // Validar que estamos en la página correcta
         const urlValidation = await validateCurrentUrl(page, '/activities');
@@ -615,11 +615,13 @@ async function scrapeActivity(page) {
             }
         });
 
-        // Log first 10 transactions for debugging
-        console.log(`[ActivityService] 📋 MUESTRA DE TRANSACCIONES EXTRAÍDAS (primeras 10):`);
-        deduplicated.slice(0, 10).forEach((tx, idx) => {
-            console.log(`  [${idx}] ${tx.dateTime || tx.creationDate} | ${(tx.title || 'sin título').substring(0, 50)} | $${tx.amount}`);
-        });
+        // Log first 10 transactions for debugging (only if verbose)
+        if (verbose) {
+            console.log(`[ActivityService] 📋 MUESTRA DE TRANSACCIONES EXTRAÍDAS (primeras 10):`);
+            deduplicated.slice(0, 10).forEach((tx, idx) => {
+                console.log(`  [${idx}] ${tx.dateTime || tx.creationDate} | ${(tx.title || 'sin título').substring(0, 50)} | $${tx.amount}`);
+            });
+        }
 
         return {
             transactions: deduplicated,
@@ -1063,9 +1065,9 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
 /**
  * Presiona el botón refresh de la página (si existe) o recarga
  */
-async function refreshActivityPage(page) {
+async function refreshActivityPage(page, verbose = true) {
     try {
-        console.log('[ActivityService] Attempting to refresh page...');
+        if (verbose) console.log('[ActivityService] Attempting to refresh page...');
 
         // Intentar presionar botón refresh (buscar por varios selectores posibles)
         const refreshSelectors = [
@@ -1082,7 +1084,7 @@ async function refreshActivityPage(page) {
                 if (btn) {
                     await btn.click();
                     refreshed = true;
-                    console.log('[ActivityService] Refresh button clicked');
+                    if (verbose) console.log('[ActivityService] Refresh button clicked');
                     break;
                 }
             } catch (e) {
@@ -1092,7 +1094,7 @@ async function refreshActivityPage(page) {
 
         // Si no se encontró botón, simplemente recargar la página
         if (!refreshed) {
-            console.log('[ActivityService] No refresh button found, reloading page...');
+            if (verbose) console.log('[ActivityService] No refresh button found, reloading page...');
             await page.reload({ waitUntil: 'networkidle2', timeout: 30000 });
             refreshed = true;
         }
@@ -1115,11 +1117,11 @@ async function refreshActivityPage(page) {
  */
 const pageLock = require('../lib/pageLock');
 
-async function getActivity(page, fresh = false) {
+async function getActivity(page, fresh = false, verbose = true) {
     try {
         // Si no se solicita fresh, devolver cache si está disponible y no expiró
         if (!fresh && _lastActivityCache && (Date.now() - _lastActivityTs) < ACTIVITY_TTL_MS) {
-            console.log('[ActivityService] Returning cached activity (TTL ok)');
+            if (verbose) console.log('[ActivityService] Returning cached activity (TTL ok)');
             return _lastActivityCache;
         }
 
@@ -1130,7 +1132,7 @@ async function getActivity(page, fresh = false) {
 
             // Si fresh=true o no estamos en activities, navegar
             if (fresh || !currentUrl.includes('/activities')) {
-                console.log('[ActivityService] Navigating to /activities...');
+                if (verbose) console.log('[ActivityService] Navigating to /activities...');
                 await page.goto('https://www.mercadopago.com.ar/activities', {
                     waitUntil: 'networkidle2',
                     timeout: 30000
@@ -1140,10 +1142,10 @@ async function getActivity(page, fresh = false) {
 
             // Si fresh=true, intentar refrescar la página
             if (fresh) {
-                await refreshActivityPage(page);
+                await refreshActivityPage(page, verbose);
             }
 
-            return await scrapeActivity(page);
+            return await scrapeActivity(page, verbose);
         });
 
         // Actualizar cache

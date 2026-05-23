@@ -192,7 +192,7 @@ class TransactionWatchService {
      */
     async _safeActivityFetch() {
         const { getActivity } = require('./activityService');
-        return await getActivity(this.page, true); // fresh=true SIEMPRE obtiene datos frescos de la página
+        return await getActivity(this.page, true, false); // fresh=true, verbose=false (quiet polling)
     }
 
     /**
