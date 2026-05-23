@@ -373,23 +373,16 @@ async function scrapeActivity(page, verbose = true) {
             };
 
             const logTransactions = (txList, label) => {
-                console.log(`[🕷️  SCRAPER] ┌── ${label}: ${txList.length} transacciones (RAW) ──`);
+                console.log(`\n[🕷️  SCRAPER] ${label}: ${txList.length} transacciones`);
                 txList.forEach((tx, idx) => {
-                    // Imprime los campos clave en formato string crudo, sin parseo
-                    console.log(
-                        `[🕷️  SCRAPER] [${String(idx+1).padStart(2)}]` +
-                        ` id=${tx.transactionId || tx.id || '?'}` +
-                        ` | title="${tx.title || ''}"` +
-                        ` | amount=${JSON.stringify(tx.amount)}` +
-                        ` | creationDate="${tx.creationDate || ''}"` +
-                        ` | dateTime="${tx.dateTime || ''}"` +
-                        ` | date="${tx.date || ''}"` +
-                        ` | time="${tx.time || ''}"` +
-                        ` | type="${tx.type || tx.category || ''}"` +
-                        ` | _src=${tx._source || (tx._isStructured ? 'structured' : 'raw')}`
-                    );
+                    const dateObj = new Date(tx.creationDate || tx.dateTime || '');
+                    const dateStr = !isNaN(dateObj) ? dateObj.toISOString().replace('T', ' ').substring(0, 19) : 'sin fecha';
+                    const type = tx.type || tx.category || '';
+                    const typeStr = type ? ` (${type})` : '';
+                    const sign = (tx.amount || 0) < 0 ? '' : '+';
+                    const absAmt = Math.abs(tx.amount || 0).toLocaleString('es-AR', {minimumFractionDigits: 0});
+                    console.log(`[🕷️  SCRAPER] ${idx + 1} ${dateStr} ${(tx.title || 'sin nombre').substring(0, 40).padEnd(40)} ${typeStr}  $${sign}${absAmt}`);
                 });
-                console.log(`[🕷️  SCRAPER] └── ${txList.length} txs ──────────────────────`);
             };
 
             if (transactions && Array.isArray(transactions.items)) {
@@ -857,9 +850,12 @@ async function scrapeActivity(page, verbose = true) {
  * 
  * @param {Object} page - Página de Puppeteer
  * @param {number} maxPages - Máximo de páginas a paginar (default: 20)
+ * @param {Function} onProgress - Callback para emitir eventos
+ * @param {Date} dateFrom - Fecha inicio para filtro (opcional)
+ * @param {Date} dateTo - Fecha fin para filtro (opcional)
  * @returns {Object} {transactions: [], totalPages: number, totalCount: number}
  */
-async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
+async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, dateFrom = null, dateTo = null) {
     const emit = (data) => {
         if (onProgress) onProgress(data);
     };
@@ -884,6 +880,14 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
     }
 
     try {
+        console.log('\n\n[🕷️  SCRAPER] ╔════════════════════════════════════════╗');
+        console.log('[🕷️  SCRAPER] ║  INICIO DEL SCRAPING PARA IMPORTACIÓN  ║');
+        console.log('[🕷️  SCRAPER] ╚════════════════════════════════════════╝');
+        if (dateFrom && dateTo) {
+            const fmtFrom = dateFrom.toISOString().replace('T', ' ').substring(0, 19);
+            const fmtTo = dateTo.toISOString().replace('T', ' ').substring(0, 19);
+            console.log(`[🕷️  SCRAPER] Petición: Período buscado ${fmtFrom} → ${fmtTo}, Cantidad de páginas: ${maxPages}`);
+        }
         console.log('[ActivityService] 🔄 Iniciando scraping paginado de todas las actividades...');
         emit({ type: 'status', message: '🔄 Iniciando scraping...' });
 
@@ -950,11 +954,11 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
         let domRefreshCount = 0;
         let navigationErrors = 0;
         let prevPageFingerprint = null; // Para detectar redirección a página anterior
+        let periodFoundInPages = false;
 
         while (hasNextPage && pageCount < maxPages) {
             pageCount++;
-            console.log(`\n[ActivityService] 📄 PÁGINA ${pageCount}:`);
-            console.log(`[ActivityService] ───────────────────────────────────────`);
+            console.log(`\n[🕷️  SCRAPER] Página ${pageCount}`);
             emit({ type: 'page_start', page: pageCount, maxPages });
 
             // ANTES: Obtener count de elementos para detectar si se refrescan
@@ -1003,7 +1007,21 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
                     } else {
                         prevPageFingerprint = fingerprint;
                         allTransactions = allTransactions.concat(pageResult.transactions);
-                        console.log(`[ActivityService] ✅ Extraídas ${pageResult.transactions.length} transacciones (total acumulado: ${allTransactions.length})`);
+                        // Verificar si el período buscado está en esta página
+                        let pageHasPeriod = false;
+                        if (dateFrom && dateTo) {
+                            pageHasPeriod = pageResult.transactions.some(tx => {
+                                const txDate = new Date(tx.creationDate || tx.dateTime || '');
+                                return !isNaN(txDate) && txDate >= dateFrom && txDate <= dateTo;
+                            });
+                            if (pageHasPeriod) periodFoundInPages = true;
+                        }
+                        console.log(`[🕷️  SCRAPER] ${pageResult.transactions.length} transacciones (total acumulado: ${allTransactions.length})`);
+                        if (pageHasPeriod) {
+                            console.log(`[🕷️  SCRAPER] ✅ Período buscado encontrado en esta página`);
+                        } else if (dateFrom && dateTo) {
+                            console.log(`[🕷️  SCRAPER] ⏸️  Período NO encontrado en esta página (transacciones fuera de rango)`);
+                        }
                         emit({
                             type: 'page_done',
                             page: pageCount,
@@ -1185,11 +1203,21 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null) {
             }
         }
 
-        console.log(`\n[ActivityService] ═══════════════════════════════════════════`);
-        console.log(`[ActivityService] ✅ SCRAPING COMPLETADO`);
-        console.log(`[ActivityService] ═══════════════════════════════════════════`);
-        console.log(`[ActivityService] • Transacciones extraídas: ${allTransactions.length}`);
-        console.log(`[ActivityService] • Páginas paginadas: ${pageCount}`);
+        console.log(`\n[🕷️  SCRAPER] ╔════════════════════════════════════════╗`);
+        console.log(`[🕷️  SCRAPER] ║  FIN DE ESCRAPEADO PARA IMPORTACIÓN   ║`);
+        console.log(`[🕷️  SCRAPER] ╚════════════════════════════════════════╝`);
+        if (dateFrom && dateTo) {
+            if (periodFoundInPages) {
+                console.log(`[🕷️  SCRAPER] ✅ PERÍODO BUSCADO: Encontrado en el scraping realizado`);
+            } else if (pageCount >= maxPages) {
+                console.log(`[🕷️  SCRAPER] ⚠️  PERÍODO BUSCADO: NO encontrado (se alcanzó límite de ${maxPages} páginas)`);
+            } else {
+                console.log(`[🕷️  SCRAPER] ✅ PERÍODO BUSCADO: No hay más transacciones (fin del historial)`);
+            }
+        }
+        console.log(`[ActivityService] Total de páginas recorridas: ${pageCount}`);
+        console.log(`[ActivityService] Total de transacciones: ${allTransactions.length}`);
+        console.log(`[ActivityService] Errores de navegación detectados: ${navigationErrors}\n`);
 
         // ── DEDUPLICACIÓN GLOBAL ─────────────────────────────────────────────
         // Mercado Pago puede devolver transacciones duplicadas entre páginas

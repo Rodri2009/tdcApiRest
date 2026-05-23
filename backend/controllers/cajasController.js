@@ -1115,11 +1115,7 @@ async function importarAutoStream(req, res) {
 
         const scrapingResult = await scrapeActivityAllPages(mpPage, parseInt(maxPaginas), (event) => {
             send(event);
-            // Loguear las transacciones en el backend también (no sólo enviarlas al cliente)
-            if (event.type === 'page_done' && event.transactions && Array.isArray(event.transactions)) {
-                console.log(`[🕷️  SCRAPER] ━━━ Página ${event.page} completada: ${event.count} txs (total acumulado: ${event.total}) ━━━`);
-            }
-        });
+        }, dateFrom, dateTo);
 
         const { transactions, totalPages, totalCount } = scrapingResult;
 
