@@ -103,16 +103,16 @@ async function scrapeActivity(page, verbose = true) {
                                                     console.log('[ActivityService] 🔍 Iniciando enriquecimiento: buscando elementos time en DOM...');
                                                     const domData = await page.evaluate(() => {
                                                         const ARGENTINA_UTC_OFFSET = 3;
-                                                        const allTimeElements = Array.from(document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]'));
+                                                        const allTimeElements = Array.from(document.querySelectorAll('[data-transaction-id] time.fuji-activities__date, [data-transaction-id] time[datetime]'));
                                                         console.log('[DOM] Total time elements encontrados:', allTimeElements.length);
 
                                                         const timeMap = {};
                                                         const debugInfo = [];
 
                                                         allTimeElements.forEach(timeEl => {
-                                                            const li = timeEl.closest('li[data-transaction-id]');
-                                                            if (li) {
-                                                                const txId = li.getAttribute('data-transaction-id');
+                                                            const txElement = timeEl.closest('[data-transaction-id]');
+                                                            if (txElement) {
+                                                                const txId = txElement.getAttribute('data-transaction-id');
                                                                 const iso = timeEl.getAttribute('datetime');
                                                                 const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
                                                                 const tm = raw.match(/(\d{1,2}):(\d{2})/);
@@ -221,10 +221,10 @@ async function scrapeActivity(page, verbose = true) {
                                 const ARGENTINA_UTC_OFFSET = 3; // Argentina is UTC-3, so add 3 to get UTC
 
                                 // Mapa: data-transaction-id → datetime
-                                document.querySelectorAll('li[data-transaction-id] time.fuji-activities__date, li[data-transaction-id] time[datetime]').forEach(timeEl => {
-                                    const li = timeEl.closest('li[data-transaction-id]');
-                                    if (li) {
-                                        const txId = li.getAttribute('data-transaction-id');
+                                document.querySelectorAll('[data-transaction-id] time.fuji-activities__date, [data-transaction-id] time[datetime]').forEach(timeEl => {
+                                    const txElement = timeEl.closest('[data-transaction-id]');
+                                    if (txElement) {
+                                        const txId = txElement.getAttribute('data-transaction-id');
                                         const iso = timeEl.getAttribute('datetime');
                                         const raw = (timeEl.getAttribute('title') || timeEl.textContent || '').trim();
                                         const tm = raw.match(/(\d{1,2}):(\d{2})/);
@@ -964,7 +964,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
             let countBefore = 0;
             try {
                 countBefore = await page.evaluate(() => {
-                    return document.querySelectorAll('li[data-transaction-id]').length;
+                    return document.querySelectorAll('[data-transaction-id]').length;
                 }).catch(err => {
                     console.warn('[ActivityService] Contexto destruido al contar elementos');
                     return 0;
@@ -1057,7 +1057,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
             let countAfter = 0;
             try {
                 countAfter = await page.evaluate(() => {
-                    return document.querySelectorAll('li[data-transaction-id]').length;
+                    return document.querySelectorAll('[data-transaction-id]').length;
                 });
             } catch (err) {
                 if (err.message.includes('Execution context was destroyed')) {
@@ -1084,21 +1084,38 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
 
             while (!clickSuccessful && retryCount < maxRetries) {
                 try {
-                    // Buscar el botón
-                    let nextButton = await page.$('#_R_2nll2e_');
+                    // Buscar el botón "Siguiente" en varias variantes
+                    let nextButton = await page.evaluateHandle(() => {
+                        const selectors = [
+                            '#_R_2nll2e_',
+                            'button[aria-label*="siguiente"]',
+                            'button[aria-label*="Siguiente"]',
+                            'button[title*="siguiente"]',
+                            'button[title*="Siguiente"]',
+                            'button[id*="next"]',
+                            '[data-testid*="next"]',
+                            '[class*="next"]'
+                        ];
+                        for (const selector of selectors) {
+                            const el = document.querySelector(selector);
+                            if (el) return el;
+                        }
+                        const candidates = Array.from(document.querySelectorAll('button, a[role="button"], div[role="button"]'));
+                        return candidates.find(el => /siguiente|next/i.test(el.innerText || el.textContent || '')) || null;
+                    });
 
-                    if (!nextButton) {
-                        nextButton = await page.$('button[aria-label*="siguiente"]');
-                    }
-                    if (!nextButton) {
-                        nextButton = await page.$('button[aria-label*="Siguiente"]');
+                    if (nextButton) {
+                        const isElementHandle = typeof nextButton.asElement === 'function';
+                        if (!isElementHandle || !nextButton.asElement()) {
+                            nextButton = null;
+                        }
                     }
 
                     if (nextButton) {
                         // Verificar si está deshabilitado
                         let isDisabled = false;
                         try {
-                            isDisabled = await nextButton.evaluate(btn => btn.disabled || btn.getAttribute('aria-disabled') === 'true');
+                            isDisabled = await nextButton.evaluate(btn => btn.disabled || btn.getAttribute('aria-disabled') === 'true' || btn.getAttribute('disabled') === 'true');
                         } catch (err) {
                             if (err.message.includes('Execution context was destroyed')) {
                                 console.warn('[ActivityService] 🔄 Refresh antes de evaluar botón');
@@ -1117,12 +1134,27 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                         } else {
                             console.log(`[ActivityService] ➡️  Clickeando "Siguiente" (intento ${retryCount + 1}/${maxRetries})...`);
 
-                            // Guardar primer item ANTES del click
+                            // Guardar primer fingerprint ANTES del click
                             let firstItemBefore = null;
                             try {
                                 firstItemBefore = await page.evaluate(() => {
-                                    const items = document.querySelectorAll('li[data-transaction-id]');
-                                    return items.length > 0 ? items[0].textContent.slice(0, 40) : null;
+                                    const buildFingerprint = (item) => {
+                                        if (!item) return null;
+                                        const id = item.id || item.transaction_id || item.txId || '';
+                                        const title = item.title || item.description || item.name || '';
+                                        const amount = item.amount || item.value || item.monto || '';
+                                        return `${id}|${title}|${amount}`;
+                                    };
+
+                                    const jsonGroups = window._n?.ctx?.r?.appProps?.pageProps?.listData?.groups;
+                                    if (Array.isArray(jsonGroups) && jsonGroups.length > 0) {
+                                        const firstItem = jsonGroups[0]?.items?.[0];
+                                        const fingerprint = buildFingerprint(firstItem);
+                                        if (fingerprint) return fingerprint;
+                                    }
+
+                                    const fallbackItems = Array.from(document.querySelectorAll('[data-transaction-id], [data-testid="transaction-item"], .activity-row, [class*="TransactionItem"], [class*="rowfeed"]'));
+                                    return fallbackItems.length > 0 ? fallbackItems[0].textContent.trim().slice(0, 80) : null;
                                 });
                             } catch (err) {
                                 if (!err.message.includes('Execution context was destroyed')) throw err;
@@ -1132,17 +1164,32 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                             console.log(`[ActivityService] 🖱️  Click en "Siguiente" ejecutado`);
                             await nextButton.click();
 
-                            // Esperar (AUMENTADO a 3 segundos para que MPs refresh completo se termine)
-                            console.log('[ActivityService] ⏳ Esperando 3s para estabilización de página...');
-                            await page.waitForTimeout(3000);
+                            // Esperar para que el click tenga efecto y MP actualice la página
+                            console.log('[ActivityService] ⏳ Esperando 5s para estabilización de página...');
+                            await page.waitForTimeout(5000);
 
                             // Verificar si el contenido cambió
                             let firstItemAfter = null;
                             let contentChanged = false;
                             try {
                                 firstItemAfter = await page.evaluate(() => {
-                                    const items = document.querySelectorAll('li[data-transaction-id]');
-                                    return items.length > 0 ? items[0].textContent.slice(0, 40) : null;
+                                    const buildFingerprint = (item) => {
+                                        if (!item) return null;
+                                        const id = item.id || item.transaction_id || item.txId || '';
+                                        const title = item.title || item.description || item.name || '';
+                                        const amount = item.amount || item.value || item.monto || '';
+                                        return `${id}|${title}|${amount}`;
+                                    };
+
+                                    const jsonGroups = window._n?.ctx?.r?.appProps?.pageProps?.listData?.groups;
+                                    if (Array.isArray(jsonGroups) && jsonGroups.length > 0) {
+                                        const firstItem = jsonGroups[0]?.items?.[0];
+                                        const fingerprint = buildFingerprint(firstItem);
+                                        if (fingerprint) return fingerprint;
+                                    }
+
+                                    const fallbackItems = Array.from(document.querySelectorAll('[data-transaction-id], [data-testid="transaction-item"], .activity-row, [class*="TransactionItem"], [class*="rowfeed"]'));
+                                    return fallbackItems.length > 0 ? fallbackItems[0].textContent.trim().slice(0, 80) : null;
                                 });
 
                                 // Verificar si realmente cambió el contenido
@@ -1151,15 +1198,15 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                                     if (firstItemBefore === null && firstItemAfter === null) {
                                         console.warn(`[ActivityService] ⚠️  Ambos NULL en intento ${retryCount + 1}: página probablemente no cargó`);
                                     } else {
-                                        console.warn(`[ActivityService] ⚠️  CONTENIDO NO CAMBIÓ en intento ${retryCount + 1}: "${firstItemBefore.slice(0, 20)}"`);
+                                        console.warn(`[ActivityService] ⚠️  CONTENIDO NO CAMBIÓ en intento ${retryCount + 1}: "${firstItemBefore ? firstItemBefore.slice(0, 40) : 'NULL'}"`);
                                     }
                                     contentChanged = false;
                                     retryCount++;
                                 } else {
                                     // Contenido cambió
                                     console.log(`[ActivityService] ✅ CONTENIDO CAMBIÓ detectado:`);
-                                    console.log(`[ActivityService]    ANTES: "${firstItemBefore ? firstItemBefore.slice(0, 20) : 'NULL'}"`);
-                                    console.log(`[ActivityService]    DESPUÉS: "${firstItemAfter ? firstItemAfter.slice(0, 20) : 'NULL'}"`);
+                                    console.log(`[ActivityService]    ANTES: "${firstItemBefore ? firstItemBefore.slice(0, 40) : 'NULL'}"`);
+                                    console.log(`[ActivityService]    DESPUÉS: "${firstItemAfter ? firstItemAfter.slice(0, 40) : 'NULL'}"`);
                                     contentChanged = true;
                                     clickSuccessful = true;
                                 }
@@ -1174,15 +1221,33 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                                 }
                             }
 
-                            // Esperar a que DOM se actualice
+                            // Esperar a que la página cambie en el modelo de datos de MP
                             if (contentChanged) {
                                 try {
                                     await page.waitForFunction(
-                                        () => document.querySelectorAll('li[data-transaction-id]').length > 0,
-                                        { timeout: 3000 }
+                                        (beforeFingerprint) => {
+                                            const buildFingerprint = (item) => {
+                                                if (!item) return null;
+                                                const id = item.id || item.transaction_id || item.txId || '';
+                                                const title = item.title || item.description || item.name || '';
+                                                const amount = item.amount || item.value || item.monto || '';
+                                                return `${id}|${title}|${amount}`;
+                                            };
+                                            const jsonGroups = window._n?.ctx?.r?.appProps?.pageProps?.listData?.groups;
+                                            if (Array.isArray(jsonGroups) && jsonGroups.length > 0) {
+                                                const firstItem = jsonGroups[0]?.items?.[0];
+                                                const fingerprint = buildFingerprint(firstItem);
+                                                if (fingerprint && fingerprint !== beforeFingerprint) return true;
+                                            }
+                                            const fallbackItems = Array.from(document.querySelectorAll('[data-transaction-id], [data-testid="transaction-item"], .activity-row, [class*="TransactionItem"], [class*="rowfeed"]'));
+                                            const current = fallbackItems.length > 0 ? fallbackItems[0].textContent.trim().slice(0, 80) : null;
+                                            return current && current !== beforeFingerprint;
+                                        },
+                                        { timeout: 8000 },
+                                        firstItemBefore
                                     );
                                 } catch (e) {
-                                    console.warn('[ActivityService] ⚠️  Timeout esperando DOM');
+                                    console.warn('[ActivityService] ⚠️  Timeout esperando nueva página');
                                 }
                             }
                         }
