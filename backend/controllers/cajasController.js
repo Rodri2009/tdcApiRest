@@ -829,7 +829,7 @@ async function importarRetroactivosStream(req, res) {
         // Scraping con callback de progreso → emisión SSE en tiempo real
         const scrapingResult = await scrapeActivityAllPages(mpPage, parseInt(maxPaginas), (event) => {
             send(event); // Reenviar cada evento al cliente SSE
-        });
+        }, dateFrom, dateTo);
 
         const { transactions, totalPages, totalCount } = scrapingResult;
 
@@ -1042,7 +1042,7 @@ async function pausarRefreshMP(req, res) {
  */
 async function importarAutoStream(req, res) {
     console.log('[importarAutoStream] 📥 req.query:', JSON.stringify(req.query));
-    const { fechaDesde, fechaHasta, maxPaginas = 20 } = req.query;
+    const { fechaDesde, fechaHasta, maxPaginas } = req.query;
     const { mpPage } = req;
     // El JWT payload usa id_usuario (con guión), no id
     const usuarioId = req.user.id_usuario || req.user.id;
@@ -1054,8 +1054,30 @@ async function importarAutoStream(req, res) {
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
 
-    const send = (data) => { try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch (e) { } };
-    const end = (data) => { try { send(data); res.end(); } catch (e) { } };
+    const send = (data) => {
+        try {
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+            if (typeof res.flush === 'function') {
+                res.flush();
+            }
+        } catch (e) {
+            console.warn('[importarAutoStream] send failed:', e.message);
+        }
+    };
+    const end = (data) => {
+        try {
+            send(data);
+            setTimeout(() => {
+                try {
+                    res.end();
+                } catch (e) {
+                    console.warn('[importarAutoStream] end failed:', e.message);
+                }
+            }, 150);
+        } catch (e) {
+            console.warn('[importarAutoStream] end wrapper failed:', e.message);
+        }
+    };
 
     // Keep-alive cada 30 segundos para prevenir timeout de conexión
     const keepAliveInterval = setInterval(() => {
@@ -1072,19 +1094,23 @@ async function importarAutoStream(req, res) {
         if (!fechaDesde || !fechaHasta) return end({ type: 'error', message: 'Faltan parámetros: fechaDesde, fechaHasta' });
 
         // ⚠️ IMPORTANTE: Las fechas del frontend vienen como datetime-local (Buenos Aires)
-        // Ej: "2026-05-16T00:00" significa "00:00 en Buenos Aires" (03:00 UTC)
-        // JavaScript interpreta strings sin Z como UTC, así que necesitamos ajustar
+        // Ej: "2026-05-16T00:00" significa "00:00 en Buenos Aires".
+        // Convertimos explícitamente ese horario a UTC con offset -03:00.
         function parseLocalDateTime(dateString) {
-            const d = new Date(dateString);
-            // Buenos Aires está en UTC-3, así que sumamos 3 horas
-            // para convertir de "hora local" a UTC
-            d.setUTCHours(d.getUTCHours() + 3);
-            return d;
+            if (typeof dateString !== 'string') return new Date(NaN);
+            const normalized = dateString.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(dateString)
+                ? dateString
+                : `${dateString}-03:00`;
+            return new Date(normalized);
         }
 
         const dateFrom = parseLocalDateTime(fechaDesde);
         const dateTo = parseLocalDateTime(fechaHasta);
         if (isNaN(dateFrom) || isNaN(dateTo)) return end({ type: 'error', message: 'Fechas inválidas' });
+
+        const maxPaginasNum = parseInt(maxPaginas, 10);
+        const maxPages = Number.isNaN(maxPaginasNum) || maxPaginasNum <= 0 ? Infinity : maxPaginasNum;
+        const maxPagesLabel = Number.isFinite(maxPages) ? maxPages : 'Ilimitado';
 
         console.log(`[importarAutoStream] 🔧 Conversión de fechas locales a UTC:`);
         console.log(`[importarAutoStream]   Recibido: ${fechaDesde} → Interpretado como: ${dateFrom.toISOString()}`);
@@ -1109,11 +1135,24 @@ async function importarAutoStream(req, res) {
 
         send({ type: 'status', message: `📦 Caja #${numeroCaja} creada: ${cajaNombre}` });
         send({ type: 'status', message: `📅 Período: ${fmtDesde} → ${fmtHasta}` });
-        send({ type: 'status', message: `📄 Máx páginas: ${maxPaginas}` });
+        send({ type: 'status', message: `📄 Máx páginas: ${maxPagesLabel}` });
 
         const { scrapeActivityAllPages } = require('../services/activityService');
 
-        const scrapingResult = await scrapeActivityAllPages(mpPage, parseInt(maxPaginas), (event) => {
+        const scrapingResult = await scrapeActivityAllPages(mpPage, maxPages, (event) => {
+            if (event && event.type) {
+                if (event.type === 'page_start') {
+                    console.log(`[importarAutoStream] page_start page=${event.page} maxPages=${event.maxPages}`);
+                } else if (event.type === 'page_done') {
+                    console.log(`[importarAutoStream] page_done page=${event.page} count=${event.count} rawCount=${event.rawCount || event.count} total=${event.total}`);
+                } else if (event.type === 'page_duplicate') {
+                    console.log(`[importarAutoStream] page_duplicate page=${event.page} message=${event.message}`);
+                } else if (event.type === 'scraping_done') {
+                    console.log(`[importarAutoStream] scraping_done total=${event.total} pages=${event.pages} navigationErrors=${event.navigationErrors} duplicatesRemoved=${event.duplicatesRemoved}`);
+                } else if (event.type === 'warning') {
+                    console.log(`[importarAutoStream] warning: ${event.message}`);
+                }
+            }
             send(event);
         }, dateFrom, dateTo);
 

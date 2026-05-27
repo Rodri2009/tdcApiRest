@@ -557,9 +557,8 @@ function agregarLogRetroactivo(mensaje) {
     const logsDiv = document.getElementById('retroactivo-logs');
     if (!logsDiv) return;
     logsDiv.classList.remove('hidden');
-    const timestamp = new Date().toLocaleTimeString('es-AR');
     const linea = document.createElement('div');
-    linea.textContent = `[${timestamp}] ${mensaje}`;
+    linea.textContent = mensaje;
     logsDiv.appendChild(linea);
     logsDiv.scrollTop = logsDiv.scrollHeight;
     console.log(`[admin_caja.js] ${mensaje}`);
@@ -573,7 +572,7 @@ async function importarMovimientosRetroactivos() {
 
     const fechaDesde = document.getElementById('retroactivo-fecha-desde').value;
     const fechaHasta = document.getElementById('retroactivo-fecha-hasta').value;
-    const maxPaginas = parseInt(document.getElementById('retroactivo-max-paginas').value) || 20;
+    const maxPaginas = 20; // Valor fijo por defecto, ya no se selecciona desde la UI
 
     if (!fechaDesde || !fechaHasta) {
         mostrarBanner('⚠️ Selecciona las fechas (desde y hasta)', 'warning');
@@ -605,7 +604,12 @@ async function importarMovimientosRetroactivos() {
     const url = `/api/cajas/importar-auto-stream?${params}`;
 
     const source = new EventSource(url);
+    let sseEnded = false;
     _sseSource = source;
+
+    source.onopen = () => {
+        sseEnded = false;
+    };
 
     source.onmessage = (event) => {
         try {
@@ -623,24 +627,36 @@ async function importarMovimientosRetroactivos() {
                 mostrarBanner('⚠️ Scraping detenido: MP redirigió al inicio', 'warning');
 
             } else if (data.type === 'page_start') {
-                agregarLogRetroactivo(`\n━━━ Página ${data.page}/${data.maxPages} ━━━`);
+                const pageLabel = data.maxPages ? `${data.page}/${data.maxPages}` : `${data.page}`;
+                agregarLogRetroactivo(`\n━━━ Página ${pageLabel} ━━━`);
 
             } else if (data.type === 'page_done') {
-                agregarLogRetroactivo(`📄 Página ${data.page}: ${data.count} transacciones (total: ${data.total})`);
-                // Mostrar cada transacción escaneada
+                const pageLabel = data.maxPages ? `${data.page}/${data.maxPages}` : `${data.page}`;
+                let pageMessage = `📄 Página ${pageLabel}: ${data.count} transacciones (total: ${data.total})`;
+                if (data.firstTransaction || data.lastTransaction) {
+                    const firstDate = data.firstTransaction?.dateTime ? formatearFecha(data.firstTransaction.dateTime) : '';
+                    const lastDate = data.lastTransaction?.dateTime ? formatearFecha(data.lastTransaction.dateTime) : '';
+                    const firstTitle = (data.firstTransaction?.title || '').substring(0, 30);
+                    const lastTitle = (data.lastTransaction?.title || '').substring(0, 30);
+                    pageMessage += ` | desde ${firstDate} (${firstTitle}) hasta ${lastDate} (${lastTitle})`;
+                }
+                agregarLogRetroactivo(pageMessage);
+
+                // Mostrar cada transacción escaneada si el backend las envía
                 if (data.transactions && data.transactions.length > 0) {
                     data.transactions.forEach(tx => {
                         const monto = tx.amount;
                         const signo = (typeof monto === 'number' && monto < 0) ? '' : '+';
                         const montoStr = typeof monto === 'number' ? `${signo}$${Math.abs(monto).toLocaleString('es-AR')}` : (monto || '');
-                        const fecha = tx.dateTime ? new Date(tx.dateTime).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '';
+                        const fecha = tx.dateTime ? formatearFecha(tx.dateTime) : '';
                         agregarLogRetroactivo(`  ↳ ${fecha} | ${(tx.title || '').substring(0, 35)} | ${montoStr}`);
                     });
                 }
 
             } else if (data.type === 'imported') {
                 const signo = data.tx.tipo === 'egreso' ? '-' : '+';
-                agregarLogRetroactivo(`✅ IMPORTADO: ${signo}$${Math.abs(data.tx.monto).toLocaleString('es-AR')} — ${(data.tx.title || '').substring(0, 40)}`);
+                const fechaImportado = data.tx.createdAt ? formatearFecha(data.tx.createdAt) : '';
+                agregarLogRetroactivo(`✅ IMPORTADO: ${signo}$${Math.abs(data.tx.monto).toLocaleString('es-AR')} — ${(data.tx.title || '').substring(0, 40)} ${fechaImportado ? `| ${fechaImportado}` : ''}`);
 
             } else if (data.type === 'scraping_done') {
                 agregarLogRetroactivo(`\n📦 Scraping terminado: ${data.total} tx, ${data.pages} páginas, ${data.navigationErrors} errores`);
@@ -661,9 +677,15 @@ async function importarMovimientosRetroactivos() {
                 if (data.cajaNombre) agregarLogRetroactivo(`   📦 Caja:       ${data.cajaNombre}`);
                 agregarLogRetroactivo(`🎉 ═══════════════════════════════`);
                 mostrarBanner(`✅ ${data.imported} movimientos importados`, 'success');
-                source.close();
-                _sseSource = null;
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-download mr-1"></i> Iniciar Importación'; }
+                sseEnded = true;
+                source.onerror = null;
+                source.onmessage = null;
+                source.onopen = null;
+                setTimeout(() => {
+                    try { source.close(); } catch (e) { }
+                    _sseSource = null;
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-download mr-1"></i> Iniciar Importación'; }
+                }, 150);
                 // Recargar listado para mostrar la nueva caja
                 setTimeout(() => cargarCajas(), 1500);
             }
@@ -673,11 +695,16 @@ async function importarMovimientosRetroactivos() {
     };
 
     source.onerror = (err) => {
-        agregarLogRetroactivo('❌ Conexión SSE perdida');
-        mostrarBanner('❌ Conexión perdida', 'error');
-        source.close();
-        _sseSource = null;
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-download mr-1"></i> Iniciar Importación'; }
+        const isClosed = source.readyState === EventSource.CLOSED || err?.target?.readyState === EventSource.CLOSED;
+        if (sseEnded || isClosed) return;
+        setTimeout(() => {
+            if (sseEnded) return;
+            agregarLogRetroactivo('❌ Conexión SSE perdida');
+            mostrarBanner('❌ Conexión perdida', 'error');
+            try { source.close(); } catch (e) { }
+            _sseSource = null;
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-download mr-1"></i> Iniciar Importación'; }
+        }, 200);
     };
 }
 

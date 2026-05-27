@@ -11,7 +11,7 @@ const ACTIVITY_TTL_MS = 10 * 1000; // 5-10s recomendado
  * Extrae la lista de transacciones de la página /activities
  * Intenta primero extraer desde el objeto in-page (más limpio), después DOM, luego plantilla
  */
-async function scrapeActivity(page, verbose = true) {
+async function scrapeActivity(page, verbose = true, dateFrom = null, dateTo = null, sequenceOffset = 0) {
     try {
         // Validar que estamos en la página correcta
         const urlValidation = await validateCurrentUrl(page, '/activities');
@@ -307,9 +307,12 @@ async function scrapeActivity(page, verbose = true) {
                                         amount: item.amount ? item.amount.fraction : null,
                                         currency: (item.amount && item.amount.currency_id) || 'ARS',
                                         symbol: (item.amount && item.amount.symbol) || '$',
-                                        dateTime: item._groupDate || null,
-                                        // ISO datetime preciso del DOM (fecha + hora)
-                                        creationDate: timeByIdOrIdx,
+                                        dateTime: item.grouperDate?.value || item.date || item._groupDate || null,
+                                        // Use item.creationDate when available, otherwise fallback to mapped DOM time
+                                        creationDate: item.creationDate || timeByIdOrIdx,
+                                        // Nota: Mercado Pago puede entregar códigos internos como transfer_mo_payout_movement
+                                        // o subcategories de pago que no son directos. Los normalizamos aquí para que el servicio
+                                        // trate estos casos como ingresos, pagos o transferencias estandarizadas.
                                         type: sub === 'in' ? 'income'
                                             : cat === 'pays' ? 'payment'
                                                 : sub === 'out' ? 'transfer'
@@ -387,9 +390,8 @@ async function scrapeActivity(page, verbose = true) {
 
             if (transactions && Array.isArray(transactions.items)) {
                 transactions = transactions.items;
-                logTransactions(transactions, 'EN VIVO desde MP');
             } else if (transactions && transactions.length > 0) {
-                logTransactions(transactions, 'EN VIVO desde MP');
+                // no-op: ocultamos la lista RAW para reducir ruido
             } else {
                 console.log('[🕷️  SCRAPER] ⚠️  Strategy 1 (in-page JSON) returned 0 transactions, trying fallback...');
                 // 2) STRATEGY 2: Fallback a DOM scraping (menos confiable pero parseable)
@@ -732,7 +734,7 @@ async function scrapeActivity(page, verbose = true) {
             // Eliminar amounts muy pequeños (<30 ARS) que probablemente son fragmentos
             const absAmount = Math.abs(tx.amount);
             if (absAmount < 30 && absAmount > 0) {
-                // Fragmento descartado (silencioso en logs normales)
+                console.log('[ActivityService] Fragment discard: amount=%d, title="%s", date="%s"', tx.amount, tx.title || tx.description || tx.raw || '', tx.dateTime || tx.creationDate || '');
                 return false;
             }
             return true;
@@ -755,16 +757,17 @@ async function scrapeActivity(page, verbose = true) {
                 keywords.push('EGRESO');
             }
 
-            // Extraer nombre/descripción significativa (primeras palabras antes de símbolos)
-            const nameMatch = raw.match(/^([a-záéíóú\s]+)/i);
-            const name = (nameMatch && nameMatch[1]) ? nameMatch[1].trim().substring(0, 50) : '';
+            // Extraer nombre/descripción significativa para la clave de deduplicación
+            const titleSource = (tx.title || tx.description || tx.raw || '').toLowerCase();
+            const nameMatch = titleSource.match(/^([a-záéíóúñ0-9\s]+)/i);
+            const fallbackName = titleSource.replace(/[^a-záéíóúñ0-9\s]/gi, ' ').trim().substring(0, 50);
+            const name = (nameMatch && nameMatch[1]) ? nameMatch[1].trim().substring(0, 50) : fallbackName;
 
             // Crear clave: tipo + nombre + monto + timestamp
-            // Incluir más caracteres del nombre y el timestamp para evitar falsos duplicados
-            // cuando hay múltiples transferencias del mismo monto de diferentes personas
+            // Incluir más información para diferenciar transacciones similares
             const typePattern = keywords.join('|') || 'OTHER';
             const amountRounded = Math.abs(tx.amount);
-            const timestamp = (tx.dateTime || tx.creationDate || '').substring(0, 19); // YYYY-MM-DDTHH:MM:SS
+            const timestamp = (tx.dateTime || tx.creationDate || '').substring(0, 19) || 'unknown'; // YYYY-MM-DDTHH:MM:SS
             const key = `${typePattern}|${name}|${amountRounded}|${timestamp}`;
 
             if (!seen.has(key)) {
@@ -772,15 +775,16 @@ async function scrapeActivity(page, verbose = true) {
                 deduplicated.push(tx);
                 // Deduplicación detectada (silencioso en logs normales)
             } else {
-                // Esta es duplicada - comparar cuál tiene más información
                 const existing = seen.get(key);
+                const existingLabel = `${existing.title || existing.description || existing.raw || 'sin título'} | ${existing.dateTime || existing.creationDate || 'sin fecha'} | ${existing.amount}`;
+                const duplicateLabel = `${tx.title || tx.description || tx.raw || 'sin título'} | ${tx.dateTime || tx.creationDate || 'sin fecha'} | ${tx.amount}`;
                 if ((tx.raw || '').length > (existing.raw || '').length) {
-                    // El nuevo tiene más info, reemplazar
                     const idx = deduplicated.indexOf(existing);
                     if (idx >= 0) deduplicated[idx] = tx;
                     seen.set(key, tx);
+                    console.log('[ActivityService] Duplicate found, replacing existing transaction with richer one: key="%s" | existing="%s" | new="%s"', key, existingLabel, duplicateLabel);
                 } else {
-                    // Duplicate descartado, manteniendo existente
+                    console.log('[ActivityService] Duplicate found, discarding transaction: key="%s" | existing="%s" | duplicate="%s"', key, existingLabel, duplicateLabel);
                 }
             }
         }
@@ -790,7 +794,8 @@ async function scrapeActivity(page, verbose = true) {
         // NOTE: This enrichment happens INSIDE page.evaluate() via STRATEGY 0 modification
         // The transactions object should already have creationDate if DOM extraction was successful
 
-        console.log(`[ActivityService] Scraped ${transactions.length} transactions, ${withAmount.length} with significant amount, deduplicated to ${deduplicated.length}`);
+        console.log(`[ActivityService] Scraped ${transactions.length} transacciones crudas desde MP, ${withAmount.length} con monto significativo, deduplicadas a ${deduplicated.length} transacciones finales`);
+        console.log('[ActivityService] Detalle de conteos: crudo=%d, significativos=%d, finales=%d', transactions.length, withAmount.length, deduplicated.length);
 
         // ✅ REMOVED: _fixTimestampUTC was adding +3 hours again to already-correct UTC timestamps
         // STRATEGY 1 already converts Argentina time to UTC correctly: display_hour + 3 = UTC hour
@@ -817,16 +822,17 @@ async function scrapeActivity(page, verbose = true) {
                     return `${String(adjusted.getUTCDate()).padStart(2, '0')}/${String(adjusted.getUTCMonth() + 1).padStart(2, '0')} ${String(h).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} ARG`;
                 } catch (e) { return iso; }
             };
-            console.log(`[🕷️  SCRAPER] ┌── RESULTADO FINAL (hora Argentina = lo que ves en MP) ──`);
-            deduplicated.forEach((tx, idx) => {
-                const absAmt = Math.abs(tx.amount || 0);
-                const sign = (tx.amount || 0) >= 0 ? '+' : '-';
-                const formatted = absAmt.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                const amt = `$${sign}${formatted}`;
-                const name = (tx.title || 'sin título').substring(0, 32);
-                console.log(`[🕷️  SCRAPER] │ [${String(idx + 1).padStart(2)}] ${toArg(tx.creationDate || tx.dateTime)} | ${name.padEnd(32)} | ${amt}`);
-            });
-            console.log(`[🕷️  SCRAPER] └── ${deduplicated.length} transacciones totales ───────────────`);
+
+            const filteredDeduplicated = (dateFrom && dateTo)
+                ? deduplicated.filter(tx => {
+                    const txDate = new Date(tx.creationDate || tx.dateTime || '');
+                    return !isNaN(txDate) && txDate >= dateFrom && txDate <= dateTo;
+                })
+                : deduplicated;
+
+            console.log(`[🕷️  SCRAPER] ┌── FINAL TRAS NORMALIZACIÓN Y DEDUPLICACIÓN (hora Argentina = lo que ves en MP) ──`);
+            console.log(`[🕷️  SCRAPER] │ Total transacciones después de deduplicar: ${filteredDeduplicated.length}`);
+            console.log(`[🕷️  SCRAPER] └── Fin resumen de página`);
         }
 
         return {
@@ -860,9 +866,6 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
     };
 
     // ── PAUSAR EL WATCH SERVICE ──────────────────────────────────────────────
-    // TransactionWatchService llama a page.goto('/activities') cada 3-7s en el
-    // MISMO mpPage. Eso resetea la paginación desde Node.js, fuera del browser.
-    // El freeze de JS del browser no puede detener esto. Pausamos el watcher.
     let watchService = null;
     let watchWasActive = false;
     try {
@@ -882,36 +885,33 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
         console.log('\n\n[🕷️  SCRAPER] ╔════════════════════════════════════════╗');
         console.log('[🕷️  SCRAPER] ║  INICIO DEL SCRAPING PARA IMPORTACIÓN  ║');
         console.log('[🕷️  SCRAPER] ╚════════════════════════════════════════╝');
+        const limitedPages = typeof maxPages === 'number' && !Number.isNaN(maxPages) && maxPages > 0 ? maxPages : Infinity;
+        const pageLimitLabel = Number.isFinite(limitedPages) ? limitedPages : 'Ilimitado';
         if (dateFrom && dateTo) {
             const fmtFrom = dateFrom.toISOString().replace('T', ' ').substring(0, 19);
             const fmtTo = dateTo.toISOString().replace('T', ' ').substring(0, 19);
-            console.log(`[🕷️  SCRAPER] Petición: Período buscado ${fmtFrom} → ${fmtTo}, Cantidad de páginas: ${maxPages}`);
+            console.log(`[🕷️  SCRAPER] Petición: Período buscado ${fmtFrom} → ${fmtTo}, Cantidad de páginas: ${pageLimitLabel}`);
         }
         console.log('[ActivityService] 🔄 Iniciando scraping paginado de todas las actividades...');
         emit({ type: 'status', message: '🔄 Iniciando scraping...' });
 
-        // Validar que estamos en la página correcta
         const urlValidation = await validateCurrentUrl(page, '/activities');
         if (!urlValidation.valid) {
             throw new Error(`URL validation failed: ${urlValidation.reason}`);
         }
 
-        // 🔒 PROTECCIÓN: Intentar pausar refresh automático de MP con reintentos
         console.log('[ActivityService] 🔒 Intentando congelar timers de MP...');
         emit({ type: 'status', message: '🔒 Pausando refresh automático de MP...' });
 
         let freezeSuccess = false;
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
-                // Timeout corto para evitar que el contexto se destruya
                 await page.evaluate(() => {
-                    // Congelar timers simples (lo más crítico)
                     const origSetTimeout = window.setTimeout;
                     const origSetInterval = window.setInterval;
                     window.setTimeout = () => -1;
                     window.setInterval = () => -1;
 
-                    // Cancelar timers existentes
                     try {
                         const highId = origSetInterval(() => { }, 99999999);
                         for (let i = 1; i <= Math.min(highId, 10000); i++) {
@@ -921,13 +921,6 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                     } catch (e) { }
 
                     console.log('✅ Timers básicos congelados');
-                }).catch(err => {
-                    // Ignora errores de contexto - continúa de todas formas
-                    if (err.message.includes('context')) {
-                        console.warn('[ActivityService] Contexto destruido durante freeze, continuando...');
-                    } else {
-                        throw err;
-                    }
                 });
 
                 freezeSuccess = true;
@@ -948,29 +941,89 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
         }
 
         let allTransactions = [];
+        const pageResults = [];
         let pageCount = 0;
         let hasNextPage = true;
         let domRefreshCount = 0;
         let navigationErrors = 0;
-        let prevPageFingerprint = null; // Para detectar redirección a página anterior
+        let prevPageFingerprint = null;
         let periodFoundInPages = false;
+        let pageLogOffset = 0;
+        const seenTransactionIds = new Set();
 
-        while (hasNextPage && pageCount < maxPages) {
+        const findNextButtonHandle = async () => {
+            const selectors = [
+                '#_R_2nll2e_',
+                'button[aria-label*="siguiente"]',
+                'button[aria-label*="Siguiente"]',
+                'button[title*="siguiente"]',
+                'button[title*="Siguiente"]',
+                'button[id*="next"]',
+                '[data-testid*="next"]',
+                '[class*="next"]'
+            ];
+
+            for (const selector of selectors) {
+                try {
+                    const handle = await page.$(selector);
+                    if (handle) return handle;
+                } catch (e) {
+                    // ignore selector lookup failures
+                }
+            }
+
+            const buttons = await page.$$('button, a[role="button"], div[role="button"]');
+            for (const btn of buttons) {
+                try {
+                    const text = await page.evaluate(el => el.innerText || el.textContent || '', btn);
+                    if (/siguiente|next/i.test(text)) return btn;
+                } catch (e) {
+                    // ignore evaluation failures
+                }
+            }
+            return null;
+        };
+
+        const getPageRowsFingerprint = async () => {
+            return page.evaluate(() => {
+                const container = document.querySelector('#_R_qllie_') || document;
+                const rows = Array.from(container.querySelectorAll('[data-transaction-id]')).slice(0, 20);
+                const summaries = rows.map(row => {
+                    const timeEl = row.querySelector('time.fuji-activities__date, time[datetime]');
+                    const dateText = timeEl ? (timeEl.getAttribute('datetime') || timeEl.getAttribute('title') || timeEl.textContent || '').trim() : '';
+                    const titleEl = row.querySelector('h3, h4, [class*="title"], [class*="subtitle"], [class*="description"], [class*="name"], [data-testid*="merchant"], [data-testid*="title"]');
+                    const titleText = titleEl ? titleEl.textContent.trim() : '';
+                    const amountEl = row.querySelector('[class*="amount"], [data-testid*="amount"], .fuji-activities__amount, [data-test="amount"]');
+                    let amountText = amountEl ? amountEl.textContent.trim() : '';
+                    if (!amountText) {
+                        const text = row.innerText || '';
+                        const match = text.match(/[+\-]\s*\$?[0-9]+(?:[\.,][0-9]{2,3})*/);
+                        amountText = match ? match[0].trim() : '';
+                    }
+                    return `${dateText}|${titleText}|${amountText}`.replace(/\s+/g, ' ');
+                });
+                if (summaries.length > 0) {
+                    return summaries.join('||');
+                }
+                const ids = Array.from(container.querySelectorAll('[data-transaction-id]')).slice(0, 20)
+                    .map(el => el.getAttribute('data-transaction-id') || '')
+                    .join('|');
+                const text = container.innerText || '';
+                return `${ids}|${text.slice(0, 200)}`;
+            });
+        };
+
+        while (hasNextPage && pageCount < limitedPages) {
             pageCount++;
-            console.log(`\n[🕷️  SCRAPER] ═══ INICIO DE EXTRACCIÓN PÁGINA ${pageCount} ═══`);
-            emit({ type: 'page_start', page: pageCount, maxPages });
+            console.log(`
+[🕷️  SCRAPER] ═══ INICIO DE EXTRACCIÓN PÁGINA ${pageCount} ═══`);
+            emit({ type: 'page_start', page: pageCount, maxPages: Number.isFinite(limitedPages) ? limitedPages : null });
 
-            // ANTES: Obtener count de elementos para detectar si se refrescan
             let countBefore = 0;
             try {
-                countBefore = await page.evaluate(() => {
-                    return document.querySelectorAll('[data-transaction-id]').length;
-                }).catch(err => {
-                    console.warn('[ActivityService] Contexto destruido al contar elementos');
-                    return 0;
-                });
+                countBefore = await page.evaluate(() => document.querySelectorAll('[data-transaction-id]').length);
             } catch (err) {
-                if (err.message.includes('Execution context was destroyed')) {
+                if (err.message && err.message.includes('Execution context was destroyed')) {
                     console.warn('[ActivityService] 🔄 ALERTA: Refresh detectado ANTES del scraping');
                     await page.waitForTimeout(2000);
                     countBefore = 0;
@@ -981,14 +1034,9 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
 
             console.log(`[ActivityService] ↳ Elementos detectados antes: ${countBefore}`);
 
-            // Extraer transacciones de la página actual
             try {
-                const pageResult = await scrapeActivity(page);
+                const pageResult = await scrapeActivity(page, true, dateFrom, dateTo, pageLogOffset);
                 if (pageResult && pageResult.transactions && Array.isArray(pageResult.transactions)) {
-                    // ── DETECCIÓN DE PÁGINA DUPLICADA ────────────────────────────────
-                    // Si la página tiene el mismo contenido que la anterior, MP nos
-                    // redirigió al inicio (el freeze no pudo evitar la navegación).
-                    // Usar 10 primeros items para fingerprint más robusta
                     const fingerprint = pageResult.transactions
                         .slice(0, 10)
                         .map(tx => `${tx.dateTime || tx.creationDate || ''}|${tx.title || tx.description || ''}|${tx.amount}`)
@@ -998,51 +1046,86 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
 
                     if (prevPageFingerprint !== null && fingerprint === prevPageFingerprint) {
                         console.warn(`[ActivityService] 🔁 PÁGINA DUPLICADA detectada en página ${pageCount} — MP redirigió al inicio. Abortando.`);
-                        emit({
-                            type: 'page_duplicate',
-                            page: pageCount,
-                            message: `🔁 Página ${pageCount} = Página ${pageCount - 1}: MP redirigió al inicio. Scraping detenido para evitar datos incorrectos.`
-                        });
+                        emit({ type: 'page_duplicate', page: pageCount, message: `🔁 Página ${pageCount} = Página ${pageCount - 1}: MP redirigió al inicio. Scraping detenido para evitar datos incorrectos.` });
                         hasNextPage = false;
-                        // Quitar las transacciones de esta página (son duplicadas)
-                        // NO las agregamos a allTransactions
                     } else {
-                        console.log(`[ActivityService] ✅ Página ${pageCount} contiene datos NUEVOS (diferentes a anterior)`);
                         prevPageFingerprint = fingerprint;
-                        allTransactions = allTransactions.concat(pageResult.transactions);
-                        // Verificar si el período buscado está en esta página
-                        let pageHasPeriod = false;
-                        if (dateFrom && dateTo) {
-                            pageHasPeriod = pageResult.transactions.some(tx => {
+                        const rawPageTransactions = pageResult.transactions || [];
+                        const uniquePageTransactions = [];
+                        rawPageTransactions.forEach(tx => {
+                            if (tx.id && seenTransactionIds.has(tx.id)) {
+                                console.warn(`[ActivityService] 🔁 Transacción duplicada por ID entre páginas: ${tx.id} | ${tx.title || tx.description || ''} | ${tx.amount}`);
+                                return;
+                            }
+                            if (tx.id) {
+                                seenTransactionIds.add(tx.id);
+                            }
+                            uniquePageTransactions.push(tx);
+                        });
+
+                        const filteredPageTransactions = (dateFrom && dateTo)
+                            ? uniquePageTransactions.filter(tx => {
                                 const txDate = new Date(tx.creationDate || tx.dateTime || '');
                                 return !isNaN(txDate) && txDate >= dateFrom && txDate <= dateTo;
-                            });
+                            })
+                            : uniquePageTransactions;
+
+                        allTransactions = allTransactions.concat(uniquePageTransactions);
+                        pageResults.push({
+                            page: pageCount,
+                            transactions: uniquePageTransactions,
+                            filteredTransactions: filteredPageTransactions
+                        });
+
+                        let pageHasPeriod = false;
+                        if (dateFrom && dateTo) {
+                            pageHasPeriod = filteredPageTransactions.length > 0;
+                            if (rawPageTransactions.length > 0) {
+                                const lastTx = rawPageTransactions[rawPageTransactions.length - 1];
+                                const lastTxDate = new Date(lastTx.creationDate || lastTx.dateTime || '');
+                                if (!isNaN(lastTxDate) && lastTxDate < dateFrom) {
+                                    console.log(`[ActivityService] ✅ Fecha objetivo alcanzada en página ${pageCount}: última transacción es ${lastTxDate.toISOString()} (anterior a ${dateFrom.toISOString()})`);
+                                    hasNextPage = false;
+                                }
+                            }
                             if (pageHasPeriod) periodFoundInPages = true;
                         }
-                        console.log(`[🕷️  SCRAPER] ${pageResult.transactions.length} transacciones (total acumulado: ${allTransactions.length})`);
+
+                        console.log(`[🕷️  SCRAPER] ${rawPageTransactions.length} transacciones en página ${pageCount} (${filteredPageTransactions.length} dentro del período). Total acumulado: ${allTransactions.length}`);
                         if (pageHasPeriod) {
                             console.log(`[🕷️  SCRAPER] ✅ Período buscado encontrado en esta página`);
                         } else if (dateFrom && dateTo) {
                             console.log(`[🕷️  SCRAPER] ⏸️  Período NO encontrado en esta página (transacciones fuera de rango)`);
                         }
-                        emit({
+                        const pageSummary = {
                             type: 'page_done',
                             page: pageCount,
-                            count: pageResult.transactions.length,
-                            total: allTransactions.length,
-                            transactions: pageResult.transactions.map(tx => ({
-                                id: tx.id,
-                                title: tx.title || tx.description || '',
-                                amount: tx.amount,
-                                dateTime: tx.creationDate || tx.dateTime || null,
-                                category: tx.category || ''
-                            }))
-                        });
+                            count: filteredPageTransactions.length,
+                            rawCount: rawPageTransactions.length,
+                            total: allTransactions.length
+                        };
+                        if (filteredPageTransactions.length > 0) {
+                            const firstTx = filteredPageTransactions[0];
+                            const lastTx = filteredPageTransactions[filteredPageTransactions.length - 1];
+                            pageSummary.firstTransaction = {
+                                id: firstTx.id,
+                                title: firstTx.title || firstTx.description || '',
+                                amount: firstTx.amount,
+                                dateTime: firstTx.creationDate || firstTx.dateTime || null
+                            };
+                            pageSummary.lastTransaction = {
+                                id: lastTx.id,
+                                title: lastTx.title || lastTx.description || '',
+                                amount: lastTx.amount,
+                                dateTime: lastTx.creationDate || lastTx.dateTime || null
+                            };
+                        }
+                        emit(pageSummary);
+                        pageLogOffset += filteredPageTransactions.length;
                     }
-                    // ── FIN DETECCIÓN ─────────────────────────────────────────────────
                 }
             } catch (err) {
-                if (err.message.includes('Execution context was destroyed')) {
+                if (err.message && err.message.includes('Execution context was destroyed')) {
                     console.warn(`[ActivityService] 🔄 ALERTA: Refresh durante scraping en página ${pageCount}`);
                     navigationErrors++;
                     emit({ type: 'warning', message: `⚠️ Página ${pageCount}: refresh detectado, reintentando...` });
@@ -1053,14 +1136,11 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                 }
             }
 
-            // DESPUÉS: Verificar si DOM se refrescó
             let countAfter = 0;
             try {
-                countAfter = await page.evaluate(() => {
-                    return document.querySelectorAll('[data-transaction-id]').length;
-                });
+                countAfter = await page.evaluate(() => document.querySelectorAll('[data-transaction-id]').length);
             } catch (err) {
-                if (err.message.includes('Execution context was destroyed')) {
+                if (err.message && err.message.includes('Execution context was destroyed')) {
                     console.warn('[ActivityService] 🔄 ALERTA: Refresh detectado DESPUÉS del scraping');
                     navigationErrors++;
                     await page.waitForTimeout(2000);
@@ -1071,252 +1151,95 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
             }
 
             console.log(`[ActivityService] ↳ Elementos detectados después: ${countAfter}`);
-
             if (countAfter < countBefore && countAfter > 0) {
                 console.warn(`[ActivityService] ⚠️  REFRESH DETECTADO: ${countBefore} → ${countAfter} elementos`);
                 domRefreshCount++;
             }
 
-            // Clickear botón "Página siguiente"
-            let clickSuccessful = false;
-            let retryCount = 0;
-            const maxRetries = 3;
-
-            while (!clickSuccessful && retryCount < maxRetries) {
+            if (Number.isFinite(limitedPages) && pageCount >= limitedPages) {
+                console.log(`[ActivityService] ⚠️  LÍMITE de ${limitedPages} páginas alcanzado; no se intentará avanzar a la siguiente página`);
+                hasNextPage = false;
+            } else if (hasNextPage) {
                 try {
-                    // Buscar el botón "Siguiente" en varias variantes
-                    let nextButton = await page.evaluateHandle(() => {
-                        const selectors = [
-                            '#_R_2nll2e_',
-                            'button[aria-label*="siguiente"]',
-                            'button[aria-label*="Siguiente"]',
-                            'button[title*="siguiente"]',
-                            'button[title*="Siguiente"]',
-                            'button[id*="next"]',
-                            '[data-testid*="next"]',
-                            '[class*="next"]'
-                        ];
-                        for (const selector of selectors) {
-                            const el = document.querySelector(selector);
-                            if (el) return el;
-                        }
-                        const candidates = Array.from(document.querySelectorAll('button, a[role="button"], div[role="button"]'));
-                        return candidates.find(el => /siguiente|next/i.test(el.innerText || el.textContent || '')) || null;
-                    });
+                    const pageUrl = new URL(page.url());
+                    const currentPageNum = Number(pageUrl.searchParams.get('page')) || 1;
+                    const nextPageNum = currentPageNum + 1;
+                    pageUrl.searchParams.set('page', String(nextPageNum));
+                    const nextUrl = pageUrl.toString();
 
-                    if (nextButton) {
-                        const isElementHandle = typeof nextButton.asElement === 'function';
-                        if (!isElementHandle || !nextButton.asElement()) {
-                            nextButton = null;
-                        }
-                    }
-
-                    if (nextButton) {
-                        // Verificar si está deshabilitado
-                        let isDisabled = false;
-                        try {
-                            isDisabled = await nextButton.evaluate(btn => btn.disabled || btn.getAttribute('aria-disabled') === 'true' || btn.getAttribute('disabled') === 'true');
-                        } catch (err) {
-                            if (err.message.includes('Execution context was destroyed')) {
-                                console.warn('[ActivityService] 🔄 Refresh antes de evaluar botón');
-                                navigationErrors++;
-                                await page.waitForTimeout(2000);
-                                retryCount++;
-                                continue;
-                            }
-                            throw err;
-                        }
-
-                        if (isDisabled) {
-                            console.log('[ActivityService] ⏹️  Botón DESHABILITADO → última página alcanzada');
-                            hasNextPage = false;
-                            clickSuccessful = true;
-                        } else {
-                            console.log(`[ActivityService] ➡️  Clickeando "Siguiente" (intento ${retryCount + 1}/${maxRetries})...`);
-
-                            // Guardar primer fingerprint ANTES del click
-                            let firstItemBefore = null;
-                            try {
-                                firstItemBefore = await page.evaluate(() => {
-                                    const buildFingerprint = (item) => {
-                                        if (!item) return null;
-                                        const id = item.id || item.transaction_id || item.txId || '';
-                                        const title = item.title || item.description || item.name || '';
-                                        const amount = item.amount || item.value || item.monto || '';
-                                        return `${id}|${title}|${amount}`;
-                                    };
-
-                                    const jsonGroups = window._n?.ctx?.r?.appProps?.pageProps?.listData?.groups;
-                                    if (Array.isArray(jsonGroups) && jsonGroups.length > 0) {
-                                        const firstItem = jsonGroups[0]?.items?.[0];
-                                        const fingerprint = buildFingerprint(firstItem);
-                                        if (fingerprint) return fingerprint;
-                                    }
-
-                                    const fallbackItems = Array.from(document.querySelectorAll('[data-transaction-id], [data-testid="transaction-item"], .activity-row, [class*="TransactionItem"], [class*="rowfeed"]'));
-                                    return fallbackItems.length > 0 ? fallbackItems[0].textContent.trim().slice(0, 80) : null;
-                                });
-                            } catch (err) {
-                                if (!err.message.includes('Execution context was destroyed')) throw err;
-                            }
-
-                            // Hacer el click
-                            console.log(`[ActivityService] 🖱️  Click en "Siguiente" ejecutado`);
-                            await nextButton.click();
-
-                            // Esperar para que el click tenga efecto y MP actualice la página
-                            console.log('[ActivityService] ⏳ Esperando 5s para estabilización de página...');
-                            await page.waitForTimeout(5000);
-
-                            // Verificar si el contenido cambió
-                            let firstItemAfter = null;
-                            let contentChanged = false;
-                            try {
-                                firstItemAfter = await page.evaluate(() => {
-                                    const buildFingerprint = (item) => {
-                                        if (!item) return null;
-                                        const id = item.id || item.transaction_id || item.txId || '';
-                                        const title = item.title || item.description || item.name || '';
-                                        const amount = item.amount || item.value || item.monto || '';
-                                        return `${id}|${title}|${amount}`;
-                                    };
-
-                                    const jsonGroups = window._n?.ctx?.r?.appProps?.pageProps?.listData?.groups;
-                                    if (Array.isArray(jsonGroups) && jsonGroups.length > 0) {
-                                        const firstItem = jsonGroups[0]?.items?.[0];
-                                        const fingerprint = buildFingerprint(firstItem);
-                                        if (fingerprint) return fingerprint;
-                                    }
-
-                                    const fallbackItems = Array.from(document.querySelectorAll('[data-transaction-id], [data-testid="transaction-item"], .activity-row, [class*="TransactionItem"], [class*="rowfeed"]'));
-                                    return fallbackItems.length > 0 ? fallbackItems[0].textContent.trim().slice(0, 80) : null;
-                                });
-
-                                // Verificar si realmente cambió el contenido
-                                if (firstItemBefore === firstItemAfter) {
-                                    // Contenido no cambió
-                                    if (firstItemBefore === null && firstItemAfter === null) {
-                                        console.warn(`[ActivityService] ⚠️  Ambos NULL en intento ${retryCount + 1}: página probablemente no cargó`);
-                                    } else {
-                                        console.warn(`[ActivityService] ⚠️  CONTENIDO NO CAMBIÓ en intento ${retryCount + 1}: "${firstItemBefore ? firstItemBefore.slice(0, 40) : 'NULL'}"`);
-                                    }
-                                    contentChanged = false;
-                                    retryCount++;
-                                } else {
-                                    // Contenido cambió
-                                    console.log(`[ActivityService] ✅ CONTENIDO CAMBIÓ detectado:`);
-                                    console.log(`[ActivityService]    ANTES: "${firstItemBefore ? firstItemBefore.slice(0, 40) : 'NULL'}"`);
-                                    console.log(`[ActivityService]    DESPUÉS: "${firstItemAfter ? firstItemAfter.slice(0, 40) : 'NULL'}"`);
-                                    contentChanged = true;
-                                    clickSuccessful = true;
-                                }
-                            } catch (err) {
-                                if (err.message.includes('Execution context was destroyed')) {
-                                    console.warn('[ActivityService] 🔄 Refresh después del click, reintentando...');
-                                    navigationErrors++;
-                                    await page.waitForTimeout(2000);
-                                    retryCount++;
-                                } else {
-                                    throw err;
-                                }
-                            }
-
-                            // Esperar a que la página cambie en el modelo de datos de MP
-                            if (contentChanged) {
-                                try {
-                                    await page.waitForFunction(
-                                        (beforeFingerprint) => {
-                                            const buildFingerprint = (item) => {
-                                                if (!item) return null;
-                                                const id = item.id || item.transaction_id || item.txId || '';
-                                                const title = item.title || item.description || item.name || '';
-                                                const amount = item.amount || item.value || item.monto || '';
-                                                return `${id}|${title}|${amount}`;
-                                            };
-                                            const jsonGroups = window._n?.ctx?.r?.appProps?.pageProps?.listData?.groups;
-                                            if (Array.isArray(jsonGroups) && jsonGroups.length > 0) {
-                                                const firstItem = jsonGroups[0]?.items?.[0];
-                                                const fingerprint = buildFingerprint(firstItem);
-                                                if (fingerprint && fingerprint !== beforeFingerprint) return true;
-                                            }
-                                            const fallbackItems = Array.from(document.querySelectorAll('[data-transaction-id], [data-testid="transaction-item"], .activity-row, [class*="TransactionItem"], [class*="rowfeed"]'));
-                                            const current = fallbackItems.length > 0 ? fallbackItems[0].textContent.trim().slice(0, 80) : null;
-                                            return current && current !== beforeFingerprint;
-                                        },
-                                        { timeout: 8000 },
-                                        firstItemBefore
-                                    );
-                                } catch (e) {
-                                    console.warn('[ActivityService] ⚠️  Timeout esperando nueva página');
-                                }
-                            }
-                        }
-                    } else {
-                        console.log('[ActivityService] ⏹️  Botón SIGUIENTE NO ENCONTRADO → fin de paginación');
-                        hasNextPage = false;
-                        clickSuccessful = true;
-                    }
+                    console.log(`[ActivityService] ➡️  Navegando a página siguiente: ${nextUrl}`);
+                    await page.goto(nextUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+                    await page.waitForFunction((expected) => {
+                        const props = window._n?.ctx?.r?.appProps?.pageProps;
+                        return props && Number(props.page) === expected;
+                    }, { polling: 'mutation', timeout: 15000 }, nextPageNum);
+                    console.log(`[ActivityService] ✅ Página siguiente cargada: ${nextPageNum}`);
                 } catch (err) {
-                    if (err.message.includes('Execution context was destroyed')) {
-                        console.warn(`[ActivityService] 🔄 Execution context destroyed (reintentos: ${retryCount + 1}/${maxRetries})`);
-                        navigationErrors++;
-                        await page.waitForTimeout(2000);
-                        retryCount++;
-                    } else {
-                        console.warn(`[ActivityService] ⚠️  Error paginando:`, err.message);
-                        hasNextPage = false;
-                        clickSuccessful = true;
-                    }
+                    navigationErrors++;
+                    console.warn(`[ActivityService] ⚠️ No se pudo navegar a siguiente página: ${err.message}`);
+                    hasNextPage = false;
                 }
             }
 
-            if (retryCount >= maxRetries) {
-                console.warn(`[ActivityService] ⚠️  MAX REINTENTOS (${maxRetries}) alcanzados en página ${pageCount} → deteniendo`);
-                hasNextPage = false;
-            }
-
-            // Límite de páginas
-            if (pageCount >= maxPages) {
-                console.log(`[ActivityService] ⚠️  LÍMITE de ${maxPages} páginas alcanzado`);
-                hasNextPage = false;
-            }
-
-            console.log(`[🕷️  SCRAPER] ═══ FIN DE EXTRACCIÓN PÁGINA ${pageCount} ═══\n`);
+            console.log(`[🕷️  SCRAPER] ═══ FIN DE EXTRACCIÓN PÁGINA ${pageCount} ═══
+`);
         }
 
-        console.log(`\n[🕷️  SCRAPER] ╔════════════════════════════════════════╗`);
-        console.log(`[🕷️  SCRAPER] ║  FIN DE ESCRAPEADO PARA IMPORTACIÓN   ║`);
-        console.log(`[🕷️  SCRAPER] ╚════════════════════════════════════════╝`);
+        console.log('\n\n[🕷️  SCRAPER] ╔════════════════════════════════════════╗');
+        console.log('[🕷️  SCRAPER] ║  FIN DE ESCRAPEADO PARA IMPORTACIÓN   ║');
+        console.log('[🕷️  SCRAPER] ╚════════════════════════════════════════╝');
         if (dateFrom && dateTo) {
             if (periodFoundInPages) {
-                console.log(`[🕷️  SCRAPER] ✅ PERÍODO BUSCADO: Encontrado en el scraping realizado`);
-            } else if (pageCount >= maxPages) {
-                console.log(`[🕷️  SCRAPER] ⚠️  PERÍODO BUSCADO: NO encontrado (se alcanzó límite de ${maxPages} páginas)`);
+                console.log('[🕷️  SCRAPER] ✅ PERÍODO BUSCADO: Encontrado en el scraping realizado');
+            } else if (Number.isFinite(limitedPages) && pageCount >= limitedPages) {
+                console.log(`[🕷️  SCRAPER] ⚠️  PERÍODO BUSCADO: NO encontrado (se alcanzó límite de ${limitedPages} páginas)`);
             } else {
-                console.log(`[🕷️  SCRAPER] ✅ PERÍODO BUSCADO: No hay más transacciones (fin del historial)`);
+                console.log('[🕷️  SCRAPER] ✅ PERÍODO BUSCADO: No hay más transacciones (fin del historial)');
             }
         }
         console.log(`[ActivityService] Total de páginas recorridas: ${pageCount}`);
         console.log(`[ActivityService] Total de transacciones: ${allTransactions.length}`);
-        console.log(`[ActivityService] Errores de navegación detectados: ${navigationErrors}\n`);
+        console.log(`[ActivityService] Errores de navegación detectados: ${navigationErrors}
+`);
 
-        // ── DEDUPLICACIÓN GLOBAL ─────────────────────────────────────────────
-        // Mercado Pago puede devolver transacciones duplicadas entre páginas
-        // Usar timestamp + monto como clave para detectar duplicados
         const seenTransactions = new Map();
         const dedupedTransactions = [];
         let duplicateCount = 0;
 
-        allTransactions.forEach(tx => {
-            const timestamp = tx.dateTime || tx.creationDate || 'unknown';
-            const amount = tx.amount || 0;
-            const key = `${timestamp}|${amount}`;
+        const buildTransactionDedupKey = (tx) => {
+            const normalizedTitle = (tx.title || tx.description || tx.raw || '').trim().replace(/\s+/g, ' ').substring(0, 120);
+            const amount = tx.amount !== undefined && tx.amount !== null ? tx.amount : '';
+            const timestamp = tx.creationDate || tx.dateTime || '';
+            const normalizedTimestamp = timestamp ? timestamp.replace(/:\d{2}\.\d{3}Z$/, ':00.000Z') : '';
+            const stableId = tx.id && !/^(activity-|tx-|mp_)/.test(tx.id) ? tx.id : null;
+            const rawHash = tx.raw ? crypto.createHash('md5').update(tx.raw.trim()).digest('hex') : '';
+            if (stableId) {
+                return `ID|${stableId}`;
+            }
+            if (rawHash) {
+                return `HASH|${rawHash}`;
+            }
+            return `FALLBACK|${normalizedTitle}|${amount}|${normalizedTimestamp}`;
+        };
 
+        allTransactions.forEach(tx => {
+            const key = buildTransactionDedupKey(tx);
             if (!seenTransactions.has(key)) {
-                seenTransactions.set(key, true);
+                seenTransactions.set(key, tx);
                 dedupedTransactions.push(tx);
             } else {
                 duplicateCount++;
+                const existing = seenTransactions.get(key);
+                const existingLabel = `${existing.title || existing.description || existing.raw || 'sin título'} | ${existing.creationDate || existing.dateTime || 'sin fecha'} | ${existing.amount}`;
+                const duplicateLabel = `${tx.title || tx.description || tx.raw || 'sin título'} | ${tx.creationDate || tx.dateTime || 'sin fecha'} | ${tx.amount}`;
+                if ((tx.raw || '').length > (existing.raw || '').length) {
+                    const idx = dedupedTransactions.indexOf(existing);
+                    if (idx >= 0) dedupedTransactions[idx] = tx;
+                    seenTransactions.set(key, tx);
+                    console.log('[ActivityService] Duplicate found, replacing existing transaction with richer one: key="%s" | existing="%s" | new="%s"', key, existingLabel, duplicateLabel);
+                } else {
+                    console.log('[ActivityService] Duplicate found, discarding transaction: key="%s" | existing="%s" | duplicate="%s"', key, existingLabel, duplicateLabel);
+                }
             }
         });
 
@@ -1324,13 +1247,48 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
             console.log(`[ActivityService] 🔄 Deduplicación: ${allTransactions.length} → ${dedupedTransactions.length} (eliminados ${duplicateCount} duplicados entre páginas)`);
         }
 
-        emit({
-            type: 'scraping_done',
-            total: dedupedTransactions.length,
-            pages: pageCount,
-            navigationErrors,
-            duplicatesRemoved: duplicateCount
-        });
+        const matchesPeriod = (tx) => {
+            if (!dateFrom || !dateTo) return true;
+            const rawDate = tx.creationDate || tx.dateTime || tx.grouperDate?.value;
+            if (!rawDate) return false;
+            const txDate = new Date(rawDate);
+            return !isNaN(txDate) && txDate >= dateFrom && txDate <= dateTo;
+        };
+
+        const finalTransactions = (dateFrom && dateTo)
+            ? dedupedTransactions.filter(matchesPeriod)
+            : dedupedTransactions;
+
+        if (dateFrom && dateTo && finalTransactions.length !== dedupedTransactions.length) {
+            console.log(`[ActivityService] ✅ Filtrado final por período: ${dedupedTransactions.length} → ${finalTransactions.length}`);
+        }
+
+        let pageComparison = null;
+        if (pageResults.length >= 2) {
+            const normalizeTx = (tx) => `${tx.id || ''}|${tx.amount || ''}|${tx.creationDate || tx.dateTime || ''}|${(tx.title || tx.description || '').trim()}`;
+            const page1Txs = pageResults[0].transactions || [];
+            const page2Txs = pageResults[1].transactions || [];
+            const page1Keys = new Set(page1Txs.map(normalizeTx));
+            const page2Keys = new Set(page2Txs.map(normalizeTx));
+            const onlyPage1 = page1Txs.filter(tx => !page2Keys.has(normalizeTx(tx)));
+            const onlyPage2 = page2Txs.filter(tx => !page1Keys.has(normalizeTx(tx)));
+            const commonCount = page1Txs.filter(tx => page2Keys.has(normalizeTx(tx))).length;
+            pageComparison = {
+                page1Count: page1Txs.length,
+                page2Count: page2Txs.length,
+                commonCount,
+                onlyPage1Count: onlyPage1.length,
+                onlyPage2Count: onlyPage2.length,
+                onlyPage1Sample: onlyPage1.slice(0, 5).map(tx => ({ id: tx.id, dateTime: tx.creationDate || tx.dateTime || null, title: tx.title || tx.description || '', amount: tx.amount })),
+                onlyPage2Sample: onlyPage2.slice(0, 5).map(tx => ({ id: tx.id, dateTime: tx.creationDate || tx.dateTime || null, title: tx.title || tx.description || '', amount: tx.amount }))
+            };
+            console.log(`[ActivityService] 🔎 Comparación página 1 vs 2: página1=${page1Txs.length} página2=${page2Txs.length} comunes=${commonCount} solo1=${onlyPage1.length} solo2=${onlyPage2.length}`);
+            if (onlyPage1.length > 0 || onlyPage2.length > 0) {
+                console.log(`[ActivityService] 🔎 Muestras diferencias: solo página1=${onlyPage1.length}, solo página2=${onlyPage2.length}`);
+            }
+        }
+
+        emit({ type: 'scraping_done', total: finalTransactions.length, pages: pageCount, navigationErrors, duplicatesRemoved: duplicateCount });
         if (domRefreshCount > 0) {
             console.warn(`[ActivityService] • Refreshes detectados: ${domRefreshCount}`);
         }
@@ -1338,7 +1296,6 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
             console.warn(`[ActivityService] • Errores de navegación: ${navigationErrors}`);
         }
 
-        // 🔓 RESTAURAR timers/listeners después del scraping
         console.log('[ActivityService] 🔓 Restaurando timers/listeners de MP...');
         try {
             await page.evaluate(() => {
@@ -1357,22 +1314,20 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
         }
 
         return {
-            transactions: dedupedTransactions,
+            transactions: finalTransactions,
             totalPages: pageCount,
-            totalCount: dedupedTransactions.length,
+            totalCount: finalTransactions.length,
             refreshsDetected: domRefreshCount,
             navigationErrors,
             duplicatesRemoved: duplicateCount,
-            source: 'manual-pagination'
+            source: 'manual-pagination',
+            pageResults,
+            pageComparison
         };
-
     } catch (err) {
         console.error('[ActivityService] ❌ Error en scraping paginado:', err.message);
         throw err;
     } finally {
-        // ── REANUDAR EL WATCH SERVICE ────────────────────────────────────────
-        // Siempre intentar reiniciar, independiente de si estaba activo antes.
-        // start() es idempotente (ignora si ya está activo).
         if (watchService) {
             try {
                 watchService.start();
@@ -1385,9 +1340,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
     }
 }
 
-/**
- * Presiona el botón refresh de la página (si existe) o recarga
- */
+
 async function refreshActivityPage(page, verbose = true) {
     try {
         if (verbose) console.log('[ActivityService] Attempting to refresh page...');
