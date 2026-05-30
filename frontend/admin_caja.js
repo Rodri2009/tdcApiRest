@@ -515,28 +515,6 @@ async function verDetalle(cajaId) {
         mostrarBanner('Error cargando detalles: ' + err.message, 'error');
     }
 }
-        document.getElementById('detalle-total-ingresos').textContent = formatearDinero(totalIngresos);
-        document.getElementById('detalle-total-egresos').textContent = formatearDinero(totalEgresos);
-        document.getElementById('detalle-saldo-esperado').textContent = formatearDinero(saldoEsperado);
-        document.getElementById('detalle-saldo-final').textContent = formatearDinero(caja.saldo_final);
-        document.getElementById('detalle-diferencia').textContent = formatearDinero(diferencia);
-
-        // Color de diferencia
-        const diferenciEl = document.getElementById('detalle-diferencia');
-        if (diferencia === 0) {
-            diferenciEl.className = 'text-2xl font-bold text-green-400';
-        } else if (diferencia < 0) {
-            diferenciEl.className = 'text-2xl font-bold text-red-400';
-        } else {
-            diferenciEl.className = 'text-2xl font-bold text-yellow-400';
-        }
-
-        mostrarVista('detalle');
-    } catch (err) {
-        console.error('[admin_caja.js] Error en verDetalle:', err);
-        mostrarBanner('Error cargando detalles: ' + err.message, 'error');
-    }
-}
 
 // Guardar nombre de caja
 async function guardarNombre() {
