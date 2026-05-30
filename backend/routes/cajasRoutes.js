@@ -11,6 +11,7 @@ const {
     obtenerHistorialCajas,
     obtenerMovimientosCaja,
     actualizarNombreCaja,
+    actualizarEventoCaja,
     importarMovimientosMPCaja,
     importarMovimientosRetroactivos,
     importarRetroactivosStream,
@@ -104,6 +105,13 @@ router.put('/:id/cerrar', cerrarCaja);
  * Body: { nombre }
  */
 router.put('/:id/nombre', actualizarNombreCaja);
+
+/**
+ * PUT /api/cajas/:id/evento
+ * Actualizar evento asociado a una caja
+ * Body: { idEventoConfirmado } (puede ser null)
+ */
+router.put('/:id/evento', actualizarEventoCaja);
 
 /**
  * POST /api/cajas/:id/importar-mp

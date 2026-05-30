@@ -180,7 +180,7 @@
                 </div>
             </div>
 
-            <!-- Nombre personalizado -->
+            <!-- Nombre personalizado + Evento Asociado -->
             <div class="mb-4">
                 <label class="text-sm text-stone-400">Nombre de la Caja (opcional)</label>
                 <div class="flex gap-2">
@@ -190,44 +190,96 @@
                 </div>
             </div>
 
-            <!-- Movimientos -->
-            <details class="mb-4 caja-collapsible">
-                <summary class="caja-collapsible-summary">
-                    <span>Ingresos</span>
-                    <span class="caja-collapsible-indicator">+</span>
-                </summary>
-                <table class="tx-table mb-4">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Hora</th>
-                            <th>Nombre</th>
-                            <th>Descripción</th>
-                            <th>Monto</th>
-                        </tr>
-                    </thead>
-                    <tbody id="detalle-ingresos"></tbody>
-                </table>
-            </details>
+            <!-- Evento Asociado -->
+            <div class="mb-4">
+                <label class="text-sm text-stone-400">Evento Asociado (opcional)</label>
+                <div class="flex gap-2">
+                    <select id="id-evento-confirmado" 
+                        class="flex-1 px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
+                        <option value="">-- Sin evento asociado --</option>
+                    </select>
+                    <button id="btn-guardar-evento" class="btn btn-sm btn-green">Guardar</button>
+                </div>
+            </div>
 
-            <details class="mb-4 caja-collapsible">
-                <summary class="caja-collapsible-summary">
-                    <span>Egresos</span>
-                    <span class="caja-collapsible-indicator">+</span>
-                </summary>
-                <table class="tx-table mb-4">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Hora</th>
-                            <th>Nombre</th>
-                            <th>Descripción</th>
-                            <th>Monto</th>
-                        </tr>
-                    </thead>
-                    <tbody id="detalle-egresos"></tbody>
-                </table>
-            </details>
+            <!-- Movimientos en Cuenta y Efectivo: Lado a Lado -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                
+                <!-- COLUMNA IZQUIERDA: MOVIMIENTOS EN CUENTA (MP/Banco/Tarjeta/etc) -->
+                <div>
+                    <details class="caja-collapsible">
+                        <summary class="caja-collapsible-summary">
+                            <span>💳 Ingresos en Cuenta</span>
+                            <span class="caja-collapsible-indicator">+</span>
+                        </summary>
+                        <table class="tx-table mb-2" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Descripción</th>
+                                    <th>Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalle-ingresos-cuenta"></tbody>
+                        </table>
+                    </details>
+
+                    <details class="caja-collapsible mt-2">
+                        <summary class="caja-collapsible-summary">
+                            <span>💳 Egresos en Cuenta</span>
+                            <span class="caja-collapsible-indicator">+</span>
+                        </summary>
+                        <table class="tx-table" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Descripción</th>
+                                    <th>Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalle-egresos-cuenta"></tbody>
+                        </table>
+                    </details>
+                </div>
+
+                <!-- COLUMNA DERECHA: MOVIMIENTOS EN EFECTIVO -->
+                <div>
+                    <details class="caja-collapsible">
+                        <summary class="caja-collapsible-summary">
+                            <span>💵 Ingresos en Efectivo</span>
+                            <span class="caja-collapsible-indicator">+</span>
+                        </summary>
+                        <table class="tx-table mb-2" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Descripción</th>
+                                    <th>Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalle-ingresos-efectivo"></tbody>
+                        </table>
+                    </details>
+
+                    <details class="caja-collapsible mt-2">
+                        <summary class="caja-collapsible-summary">
+                            <span>💵 Egresos en Efectivo</span>
+                            <span class="caja-collapsible-indicator">+</span>
+                        </summary>
+                        <table class="tx-table" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Descripción</th>
+                                    <th>Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalle-egresos-efectivo"></tbody>
+                        </table>
+                    </details>
+                </div>
+
+            </div>
 
             <!-- Totales -->
             <div class="bg-stone-800 p-4 rounded">

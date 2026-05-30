@@ -22,6 +22,7 @@ const banner = getElement('banner');
 const btnNuevaCaja = getElement('btn-nueva-caja');
 const btnVolver = getElement('btn-volver');
 const btnGuardarNombre = getElement('btn-guardar-nombre');
+const btnGuardarEvento = getElement('btn-guardar-evento');
 const formAbrirCaja = getElement('form-abrir-caja');
 const btnCerrarCajaAbierta = getElement('btn-cerrar-caja-abierta');
 const cajaStatus = getElement('caja-status');
@@ -434,40 +435,86 @@ async function verDetalle(cajaId) {
         document.getElementById('detalle-duracion').textContent = calcularDuracion(caja.fecha_apertura, caja.fecha_cierre);
         document.getElementById('detalle-nombre').value = caja.nombre || '';
 
-        // Separar ingresos y egresos
-        const ingresos = movimientos.filter(m => m.tipo === 'ingreso');
-        const egresos = movimientos.filter(m => m.tipo === 'egreso');
+        // Cargar evento asociado si existe
+        if (caja.id_evento_confirmado) {
+            document.getElementById('id-evento-confirmado').value = caja.id_evento_confirmado;
+        } else {
+            document.getElementById('id-evento-confirmado').value = '';
+        }
+        
+        // Cargar lista de eventos disponibles
+        await cargarEventosDisponibles('id-evento-confirmado');
 
-        const totalIngresos = ingresos.reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
-        const totalEgresos = egresos.reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
-        const saldoEsperado = parseFloat(caja.saldo_inicial) + totalIngresos - totalEgresos;
-        const diferencia = parseFloat(caja.saldo_final) - saldoEsperado;
+        // Separar ingresos y egresos POR TIPO DE PAGO
+        // EN CUENTA: transferencia, tarjeta, cheque, otro
+        // EN EFECTIVO: efectivo
+        const ingresosEnCuenta = movimientos.filter(m => m.tipo === 'ingreso' && m.metodo_pago !== 'efectivo');
+        const egresosEnCuenta = movimientos.filter(m => m.tipo === 'egreso' && m.metodo_pago !== 'efectivo');
+        const ingresosEnEfectivo = movimientos.filter(m => m.tipo === 'ingreso' && m.metodo_pago === 'efectivo');
+        const egresosEnEfectivo = movimientos.filter(m => m.tipo === 'egreso' && m.metodo_pago === 'efectivo');
 
-        // Llenar tablas
+        // Calcular totales GENERALES (todos los movimientos)
+        const totalIngresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
+        const totalEgresos = movimientos.filter(m => m.tipo === 'egreso').reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
+        const saldoEsperado = parseFloat(caja.saldo_inicial_en_cuenta) + totalIngresos - totalEgresos;
+        const diferencia = parseFloat(caja.saldo_final_en_efectivo || 0) - saldoEsperado;
+
+        // Función auxiliar para construir filas
         const buildDetalleRow = (m, isIngreso) => {
             const createdAt = new Date(m.creado_en);
             const fecha = createdAt.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const hora = createdAt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-            const nombre = String(m.subcategoria || '').trim();
             const descripcion = String(m.descripcion || '').trim();
             const montoClass = isIngreso ? 'text-green-400' : 'text-red-400';
             return `
             <tr>
                 <td>${fecha}</td>
-                <td>${hora}</td>
-                <td>${nombre || ''}</td>
-                <td>${descripcion || ''}</td>
+                <td>${descripcion || '-'}</td>
                 <td class="${montoClass}">${formatearDinero(m.monto)}</td>
             </tr>
         `;
         };
 
-        document.getElementById('detalle-ingresos').innerHTML = ingresos.map(m => buildDetalleRow(m, true)).join('');
+        // Llenar 4 tablas separadas
+        document.getElementById('detalle-ingresos-cuenta').innerHTML = ingresosEnCuenta.length > 0 
+            ? ingresosEnCuenta.map(m => buildDetalleRow(m, true)).join('')
+            : '<tr><td colspan="3" class="text-center text-stone-500">Sin ingresos en cuenta</td></tr>';
 
-        document.getElementById('detalle-egresos').innerHTML = egresos.map(m => buildDetalleRow(m, false)).join('');
+        document.getElementById('detalle-egresos-cuenta').innerHTML = egresosEnCuenta.length > 0
+            ? egresosEnCuenta.map(m => buildDetalleRow(m, false)).join('')
+            : '<tr><td colspan="3" class="text-center text-stone-500">Sin egresos en cuenta</td></tr>';
+
+        document.getElementById('detalle-ingresos-efectivo').innerHTML = ingresosEnEfectivo.length > 0
+            ? ingresosEnEfectivo.map(m => buildDetalleRow(m, true)).join('')
+            : '<tr><td colspan="3" class="text-center text-stone-500">Sin ingresos en efectivo</td></tr>';
+
+        document.getElementById('detalle-egresos-efectivo').innerHTML = egresosEnEfectivo.length > 0
+            ? egresosEnEfectivo.map(m => buildDetalleRow(m, false)).join('')
+            : '<tr><td colspan="3" class="text-center text-stone-500">Sin egresos en efectivo</td></tr>';
 
         // Llenar totales
-        document.getElementById('detalle-saldo-inicial').textContent = formatearDinero(caja.saldo_inicial);
+        document.getElementById('detalle-saldo-inicial').textContent = formatearDinero(caja.saldo_inicial_en_cuenta);
+        document.getElementById('detalle-total-ingresos').textContent = formatearDinero(totalIngresos);
+        document.getElementById('detalle-total-egresos').textContent = formatearDinero(totalEgresos);
+        document.getElementById('detalle-saldo-esperado').textContent = formatearDinero(saldoEsperado);
+        document.getElementById('detalle-saldo-final').textContent = formatearDinero(caja.saldo_final_en_efectivo || 0);
+        document.getElementById('detalle-diferencia').textContent = formatearDinero(diferencia);
+
+        // Color de diferencia
+        const diferenciEl = document.getElementById('detalle-diferencia');
+        if (diferencia === 0) {
+            diferenciEl.className = 'text-2xl font-bold text-green-400';
+        } else if (diferencia < 0) {
+            diferenciEl.className = 'text-2xl font-bold text-red-400';
+        } else {
+            diferenciEl.className = 'text-2xl font-bold text-yellow-400';
+        }
+
+        mostrarVista('detalle');
+    } catch (err) {
+        console.error('[admin_caja.js] Error en verDetalle:', err);
+        mostrarBanner('Error cargando detalles: ' + err.message, 'error');
+    }
+}
         document.getElementById('detalle-total-ingresos').textContent = formatearDinero(totalIngresos);
         document.getElementById('detalle-total-egresos').textContent = formatearDinero(totalEgresos);
         document.getElementById('detalle-saldo-esperado').textContent = formatearDinero(saldoEsperado);
@@ -527,6 +574,41 @@ async function guardarNombre() {
     }
 }
 
+// Guardar evento asociado a la caja
+async function guardarEvento() {
+    if (!cajaActual) return;
+
+    const idEvento = document.getElementById('id-evento-confirmado').value || null;
+    
+    if (!token) await authenticateAndGetToken();
+
+    try {
+        const response = await fetch(`/api/cajas/${cajaActual.id}/evento`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ idEventoConfirmado: idEvento ? parseInt(idEvento) : null })
+        });
+
+        if (!response.ok) {
+            throw new Error('Error guardando evento');
+        }
+
+        cajaActual.id_evento_confirmado = idEvento ? parseInt(idEvento) : null;
+        const selectEvento = document.getElementById('id-evento-confirmado');
+        const selectedText = selectEvento.options[selectEvento.selectedIndex]?.text || 'Sin evento';
+        mostrarBanner(`✅ Evento actualizado: ${selectedText}`, 'success');
+        cargarCajas();
+    } catch (err) {
+        console.error('[admin_caja.js] Error guardando evento:', err);
+        mostrarBanner('Error: ' + err.message, 'error');
+    }
+}
+    }
+}
+
 // Mostrar vista específica
 function mostrarVista(vista) {
     viewListado.classList.add('hidden');
@@ -550,11 +632,14 @@ function mostrarVista(vista) {
     }
 }
 
-// Cargar eventos confirmados en el select
-async function cargarEventosDisponibles() {
+// Cargar eventos confirmados en el select (reutilizable para diferentes selectores)
+async function cargarEventosDisponibles(selectId = 'id-evento-confirmado') {
     try {
-        const selectEvento = document.getElementById('id-evento-confirmado');
-        if (!selectEvento) return;
+        const selectEvento = document.getElementById(selectId);
+        if (!selectEvento) {
+            console.warn(`[admin_caja.js] No se encontró select #${selectId}`);
+            return;
+        }
 
         if (!token) await authenticateAndGetToken();
 
@@ -1103,6 +1188,7 @@ async function pausarRefreshMP() {
 if (btnNuevaCaja) btnNuevaCaja.addEventListener('click', () => mostrarVista('abrir'));
 if (btnVolver) btnVolver.addEventListener('click', mostrarListado);
 if (btnGuardarNombre) btnGuardarNombre.addEventListener('click', guardarNombre);
+if (btnGuardarEvento) btnGuardarEvento.addEventListener('click', guardarEvento);
 if (btnCerrarCajaAbierta) btnCerrarCajaAbierta.addEventListener('click', cerrarCajaAbierta);
 
 // Toggle panel de importación MP

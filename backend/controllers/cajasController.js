@@ -625,6 +625,35 @@ async function actualizarNombreCaja(req, res) {
 }
 
 /**
+ * Actualizar evento asociado a una caja
+ * PUT /api/cajas/:id/evento
+ */
+async function actualizarEventoCaja(req, res) {
+    try {
+        const cajaId = req.params.id;
+        const { idEventoConfirmado } = req.body;
+
+        // idEventoConfirmado puede ser null (sin evento)
+        const updateQuery = `
+            UPDATE cajas
+            SET id_evento_confirmado = ?
+            WHERE id = ?
+        `;
+
+        await db.query(updateQuery, [idEventoConfirmado || null, cajaId]);
+
+        return res.json(serializeBigInt({
+            id: cajaId,
+            id_evento_confirmado: idEventoConfirmado || null,
+            mensaje: 'Evento actualizado correctamente'
+        }));
+    } catch (err) {
+        console.error('[cajasController] Error actualizando evento:', err);
+        res.status(500).json({ error: 'Error actualizando evento', details: err.message });
+    }
+}
+
+/**
  * Importar movimientos de MP a una caja
  * POST /api/cajas/:id/importar-mp
  */
@@ -1499,6 +1528,7 @@ module.exports = {
     cerrarCaja,
     obtenerHistorialCajas,
     actualizarNombreCaja,
+    actualizarEventoCaja,
     importarMovimientosMPCaja,
     importarMovimientosRetroactivos,
     importarRetroactivosStream,
