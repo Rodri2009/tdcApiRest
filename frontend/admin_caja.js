@@ -463,14 +463,16 @@ async function verDetalle(cajaId) {
         const buildDetalleRow = (m, isIngreso) => {
             const createdAt = new Date(m.creado_en);
             const fecha = createdAt.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const hora = createdAt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
             const descripcion = String(m.descripcion || '').trim();
             const usuario = String(m.usuario_nombre || '').trim() || '-';
             const montoClass = isIngreso ? 'text-green-400' : 'text-red-400';
             return `
             <tr>
                 <td>${fecha}</td>
-                <td>${descripcion || '-'}</td>
+                <td class="text-stone-400 text-xs">${hora}</td>
                 <td class="text-stone-400 text-sm">${usuario}</td>
+                <td>${descripcion || '-'}</td>
                 <td class="${montoClass}">${formatearDinero(m.monto)}</td>
             </tr>
         `;
@@ -479,19 +481,19 @@ async function verDetalle(cajaId) {
         // Llenar 4 tablas separadas
         document.getElementById('detalle-ingresos-cuenta').innerHTML = ingresosEnCuenta.length > 0
             ? ingresosEnCuenta.map(m => buildDetalleRow(m, true)).join('')
-            : '<tr><td colspan="4" class="text-center text-stone-500">Sin ingresos en cuenta</td></tr>';
+            : '<tr><td colspan="5" class="text-center text-stone-500">Sin ingresos en cuenta</td></tr>';
 
         document.getElementById('detalle-egresos-cuenta').innerHTML = egresosEnCuenta.length > 0
             ? egresosEnCuenta.map(m => buildDetalleRow(m, false)).join('')
-            : '<tr><td colspan="4" class="text-center text-stone-500">Sin egresos en cuenta</td></tr>';
+            : '<tr><td colspan="5" class="text-center text-stone-500">Sin egresos en cuenta</td></tr>';
 
         document.getElementById('detalle-ingresos-efectivo').innerHTML = ingresosEnEfectivo.length > 0
             ? ingresosEnEfectivo.map(m => buildDetalleRow(m, true)).join('')
-            : '<tr><td colspan="4" class="text-center text-stone-500">Sin ingresos en efectivo</td></tr>';
+            : '<tr><td colspan="5" class="text-center text-stone-500">Sin ingresos en efectivo</td></tr>';
 
         document.getElementById('detalle-egresos-efectivo').innerHTML = egresosEnEfectivo.length > 0
             ? egresosEnEfectivo.map(m => buildDetalleRow(m, false)).join('')
-            : '<tr><td colspan="4" class="text-center text-stone-500">Sin egresos en efectivo</td></tr>';
+            : '<tr><td colspan="5" class="text-center text-stone-500">Sin egresos en efectivo</td></tr>';
 
         // Llenar totales
         document.getElementById('detalle-saldo-inicial').textContent = formatearDinero(caja.saldo_inicial_en_cuenta);
