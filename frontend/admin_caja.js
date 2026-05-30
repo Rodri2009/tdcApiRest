@@ -606,8 +606,6 @@ async function guardarEvento() {
         mostrarBanner('Error: ' + err.message, 'error');
     }
 }
-    }
-}
 
 // Mostrar vista específica
 function mostrarVista(vista) {
