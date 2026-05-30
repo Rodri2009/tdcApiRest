@@ -1,6 +1,6 @@
 # 📚 Índice de Documentación - TDC API REST
 
-## Última actualización: 27/04/2026
+## Última actualización: 28/05/2026 (FASE 2 COMPLETADA)
 
 ---
 
@@ -8,6 +8,15 @@
 
 Estos documentos contienen información actual y relevante para el desarrollo.
 
+### 🎯 ROADMAP IMPLEMENTACIÓN (Fases Activas)
+- **[FASE_1_ADMIN_VENTA_ENTRADAS.md](FASE_1_ADMIN_VENTA_ENTRADAS.md)** - ✅ COMPLETADA (28/05) - Dashboard admin para gestión de ventas
+- **[FASE_2_SCANNER_PUERTA.md](FASE_2_SCANNER_PUERTA.md)** - ✅ COMPLETADA (28/05) - Control de puerta con scanner QR
+- **[PROXIMOS_PASOS_FASE_3_4.md](PROXIMOS_PASOS_FASE_3_4.md)** - 🔄 PLANIFICADO - Devoluciones, Reembolsos y Reportes
+
+### 💳 Compra de Entradas & Pagos
+- **[FLUJO_COMPRA_ENTRADAS.md](FLUJO_COMPRA_ENTRADAS.md)** - Flujo end-to-end de compra de entradas con MercadoPago
+- **[SOPORTE_MERCADOPAGO_WALLET_BRICK.md](SOPORTE_MERCADOPAGO_WALLET_BRICK.md)** - Solución completa de problemas Wallet Brick
+- **[ANALISIS_OPERATORIA_POSTCARGA.md](ANALISIS_OPERATORIA_POSTCARGA.md)** - Análisis completo de operatoria post-compra (listas, control de puerta, devoluciones)
 ### 🏗️ Arquitectura & Diseño
 - **[arquitectura_oauth.md](arquitectura_oauth.md)** - Flujo OAuth y autenticación en backend
 - **[diagrama_modelo.md](diagrama_modelo.md)** - Diagrama del modelo relacional actual
@@ -33,34 +42,58 @@ Estos documentos contienen información actual y relevante para el desarrollo.
 
 ---
 
-## ✅ DOCUMENTACIÓN COMPLETADA (Referencia Histórica)
+## ✅ FASES IMPLEMENTADAS (Información Detallada)
 
-Fases y tareas que ya fueron finalizadas. Se mantienen como referencia.
+Fases completadas del roadmap actual con documentación detallada.
 
-### Fase 2 - Normalización
-- **[completado_fase2_validacion.md](completado_fase2_validacion.md)**
-- **[completado_normalizacion_db.md](completado_normalizacion_db.md)**
-- **[completado_plan_normalizacion.md](completado_plan_normalizacion.md)**
-- **[completado_quickstart_fase2.md](completado_quickstart_fase2.md)**
-- **[completado_sesion_fase2_final.md](completado_sesion_fase2_final.md)**
-- **[completado_resumen_fase2.md](completado_resumen_fase2.md)**
+### FASE 1 - Admin Dashboard Venta de Entradas (Completada 28/05/2026)
+- **[FASE_1_ADMIN_VENTA_ENTRADAS.md](FASE_1_ADMIN_VENTA_ENTRADAS.md)** - Documentación completa FASE 1
+  - Dashboard con 2 tabs: Compradores | Estadísticas
+  - Tabla de 150+ compradores
+  - 8 KPI cards
+  - CSV export funcional
+  - Status: ✅ TESTEADO Y FUNCIONAL
 
-### Testing Completado
-- **[completado_testing_fase2.md](completado_testing_fase2.md)**
-- **[completado_testing_oauth.md](completado_testing_oauth.md)**
-- **[completado_testing_proteccion.md](completado_testing_proteccion.md)**
-- **[completado_testing_solicitudes.md](completado_testing_solicitudes.md)**
-
-### Implementaciones Completadas
-- **[completado_proteccion_rutas.md](completado_proteccion_rutas.md)**
-- **[completado_cambios_bandas.md](completado_cambios_bandas.md)**
-
-### Referencias de Fase
-- **[referencia_cheatsheet_fase2.md](referencia_cheatsheet_fase2.md)** - Resumen ejecutivo de cambios fase 2
+### FASE 2 - Control de Puerta Scanner QR (Completada 28/05/2026)
+- **[FASE_2_SCANNER_PUERTA.md](FASE_2_SCANNER_PUERTA.md)** - Documentación completa FASE 2
+  - Interfaz de escaneo QR en vivo
+  - Validación de tickets contra BD
+  - Panel de estadísticas
+  - Historial de escaneos (últimos 50)
+  - Status: ✅ LISTO PARA TESTING
 
 ---
 
-## 📖 REFERENCIAS E ÍNDICES
+## 🔄 PRÓXIMAS FASES (En Planificación)
+
+Fases en planificación del roadmap actual.
+
+### FASE 3 - Devoluciones y Reembolsos (Planificado 02/06, 3 horas)
+- **[PROXIMOS_PASOS_FASE_3_4.md](PROXIMOS_PASOS_FASE_3_4.md#🔄-fase-3-devoluciones-y-reembolsos)** - Documentación completa FASE 3
+  - Admin dashboard para cancelar entradas
+  - Integración con MercadoPago Refund API
+  - Auditoría de reembolsos
+  - Status: 🔄 DISEÑO COMPLETADO, LISTO PARA IMPLEMENTAR
+
+### FASE 4 - Reportes Avanzados (Planificado 03/06, 2 horas)
+- **[PROXIMOS_PASOS_FASE_3_4.md](PROXIMOS_PASOS_FASE_3_4.md#📊-fase-4-reportes-avanzados)** - Documentación completa FASE 4
+  - Dashboard de analytics
+  - Gráficos con Chart.js
+  - Exportación a Excel
+  - Predicciones básicas
+  - Status: 🔄 DISEÑO COMPLETADO, LISTO PARA IMPLEMENTAR
+
+### FASE 5 - Cliente Logueado (Completada 28/05)
+- **[FASE_5_CLIENTE_LOGUEADO.md](FASE_5_CLIENTE_LOGUEADO.md)** - Documentación completa FASE 5
+  - Interfaz: Mis Entradas
+  - Tabla de tickets con detalles
+  - Modal de detalles
+  - Endpoint GET /api/tickets/me
+  - Status: ✅ COMPLETADA Y FUNCIONAL
+
+---
+
+## 🏛️ DOCUMENTACIÓN HISTÓRICA (Referencia Antigua)
 
 Índices, referencias históricas y documentación obsoleta mantenida como referencia.
 
@@ -81,14 +114,14 @@ Fases y tareas que ya fueron finalizadas. Se mantienen como referencia.
 
 | Categoría | Cantidad |
 |-----------|----------|
-| Vigentes | 12 |
-| Completadas | 6 |
-| Referencias | 1 |
+| Vigentes | 15 |
+| Fases Implementadas | 2 |
+| Próximas Fases | 1 |
 | Cheatsheet | 1 |
 | Índices | 2 |
 | Históricos | 3 |
 | Antiguos | 1 |
-| Totales | **32** |
+| **Totales** | **35** |
 
 ---
 

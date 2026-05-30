@@ -17,6 +17,10 @@ router.get('/eventos/:id/lineup', bandasController.getEventoLineup);
 // PUT /api/tickets/eventos/:id/lineup - Actualizar lineup (admin)
 router.put('/eventos/:id/lineup', protect, requireAdmin, bandasController.updateEventoLineup);
 
+// FASE 1: Lista de clientes y estadísticas
+router.get('/evento/:eventoId/clientes', ticketsController.getClientesPorEvento);
+router.get('/evento/:eventoId/resumen', ticketsController.getResumenEvento);
+
 // POST /api/tickets/checkout/simulate - Simula la compra y aplica cupones.
 router.post('/checkout/simulate', ticketsController.simulateCheckout);
 
@@ -34,6 +38,12 @@ router.get('/public-key', ticketsController.getPublicKey);
 
 // GET /api/tickets/:ticketId — obtiene detalles del ticket para el comprobante
 router.get('/:ticketId', ticketsController.getTicketDetails);
+
+// FASE 2: Validar entrada en la puerta (escaneo de QR)
+router.put('/:ticketId/validar', protect, ticketsController.validarEntrada);
+
+// FASE 5: Obtener entradas del usuario logueado
+router.get('/me', protect, ticketsController.getMyTickets);
 
 // RUTAS FUTURAS:
 // router.post('/validate', authMiddleware.isAdmin, ticketsController.validateTicket); // Para la app de scanner

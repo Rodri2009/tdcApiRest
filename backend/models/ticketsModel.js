@@ -151,10 +151,187 @@ const updateTicketStatus = async (ticketId, estado, mpPaymentId = null) => {
     }
 };
 
+/**
+ * FASE 1: Obtiene lista de todos los clientes que compraron entradas para un evento.
+ * @param {number} eventoId - ID del evento (eventos_confirmados.id)
+ * @returns {Promise<Array>} Array con detalles de cada comprador
+ */
+const getClientesPorEvento = async (eventoId) => {
+    const query = `
+        SELECT 
+            t.id,
+            t.nombre_comprador,
+            t.email,
+            t.cantidad,
+            t.tipo_precio,
+            t.total,
+            t.codigo_cupon,
+            t.descuento_aplicado,
+            t.codigo_confirmacion,
+            t.estado,
+            t.cantidad_utilizada,
+            t.fecha_utilizacion,
+            t.comprado_en,
+            c.telefono,
+            c.id_cliente,
+            c.apellido
+        FROM tickets t
+        LEFT JOIN clientes c ON c.email = t.email
+        WHERE t.id_evento = ?
+        ORDER BY t.comprado_en DESC;
+    `;
+    const rows = await pool.query(query, [eventoId]);
+    return rows.map(sanitizeRow);
+};
+
+/**
+ * FASE 1: Obtiene estadísticas agregadas de un evento.
+ * @param {number} eventoId - ID del evento (eventos_confirmados.id)
+ * @returns {Promise<Object>} Objeto con estadísticas del evento
+ */
+const getResumenEvento = async (eventoId) => {
+    const query = `
+        SELECT 
+            COUNT(DISTINCT id) as total_entradas_vendidas,
+            COUNT(DISTINCT CASE WHEN estado = 'pagado' THEN id END) as entradas_pagadas,
+            COUNT(DISTINCT CASE WHEN estado = 'pendiente' THEN id END) as entradas_pendientes,
+            COUNT(DISTINCT CASE WHEN estado = 'utilizado' THEN id END) as entradas_utilizadas,
+            COUNT(DISTINCT CASE WHEN estado = 'cancelado' THEN id END) as entradas_canceladas,
+            SUM(CASE WHEN tipo_precio = 'ANTICIPADA' THEN 1 ELSE 0 END) as anticipadas,
+            SUM(CASE WHEN tipo_precio = 'PUERTA' THEN 1 ELSE 0 END) as puerta,
+            SUM(total) as ingresos_totales,
+            SUM(CASE WHEN estado = 'pagado' THEN total ELSE 0 END) as ingresos_pagados,
+            SUM(CASE WHEN estado = 'cancelado' THEN monto_reembolsado ELSE 0 END) as reembolsos_totales,
+            SUM(cantidad) as cantidad_total_entradas,
+            SUM(CASE WHEN estado = 'pagado' THEN cantidad ELSE 0 END) as cantidad_pagada,
+            SUM(cantidad_utilizada) as cantidad_utilizada_total
+        FROM tickets
+        WHERE id_evento = ?;
+    `;
+    const rows = await pool.query(query, [eventoId]);
+    return sanitizeRow(rows[0]);
+};
+
+/**
+ * FASE 2: Obtiene los detalles completos de un ticket.
+ * @param {number} ticketId - ID del ticket
+ * @returns {Promise<Object>} Detalles del ticket
+ */
+const getTicketById = async (ticketId) => {
+    const query = `
+        SELECT 
+            t.id,
+            t.id_evento,
+            t.nombre_comprador,
+            t.email,
+            t.cantidad,
+            t.tipo_precio,
+            t.total,
+            t.estado,
+            t.codigo_confirmacion,
+            t.codigo_cupon,
+            t.cantidad_utilizada,
+            t.fecha_utilizacion,
+            t.fecha_escaneo,
+            t.comprado_en,
+            e.nombre_evento,
+            e.fecha_evento
+        FROM tickets t
+        LEFT JOIN eventos_confirmados e ON e.id = t.id_evento
+        WHERE t.id = ?;
+    `;
+    const rows = await pool.query(query, [ticketId]);
+    return sanitizeRow(rows[0]);
+};
+
+/**
+ * FASE 2: Valida un ticket para entrada y lo marca como utilizado.
+ * @param {number} ticketId - ID del ticket
+ * @param {number} eventoId - ID del evento (para validar)
+ * @returns {Promise<Object>} Resultado de la validación con detalles del ticket
+ */
+const validateTicketForEntry = async (ticketId, eventoId) => {
+    const ticket = await getTicketById(ticketId);
+
+    if (!ticket) {
+        throw {
+            status: 404,
+            error: 'TICKET_NOT_FOUND',
+            message: 'El ticket no existe'
+        };
+    }
+
+    if (ticket.id_evento !== eventoId) {
+        throw {
+            status: 400,
+            error: 'EVENTO_MISMATCH',
+            message: `El ticket es para otro evento (${ticket.id_evento})`
+        };
+    }
+
+    if (ticket.estado === 'cancelado') {
+        throw {
+            status: 400,
+            error: 'TICKET_CANCELLED',
+            message: 'Este ticket ha sido cancelado'
+        };
+    }
+
+    if (ticket.estado !== 'pagado') {
+        throw {
+            status: 400,
+            error: 'TICKET_NOT_PAID',
+            message: `El ticket está en estado ${ticket.estado}, debe estar pagado`
+        };
+    }
+
+    if (ticket.cantidad_utilizada >= ticket.cantidad) {
+        throw {
+            status: 400,
+            error: 'TICKET_ALREADY_USED',
+            message: 'Este ticket ya fue utilizado completamente'
+        };
+    }
+
+    // Marcar como utilizado
+    const ahora = new Date();
+    const cantidadNueva = (ticket.cantidad_utilizada || 0) + 1;
+
+    await pool.query(
+        `UPDATE tickets 
+         SET estado = 'utilizado', 
+             cantidad_utilizada = ?,
+             fecha_escaneo = NOW(),
+             fecha_utilizacion = ?
+         WHERE id = ?`,
+        [cantidadNueva, ahora, ticketId]
+    );
+
+    // Registrar en historial
+    await pool.query(
+        `INSERT INTO tickets_historial (id_ticket, evento_id, estado_anterior, estado_nuevo, nota)
+         VALUES (?, ?, ?, ?, ?)`,
+        [ticketId, eventoId, ticket.estado, 'utilizado', 'Entrada utilizada - Escaneado en puerta']
+    );
+
+    return {
+        id: ticketId,
+        cliente_nombre: ticket.nombre_comprador,
+        email: ticket.email,
+        evento: ticket.nombre_evento,
+        estado: 'utilizado',
+        cantidad_utilizada: cantidadNueva
+    };
+};
+
 module.exports = {
     getEventosActivos,
     getEventoById,
     checkCupon,
     createPendingTicket,
     updateTicketStatus,
+    getClientesPorEvento,
+    getResumenEvento,
+    getTicketById,
+    validateTicketForEntry,
 };

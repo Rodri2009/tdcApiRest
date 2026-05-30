@@ -172,40 +172,63 @@ apply_filters() {
         cat
         return
     fi
-    
-    # Si FILTER_IMPORT está activo, mostrar solo escrapeo para importaciones (en vivo, sin caché)
-    if [ "$FILTER_IMPORT" = "1" ]; then
-        sed -n '/INICIO DEL SCRAPING PARA IMPORTACIÓN/,/FIN DE ESCRAPEADO PARA IMPORTACIÓN/p'
-        return
-    fi
-    
-    # Construir patrón de grep con los filtros activos
+
     local patterns=()
-    
-    if [ "$FILTER_SCRAPER" = "1" ]; then
-        patterns+=("SCRAPER|🕷️")
+    local use_import_range=0
+
+    if [ "$FILTER_IMPORT" = "1" ]; then
+        use_import_range=1
     fi
-    
-    if [ "$FILTER_ACTIVITY" = "1" ]; then
+
+    if [ "$FILTER_SCRAPER" = "1" ]; then
+        patterns+=("SCRAPER\] Petición: Período buscado")
+        patterns+=("ActivityService\] Período buscado desde")
+        patterns+=("ActivityService\] Se pausa el timer de MP")
+        patterns+=("ActivityService\] 🔄 Iniciando scraping paginado")
+        patterns+=("ActivityService\] Página actual:")
+        patterns+=("ActivityService\]   Fecha")
+        patterns+=("ActivityService\]   transacción")
+        patterns+=("transacción")
+        patterns+=("ActivityService\] Fin del scraper")
+        patterns+=("ActivityService\] Se reanuda el timer de MP")
+    fi
+
+    if [ "$FILTER_ACTIVITY" = "1" ] && [ "$FILTER_SCRAPER" = "0" ]; then
         patterns+=("ActivityService")
     fi
-    
+
     if [ "$FILTER_MP" = "1" ]; then
         patterns+=("MP|Mercado|mercado-pago|mercadopago")
     fi
-    
+
     if [ "$FILTER_WA" = "1" ]; then
         patterns+=("WA|WhatsApp|whatsapp")
     fi
-    
+
     if [ "$FILTER_DEBUG_LOGS" = "1" ]; then
         patterns+=("\[DEBUG\]|debug")
     fi
-    
-    # Unir todos los patrones con OR
-    local combined_pattern=$(IFS='|'; echo "${patterns[*]}")
-    
-    grep -iE "$combined_pattern" || true
+
+    local combined_pattern=
+    if [ ${#patterns[@]} -gt 0 ]; then
+        combined_pattern=$(IFS='|'; echo "${patterns[*]}")
+    fi
+
+    if [ "$use_import_range" = "1" ] && [ -n "$combined_pattern" ]; then
+        sed -n '/INICIO DEL SCRAPING PARA IMPORTACIÓN/,/FIN DE ESCRAPEADO PARA IMPORTACIÓN/p' | grep -iE "$combined_pattern" || true
+        return
+    fi
+
+    if [ "$use_import_range" = "1" ]; then
+        sed -n '/INICIO DEL SCRAPING PARA IMPORTACIÓN/,/FIN DE ESCRAPEADO PARA IMPORTACIÓN/p'
+        return
+    fi
+
+    if [ -n "$combined_pattern" ]; then
+        grep -iE "$combined_pattern" || true
+    else
+        cat
+    fi
 }
 
 # Muestra logs de un contenedor específico

@@ -202,6 +202,23 @@ Sugiero:
 - El scraper detecta páginas duplicadas y aborta cuando MP regresa al inicio de historial.
 - El `watchService` se pausa durante el scraping para evitar que la sesión MP refresque la página.
 
+## Hallazgos recientes de la UI y la paginación
+
+- El HTML visible actual contiene los movimientos dentro de `li.andes-ui-list__item.fuji-activities`.
+- Cada fila tiene:
+  - `.fuji-activities__title` para el nombre/título.
+  - `.fuji-activities__description` para la descripción.
+  - `.andes-ui-money-amount__fraction` para el monto.
+  - `time.fuji-activities__date` para la hora, con `aria-label` que muestra la fecha textual y `datetime` con fecha ISO parcial.
+- Las transacciones se agrupan visualmente por fecha dentro de bloques `group-divider` / `list-group-items`.
+- En el estado actual, el botón “Siguiente” no siempre está disponible o detectable, pero la URL `?page=N` sí funciona para avanzar.
+- El scraping de páginas funciona con 25 transacciones por página y las páginas pueden mezclar varios días de movimiento.
+- Se confirmó en consola que la página 6 devolvía 25 movimientos, y la página 5 también mostró 25 movimientos con fechas múltiples.
+- Por esto, el scraper debe:
+  - no depender de un botón de paginación visible,
+  - no confiar en `window._n.ctx.r.appProps.pageProps.page` como única señal de cambio de página,
+  - extraer datos del DOM `fuji-activities` directamente cuando los datos internos no estén completos.
+
 ---
 
 ## Estado actual

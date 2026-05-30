@@ -299,11 +299,19 @@ async function scrapeActivity(page, verbose = true, dateFrom = null, dateTo = nu
                                     // Try to get creationDate by ID first, then by index
                                     const timeByIdOrIdx = timeMap[item.id] || timeMap[idx] || null;
 
+                                    const rawTitle = (item.title || '').trim();
+                                    const rawDescription = (item.description || '').trim();
+                                    const looksLikePerson = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4}$/.test(rawDescription);
+                                    const genericTitle = /^(?:transferencia(?: recibida| enviada)?|ingreso|egreso|pago(?:s)?|compra|venta|income|in_money|out|payment|deposito|acreditad[oa]|abonad[oa]|recibid[oa]|cobro)$/i.test(rawTitle);
+                                    const title = genericTitle && looksLikePerson ? rawDescription : rawTitle || rawDescription;
+                                    const description = title !== rawDescription ? rawDescription : rawTitle;
+
                                     return {
                                         id: item.id || `activity-${idx}`,
-                                        title: item.title || item.description || '',
+                                        name: title,
+                                        title,
                                         category: normCategory,
-                                        description: item.description || '',
+                                        description: description || '',
                                         amount: item.amount ? item.amount.fraction : null,
                                         currency: (item.amount && item.amount.currency_id) || 'ARS',
                                         symbol: (item.amount && item.amount.symbol) || '$',
@@ -335,21 +343,30 @@ async function scrapeActivity(page, verbose = true, dateFrom = null, dateTo = nu
                     // --- OLD API (fallback): pageProps.activities.results ---
                     const results = pageProps?.activities?.results || [];
                     if (Array.isArray(results) && results.length > 0) {
-                        return results.map((item, idx) => ({
-                            id: item.id || `activity-${idx}`,
-                            title: item.title || item.description || '',
-                            category: item.category || item.subCategory || '',
-                            description: item.description || '',
-                            amount: item.amount ? item.amount.fraction : null,
-                            currency: item.amount ? item.amount.currency_id : 'ARS',
-                            symbol: item.amount ? item.amount.symbol : '$',
-                            dateTime: item.grouperDate?.value || item.creationDate || null,
-                            creationDate: item.creationDate || null,
-                            type: item.entity || (item.category === 'transfers' ? 'transfer' : item.category),
-                            raw: JSON.stringify(item).slice(0, 300),
-                            _isStructured: true,
-                            _source: 'in-page-json'
-                        }));
+                        return results.map((item, idx) => {
+                            const rawTitle = (item.title || '').trim();
+                            const rawDescription = (item.description || '').trim();
+                            const looksLikePerson = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4}$/.test(rawDescription);
+                            const genericTitle = /^(?:transferencia(?: recibida| enviada)?|ingreso|egreso|pago(?:s)?|compra|venta|income|in_money|out|payment|deposito|acreditad[oa]|abonad[oa]|recibid[oa]|cobro)$/i.test(rawTitle);
+                            const title = genericTitle && looksLikePerson ? rawDescription : rawTitle || rawDescription;
+                            const description = title !== rawDescription ? rawDescription : rawTitle;
+                            return {
+                                id: item.id || `activity-${idx}`,
+                                name: title,
+                                title,
+                                category: item.category || item.subCategory || '',
+                                description: description || '',
+                                amount: item.amount ? item.amount.fraction : null,
+                                currency: item.amount ? item.amount.currency_id : 'ARS',
+                                symbol: item.amount ? item.amount.symbol : '$',
+                                dateTime: item.grouperDate?.value || item.creationDate || null,
+                                creationDate: item.creationDate || null,
+                                type: item.entity || (item.category === 'transfers' ? 'transfer' : item.category),
+                                raw: JSON.stringify(item).slice(0, 300),
+                                _isStructured: true,
+                                _source: 'in-page-json'
+                            };
+                        });
                     }
                 } catch (e) {
                     // fallthrough to DOM strategy
@@ -440,6 +457,96 @@ async function scrapeActivity(page, verbose = true, dateFrom = null, dateTo = nu
                     });
                     if (items.length > 0) {
                         return items;
+                    }
+
+                    // NEW FALLBACK: Mercado Pago current markup uses grouped date blocks with .group-divider + .list-group-items
+                    const groupBlocks = Array.from(document.querySelectorAll('#_R_qllie_ > div'));
+                    if (groupBlocks.length > 0) {
+                        const groupedItems = [];
+
+                        groupBlocks.forEach((group) => {
+                            const groupDate = group.querySelector('.group-divider')?.textContent.trim() || '';
+                            const rows = Array.from(group.querySelectorAll('.list-group-items .andes-ui-list__item.fuji-activities'));
+
+                            rows.forEach((row, idx) => {
+                                const title = row.querySelector('.fuji-activities__title')?.textContent.trim() || '';
+                                const description = row.querySelector('.fuji-activities__description')?.textContent.trim() || '';
+                                const amountEl = row.querySelector('.andes-ui-money-amount__fraction');
+                                const amountText = amountEl ? amountEl.textContent.trim() : row.querySelector('.fuji-activities__amount')?.textContent.trim() || '';
+                                const sign = row.querySelector('.andes-ui-money-amount__negative-symbol') ? '-' : '+';
+                                const timeEl = row.querySelector('time.fuji-activities__date');
+                                const timeText = timeEl?.textContent.trim() || '';
+                                const href = row.querySelector('a.andes-ui-list__item-actionable')?.href || row.querySelector('a')?.href || '';
+                                const raw = row.innerText || row.textContent || '';
+                                const computedDateTime = groupDate ? `${groupDate} ${timeText}` : timeText;
+                                const creationDate = computedDateTime || null;
+
+                                groupedItems.push({
+                                    id: href ? href.split('/').pop() : (row.id || `tx-${idx}`),
+                                    title: title || description || '',
+                                    description: description || '',
+                                    amount: `${sign}${amountText}`.replace(/\s+/g, ''),
+                                    currency: 'ARS',
+                                    symbol: '$',
+                                    dateTime: computedDateTime,
+                                    creationDate,
+                                    date: groupDate || '',
+                                    time: timeText,
+                                    href,
+                                    raw,
+                                    _source: 'dom-fuji-activities-grouped'
+                                });
+                            });
+                        });
+
+                        if (groupedItems.length > 0) {
+                            return groupedItems;
+                        }
+                    }
+
+                    // NEW FALLBACK: Mercado Pago current markup uses fuji-activities rows inside an Andes UI list
+                    const fujiRows = Array.from(document.querySelectorAll('li.andes-ui-list__item.fuji-activities'));
+                    if (fujiRows.length > 0) {
+                        return fujiRows.map((row, idx) => {
+                            const title = row.querySelector('.fuji-activities__title')?.textContent.trim() || '';
+                            const description = row.querySelector('.fuji-activities__description')?.textContent.trim() || '';
+                            const amountEl = row.querySelector('.andes-ui-money-amount__fraction');
+                            const amountText = amountEl ? amountEl.textContent.trim() : row.querySelector('.fuji-activities__amount')?.textContent.trim() || '';
+                            const sign = row.querySelector('.andes-ui-money-amount__negative-symbol') ? '-' : '+';
+                            const amount = `${sign}${amountText}`.replace(/\s+/g, '');
+                            const timeEl = row.querySelector('time.fuji-activities__date');
+                            const timeText = timeEl?.textContent.trim() || '';
+                            const dateLabel = timeEl?.getAttribute('aria-label')?.trim() || '';
+                            const isoDate = timeEl?.getAttribute('datetime')?.trim() || '';
+                            const groupDate = row.closest('.list-group-items')?.previousElementSibling?.textContent.trim() || '';
+                            const href = row.querySelector('a.andes-ui-list__item-actionable')?.href || '';
+                            const raw = row.innerText || row.textContent || '';
+                            const computedDateTime = dateLabel
+                                ? `${dateLabel} ${timeText}`
+                                : (groupDate ? `${groupDate} ${timeText}` : timeText);
+                            const computedCreationDate = dateLabel && timeText
+                                ? `${dateLabel} ${timeText}`
+                                : isoDate && timeText
+                                    ? `${isoDate} ${timeText}`
+                                    : isoDate
+                                        ? `${isoDate}T00:00:00.000Z`
+                                        : null;
+                            return {
+                                id: href ? href.split('/').pop() : (row.id || `tx-${idx}`),
+                                title: title || description || '',
+                                description: description || '',
+                                amount: amount,
+                                currency: 'ARS',
+                                symbol: '$',
+                                dateTime: computedDateTime,
+                                creationDate: computedCreationDate,
+                                date: groupDate || '',
+                                time: timeText,
+                                href,
+                                raw,
+                                _source: 'dom-fuji-activities'
+                            };
+                        });
                     }
 
                     // FALLBACK generic selectors if section parsing found nothing
@@ -606,29 +713,36 @@ async function scrapeActivity(page, verbose = true, dateFrom = null, dateTo = nu
                 };
 
                 const timeMatch = (timeStr || '').match(/(\d{1,2}):(\d{2})/);
-                const spanishDate = (dateStr || '').match(/(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i);
+                const spanishDate = (dateStr || '').match(/(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s+de\s+(\d{4}))?/i);
 
                 const isoFromParts = (y, m, d, h, mn) => {
-                    try { return new Date(y, m - 1, d, h || 0, mn || 0).toISOString(); } catch (e) { return null; }
+                    try {
+                        // Convertir hora Argentina (UTC-3) a UTC
+                        const utcMillis = Date.UTC(y, m - 1, d, (h || 0) + 3, mn || 0);
+                        return new Date(utcMillis).toISOString();
+                    } catch (e) {
+                        return null;
+                    }
                 };
 
                 // Manejar "Hoy" y "Ayer" (grupo del día actual/anterior en MP)
+                const baseArgDate = new Date(Date.now() + 3 * 3600 * 1000);
                 const trimmedDate = (dateStr || '').trim().toLowerCase();
                 if (trimmedDate === 'hoy' || trimmedDate === 'ayer') {
-                    const base = new Date();
-                    if (trimmedDate === 'ayer') base.setDate(base.getDate() - 1);
+                    const base = new Date(baseArgDate);
+                    if (trimmedDate === 'ayer') base.setUTCDate(base.getUTCDate() - 1);
                     if (timeMatch) {
-                        return isoFromParts(base.getFullYear(), base.getMonth() + 1, base.getDate(),
+                        return isoFromParts(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate(),
                             Number(timeMatch[1]), Number(timeMatch[2]));
                     }
-                    return isoFromParts(base.getFullYear(), base.getMonth() + 1, base.getDate());
+                    return isoFromParts(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate());
                 }
 
                 if (spanishDate) {
                     const day = Number(spanishDate[1]);
                     const monthName = spanishDate[2].toLowerCase();
                     const month = monthMap[monthName] || (new Date()).getMonth() + 1;
-                    const year = (new Date()).getFullYear();
+                    const year = spanishDate[3] ? Number(spanishDate[3]) : (new Date()).getFullYear();
                     if (timeMatch) {
                         const [h, mi] = timeMatch.slice(1, 3).map(Number);
                         return isoFromParts(year, month, day, h, mi);
@@ -825,7 +939,7 @@ async function scrapeActivity(page, verbose = true, dateFrom = null, dateTo = nu
 
             const filteredDeduplicated = (dateFrom && dateTo)
                 ? deduplicated.filter(tx => {
-                    const txDate = new Date(tx.creationDate || tx.dateTime || '');
+                    const txDate = parseMercadoPagoDate(tx.creationDate || tx.dateTime || '');
                     return !isNaN(txDate) && txDate >= dateFrom && txDate <= dateTo;
                 })
                 : deduplicated;
@@ -865,6 +979,99 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
         if (onProgress) onProgress(data);
     };
 
+    const parseMpDate = parseMercadoPagoDate;
+
+    const getArgentinaDateParts = (date) => {
+        const parts = new Intl.DateTimeFormat('es-AR', {
+            timeZone: 'America/Argentina/Buenos_Aires',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        }).formatToParts(date);
+        const result = {};
+        for (const part of parts) {
+            if (part.type !== 'literal') result[part.type] = part.value;
+        }
+        return result;
+    };
+
+    const formatArgentinaDateLabel = (date) => {
+        if (!date) return '';
+        const parts = getArgentinaDateParts(date);
+        const nowParts = getArgentinaDateParts(new Date());
+        const isToday = parts.year === nowParts.year && parts.month === nowParts.month && parts.day === nowParts.day;
+        if (isToday) return 'Hoy';
+        const monthName = new Intl.DateTimeFormat('es-AR', { month: 'long', timeZone: 'America/Argentina/Buenos_Aires' }).format(date);
+        return `${Number(parts.day)} de ${monthName}`;
+    };
+
+    const formatArgentinaHour = (date) => {
+        if (!date) return '';
+        const parts = getArgentinaDateParts(date);
+        return `${parts.hour}:${parts.minute} hs`;
+    };
+
+    const formatAmount = (amount) => {
+        if (amount === undefined || amount === null || amount === '') return '';
+        const value = Number(amount);
+        if (isNaN(value)) return String(amount);
+        const formatted = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(Math.abs(value));
+        return value < 0 ? `-${formatted}` : `${formatted}`;
+    };
+
+    const buildTransactionLogItem = (tx) => {
+        const dateValue = parseMpDate(tx.creationDate || tx.dateTime || tx.grouperDate?.value || '');
+        const titulo = (tx.name || tx.title || tx.description || '').trim();
+        const descripcion = tx.description && tx.description !== titulo ? tx.description.trim() : '';
+        return {
+            fecha: formatArgentinaDateLabel(dateValue),
+            hora: formatArgentinaHour(dateValue),
+            titulo,
+            descripcion,
+            monto: formatAmount(tx.amount),
+        };
+    };
+
+    const formatArgentinaPeriod = (date) => {
+        if (!date) return '';
+        const label = formatArgentinaDateLabel(date);
+        const hour = formatArgentinaHour(date);
+        return `${label} a las ${hour}`;
+    };
+
+    const groupTransactionsByDate = (transactions) => {
+        const grouped = new Map();
+        for (const tx of transactions) {
+            const dateValue = parseMpDate(tx.creationDate || tx.dateTime || tx.grouperDate?.value || '');
+            const label = formatArgentinaDateLabel(dateValue) || 'Sin fecha';
+            if (!grouped.has(label)) grouped.set(label, []);
+            grouped.get(label).push({ tx, dateValue });
+        }
+        return Array.from(grouped.entries()).map(([label, items]) => ({
+            label,
+            items: items.sort((a, b) => b.dateValue - a.dateValue).map((item) => item.tx)
+        })).sort((a, b) => {
+            const aDate = parseMpDate(a.items[0]?.creationDate || a.items[0]?.dateTime || a.items[0]?.grouperDate?.value || '');
+            const bDate = parseMpDate(b.items[0]?.creationDate || b.items[0]?.dateTime || b.items[0]?.grouperDate?.value || '');
+            return bDate - aDate;
+        });
+    };
+
+    const logPageTransactions = (pageNumber, transactions) => {
+        console.log(`[ActivityService] Página actual: ${pageNumber}`);
+        if (!transactions || transactions.length === 0) {
+            console.log('[ActivityService]   No hay transacciones del período en esta página.');
+            return;
+        }
+        const grouped = groupTransactionsByDate(transactions);
+        grouped.forEach((group) => {
+            console.log(`[ActivityService]   Fecha ${group.label}`);
+            group.items.forEach((tx, index) => {
+                const item = buildTransactionLogItem(tx);
+                console.log(`    transacción ${index + 1}: ${item.hora} | ${item.titulo} | ${item.descripcion || 'sin descripción'} | ${item.monto}`);
+            });
+        });
+    };
+
     // ── PAUSAR EL WATCH SERVICE ──────────────────────────────────────────────
     let watchService = null;
     let watchWasActive = false;
@@ -888,12 +1095,35 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
         const limitedPages = typeof maxPages === 'number' && !Number.isNaN(maxPages) && maxPages > 0 ? maxPages : Infinity;
         const pageLimitLabel = Number.isFinite(limitedPages) ? limitedPages : 'Ilimitado';
         if (dateFrom && dateTo) {
-            const fmtFrom = dateFrom.toISOString().replace('T', ' ').substring(0, 19);
-            const fmtTo = dateTo.toISOString().replace('T', ' ').substring(0, 19);
-            console.log(`[🕷️  SCRAPER] Petición: Período buscado ${fmtFrom} → ${fmtTo}, Cantidad de páginas: ${pageLimitLabel}`);
+            console.log(`[🕷️  SCRAPER] Petición: Período buscado ${formatArgentinaPeriod(dateFrom)} → ${formatArgentinaPeriod(dateTo)}, Cantidad de páginas: ${pageLimitLabel}`);
         }
+        if (dateFrom && dateTo) {
+            console.log(`[ActivityService] Período buscado desde el ${formatArgentinaPeriod(dateFrom)} hasta el ${formatArgentinaPeriod(dateTo)}`);
+        }
+        console.log('[ActivityService] Se pausa el timer de MP...');
         console.log('[ActivityService] 🔄 Iniciando scraping paginado de todas las actividades...');
         emit({ type: 'status', message: '🔄 Iniciando scraping...' });
+
+        const ensureActivitiesPage = async () => {
+            try {
+                const currentUrl = page.url();
+                console.log(`[ActivityService] currentUrl before scraping: ${currentUrl}`);
+                if (!currentUrl || !currentUrl.includes('/activities')) {
+                    console.log('[ActivityService] Navegando a https://www.mercadopago.com.ar/activities...');
+                    await page.goto('https://www.mercadopago.com.ar/activities', { waitUntil: 'networkidle2', timeout: 45000 });
+                    try {
+                        await page.waitForTimeout(2000);
+                    } catch (waitErr) {
+                        await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 2000)));
+                    }
+                    console.log('[ActivityService] currentUrl after navigation:', page.url());
+                }
+            } catch (err) {
+                console.warn('[ActivityService] ⚠️  Error al navegar a activities:', err.message);
+            }
+        };
+
+        await ensureActivitiesPage();
 
         const urlValidation = await validateCurrentUrl(page, '/activities');
         if (!urlValidation.valid) {
@@ -950,6 +1180,15 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
         let periodFoundInPages = false;
         let pageLogOffset = 0;
         const seenTransactionIds = new Set();
+        const seenTransactionKeys = new Set();
+
+        const buildTransactionLogKey = (tx) => {
+            const timestamp = tx.creationDate || tx.dateTime || '';
+            const title = (tx.title || tx.description || '').trim().replace(/\s+/g, ' ').substring(0, 120);
+            const amount = tx.amount !== undefined && tx.amount !== null ? String(tx.amount) : '';
+            if (tx.id) return `ID|${tx.id}`;
+            return `KEY|${timestamp}|${amount}|${title}`;
+        };
 
         const findNextButtonHandle = async () => {
             const selectors = [
@@ -986,14 +1225,13 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
 
         const getPageRowsFingerprint = async () => {
             return page.evaluate(() => {
-                const container = document.querySelector('#_R_qllie_') || document;
-                const rows = Array.from(container.querySelectorAll('[data-transaction-id]')).slice(0, 20);
+                const rows = Array.from(document.querySelectorAll('li.andes-ui-list__item.fuji-activities')).slice(0, 20);
                 const summaries = rows.map(row => {
                     const timeEl = row.querySelector('time.fuji-activities__date, time[datetime]');
                     const dateText = timeEl ? (timeEl.getAttribute('datetime') || timeEl.getAttribute('title') || timeEl.textContent || '').trim() : '';
-                    const titleEl = row.querySelector('h3, h4, [class*="title"], [class*="subtitle"], [class*="description"], [class*="name"], [data-testid*="merchant"], [data-testid*="title"]');
+                    const titleEl = row.querySelector('.fuji-activities__title, h3, h4, [class*=\"title\"], [data-testid*=\"merchant\"], [data-testid*=\"title\"]');
                     const titleText = titleEl ? titleEl.textContent.trim() : '';
-                    const amountEl = row.querySelector('[class*="amount"], [data-testid*="amount"], .fuji-activities__amount, [data-test="amount"]');
+                    const amountEl = row.querySelector('.andes-ui-money-amount__fraction, .fuji-activities__amount, [class*=\"amount\"], [data-testid*=\"amount\"], [data-test=\"amount\"]');
                     let amountText = amountEl ? amountEl.textContent.trim() : '';
                     if (!amountText) {
                         const text = row.innerText || '';
@@ -1005,11 +1243,8 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                 if (summaries.length > 0) {
                     return summaries.join('||');
                 }
-                const ids = Array.from(container.querySelectorAll('[data-transaction-id]')).slice(0, 20)
-                    .map(el => el.getAttribute('data-transaction-id') || '')
-                    .join('|');
-                const text = container.innerText || '';
-                return `${ids}|${text.slice(0, 200)}`;
+                const text = document.body.innerText || '';
+                return `BODY|${text.slice(0, 200)}`;
             });
         };
 
@@ -1021,7 +1256,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
 
             let countBefore = 0;
             try {
-                countBefore = await page.evaluate(() => document.querySelectorAll('[data-transaction-id]').length);
+                countBefore = await page.evaluate(() => document.querySelectorAll('li.andes-ui-list__item.fuji-activities').length);
             } catch (err) {
                 if (err.message && err.message.includes('Execution context was destroyed')) {
                     console.warn('[ActivityService] 🔄 ALERTA: Refresh detectado ANTES del scraping');
@@ -1042,8 +1277,6 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                         .map(tx => `${tx.dateTime || tx.creationDate || ''}|${tx.title || tx.description || ''}|${tx.amount}`)
                         .join(';');
 
-                    console.log(`[ActivityService] 🔍 Fingerprint de página ${pageCount}: ${fingerprint.slice(0, 80)}...`);
-
                     if (prevPageFingerprint !== null && fingerprint === prevPageFingerprint) {
                         console.warn(`[ActivityService] 🔁 PÁGINA DUPLICADA detectada en página ${pageCount} — MP redirigió al inicio. Abortando.`);
                         emit({ type: 'page_duplicate', page: pageCount, message: `🔁 Página ${pageCount} = Página ${pageCount - 1}: MP redirigió al inicio. Scraping detenido para evitar datos incorrectos.` });
@@ -1053,11 +1286,17 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                         const rawPageTransactions = pageResult.transactions || [];
                         const uniquePageTransactions = [];
                         rawPageTransactions.forEach(tx => {
-                            if (tx.id && seenTransactionIds.has(tx.id)) {
-                                console.warn(`[ActivityService] 🔁 Transacción duplicada por ID entre páginas: ${tx.id} | ${tx.title || tx.description || ''} | ${tx.amount}`);
+                            const txKey = buildTransactionLogKey(tx);
+                            if (seenTransactionKeys.has(txKey)) {
+                                console.warn(`[ActivityService] 🔁 Transacción duplicada detectada entre páginas: ${txKey}`);
                                 return;
                             }
+                            seenTransactionKeys.add(txKey);
                             if (tx.id) {
+                                if (seenTransactionIds.has(tx.id)) {
+                                    console.warn(`[ActivityService] 🔁 Transacción duplicada por ID entre páginas: ${tx.id} | ${tx.title || tx.description || ''} | ${tx.amount}`);
+                                    return;
+                                }
                                 seenTransactionIds.add(tx.id);
                             }
                             uniquePageTransactions.push(tx);
@@ -1065,10 +1304,12 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
 
                         const filteredPageTransactions = (dateFrom && dateTo)
                             ? uniquePageTransactions.filter(tx => {
-                                const txDate = new Date(tx.creationDate || tx.dateTime || '');
-                                return !isNaN(txDate) && txDate >= dateFrom && txDate <= dateTo;
+                                const txDate = parseMpDate(tx.creationDate || tx.dateTime || '');
+                                return txDate && txDate >= dateFrom && txDate <= dateTo;
                             })
                             : uniquePageTransactions;
+
+                        logPageTransactions(pageCount, filteredPageTransactions);
 
                         allTransactions = allTransactions.concat(uniquePageTransactions);
                         pageResults.push({
@@ -1082,8 +1323,8 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                             pageHasPeriod = filteredPageTransactions.length > 0;
                             if (rawPageTransactions.length > 0) {
                                 const lastTx = rawPageTransactions[rawPageTransactions.length - 1];
-                                const lastTxDate = new Date(lastTx.creationDate || lastTx.dateTime || '');
-                                if (!isNaN(lastTxDate) && lastTxDate < dateFrom) {
+                                const lastTxDate = parseMpDate(lastTx.creationDate || lastTx.dateTime || '');
+                                if (lastTxDate && lastTxDate < dateFrom) {
                                     console.log(`[ActivityService] ✅ Fecha objetivo alcanzada en página ${pageCount}: última transacción es ${lastTxDate.toISOString()} (anterior a ${dateFrom.toISOString()})`);
                                     hasNextPage = false;
                                 }
@@ -1102,7 +1343,12 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
                             page: pageCount,
                             count: filteredPageTransactions.length,
                             rawCount: rawPageTransactions.length,
-                            total: allTransactions.length
+                            total: allTransactions.length,
+                            sampleDates: rawPageTransactions.slice(0, 4).map(tx => ({
+                                title: tx.title,
+                                creationDate: tx.creationDate || null,
+                                dateTime: tx.dateTime || null
+                            }))
                         };
                         if (filteredPageTransactions.length > 0) {
                             const firstTx = filteredPageTransactions[0];
@@ -1138,7 +1384,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
 
             let countAfter = 0;
             try {
-                countAfter = await page.evaluate(() => document.querySelectorAll('[data-transaction-id]').length);
+                countAfter = await page.evaluate(() => document.querySelectorAll('li.andes-ui-list__item.fuji-activities').length);
             } catch (err) {
                 if (err.message && err.message.includes('Execution context was destroyed')) {
                     console.warn('[ActivityService] 🔄 ALERTA: Refresh detectado DESPUÉS del scraping');
@@ -1169,10 +1415,9 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
 
                     console.log(`[ActivityService] ➡️  Navegando a página siguiente: ${nextUrl}`);
                     await page.goto(nextUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-                    await page.waitForFunction((expected) => {
-                        const props = window._n?.ctx?.r?.appProps?.pageProps;
-                        return props && Number(props.page) === expected;
-                    }, { polling: 'mutation', timeout: 15000 }, nextPageNum);
+                    await page.waitForFunction(() => {
+                        return document.querySelectorAll('li.andes-ui-list__item.fuji-activities').length > 0 || document.querySelector('#_r_30_');
+                    }, { polling: 'mutation', timeout: 15000 });
                     console.log(`[ActivityService] ✅ Página siguiente cargada: ${nextPageNum}`);
                 } catch (err) {
                     navigationErrors++;
@@ -1251,8 +1496,8 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
             if (!dateFrom || !dateTo) return true;
             const rawDate = tx.creationDate || tx.dateTime || tx.grouperDate?.value;
             if (!rawDate) return false;
-            const txDate = new Date(rawDate);
-            return !isNaN(txDate) && txDate >= dateFrom && txDate <= dateTo;
+            const txDate = parseMercadoPagoDate(rawDate);
+            return txDate !== null && txDate >= dateFrom && txDate <= dateTo;
         };
 
         const finalTransactions = (dateFrom && dateTo)
@@ -1261,6 +1506,12 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
 
         if (dateFrom && dateTo && finalTransactions.length !== dedupedTransactions.length) {
             console.log(`[ActivityService] ✅ Filtrado final por período: ${dedupedTransactions.length} → ${finalTransactions.length}`);
+        }
+
+        if (dateFrom && dateTo) {
+            const transactionsForLog = finalTransactions.map(buildTransactionLogItem);
+            console.log('[ActivityService] 📝 Transacciones dentro del período:');
+            console.log(JSON.stringify(transactionsForLog, null, 2));
         }
 
         let pageComparison = null;
@@ -1332,6 +1583,7 @@ async function scrapeActivityAllPages(page, maxPages = 20, onProgress = null, da
             try {
                 watchService.start();
                 console.log('[ActivityService] ▶️  TransactionWatchService reanudado');
+                console.log('[ActivityService] Se reanuda el timer de MP...');
                 emit({ type: 'status', message: '▶️ Watch service reanudado' });
             } catch (e) {
                 console.warn('[ActivityService] ⚠️  No se pudo reanudar watch service:', e.message);
@@ -1468,6 +1720,133 @@ async function warmupCache(page) {
 }
 
 /**
+ * Parse a Mercado Pago date string into a UTC Date.
+ * Supports ISO strings, Argentina-local strings, Spanish labels, Hoy/Ayer, and human-readable group dates.
+ */
+function parseMercadoPagoDate(value) {
+    if (!value) return null;
+
+    if (value instanceof Date) {
+        return isNaN(value.getTime()) ? null : value;
+    }
+
+    const raw = String(value).replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!raw) return null;
+
+    const parseArgDatetime = (year, month, day, hour = 0, minute = 0, second = 0) => {
+        try {
+            const utcMillis = Date.UTC(year, month - 1, day, hour + 3, minute, second);
+            return new Date(utcMillis);
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const getArgentinaNowParts = () => {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Argentina/Buenos_Aires',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        }).formatToParts(new Date());
+        const result = {};
+        for (const part of parts) {
+            if (part.type !== 'literal') result[part.type] = part.value;
+        }
+        return {
+            year: Number(result.year),
+            month: Number(result.month),
+            day: Number(result.day),
+            hour: Number(result.hour),
+            minute: Number(result.minute),
+            second: Number(result.second)
+        };
+    };
+
+    const monthMap = {
+        enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+        julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12
+    };
+
+    const timeMatch = raw.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    const explicitTimezone = /[+-]\d{2}:?\d{2}$/.test(raw);
+    const isIsoDate = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?(?:Z|[+-]\d{2}:?\d{2})?$/.test(raw);
+    if (isIsoDate) {
+        if (/Z$/.test(raw) || explicitTimezone) {
+            const parsed = new Date(raw);
+            return isNaN(parsed) ? null : parsed;
+        }
+        if (/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw)) {
+            const [datePart, timePart] = raw.split('T');
+            const [year, month, day] = datePart.split('-').map(Number);
+            const [hour, minute, second = '0'] = timePart.split(':').map(Number);
+            return parseArgDatetime(year, month, day, hour, minute, second);
+        }
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            const [year, month, day] = raw.split('-').map(Number);
+            return parseArgDatetime(year, month, day, 0, 0, 0);
+        }
+    }
+
+    const spanishDate = raw.match(/(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s+de\s+(\d{4}))?/i);
+    const hoyMatch = raw.match(/\b(hoy)\b/i);
+    const ayerMatch = raw.match(/\b(ayer)\b/i);
+    const dmY = raw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    const isoLikeDateSpace = raw.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    const argNow = getArgentinaNowParts();
+
+    if (hoyMatch || ayerMatch) {
+        const baseDate = new Date(Date.UTC(argNow.year, argNow.month - 1, argNow.day, argNow.hour, argNow.minute, argNow.second));
+        if (ayerMatch) {
+            baseDate.setUTCDate(baseDate.getUTCDate() - 1);
+        }
+        const hour = timeMatch ? Number(timeMatch[1]) : 0;
+        const minute = timeMatch ? Number(timeMatch[2]) : 0;
+        const second = timeMatch && timeMatch[3] ? Number(timeMatch[3]) : 0;
+        return parseArgDatetime(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + 1, baseDate.getUTCDate(), hour, minute, second);
+    }
+
+    if (spanishDate) {
+        const day = Number(spanishDate[1]);
+        const month = monthMap[spanishDate[2].toLowerCase()] || argNow.month;
+        const year = spanishDate[3] ? Number(spanishDate[3]) : argNow.year;
+        const hour = timeMatch ? Number(timeMatch[1]) : 0;
+        const minute = timeMatch ? Number(timeMatch[2]) : 0;
+        const second = timeMatch && timeMatch[3] ? Number(timeMatch[3]) : 0;
+        return parseArgDatetime(year, month, day, hour, minute, second);
+    }
+
+    if (dmY) {
+        const day = Number(dmY[1]);
+        const month = Number(dmY[2]);
+        const year = Number(dmY[3]);
+        const hour = timeMatch ? Number(timeMatch[1]) : 0;
+        const minute = timeMatch ? Number(timeMatch[2]) : 0;
+        const second = timeMatch && timeMatch[3] ? Number(timeMatch[3]) : 0;
+        return parseArgDatetime(year, month, day, hour, minute, second);
+    }
+
+    if (isoLikeDateSpace) {
+        const year = Number(isoLikeDateSpace[1].split('-')[0]);
+        const month = Number(isoLikeDateSpace[1].split('-')[1]);
+        const day = Number(isoLikeDateSpace[1].split('-')[2]);
+        const hour = Number(isoLikeDateSpace[2]);
+        const minute = Number(isoLikeDateSpace[3]);
+        const second = isoLikeDateSpace[4] ? Number(isoLikeDateSpace[4]) : 0;
+        return parseArgDatetime(year, month, day, hour, minute, second);
+    }
+
+    if (timeMatch && raw.length <= 8) {
+        const year = argNow.year;
+        const month = argNow.month;
+        const day = argNow.day;
+        return parseArgDatetime(year, month, day, Number(timeMatch[1]), Number(timeMatch[2]), timeMatch[3] ? Number(timeMatch[3]) : 0);
+    }
+
+    const parsed = new Date(raw);
+    return isNaN(parsed) ? null : parsed;
+}
+
+/**
  * Corrige timestamps que vienen de serverMP
  * serverMP envía hora local de Argentina pero con tag UTC (Z)
  * Esto causa un offset de -3 horas en la visualización
@@ -1491,5 +1870,6 @@ module.exports = {
     scrapeActivity,
     scrapeActivityAllPages,
     refreshActivityPage,
-    warmupCache
+    warmupCache,
+    parseMercadoPagoDate
 };

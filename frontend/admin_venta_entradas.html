@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin - Venta de Entradas</title>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <style>
+        .wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 24px;
+            color: #9f7aea;
+        }
+
+        .tabs-container {
+            display: flex;
+            gap: 1px;
+            border-bottom: 2px solid #44403c;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #a89968;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .tab-button:hover {
+            color: #d4a574;
+        }
+
+        .tab-button.active {
+            color: #f0abfc;
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #f0abfc;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, rgba(88, 28, 135, 0.1), rgba(0, 0, 0, 0.2));
+            border: 1px solid rgba(240, 171, 252, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #f0abfc;
+            margin: 8px 0;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-subtext {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+
+        table {
+            min-width: 100%;
+            width: 100%;
+        }
+
+        td {
+            padding: 12px 8px;
+            font-size: 13px;
+        }
+
+        th {
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #a89968;
+            padding: 12px 8px;
+            border-bottom: 1px solid #44403c;
+        }
+
+        tbody tr:hover {
+            background: rgba(88, 28, 135, 0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-pagado {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .badge-pendiente {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .badge-cancelado {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .badge-utilizado {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .selector-evento {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .selector-evento label {
+            font-weight: 600;
+            color: #d4a574;
+        }
+
+        .selector-evento select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: #44403c;
+            color: white;
+            border: 1px solid #78716c;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .selector-evento select:focus {
+            outline: none;
+            border-color: #f0abfc;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #ef4444;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #44403c;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .btn-export {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #581c87, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: opacity 0.3s;
+        }
+
+        .btn-export:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="/navbar.js"></script>
+
+    <main class="wrap">
+        <div class="page-header">
+            <a href="admin.html" class="btn-back">
+                <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver al Panel
+            </a>
+            <h1>🎫 Venta de Entradas</h1>
+            <div class="spacer"></div>
+        </div>
+
+        <!-- Selector de Evento -->
+        <div class="selector-evento">
+            <label for="eventoSelect">Selecciona un evento:</label>
+            <select id="eventoSelect">
+                <option value="">Cargando eventos...</option>
+            </select>
+        </div>
+
+        <!-- Mensaje de Error -->
+        <div id="errorMessage" class="error-message hidden"></div>
+
+        <!-- Loader -->
+        <div id="loader" class="loader hidden">
+            <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
+
+        <!-- Contenido Principal -->
+        <div id="mainContent" class="hidden">
+
+            <!-- Tabs -->
+            <div class="tabs-container">
+                <button class="tab-button active" data-tab="compradores">
+                    👥 Compradores
+                </button>
+                <button class="tab-button" data-tab="estadisticas">
+                    📊 Estadísticas
+                </button>
+            </div>
+
+            <!-- TAB 1: Compradores -->
+            <div id="compradores" class="tab-content active">
+                <div id="compradoresLoader" class="loader hidden">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando compradores...
+                </div>
+
+                <div id="compradoresContent">
+                    <div class="table-container">
+                        <table id="compradoresTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Cantidad</th>
+                                    <th>Tipo</th>
+                                    <th>Monto</th>
+                                    <th>Estado</th>
+                                    <th>Comprado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="compradoresTbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="compradoresEmpty" class="empty-state hidden">
+                    <div class="empty-state-icon">📭</div>
+                    <p>No hay compradores para este evento</p>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-export" onclick="exportarCSV()">
+                        <i class="fas fa-download"></i> Exportar CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: Estadísticas -->
+            <div id="estadisticas" class="tab-content">
+                <div id="estadisticasLoader" class="loader hidden">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando estadísticas...
+                </div>
+
+                <div id="estadisticasContent">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Total Vendidas</div>
+                            <div class="kpi-value" id="totalVendidas">0</div>
+                            <div class="kpi-subtext">Entradas</div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-label">Pagadas</div>
+                            <div class="kpi-value" id="entradaspagadas">0</div>
+                            <div class="kpi-subtext" id="porcentajePago">0%</div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-label">Pendientes</div>
+                            <div class="kpi-value" id="entradaspendientes">0</div>
+                            <div class="kpi-subtext">Por pagar</div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-label">Ingresos Totales</div>
+                            <div class="kpi-value" id="ingresosTotales">$0</div>
+                            <div class="kpi-subtext" id="ingresosPagados">$0 pagado</div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-label">Anticipadas</div>
+                            <div class="kpi-value" id="anticipadas">0</div>
+                            <div class="kpi-subtext">Precio reducido</div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-label">Puerta</div>
+                            <div class="kpi-value" id="puerta">0</div>
+                            <div class="kpi-subtext">Precio regular</div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-label">Utilizadas</div>
+                            <div class="kpi-value" id="utilizadas">0</div>
+                            <div class="kpi-subtext" id="porcentajeUtilizacion">0%</div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-label">Canceladas</div>
+                            <div class="kpi-value" id="canceladas">0</div>
+                            <div class="kpi-subtext" id="reembolsos">$0 reembolsos</div>
+                        </div>
+                    </div>
+
+                    <div class="table-container" style="margin-top: 24px;">
+                        <table id="detalleTable" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Métrica</th>
+                                    <th>Valor</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalleTbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="estadisticasEmpty" class="empty-state hidden">
+                    <div class="empty-state-icon">📊</div>
+                    <p>No hay datos para mostrar</p>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script src="/admin_venta_entradas.js"></script>
+</body>
+
+</html>

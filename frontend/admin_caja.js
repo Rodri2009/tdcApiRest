@@ -26,6 +26,29 @@ const formAbrirCaja = getElement('form-abrir-caja');
 const btnCerrarCajaAbierta = getElement('btn-cerrar-caja-abierta');
 const cajaStatus = getElement('caja-status');
 const statusText = getElement('status-text');
+const panelImportarMp = getElement('panel-importar-mp');
+const importPanelOriginalHtml = panelImportarMp ? panelImportarMp.innerHTML : '';
+const importPanelOriginalClass = panelImportarMp ? panelImportarMp.className : '';
+
+function getRetroactivoInput(id) {
+    return getElement(id);
+}
+
+function getRetroactivoFechaDesde() {
+    return getRetroactivoInput('retroactivo-fecha-desde');
+}
+
+function getRetroactivoHoraDesde() {
+    return getRetroactivoInput('retroactivo-hora-desde');
+}
+
+function getRetroactivoFechaHasta() {
+    return getRetroactivoInput('retroactivo-fecha-hasta');
+}
+
+function getRetroactivoHoraHasta() {
+    return getRetroactivoInput('retroactivo-hora-hasta');
+}
 
 // Formatea fecha a formato legible
 function formatearFecha(fecha) {
@@ -312,7 +335,12 @@ async function cargarCajas() {
                             ${caja.usuario_apertura ? ' · ' + caja.usuario_apertura : ''}
                         </div>
                     </div>
-                    <span class="caja-card-number px-2 py-1 rounded text-xs ${badgeClass}">${badgeText}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="caja-card-number px-2 py-1 rounded text-xs ${badgeClass}">${badgeText}</span>
+                        <button type="button" class="btn btn-sm btn-red" onclick="eliminarCaja(event, ${caja.id})" title="Eliminar caja">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="caja-card-body">
                     <div class="caja-card-item">
@@ -338,6 +366,44 @@ async function cargarCajas() {
     } catch (err) {
         console.error('[admin_caja.js] ❌ Error en cargarCajas:', err.message, err.stack);
         mostrarBanner('Error cargando cajas: ' + err.message, 'error');
+    }
+}
+
+async function eliminarCaja(event, cajaId) {
+    event.stopPropagation();
+
+    if (!confirm('¿Eliminar esta caja y todos sus movimientos? Esta acción no se puede deshacer.')) {
+        return;
+    }
+
+    if (!token) {
+        await authenticateAndGetToken();
+        if (!token) {
+            mostrarBanner('No se pudo autenticar', 'error');
+            return;
+        }
+    }
+
+    try {
+        const response = await fetch(`/api/cajas/${cajaId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text || `HTTP ${response.status}`);
+        }
+
+        mostrarBanner('Caja eliminada correctamente', 'success');
+        cargarCajas();
+        mostrarListado();
+    } catch (err) {
+        console.error('[admin_caja.js] ❌ Error eliminando caja:', err);
+        mostrarBanner('Error eliminando caja: ' + err.message, 'error');
     }
 }
 
@@ -378,23 +444,27 @@ async function verDetalle(cajaId) {
         const diferencia = parseFloat(caja.saldo_final) - saldoEsperado;
 
         // Llenar tablas
-        document.getElementById('detalle-ingresos').innerHTML = ingresos.map(m => `
+        const buildDetalleRow = (m, isIngreso) => {
+            const createdAt = new Date(m.creado_en);
+            const fecha = createdAt.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const hora = createdAt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+            const nombre = String(m.subcategoria || '').trim();
+            const descripcion = String(m.descripcion || '').trim();
+            const montoClass = isIngreso ? 'text-green-400' : 'text-red-400';
+            return `
             <tr>
-                <td>${m.descripcion}</td>
-                <td>${m.categoria}</td>
-                <td class="text-green-400">${formatearDinero(m.monto)}</td>
-                <td>${new Date(m.creado_en).toLocaleTimeString('es-AR')}</td>
+                <td>${fecha}</td>
+                <td>${hora}</td>
+                <td>${nombre || ''}</td>
+                <td>${descripcion || ''}</td>
+                <td class="${montoClass}">${formatearDinero(m.monto)}</td>
             </tr>
-        `).join('');
+        `;
+        };
 
-        document.getElementById('detalle-egresos').innerHTML = egresos.map(m => `
-            <tr>
-                <td>${m.descripcion}</td>
-                <td>${m.categoria}</td>
-                <td class="text-red-400">${formatearDinero(m.monto)}</td>
-                <td>${new Date(m.creado_en).toLocaleTimeString('es-AR')}</td>
-            </tr>
-        `).join('');
+        document.getElementById('detalle-ingresos').innerHTML = ingresos.map(m => buildDetalleRow(m, true)).join('');
+
+        document.getElementById('detalle-egresos').innerHTML = egresos.map(m => buildDetalleRow(m, false)).join('');
 
         // Llenar totales
         document.getElementById('detalle-saldo-inicial').textContent = formatearDinero(caja.saldo_inicial);
@@ -474,7 +544,55 @@ function mostrarVista(vista) {
     else if (vista === 'abrir') {
         viewAbrir.classList.remove('hidden');
         console.log('[admin_caja.js] 👁️ Mostrando formulario abrir caja');
+        // Cargar automáticamente el saldo disponible de MP
+        cargarSaldoMPAlFormulario();
     }
+}
+
+// Cargar saldo disponible de MP al formulario
+async function cargarSaldoMPAlFormulario() {
+    try {
+        const inputSaldo = document.getElementById('saldo-inicial');
+        const infoText = document.getElementById('saldo-info');
+
+        if (!inputSaldo) return;
+
+        if (!token) await authenticateAndGetToken();
+
+        const res = await fetch('/api/mercadopago/balance', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            // data puede ser { success: true, data: { available: ... } } o directamente { available: ... }
+            let available = 0;
+            if (data && data.success && data.data && typeof data.data.available === 'number') {
+                available = data.data.available;
+            } else if (data && typeof data.available === 'number') {
+                available = data.available;
+            }
+
+            if (available > 0) {
+                inputSaldo.value = available.toFixed(2);
+                if (infoText) {
+                    infoText.textContent = `✅ Saldo cargado de Mercado Pago: $${available.toFixed(2)}`;
+                }
+                console.log('[admin_caja.js] ✅ Saldo de MP cargado:', available);
+            }
+        }
+    } catch (err) {
+        console.warn('[admin_caja.js] No se pudo cargar saldo de MP:', err.message);
+    }
+}
+
+// Conectar botón "Cargar de MP"
+const btnCargarSaldoMP = document.getElementById('btn-cargar-saldo-mp');
+if (btnCargarSaldoMP) {
+    btnCargarSaldoMP.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await cargarSaldoMPAlFormulario();
+    });
 }
 
 function mostrarListado() {
@@ -516,8 +634,19 @@ if (formAbrirCaja) {
     formAbrirCaja.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const saldoInicial = document.getElementById('saldo-inicial').value;
+        const nombreCaja = document.getElementById('nombre-caja').value.trim();
+        const saldoInicial = parseFloat(document.getElementById('saldo-inicial').value);
         const notas = document.getElementById('notas-apertura').value;
+
+        if (!nombreCaja) {
+            mostrarBanner('⚠️ Ingresa un nombre para la caja', 'warning');
+            return;
+        }
+
+        if (Number.isNaN(saldoInicial) || saldoInicial < 0) {
+            mostrarBanner('⚠️ Ingresa un saldo inicial válido', 'warning');
+            return;
+        }
 
         if (!token) await authenticateAndGetToken();
 
@@ -529,6 +658,7 @@ if (formAbrirCaja) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    nombre: nombreCaja,
                     saldoInicial: parseFloat(saldoInicial),
                     notas
                 })
@@ -564,18 +694,146 @@ function agregarLogRetroactivo(mensaje) {
     console.log(`[admin_caja.js] ${mensaje}`);
 }
 
+function restaurarPanelImportacion() {
+    if (!panelImportarMp) return;
+    panelImportarMp.innerHTML = importPanelOriginalHtml;
+    panelImportarMp.className = importPanelOriginalClass;
+    attachImportPanelListeners();
+    inicializarFechasRetroactivas();
+}
+
+function inicializarFechasRetroactivas() {
+    const fechaDesdeEl = getRetroactivoFechaDesde();
+    const horaDesdeEl = getRetroactivoHoraDesde();
+    const fechaHastaEl = getRetroactivoFechaHasta();
+    const horaHastaEl = getRetroactivoHoraHasta();
+    if (!fechaDesdeEl || !horaDesdeEl || !fechaHastaEl || !horaHastaEl) return;
+
+    const now = new Date();
+    now.setSeconds(0, 0);
+    const antes = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    fechaHastaEl.value = formatDateLocal(now);
+    horaHastaEl.value = formatTimeLocal(now);
+    fechaDesdeEl.value = formatDateLocal(antes);
+    horaDesdeEl.value = formatTimeLocal(antes);
+}
+
+function formatDateLocal(date) {
+    const pad = (value) => String(value).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    return `${year}-${month}-${day}`;
+}
+
+function formatTimeLocal(date) {
+    const pad = (value) => String(value).padStart(2, '0');
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${hours}:${minutes}`;
+}
+
+function formatTimeLocal(date) {
+    const pad = (value) => String(value).padStart(2, '0');
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${hours}:${minutes}`;
+}
+
+function mostrarImportPanelComoCajaCard({ numeroCaja, cajaNombre, imported, failed, filtered, pagesScraped, totalInMP, fechaDesde, fechaHasta, nombreImportacion }) {
+    if (!panelImportarMp) return;
+    panelImportarMp.className = 'caja-card mb-4';
+    const titulo = cajaNombre || 'Importación MP';
+    const periodo = `${formatearFecha(fechaDesde)} → ${formatearFecha(fechaHasta)}`;
+    panelImportarMp.innerHTML = `
+        <div class="caja-card-header">
+            <div>
+                <div class="caja-card-title">${titulo}</div>
+                <div class="text-stone-400 text-xs mt-1">
+                    Caja #${numeroCaja}${periodo ? ` · ${periodo}` : ''}
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="caja-card-number px-2 py-1 rounded text-xs bg-purple-700 text-purple-100">⬇ Importación MP</span>
+            </div>
+        </div>
+        <div class="caja-card-body">
+            <div class="caja-card-item">
+                <span class="caja-card-label">Movimientos importados</span>
+                <span class="caja-card-value">${imported}</span>
+            </div>
+            <div class="caja-card-item">
+                <span class="caja-card-label">Fallidos</span>
+                <span class="caja-card-value">${failed}</span>
+            </div>
+            <div class="caja-card-item">
+                <span class="caja-card-label">Filtradas</span>
+                <span class="caja-card-value">${filtered}</span>
+            </div>
+            <div class="caja-card-item">
+                <span class="caja-card-label">Páginas</span>
+                <span class="caja-card-value">${pagesScraped}</span>
+            </div>
+        </div>
+        <div class="caja-card-footer">
+            <button type="button" id="btn-restaurar-importacion" class="btn btn-sm btn-purple">Nueva importación</button>
+            <button type="button" class="btn btn-sm btn-stone" onclick="cargarCajas();">Ver historial</button>
+        </div>
+    `;
+    setTimeout(() => {
+        const btn = document.getElementById('btn-restaurar-importacion');
+        if (btn) {
+            btn.onclick = () => {
+                restaurarPanelImportacion();
+                if (btnToggleImportar) {
+                    panelImportarMp.classList.remove('hidden');
+                    btnToggleImportar.innerHTML = '<i class="fas fa-chevron-up mr-1"></i> Ocultar importación';
+                }
+            };
+        }
+    }, 0);
+}
+
+function attachImportPanelListeners() {
+    const btnImportarRetroactivos = document.getElementById('btn-importar-retroactivos');
+    if (btnImportarRetroactivos) {
+        btnImportarRetroactivos.onclick = importarMovimientosRetroactivos;
+    }
+    const btnPausarRefresh = document.getElementById('btn-pausar-refresh-mp');
+    if (btnPausarRefresh) {
+        btnPausarRefresh.onclick = pausarRefreshMP;
+    }
+}
+
 // Importar movimientos retroactivos con período elegido (auto-crea y cierra la caja)
 let _sseSource = null; // Referencia global al EventSource activo
 
 async function importarMovimientosRetroactivos() {
     if (!token) await authenticateAndGetToken();
 
-    const fechaDesde = document.getElementById('retroactivo-fecha-desde').value;
-    const fechaHasta = document.getElementById('retroactivo-fecha-hasta').value;
-    const maxPaginas = 20; // Valor fijo por defecto, ya no se selecciona desde la UI
+    const fechaDesdeEl = getRetroactivoFechaDesde();
+    const horaDesdeEl = getRetroactivoHoraDesde();
+    const fechaHastaEl = getRetroactivoFechaHasta();
+    const horaHastaEl = getRetroactivoHoraHasta();
+    const nombreImportacion = document.getElementById('retroactivo-nombre')?.value.trim() || '';
+    const maxPaginas = 20;
+
+    const fechaDesde = fechaDesdeEl?.value && horaDesdeEl?.value ? `${fechaDesdeEl.value}T${horaDesdeEl.value}` : '';
+    const fechaHasta = fechaHastaEl?.value && horaHastaEl?.value ? `${fechaHastaEl.value}T${horaHastaEl.value}` : '';
+
+    // Validar formato HH:mm
+    const timePattern = /^[0-2][0-9]:[0-5][0-9]$/;
+    if (!timePattern.test(horaDesdeEl?.value || '')) {
+        mostrarBanner('⚠️ Formato de hora inválido en Desde. Usa HH:mm (ej: 06:30)', 'warning');
+        return;
+    }
+    if (!timePattern.test(horaHastaEl?.value || '')) {
+        mostrarBanner('⚠️ Formato de hora inválido en Hasta. Usa HH:mm (ej: 06:30)', 'warning');
+        return;
+    }
 
     if (!fechaDesde || !fechaHasta) {
-        mostrarBanner('⚠️ Selecciona las fechas (desde y hasta)', 'warning');
+        mostrarBanner('⚠️ Selecciona fecha y hora de Desde y Hasta', 'warning');
         return;
     }
 
@@ -601,10 +859,15 @@ async function importarMovimientosRetroactivos() {
 
     // Usar el nuevo endpoint que auto-crea y cierra la caja
     const params = new URLSearchParams({ fechaDesde, fechaHasta, maxPaginas, token });
+    if (nombreImportacion) {
+        params.append('nombreCaja', nombreImportacion);
+    }
     const url = `/api/cajas/importar-auto-stream?${params}`;
 
     const source = new EventSource(url);
     let sseEnded = false;
+    let cajaCerrada = false;
+    let doneReceived = false;
     _sseSource = source;
 
     source.onopen = () => {
@@ -617,6 +880,9 @@ async function importarMovimientosRetroactivos() {
 
             if (data.type === 'status') {
                 agregarLogRetroactivo(data.message);
+                if (/^📦 Caja #[0-9]+ cerrada/.test(data.message)) {
+                    cajaCerrada = true;
+                }
 
             } else if (data.type === 'warning') {
                 agregarLogRetroactivo(`⚠️ ${data.message}`);
@@ -669,6 +935,8 @@ async function importarMovimientosRetroactivos() {
                 if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-download mr-1"></i> Iniciar Importación'; }
 
             } else if (data.type === 'done') {
+                doneReceived = true;
+                cajaCerrada = true;
                 agregarLogRetroactivo(`\n🎉 ═══════════════════════════════`);
                 agregarLogRetroactivo(`   ✅ Importados: ${data.imported}`);
                 agregarLogRetroactivo(`   ❌ Fallidos:   ${data.failed}`);
@@ -678,6 +946,20 @@ async function importarMovimientosRetroactivos() {
                 agregarLogRetroactivo(`🎉 ═══════════════════════════════`);
                 mostrarBanner(`✅ ${data.imported} movimientos importados`, 'success');
                 sseEnded = true;
+                if (data.cajaId) {
+                    mostrarImportPanelComoCajaCard({
+                        numeroCaja: data.numeroCaja,
+                        cajaNombre: data.cajaNombre,
+                        imported: data.imported,
+                        failed: data.failed,
+                        filtered: data.filtered,
+                        pagesScraped: data.pagesScraped,
+                        totalInMP: data.totalInMP,
+                        fechaDesde,
+                        fechaHasta,
+                        nombreImportacion
+                    });
+                }
                 source.onerror = null;
                 source.onmessage = null;
                 source.onopen = null;
@@ -687,7 +969,13 @@ async function importarMovimientosRetroactivos() {
                     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-download mr-1"></i> Iniciar Importación'; }
                 }, 150);
                 // Recargar listado para mostrar la nueva caja
-                setTimeout(() => cargarCajas(), 1500);
+                setTimeout(() => {
+                    if (panelImportarMp) panelImportarMp.classList.add('hidden');
+                    if (btnToggleImportar) {
+                        btnToggleImportar.innerHTML = '<i class="fas fa-download mr-1"></i> Importar desde MP';
+                    }
+                    cargarCajas();
+                }, 1500);
             }
         } catch (e) {
             console.error('[admin_caja.js] SSE parse error:', e);
@@ -697,6 +985,17 @@ async function importarMovimientosRetroactivos() {
     source.onerror = (err) => {
         const isClosed = source.readyState === EventSource.CLOSED || err?.target?.readyState === EventSource.CLOSED;
         if (sseEnded || isClosed) return;
+
+        if (cajaCerrada || doneReceived) {
+            agregarLogRetroactivo('✅ Importación completada en el backend. Recargando historial de cajas...');
+            mostrarBanner('✅ Importación completada', 'success');
+            try { source.close(); } catch (e) { }
+            _sseSource = null;
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-download mr-1"></i> Iniciar Importación'; }
+            setTimeout(() => cargarCajas(), 1500);
+            return;
+        }
+
         setTimeout(() => {
             if (sseEnded) return;
             agregarLogRetroactivo('❌ Conexión SSE perdida');
@@ -767,7 +1066,6 @@ if (btnCerrarCajaAbierta) btnCerrarCajaAbierta.addEventListener('click', cerrarC
 
 // Toggle panel de importación MP
 const btnToggleImportar = document.getElementById('btn-toggle-importar');
-const panelImportarMp = document.getElementById('panel-importar-mp');
 if (btnToggleImportar && panelImportarMp) {
     btnToggleImportar.addEventListener('click', () => {
         panelImportarMp.classList.toggle('hidden');
@@ -777,22 +1075,14 @@ if (btnToggleImportar && panelImportarMp) {
     });
 }
 
-// Evento para botón de importación retroactiva
-const btnImportarRetroactivos = document.getElementById('btn-importar-retroactivos');
-if (btnImportarRetroactivos) {
-    btnImportarRetroactivos.addEventListener('click', importarMovimientosRetroactivos);
-}
-
-// Evento para botón de pausar refresh de MP
-const btnPausarRefresh = document.getElementById('btn-pausar-refresh-mp');
-if (btnPausarRefresh) {
-    btnPausarRefresh.addEventListener('click', pausarRefreshMP);
-}
+// Evento para botones dentro del panel de importación MP
+attachImportPanelListeners();
 
 // Inicializar
 async function inicializar() {
     try {
         console.log('[admin_caja.js] 🚀 Iniciando...');
+        inicializarFechasRetroactivas();
         actualizarEstadoConexion('cargando', 'cargando…');
 
         await authenticateAndGetToken();

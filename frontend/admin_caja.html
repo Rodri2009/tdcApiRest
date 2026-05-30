@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="/css/fontawesome.min.css">
     <link rel="stylesheet" href="/styles/admin.css">
-    <link rel="stylesheet" href="admin_movimientos.css?v=10">
+    <link rel="stylesheet" href="admin_transacciones.css?v=10">
 </head>
 
 <body>
@@ -48,8 +48,8 @@
                         </p>
                     </div>
                     <div class="flex gap-2 items-center">
-                        <a href="admin_movimientos.html" class="btn btn-sm" style="background:#1e40af;color:#bfdbfe">
-                            <i class="fas fa-list mr-1"></i> Ver movimientos
+                        <a href="admin_transacciones.html" class="btn btn-sm" style="background:#1e40af;color:#bfdbfe">
+                            <i class="fas fa-list mr-1"></i> Ver transacciones
                         </a>
                         <button id="btn-cerrar-caja-abierta" class="btn btn-red btn-sm">
                             <i class="fas fa-lock mr-1"></i> Cerrar Caja
@@ -64,11 +64,11 @@
             <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
                 <h2>Historial de Cajas</h2>
                 <div class="flex gap-2">
-                    <button id="btn-toggle-importar" class="btn btn-purple btn-sm">
-                        <i class="fas fa-download mr-1"></i> Importar desde MP
-                    </button>
                     <button id="btn-nueva-caja" class="btn btn-green btn-sm">
                         <i class="fas fa-plus mr-1"></i> Abrir Caja Manual
+                    </button>
+                    <button id="btn-toggle-importar" class="btn btn-purple btn-sm">
+                        <i class="fas fa-download mr-1"></i> Importar desde MP
                     </button>
                 </div>
             </div>
@@ -83,16 +83,46 @@
                     Se creará una caja automáticamente para el período seleccionado, se importarán los movimientos y se
                     cerrará la caja.
                 </p>
+                <div class="space-y-3 mb-3">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                        <div>
+                            <label class="text-sm text-stone-400">Desde fecha</label>
+                            <input type="date" id="retroactivo-fecha-desde"
+                                class="w-full px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
+                        </div>
+                        <div>
+                            <label class="text-sm text-stone-400">Desde hora</label>
+                            <div class="relative">
+                                <input type="text" id="retroactivo-hora-desde" pattern="[0-2][0-9]:[0-5][0-9]"
+                                    placeholder="06:30"
+                                    class="w-full px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600 font-mono pr-10 text-center">
+                                <span class="absolute right-3 top-2 text-stone-400 pointer-events-none">hs</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                        <div>
+                            <label class="text-sm text-stone-400">Hasta fecha</label>
+                            <input type="date" id="retroactivo-fecha-hasta"
+                                class="w-full px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
+                        </div>
+                        <div>
+                            <label class="text-sm text-stone-400">Hasta hora</label>
+                            <div class="relative">
+                                <input type="text" id="retroactivo-hora-hasta" pattern="[0-2][0-9]:[0-5][0-9]"
+                                    placeholder="06:30"
+                                    class="w-full px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600 font-mono pr-10 text-center">
+                                <span class="absolute right-3 top-2 text-stone-400 pointer-events-none">hs</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end mb-3">
                     <div>
-                        <label class="text-sm text-stone-400">Desde</label>
-                        <input type="datetime-local" id="retroactivo-fecha-desde" value="2026-05-16T00:00"
-                            class="w-full px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
-                    </div>
-                    <div>
-                        <label class="text-sm text-stone-400">Hasta</label>
-                        <input type="datetime-local" id="retroactivo-fecha-hasta" value="2026-05-17T23:59"
-                            class="w-full px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
+                        <label class="text-sm text-stone-400">Nombre de importación</label>
+                        <input type="text" id="retroactivo-nombre" placeholder="Ej: Caja MP mayo 2026"
+                            class="w-full px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600"
+                            maxlength="80">
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -161,35 +191,43 @@
             </div>
 
             <!-- Movimientos -->
-            <div class="mb-4">
-                <h3 class="text-lg font-bold mb-2">Ingresos</h3>
+            <details class="mb-4 caja-collapsible">
+                <summary class="caja-collapsible-summary">
+                    <span>Ingresos</span>
+                    <span class="caja-collapsible-indicator">+</span>
+                </summary>
                 <table class="tx-table mb-4">
                     <thead>
                         <tr>
-                            <th>Descripción</th>
-                            <th>Categoría</th>
-                            <th>Monto</th>
+                            <th>Fecha</th>
                             <th>Hora</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Monto</th>
                         </tr>
                     </thead>
                     <tbody id="detalle-ingresos"></tbody>
                 </table>
-            </div>
+            </details>
 
-            <div class="mb-4">
-                <h3 class="text-lg font-bold mb-2">Egresos</h3>
+            <details class="mb-4 caja-collapsible">
+                <summary class="caja-collapsible-summary">
+                    <span>Egresos</span>
+                    <span class="caja-collapsible-indicator">+</span>
+                </summary>
                 <table class="tx-table mb-4">
                     <thead>
                         <tr>
-                            <th>Descripción</th>
-                            <th>Categoría</th>
-                            <th>Monto</th>
+                            <th>Fecha</th>
                             <th>Hora</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Monto</th>
                         </tr>
                     </thead>
                     <tbody id="detalle-egresos"></tbody>
                 </table>
-            </div>
+            </details>
 
             <!-- Totales -->
             <div class="bg-stone-800 p-4 rounded">
@@ -232,8 +270,20 @@
 
             <form id="form-abrir-caja">
                 <div class="form-group">
-                    <label for="saldo-inicial">Saldo Inicial (dinero en caja)</label>
+                    <label for="nombre-caja">Nombre de Caja (ej: "Caja 1", "Mostrador A")</label>
+                    <input type="text" id="nombre-caja" placeholder="Nombre descriptivo de la caja" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="saldo-inicial">
+                        Saldo Inicial (dinero en caja)
+                        <button type="button" id="btn-cargar-saldo-mp" class="btn btn-purple btn-xs"
+                            style="margin-left: 8px;">
+                            <i class="fas fa-download"></i> Cargar de MP
+                        </button>
+                    </label>
                     <input type="number" id="saldo-inicial" min="0" step="0.01" value="0" placeholder="0.00" required>
+                    <small id="saldo-info" class="text-stone-500"></small>
                 </div>
 
                 <div class="form-group">
@@ -329,6 +379,47 @@
         .caja-card-abierta {
             border-color: #22c55e !important;
             background: #1a2e1a !important;
+        }
+
+        .caja-collapsible {
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 0.75rem;
+            background: rgba(15, 23, 42, 0.9);
+            overflow: hidden;
+        }
+
+        .caja-collapsible summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #f8fafc;
+            background: rgba(30, 41, 59, 0.95);
+        }
+
+        .caja-collapsible summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .caja-collapsible-indicator {
+            display: inline-flex;
+            width: 1.9rem;
+            height: 1.9rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            background: rgba(148, 163, 184, 0.15);
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: transform 0.2s ease;
+        }
+
+        .caja-collapsible[open] .caja-collapsible-indicator {
+            transform: rotate(45deg);
         }
 
         .caja-card-abierta:hover {

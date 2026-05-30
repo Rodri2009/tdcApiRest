@@ -68,9 +68,9 @@ async function createPreference(ticketId, precioFinal, email, nombreEvento, nomb
             },
         ],
         payer: {
-            // En TEST: usar email genérico de prueba
-            // En PROD: usar email real del usuario
-            email: isLocalhost ? 'test_comprador@prueba.com' : email
+            // Usar siempre el email del usuario que está comprando
+            // Si es válido (contiene @), usarlo; si no, usar genérico
+            email: (email && email.includes('@')) ? email : 'test_comprador@prueba.com'
         },
     };
 

@@ -139,7 +139,10 @@ check_containers_health() {
       echo -e "  ${GREEN}✓${NC} $container: ${GREEN}running${NC}"
       
       # Revisar logs para errores críticos (ignorar warnings conocidas)
-      local critical_errors=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "(error|exception|failed|cannot|refused|fatal)" | grep -viE "(io_uring_queue_init|Chromium has locked|WhatsAppService|MercadoPagoService|PUPPETEER-WA|PUPPETEER-MP|BANDA-SYNC|FLYER-SYNC|Error al inicializar)" | head -2 || true)
+      # IMPORTANTE: Los errores de conexión nginx→backend durante startup son NORMALES
+      # (race condition mientras el backend se inicializa). No son críticos si los servicios
+      # están en estado "running". Ver: DOCUMENTACION_INDEX.md
+      local critical_errors=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "(error|exception|failed|cannot|refused|fatal)" | grep -viE "(io_uring_queue_init|Chromium has locked|WhatsAppService|MercadoPagoService|PUPPETEER-WA|PUPPETEER-MP|BANDA-SYNC|FLYER-SYNC|Error al inicializar|connect\(\) failed.*upstream|Connection refused.*upstream|connect() failed \(111.*Connection refused)" | head -2 || true)
       
       # Revisar warnings
       local all_warnings=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "warning|warn" | head -2 || true)

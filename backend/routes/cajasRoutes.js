@@ -6,6 +6,7 @@ const {
     obtenerCaja,
     agregarMovimiento,
     eliminarMovimiento,
+    eliminarCaja,
     cerrarCaja,
     obtenerHistorialCajas,
     obtenerMovimientosCaja,
@@ -57,6 +58,12 @@ router.post('/', crearCaja);
  * Obtener detalles de una caja específica con sus movimientos
  */
 router.get('/:id', obtenerCaja);
+
+/**
+ * DELETE /api/cajas/:id
+ * Eliminar una caja y sus movimientos asociados
+ */
+router.delete('/:id', eliminarCaja);
 
 /**
  * GET /api/cajas/:id/movimientos

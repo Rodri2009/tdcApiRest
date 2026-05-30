@@ -1,207 +1,191 @@
-# Soporte MercadoPago - Error Wallet Brick
+# 🎯 MercadoPago Wallet Brick - Solución Completa
 
-## Problema
-
-El componente Wallet Brick muestra "Algo salió mal" cuando el usuario intenta finalizar el pago. El error ocurre después de que:
-1. ✅ Se crea la preferencia correctamente en el backend
-2. ✅ Se obtiene un `preference_id` válido
-3. ✅ El Wallet Brick se renderiza sin errores iniciales
-4. ❌ El usuario intenta hacer clic en "Pagar" - FALLA CON ERROR GENÉRICO
-
-## Configuración
-
-- **Public Key (TEST):** `TEST-7502cd2c-2aea-4ece-befa-7cf059b2b45c`
-- **SDK Version:** v2 (última)
-- **Componente:** Wallet Brick
-- **Ambiente:** Sandbox
-- **Moneda:** ARS (Pesos Argentinos)
-- **Monto Test:** $100 ARS
-- **URL Test:** `http://localhost/checkout_form.html?event_id=4`
-
-## Stack
-
-- **Frontend:** HTML5, JavaScript vanilla, Tailwind CSS
-- **Backend:** Node.js + Express
-- **Database:** MariaDB 10.6
-- **Infrastructure:** Docker Compose (Nginx, Backend, MariaDB)
-- **SSL:** Self-signed certificates for localhost
-
-## Flujo de Implementación
-
-### 1. Frontend - Inicialización SDK
-
-```javascript
-// Archivo: /frontend/checkout_form.html (línea ~134)
-const MP_PUBLIC_KEY = 'TEST-7502cd2c-2aea-4ece-befa-7cf059b2b45c';
-const mp = new MercadoPago(MP_PUBLIC_KEY);
-```
-
-### 2. Frontend - Crear Preferencia
-
-Cuando el usuario completa nombre y email:
-
-```javascript
-const requestBody = {
-    evento_id: 4,
-    email: "test@example.com",
-    nombre_comprador: "Test User",
-    codigo_cupon: null,
-    precio_final: 100,
-    tipo_venta: "ANTICIPADA"
-};
-
-const res = await fetch('/api/tickets/checkout/init', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-});
-```
-
-### 3. Backend - Response (Funciona Correctamente ✅)
-
-El endpoint `/api/tickets/checkout/init` retorna:
-
-```json
-{
-    "preference_id": "3896784-07d514bc-7721-46ac-871a-5561ca556ec9",
-    "ticket_id": 24,
-    "status": "pending_payment"
-}
-```
-
-### 4. Frontend - Renderizar Wallet Brick
-
-```javascript
-async function renderWalletBrick(preferenceId) {
-    try {
-        const bricksBuilder = mp.bricks();
-        await bricksBuilder.create('wallet', 'wallet-brick-container', {
-            initialization: {
-                preferenceId: preferenceId,
-            },
-            callbacks: {
-                onError: (error) => {
-                    console.error('[Wallet Brick] Error:', error);
-                    // Aquí es donde falla con: "Algo salió mal"
-                },
-                onReady: () => {
-                    console.log('[Wallet Brick] Listo para pagar');
-                }
-            }
-        });
-    } catch (error) {
-        console.error('[Wallet Brick] Error al crear:', error);
-    }
-}
-```
-
-### 5. HTML - Contenedor
-
-```html
-<div id="wallet-brick-container" class="hidden mt-6"></div>
-<script src="https://sdk.mercadopago.com/js/v2"></script>
-```
-
-## Verificación Realizada
-
-✅ **SDK carga correctamente**
-```bash
-window.MercadoPago // Disponible en browser
-```
-
-✅ **Public Key es correcta (TEST)**
-```
-TEST-7502cd2c-2aea-4ece-befa-7cf059b2b45c
-```
-
-✅ **Backend API funciona**
-```bash
-curl -X POST http://localhost:3000/api/tickets/checkout/init \
-  -H "Content-Type: application/json" \
-  -d '{
-    "evento_id": 4,
-    "email": "test@example.com",
-    "nombre_comprador": "Test User",
-    "precio_final": 100,
-    "tipo_venta": "ANTICIPADA"
-  }'
-
-# Response: 200 OK
-# {"preference_id":"3896784-07d514bc-7721-46ac-871a-5561ca556ec9","ticket_id":24,"status":"pending_payment"}
-```
-
-✅ **Preference ID es válido**
-```
-3896784-07d514bc-7721-46ac-871a-5561ca556ec9
-```
-
-✅ **Wallet Brick se renderiza**
-- El componente aparece en la página
-- `onReady()` callback se ejecuta correctamente
-- No hay errores de inicialización
-
-❌ **Falla al procesar pago**
-- Usuario selecciona método de pago
-- Usuario completa datos (tarjeta de prueba: 4111111111111111)
-- Usuario hace clic en "Pagar"
-- Aparece error genérico: "Algo salió mal"
-
-## Datos de Prueba Usados
-
-```
-Nombre: Test User
-Email: test@example.com
-Evento: event_id=4
-Monto: $100 ARS
-Tarjeta (4111): 4111111111111111
-Vencimiento: 12/25
-CVV: 123
-```
-
-## Error Capturado
-
-```
-Message: "Algo salió mal"
-Tipo: Error genérico del Wallet Brick
-Ubicación: Al hacer clic en "Pagar"
-Console log: [Wallet Brick] ❌ Error: {...}
-```
-
-## Preguntas Técnicas
-
-1. ¿Hay validaciones específicas en la estructura de la preferencia que estén faltando?
-2. ¿El formato del `preferenceId` que retorna nuestro backend es el correcto para Wallet Brick?
-3. ¿Se requiere configuración adicional en la Public Key TEST para que Wallet Brick funcione?
-4. ¿Hay restricciones de CORS que podrían estar bloqueando la comunicación?
-5. ¿Cómo obtener mensajes de error más detallados del Wallet Brick?
-
-## Reproducción Paso a Paso
-
-1. Abre: `http://localhost/checkout_form.html?event_id=4`
-2. Presiona F12 → Console
-3. Completa: Nombre: "Test User", Email: "test@example.com"
-4. Observa: Se genera `preference_id` correctamente
-5. Observa: Wallet Brick se renderiza
-6. Intenta pagar con tarjeta de prueba
-7. VER ERROR: "Algo salió mal"
-
-## Información Adicional
-
-- **Docker containers:** Todos corriendo (Nginx, Backend, MariaDB)
-- **SSL:** Configurado y válido
-- **Backend:** Respondiendo correctamente en puerto 3000
-- **Frontend:** Accesible en http://localhost/
-- **Navegador:** Chrome/Firefox
-- **Network:** Sin errores de conexión
-
-## Archivos Relevantes
-
-- Frontend: `/home/almacen/tdcApiRest/frontend/checkout_form.html`
-- Backend: `/home/almacen/tdcApiRest/backend/server.js` (port 3000)
-- Endpoint: `POST /api/tickets/checkout/init`
+**Última actualización:** 28/05/2026  
+**Estado:** ✅ RESUELTO Y FUNCIONAL
 
 ---
 
-**Status:** 🔴 CRÍTICO - Bloqueado en producción  
-**Fecha:** 5 mayo 2026  
-**Acción requerida:** Soporte técnico MercadoPago
+## 📋 Resumen de Soluciones
+
+Este documento detalla todos los problemas encontrados durante la implementación de Wallet Brick y sus soluciones.
+
+**Resultado:** Pago test exitoso - Operación #161374412648 - $6.500 ARS ✅
+
+---
+
+## 🔴 Problema 1: "Algo salió mal" - Credenciales Incorrectas
+
+### Síntoma
+```
+Error en MP: "Algo salió mal. Una de las partes con la que intentás hacer el pago es de prueba"
+```
+
+### Causa
+Se estaban usando credenciales **TEST** de una cuenta real en lugar de credenciales **PRODUCTION** de una cuenta vendedora TEST.
+
+**Credenciales INCORRECTAS (antes):**
+```bash
+MP_ACCESS_TOKEN=TEST-727763420744852-042915-cfef96e5976b63f0a4d94...
+MP_PUBLIC_KEY=TEST-7502cd2c-2aea-4ece-befa-7cf059b2b45c
+```
+
+### Explicación de MercadoPago
+> "Si probás el flujo que redirige a Mercado Pago desde Wallet Brick, debés usar una cuenta de prueba vendedora y otra compradora, y en ese caso la preferencia debe crearse con las credenciales de producción de la cuenta de prueba vendedora. Mezclar este flujo con credenciales de prueba genera errores."
+
+### Solución
+Crear una **nueva aplicación en la cuenta vendedora TEST** y obtener sus credenciales de **PRODUCCIÓN**.
+
+**Credenciales CORRECTAS (después):**
+```bash
+MP_ACCESS_TOKEN=APP_USR-2784737898754316-052811-e4be84c7a1eedbe3872104ff37fbb808-3421215338
+MP_PUBLIC_KEY=APP_USR-40690e01-da35-47eb-906d-9a632f8c3c0f
+```
+
+---
+
+## 🔴 Problema 2: Wallet Brick No Se Muestra
+
+### Síntoma
+```
+offsetParent_visible: false
+Element.offsetHeight = 0
+Elemento no aparece en pantalla
+```
+
+### Causa
+En `autoInitCheckoutForAuthenticatedUser()`, se estaba ocultando el **contenedor padre completo** `.bg-stone-900`, que incluía tanto los campos del formulario como el Wallet Brick:
+
+```javascript
+// INCORRECTO ❌
+elWalletContainer.classList.add('hidden');  // Oculta TODO, incluyendo Wallet Brick
+```
+
+### Solución
+Ocultar **solo** los campos del formulario, dejando el contenedor del Wallet Brick visible:
+
+```javascript
+// CORRECTO ✅
+// Ocultar solo los inputs
+nombreInput.parentElement.classList.add('hidden');
+emailInput.parentElement.classList.add('hidden');
+couponInput.parentElement.classList.add('hidden');
+
+// Remover clases hidden del contenedor de Wallet Brick
+elWalletContainer.classList.remove('hidden');
+elWalletContainer.style.display = 'block';
+
+// Forzar reflow para que el navegador registre los cambios
+void elWalletContainer.offsetHeight;
+```
+
+---
+
+## 🔴 Problema 3: Email de Prueba Rechazado
+
+### Síntoma
+```
+"Payer email must be a valid email" - rechazado por MP
+O pagos fallando sin motivo claro
+```
+
+### Causa
+Email genérico o cuenta compradora TEST no verificada en MP
+
+### Solución
+Usar email REAL del usuario autenticado:
+
+```javascript
+// CORRECTO ✅
+payer: {
+    email: (email && email.includes('@')) ? email : 'test_comprador@prueba.com'
+}
+
+// Debug
+console.log('EMAIL ENVIADO A MERCADOPAGO:', payer.email);
+```
+
+Usuario de prueba:
+```
+email: "villalbarodrigo2009@gmail.com"
+password: "test123456"
+```
+
+---
+
+## 🔴 Problema 4: Error "invalid_auto_return"
+
+### Síntoma
+```json
+{
+    "message": "Invalid auto_return value",
+    "error": "invalid_parameter"
+}
+```
+
+### Causa
+En **localhost**, MP no acepta URLs locales en `back_urls` ni `auto_return`
+
+### Solución
+Detectar si estamos en localhost y omitir estas configuraciones:
+
+```javascript
+// CORRECTO ✅
+const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+
+if (!isLocalhost) {
+    body.back_urls = {
+        success: `${appUrl}/ticket-receipt.html`,
+        failure: `${appUrl}/checkout_form.html`,
+        pending: `${appUrl}/ticket-receipt.html`
+    };
+    body.auto_return = 'approved';
+}
+
+// Siempre incluir webhook
+body.notification_url = `${appUrl}/api/tickets/webhook`;
+```
+
+---
+
+## 🔴 Problema 5: Webhook No Funciona en Localhost
+
+### Síntoma
+```
+POST /api/tickets/webhook nunca se ejecuta
+MP no puede conectar a tu máquina local
+```
+
+### Causa
+MP no puede enviar notificaciones a URLs privadas (localhost)
+
+### Solución para Testing Local
+Usar **polling desde el frontend**:
+
+```javascript
+// frontend/checkout_form.html
+async function checkPaymentStatus(ticketId) {
+    let attempts = 0;
+    const maxAttempts = 60;  // 5 minutos
+    
+    const pollInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`/api/tickets/${ticketId}`);
+            const ticket = await res.json();
+            
+            if (ticket.estado === 'pagado') {
+                clearInterval(pollInterval);
+                window.location.href = `/ticket-receipt.html?ticket_id=${ticketId}`;
+                return;
+            }
+            
+            attempts++;
+            if (attempts >= maxAttempts) {
+                clearInterval(pollInterval);
+                console.error('Timeout esperando pago');
+            }
+        } catch (error) {
+            console.error('Error checking payment:', error);
+        }
+    }, 5000);  // Cada 5 segundos
+}
+```

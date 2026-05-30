@@ -10,6 +10,11 @@ SENSIBLE.md
 # Archivos de configuración con credenciales (¡NO COMITEAR!)
 frontend/config.js
 
+# Archivos locales con credenciales (¡NO COMITEAR!)
+*.local
+MERCADOPAGO_SANDBOX_CREDENTIALS.local
+LOCAL_CREDENTIALS.md
+
 # Backups y archivos de migración (no subirlos al repositorio)
 _backups/
 

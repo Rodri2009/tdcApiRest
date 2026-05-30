@@ -7,6 +7,49 @@
     let viewAllMode = false;
     let cajaAbierta = false;  // Estado de caja abierta (true = limpiar tabla, false = mostrar transacciones)
     let cajaMovimientos = [];  // Movimientos registrados desde apertura de caja
+
+    // Funciones auxiliares para persistir estado de caja
+    function guardarEstadoCaja() {
+        if (cajaAbierta && window._cajaAbiertaId) {
+            localStorage.setItem('cajaAbierta', JSON.stringify({
+                abierta: true,
+                cajaId: window._cajaAbiertaId,
+                timestamp: Date.now()
+            }));
+            console.log('[Estado Caja] Guardado: caja abierta #' + window._cajaAbiertaId);
+        } else {
+            localStorage.removeItem('cajaAbierta');
+            console.log('[Estado Caja] Limpiado: caja cerrada');
+        }
+    }
+
+    function restaurarEstadoCaja() {
+        const stored = localStorage.getItem('cajaAbierta');
+        if (!stored) {
+            console.log('[Estado Caja] No hay estado guardado');
+            return false;
+        }
+        try {
+            const data = JSON.parse(stored);
+            // Verificar que no sea antigua (menos de 24h)
+            if (Date.now() - data.timestamp > 24 * 60 * 60 * 1000) {
+                localStorage.removeItem('cajaAbierta');
+                console.log('[Estado Caja] Estado expirado (>24h), limpiado');
+                return false;
+            }
+            if (data.abierta && data.cajaId) {
+                window._cajaAbiertaId = data.cajaId;
+                cajaAbierta = true;
+                console.log('[Estado Caja] Restaurado: caja abierta #' + data.cajaId);
+                return true;
+            }
+        } catch (e) {
+            console.error('[Estado Caja] Error al restaurar:', e.message);
+            localStorage.removeItem('cajaAbierta');
+        }
+        return false;
+    }
+
     // mostrar todos los movimientos por defecto (ingresos y egresos)
     let filterIncome = false;
     let allTransactions = [];
@@ -15,6 +58,18 @@
     let sharedWorker = null;  // SharedWorker para SSE persistente entre recargas
     let sseReady = false;      // true cuando worker confirma sse-open
     let directES = null;       // EventSource directo (fallback)
+
+    // Exponer estado global para debugging desde console del navegador
+    window._cajaDebug = {
+        get cajaAbierta() { return cajaAbierta; },
+        get cajaMovimientos() { return cajaMovimientos; },
+        get allTransactions() { return allTransactions; },
+        get authToken() { return authToken; },
+        get _cajaAbiertaId() { return window._cajaAbiertaId; },
+        get MAX_ITEMS() { return MAX_ITEMS; },
+        get viewAllMode() { return viewAllMode; }
+    };
+    console.log('[admin_transacciones] Debug object available as window._cajaDebug');
 
     /* --- Authentication --- */
     async function authenticateAndGetToken() {
@@ -336,7 +391,7 @@
 
         // Si caja está abierta, mostrar solo cajaMovimientos
         if (cajaAbierta) {
-            list = cajaMovimientos;
+            list = Array.isArray(cajaMovimientos) ? cajaMovimientos : [];
             console.log('[renderTransactions] Modo caja abierta: mostrando', list.length, 'movimientos');
         }
 
@@ -358,8 +413,18 @@
         displayList.forEach(tx => {
             const tr = document.createElement('tr');
 
+            // NUEVO: Normalizar datos que vienen de dos fuentes (MP o movimientos_caja)
+            // Transacciones MP tienen: dateTime, name, amount, payer.name
+            // Movimientos caja tienen: creado_en, descripcion, monto
+
+            const isMovimientoCaja = 'creado_en' in tx && !('dateTime' in tx);
+
+            let dateField = isMovimientoCaja ? tx.creado_en : tx.dateTime;
+            let nameField = isMovimientoCaja ? tx.descripcion : (tx.name || tx.title || tx.payer?.name || '');
+            let amountField = isMovimientoCaja ? tx.monto : tx.amount;
+
             // intentar normalizar campos faltantes usando 'raw' si es necesario
-            let name = tx.name || tx.title || '';
+            let name = nameField || '';
             let desc = tx.description || '';
             // si no hay descripción, mostrar un texto basado en el tipo (traducido)
             if (!desc && tx.type) {
@@ -375,16 +440,16 @@
 
             // DEBUG: Loguear objeto transacción
             console.log('[renderTransactions] Transacción completa:', tx);
-            console.log('[renderTransactions] dateTime:', tx.dateTime, '| name:', tx.name, '| amount:', tx.amount);
+            console.log('[renderTransactions] isMovimientoCaja:', isMovimientoCaja, '| dateField:', dateField, '| nameField:', nameField, '| amountField:', amountField);
 
             // formato fecha/hora uniforme
-            const dt = formatDateTime(tx.dateTime);
+            const dt = formatDateTime(dateField);
             const date = escapeHtml(dt.date);
             const time = escapeHtml(dt.time);
 
-            const amtNum = parseAmount(tx.amount);
+            const amtNum = parseAmount(amountField);
             const amtDisplay = isNaN(amtNum)
-                ? escapeHtml(String(tx.amount || '—'))
+                ? escapeHtml(String(amountField || '—'))
                 : formatCurrency(amtNum);
 
             if (amtNum > 0) tr.classList.add('income');
@@ -413,20 +478,73 @@
     }
 
     function addTransactionToTop(tx) {
-        // Agregar nueva transacción al pool de allTransactions
         console.log('[addTransactionToTop] Agregando:', tx);
-        console.log('[addTransactionToTop] dateTime:', tx.dateTime);
-        allTransactions.unshift(tx);
+        console.log('[addTransactionToTop] cajaAbierta:', cajaAbierta);
 
-        // Si caja está abierta, agregar a cajaMovimientos también
         if (cajaAbierta) {
+            // Si hay caja abierta, agregar SOLO a cajaMovimientos
             cajaMovimientos.unshift(tx);
             console.log('[addTransactionToTop] Agregada a cajaMovimientos. Total:', cajaMovimientos.length);
+            renderTransactions(cajaMovimientos);
+
+            // NUEVO: Registrar la transacción de MP en la caja del backend
+            registrarMovimientoMPEnCaja(tx);
+        } else {
+            // Si no hay caja abierta, agregar a allTransactions
+            allTransactions.unshift(tx);
+            console.log('[addTransactionToTop] Agregada a allTransactions. Total:', allTransactions.length);
+            renderTransactions(allTransactions);
+        }
+    }
+
+    // Registrar una transacción de Mercado Pago en movimientos_caja del backend
+    async function registrarMovimientoMPEnCaja(tx) {
+        const cajaId = window._cajaAbiertaId;
+        if (!cajaId) {
+            console.warn('[registrarMovimientoMPEnCaja] No hay caja abierta');
+            return;
         }
 
-        // Re-renderizar con la nueva transacción
-        renderTransactions(allTransactions);
+        const token = authToken || localStorage.getItem('authToken');
+        if (!token) {
+            console.warn('[registrarMovimientoMPEnCaja] No hay token');
+            return;
+        }
+
+        try {
+            // Convertir la transacción de MP al formato de movimiento_caja
+            const monto = parseAmount(tx.amount);
+            const movimiento = {
+                tipo: tx.transactionAmount < 0 ? 'egreso' : 'ingreso',
+                categoria: 'mercado_pago',
+                subcategoria: tx.paymentMethod || 'transferencia',
+                descripcion: `MP: ${tx.payer?.name || 'Cliente'} - ${tx.description || tx.reference}`,
+                monto: Math.abs(monto),
+                metodo_pago: 'mercado_pago',
+                comprobante: tx.id,
+                id_evento_confirmado: null
+            };
+
+            const res = await fetch(`/api/cajas/${cajaId}/movimientos`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(movimiento)
+            });
+
+            if (res.ok) {
+                console.log('[registrarMovimientoMPEnCaja] ✅ Movimiento registrado en BD para caja:', cajaId);
+            } else {
+                const error = await res.json();
+                console.warn('[registrarMovimientoMPEnCaja] Error:', error.error);
+            }
+        } catch (e) {
+            console.error('[registrarMovimientoMPEnCaja] Error:', e.message);
+        }
     }
+
 
     /* --- banner --- */
     let bannerTimer = null;
@@ -881,6 +999,12 @@
     async function init() {
         console.log('[Init] Iniciando admin_balance...', new Date().toLocaleString());
 
+        // Restaurar estado de caja abierta si está guardado en localStorage
+        if (restaurarEstadoCaja()) {
+            console.log('[Init] Estado de caja restaurado desde localStorage');
+            // Los botones se actualizarán cuando verificarCajaAbiertaReal() confirme la caja desde la API
+        }
+
         // seguridad en frontend: solo personal (nivel >= 50)
         if (window.navbarManager) {
             if (!navbarManager.protectAdminPage() || !navbarManager.tieneNivel(50)) {
@@ -945,7 +1069,7 @@
 
         // Verificar si hay caja abierta al cargar la página
         async function verificarCajaAbiertaReal() {
-            const token = localStorage.getItem('authToken');
+            const token = authToken || localStorage.getItem('authToken');
             if (!token) return;
             try {
                 const res = await fetch('/api/cajas/activa', {
@@ -953,24 +1077,40 @@
                 });
                 if (res.ok) {
                     const caja = await res.json();
+                    console.log('[verificarCajaAbiertaReal] Respuesta completa de API:', caja);
+                    console.log('[verificarCajaAbiertaReal] caja.movimientos:', caja.movimientos);
+                    console.log('[verificarCajaAbiertaReal] Is array?:', Array.isArray(caja.movimientos));
+
                     window._cajaAbiertaId = caja.id;
+                    cajaAbierta = true;
+                    cajaMovimientos = Array.isArray(caja.movimientos) ? caja.movimientos : [];
+                    guardarEstadoCaja();  // Guardar estado: caja abierta
                     btnAbrirCaja.classList.add('hidden');
                     btnCerrarCaja.classList.remove('hidden');
-                    console.log('[admin_movimientos] Caja abierta encontrada:', caja.id);
+                    console.log('[admin_transacciones] Caja abierta encontrada:', caja.id, 'movimientos:', cajaMovimientos.length);
+                    renderTransactions(cajaMovimientos);  // Renderizar movimientos de la caja, NO allTransactions
                 } else {
                     window._cajaAbiertaId = null;
+                    cajaAbierta = false;
+                    cajaMovimientos = [];
+                    guardarEstadoCaja();  // Guardar estado: caja cerrada
                     btnAbrirCaja.classList.remove('hidden');
                     btnCerrarCaja.classList.add('hidden');
                 }
             } catch (e) {
-                console.warn('[admin_movimientos] No se pudo verificar caja:', e.message);
+                console.warn('[admin_transacciones] No se pudo verificar caja:', e.message);
             }
+
         }
-        verificarCajaAbiertaReal();
+        await verificarCajaAbiertaReal();
 
         btnAbrirCaja.addEventListener('click', () => {
-            // Redirigir a la página de cajas para abrir una
-            window.location.href = 'admin_caja.html';
+            // Mostrar modal para abrir caja
+            const modal = document.getElementById('modal-abrir-caja');
+            if (modal) {
+                modal.classList.remove('hidden');
+                cargarSaldoMPAlModal();
+            }
         });
 
         btnCerrarCaja.addEventListener('click', async () => {
@@ -985,10 +1125,12 @@
                 const res = await fetch(`/api/cajas/${window._cajaAbiertaId}/cerrar`, {
                     method: 'PUT',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ saldoFinal: 0, notas: 'Cerrada desde admin_movimientos' })
+                    body: JSON.stringify({ saldoFinal: 0, notas: 'Cerrada desde admin_transacciones' })
                 });
                 if (res.ok) {
                     window._cajaAbiertaId = null;
+                    cajaAbierta = false;
+                    guardarEstadoCaja();  // Guardar estado: caja cerrada
                     btnAbrirCaja.classList.remove('hidden');
                     btnCerrarCaja.classList.add('hidden');
                     showBanner('✅ Caja cerrada correctamente', 'success');
@@ -1000,6 +1142,137 @@
                 showBanner(`Error: ${e.message}`, 'error');
             }
         });
+
+        // Modal para abrir caja (solo en admin_transacciones)
+        const modal = document.getElementById('modal-abrir-caja');
+        const modalCloseBtn = modal ? modal.querySelector('.modal-close') : null;
+        const formAbrirCajaTx = document.getElementById('form-abrir-caja-transacciones');
+        const modalCerrarBtn = document.getElementById('modal-cerrar-btn');
+
+        // Cargar saldo de MP en el modal
+        async function cargarSaldoMPAlModal() {
+            try {
+                const inputSaldo = document.getElementById('tx-saldo-inicial');
+                const infoText = document.getElementById('tx-saldo-info');
+
+                if (!inputSaldo) return;
+
+                const token = authToken || localStorage.getItem('authToken');
+                if (!token) await authenticateAndGetToken();
+
+                const res = await fetch('/api/mercadopago/balance', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    let available = 0;
+                    if (data && data.success && data.data && typeof data.data.available === 'number') {
+                        available = data.data.available;
+                    } else if (data && typeof data.available === 'number') {
+                        available = data.available;
+                    }
+
+                    if (available > 0) {
+                        inputSaldo.value = available.toFixed(2);
+                        if (infoText) {
+                            infoText.textContent = `✅ Saldo cargado de Mercado Pago: $${available.toFixed(2)}`;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('[admin_transacciones] No se pudo cargar saldo de MP:', err.message);
+            }
+        }
+
+        // Cerrar modal
+        function cerrarModal() {
+            if (modal) modal.classList.add('hidden');
+        }
+
+        if (modalCloseBtn) modalCloseBtn.addEventListener('click', cerrarModal);
+        if (modalCerrarBtn) modalCerrarBtn.addEventListener('click', cerrarModal);
+
+        // Cerrar modal al hacer click en overlay
+        if (modal) {
+            const overlay = modal.querySelector('.modal-overlay');
+            if (overlay) overlay.addEventListener('click', cerrarModal);
+        }
+
+        // Botón "Cargar de MP" en el modal
+        const btnCargarSaldoMPTx = document.getElementById('btn-cargar-saldo-mp-tx');
+        if (btnCargarSaldoMPTx) {
+            btnCargarSaldoMPTx.addEventListener('click', async (e) => {
+                e.preventDefault();
+                await cargarSaldoMPAlModal();
+            });
+        }
+
+        // Handler para abrir caja desde el modal
+        if (formAbrirCajaTx) {
+            formAbrirCajaTx.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const nombreCaja = document.getElementById('tx-nombre-caja').value.trim();
+                const saldoInicial = parseFloat(document.getElementById('tx-saldo-inicial').value);
+                const notas = document.getElementById('tx-notas-apertura').value;
+
+                if (!nombreCaja) {
+                    showBanner('⚠️ Ingresa un nombre para la caja', 'warning');
+                    return;
+                }
+
+                if (Number.isNaN(saldoInicial) || saldoInicial < 0) {
+                    showBanner('⚠️ Ingresa un saldo inicial válido', 'warning');
+                    return;
+                }
+
+                const token = authToken || localStorage.getItem('authToken');
+                if (!token) await authenticateAndGetToken();
+
+                try {
+                    const res = await fetch('/api/cajas', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            nombre: nombreCaja,
+                            saldoInicial: saldoInicial,
+                            notas
+                        })
+                    });
+
+                    if (res.ok) {
+                        const nuevaCaja = await res.json();
+                        window._cajaAbiertaId = nuevaCaja.id;
+                        cajaAbierta = true;
+                        cajaMovimientos = [];
+                        guardarEstadoCaja();
+
+                        btnAbrirCaja.classList.add('hidden');
+                        btnCerrarCaja.classList.remove('hidden');
+
+                        showBanner('✅ Caja abierta correctamente', 'success');
+
+                        formAbrirCajaTx.reset();
+                        cerrarModal();
+
+                        // Recargar la página después de 1s
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        const err = await res.json();
+                        showBanner(`Error: ${err.error || 'No se pudo abrir la caja'}`, 'error');
+                    }
+                } catch (err) {
+                    console.error('[admin_transacciones] Error abriendo caja:', err);
+                    showBanner(`Error: ${err.message}`, 'error');
+                }
+            });
+        }
 
         // botón especiales
         const toggleBalanceBtn = document.getElementById('toggle-balance-btn');
@@ -1015,21 +1288,25 @@
             checkBtn.disabled = true;
             checkBtn.innerHTML = 'Actualizando <span class="spinner"></span>';
 
-            const prevFingerprint = allTransactions.length > 0 ? getTransactionFingerprint(allTransactions[0]) : null;
-            try {
-                await fetchTransactions(true);
-            } catch (e) {
-                showBanner('Servicio no disponible', 'neutral');
-            }
-            const currentFingerprint = allTransactions.length > 0 ? getTransactionFingerprint(allTransactions[0]) : null;
-
-            if (prevFingerprint && currentFingerprint === prevFingerprint) {
-                showBanner('Todo funciona bien, NO hay nuevos ingresos', 'neutral');
+            if (cajaAbierta) {
+                showBanner('📦 Caja abierta: mostrando solo transacciones de la caja actual', 'neutral');
             } else {
-                if (allTransactions.length > 0) {
-                    const amtNum = parseAmount(allTransactions[0].amount);
-                    if (isNaN(amtNum) || amtNum <= 0) {
-                        showBanner('Todo funciona bien, NO hay nuevos ingresos', 'neutral');
+                const prevFingerprint = allTransactions.length > 0 ? getTransactionFingerprint(allTransactions[0]) : null;
+                try {
+                    await fetchTransactions(true);
+                } catch (e) {
+                    showBanner('Servicio no disponible', 'neutral');
+                }
+                const currentFingerprint = allTransactions.length > 0 ? getTransactionFingerprint(allTransactions[0]) : null;
+
+                if (prevFingerprint && currentFingerprint === prevFingerprint) {
+                    showBanner('Todo funciona bien, NO hay nuevos ingresos', 'neutral');
+                } else {
+                    if (allTransactions.length > 0) {
+                        const amtNum = parseAmount(allTransactions[0].amount);
+                        if (isNaN(amtNum) || amtNum <= 0) {
+                            showBanner('Todo funciona bien, NO hay nuevos ingresos', 'neutral');
+                        }
                     }
                 }
             }
@@ -1054,9 +1331,18 @@
 
         // Botón de prueba de notificaciones
 
+        // Primero verificar si hay caja abierta
+        await verificarCajaAbiertaReal();
 
+        // Si hay caja abierta, no cargar transacciones generales de MP
+        if (!cajaAbierta) {
+            await Promise.all([fetchBalance(false), fetchTransactions(false)]);
+        } else {
+            // Si hay caja abierta, al menos cargar el balance
+            await fetchBalance(false);
+            console.log('[Init] Caja abierta detectada: mostrando solo movimientos de caja');
+        }
 
-        await Promise.all([fetchBalance(false), fetchTransactions(false)]);
         startHealthPolling();
         initSSE();
     }

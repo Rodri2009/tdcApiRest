@@ -419,11 +419,11 @@ async function startServer() {
                     console.log('[PUPPETEER-MP] 🔧 Lanzando browser...');
                     mpBrowser = await browserManager.launchBrowser(mpConfig);
                     console.log('[PUPPETEER-MP] ✓ Browser lanzado');
-                    
+
                     const mpPages = await mpBrowser.pages();
                     mpPage = mpPages.length > 0 ? mpPages[0] : await mpBrowser.newPage();
                     console.log('[PUPPETEER-MP] ✓ Page obtenida');
-                    
+
                     // Try setViewport, but don't fail if it doesn't work
                     try {
                         await mpPage.setViewport({ width: 1920, height: 1080 });
@@ -445,7 +445,7 @@ async function startServer() {
                     try {
                         const transactionWatch = initializeWatch(mpPage);
                         console.log('[PUPPETEER-MP] ✓ Watch service creado');
-                        
+
                         transactionWatch.start();
                         console.log('[PUPPETEER-MP] ✓ Watch service iniciado');
                         logSuccess('[PUPPETEER-MP] ✓ Watch service iniciado');
@@ -458,7 +458,7 @@ async function startServer() {
                     try {
                         const mpSessionMonitor = new SessionMonitor(mpPage);
                         console.log('[PUPPETEER-MP] ✓ Session monitor creado');
-                        
+
                         global.mpSessionMonitor = mpSessionMonitor;
                         mpSessionMonitor.start();
                         console.log('[PUPPETEER-MP] ✓ Session monitor iniciado');
@@ -482,7 +482,7 @@ async function startServer() {
                         logVerbose('[PUPPETEER-MP] ⏳ Esperando a que MP se estabilice antes de iniciar WA (3s)...');
                         await new Promise(r => setTimeout(r, 3000));
                     }
-                    
+
                     console.log('[PUPPETEER-MP] ✅ INICIALIZACIÓN COMPLETADA');
 
                 } catch (err) {

@@ -411,6 +411,234 @@ const getTicketDetails = async (req, res) => {
     }
 };
 
+/**
+ * FASE 1 - GET /api/tickets/evento/:eventoId/clientes
+ * Obtiene lista de todos los clientes que compraron entradas para un evento.
+ * Incluye: nombre, email, cantidad, tipo, monto, estado, fecha de compra, etc.
+ */
+const getClientesPorEvento = async (req, res) => {
+    const { eventoId } = req.params;
+
+    if (!eventoId || isNaN(eventoId)) {
+        return res.status(400).json({ error: 'ID de evento inválido.' });
+    }
+
+    try {
+        // Validar que el evento exista
+        const eventoQuery = `SELECT id, nombre_evento, fecha_evento, hora_inicio FROM eventos_confirmados WHERE id = ?`;
+        const [evento] = await pool.query(eventoQuery, [eventoId]);
+
+        if (!evento) {
+            return res.status(404).json({ error: 'Evento no encontrado.' });
+        }
+
+        // Obtener lista de clientes
+        const clientes = await ticketsModel.getClientesPorEvento(eventoId);
+
+        logSuccess(`[getClientesPorEvento] Evento ${eventoId}: ${clientes.length} compradores encontrados`);
+
+        res.status(200).json({
+            evento: {
+                id: evento.id,
+                nombre: evento.nombre_evento,
+                fecha: evento.fecha_evento,
+                hora: evento.hora_inicio
+            },
+            clientes: clientes,
+            total_clientes: clientes.length
+        });
+
+    } catch (error) {
+        logError('Error al obtener clientes por evento:', error);
+        res.status(500).json({ error: 'Error interno al obtener clientes.' });
+    }
+};
+
+/**
+ * FASE 1 - GET /api/tickets/evento/:eventoId/resumen
+ * Obtiene estadísticas agregadas de un evento:
+ * - Total de entradas vendidas
+ * - Desglose por estado (pagado, pendiente, utilizado, cancelado)
+ * - Desglose por tipo (anticipadas vs puerta)
+ * - Ingresos totales y pagados
+ * - Reembolsos procesados
+ */
+const getResumenEvento = async (req, res) => {
+    const { eventoId } = req.params;
+
+    if (!eventoId || isNaN(eventoId)) {
+        return res.status(400).json({ error: 'ID de evento inválido.' });
+    }
+
+    try {
+        // Validar que el evento exista
+        const eventoQuery = `SELECT id, nombre_evento, fecha_evento, hora_inicio FROM eventos_confirmados WHERE id = ?`;
+        const [evento] = await pool.query(eventoQuery, [eventoId]);
+
+        if (!evento) {
+            return res.status(404).json({ error: 'Evento no encontrado.' });
+        }
+
+        // Obtener estadísticas
+        const resumen = await ticketsModel.getResumenEvento(eventoId);
+
+        logSuccess(`[getResumenEvento] Evento ${eventoId}: Resumen generado`);
+
+        res.status(200).json({
+            evento: {
+                id: evento.id,
+                nombre: evento.nombre_evento,
+                fecha: evento.fecha_evento,
+                hora: evento.hora_inicio
+            },
+            estadisticas: {
+                // Conteos por estado
+                total_entradas_vendidas: resumen.total_entradas_vendidas || 0,
+                entradas_pagadas: resumen.entradas_pagadas || 0,
+                entradas_pendientes: resumen.entradas_pendientes || 0,
+                entradas_utilizadas: resumen.entradas_utilizadas || 0,
+                entradas_canceladas: resumen.entradas_canceladas || 0,
+
+                // Desglose por tipo de venta
+                anticipadas: resumen.anticipadas || 0,
+                puerta: resumen.puerta || 0,
+
+                // Ingresos
+                ingresos_totales: parseFloat(resumen.ingresos_totales) || 0,
+                ingresos_pagados: parseFloat(resumen.ingresos_pagados) || 0,
+                reembolsos_totales: parseFloat(resumen.reembolsos_totales) || 0,
+
+                // Cantidades de entradas
+                cantidad_total_entradas: resumen.cantidad_total_entradas || 0,
+                cantidad_pagada: resumen.cantidad_pagada || 0,
+                cantidad_utilizada_total: resumen.cantidad_utilizada_total || 0,
+
+                // Porcentajes
+                porcentaje_pago: resumen.total_entradas_vendidas > 0
+                    ? ((resumen.entradas_pagadas / resumen.total_entradas_vendidas) * 100).toFixed(1)
+                    : 0,
+                porcentaje_utilizacion: resumen.cantidad_pagada > 0
+                    ? ((resumen.cantidad_utilizada_total / resumen.cantidad_pagada) * 100).toFixed(1)
+                    : 0
+            }
+        });
+
+    } catch (error) {
+        logError('Error al obtener resumen del evento:', error);
+        res.status(500).json({ error: 'Error interno al obtener resumen.' });
+    }
+};
+
+/**
+ * PUT /api/tickets/:ticketId/validar
+ * FASE 2: Valida una entrada en la puerta (marca como utilizado).
+ */
+const validarEntrada = async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { evento_id, codigo } = req.body;
+
+        // Validar parámetros
+        if (!ticketId || !evento_id) {
+            return res.status(400).json({
+                error: 'INVALID_PARAMS',
+                message: 'Faltan parámetros requeridos (ticketId, evento_id)'
+            });
+        }
+
+        logVerbose(`[TICKETS] Validando entrada: ticket=${ticketId}, evento=${evento_id}`);
+
+        // Validar el ticket
+        const result = await ticketsModel.validateTicketForEntry(ticketId, parseInt(evento_id));
+
+        logSuccess(`[TICKETS] ✓ Entrada validada: ticket ${ticketId}`);
+        res.json(result);
+
+    } catch (error) {
+        logError(`[TICKETS] Error validando entrada:`, error);
+
+        if (error.status === 404) {
+            return res.status(404).json({ error: error.error, message: error.message });
+        }
+        if (error.status === 400) {
+            return res.status(400).json({ error: error.error, message: error.message });
+        }
+
+        res.status(500).json({
+            error: 'INTERNAL_ERROR',
+            message: 'Error interno del servidor al validar entrada'
+        });
+    }
+};
+
+/**
+ * FASE 5 - GET /api/tickets/me
+ * Obtiene todas las entradas del usuario logueado.
+ * Requiere autenticación JWT (protect middleware)
+ * 
+ * Retorna: Array de tickets con datos del evento
+ */
+const getMyTickets = async (req, res) => {
+    try {
+        // req.user viene del protect middleware
+        if (!req.user || !req.user.email) {
+            return res.status(401).json({
+                error: 'UNAUTHORIZED',
+                message: 'Usuario no autenticado'
+            });
+        }
+
+        const userEmail = req.user.email;
+        logVerbose(`[getMyTickets] Obteniendo entradas de: ${userEmail}`);
+
+        // Query: Obtener todos los tickets del usuario por email
+        const query = `
+            SELECT 
+                t.id,
+                t.nombre_comprador,
+                t.email,
+                t.cantidad,
+                t.tipo_precio,
+                t.total,
+                t.codigo_confirmacion,
+                t.estado,
+                t.comprado_en,
+                t.id_evento,
+                e.nombre_evento,
+                e.nombre_banda,
+                e.fecha_evento,
+                e.hora_inicio
+            FROM tickets t
+            LEFT JOIN eventos_confirmados e ON t.id_evento = e.id
+            WHERE t.email = ?
+            ORDER BY t.comprado_en DESC
+        `;
+
+        const tickets = await pool.query(query, [userEmail]);
+
+        // Convertir BigInt a string para JSON
+        const serializedTickets = tickets.map(ticket => {
+            const converted = { ...ticket };
+            for (const key in converted) {
+                if (typeof converted[key] === 'bigint') {
+                    converted[key] = converted[key].toString();
+                }
+            }
+            return converted;
+        });
+
+        logSuccess(`[getMyTickets] ${serializedTickets.length} entradas encontradas para ${userEmail}`);
+        res.status(200).json(serializedTickets);
+
+    } catch (error) {
+        logError('[getMyTickets] Error obteniendo entradas:', error);
+        res.status(500).json({
+            error: 'INTERNAL_ERROR',
+            message: 'Error interno al obtener entradas'
+        });
+    }
+};
+
 module.exports = {
     getFechasBandasConfirmadas,
     simulateCheckout,
@@ -419,4 +647,8 @@ module.exports = {
     processPayment,
     getPublicKey,
     getTicketDetails,
+    getClientesPorEvento,
+    getResumenEvento,
+    validarEntrada,
+    getMyTickets,
 };

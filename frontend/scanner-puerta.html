@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Puerta - Control de Entradas</title>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        body {
+            background-color: #0c0a09;
+            color: #e6e6e6;
+            font-family: 'Inter', system-ui, Arial;
+        }
+
+        .scanner-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .scanner-header {
+            background: linear-gradient(135deg, var(--color-primary) 0%, #6b21a8 100%);
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .scanner-header h1 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 24px;
+        }
+
+        .scanner-content {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            padding: 20px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .scanner-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 0;
+        }
+
+        .scanner-right {
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--color-secondary);
+        }
+
+        .form-group select {
+            padding: 10px 12px;
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            color: #e6e6e6;
+            font-size: 14px;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 0 3px rgba(240, 171, 252, 0.1);
+        }
+
+        .video-container {
+            flex: 1;
+            background-color: #111827;
+            border: 2px solid #374151;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-height: 0;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .qr-frame {
+            width: 250px;
+            height: 250px;
+            border: 3px solid var(--color-secondary);
+            border-radius: 12px;
+            background: transparent;
+            box-shadow: inset 0 0 20px rgba(240, 171, 252, 0.2),
+                0 0 20px rgba(240, 171, 252, 0.3);
+            animation: qrPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes qrPulse {
+
+            0%,
+            100% {
+                box-shadow: inset 0 0 20px rgba(240, 171, 252, 0.2), 0 0 20px rgba(240, 171, 252, 0.3);
+            }
+
+            50% {
+                box-shadow: inset 0 0 20px rgba(240, 171, 252, 0.4), 0 0 30px rgba(240, 171, 252, 0.5);
+            }
+        }
+
+        .camera-off {
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            color: #9ca3af;
+        }
+
+        .camera-off i {
+            font-size: 48px;
+            color: #6b7280;
+        }
+
+        .status-card {
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #6b7280;
+            background-color: #111827;
+        }
+
+        .status-card.success {
+            border-left-color: #10b981;
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+
+        .status-card.error {
+            border-left-color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .status-card.warning {
+            border-left-color: #f59e0b;
+            background-color: rgba(245, 158, 11, 0.1);
+        }
+
+        .status-card.info {
+            border-left-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .status-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .status-content {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            background-color: #1f2937;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border-top: 2px solid var(--color-secondary);
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--color-secondary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        .log-section {
+            background-color: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .log-header {
+            background-color: #1f2937;
+            padding: 10px;
+            border-bottom: 1px solid #374151;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--color-secondary);
+        }
+
+        .log-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .log-entry {
+            padding: 10px;
+            border-bottom: 1px solid #374151;
+            font-size: 12px;
+            font-family: 'Monaco', monospace;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry.success {
+            color: #10b981;
+            background-color: rgba(16, 185, 129, 0.05);
+        }
+
+        .log-entry.error {
+            color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+
+        .log-entry.warning {
+            color: #f59e0b;
+            background-color: rgba(245, 158, 11, 0.05);
+        }
+
+        .log-entry.info {
+            color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .log-timestamp {
+            color: #6b7280;
+            font-size: 11px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--color-secondary);
+            color: #0c0a09;
+        }
+
+        .btn-primary:hover {
+            background-color: #e879f9;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #374151;
+            color: #e6e6e6;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+
+        @media (max-width: 1024px) {
+            .scanner-content {
+                flex-direction: column;
+            }
+
+            .scanner-right {
+                width: 100%;
+                max-height: 250px;
+            }
+
+            .scanner-left {
+                height: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .scanner-content {
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .scanner-header h1 {
+                font-size: 18px;
+            }
+
+            .qr-frame {
+                width: 180px;
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scanner-container">
+        <!-- Header -->
+        <div class="scanner-header">
+            <h1>
+                <i class="fas fa-qrcode"></i>
+                Scanner Puerta - Control de Entradas
+            </h1>
+        </div>
+
+        <!-- Content -->
+        <div class="scanner-content">
+            <!-- Left: Camera & Scanner -->
+            <div class="scanner-left">
+                <div class="form-group">
+                    <label for="eventoSelector">Evento</label>
+                    <select id="eventoSelector" onchange="selectEvento(this.value)">
+                        <option value="">Seleccionar evento...</option>
+                    </select>
+                </div>
+
+                <div class="video-container">
+                    <video id="video" playsinline></video>
+                    <canvas id="canvas"></canvas>
+                    <div class="camera-off" id="cameraOff">
+                        <i class="fas fa-video-slash"></i>
+                        <span>Cámara no disponible</span>
+                    </div>
+                    <div class="video-overlay">
+                        <div class="qr-frame"></div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="startCamera()">
+                        <i class="fas fa-play"></i> Iniciar Cámara
+                    </button>
+                    <button class="btn-danger" onclick="stopCamera()">
+                        <i class="fas fa-stop"></i> Detener
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Status & Log -->
+            <div class="scanner-right">
+                <!-- Current Status -->
+                <div id="statusContainer"></div>
+
+                <!-- Stats -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalCount">0</div>
+                        <div class="stat-label">Total Escaneos</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="successCount">0</div>
+                        <div class="stat-label">Entradas Válidas</div>
+                    </div>
+                </div>
+
+                <!-- Log -->
+                <div class="log-section">
+                    <div class="log-header">
+                        <i class="fas fa-list"></i> Historial de Escaneos
+                    </div>
+                    <div class="log-content" id="logContent"></div>
+                </div>
+
+                <button class="btn-secondary" onclick="clearLog()">
+                    <i class="fas fa-trash"></i> Limpiar Historial
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Navbar -->
+    <script src="/navbar.js"></script>
+
+    <!-- QR Code Scanner Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+    <script>
+        let video, canvas, canvasContext;
+        let scanning = false;
+        let currentEventoId = null;
+        let stats = { total: 0, success: 0 };
+        let logEntries = [];
+
+        // =========================================================================
+        // INITIALIZATION
+        // =========================================================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            video = document.getElementById('video');
+            canvas = document.getElementById('canvas');
+            canvasContext = canvas.getContext('2d');
+
+            // Load navbar & check auth
+            setTimeout(() => {
+                if (!navbarManager || !navbarManager.isAuthenticated) {
+                    window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+                    return;
+                }
+
+                // Check admin permission
+                if (!navbarManager.tieneRol('admin') && !navbarManager.tieneAlgunPermiso(['tickets.escanear', 'admin'])) {
+                    showStatus('error', 'Sin permiso', 'No tienes permiso para acceder a esta página');
+                    return;
+                }
+
+                loadEventos();
+            }, 100);
+        });
+
+        // =========================================================================
+        // LOAD EVENTOS
+        // =========================================================================
+
+        async function loadEventos() {
+            try {
+                const response = await fetch('/api/tickets/eventos_confirmados');
+                if (!response.ok) throw new Error('Failed to load eventos');
+
+                const eventos = await response.json();
+                const selector = document.getElementById('eventoSelector');
+
+                eventos.forEach(evento => {
+                    const option = document.createElement('option');
+                    option.value = evento.id_evento;
+                    option.textContent = `${evento.fecha_evento.split('T')[0]} - ${evento.nombre_banda}`;
+                    selector.appendChild(option);
+                });
+
+                addLog('info', '✓ Eventos cargados correctamente');
+            } catch (error) {
+                addLog('error', '✗ Error cargando eventos: ' + error.message);
+            }
+        }
+
+        // =========================================================================
+        // SELECT EVENTO
+        // =========================================================================
+
+        function selectEvento(eventoId) {
+            currentEventoId = eventoId;
+            if (eventoId) {
+                addLog('info', `📌 Evento seleccionado: ${eventoId}`);
+            }
+        }
+
+        // =========================================================================
+        // CAMERA MANAGEMENT
+        // =========================================================================
+
+        async function startCamera() {
+            if (!currentEventoId) {
+                showStatus('warning', 'Evento no seleccionado', 'Selecciona un evento primero');
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+
+                video.srcObject = stream;
+                document.getElementById('cameraOff').style.display = 'none';
+                video.style.display = 'block';
+                scanning = true;
+                addLog('success', '✓ Cámara iniciada correctamente');
+
+                scanQRCode();
+            } catch (error) {
+                showStatus('error', 'Error de cámara', error.message);
+                addLog('error', '✗ Error iniciando cámara: ' + error.message);
+            }
+        }
+
+        function stopCamera() {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            video.style.display = 'none';
+            document.getElementById('cameraOff').style.display = 'flex';
+            scanning = false;
+            addLog('warning', '⏹ Cámara detenida');
+        }
+
+        // =========================================================================
+        // QR CODE SCANNING
+        // =========================================================================
+
+        async function scanQRCode() {
+            if (!scanning) return;
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 2 });
+
+            if (code) {
+                await processQRCode(code.data);
+                // Esperar 2 segundos antes de continuar escaneando
+                await new Promise(r => setTimeout(r, 2000));
+            }
+
+            requestAnimationFrame(scanQRCode);
+        }
+
+        // =========================================================================
+        // PROCESS QR CODE
+        // =========================================================================
+
+        async function processQRCode(qrData) {
+            try {
+                const data = JSON.parse(qrData);
+                const { ticketId, eventoId, codigo } = data;
+
+                if (!ticketId || !eventoId) {
+                    showStatus('error', 'QR inválido', 'Formato de QR no reconocido');
+                    return;
+                }
+
+                if (parseInt(eventoId) !== parseInt(currentEventoId)) {
+                    showStatus('error', 'Evento incorrecto', `Este ticket es para otro evento (${eventoId})`);
+                    addLog('error', `✗ QR de evento distinto: ${eventoId} vs ${currentEventoId}`);
+                    return;
+                }
+
+                // Validar ticket
+                await validateTicket(ticketId, codigo);
+            } catch (error) {
+                showStatus('error', 'Error al procesar QR', error.message);
+                addLog('error', '✗ Error procesando QR: ' + error.message);
+            }
+        }
+
+        // =========================================================================
+        // VALIDATE TICKET
+        // =========================================================================
+
+        async function validateTicket(ticketId, codigo) {
+            try {
+                stats.total++;
+                updateStats();
+
+                const response = await fetch(`/api/tickets/${ticketId}/validar`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify({
+                        evento_id: currentEventoId,
+                        codigo: codigo
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    showStatus('error', result.error || 'Error', result.message || 'No se pudo validar el ticket');
+                    addLog('error', `✗ Ticket ${ticketId}: ${result.message}`);
+                    return;
+                }
+
+                stats.success++;
+                updateStats();
+                showStatus('success', '✓ Entrada válida', `Ticket #${ticketId} - ${result.cliente_nombre}`);
+                addLog('success', `✓ Entrada #${ticketId}: ${result.cliente_nombre} - ENTRÓ`);
+            } catch (error) {
+                showStatus('error', 'Error de conexión', error.message);
+                addLog('error', '✗ Error: ' + error.message);
+            }
+        }
+
+        // =========================================================================
+        // UI HELPERS
+        // =========================================================================
+
+        function showStatus(type, title, message) {
+            const container = document.getElementById('statusContainer');
+            const statusClass = {
+                'success': 'success',
+                'error': 'error',
+                'warning': 'warning',
+                'info': 'info'
+            }[type] || 'info';
+
+            container.innerHTML = `
+                <div class="status-card ${statusClass}">
+                    <div class="status-title">${title}</div>
+                    <div class="status-content">${message}</div>
+                </div>
+            `;
+        }
+
+        function addLog(type, message) {
+            const timestamp = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            logEntries.unshift({ type, message, timestamp });
+            if (logEntries.length > 50) logEntries.pop(); // Limitar a 50 entradas
+
+            const logContent = document.getElementById('logContent');
+            logContent.innerHTML = logEntries.map(entry => `
+                <div class="log-entry ${entry.type}">
+                    <span class="log-timestamp">[${entry.timestamp}]</span> ${entry.message}
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('totalCount').textContent = stats.total;
+            document.getElementById('successCount').textContent = stats.success;
+        }
+
+        function clearLog() {
+            logEntries = [];
+            document.getElementById('logContent').innerHTML = '';
+            addLog('info', 'Historial limpiado');
+        }
+    </script>
+</body>
+
+</html>

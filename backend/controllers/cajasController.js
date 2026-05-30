@@ -1,4 +1,103 @@
 const db = require('../db');
+const { parseMercadoPagoDate } = require('../services/activityService');
+
+const GENERIC_MP_LABEL_REGEX = /^(?:in_money|income|out|outflow|pays?|payment|transferencia|pago(?:s)?|ingreso|egreso|compra|venta|retiro|deposito|acreditad[oa]|abonad[oa]|recibid[oa]|cobro|movimiento)$/i;
+
+function isGenericMpLabel(value) {
+    if (!value) return true;
+    const normalized = String(value).trim().toLowerCase();
+    return GENERIC_MP_LABEL_REGEX.test(normalized);
+}
+
+function looksLikePersonName(value) {
+    if (!value) return false;
+    const trimmed = String(value).trim();
+    return /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4}$/.test(trimmed);
+}
+
+function normalizeMpDisplayFields(tx) {
+    const name = (tx.name || '').trim();
+    const title = (tx.title || '').trim();
+    const description = (tx.description || '').trim();
+    const category = (tx.category || '').trim();
+
+    const titleGeneric = isGenericMpLabel(title);
+    const descriptionGeneric = isGenericMpLabel(description);
+    const categoryGeneric = isGenericMpLabel(category);
+    const nameGeneric = isGenericMpLabel(name);
+
+    let subcategoria = '';
+    let descripcion = '';
+
+    if (name && !nameGeneric) {
+        subcategoria = name;
+        descripcion = description && !descriptionGeneric && description !== name
+            ? description
+            : (!titleGeneric && title !== name ? title : (category && !categoryGeneric ? category : name));
+    } else if (title && !titleGeneric && looksLikePersonName(title)) {
+        subcategoria = title;
+        descripcion = description && description !== title ? description : (category && !categoryGeneric ? category : title);
+    } else if (titleGeneric && !descriptionGeneric && looksLikePersonName(description)) {
+        subcategoria = description;
+        descripcion = title;
+    } else if (title && !titleGeneric) {
+        subcategoria = title;
+        descripcion = description && description !== title ? description : (category && !categoryGeneric ? category : title);
+    } else if (description && !descriptionGeneric) {
+        subcategoria = description;
+        descripcion = title && title !== description ? title : (category && !categoryGeneric ? category : description);
+    } else if (category && !categoryGeneric) {
+        subcategoria = category;
+        descripcion = title || description || category;
+    } else if (title) {
+        subcategoria = title;
+        descripcion = description || title;
+    } else if (description) {
+        subcategoria = description;
+        descripcion = description;
+    } else if (category) {
+        subcategoria = category;
+        descripcion = category;
+    } else {
+        subcategoria = 'mercadopago';
+        descripcion = 'Transacción MP';
+    }
+
+    if (!descripcion) descripcion = subcategoria;
+    return { subcategoria, descripcion };
+}
+
+async function upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, alreadyExists = false) {
+    const comprobante_ref = `MP-${tx.id}`;
+    const { subcategoria, descripcion } = normalizeMpDisplayFields(tx);
+
+    // Convertir createdAt al formato que MariaDB espera (DATETIME: YYYY-MM-DD HH:MM:SS)
+    let mysqlDatetime = createdAt;
+    if (typeof createdAt === 'string' && createdAt.includes('T')) {
+        // Es ISO 8601, convertir a DATETIME format
+        const date = new Date(createdAt);
+        mysqlDatetime = date.toISOString().slice(0, 19).replace('T', ' ');
+    }
+
+    if (alreadyExists) {
+        await db.query(
+            `UPDATE movimientos_caja
+             SET tipo = ?, subcategoria = ?, descripcion = ?, monto = ?, metodo_pago = ?, creado_en = ?
+             WHERE id_caja = ? AND comprobante_ref = ?`,
+            [tipo, subcategoria, descripcion, monto, 'otro', mysqlDatetime, cajaId, comprobante_ref]
+        );
+        return { inserted: false, updated: true, comprobante_ref, subcategoria, descripcion };
+    }
+
+    await db.query(
+        `INSERT INTO movimientos_caja
+         (id_caja, tipo, categoria, subcategoria, descripcion, monto, metodo_pago, comprobante_ref, usuario_id, creado_en)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [cajaId, tipo, 'mercadopago', subcategoria, descripcion, monto, 'otro', comprobante_ref, 2, mysqlDatetime]
+    );
+
+    return { inserted: true, updated: false, comprobante_ref, subcategoria, descripcion };
+}
 
 // Serializar BigInt a Number para JSON
 const serializeBigInt = (obj) => JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? Number(value) : value));
@@ -12,6 +111,7 @@ async function verificarCajaActiva(req, res) {
             SELECT 
                 c.id,
                 c.numero_caja,
+                c.nombre,
                 c.fecha_apertura,
                 c.saldo_inicial,
                 c.estado,
@@ -66,10 +166,14 @@ async function verificarCajaActiva(req, res) {
 async function crearCaja(req, res) {
     try {
         const { saldoInicial, notas } = req.body;
-        const usuarioId = req.user.id;
+        const usuarioId = req.user?.id_usuario || req.user?.id;
 
-        if (saldoInicial === undefined || saldoInicial < 0) {
+        if (saldoInicial === undefined || Number.isNaN(saldoInicial) || saldoInicial < 0) {
             return res.status(400).json({ error: 'Saldo inicial inválido' });
+        }
+
+        if (!usuarioId) {
+            return res.status(401).json({ error: 'Usuario no autenticado' });
         }
 
         // Verificar que no haya otra caja abierta
@@ -87,12 +191,27 @@ async function crearCaja(req, res) {
 
         // Crear caja
         const insertQuery = `
-            INSERT INTO cajas (numero_caja, usuario_apertura_id, saldo_inicial, notas_apertura, estado)
-            VALUES (?, ?, ?, ?, 'abierta')
+            INSERT INTO cajas (numero_caja, nombre, usuario_apertura_id, saldo_inicial, notas_apertura, estado)
+            VALUES (?, ?, ?, ?, ?, 'abierta')
         `;
 
-        const result = await db.query(insertQuery, [numeroCaja, usuarioId, saldoInicial, notas]);
+        const nombre = req.body.nombre || `Caja ${numeroCaja}`;  // Usar nombre proporcionado o generar uno por defecto
+        const result = await db.query(insertQuery, [numeroCaja, nombre, usuarioId, saldoInicial, notas]);
         const cajaId = result.insertId;
+
+        // NUEVO: Registrar el movimiento de apertura de caja
+        try {
+            const movimientoQuery = `
+                INSERT INTO movimientos_caja 
+                (id_caja, tipo, categoria, subcategoria, descripcion, monto, metodo_pago, creado_en)
+                VALUES (?, 'ingreso', 'apertura', 'apertura_caja', ?, ?, 'manual', NOW())
+            `;
+            await db.query(movimientoQuery, [cajaId, `Apertura de caja #${numeroCaja}`, saldoInicial]);
+            console.log('[MOVIMIENTO] Apertura registrada para caja:', cajaId);
+        } catch (movErr) {
+            console.warn('[MOVIMIENTO] Error al registrar apertura:', movErr.message);
+            // No retornar error, continuar igual
+        }
 
         // Log de actividad
         console.log('[CAJA_ABIERTA]', {
@@ -282,6 +401,41 @@ async function eliminarMovimiento(req, res) {
 }
 
 /**
+ * Eliminar una caja y sus movimientos asociados
+ */
+async function eliminarCaja(req, res) {
+    try {
+        const cajaId = req.params.id;
+        const usuarioId = req.user.id;
+
+        const cajaQuery = 'SELECT id, estado FROM cajas WHERE id = ?';
+        const cajaResults = await db.query(cajaQuery, [cajaId]);
+
+        if (cajaResults.length === 0) {
+            return res.status(404).json({ error: 'Caja no encontrada' });
+        }
+
+        const caja = cajaResults[0];
+        if (caja.estado === 'abierta') {
+            return res.status(400).json({ error: 'No se puede eliminar una caja abierta' });
+        }
+
+        await db.query('DELETE FROM movimientos_caja WHERE id_caja = ?', [cajaId]);
+        await db.query('DELETE FROM cajas WHERE id = ?', [cajaId]);
+
+        console.log('[CAJA_ELIMINADA]', {
+            caja_id: cajaId,
+            usuario_id: usuarioId
+        });
+
+        return res.json({ mensaje: 'Caja eliminada' });
+    } catch (err) {
+        console.error('[cajasController] Error:', err);
+        res.status(500).json({ error: 'Error interno del servidor', details: err.message });
+    }
+}
+
+/**
  * Cerrar una caja
  */
 async function cerrarCaja(req, res) {
@@ -329,6 +483,25 @@ async function cerrarCaja(req, res) {
         `;
 
         await db.query(updateQuery, [saldoFinal, usuarioId, notas, cajaId]);
+
+        // NUEVO: Registrar el movimiento de cierre de caja (si hay diferencia)
+        try {
+            if (diferencia !== 0) {
+                const movimientoQuery = `
+                    INSERT INTO movimientos_caja 
+                    (id_caja, tipo, categoria, subcategoria, descripcion, monto, metodo_pago, creado_en)
+                    VALUES (?, ?, 'cierre', 'cierre_caja', ?, ?, 'manual', NOW())
+                `;
+                const tipoMovimiento = diferencia > 0 ? 'ingreso' : 'egreso';
+                const montoAbs = Math.abs(diferencia);
+                const descripcion = `Cierre de caja #${caja.numero_caja} - ${diferencia > 0 ? 'Sobrante' : 'Faltante'}: $${montoAbs}`;
+                await db.query(movimientoQuery, [cajaId, tipoMovimiento, descripcion, montoAbs]);
+                console.log('[MOVIMIENTO] Cierre registrado para caja:', cajaId, 'diferencia:', diferencia);
+            }
+        } catch (movErr) {
+            console.warn('[MOVIMIENTO] Error al registrar cierre:', movErr.message);
+            // No retornar error, continuar igual
+        }
 
         console.log('[CAJA_CERRADA]', {
             caja_id: cajaId,
@@ -475,9 +648,8 @@ async function importarMovimientosMPCaja(req, res) {
         console.log(`[cajasController] 📅 Filtrando entre ${cajaStart.toISOString()} y ${cajaEnd.toISOString()}`);
 
         transactions = transactions.filter(tx => {
-            if (!tx.dateTime && !tx.creationDate) return false;
-            const txDate = new Date(tx.dateTime || tx.creationDate);
-            return txDate >= cajaStart && txDate <= cajaEnd;
+            const txDate = parseMercadoPagoDate(tx.creationDate || tx.dateTime || '');
+            return txDate !== null && txDate >= cajaStart && txDate <= cajaEnd;
         });
 
         console.log(`[cajasController] ✅ Filtrado: ${transactions.length} transacciones en rango`);
@@ -499,24 +671,26 @@ async function importarMovimientosMPCaja(req, res) {
             return tx;
         });
 
-        // Filtrar transacciones que ya existen
-        const newTransactions = transactionsWithIds.filter(tx => {
-            const ref = `MP-${tx.id}`;
-            if (existingRefs.has(ref)) {
-                console.log(`  ⏭️  Saltando duplicado: ${ref}`);
-                return false;
-            }
-            return true;
-        });
+        const duplicateCount = transactionsWithIds.reduce((count, tx) => {
+            return count + (existingRefs.has(`MP-${tx.id}`) ? 1 : 0);
+        }, 0);
 
-        console.log(`[cajasController] ✅ Deduplicación: ${newTransactions.length} nuevas (${transactions.length - newTransactions.length} ya existentes)`);
+        console.log(`[cajasController] ✅ Deduplicación: ${transactionsWithIds.length - duplicateCount} nuevas, ${duplicateCount} existentes (se actualizarán si cambian)`);
 
         // 3b. Importar a BD
         let importedCount = 0;
+        let updatedCount = 0;
         let failedCount = 0;
+        const processedRefs = new Set();
 
-        for (const tx of newTransactions) {
+        for (const tx of transactionsWithIds) {
             try {
+                const comprobante_ref = `MP-${tx.id}`;
+                if (processedRefs.has(comprobante_ref)) {
+                    continue;
+                }
+                processedRefs.add(comprobante_ref);
+
                 let monto = tx.amount || 0;
                 if (typeof monto === 'string') {
                     monto = parseFloat(monto.replace(/[^0-9.-]/g, '')) || 0;
@@ -533,35 +707,18 @@ async function importarMovimientosMPCaja(req, res) {
                     monto = Math.abs(monto);
                 }
 
-                const descripcion = `${tx.title || 'Transacción'} - ${tx.description || ''}`.trim();
-                // Usar el mismo ID normalizado que en deduplicación
-                const comprobante_ref = `MP-${tx.id}`;
+                const createdAtDate = parseMercadoPagoDate(tx.creationDate || tx.dateTime || '') || new Date();
+                const createdAt = createdAtDate.toISOString(); // ✅ Incluye 'Z' para indicar UTC
 
-                // Convertir datetime a formato MySQL (YYYY-MM-DD HH:MM:SS)
-                const txDateTime = tx.dateTime || tx.creationDate || new Date().toISOString();
-                const dateObj = new Date(txDateTime);
-                const mysqlDateTime = dateObj.toISOString().slice(0, 19).replace('T', ' ');
+                const { inserted, updated, subcategoria, descripcion } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, existingRefs.has(comprobante_ref));
 
-                await db.query(
-                    `INSERT INTO movimientos_caja 
-                    (id_caja, tipo, categoria, subcategoria, descripcion, monto, metodo_pago, comprobante_ref, usuario_id, creado_en)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                        cajaId,
-                        tipo,
-                        'mercadopago',
-                        tx.category || 'general',
-                        descripcion,
-                        monto,
-                        'otro',  // metodo_pago ENUM válido
-                        comprobante_ref,
-                        2,  // usuario_id = Rodrigo (admin)
-                        mysqlDateTime
-                    ]
-                );
+                if (inserted) {
+                    importedCount++;
+                } else if (updated) {
+                    updatedCount++;
+                }
 
-                importedCount++;
-                console.log(`  ✅ ${descripcion} ($${monto})`);
+                console.log(`  ${inserted ? '✅' : '♻️'} ${comprobante_ref}: ${tipo} $${monto} - ${subcategoria} / ${descripcion}`);
             } catch (err) {
                 failedCount++;
                 console.error(`  ❌ Error:`, err.message);
@@ -573,6 +730,7 @@ async function importarMovimientosMPCaja(req, res) {
         return res.json({
             success: true,
             imported: importedCount,
+            updated: updatedCount,
             failed: failedCount,
             total: transactions.length,
             pagesScraped: scrapedData.totalPages,
@@ -637,16 +795,7 @@ async function importarMovimientosRetroactivos(req, res) {
 
         // 3. Filtrar por período
         const filteredTransactions = transactions.filter(tx => {
-            let txDateTime = null;
-
-            // Intentar parsear datetime de la transacción (varios formatos posibles)
-            if (tx.dateTime) {
-                txDateTime = new Date(tx.dateTime);
-            } else if (tx.creationDate) {
-                txDateTime = new Date(tx.creationDate);
-            } else if (tx.grouperDate?.value) {
-                txDateTime = new Date(tx.grouperDate.value);
-            }
+            const txDateTime = parseMercadoPagoDate(tx.creationDate || tx.dateTime || tx.grouperDate?.value || '');
 
             if (!txDateTime || isNaN(txDateTime)) {
                 console.warn(`  ⚠️  Transacción ${tx.id} sin fecha válida, ignorando`);
@@ -673,24 +822,27 @@ async function importarMovimientosRetroactivos(req, res) {
         );
         const existingRefs = new Set(existingRefsResults.map(r => r.comprobante_ref));
 
-        const newTransactions = transactionsWithIds.filter(tx => {
-            const ref = `MP-${tx.id}`;
-            if (existingRefs.has(ref)) {
-                console.log(`  ⏭️  Duplicado: ${ref}`);
-                return false;
-            }
-            return true;
-        });
+        const duplicateCount = transactionsWithIds.reduce((count, tx) => {
+            return count + (existingRefs.has(`MP-${tx.id}`) ? 1 : 0);
+        }, 0);
 
-        console.log(`[cajasController] ✅ Deduplicación: ${newTransactions.length} nuevas (${filteredTransactions.length - newTransactions.length} existentes)`);
+        console.log(`[cajasController] ✅ Deduplicación: ${transactionsWithIds.length - duplicateCount} nuevas (${duplicateCount} existentes)`);
 
         // 5. Importar a BD
         let importedCount = 0;
+        let updatedCount = 0;
         let failedCount = 0;
         const detailedLogs = [];
+        const processedRefs = new Set();
 
-        for (const tx of newTransactions) {
+        for (const tx of transactionsWithIds) {
             try {
+                const comprobante_ref = `MP-${tx.id}`;
+                if (processedRefs.has(comprobante_ref)) {
+                    continue;
+                }
+                processedRefs.add(comprobante_ref);
+
                 // Parsear monto
                 let monto = 0;
                 if (typeof tx.amount === 'string') {
@@ -710,35 +862,20 @@ async function importarMovimientosRetroactivos(req, res) {
                 }
 
                 // Parsear datetime
-                let createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
-                if (tx.dateTime) {
-                    createdAt = new Date(tx.dateTime).toISOString().slice(0, 19).replace('T', ' ');
-                } else if (tx.creationDate) {
-                    createdAt = new Date(tx.creationDate).toISOString().slice(0, 19).replace('T', ' ');
+                let createdAt = new Date().toISOString(); // ✅ Incluye 'Z' para indicar UTC
+                if (tx.dateTime || tx.creationDate) {
+                    const parsedDate = parseMercadoPagoDate(tx.creationDate || tx.dateTime || '');
+                    if (parsedDate) {
+                        createdAt = parsedDate.toISOString(); // ✅ Incluye 'Z' para indicar UTC
+                    }
                 }
 
-                const insertQuery = `
-                    INSERT INTO movimientos_caja (
-                        id_caja, tipo, categoria, subcategoria, descripcion,
-                        monto, metodo_pago, comprobante_ref, usuario_id, creado_en
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `;
+                const { inserted, updated, subcategoria, descripcion } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, existingRefs.has(comprobante_ref));
 
-                await db.query(insertQuery, [
-                    cajaId,
-                    tipo,
-                    'mercadopago',
-                    tx.category || 'otros',
-                    tx.description || tx.title || 'Transacción MP',
-                    monto,
-                    'otro',
-                    `MP-${tx.id}`,
-                    2, // usuario_id Rodrigo
-                    createdAt
-                ]);
+                if (inserted) importedCount++;
+                if (updated) updatedCount++;
 
-                importedCount++;
-                const log = `✅ ${tx.id}: ${tipo} $${monto} - ${tx.description}`;
+                const log = `${inserted ? '✅' : '♻️'} ${tx.id}: ${tipo} $${monto} - ${subcategoria} / ${descripcion}`;
                 detailedLogs.push(log);
                 console.log(`  ${log}`);
 
@@ -755,8 +892,9 @@ async function importarMovimientosRetroactivos(req, res) {
         return res.status(200).json({
             success: true,
             imported: importedCount,
+            updated: updatedCount,
             failed: failedCount,
-            total: newTransactions.length,
+            total: transactionsWithIds.length,
             filtered: filteredTransactions.length,
             pagesScraped: totalPages,
             totalInMP: totalCount,
@@ -835,10 +973,8 @@ async function importarRetroactivosStream(req, res) {
 
         // Filtrar por período
         const filteredTransactions = transactions.filter(tx => {
-            const rawDate = tx.dateTime || tx.creationDate || tx.grouperDate?.value;
-            if (!rawDate) return false;
-            const txDateTime = new Date(rawDate);
-            if (isNaN(txDateTime)) return false;
+            const txDateTime = parseMercadoPagoDate(tx.creationDate || tx.dateTime || tx.grouperDate?.value || '');
+            if (!txDateTime || isNaN(txDateTime)) return false;
             return txDateTime >= dateFrom && txDateTime <= dateTo;
         });
 
@@ -857,23 +993,25 @@ async function importarRetroactivosStream(req, res) {
         const existingRefs = new Set(existingRefsResults.map(r => r.comprobante_ref));
 
         console.log(`[cajasController] 🔍 Dedup: ${filteredTransactions.length} filtradas, ${existingRefs.size} refs en DB para caja ${cajaId}`);
-        const newTransactions = transactionsWithIds.filter(tx => {
-            const ref = `MP-${tx.id}`;
-            const isDup = existingRefs.has(ref);
-            if (isDup) {
-                console.log(`[cajasController]   ⏭️  DUP  ref=${ref.substring(0, 60)}`);
-            } else {
-                console.log(`[cajasController]   🆕  NEW  ref=${ref.substring(0, 60)}`);
-            }
-            return !isDup;
-        });
+        const duplicateCount = transactionsWithIds.reduce((count, tx) => {
+            return count + (existingRefs.has(`MP-${tx.id}`) ? 1 : 0);
+        }, 0);
+        console.log(`[cajasController] ✅ Deduplicación: ${transactionsWithIds.length - duplicateCount} nuevas, ${duplicateCount} existentes (se actualizarán si hay cambios)`);
 
         // Importar a BD
         let importedCount = 0;
+        let updatedCount = 0;
         let failedCount = 0;
+        const processedRefs = new Set();
 
-        for (const tx of newTransactions) {
+        for (const tx of transactionsWithIds) {
             try {
+                const comprobante_ref = `MP-${tx.id}`;
+                if (processedRefs.has(comprobante_ref)) {
+                    continue;
+                }
+                processedRefs.add(comprobante_ref);
+
                 let monto = 0;
                 if (typeof tx.amount === 'string') {
                     monto = parseFloat(tx.amount.replace(/\./g, '').replace(',', '.'));
@@ -887,20 +1025,15 @@ async function importarRetroactivosStream(req, res) {
                 if (titleLower.includes('enviada') || titleLower.includes('egreso')) tipo = 'egreso';
                 if (monto < 0) { tipo = 'egreso'; monto = Math.abs(monto); }
 
-                const createdAt = new Date(tx.dateTime || tx.creationDate || new Date())
-                    .toISOString().slice(0, 19).replace('T', ' ');
+                const createdAtDate = parseMercadoPagoDate(tx.creationDate || tx.dateTime || '') || new Date();
+                const createdAt = createdAtDate.toISOString(); // ✅ Incluye 'Z' para indicar UTC
 
-                await db.query(
-                    `INSERT IGNORE INTO movimientos_caja 
-                    (id_caja, tipo, categoria, subcategoria, descripcion, monto, metodo_pago, comprobante_ref, usuario_id, creado_en)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [cajaId, tipo, 'mercadopago', tx.category || 'otros',
-                        tx.description || tx.title || 'Transacción MP',
-                        monto, 'otro', `MP-${tx.id}`, 2, createdAt]
-                );
+                const { inserted, updated } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, existingRefs.has(comprobante_ref));
 
-                importedCount++;
-                send({ type: 'imported', tx: { id: tx.id, tipo, monto, title: tx.title, createdAt } });
+                if (inserted) importedCount++;
+                if (updated) updatedCount++;
+
+                send({ type: 'imported', tx: { id: tx.id, tipo, monto, title: tx.title, createdAt, updated } });
             } catch (err) {
                 failedCount++;
                 send({ type: 'warning', message: `❌ ${tx.id}: ${err.message}` });
@@ -910,6 +1043,7 @@ async function importarRetroactivosStream(req, res) {
         end({
             type: 'done',
             imported: importedCount,
+            updated: updatedCount,
             failed: failedCount,
             filtered: filteredTransactions.length,
             pagesScraped: totalPages,
@@ -1038,15 +1172,15 @@ async function pausarRefreshMP(req, res) {
 
 /**
  * Importar movimientos de MP creando y cerrando la caja automáticamente (SSE)
- * GET /api/cajas/importar-auto-stream?fechaDesde=&fechaHasta=&maxPaginas=&token=
+ * GET /api/cajas/importar-auto-stream?fechaDesde=&fechaHasta=&maxPaginas=&token=&nombreCaja=
  */
 async function importarAutoStream(req, res) {
     console.log('[importarAutoStream] 📥 req.query:', JSON.stringify(req.query));
-    const { fechaDesde, fechaHasta, maxPaginas } = req.query;
+    const { fechaDesde, fechaHasta, maxPaginas, nombreCaja } = req.query;
     const { mpPage } = req;
     // El JWT payload usa id_usuario (con guión), no id
     const usuarioId = req.user.id_usuario || req.user.id;
-    console.log(`[importarAutoStream] 📅 fechaDesde=${fechaDesde}, fechaHasta=${fechaHasta}, maxPaginas=${maxPaginas}`);
+    console.log(`[importarAutoStream] 📅 fechaDesde=${fechaDesde}, fechaHasta=${fechaHasta}, maxPaginas=${maxPaginas}, nombreCaja=${nombreCaja}`);
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -1059,6 +1193,15 @@ async function importarAutoStream(req, res) {
             res.write(`data: ${JSON.stringify(data)}\n\n`);
             if (typeof res.flush === 'function') {
                 res.flush();
+            }
+            if (data && data.type === 'imported' && data.tx) {
+                console.log(`[importarAutoStream] SSE imported tx=${data.tx.id} tipo=${data.tx.tipo} monto=${data.tx.monto} title=${data.tx.title} createdAt=${data.tx.createdAt}`);
+            }
+            if (data && data.type === 'page_done') {
+                console.log(`[importarAutoStream] SSE page_done page=${data.page} count=${data.count} rawCount=${data.rawCount || data.count} total=${data.total}`);
+                if (Array.isArray(data.sampleDates) && data.sampleDates.length > 0) {
+                    console.log('[importarAutoStream] SSE page_done sampleDates=', JSON.stringify(data.sampleDates, null, 2));
+                }
             }
         } catch (e) {
             console.warn('[importarAutoStream] send failed:', e.message);
@@ -1120,7 +1263,9 @@ async function importarAutoStream(req, res) {
         const fmtOpts = { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
         const fmtDesde = dateFrom.toLocaleString('es-AR', fmtOpts);
         const fmtHasta = dateTo.toLocaleString('es-AR', fmtOpts);
-        const cajaNombre = `Importación MP: ${fmtDesde} → ${fmtHasta}`;
+        const cajaNombre = (typeof nombreCaja === 'string' && nombreCaja.trim())
+            ? nombreCaja.trim()
+            : `Importación MP: ${fmtDesde} → ${fmtHasta}`;
 
         // Crear caja automáticamente (sin verificar si ya hay una abierta)
         const numeroQuery = 'SELECT COALESCE(MAX(numero_caja), 0) + 1 as siguiente FROM cajas';
@@ -1129,7 +1274,7 @@ async function importarAutoStream(req, res) {
 
         const insertCaja = `INSERT INTO cajas (numero_caja, nombre, usuario_apertura_id, saldo_inicial, notas_apertura, estado, fecha_apertura)
                             VALUES (?, ?, ?, 0, ?, 'abierta', ?)`;
-        const cajaNota = `Importación automática desde MP. Período: ${fmtDesde} → ${fmtHasta}`;
+        const cajaNota = `Importación automática desde MP${typeof nombreCaja === 'string' && nombreCaja.trim() ? `: ${nombreCaja.trim()}` : ''}. Período: ${fmtDesde} → ${fmtHasta}`;
         const cajaResult = await db.query(insertCaja, [numeroCaja, cajaNombre, usuarioId, cajaNota, dateFrom]);
         cajaId = cajaResult.insertId;
 
@@ -1167,8 +1312,8 @@ async function importarAutoStream(req, res) {
             // creationDate has the precise hour extracted from DOM <time> element
             const rawDate = tx.creationDate || tx.grouperDate?.value || tx.dateTime;
             if (!rawDate) return false;
-            const txDateTime = new Date(rawDate);
-            if (isNaN(txDateTime)) return false;
+            const txDateTime = parseMercadoPagoDate(rawDate);
+            if (!txDateTime) return false;
             const isInRange = txDateTime >= dateFrom && txDateTime <= dateTo;
             if (!isInRange && transactions.indexOf(tx) < 3) {
                 console.log(`[cajasController] ❌ FUERA DE RANGO: ${txDateTime.toISOString()} (tx: ${(tx.title || 'sin título').substring(0, 40)})`);
@@ -1193,24 +1338,27 @@ async function importarAutoStream(req, res) {
         console.log(`[cajasController] 🔍 DEDUPLICACIÓN:`);
         console.log(`[cajasController] Refs existentes en BD para caja #${cajaId}: ${existingRefs.size}`);
 
-        const newTransactions = transactionsWithIds.filter(tx => {
-            const ref = `MP-${tx.id}`;
-            const isDuplicate = existingRefs.has(ref);
-            if (isDuplicate && filteredTransactions.indexOf(tx) < 3) {
-                console.log(`[cajasController] 🔁 DUP: ${ref} (${(tx.title || 'sin título').substring(0, 40)})`);
-            }
-            return !isDuplicate;
-        });
-        console.log(`[cajasController] 📌 Nuevas transacciones para importar: ${newTransactions.length}`);
+        const duplicateCount = transactionsWithIds.reduce((count, tx) => {
+            return count + (existingRefs.has(`MP-${tx.id}`) ? 1 : 0);
+        }, 0);
+        console.log(`[cajasController] 📌 Transacciones nuevas: ${transactionsWithIds.length - duplicateCount}, existentes: ${duplicateCount}`);
 
         let importedCount = 0;
+        let updatedCount = 0;
         let failedCount = 0;
         let totalMonto = 0;
 
-        console.log(`[cajasController] 💾 IMPORTANDO ${newTransactions.length} transacciones a BD...`);
+        console.log(`[cajasController] 💾 IMPORTANDO ${transactionsWithIds.length} transacciones a BD...`);
+        const processedRefs = new Set();
 
-        for (const tx of newTransactions) {
+        for (const tx of transactionsWithIds) {
             try {
+                const comprobante_ref = `MP-${tx.id}`;
+                if (processedRefs.has(comprobante_ref)) {
+                    continue;
+                }
+                processedRefs.add(comprobante_ref);
+
                 let monto = 0;
                 if (typeof tx.amount === 'string') {
                     monto = parseFloat(tx.amount.replace(/\./g, '').replace(',', '.'));
@@ -1224,28 +1372,25 @@ async function importarAutoStream(req, res) {
                 if (titleLower.includes('enviada') || titleLower.includes('egreso')) tipo = 'egreso';
                 if (monto < 0) { tipo = 'egreso'; monto = Math.abs(monto); }
 
-                const createdAt = new Date(tx.dateTime || tx.creationDate || new Date())
-                    .toISOString().slice(0, 19).replace('T', ' ');
+                const createdAtDate = parseMercadoPagoDate(tx.creationDate || tx.dateTime || '') || new Date();
+                const createdAt = createdAtDate.toISOString(); // ✅ Incluye 'Z' para indicar UTC
 
                 // Log each transaction
                 if (importedCount < 5) {
                     console.log(`[cajasController] [${importedCount + 1}] ${tipo.toUpperCase()}: $${monto} | ${(tx.title || 'sin título').substring(0, 50)} | fecha: ${createdAt}`);
                 }
 
-                await db.query(
-                    `INSERT IGNORE INTO movimientos_caja
-                    (id_caja, tipo, categoria, subcategoria, descripcion, monto, metodo_pago, comprobante_ref, usuario_id, creado_en)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [cajaId, tipo, 'mercadopago', tx.category || 'otros',
-                        tx.description || tx.title || 'Transacción MP',
-                        monto, 'otro', `MP-${tx.id}`, usuarioId, createdAt]
-                );
+                const { inserted, updated } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, existingRefs.has(comprobante_ref));
+                if (inserted) {
+                    if (tipo === 'ingreso') totalMonto += monto;
+                    else totalMonto -= monto;
+                    importedCount++;
+                }
+                if (updated) {
+                    updatedCount++;
+                }
 
-                if (tipo === 'ingreso') totalMonto += monto;
-                else totalMonto -= monto;
-
-                importedCount++;
-                send({ type: 'imported', tx: { id: tx.id, tipo, monto, title: tx.title, createdAt } });
+                send({ type: 'imported', tx: { id: tx.id, tipo, monto, title: tx.title, createdAt, updated } });
             } catch (err) {
                 failedCount++;
                 console.error(`[cajasController] ❌ Error importando ${tx.id}: ${err.message}`);
@@ -1269,6 +1414,7 @@ async function importarAutoStream(req, res) {
         end({
             type: 'done',
             imported: importedCount,
+            updated: updatedCount,
             failed: failedCount,
             filtered: filteredTransactions.length,
             pagesScraped: totalPages,
@@ -1307,5 +1453,6 @@ module.exports = {
     importarMovimientosRetroactivos,
     importarRetroactivosStream,
     importarAutoStream,
-    pausarRefreshMP
+    pausarRefreshMP,
+    eliminarCaja
 };
