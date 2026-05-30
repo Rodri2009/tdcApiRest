@@ -761,21 +761,26 @@ CREATE TABLE IF NOT EXISTS cajas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     numero_caja INT NOT NULL UNIQUE COMMENT 'Número secuencial de caja',
     nombre VARCHAR(100) COMMENT 'Nombre descriptivo de la caja',
+    id_evento_confirmado INT COMMENT 'FK a eventos_confirmados.id - Evento asociado (si aplica)',
     fecha_apertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha/hora de apertura',
     fecha_cierre TIMESTAMP NULL COMMENT 'Fecha/hora de cierre (NULL si abierta)',
     estado ENUM('abierta', 'cerrada') DEFAULT 'abierta' COMMENT 'Estado actual',
     usuario_apertura_id INT NOT NULL COMMENT 'Usuario que abrió la caja',
     usuario_cierre_id INT COMMENT 'Usuario que cerró la caja (NULL si abierta)',
-    saldo_inicial DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT 'Saldo con el que se abrió',
-    saldo_final DECIMAL(12,2) COMMENT 'Saldo real contado al cerrar (NULL si abierta)',
+    saldo_inicial_en_cuenta DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT 'Saldo inicial en cuenta (MP, banco, etc.)',
+    saldo_inicial_en_efectivo DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT 'Saldo inicial en efectivo',
+    saldo_final_en_cuenta DECIMAL(12,2) COMMENT 'Saldo final en cuenta (NULL si abierta)',
+    saldo_final_en_efectivo DECIMAL(12,2) COMMENT 'Saldo final en efectivo (NULL si abierta)',
     notas_apertura TEXT COMMENT 'Notas al abrir',
     notas_cierre TEXT COMMENT 'Notas al cerrar',
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_apertura_id) REFERENCES usuarios(id_usuario),
+    FOREIGN KEY (id_evento_confirmado) REFERENCES eventos_confirmados(id) ON DELETE SET NULL,
     INDEX idx_estado (estado),
     INDEX idx_fecha_apertura (fecha_apertura),
-    INDEX idx_usuario_apertura (usuario_apertura_id)
+    INDEX idx_usuario_apertura (usuario_apertura_id),
+    INDEX idx_evento (id_evento_confirmado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Movimientos individuales dentro de cada caja

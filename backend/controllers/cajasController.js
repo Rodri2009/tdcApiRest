@@ -112,8 +112,10 @@ async function verificarCajaActiva(req, res) {
                 c.id,
                 c.numero_caja,
                 c.nombre,
+                c.id_evento_confirmado,
                 c.fecha_apertura,
-                c.saldo_inicial,
+                c.saldo_inicial_en_cuenta,
+                c.saldo_inicial_en_efectivo,
                 c.estado,
                 u.nombre as usuario_apertura
             FROM cajas c
@@ -165,11 +167,15 @@ async function verificarCajaActiva(req, res) {
  */
 async function crearCaja(req, res) {
     try {
-        const { saldoInicial, notas } = req.body;
+        const { saldoInicial, saldoInicialEnCuenta, saldoInicialEnEfectivo, idEventoConfirmado, notas } = req.body;
         const usuarioId = req.user?.id_usuario || req.user?.id;
 
-        if (saldoInicial === undefined || Number.isNaN(saldoInicial) || saldoInicial < 0) {
-            return res.status(400).json({ error: 'Saldo inicial inválido' });
+        // Validar saldos: aceptar parámetros nuevos O antiguos (backward compatibility)
+        const saldoCuenta = saldoInicialEnCuenta !== undefined ? saldoInicialEnCuenta : (saldoInicial || 0);
+        const saldoEfectivo = saldoInicialEnEfectivo !== undefined ? saldoInicialEnEfectivo : 0;
+
+        if (Number.isNaN(saldoCuenta) || saldoCuenta < 0 || Number.isNaN(saldoEfectivo) || saldoEfectivo < 0) {
+            return res.status(400).json({ error: 'Saldos iniciales inválidos' });
         }
 
         if (!usuarioId) {
@@ -191,22 +197,23 @@ async function crearCaja(req, res) {
 
         // Crear caja
         const insertQuery = `
-            INSERT INTO cajas (numero_caja, nombre, usuario_apertura_id, saldo_inicial, notas_apertura, estado)
-            VALUES (?, ?, ?, ?, ?, 'abierta')
+            INSERT INTO cajas (numero_caja, nombre, id_evento_confirmado, usuario_apertura_id, saldo_inicial_en_cuenta, saldo_inicial_en_efectivo, notas_apertura, estado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'abierta')
         `;
 
         const nombre = req.body.nombre || `Caja ${numeroCaja}`;  // Usar nombre proporcionado o generar uno por defecto
-        const result = await db.query(insertQuery, [numeroCaja, nombre, usuarioId, saldoInicial, notas]);
+        const result = await db.query(insertQuery, [numeroCaja, nombre, idEventoConfirmado || null, usuarioId, saldoCuenta, saldoEfectivo, notas]);
         const cajaId = result.insertId;
 
         // NUEVO: Registrar el movimiento de apertura de caja
         try {
+            const totalSaldoInicial = saldoCuenta + saldoEfectivo;
             const movimientoQuery = `
                 INSERT INTO movimientos_caja 
                 (id_caja, tipo, categoria, subcategoria, descripcion, monto, metodo_pago, creado_en)
                 VALUES (?, 'ingreso', 'apertura', 'apertura_caja', ?, ?, 'manual', NOW())
             `;
-            await db.query(movimientoQuery, [cajaId, `Apertura de caja #${numeroCaja}`, saldoInicial]);
+            await db.query(movimientoQuery, [cajaId, `Apertura de caja #${numeroCaja}`, totalSaldoInicial]);
             console.log('[MOVIMIENTO] Apertura registrada para caja:', cajaId);
         } catch (movErr) {
             console.warn('[MOVIMIENTO] Error al registrar apertura:', movErr.message);
@@ -224,9 +231,12 @@ async function crearCaja(req, res) {
         return res.status(201).json(serializeBigInt({
             id: cajaId,
             numero_caja: numeroCaja,
-            saldo_inicial: saldoInicial,
+            nombre: nombre,
+            saldo_inicial_en_cuenta: saldoCuenta,
+            saldo_inicial_en_efectivo: saldoEfectivo,
             estado: 'abierta',
-            fecha_apertura: new Date()
+            fecha_apertura: new Date(),
+            id_evento_confirmado: idEventoConfirmado || null
         }));
     } catch (err) {
         console.error('[cajasController] Error:', err);
@@ -468,21 +478,26 @@ async function cerrarCaja(req, res) {
 
         const totalResults = await db.query(totalQuery, [cajaId]);
         const totalMovimientos = totalResults[0].total_movimientos || 0;
-        const saldoEsperado = caja.saldo_inicial + totalMovimientos;
+        const totalSaldoInicial = caja.saldo_inicial_en_cuenta + (caja.saldo_inicial_en_efectivo || 0);
+        const saldoEsperado = totalSaldoInicial + totalMovimientos;
         const diferencia = saldoFinal - saldoEsperado;
 
         // Actualizar caja
         const updateQuery = `
             UPDATE cajas
             SET estado = 'cerrada',
-                saldo_final = ?,
+                saldo_final_en_cuenta = ?,
+                saldo_final_en_efectivo = ?,
                 fecha_cierre = NOW(),
                 usuario_cierre_id = ?,
                 notas_cierre = ?
             WHERE id = ?
         `;
 
-        await db.query(updateQuery, [saldoFinal, usuarioId, notas, cajaId]);
+        const saldoFinalEnCuenta = req.body.saldoFinalEnCuenta || 0;
+        const saldoFinalEnEfectivo = req.body.saldoFinalEnEfectivo || saldoFinal; // Backward compatibility
+
+        await db.query(updateQuery, [saldoFinalEnCuenta, saldoFinalEnEfectivo, usuarioId, notas, cajaId]);
 
         // NUEVO: Registrar el movimiento de cierre de caja (si hay diferencia)
         try {
@@ -506,8 +521,10 @@ async function cerrarCaja(req, res) {
         console.log('[CAJA_CERRADA]', {
             caja_id: cajaId,
             numero_caja: caja.numero_caja,
-            saldo_inicial: caja.saldo_inicial,
-            saldo_final: saldoFinal,
+            saldo_inicial_en_cuenta: caja.saldo_inicial_en_cuenta,
+            saldo_inicial_en_efectivo: caja.saldo_inicial_en_efectivo || 0,
+            saldo_final_en_cuenta: saldoFinalEnCuenta,
+            saldo_final_en_efectivo: saldoFinalEnEfectivo,
             diferencia: diferencia,
             usuario_id: usuarioId
         });
@@ -516,8 +533,10 @@ async function cerrarCaja(req, res) {
             id: cajaId,
             numero_caja: caja.numero_caja,
             estado: 'cerrada',
-            saldo_inicial: caja.saldo_inicial,
-            saldo_final: saldoFinal,
+            saldo_inicial_en_cuenta: caja.saldo_inicial_en_cuenta,
+            saldo_inicial_en_efectivo: caja.saldo_inicial_en_efectivo || 0,
+            saldo_final_en_cuenta: saldoFinalEnCuenta,
+            saldo_final_en_efectivo: saldoFinalEnEfectivo,
             saldo_esperado: saldoEsperado,
             diferencia: diferencia,
             fecha_cierre: new Date()
@@ -541,10 +560,13 @@ async function obtenerHistorialCajas(req, res) {
                 c.id,
                 c.numero_caja,
                 c.nombre,
+                c.id_evento_confirmado,
                 c.fecha_apertura,
                 c.fecha_cierre,
-                c.saldo_inicial,
-                c.saldo_final,
+                c.saldo_inicial_en_cuenta,
+                c.saldo_inicial_en_efectivo,
+                c.saldo_final_en_cuenta,
+                c.saldo_final_en_efectivo,
                 u1.nombre as usuario_apertura,
                 u2.nombre as usuario_cierre,
                 (
