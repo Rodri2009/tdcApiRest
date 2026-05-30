@@ -15,7 +15,8 @@ const {
     importarMovimientosRetroactivos,
     importarRetroactivosStream,
     importarAutoStream,
-    pausarRefreshMP
+    pausarRefreshMP,
+    obtenerEventosDisponibles
 } = require('../controllers/cajasController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -37,6 +38,12 @@ router.get('/activa', verificarCajaActiva);
  * Obtener historial de todas las cajas cerradas
  */
 router.get('/history', obtenerHistorialCajas);
+
+/**
+ * GET /api/cajas/eventos-disponibles
+ * Obtener lista de eventos confirmados activos para asociar con cajas
+ */
+router.get('/eventos-disponibles', obtenerEventosDisponibles);
 
 /**
  * GET /api/cajas/importar-auto-stream?fechaDesde=&fechaHasta=&maxPaginas=&token=

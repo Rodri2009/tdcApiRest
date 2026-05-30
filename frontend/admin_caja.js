@@ -544,8 +544,45 @@ function mostrarVista(vista) {
     else if (vista === 'abrir') {
         viewAbrir.classList.remove('hidden');
         console.log('[admin_caja.js] 👁️ Mostrando formulario abrir caja');
-        // Cargar automáticamente el saldo disponible de MP
+        // Cargar automáticamente el saldo disponible de MP y eventos
         cargarSaldoMPAlFormulario();
+        cargarEventosDisponibles();
+    }
+}
+
+// Cargar eventos confirmados en el select
+async function cargarEventosDisponibles() {
+    try {
+        const selectEvento = document.getElementById('id-evento-confirmado');
+        if (!selectEvento) return;
+
+        if (!token) await authenticateAndGetToken();
+
+        const res = await fetch('/api/cajas/eventos-disponibles', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            const eventos = await res.json();
+            console.log('[admin_caja.js] ✅ Eventos cargados:', eventos.length);
+            
+            // Mantener la opción "Sin evento"
+            const currentValue = selectEvento.value;
+            selectEvento.innerHTML = '<option value="">-- Sin evento asociado --</option>';
+            
+            eventos.forEach(evento => {
+                const option = document.createElement('option');
+                option.value = evento.id;
+                option.textContent = `${evento.nombre_evento} (${evento.descripcion_corta || 'Sin descripción'})`;
+                selectEvento.appendChild(option);
+            });
+            
+            selectEvento.value = currentValue;
+        } else {
+            console.warn('[admin_caja.js] No se pudieron cargar eventos:', res.status);
+        }
+    } catch (err) {
+        console.warn('[admin_caja.js] Error cargando eventos:', err.message);
     }
 }
 
@@ -636,6 +673,8 @@ if (formAbrirCaja) {
 
         const nombreCaja = document.getElementById('nombre-caja').value.trim();
         const saldoInicial = parseFloat(document.getElementById('saldo-inicial').value);
+        const efectivoInicial = parseFloat(document.getElementById('efectivo-inicial').value) || 0;
+        const idEvento = document.getElementById('id-evento-confirmado').value || null;
         const notas = document.getElementById('notas-apertura').value;
 
         if (!nombreCaja) {
@@ -660,6 +699,8 @@ if (formAbrirCaja) {
                 body: JSON.stringify({
                     nombre: nombreCaja,
                     saldoInicial: parseFloat(saldoInicial),
+                    saldoInicialEnEfectivo: efectivoInicial,
+                    idEventoConfirmado: idEvento ? parseInt(idEvento) : null,
                     notas
                 })
             });

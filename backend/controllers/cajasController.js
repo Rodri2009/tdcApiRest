@@ -1461,6 +1461,34 @@ async function importarAutoStream(req, res) {
     }
 }
 
+// GET /api/cajas/eventos-disponibles
+// Obtener lista de eventos confirmados activos para asociar con cajas
+async function obtenerEventosDisponibles(req, res) {
+    console.log('[cajasController] ✅ obtenerEventosDisponibles CALLED');
+    try {
+        const query = `
+            SELECT 
+                id,
+                nombre_evento,
+                descripcion_corta,
+                fecha_evento,
+                hora_inicio,
+                tipo_evento
+            FROM eventos_confirmados
+            WHERE activo = 1 AND cancelado_en IS NULL
+            ORDER BY fecha_evento DESC
+            LIMIT 50
+        `;
+
+        const results = await db.query(query);
+        console.log('[cajasController] ✅ Query success, returning', results?.length || 0, 'eventos');
+        return res.json(serializeBigInt(results || []));
+    } catch (err) {
+        console.error('[cajasController] ❌ Error:', err.message);
+        res.status(500).json({ error: 'Error obteniendo eventos', details: err.message });
+    }
+}
+
 module.exports = {
     verificarCajaActiva,
     crearCaja,
@@ -1476,5 +1504,6 @@ module.exports = {
     importarRetroactivosStream,
     importarAutoStream,
     pausarRefreshMP,
-    eliminarCaja
+    eliminarCaja,
+    obtenerEventosDisponibles
 };

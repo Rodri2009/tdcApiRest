@@ -1110,6 +1110,7 @@
             if (modal) {
                 modal.classList.remove('hidden');
                 cargarSaldoMPAlModal();
+                cargarEventosAlModal();
             }
         });
 
@@ -1185,6 +1186,43 @@
             }
         }
 
+        // Cargar eventos confirmados en el modal
+        async function cargarEventosAlModal() {
+            try {
+                const selectEvento = document.getElementById('tx-id-evento-confirmado');
+                if (!selectEvento) return;
+
+                const token = authToken || localStorage.getItem('authToken');
+                if (!token) await authenticateAndGetToken();
+
+                const res = await fetch('/api/cajas/eventos-disponibles', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const eventos = await res.json();
+                    console.log('[admin_transacciones] ✅ Eventos cargados:', eventos.length);
+                    
+                    // Mantener la opción "Sin evento"
+                    const currentValue = selectEvento.value;
+                    selectEvento.innerHTML = '<option value="">-- Sin evento asociado --</option>';
+                    
+                    eventos.forEach(evento => {
+                        const option = document.createElement('option');
+                        option.value = evento.id;
+                        option.textContent = `${evento.nombre_evento} (${evento.descripcion_corta || 'Sin descripción'})`;
+                        selectEvento.appendChild(option);
+                    });
+                    
+                    selectEvento.value = currentValue;
+                } else {
+                    console.warn('[admin_transacciones] No se pudieron cargar eventos:', res.status);
+                }
+            } catch (err) {
+                console.warn('[admin_transacciones] Error cargando eventos:', err.message);
+            }
+        }
+
         // Cerrar modal
         function cerrarModal() {
             if (modal) modal.classList.add('hidden');
@@ -1215,6 +1253,8 @@
 
                 const nombreCaja = document.getElementById('tx-nombre-caja').value.trim();
                 const saldoInicial = parseFloat(document.getElementById('tx-saldo-inicial').value);
+                const efectivoInicial = parseFloat(document.getElementById('tx-efectivo-inicial').value) || 0;
+                const idEvento = document.getElementById('tx-id-evento-confirmado').value || null;
                 const notas = document.getElementById('tx-notas-apertura').value;
 
                 if (!nombreCaja) {
@@ -1240,6 +1280,8 @@
                         body: JSON.stringify({
                             nombre: nombreCaja,
                             saldoInicial: saldoInicial,
+                            saldoInicialEnEfectivo: efectivoInicial,
+                            idEventoConfirmado: idEvento ? parseInt(idEvento) : null,
                             notas
                         })
                     });
