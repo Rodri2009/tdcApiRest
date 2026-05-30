@@ -158,28 +158,6 @@
                 <div style="width: 100px;"></div>
             </div>
 
-            <!-- Info de la caja -->
-            <div class="bg-stone-800 p-4 rounded mb-4">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                        <p class="text-stone-400">Número</p>
-                        <p id="detalle-numero" class="font-bold text-lg">-</p>
-                    </div>
-                    <div>
-                        <p class="text-stone-400">Apertura</p>
-                        <p id="detalle-apertura" class="font-bold">-</p>
-                    </div>
-                    <div>
-                        <p class="text-stone-400">Cierre</p>
-                        <p id="detalle-cierre" class="font-bold">-</p>
-                    </div>
-                    <div>
-                        <p class="text-stone-400">Duración</p>
-                        <p id="detalle-duracion" class="font-bold">-</p>
-                    </div>
-                </div>
-            </div>
-
             <!-- Nombre personalizado + Evento Asociado -->
             <div class="mb-4">
                 <label class="text-sm text-stone-400">Nombre de la Caja (opcional)</label>
@@ -194,7 +172,7 @@
             <div class="mb-4">
                 <label class="text-sm text-stone-400">Evento Asociado (opcional)</label>
                 <div class="flex gap-2">
-                    <select id="id-evento-confirmado" 
+                    <select id="id-evento-confirmado"
                         class="flex-1 px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
                         <option value="">-- Sin evento asociado --</option>
                     </select>
@@ -204,7 +182,7 @@
 
             <!-- Movimientos en Cuenta y Efectivo: Lado a Lado -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                
+
                 <!-- COLUMNA IZQUIERDA: MOVIMIENTOS EN CUENTA (MP/Banco/Tarjeta/etc) -->
                 <div>
                     <details class="caja-collapsible">
@@ -217,6 +195,7 @@
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Descripción</th>
+                                    <th>Usuario</th>
                                     <th>Monto</th>
                                 </tr>
                             </thead>
@@ -234,6 +213,7 @@
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Descripción</th>
+                                    <th>Usuario</th>
                                     <th>Monto</th>
                                 </tr>
                             </thead>
@@ -254,6 +234,7 @@
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Descripción</th>
+                                    <th>Usuario</th>
                                     <th>Monto</th>
                                 </tr>
                             </thead>
@@ -271,6 +252,7 @@
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Descripción</th>
+                                    <th>Usuario</th>
                                     <th>Monto</th>
                                 </tr>
                             </thead>
@@ -312,6 +294,29 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Info de la caja -->
+            <div class="bg-stone-800 p-4 rounded mb-4 border-t border-stone-700">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                        <p class="text-stone-400">Número</p>
+                        <p id="detalle-numero" class="font-bold text-lg">-</p>
+                    </div>
+                    <div>
+                        <p class="text-stone-400">Apertura</p>
+                        <p id="detalle-apertura" class="font-bold">-</p>
+                    </div>
+                    <div>
+                        <p class="text-stone-400">Cierre</p>
+                        <p id="detalle-cierre" class="font-bold">-</p>
+                    </div>
+                    <div>
+                        <p class="text-stone-400">Duración</p>
+                        <p id="detalle-duracion" class="font-bold">-</p>
+                    </div>
+                </div>
+            </div>
+
         </section>
 
         <!-- VISTA: ABRIR CAJA -->

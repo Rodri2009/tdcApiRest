@@ -282,18 +282,21 @@ async function obtenerMovimientosCaja(req, res) {
 
         const query = `
             SELECT 
-                id,
-                tipo,
-                categoria,
-                subcategoria,
-                descripcion,
-                monto,
-                metodo_pago,
-                comprobante_ref,
-                creado_en
-            FROM movimientos_caja
-            WHERE id_caja = ?
-            ORDER BY creado_en DESC
+                mc.id,
+                mc.tipo,
+                mc.categoria,
+                mc.subcategoria,
+                mc.descripcion,
+                mc.monto,
+                mc.metodo_pago,
+                mc.comprobante_ref,
+                mc.usuario_id,
+                u.nombre as usuario_nombre,
+                mc.creado_en
+            FROM movimientos_caja mc
+            LEFT JOIN usuarios u ON mc.usuario_id = u.id_usuario
+            WHERE mc.id_caja = ?
+            ORDER BY mc.creado_en DESC
         `;
 
         const results = await db.query(query, [cajaId]);

@@ -441,7 +441,7 @@ async function verDetalle(cajaId) {
         } else {
             document.getElementById('id-evento-confirmado').value = '';
         }
-        
+
         // Cargar lista de eventos disponibles
         await cargarEventosDisponibles('id-evento-confirmado');
 
@@ -464,32 +464,34 @@ async function verDetalle(cajaId) {
             const createdAt = new Date(m.creado_en);
             const fecha = createdAt.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
             const descripcion = String(m.descripcion || '').trim();
+            const usuario = String(m.usuario_nombre || '').trim() || '-';
             const montoClass = isIngreso ? 'text-green-400' : 'text-red-400';
             return `
             <tr>
                 <td>${fecha}</td>
                 <td>${descripcion || '-'}</td>
+                <td class="text-stone-400 text-sm">${usuario}</td>
                 <td class="${montoClass}">${formatearDinero(m.monto)}</td>
             </tr>
         `;
         };
 
         // Llenar 4 tablas separadas
-        document.getElementById('detalle-ingresos-cuenta').innerHTML = ingresosEnCuenta.length > 0 
+        document.getElementById('detalle-ingresos-cuenta').innerHTML = ingresosEnCuenta.length > 0
             ? ingresosEnCuenta.map(m => buildDetalleRow(m, true)).join('')
-            : '<tr><td colspan="3" class="text-center text-stone-500">Sin ingresos en cuenta</td></tr>';
+            : '<tr><td colspan="4" class="text-center text-stone-500">Sin ingresos en cuenta</td></tr>';
 
         document.getElementById('detalle-egresos-cuenta').innerHTML = egresosEnCuenta.length > 0
             ? egresosEnCuenta.map(m => buildDetalleRow(m, false)).join('')
-            : '<tr><td colspan="3" class="text-center text-stone-500">Sin egresos en cuenta</td></tr>';
+            : '<tr><td colspan="4" class="text-center text-stone-500">Sin egresos en cuenta</td></tr>';
 
         document.getElementById('detalle-ingresos-efectivo').innerHTML = ingresosEnEfectivo.length > 0
             ? ingresosEnEfectivo.map(m => buildDetalleRow(m, true)).join('')
-            : '<tr><td colspan="3" class="text-center text-stone-500">Sin ingresos en efectivo</td></tr>';
+            : '<tr><td colspan="4" class="text-center text-stone-500">Sin ingresos en efectivo</td></tr>';
 
         document.getElementById('detalle-egresos-efectivo').innerHTML = egresosEnEfectivo.length > 0
             ? egresosEnEfectivo.map(m => buildDetalleRow(m, false)).join('')
-            : '<tr><td colspan="3" class="text-center text-stone-500">Sin egresos en efectivo</td></tr>';
+            : '<tr><td colspan="4" class="text-center text-stone-500">Sin egresos en efectivo</td></tr>';
 
         // Llenar totales
         document.getElementById('detalle-saldo-inicial').textContent = formatearDinero(caja.saldo_inicial_en_cuenta);
@@ -557,7 +559,7 @@ async function guardarEvento() {
     if (!cajaActual) return;
 
     const idEvento = document.getElementById('id-evento-confirmado').value || null;
-    
+
     if (!token) await authenticateAndGetToken();
 
     try {
@@ -626,18 +628,18 @@ async function cargarEventosDisponibles(selectId = 'id-evento-confirmado') {
         if (res.ok) {
             const eventos = await res.json();
             console.log('[admin_caja.js] ✅ Eventos cargados:', eventos.length);
-            
+
             // Mantener la opción "Sin evento"
             const currentValue = selectEvento.value;
             selectEvento.innerHTML = '<option value="">-- Sin evento asociado --</option>';
-            
+
             eventos.forEach(evento => {
                 const option = document.createElement('option');
                 option.value = evento.id;
                 option.textContent = `${evento.nombre_evento} (${evento.descripcion_corta || 'Sin descripción'})`;
                 selectEvento.appendChild(option);
             });
-            
+
             selectEvento.value = currentValue;
         } else {
             console.warn('[admin_caja.js] No se pudieron cargar eventos:', res.status);
