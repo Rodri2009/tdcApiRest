@@ -18,9 +18,9 @@ function subscribe(ticketId, res) {
     if (!subscribers.has(ticketId)) {
         subscribers.set(ticketId, new Set());
     }
-    
+
     subscribers.get(ticketId).add(res);
-    
+
     // Cuando se cierre la conexión, remover este subscriber
     res.on('close', () => {
         const subs = subscribers.get(ticketId);
@@ -41,20 +41,20 @@ function subscribe(ticketId, res) {
  */
 function notifySubscribers(ticketId, newStatus, paymentId = null) {
     const subs = subscribers.get(ticketId);
-    
+
     if (!subs || subs.size === 0) {
         return;
     }
-    
+
     const event = {
         ticketId,
         newStatus,
         paymentId,
         timestamp: new Date().toISOString()
     };
-    
+
     const data = `data: ${JSON.stringify(event)}\n\n`;
-    
+
     // Enviar a todos los clientes suscritos
     subs.forEach(res => {
         try {

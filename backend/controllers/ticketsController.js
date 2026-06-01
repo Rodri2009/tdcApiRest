@@ -649,25 +649,25 @@ const getMyTickets = async (req, res) => {
  */
 const subscribeToTicketEvents = (req, res) => {
     const { id: ticketId } = req.params;
-    
+
     if (!ticketId || isNaN(ticketId)) {
         return res.status(400).json({ error: 'ID de ticket inválido' });
     }
-    
+
     // Headers para SSE
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    
+
     // Enviar un ping inicial
     res.write(`:Connected to ticket ${ticketId} events\n\n`);
-    
+
     logVerbose(`[SSE] Cliente conectado para eventos del ticket ${ticketId}`);
-    
+
     // Suscribir al emitter
     ticketEventEmitter.subscribe(parseInt(ticketId), res);
-    
+
     // Mantener la conexión viva con ping cada 30 segundos
     const pingInterval = setInterval(() => {
         try {
@@ -676,12 +676,79 @@ const subscribeToTicketEvents = (req, res) => {
             clearInterval(pingInterval);
         }
     }, 30000);
-    
+
     // Limpiar cuando el cliente se desconecte
     res.on('close', () => {
         clearInterval(pingInterval);
         logVerbose(`[SSE] Cliente desconectado del ticket ${ticketId}`);
     });
+};
+
+/**
+ * GET /api/tickets/search-by-payment/:paymentId
+ * Busca un ticket por su payment_id (útil para Checkout Pro redirect)
+ * Sin autenticación requerida (el payment_id es único y de corta duración)
+ */
+const getTicketByPayment = async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        
+        if (!paymentId) {
+            return res.status(400).json({ error: 'paymentId requerido' });
+        }
+
+        logVerbose(`[getTicketByPayment] Buscando ticket con payment_id: ${paymentId}`);
+
+        const query = `
+            SELECT 
+                t.id,
+                t.nombre_comprador,
+                t.email,
+                t.cantidad,
+                t.tipo_precio,
+                t.total,
+                t.codigo_confirmacion,
+                t.estado,
+                t.mp_payment_id,
+                t.comprado_en,
+                t.id_evento,
+                e.nombre_evento,
+                e.nombre_banda,
+                e.fecha_evento,
+                e.hora_inicio
+            FROM tickets t
+            LEFT JOIN eventos_confirmados e ON t.id_evento = e.id
+            WHERE t.mp_payment_id = ?
+            LIMIT 1
+        `;
+
+        const tickets = await pool.query(query, [paymentId]);
+
+        if (tickets.length === 0) {
+            logWarning(`[getTicketByPayment] No encontrado: ${paymentId}`);
+            return res.status(404).json({ error: 'Ticket no encontrado' });
+        }
+
+        const ticket = tickets[0];
+        
+        // Convertir BigInt a string para JSON
+        const converted = { ...ticket };
+        for (const key in converted) {
+            if (typeof converted[key] === 'bigint') {
+                converted[key] = converted[key].toString();
+            }
+        }
+
+        logSuccess(`[getTicketByPayment] Encontrado ticket ${converted.id} (pago ${paymentId})`);
+        res.status(200).json(converted);
+
+    } catch (error) {
+        logError('[getTicketByPayment] Error:', error);
+        res.status(500).json({
+            error: 'INTERNAL_ERROR',
+            message: 'Error al buscar ticket'
+        });
+    }
 };
 
 module.exports = {
@@ -697,4 +764,5 @@ module.exports = {
     validarEntrada,
     getMyTickets,
     subscribeToTicketEvents,
+    getTicketByPayment,
 };

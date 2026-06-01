@@ -231,12 +231,15 @@
     <script>
         const API_BASE_URL = window.location.protocol + '//' + window.location.host;
         const params = new URLSearchParams(window.location.search);
-        const ticketId = params.get('ticket_id');
+        let ticketId = params.get('ticket_id');
         const status = params.get('status');
+        
+        // Fallback para Checkout Pro: si no hay ticket_id, buscar por payment_id (collection_id)
+        const paymentId = params.get('collection_id') || params.get('payment_id');
 
         async function loadTicket() {
-            if (!ticketId) {
-                showError('Falta el ID del ticket');
+            if (!ticketId && !paymentId) {
+                showError('Falta el ID del ticket o del pago');
                 return;
             }
 
@@ -252,7 +255,22 @@
                     </div>
                 `;
 
-                const res = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}`);
+                let url;
+                
+                // Si tenemos ticket_id, usar ese
+                if (ticketId) {
+                    url = `${API_BASE_URL}/api/tickets/${ticketId}`;
+                } 
+                // Si no, buscar por payment_id
+                else if (paymentId) {
+                    url = `${API_BASE_URL}/api/tickets/search-by-payment/${paymentId}`;
+                } 
+                else {
+                    showError('No hay datos suficientes para cargar el comprobante');
+                    return;
+                }
+
+                const res = await fetch(url);
                 if (!res.ok) {
                     if (res.status === 404) {
                         showError('Comprobante no encontrado');
@@ -263,6 +281,10 @@
                 }
 
                 const ticket = await res.json();
+                // Si obtuvimos el ticket vía payment_id, actualizar ticketId para futuras referencias
+                if (!ticketId && ticket.id) {
+                    ticketId = ticket.id;
+                }
                 renderReceipt(ticket);
             } catch (error) {
                 console.error('Error:', error);

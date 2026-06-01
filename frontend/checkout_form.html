@@ -568,20 +568,20 @@
                             // ✨ NUEVO: Conectar a SSE para notificaciones en tiempo real
                             console.log(`[SSE] Conectando a eventos del ticket ${currentTicketId}...`);
                             const eventSource = new EventSource(`/api/tickets/${currentTicketId}/events`);
-                            
+
                             let sseConnected = false;
                             let sseTimeout = null;
-                            
+
                             eventSource.onopen = () => {
                                 sseConnected = true;
                                 console.log('[SSE] ✓ Conexión establecida');
                             };
-                            
+
                             eventSource.onmessage = (event) => {
                                 try {
                                     const data = JSON.parse(event.data);
                                     console.log('[SSE] Evento recibido:', data);
-                                    
+
                                     if (data.newStatus === 'pagado') {
                                         console.log(`[SSE] ✅ Ticket ${currentTicketId} pagado (pago ${data.paymentId})`);
                                         eventSource.close();
@@ -595,12 +595,12 @@
                                     }
                                 }
                             };
-                            
+
                             eventSource.onerror = (error) => {
                                 console.error('[SSE] Error de conexión:', error);
                                 eventSource.close();
                             };
-                            
+
                             // Fallback: Timeout de 5 minutos como backup por si SSE falla
                             sseTimeout = setTimeout(() => {
                                 console.log('[Checkout] Timeout de 5min - redireccionando a comprobante (fallback)...');

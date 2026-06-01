@@ -36,6 +36,9 @@ router.post('/process-payment', ticketsController.processPayment);
 // GET /api/tickets/public-key — devuelve la public key de MP al frontend
 router.get('/public-key', ticketsController.getPublicKey);
 
+// GET /api/tickets/search-by-payment/:paymentId — busca ticket por payment_id (fallback Checkout Pro)
+router.get('/search-by-payment/:paymentId', ticketsController.getTicketByPayment);
+
 // GET /api/tickets/:ticketId/events — SSE endpoint para notificaciones en tiempo real
 router.get('/:ticketId/events', ticketsController.subscribeToTicketEvents);
 
