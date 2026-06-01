@@ -150,8 +150,30 @@
         // Public Key de MercadoPago (PRODUCCIÓN de cuenta vendedora TEST - Checkout Bricks)
         const MP_PUBLIC_KEY = 'APP_USR-40690e01-da35-47eb-906d-9a632f8c3c0f';
 
+        // Verificar que MercadoPago SDK esté cargado
+        if (typeof MercadoPago === 'undefined') {
+            console.error('❌ MercadoPago SDK no está cargado!');
+            console.log('🔍 window.MercadoPago:', typeof window.MercadoPago);
+            console.log('🔍 window keys:', Object.keys(window).filter(k => k.toLowerCase().includes('mercado')));
+        } else {
+            console.log('✅ MercadoPago SDK cargado correctamente');
+            console.log('🔍 MercadoPago version:', MercadoPago?.version || 'unknown');
+            console.log('🔍 MercadoPago.bricks disponible:', typeof MercadoPago?.prototype?.bricks);
+        }
+
         // Inicializar SDK de MercadoPago
-        const mp = new MercadoPago(MP_PUBLIC_KEY);
+        let mp;
+        try {
+            mp = new MercadoPago(MP_PUBLIC_KEY);
+            console.log('✅ MercadoPago instance creada:', {
+                publicKey: MP_PUBLIC_KEY.substring(0, 20) + '...',
+                type: typeof mp,
+                hasBricks: typeof mp.bricks === 'function'
+            });
+        } catch (e) {
+            console.error('❌ Error creando MercadoPago instance:', e);
+            mp = null;
+        }
 
         // ─────────────────────────────────────────────────────────────────────
         // VARIABLES GLOBALES
@@ -505,130 +527,196 @@
 
         /**
          * Renderiza el Wallet Brick de MercadoPago
-         * Con callbacks para debugging y manejo de errores
+         * Con debugging extensivo para diagnosticar problemas
          */
         async function renderWalletBrick(preferenceId) {
+            const DEBUG_PREFIX = '[🧱 Wallet Brick DEBUG]';
+            const startTime = Date.now();
+            const log = (...args) => console.log(`${DEBUG_PREFIX} ${new Date().toLocaleTimeString()}.${Date.now() % 1000}:`, ...args);
+            const error = (...args) => console.error(`${DEBUG_PREFIX} ❌`, ...args);
+            
             try {
-                console.log('[Wallet Brick] Iniciando renderizado...');
-
-                // Mostrar el contenedor del Brick inmediatamente
-                elWalletContainer.classList.remove('hidden');
-                elWalletContainer.style.display = 'block';
-
-                // Forzar reflow para asegurar que el navegador registre el cambio
-                void elWalletContainer.offsetHeight;
-
-                console.log('[Wallet Brick] Contenedor después de remove hidden:', {
-                    hidden_class: elWalletContainer.classList.contains('hidden'),
-                    display_style: elWalletContainer.style.display,
-                    offsetParent_visible: elWalletContainer.offsetParent !== null,
-                    computed_display: window.getComputedStyle(elWalletContainer).display
+                log('═══════════════════════════════════════════════════════');
+                log('INICIANDO RENDERIZADO');
+                log('═══════════════════════════════════════════════════════');
+                log('Preferences ID:', preferenceId);
+                log('Ticket ID:', currentTicketId);
+                log('MercadoPago SDK estado:', {
+                    loaded: typeof MercadoPago !== 'undefined',
+                    mp_instance: mp ? 'exists' : 'null',
+                    mp_bricks_type: mp ? typeof mp.bricks : 'N/A'
                 });
 
-                const bricksBuilder = mp.bricks();
-                let walletBrickCreated = false;
+                // ✅ Validar que MercadoPago SDK esté disponible
+                if (!mp) {
+                    throw new Error('MercadoPago SDK no está cargado - mp instance es null');
+                }
+                if (typeof mp.bricks !== 'function') {
+                    throw new Error('mp.bricks() no es una función - SDK incompleto');
+                }
+                log('✅ MercadoPago SDK validado');
 
-                // Crear y mostrar el Wallet Brick
+                // ✅ Validar contenedor
+                const container = document.getElementById('wallet-brick-container');
+                if (!container) {
+                    throw new Error('Contenedor wallet-brick-container no existe en el DOM');
+                }
+                log('✅ Contenedor encontrado:', {
+                    id: container.id,
+                    parent: container.parentElement?.id,
+                    classList: Array.from(container.classList)
+                });
+
+                // ✅ Hacer visible el contenedor
+                log('Haciendo visible el contenedor...');
+                elWalletContainer.classList.remove('hidden');
+                elWalletContainer.style.display = 'block';
+                void elWalletContainer.offsetHeight; // Forzar reflow
+                
+                log('Estado del contenedor después de remove hidden:', {
+                    hasHiddenClass: elWalletContainer.classList.contains('hidden'),
+                    displayStyle: elWalletContainer.style.display,
+                    offsetParent: elWalletContainer.offsetParent !== null ? 'visible' : 'hidden',
+                    computedDisplay: window.getComputedStyle(elWalletContainer).display,
+                    offsetHeight: elWalletContainer.offsetHeight,
+                    clientHeight: elWalletContainer.clientHeight,
+                    scrollHeight: elWalletContainer.scrollHeight
+                });
+
+                // ✅ Crear bricksBuilder
+                log('Creando bricksBuilder con mp.bricks()...');
+                const bricksBuilder = mp.bricks();
+                if (!bricksBuilder) {
+                    throw new Error('bricksBuilder es null - mp.bricks() falló');
+                }
+                log('✅ bricksBuilder creado:', typeof bricksBuilder);
+
+                let walletBrickCreated = false;
+                const createStartTime = Date.now();
+
+                // ✅ Crear el Wallet Brick con configuración completa
+                log('Llamando a bricksBuilder.create() con config...');
+                log('Config que se envía:', {
+                    type: 'wallet',
+                    container: 'wallet-brick-container',
+                    preferences: {
+                        preferenceId: preferenceId
+                    }
+                });
+
                 await bricksBuilder.create('wallet', 'wallet-brick-container', {
                     initialization: {
                         preferenceId: preferenceId,
                     },
                     callbacks: {
                         onError: (error) => {
-                            console.error('[Wallet Brick] ❌ Error:', error);
-                            console.error('[Wallet Brick] Error details:', {
-                                message: error.message,
-                                type: error.type,
-                                preference_id: preferenceId,
-                                full_error: error
+                            const elapsed = Date.now() - startTime;
+                            error(`❌ onError llamado después de ${elapsed}ms`);
+                            error('Error object:', error);
+                            error('Error properties:', {
+                                message: error?.message,
+                                type: error?.type,
+                                status: error?.status,
+                                statusText: error?.statusText,
+                                response: error?.response,
+                                stack: error?.stack
                             });
 
-                            // FALLBACK: Si el Wallet Brick falla, usar Checkout Pro
-                            console.log('[Wallet Brick] Intentando fallback a Checkout Pro...');
-                            fallbackToCheckoutPro(preferenceId);
+                            showNotification(`❌ Error en Wallet Brick: ${error?.message || error}`, 'error', 0);
 
+                            console.log(`${DEBUG_PREFIX} Intentando fallback a Checkout Pro...`);
+                            fallbackToCheckoutPro(preferenceId);
                             document.getElementById('brick-loading').classList.add('hidden');
                         },
+                        
                         onReady: () => {
-                            console.log('[Wallet Brick] ✅ Listo para pagar');
+                            const elapsed = Date.now() - createStartTime;
+                            log(`✅ onReady disparado después de ${elapsed}ms`);
                             walletBrickCreated = true;
-                            console.log('[Wallet Brick] Detalles:', {
+                            
+                            log('Estado del Brick:', {
                                 preference_id: preferenceId,
                                 ticket_id: currentTicketId,
-                                timestamp: new Date().toISOString()
-                            });
-                            document.getElementById('brick-loading').classList.add('hidden');
-                            elWalletContainer.classList.remove('hidden');
-                            elWalletContainer.style.display = 'block';
-                            console.log('[Wallet Brick] Estado después de onReady:', {
-                                visible: elWalletContainer.offsetParent !== null,
-                                display: window.getComputedStyle(elWalletContainer).display
+                                containerState: {
+                                    visible: elWalletContainer.offsetParent !== null,
+                                    display: window.getComputedStyle(elWalletContainer).display
+                                }
                             });
 
-                            // ✨ NUEVO: Conectar a SSE para notificaciones en tiempo real
-                            console.log(`[SSE] Conectando a eventos del ticket ${currentTicketId}...`);
+                            document.getElementById('brick-loading').classList.add('hidden');
+                            showNotification('✅ Formulario de pago listo - selecciona método de pago', 'success', 3000);
+
+                            // ✨ Conectar a SSE
+                            log(`Conectando a SSE para ticket ${currentTicketId}...`);
                             const eventSource = new EventSource(`/api/tickets/${currentTicketId}/events`);
 
-                            let sseConnected = false;
                             let sseTimeout = null;
 
                             eventSource.onopen = () => {
-                                sseConnected = true;
-                                console.log('[SSE] ✓ Conexión establecida');
+                                log('✅ Conexión SSE establecida');
                             };
 
                             eventSource.onmessage = (event) => {
                                 try {
+                                    if (event.data.startsWith(':')) return;
                                     const data = JSON.parse(event.data);
-                                    console.log('[SSE] Evento recibido:', data);
+                                    log('📨 SSE evento recibido:', data);
 
                                     if (data.newStatus === 'pagado') {
-                                        console.log(`[SSE] ✅ Ticket ${currentTicketId} pagado (pago ${data.paymentId})`);
+                                        log(`✅ PAGO CONFIRMADO: Ticket ${currentTicketId} en estado 'pagado'`);
                                         eventSource.close();
                                         if (sseTimeout) clearTimeout(sseTimeout);
                                         window.location.href = `/ticket-receipt.html?ticket_id=${currentTicketId}`;
                                     }
-                                } catch (error) {
-                                    // Ignorar pings (comments que empiezan con :)
+                                } catch (parseError) {
                                     if (!event.data.startsWith(':')) {
-                                        console.error('[SSE] Error parseando evento:', error);
+                                        error('Error parseando SSE evento:', parseError);
                                     }
                                 }
                             };
 
-                            eventSource.onerror = (error) => {
-                                console.error('[SSE] Error de conexión:', error);
+                            eventSource.onerror = (err) => {
+                                error('SSE conexión error:', err);
                                 eventSource.close();
                             };
 
-                            // Fallback: Timeout de 5 minutos como backup por si SSE falla
+                            // Fallback timeout
                             sseTimeout = setTimeout(() => {
-                                console.log('[Checkout] Timeout de 5min - redireccionando a comprobante (fallback)...');
+                                log('⏱️ Timeout de 5min - redireccionando a comprobante (fallback)');
                                 eventSource.close();
                                 window.location.href = `/ticket-receipt.html?ticket_id=${currentTicketId}`;
                             }, 300000);
                         },
-                        onSubmit: async (data) => {
-                            console.log('[Wallet Brick] ✅ onSubmit disparado:', data);
-                            try {
-                                showNotification('Procesando pago…', 'info', 0);
-                                // El pago se procesa automáticamente vía webhook de MercadoPago
-                            } catch (err) {
-                                console.error('[Wallet Brick] Error en onSubmit:', err);
-                            }
+
+                        onSubmit: (data) => {
+                            log('✅ onSubmit disparado');
+                            log('FormData:', data);
+                            showNotification('💳 Procesando pago en MercadoPago...', 'info', 0);
                         }
                     }
                 });
 
+                const totalElapsed = Date.now() - startTime;
+                log(`═══════════════════════════════════════════════════════`);
+                log(`✅ BRICK CREADO EXITOSAMENTE en ${totalElapsed}ms`);
+                log(`═══════════════════════════════════════════════════════`);
                 walletBrickInitialized = true;
-                console.log('[Wallet Brick] ✅ Componente creado exitosamente');
-            } catch (error) {
-                console.error('[Wallet Brick] ❌ Error al crear:', error);
-                console.error('[Wallet Brick] Stack:', error.stack);
-                document.getElementById('brick-loading').classList.add('hidden');
 
-                // Fallback a Checkout Pro
-                console.log('[Wallet Brick] Usando fallback a Checkout Pro por error:', error.message);
+            } catch (error) {
+                const totalElapsed = Date.now() - startTime;
+                console.error(`${DEBUG_PREFIX} ❌ ERROR FATAL (${totalElapsed}ms):`);
+                console.error('Error message:', error?.message);
+                console.error('Error stack:', error?.stack);
+                console.error('Error completo:', error);
+                
+                showNotification(
+                    `❌ Error al cargar Wallet Brick: ${error?.message || error}. Usando formulario alternativo...`,
+                    'error',
+                    0
+                );
+
+                document.getElementById('brick-loading').classList.add('hidden');
+                console.log(`${DEBUG_PREFIX} Fallback a Checkout Pro por error`);
                 fallbackToCheckoutPro(preferenceId);
             }
         }
