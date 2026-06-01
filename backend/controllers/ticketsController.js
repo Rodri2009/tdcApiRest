@@ -713,7 +713,6 @@ const getTicketByPayment = async (req, res) => {
                 t.comprado_en,
                 t.id_evento,
                 e.nombre_evento,
-                e.nombre_banda,
                 e.fecha_evento,
                 e.hora_inicio
             FROM tickets t
