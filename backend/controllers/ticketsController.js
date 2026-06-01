@@ -3,6 +3,7 @@ const ticketsModel = require('../models/ticketsModel');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 const pool = require('../db');
 const mercadopagoPaymentService = require('../services/mercadopagoPaymentService');
+const ticketEventEmitter = require('../lib/ticketEventEmitter');
 const crypto = require('crypto');
 
 /**
@@ -291,6 +292,9 @@ const webhookHandler = async (req, res) => {
 
         await ticketsModel.updateTicketStatus(ticketId, nuevoEstado, String(paymentId));
         logSuccess(`[Webhook MP] Ticket ${ticketId} → ${nuevoEstado} (pago ${paymentId})`);
+
+        // Notificar via SSE a clientes suscritos
+        ticketEventEmitter.notifySubscribers(ticketId, nuevoEstado, paymentId);
 
     } catch (error) {
         logError('[Webhook MP] Error al procesar pago ' + paymentId);
@@ -636,6 +640,50 @@ const getMyTickets = async (req, res) => {
     }
 };
 
+/**
+ * GET /api/tickets/{id}/events
+ * Server-Sent Events (SSE) endpoint para notificaciones de cambio de estado
+ * 
+ * El cliente abre una conexión persistente y recibe eventos en tiempo real
+ * cuando el ticket cambia de estado (ej: pago aprobado → pagado)
+ */
+const subscribeToTicketEvents = (req, res) => {
+    const { id: ticketId } = req.params;
+    
+    if (!ticketId || isNaN(ticketId)) {
+        return res.status(400).json({ error: 'ID de ticket inválido' });
+    }
+    
+    // Headers para SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    // Enviar un ping inicial
+    res.write(`:Connected to ticket ${ticketId} events\n\n`);
+    
+    logVerbose(`[SSE] Cliente conectado para eventos del ticket ${ticketId}`);
+    
+    // Suscribir al emitter
+    ticketEventEmitter.subscribe(parseInt(ticketId), res);
+    
+    // Mantener la conexión viva con ping cada 30 segundos
+    const pingInterval = setInterval(() => {
+        try {
+            res.write(`: heartbeat\n\n`);
+        } catch (error) {
+            clearInterval(pingInterval);
+        }
+    }, 30000);
+    
+    // Limpiar cuando el cliente se desconecte
+    res.on('close', () => {
+        clearInterval(pingInterval);
+        logVerbose(`[SSE] Cliente desconectado del ticket ${ticketId}`);
+    });
+};
+
 module.exports = {
     getFechasBandasConfirmadas,
     simulateCheckout,
@@ -648,4 +696,5 @@ module.exports = {
     getResumenEvento,
     validarEntrada,
     getMyTickets,
+    subscribeToTicketEvents,
 };

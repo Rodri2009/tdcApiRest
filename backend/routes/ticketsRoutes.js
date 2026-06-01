@@ -36,6 +36,9 @@ router.post('/process-payment', ticketsController.processPayment);
 // GET /api/tickets/public-key — devuelve la public key de MP al frontend
 router.get('/public-key', ticketsController.getPublicKey);
 
+// GET /api/tickets/:ticketId/events — SSE endpoint para notificaciones en tiempo real
+router.get('/:ticketId/events', ticketsController.subscribeToTicketEvents);
+
 // GET /api/tickets/:ticketId — obtiene detalles del ticket para el comprobante
 router.get('/:ticketId', ticketsController.getTicketDetails);
 

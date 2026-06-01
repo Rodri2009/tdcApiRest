@@ -565,12 +565,47 @@
                                 display: window.getComputedStyle(elWalletContainer).display
                             });
 
-                            // Timeout de 5 minutos como backup - normalmente el usuario debe hacer clic en pagar
-                            setTimeout(() => {
-                                if (!walletBrickCreated) {
-                                    console.log('[Wallet Brick] Timeout de 5min - redireccionando a comprobante...');
-                                    window.location.href = `/ticket-receipt.html?ticket_id=${currentTicketId}`;
+                            // ✨ NUEVO: Conectar a SSE para notificaciones en tiempo real
+                            console.log(`[SSE] Conectando a eventos del ticket ${currentTicketId}...`);
+                            const eventSource = new EventSource(`/api/tickets/${currentTicketId}/events`);
+                            
+                            let sseConnected = false;
+                            let sseTimeout = null;
+                            
+                            eventSource.onopen = () => {
+                                sseConnected = true;
+                                console.log('[SSE] ✓ Conexión establecida');
+                            };
+                            
+                            eventSource.onmessage = (event) => {
+                                try {
+                                    const data = JSON.parse(event.data);
+                                    console.log('[SSE] Evento recibido:', data);
+                                    
+                                    if (data.newStatus === 'pagado') {
+                                        console.log(`[SSE] ✅ Ticket ${currentTicketId} pagado (pago ${data.paymentId})`);
+                                        eventSource.close();
+                                        if (sseTimeout) clearTimeout(sseTimeout);
+                                        window.location.href = `/ticket-receipt.html?ticket_id=${currentTicketId}`;
+                                    }
+                                } catch (error) {
+                                    // Ignorar pings (comments que empiezan con :)
+                                    if (!event.data.startsWith(':')) {
+                                        console.error('[SSE] Error parseando evento:', error);
+                                    }
                                 }
+                            };
+                            
+                            eventSource.onerror = (error) => {
+                                console.error('[SSE] Error de conexión:', error);
+                                eventSource.close();
+                            };
+                            
+                            // Fallback: Timeout de 5 minutos como backup por si SSE falla
+                            sseTimeout = setTimeout(() => {
+                                console.log('[Checkout] Timeout de 5min - redireccionando a comprobante (fallback)...');
+                                eventSource.close();
+                                window.location.href = `/ticket-receipt.html?ticket_id=${currentTicketId}`;
                             }, 300000);
                         },
                         onSubmit: async (data) => {
