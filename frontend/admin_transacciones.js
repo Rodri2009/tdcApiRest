@@ -1202,18 +1202,18 @@
                 if (res.ok) {
                     const eventos = await res.json();
                     console.log('[admin_transacciones] ✅ Eventos cargados:', eventos.length);
-                    
+
                     // Mantener la opción "Sin evento"
                     const currentValue = selectEvento.value;
                     selectEvento.innerHTML = '<option value="">-- Sin evento asociado --</option>';
-                    
+
                     eventos.forEach(evento => {
                         const option = document.createElement('option');
                         option.value = evento.id;
                         option.textContent = `${evento.nombre_evento} (${evento.descripcion_corta || 'Sin descripción'})`;
                         selectEvento.appendChild(option);
                     });
-                    
+
                     selectEvento.value = currentValue;
                 } else {
                     console.warn('[admin_transacciones] No se pudieron cargar eventos:', res.status);

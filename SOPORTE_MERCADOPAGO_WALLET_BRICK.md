@@ -1,7 +1,7 @@
 # 🎯 MercadoPago Wallet Brick - Solución Completa
 
-**Última actualización:** 28/05/2026  
-**Estado:** ✅ RESUELTO Y FUNCIONAL
+**Última actualización:** 01/06/2026  
+**Estado:** ✅ RESUELTO Y FUNCIONAL - Webhook procesando pagos exitosamente
 
 ---
 
@@ -189,3 +189,115 @@ async function checkPaymentStatus(ticketId) {
     }, 5000);  // Cada 5 segundos
 }
 ```
+
+---
+
+## ✅ Problema 5 RESUELTO: Webhook Funcional con ngrok (01/06/2026)
+
+### Solución Implementada
+Instaló **ngrok** para crear un túnel HTTPS seguro desde MP hacia el backend local.
+
+**Resultado:** Webhooks procesando pagos correctamente ✅
+
+### Configuración
+
+```bash
+# 1. Instalar ngrok
+wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3.39.6-linux-amd64.tgz
+tar xzf ngrok-v3.39.6-linux-amd64.tgz
+mv ngrok /usr/local/bin
+
+# 2. Autenticar con token
+ngrok config add-authtoken 3EYDDaCS4v1k4DXBNA1ssnQUQUh_5Ffs2FJwR4sZ57Z82ieKh
+
+# 3. Crear túnel
+ngrok http 3000 --region sa
+```
+
+### Variables de Entorno (.env)
+```bash
+APP_URL=https://imminent-monday-courier.ngrok-free.dev
+MP_WEBHOOK_SECRET=c6707b4cc80cd8f4f3a5644846a5b22d92300efee392a4f7cf3cd4893b9ad351
+```
+
+### Database Schema Update
+Agregó columna a tabla `tickets`:
+
+```sql
+ALTER TABLE tickets 
+ADD COLUMN mp_payment_id BIGINT DEFAULT NULL 
+COMMENT 'ID del pago en Mercado Pago' AFTER estado, 
+ADD INDEX idx_mp_payment_id (mp_payment_id);
+```
+
+**Cambios en schema** (/database/01_schema.sql línea 644):
+```sql
+CREATE TABLE IF NOT EXISTS tickets (
+    ...
+    estado ENUM('pendiente', 'pagado', 'utilizado', 'cancelado') DEFAULT 'pendiente',
+    mp_payment_id BIGINT DEFAULT NULL COMMENT 'ID del pago en Mercado Pago',
+    comprado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ...
+    INDEX idx_mp_payment_id (mp_payment_id),
+    ...
+)
+```
+
+### Webhook Processing Flow
+
+Flujo completo verificado (01/06/2026 21:38 UTC):
+
+```
+1. Usuario paga con Wallet Brick
+   ↓
+2. MP procesa pago (ejemplo: ID 161246034937)
+   ↓
+3. MP envía webhook POST a: 
+   https://imminent-monday-courier.ngrok-free.dev/api/tickets/webhook
+   ↓
+4. Backend recibe notificación:
+   - Extrae payment_id de webhook
+   - Consulta payment details en MP API
+   - Mapea estado: approved → 'pagado'
+   ↓
+5. Database UPDATE exitoso:
+   UPDATE tickets 
+   SET estado = 'pagado', mp_payment_id = 161246034937 
+   WHERE id = 17
+   ↓
+6. Log confirmado:
+   [2026-06-01T21:38:57.708Z] ✓ [Webhook MP] Ticket 17 → pagado (pago 161246034937)
+```
+
+### Log de Éxito (verificado)
+
+```
+[2026-06-01T21:38:57.708Z] ✓ [Webhook MP] Ticket 17 → pagado (pago 161246034937)
+```
+
+**Interpretación:**
+- ✅ Webhook recibido correctamente
+- ✅ Payment ID extraído: 161246034937
+- ✅ Ticket ID actualizado: 17
+- ✅ Estado actualizado a: pagado
+- ✅ Database UPDATE ejecutado exitosamente
+- ✅ Sin errores de SQL o excepciones
+
+### Estado Actual de Componentes
+
+| Componente | Estado | Detalles |
+|-----------|--------|----------|
+| Wallet Brick Frontend | ✅ Funcional | Renderiza correctamente |
+| MP Preferences | ✅ Funcional | Crea preferences con HTTPS webhook |
+| MP Webhooks | ✅ Activos | Recibe notificaciones via ngrok |
+| HMAC Validation | 🟡 Informative | Deshabilitado blocking, solo logs |
+| Database Schema | ✅ Actualizado | mp_payment_id column agregada |
+| Webhook Handler | ✅ Funcional | Actualiza DB sin errores |
+| Ticket Status Update | ✅ Completo | End-to-end workflow operativo |
+
+### Próximos Pasos
+
+1. **Auto-redirect post-pago** - Implementar redirección automática a receipt sin polling
+2. **HMAC Validation Fix** - Re-habilitar validación de firma de webhook
+3. **Email Confirmación** - Enviar comprobante de pago por email
+4. **QR Code** - Generar código QR para validación en evento

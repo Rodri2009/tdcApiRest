@@ -1,6 +1,6 @@
 # 📚 Índice de Documentación - TDC API REST
 
-## Última actualización: 28/05/2026 (FASE 2 COMPLETADA)
+## Última actualización: 01/06/2026 (Webhook Completado)
 
 ---
 
@@ -15,7 +15,7 @@ Estos documentos contienen información actual y relevante para el desarrollo.
 
 ### 💳 Compra de Entradas & Pagos
 - **[FLUJO_COMPRA_ENTRADAS.md](FLUJO_COMPRA_ENTRADAS.md)** - Flujo end-to-end de compra de entradas con MercadoPago
-- **[SOPORTE_MERCADOPAGO_WALLET_BRICK.md](SOPORTE_MERCADOPAGO_WALLET_BRICK.md)** - Solución completa de problemas Wallet Brick
+- **[SOPORTE_MERCADOPAGO_WALLET_BRICK.md](SOPORTE_MERCADOPAGO_WALLET_BRICK.md)** - ✅ **Webhook FUNCIONAL (01/06)** - Solución completa con ngrok HTTPS tunnel
 - **[ANALISIS_OPERATORIA_POSTCARGA.md](ANALISIS_OPERATORIA_POSTCARGA.md)** - Análisis completo de operatoria post-compra (listas, control de puerta, devoluciones)
 ### 🏗️ Arquitectura & Diseño
 - **[arquitectura_oauth.md](arquitectura_oauth.md)** - Flujo OAuth y autenticación en backend

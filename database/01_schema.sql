@@ -641,8 +641,10 @@ CREATE TABLE IF NOT EXISTS tickets (
     descuento_aplicado DECIMAL(10,2) DEFAULT 0,
     codigo_confirmacion VARCHAR(20) NOT NULL UNIQUE,
     estado ENUM('pendiente', 'pagado', 'utilizado', 'cancelado') DEFAULT 'pendiente',
+    mp_payment_id BIGINT DEFAULT NULL COMMENT 'ID del pago en Mercado Pago',
     comprado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_evento (id_evento),
+    INDEX idx_mp_payment_id (mp_payment_id),
     FOREIGN KEY (id_evento) REFERENCES eventos_confirmados(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

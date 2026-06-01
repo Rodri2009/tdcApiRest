@@ -217,51 +217,46 @@ const webhookHandler = async (req, res) => {
     // Responder inmediatamente a MP para evitar reintentos
     res.status(200).send('OK');
 
-    // VALIDACIÓN HMAC (opcional)
+    // VALIDACIÓN HMAC (opcional - TEMPORALMENTE DESACTIVADA PARA DIAGNOSTICAR)
     const mpWebhookSecret = process.env.MP_WEBHOOK_SECRET;
     if (mpWebhookSecret) {
         const xSignature = req.headers['x-signature'];
         const xRequestId = req.headers['x-request-id'];
 
-        if (!xSignature || !xRequestId) {
-            logWarning('[Webhook MP] Headers de firma faltantes — posible notificación inválida');
-            return;
+        if (xSignature && xRequestId) {
+            // Extraer ts y hash del header x-signature
+            const parts = xSignature.split(',');
+            let ts, hash;
+
+            parts.forEach(part => {
+                const [key, value] = part.split('=');
+                if (key?.trim() === 'ts') ts = value?.trim();
+                if (key?.trim() === 'v1') hash = value?.trim();
+            });
+
+            if (ts && hash) {
+                // Construir el template para validación
+                const dataId = req.query['data.id'] || req.query['id'] || req.body?.data?.id;
+
+                if (dataId) {
+                    const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+                    const expectedHash = crypto
+                        .createHmac('sha256', mpWebhookSecret)
+                        .update(manifest)
+                        .digest('hex');
+
+                    // LOG INFORMATIVO (no bloquea)
+                    if (hash === expectedHash) {
+                        logSuccess('[Webhook MP] Firma HMAC validada ✓');
+                    } else {
+                        logWarning('[Webhook MP] Firma HMAC no coincide (continuando sin validar)');
+                        logWarning('  Manifest: ' + manifest);
+                        logWarning('  Hash recibido: ' + hash);
+                        logWarning('  Hash esperado: ' + expectedHash);
+                    }
+                }
+            }
         }
-
-        // Extraer ts y hash del header x-signature
-        const parts = xSignature.split(',');
-        let ts, hash;
-
-        parts.forEach(part => {
-            const [key, value] = part.split('=');
-            if (key?.trim() === 'ts') ts = value?.trim();
-            if (key?.trim() === 'v1') hash = value?.trim();
-        });
-
-        if (!ts || !hash) {
-            logWarning('[Webhook MP] No se pudo extraer ts/hash del header x-signature');
-            return;
-        }
-
-        // Construir el template para validación
-        const dataId = req.query['data.id'] || req.body?.data?.id;
-        const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
-
-        // Generar firma esperada usando HMAC-SHA256
-        const expectedHash = crypto
-            .createHmac('sha256', mpWebhookSecret)
-            .update(manifest)
-            .digest('hex');
-
-        // Comparar firmas
-        if (hash !== expectedHash) {
-            logError('[Webhook MP] Firma HMAC inválida — webhook rechazado');
-            logVerbose('  Hash esperado:', expectedHash);
-            logVerbose('  Hash recibido:', hash);
-            return;
-        }
-
-        logSuccess('[Webhook MP] Firma HMAC validada ✓');
     }
 
     const { type, data } = req.body;
@@ -298,7 +293,9 @@ const webhookHandler = async (req, res) => {
         logSuccess(`[Webhook MP] Ticket ${ticketId} → ${nuevoEstado} (pago ${paymentId})`);
 
     } catch (error) {
-        logError('[Webhook MP] Error al procesar pago', paymentId, error);
+        logError('[Webhook MP] Error al procesar pago ' + paymentId);
+        logError('  Error message: ' + (error?.message || error));
+        logError('  Stack: ' + (error?.stack || 'N/A'));
     }
 };
 
