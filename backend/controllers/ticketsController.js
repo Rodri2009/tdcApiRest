@@ -692,7 +692,7 @@ const subscribeToTicketEvents = (req, res) => {
 const getTicketByPayment = async (req, res) => {
     try {
         const { paymentId } = req.params;
-        
+
         if (!paymentId) {
             return res.status(400).json({ error: 'paymentId requerido' });
         }
@@ -729,7 +729,7 @@ const getTicketByPayment = async (req, res) => {
         }
 
         const ticket = tickets[0];
-        
+
         // Convertir BigInt a string para JSON
         const converted = { ...ticket };
         for (const key in converted) {

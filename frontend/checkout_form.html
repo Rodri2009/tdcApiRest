@@ -534,7 +534,7 @@
             const startTime = Date.now();
             const log = (...args) => console.log(`${DEBUG_PREFIX} ${new Date().toLocaleTimeString()}.${Date.now() % 1000}:`, ...args);
             const error = (...args) => console.error(`${DEBUG_PREFIX} ❌`, ...args);
-            
+
             try {
                 log('═══════════════════════════════════════════════════════');
                 log('INICIANDO RENDERIZADO');
@@ -572,7 +572,7 @@
                 elWalletContainer.classList.remove('hidden');
                 elWalletContainer.style.display = 'block';
                 void elWalletContainer.offsetHeight; // Forzar reflow
-                
+
                 log('Estado del contenedor después de remove hidden:', {
                     hasHiddenClass: elWalletContainer.classList.contains('hidden'),
                     displayStyle: elWalletContainer.style.display,
@@ -628,12 +628,12 @@
                             fallbackToCheckoutPro(preferenceId);
                             document.getElementById('brick-loading').classList.add('hidden');
                         },
-                        
+
                         onReady: () => {
                             const elapsed = Date.now() - createStartTime;
                             log(`✅ onReady disparado después de ${elapsed}ms`);
                             walletBrickCreated = true;
-                            
+
                             log('Estado del Brick:', {
                                 preference_id: preferenceId,
                                 ticket_id: currentTicketId,
@@ -708,7 +708,7 @@
                 console.error('Error message:', error?.message);
                 console.error('Error stack:', error?.stack);
                 console.error('Error completo:', error);
-                
+
                 showNotification(
                     `❌ Error al cargar Wallet Brick: ${error?.message || error}. Usando formulario alternativo...`,
                     'error',

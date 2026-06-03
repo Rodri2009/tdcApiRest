@@ -233,7 +233,7 @@
         const params = new URLSearchParams(window.location.search);
         let ticketId = params.get('ticket_id');
         const status = params.get('status');
-        
+
         // Fallback para Checkout Pro: si no hay ticket_id, buscar por payment_id (collection_id)
         const paymentId = params.get('collection_id') || params.get('payment_id');
 
@@ -256,15 +256,15 @@
                 `;
 
                 let url;
-                
+
                 // Si tenemos ticket_id, usar ese
                 if (ticketId) {
                     url = `${API_BASE_URL}/api/tickets/${ticketId}`;
-                } 
+                }
                 // Si no, buscar por payment_id
                 else if (paymentId) {
                     url = `${API_BASE_URL}/api/tickets/search-by-payment/${paymentId}`;
-                } 
+                }
                 else {
                     showError('No hay datos suficientes para cargar el comprobante');
                     return;
