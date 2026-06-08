@@ -1326,8 +1326,8 @@ async function importarAutoStream(req, res) {
         const numResults = await db.query(numeroQuery);
         const numeroCaja = numResults[0].siguiente;
 
-        const insertCaja = `INSERT INTO cajas (numero_caja, nombre, usuario_apertura_id, saldo_inicial, notas_apertura, estado, fecha_apertura)
-                            VALUES (?, ?, ?, 0, ?, 'abierta', ?)`;
+        const insertCaja = `INSERT INTO cajas (numero_caja, nombre, usuario_apertura_id, saldo_inicial_en_cuenta, saldo_inicial_en_efectivo, notas_apertura, estado, fecha_apertura)
+                            VALUES (?, ?, ?, 0, 0, ?, 'abierta', ?)`;
         const cajaNota = `Importación automática desde MP${typeof nombreCaja === 'string' && nombreCaja.trim() ? `: ${nombreCaja.trim()}` : ''}. Período: ${fmtDesde} → ${fmtHasta}`;
         const cajaResult = await db.query(insertCaja, [numeroCaja, cajaNombre, usuarioId, cajaNota, dateFrom]);
         cajaId = cajaResult.insertId;
