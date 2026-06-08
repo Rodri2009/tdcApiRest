@@ -833,7 +833,7 @@ async function importarMovimientosRetroactivos(req, res) {
         const { scrapeActivityAllPages } = require('../services/activityService');
 
         // 1. Obtener caja
-        const cajaQuery = 'SELECT id, numero_caja, saldo_inicial FROM cajas WHERE id = ?';
+        const cajaQuery = 'SELECT id, numero_caja, saldo_inicial_en_cuenta, saldo_inicial_en_efectivo FROM cajas WHERE id = ?';
         const cajaResults = await db.query(cajaQuery, [cajaId]);
 
         if (cajaResults.length === 0) {
@@ -1457,7 +1457,7 @@ async function importarAutoStream(req, res) {
         // Cerrar la caja automáticamente
         const saldoFinal = Math.max(0, totalMonto);
         await db.query(
-            `UPDATE cajas SET estado = 'cerrada', saldo_final = ?, fecha_cierre = ?, usuario_cierre_id = ?,
+            `UPDATE cajas SET estado = 'cerrada', saldo_final_en_cuenta = ?, saldo_final_en_efectivo = 0, fecha_cierre = ?, usuario_cierre_id = ?,
              notas_cierre = 'Cerrada automáticamente al finalizar importación'
              WHERE id = ?`,
             [saldoFinal, dateTo, usuarioId, cajaId]
@@ -1483,7 +1483,7 @@ async function importarAutoStream(req, res) {
         // Si se creó la caja pero falló el proceso, marcarla con error
         if (cajaId) {
             await db.query(
-                `UPDATE cajas SET estado = 'cerrada', saldo_final = 0, fecha_cierre = NOW(),
+                `UPDATE cajas SET estado = 'cerrada', saldo_final_en_cuenta = 0, saldo_final_en_efectivo = 0, fecha_cierre = NOW(),
                  notas_cierre = 'Error durante importación: ${err.message.substring(0, 100)}'
                  WHERE id = ?`,
                 [cajaId]
