@@ -20,10 +20,10 @@ set -euo pipefail
 #   -h, --help        : muestra ayuda de node server.js
 #
 # EJEMPLOS:
-#   ./restart_backend.sh -v                    # Levanta con verbose
-#   ./restart_backend.sh --down --rebuild -d   # Rebuild + down + debug
-#   ./restart_backend.sh --no-logs -e          # Sin logs de docker, solo errores
-#   ./restart_backend.sh --mp --wa -d          # Con MP y WA + debug
+#   ./scripts/infraestructura/restart_backend.sh -v                    # Levanta con verbose
+#   ./scripts/infraestructura/restart_backend.sh --down --rebuild -d   # Rebuild + down + debug
+#   ./scripts/infraestructura/restart_backend.sh --no-logs -e          # Sin logs de docker, solo errores
+#   ./scripts/infraestructura/restart_backend.sh --mp --wa -d          # Con MP y WA + debug
 ###############################################################################
 
 # Colores
@@ -259,7 +259,7 @@ if [ -n "$DEBUG_FLAGS" ]; then
   echo -e "  Ejecuta: ${CYAN}./scripts/backend_logs.sh${NC}"
   echo ""
   echo -e "${YELLOW}¿Cómo reiniciar o resetear?${NC}"
-  echo -e "  Reiniciar backend: ${CYAN}./scripts/restart_backend.sh${NC}"
+  echo -e "  Reiniciar backend: ${CYAN}./scripts/infraestructura/restart_backend.sh${NC}"
   echo -e "  Resetear todo:     ${CYAN}./scripts/reset.sh${NC}"
   echo ""
   echo -e "${YELLOW}¿Ayuda?${NC}"
@@ -298,7 +298,7 @@ else
     echo -e "  Ejecuta: ${CYAN}./scripts/backend_logs.sh${NC}"
     echo ""
     echo -e "${YELLOW}¿Cómo reiniciar o resetear?${NC}"
-    echo -e "  Reiniciar backend: ${CYAN}./scripts/restart_backend.sh${NC}"
+    echo -e "  Reiniciar backend: ${CYAN}./scripts/infraestructura/restart_backend.sh${NC}"
     echo -e "  Resetear todo:     ${CYAN}./scripts/reset.sh${NC}"
     echo ""
     echo -e "${YELLOW}¿Ayuda?${NC}"

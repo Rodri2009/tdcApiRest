@@ -95,7 +95,7 @@ En el host (Docker): /var/lib/docker/volumes/docker_mariadb_binlogs/_data/
 ### Listar binlogs disponibles
 
 ```bash
-./scripts/recover-from-binlog.sh -l
+./scripts/recuperacion/recuperar_desde_binlog.sh -l
 ```
 
 Output:
@@ -112,7 +112,7 @@ File_size: 524288000
 
 ```bash
 # Queremos recuperar la BD al estado que tenía hace 10 minutos
-./scripts/recover-from-binlog.sh -t "2026-04-15 14:30:00"
+./scripts/recuperacion/recuperar_desde_binlog.sh -t "2026-04-15 14:30:00"
 ```
 
 Output:
@@ -130,13 +130,13 @@ Para aplicar la recuperación:
 ### Recuperar desde un binlog específico
 
 ```bash
-./scripts/recover-from-binlog.sh -f mariadb-bin.000042
+./scripts/recuperacion/recuperar_desde_binlog.sh -f mariadb-bin.000042
 ```
 
 ### Modo verbose
 
 ```bash
-./scripts/recover-from-binlog.sh -l -v
+./scripts/recuperacion/recuperar_desde_binlog.sh -l -v
 ```
 
 Muestra:
@@ -186,14 +186,14 @@ Recomendación:
 
 ```bash
 # 1. Listar binlogs para confirm availability
-./scripts/recover-from-binlog.sh -l
+./scripts/recuperacion/recuperar_desde_binlog.sh -l
 
 # 2. Calcular time hace 30 min
 # Ahora: 2026-04-15 15:00:00
 # Hace 30 min: 2026-04-15 14:30:00
 
 # 3. Generar SQL de recuperación
-./scripts/recover-from-binlog.sh -t "2026-04-15 14:30:00"
+./scripts/recuperacion/recuperar_desde_binlog.sh -t "2026-04-15 14:30:00"
 
 # 4. Revisar archivo generado
 head -100 /tmp/recovery_12345.sql
@@ -206,8 +206,8 @@ mysql -u root -p < /tmp/recovery_12345.sql
 
 ```bash
 # 1. Extraer binlog entre dos tiempos
-./scripts/recover-from-binlog.sh -t "2026-04-15 14:00:00"
-./scripts/recover-from-binlog.sh -t "2026-04-15 15:00:00"
+./scripts/recuperacion/recuperar_desde_binlog.sh -t "2026-04-15 14:00:00"
+./scripts/recuperacion/recuperar_desde_binlog.sh -t "2026-04-15 15:00:00"
 
 # 2. Comparar eventos:
 diff /tmp/recovery_*.sql | less
@@ -237,7 +237,7 @@ diff /tmp/recovery_*.sql | less
 Si necesitas encriptación (IMPORTANTE en producción):
 
 ```bash
-./scripts/recover-from-binlog.sh -l -v
+./scripts/recuperacion/recuperar_desde_binlog.sh -l -v
 # Mirar columna "Encrypted"
 
 # Habilitar en docker-compose.yml:
@@ -297,10 +297,10 @@ docker exec docker-mariadb-1 mysql -u root -p"$MARIADB_ROOT_PASSWORD" -e "SHOW B
 # mariadb-bin.000002
 
 # 3. Probar script de recovery
-./scripts/recover-from-binlog.sh -l
+./scripts/recuperacion/recuperar_desde_binlog.sh -l
 
 # 4. Probar recovery a momento reciente
-./scripts/recover-from-binlog.sh -t "2026-04-15 15:30:00"
+./scripts/recuperacion/recuperar_desde_binlog.sh -t "2026-04-15 15:30:00"
 ```
 
 ---

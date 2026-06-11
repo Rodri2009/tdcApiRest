@@ -141,7 +141,7 @@ check_containers_health() {
       # Revisar logs para errores críticos (ignorar warnings conocidas)
       # IMPORTANTE: Los errores de conexión nginx→backend durante startup son NORMALES
       # (race condition mientras el backend se inicializa). No son críticos si los servicios
-      # están en estado "running". Ver: DOCUMENTACION_INDEX.md
+      # están en estado "running". Ver: docs/DOCUMENTACION_INDEX.md
       local critical_errors=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "(error|exception|failed|cannot|refused|fatal)" | grep -viE "(io_uring_queue_init|Chromium has locked|WhatsAppService|MercadoPagoService|PUPPETEER-WA|PUPPETEER-MP|BANDA-SYNC|FLYER-SYNC|Error al inicializar|connect\(\) failed.*upstream|Connection refused.*upstream|connect() failed \(111.*Connection refused)" | head -2 || true)
       
       # Revisar warnings
@@ -422,7 +422,7 @@ if [ "$BACKEND_RUNNING" -gt 0 ] && [ "$NGINX_RUNNING" -gt 0 ] && [ "$MARIADB_RUN
     if [ "$RESET_DB" = false ]; then
         echo -e "${YELLOW}[⚠]  Todos los contenedores ya están en ejecución.${NC}"
         echo -e "${CYAN}[*]  Para reiniciar el backend sin perder sesión de Mercado Pago:${NC}"
-        echo -e "       ./scripts/restart_backend.sh"
+        echo -e "       ./scripts/infraestructura/restart_backend.sh"
         echo ""
         echo -e "${CYAN}[*]  Para reiniciar COMPLETAMENTE (limpiar BD):${NC}"
         echo -e "       ./scripts/up.sh --reset-db${NC}"
@@ -590,7 +590,7 @@ echo -e "${YELLOW}¿Cómo ver logs en vivo?${NC}"
 echo -e "  Ejecuta: ${CYAN}./scripts/backend-logs.sh${NC}"
 echo ""
 echo -e "${YELLOW}¿Cómo reiniciar o resetear?${NC}"
-echo -e "  Reiniciar backend: ${CYAN}./scripts/restart_backend.sh${NC}"
+echo -e "  Reiniciar backend: ${CYAN}./scripts/infraestructura/restart_backend.sh${NC}"
 echo -e "  Resetear todo:     ${CYAN}./scripts/reset.sh${NC}"
 echo ""
 echo -e "${YELLOW}¿Ayuda?${NC}"
