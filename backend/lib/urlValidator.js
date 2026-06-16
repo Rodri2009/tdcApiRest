@@ -71,13 +71,18 @@ async function validateCurrentUrl(page, expectedPath = '') {
         // También chequear el status HTTP del documento
         let status = -1;
         try {
-            status = await page.evaluate(() => {
-                // En el contexto del navegador, podemos acceder al estado
-                // pero no siempre. Devolvemos -1 si no se puede obtener.
-                return document.readyState === 'complete' ? 200 : -1;
-            });
+            status = await Promise.race([
+                page.evaluate(() => {
+                    // En el contexto del navegador, podemos acceder al estado
+                    // pero no siempre. Devolvemos -1 si no se puede obtener.
+                    return document.readyState === 'complete' ? 200 : -1;
+                }),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('page.evaluate timeout')), 10000)
+                )
+            ]);
         } catch (evalErr) {
-            // Si falla la evaluación (ej: contexto destruido), saltamos pero no fallamos
+            // Si falla la evaluación (ej: timeout, contexto destruido), saltamos pero no fallamos
             // La URL ya fue validada arriba
             console.warn('[urlValidator] page.evaluate() falló durante status check:', evalErr.message);
             status = -1;

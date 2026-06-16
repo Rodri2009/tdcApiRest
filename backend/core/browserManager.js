@@ -72,6 +72,7 @@ async function launchBrowser(config) {
             headless: config.headless !== undefined ? config.headless : true,
             userDataDir: config.userDataDir,
             args: chromiumArgs,
+            protocolTimeout: 90000, // Aumentado a 90s para evitar timeouts durante scraping intensivo
             defaultViewport: {
                 width: 1920,
                 height: 1080,
