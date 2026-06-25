@@ -1,0 +1,21 @@
+categoria,item,precio
+BEBIDAS,Fernet Branca / Litro,10000
+BEBIDAS,Brahma / Litro,8000
+BEBIDAS,Iguana / Litro,6000
+BEBIDAS,Miller / Litro,10000
+BEBIDAS,Heineken / LATON,10000
+BEBIDAS,Brahma / Lata chica,4500
+BEBIDAS,Coca Cola / Vaso chico,4000
+BEBIDAS,Manaos / Vaso Chico,3000
+BEBIDAS,Agua (600cc),2000
+BEBIDAS,Agua saborizada (600cc),3000
+COMIDAS,Pizza Muza,12000
+COMIDAS,Pizza Napolitana,14000
+COMIDAS,Pizza Calabresa,16000
+COMIDAS,Pizza Jamon y Morron,16000
+COMIDAS,Superpancho,2500
+COMIDAS,Empanada,3000
+COMIDAS,Hamburguesa simple,4000
+COMIDAS,Hamburguesa lechuga y tomate,5000
+COMIDAS,Chori o Jamon la pomarola / sandwich,6000
+OTROS,Red point (x10),3000
