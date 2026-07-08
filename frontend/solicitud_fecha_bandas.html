@@ -726,6 +726,39 @@
 </head>
 
 <body>
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver a inicio</span>
+                </a>
+
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="seccion_bandas.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en Vivo</a>
+                    <a href="seccion_alquiler.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del Salón</a>
+                    <a href="seccion_talleres.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+
+                <button id="mobile-menu-button" class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="seccion_bandas.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas en Vivo</a>
+                <a href="seccion_alquiler.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler del Salón</a>
+                <a href="seccion_talleres.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
     <div id="notification-banner" class="notification-banner"></div>
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-spinner"></div>
@@ -898,7 +931,6 @@
         </div>
     </div>
 
-    <script src="/navbar.js"></script>
     <script>
         // Función para decodificar JWT
         function parseJwt(token) {
@@ -1606,8 +1638,8 @@
 
         function updateAuthMenu() {
             const token = localStorage.getItem('authToken');
-            const desktopMenu = document.getElementById('auth-menu-nav');
-            const mobileMenu = document.getElementById('auth-menu-mobile-band');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
 
             if (token) {
                 const decoded = decodeJWT(token);
@@ -1616,59 +1648,15 @@
                 const isAdmin = rol === 'admin' || rol === 'staff';
 
                 if (isAdmin) {
-                    const desktopHTML = `
-                        <a href="/admin.html" 
-                           class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150"
-                           style="display: inline-block;">
-                            🔐 Admin
-                        </a>
-                    `;
-                    const mobileHTML = `
-                        <a href="/admin.html"
-                           class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
-                            🔐 Admin Panel
-                        </a>
-                        <button onclick="logout()" 
-                                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
-                            🚪 Cerrar Sesión
-                        </button>
-                    `;
-                    if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
-                    if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+                    if (desktopMenu) desktopMenu.innerHTML = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition">🔐 Admin</a>`;
+                    if (mobileMenu) mobileMenu.innerHTML = `<a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐 Admin</a>`;
                 } else {
-                    const desktopHTML = `
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-semibold text-neon">${nombre}</span>
-                            <button onclick="logout()" class="px-2 py-1 text-xs rounded-full bg-red-600 text-white hover:bg-red-700 transition">Salir</button>
-                        </div>
-                    `;
-                    const mobileHTML = `
-                        <div class="px-3 py-2 text-base font-medium text-neon">Hola, ${nombre}</div>
-                        <button onclick="logout()" 
-                                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
-                            🚪 Cerrar Sesión
-                        </button>
-                    `;
-                    if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
-                    if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+                    if (desktopMenu) desktopMenu.innerHTML = `<div class="flex items-center gap-2"><span class="text-sm font-semibold text-neon">${nombre}</span><button onclick="logout()" class="px-2 py-1 text-xs rounded-full bg-red-600 text-white hover:bg-red-700 transition">Salir</button></div>`;
+                    if (mobileMenu) mobileMenu.innerHTML = `<div class="px-3 py-2 text-base font-medium text-neon">Hola, ${nombre}</div><button onclick="logout()" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">🚪 Cerrar Sesión</button>`;
                 }
             } else {
-                // Usuario no autenticado
-                const desktopHTML = `
-                    <a href="login.html"
-                       class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition duration-150"
-                       style="display: inline-block;">
-                        Login
-                    </a>
-                `;
-                const mobileHTML = `
-                    <a href="login.html"
-                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
-                        Login
-                    </a>
-                `;
-                if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
-                if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
+                if (desktopMenu) desktopMenu.innerHTML = `<a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition">Login</a>`;
+                if (mobileMenu) mobileMenu.innerHTML = `<a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon text-neon">Login</a>`;
             }
         }
 
@@ -1677,7 +1665,6 @@
             window.location.href = '/index.html';
         }
 
-        // Escuchar cambios en localStorage (sesión iniciada en otra pestaña)
         window.addEventListener('storage', updateAuthMenu);
 
         // Toggle Escenario sección
