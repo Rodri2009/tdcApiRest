@@ -406,7 +406,7 @@
 
                 <div class="footer">
                     <p>¿Olvidaste la contraseña? Contacta con el administrador.</p>
-                    <p style="margin-top:10px;">¿No tenés cuenta? <a href="/registro.html"
+                    <p style="margin-top:10px;">¿No tenés cuenta? <a href="#" id="registerLink"
                             style="color:var(--color-secondary,#f0abfc);font-weight:600;">Registrate aquí</a></p>
                 </div>
             </div>
@@ -641,6 +641,17 @@
             document.addEventListener('DOMContentLoaded', () => {
                 new LoginManager();
                 ensureGoogleInitialized();
+                
+                // Pasar returnTo a registro.html si existe
+                const registerLink = document.getElementById('registerLink');
+                if (registerLink) {
+                    registerLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const returnTo = sessionStorage.getItem('returnTo');
+                        const redirectUrl = returnTo ? `/registro.html?returnTo=${encodeURIComponent(returnTo)}` : '/registro.html';
+                        window.location.href = redirectUrl;
+                    });
+                }
             });
 
             // ============================================

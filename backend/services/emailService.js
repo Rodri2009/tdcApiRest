@@ -229,8 +229,9 @@ const sendBandaConfirmacion = async (to, banda) => {
  * @param {string} to - Email del usuario
  * @param {string} nombre - Nombre del usuario
  * @param {string} verificationToken - Token único de verificación (64 chars)
+ * @param {string} returnTo - (opcional) URL a donde redirigir después de verificar
  */
-const sendVerificationEmail = async (to, nombre, verificationToken) => {
+const sendVerificationEmail = async (to, nombre, verificationToken, returnTo) => {
     logVerbose(`-> Preparando email de verificación para: ${to}`);
 
     try {
@@ -241,7 +242,12 @@ const sendVerificationEmail = async (to, nombre, verificationToken) => {
 
         // Construir URL de verificación usando APP_URL del .env
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
-        const verificationUrl = `${appUrl}/verificar-email?token=${verificationToken}`;
+        let verificationUrl = `${appUrl}/verificar-email?token=${verificationToken}`;
+        
+        // Agregar returnTo si existe
+        if (returnTo) {
+            verificationUrl += `&returnTo=${encodeURIComponent(returnTo)}`;
+        }
 
         // Reemplazar placeholders
         htmlBody = htmlBody.replace(/{{nombre}}/g, nombre || 'Usuario');

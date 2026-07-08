@@ -248,9 +248,10 @@
     </div>
 
     <script>
-        // Obtener token de la URL
+        // Obtener token y returnTo de la URL
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
+        const returnTo = urlParams.get('returnTo');
 
         const processingState = document.getElementById('processingState');
         const successState = document.getElementById('successState');
@@ -276,6 +277,10 @@
                 
                 if (seconds <= 0) {
                     clearInterval(interval);
+                    // Guardar returnTo en sessionStorage para que login.html lo use
+                    if (returnTo) {
+                        sessionStorage.setItem('returnTo', returnTo);
+                    }
                     window.location.href = '/login.html';
                 }
             }, 1000);

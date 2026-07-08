@@ -95,7 +95,7 @@ const generarToken = (usuario) => {
  * Respuesta: { message, email } - Usuario debe verificar email
  */
 const register = async (req, res) => {
-    const { nombre, apellido, email, telefono, password } = req.body;
+    const { nombre, apellido, email, telefono, password, returnTo } = req.body;
 
     // Validar campos
     if (!nombre || !email || !telefono || !password) {
@@ -155,9 +155,9 @@ const register = async (req, res) => {
             await conn.commit();
             logSuccess(`Usuario registrado (pendiente verificación): ${email} (id_usuario: ${id_usuario})`);
 
-            // 3. Enviar email de verificación
+            // 3. Enviar email de verificación (con returnTo si existe)
             try {
-                await sendVerificationEmail(email, nombre, verification_token);
+                await sendVerificationEmail(email, nombre, verification_token, returnTo);
                 logSuccess(`Email de verificación enviado a: ${email}`);
             } catch (emailErr) {
                 logError(`Error al enviar email a ${email}, pero usuario fue creado:`, emailErr);

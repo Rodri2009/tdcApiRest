@@ -522,6 +522,15 @@
                 this.overlay = document.getElementById('form-overlay');
                 this.notificationTimer = null;
 
+                // Capturar returnTo de parámetro URL si existe
+                const urlParams = new URLSearchParams(window.location.search);
+                this.returnTo = urlParams.get('returnTo');
+                
+                // Guardar en sessionStorage para que se preserve a través de la verificación
+                if (this.returnTo) {
+                    sessionStorage.setItem('returnTo', this.returnTo);
+                }
+
                 this.setupEventListeners();
                 //this.initializeOAuth(); // manual buttons used instead
                 this.initializeGoogleIfNeeded();
@@ -663,7 +672,8 @@
                     apellido: document.getElementById('apellido').value.trim(),
                     email: document.getElementById('email').value.trim(),
                     telefono: document.getElementById('telefono').value.trim(),
-                    password: document.getElementById('password').value
+                    password: document.getElementById('password').value,
+                    returnTo: this.returnTo  // Incluir returnTo si existe
                 };
 
                 this.lockForm();
