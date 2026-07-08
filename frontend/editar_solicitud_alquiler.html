@@ -898,7 +898,7 @@
             }
 
             // Asegurar que sea un archivo válido dentro de admin/
-            const validPages = ['admin_solicitudes.html', 'admin_agenda.html', 'admin_clientes.html', 'admin_transacciones.html', 'admin_caja.html', 'admin_orden_de_trabajo.html', 'admin_asignar_personal.html', 'admin_eventos_confirmados.html'];
+            const validPages = ['admin_solicitudes.html', 'admin_agenda.html', 'admin_usuarios_clientes.html', 'admin_transacciones.html', 'admin_caja.html', 'admin_orden_de_trabajo.html', 'admin_asignar_personal.html', 'admin_eventos_confirmados.html'];
             if (!validPages.includes(returnTo) && !returnTo.startsWith('admin_')) {
                 returnTo = 'admin_solicitudes.html';
             }

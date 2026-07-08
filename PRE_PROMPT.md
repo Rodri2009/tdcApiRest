@@ -223,6 +223,71 @@ if (isAdmin) {
 4. **Reconstruir contenedores** → `docker-compose up -d --build`
 5. **Commit a git** → `git add .` → `git commit -m "..."` → `git push`
 
+## ⚠️ REGLAS CRÍTICAS PARA CAMBIOS EN BASE DE DATOS
+
+### ❌ LO QUE NO DEBES HACER:
+
+1. **NUNCA instales paquetes npm en el equipo anfitrión (host)**
+   - ❌ `npm install` en tu máquina
+   - ❌ `node scripts/...js` en tu máquina
+   - ❌ Modificar directamente MySQL en tu máquina
+   - **✅ TODO debe ejecutarse DENTRO de Docker**
+
+2. **NUNCA hagas migraciones de datos con scripts Node.js en el host**
+   - ❌ `rm -rf node_modules && npm install` + ejecutar scripts
+   - ✅ Crea un archivo SQL en `database/` o un script Node que se corra en Docker
+
+### ✅ LO QUE DEBES HACER:
+
+1. **Todos los cambios de esquema BD = archivos SQL en `database/`**
+   - Crear tabla nueva → `database/0X_nombre_migracion.sql`
+   - Alterar tabla existente → Agregar dentro del SQL correspondiente
+   - Insertar datos → `database/02_seed.sql` o nuevo archivo
+   - Ejemplo: `database/06_migrate_clientes_usuarios.sql`
+
+2. **Scripts de migración de datos (Node.js) = archivos en `backend/scripts/` EJECUTADOS EN DOCKER**
+   ```bash
+   # EN TU MÁQUINA (nunca npm install)
+   git push
+
+   # EN DOCKER (después de docker-compose up)
+   docker exec <backend-container> node backend/scripts/migrar_clientes.js
+   # O integrar en el startup del backend si es crítico
+   ```
+
+3. **Proceso correcto cuando haces pull:**
+   ```bash
+   git pull
+   cd docker
+   docker-compose up -d --build  # Ejecuta todos los SQL de database/
+   # Si hay scripts Node.js pendientes:
+   docker exec <backend-container> node backend/scripts/migrar_clientes.js
+   ```
+
+### 🚀 Ejemplo: Migración Correcta de Clientes a Usuarios
+
+**Archivos involucrados:**
+- `database/06_migrate_clientes_usuarios.sql` - Documentación + pre-requisitos
+- `backend/scripts/migrar_clientes.js` - Script Node.js que ejecuta la migración
+- `PRE_PROMPT.md` - Este archivo (documentación)
+
+**Pasos:**
+1. Commit cambios a Git
+2. Hacer pull en otra máquina
+3. `docker-compose up -d --build` - Levanta todo
+4. `docker exec tdc-backend node backend/scripts/migrar_clientes.js` - Ejecuta migración
+
+**NUNCA hacer:**
+```bash
+# ❌ MAL: npm install en host
+npm install
+node backend/scripts/migrar_clientes.js
+
+# ✅ BIEN: Dentro de Docker
+docker exec tdc-backend npm install
+docker exec tdc-backend node backend/scripts/migrar_clientes.js
+```
+
 ## 🛠️ Troubleshooting
 
 ### Puertos ocupados

@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administración - Usuarios y Clientes</title>
+  <link rel="stylesheet" href="/css/tailwind.min.css">
+  <link rel="stylesheet" href="/css/fontawesome.min.css">
+  <link rel="stylesheet" href="/styles/admin.css">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <style>
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 20px 16px; }
+    .checkbox-item .rol-info { flex: 1; }
+    .checkbox-item .rol-nombre { font-weight: 500; color: #d6d3d1; }
+    .checkbox-item .rol-desc { font-size: 0.75rem; color: #78716c; }
+
+    /* Estilos para tabs */
+    .tabs-container {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid rgba(240, 171, 252, 0.2);
+      margin-bottom: 24px;
+    }
+
+    .tab-button {
+      padding: 12px 20px;
+      background: none;
+      border: none;
+      color: #9ca3af;
+      font-size: 1rem;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s ease;
+      position: relative;
+      bottom: -1px;
+    }
+
+    .tab-button.active {
+      color: var(--color-secondary);
+      border-bottom-color: var(--color-secondary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Modal styles - ensure they appear above navbar */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding-top: 80px;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 500px;
+      margin: 40px auto;
+    }
+</head>
+
+<body style="visibility: visible;">
+  <script>
+    // Load navbar after DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const script = document.createElement('script');
+      script.src = '/navbar.js';
+      script.async = true;
+      document.head.appendChild(script);
+    });
+  </script>
+  
+  <main class="wrap">
+    <div class="page-header">
+      <a href="admin.html" class="btn-back">
+        <i class="fas fa-arrow-left"></i> Volver al Panel
+      </a>
+      <h1>👥 Usuarios y Clientes</h1>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-container">
+      <button class="tab-button active" onclick="switchTab('usuarios')">
+        <i class="fas fa-users"></i> Usuarios del Sistema
+      </button>
+      <button class="tab-button" onclick="switchTab('clientes')">
+        <i class="fas fa-user-circle"></i> Clientes
+      </button>
+    </div>
+
+    <!-- ============================================================================ -->
+    <!-- TAB 1: USUARIOS                                                             -->
+    <!-- ============================================================================ -->
+    <div id="tab-usuarios" class="tab-content active">
+      <div class="filters-panel">
+        <div class="filters-row" style="justify-content: space-between;">
+          <div class="filter-field">
+            <button class="btn btn-primary btn-crear" data-requiere-edicion="usuarios" onclick="abrirModalUsuario()">
+              <i class="fas fa-user-plus"></i> Nuevo Usuario
+            </button>
+          </div>
+          <div class="filter-field">
+            <label>Buscar</label>
+            <input type="text" id="buscar-usuarios" placeholder="Email o nombre..." oninput="filtrarUsuarios()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de usuarios -->
+      <div class="table-container">
+        <div id="tabla-usuarios-container">
+          <div class="loading">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Cargando usuarios...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info de roles -->
+      <div class="card">
+        <h3 style="color: var(--color-secondary); margin-bottom: 12px;">📋 Roles del Sistema</h3>
+        <div id="roles-info"
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+          <!-- Se llena dinámicamente -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================================ -->
+    <!-- TAB 2: CLIENTES                                                             -->
+    <!-- ============================================================================ -->
+    <div id="tab-clientes" class="tab-content">
+      <div class="filters-panel">
+        <div class="filters-row" style="justify-content: space-between;">
+          <div class="filter-field">
+            <button class="btn btn-primary btn-crear" onclick="abrirModalCliente()">
+              <i class="fas fa-user-plus"></i> Nuevo Cliente
+            </button>
+          </div>
+          <div class="filter-field">
+            <label>Buscar</label>
+            <input type="text" id="search-clientes" placeholder="Nombre, apellido, email o teléfono..." oninput="filtrarClientes()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de clientes -->
+      <div class="table-container">
+        <div id="tabla-clientes-container">
+          <div class="loading">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Cargando clientes...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================================ -->
+    <!-- MODALES                                                                     -->
+    <!-- ============================================================================ -->
+
+    <!-- Modal Crear/Editar Usuario -->
+    <div id="modal-usuario" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title" id="modal-title">Nuevo Usuario</h2>
+          <button class="modal-close" onclick="cerrarModal()">&times;</button>
+        </div>
+        <div id="modal-error"></div>
+        <form id="form-usuario" onsubmit="guardarUsuario(event)">
+          <input type="hidden" id="id_usuario">
+
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" id="usuario-email" required placeholder="usuario@ejemplo.com">
+          </div>
+
+          <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" id="usuario-nombre" placeholder="Nombre completo">
+          </div>
+
+          <div class="form-group" id="password-group">
+            <label>Contraseña *</label>
+            <input type="password" id="usuario-password" placeholder="Mínimo 6 caracteres" minlength="6">
+            <small style="color: #78716c;">Dejar vacío para mantener la actual (al editar)</small>
+          </div>
+
+          <div class="form-group">
+            <label>Roles</label>
+            <div id="roles-checkboxes" class="checkbox-group">
+              <!-- Se llena dinámicamente -->
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="usuario-activo" checked style="width: auto;">
+              Usuario activo (puede iniciar sesión)
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-save"></i> Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Confirmar Eliminación Usuario -->
+    <div id="modal-eliminar-usuario" class="modal-overlay">
+      <div class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+          <h2 class="modal-title">⚠️ Confirmar Eliminación</h2>
+          <button class="modal-close" onclick="cerrarModalEliminar()">&times;</button>
+        </div>
+        <p id="eliminar-mensaje" style="margin-bottom: 20px;">¿Estás seguro de eliminar este usuario?</p>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn btn-secondary" onclick="cerrarModalEliminar()">Cancelar</button>
+          <button class="btn btn-danger" onclick="confirmarEliminar()">
+            <i class="fas fa-trash"></i> Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Crear/Editar Cliente -->
+    <div id="modal-cliente" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title" id="modal-cliente-title">Nuevo Cliente</h2>
+          <button class="modal-close" onclick="cerrarModalCliente()">&times;</button>
+        </div>
+        <div id="modal-cliente-error"></div>
+        <form id="form-cliente" onsubmit="guardarCliente(event)">
+          <input type="hidden" id="cliente-id">
+
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input type="text" id="cliente-nombre" required placeholder="Nombre completo">
+          </div>
+
+          <div class="form-group">
+            <label>Apellido</label>
+            <input type="text" id="cliente-apellido" placeholder="Apellido">
+          </div>
+
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="cliente-email" placeholder="contacto@ejemplo.com">
+          </div>
+
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="tel" id="cliente-telefono" placeholder="+54 9 11 XXXX-XXXX">
+          </div>
+
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" onclick="cerrarModalCliente()">Cancelar</button>
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-save"></i> Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Confirmar Eliminación Cliente -->
+    <div id="modal-eliminar-cliente" class="modal-overlay">
+      <div class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+          <h2 class="modal-title">⚠️ Confirmar Eliminación</h2>
+          <button class="modal-close" onclick="cerrarModalEliminarCliente()">&times;</button>
+        </div>
+        <p id="eliminar-cliente-mensaje" style="margin-bottom: 20px;">¿Estás seguro de eliminar este cliente?</p>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn btn-secondary" onclick="cerrarModalEliminarCliente()">Cancelar</button>
+          <button class="btn btn-danger" onclick="confirmarEliminarCliente()">
+            <i class="fas fa-trash"></i> Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // ============================================================================
+    // VARIABLES GLOBALES
+    // ============================================================================
+    let usuarios = [];
+    let clientes = [];
+    let roles = [];
+    let usuarioAEliminar = null;
+    let clienteAEliminar = null;
+    let puedeEditarUsuarios = false;
+    let puedeEliminarUsuarios = false;
+
+    // ============================================================================
+    // FUNCIONES DE TAB SWITCHING (EARLY DEFINITION - must be available for inline onclick)
+    // ============================================================================
+    function switchTab(tabName) {
+      // Ocultar todos los tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Desactivar todos los botones
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Mostrar el tab seleccionado
+      document.getElementById('tab-' + tabName).classList.add('active');
+
+      // Activar el botón correspondiente
+      event.target.classList.add('active');
+
+      // Cargar datos si es necesario
+      if (tabName === 'usuarios' && usuarios.length === 0) {
+        cargarDatosUsuarios();
+      } else if (tabName === 'clientes' && clientes.length === 0) {
+        cargarDatosClientes();
+      }
+    }
+
+    // ============================================================================
+    // EARLY-DEFINED STUBS (redefined later, but must be available for early calls)
+    // ============================================================================
+    function filtrarUsuarios() {}
+    function filtrarClientes() {}
+    function renderizarTablaUsuarios() {}
+    function renderizarTablaClientes() {}
+    function normalizeSearch(str) { return (str || '').toLowerCase().trim(); }
+    function cargarDatosUsuarios() {}
+    function cargarDatosClientes() {}
+
+    // ============================================================================
+    // FUNCIONES GENERALES
+    // ============================================================================
+    function getToken() {
+      return localStorage.getItem('authToken');
+    }
+
+    function getHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      };
+    }
+
+    function showBanner(message, type = 'info', duration = 4000) {
+      document.querySelectorAll('.notification-banner').forEach(n => {
+        n.classList.remove('show');
+        n.classList.add('hide');
+        setTimeout(() => n.remove(), 350);
+      });
+      const banner = document.createElement('div');
+      banner.className = `notification-banner ${type}`;
+      const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle');
+      banner.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><i class="fas fa-${icon}"></i><span>${message}</span></div>`;
+      document.body.appendChild(banner);
+      requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('show')));
+      setTimeout(() => {
+        banner.classList.remove('show');
+        banner.classList.add('hide');
+        setTimeout(() => banner.remove(), 350);
+      }, duration);
+    }
+
+    // ============================================================================
+    // FUNCIONES DE USUARIOS
+    // ============================================================================
+    async function cargarDatosUsuarios() {
+      try {
+        // Cargar roles
+        const resRoles = await fetch('/api/usuarios/roles', { headers: getHeaders() });
+        if (resRoles.ok) {
+          roles = await resRoles.json();
+          renderizarRolesInfo();
+          renderizarRolesCheckboxes();
+        } else if (resRoles.status === 401) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        // Cargar usuarios
+        const resUsuarios = await fetch('/api/usuarios', { headers: getHeaders() });
+        if (resUsuarios.ok) {
+          usuarios = await resUsuarios.json();
+          renderizarTablaUsuarios();
+          showBanner(usuarios.length + ' usuario' + (usuarios.length !== 1 ? 's' : '') + ' cargado' + (usuarios.length !== 1 ? 's' : ''), 'success', 2500);
+        } else if (resUsuarios.status === 401) {
+          window.location.href = '/login.html';
+          return;
+        } else if (resUsuarios.status === 403) {
+          document.getElementById('tabla-usuarios-container').innerHTML = `
+            <div class="error-message">
+              <i class="fas fa-lock"></i> No tienes permisos para ver usuarios.
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('Error cargando datos de usuarios:', error);
+      }
+    }
+
+    function renderizarTablaUsuarios() {
+      const container = document.getElementById('tabla-usuarios-container');
+
+      if (usuarios.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-users"></i>
+            <h3>No hay usuarios registrados</h3>
+            <p>Crea el primer usuario con el botón "Nuevo Usuario"</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Nombre</th>
+              <th>Roles</th>
+              <th>Estado</th>
+              <th>Último Acceso</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for (const u of usuarios) {
+        const rolesArray = u.roles ? u.roles.split(',') : [];
+        const rolesBadges = rolesArray.map(r => {
+          let badgeClass = 'badge-viewer';
+          if (r === 'SUPER_ADMIN') badgeClass = 'badge-admin';
+          else if (r === 'ADMIN') badgeClass = 'badge-admin';
+          else if (r === 'OPERADOR') badgeClass = 'badge-operador';
+          return `<span class="badge ${badgeClass}">${r}</span>`;
+        }).join(' ');
+
+        const estadoBadge = u.activo
+          ? '<span class="badge badge-active">Activo</span>'
+          : '<span class="badge badge-inactive">Inactivo</span>';
+
+        const ultimoAcceso = u.ultimo_acceso
+          ? new Date(u.ultimo_acceso).toLocaleString('es-AR')
+          : 'Nunca';
+
+        html += `
+          <tr>
+            <td>${u.id_usuario}</td>
+            <td>${u.email}</td>
+            <td>${((u.nombre || '') + (u.apellido ? ' ' + u.apellido : '')) || '-'}</td>
+            <td>${rolesBadges || '<span style="color:#78716c">Sin rol</span>'}</td>
+            <td>${estadoBadge}</td>
+            <td style="font-size: 0.85rem; color: #78716c;">${ultimoAcceso}</td>
+            <td>
+              ${puedeEditarUsuarios ? `
+              <button class="btn btn-secondary" onclick="editarUsuario(${u.id_usuario})" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              ` : ''}
+              ${puedeEliminarUsuarios ? `
+              <button class="btn btn-danger" onclick="abrirModalEliminar(${u.id_usuario}, '${u.email.replace(/'/g, '&apos;')}')" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+              ` : ''}
+              ${!puedeEditarUsuarios && !puedeEliminarUsuarios ? '<span style="color:#6b7280;font-size:0.8rem;">Solo lectura</span>' : ''}
+            </td>
+          </tr>
+        `;
+      }
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function renderizarRolesInfo() {
+      const container = document.getElementById('roles-info');
+      container.innerHTML = roles.map(r => `
+        <div style="background: #292524; padding: 12px; border-radius: 8px;">
+          <div style="font-weight: 600; color: var(--color-secondary);">${r.nombre}</div>
+          <div style="font-size: 0.8rem; color: #78716c; margin-top: 4px;">${r.descripcion || ''}</div>
+          <div style="font-size: 0.75rem; color: #57534e; margin-top: 4px;">Nivel: ${r.nivel}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderizarRolesCheckboxes() {
+      const container = document.getElementById('roles-checkboxes');
+      container.innerHTML = roles.map(r => `
+        <label class="checkbox-item">
+          <input type="checkbox" name="roles" value="${r.id}">
+          <div class="rol-info">
+            <div class="rol-nombre">${r.nombre}</div>
+            <div class="rol-desc">${r.descripcion || ''}</div>
+          </div>
+        </label>
+      `).join('');
+    }
+
+    function filtrarUsuarios() {
+      const buscar = document.getElementById('buscar-usuarios').value.toLowerCase();
+      const filtrados = usuarios.filter(u =>
+        u.email.toLowerCase().includes(buscar) ||
+        (u.nombre && u.nombre.toLowerCase().includes(buscar))
+      );
+
+      const original = usuarios;
+      usuarios = filtrados;
+      renderizarTablaUsuarios();
+      usuarios = original;
+    }
+
+    function abrirModalUsuario() {
+      document.getElementById('modal-title').textContent = 'Nuevo Usuario';
+      document.getElementById('id_usuario').value = '';
+      document.getElementById('usuario-email').value = '';
+      document.getElementById('usuario-nombre').value = '';
+      document.getElementById('usuario-password').value = '';
+      document.getElementById('usuario-password').required = true;
+      document.getElementById('usuario-activo').checked = true;
+      document.getElementById('modal-error').innerHTML = '';
+
+      document.querySelectorAll('input[name="roles"]').forEach(cb => cb.checked = false);
+      document.getElementById('modal-usuario').classList.add('active');
+    }
+
+    async function editarUsuario(id) {
+      try {
+        const res = await fetch(`/api/usuarios/${id}`, { headers: getHeaders() });
+        if (!res.ok) throw new Error(`HTTP ${res.status}: Error al obtener usuario`);
+
+        const usuario = await res.json();
+
+        document.getElementById('modal-title').textContent = 'Editar Usuario';
+        document.getElementById('id_usuario').value = usuario.id_usuario;
+        document.getElementById('usuario-email').value = usuario.email;
+        document.getElementById('usuario-nombre').value = usuario.nombre || '';
+        document.getElementById('usuario-password').value = '';
+        document.getElementById('usuario-password').required = false;
+        document.getElementById('usuario-activo').checked = usuario.activo !== 0;
+        document.getElementById('modal-error').innerHTML = '';
+
+        // Procesar roles - pueden venir como string, array de strings, o array de objetos
+        let rolesUsuario = [];
+        if (usuario.roles) {
+          if (typeof usuario.roles === 'string') {
+            const rolesNombres = usuario.roles.split(',').map(r => r.trim());
+            rolesUsuario = roles.filter(r => rolesNombres.includes(r.nombre)).map(r => r.id);
+          } else if (Array.isArray(usuario.roles)) {
+            rolesUsuario = usuario.roles.map(r => typeof r === 'object' ? r.id : 
+              roles.find(role => role.nombre === r)?.id
+            ).filter(Boolean);
+          }
+        }
+
+        document.querySelectorAll('input[name="roles"]').forEach(cb => {
+          cb.checked = rolesUsuario.includes(parseInt(cb.value));
+        });
+
+        document.getElementById('modal-usuario').classList.add('active');
+      } catch (error) {
+        console.error('Error editarUsuario:', error);
+        showBanner('Error al cargar usuario: ' + error.message, 'error');
+      }
+    }
+
+    async function guardarUsuario(event) {
+      event.preventDefault();
+
+      const id = document.getElementById('id_usuario').value;
+      const email = document.getElementById('usuario-email').value;
+      const nombre = document.getElementById('usuario-nombre').value;
+      const password = document.getElementById('usuario-password').value;
+      const activo = document.getElementById('usuario-activo').checked;
+
+      const rolesSeleccionados = [];
+      document.querySelectorAll('input[name="roles"]:checked').forEach(cb => {
+        rolesSeleccionados.push(parseInt(cb.value));
+      });
+
+      const datos = { email, nombre, activo, roles: rolesSeleccionados };
+      if (password) datos.password = password;
+
+      try {
+        const url = id ? `/api/usuarios/${id}` : '/api/usuarios';
+        const method = id ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: getHeaders(),
+          body: JSON.stringify(datos)
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          document.getElementById('modal-error').innerHTML = `
+            <div class="error-message">${result.message}</div>
+          `;
+          return;
+        }
+
+        cerrarModal();
+        cargarDatosUsuarios();
+        showBanner(id ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente', 'success');
+      } catch (error) {
+        document.getElementById('modal-error').innerHTML = `
+          <div class="error-message">Error: ${error.message}</div>
+        `;
+      }
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal-usuario').classList.remove('active');
+    }
+
+    function abrirModalEliminar(id, email) {
+      usuarioAEliminar = id;
+      document.getElementById('eliminar-mensaje').textContent =
+        `¿Estás seguro de eliminar al usuario "${email}"? Esta acción no se puede deshacer.`;
+      document.getElementById('modal-eliminar-usuario').classList.add('active');
+    }
+
+    function cerrarModalEliminar() {
+      document.getElementById('modal-eliminar-usuario').classList.remove('active');
+      usuarioAEliminar = null;
+    }
+
+    async function confirmarEliminar() {
+      if (!usuarioAEliminar) return;
+
+      try {
+        const res = await fetch(`/api/usuarios/${usuarioAEliminar}`, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          showBanner(result.message, 'error');
+          return;
+        }
+
+        cerrarModalEliminar();
+        cargarDatosUsuarios();
+        showBanner('Usuario eliminado exitosamente', 'success');
+      } catch (error) {
+        showBanner('Error al eliminar: ' + error.message, 'error');
+      }
+    }
+
+    // ============================================================================
+    // FUNCIONES DE CLIENTES
+    // ============================================================================
+    function normalizeSearch(str) {
+      return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    async function cargarDatosClientes() {
+      try {
+        const res = await fetch('/api/admin/clientes', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') }
+        });
+        if (!res.ok) {
+          if (res.status === 401) {
+            showBanner('No autorizado - Debes iniciar sesión', 'error');
+            return;
+          }
+          if (res.status === 403) {
+            showBanner('Permisos insuficientes - Se requiere rol Admin para ver clientes', 'error');
+            return;
+          }
+          throw new Error('Error al obtener clientes');
+        }
+        const data = await res.json();
+        clientes = Array.isArray(data) ? data : (data.clientes || []);
+        filtrarClientes();
+      } catch (err) {
+        console.error('Error cargando clientes:', err);
+        showBanner('Error al cargar clientes: ' + err.message, 'error');
+      }
+    }
+
+    function filtrarClientes() {
+      const buscar = document.getElementById('search-clientes').value.toLowerCase();
+      const filtrados = clientes.filter(c =>
+        normalizeSearch(c.nombre || '').includes(normalizeSearch(buscar)) ||
+        normalizeSearch(c.apellido || '').includes(normalizeSearch(buscar)) ||
+        normalizeSearch(c.email || '').includes(normalizeSearch(buscar)) ||
+        normalizeSearch(c.telefono || '').includes(normalizeSearch(buscar))
+      );
+
+      const original = clientes;
+      clientes = filtrados;
+      renderizarTablaClientes();
+      clientes = original;
+    }
+
+    function renderizarTablaClientes() {
+      const container = document.getElementById('tabla-clientes-container');
+
+      if (clientes.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-users"></i>
+            <h3>No hay clientes registrados</h3>
+            <p>Crea el primer cliente con el botón "Nuevo Cliente"</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Usuario</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for (const c of clientes) {
+        const usuarioIndicador = c.id_usuario
+          ? `<span title="Vinculado a usuario #${c.id_usuario}" style="color:#10b981;">👤 #${c.id_usuario}</span>`
+          : '<span style="color:#78716c;">-</span>';
+
+        html += `
+          <tr>
+            <td>${c.id_cliente}</td>
+            <td>${c.nombre || '-'}</td>
+            <td>${c.apellido || '-'}</td>
+            <td>${c.email || '-'}</td>
+            <td>${c.telefono || '-'}</td>
+            <td>${usuarioIndicador}</td>
+            <td>
+              <button class="btn btn-secondary" onclick="editarCliente(${c.id_cliente})" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-danger" onclick="abrirModalEliminarCliente(${c.id_cliente}, '${(c.nombre || '').replace(/'/g, '&apos;')}');" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function abrirModalCliente() {
+      document.getElementById('modal-cliente-title').textContent = 'Nuevo Cliente';
+      document.getElementById('cliente-id').value = '';
+      document.getElementById('cliente-nombre').value = '';
+      document.getElementById('cliente-apellido').value = '';
+      document.getElementById('cliente-email').value = '';
+      document.getElementById('cliente-telefono').value = '';
+      document.getElementById('modal-cliente-error').innerHTML = '';
+      document.getElementById('modal-cliente').classList.add('active');
+    }
+
+    async function editarCliente(id) {
+      try {
+        const cliente = clientes.find(c => c.id_cliente === id);
+        if (!cliente) throw new Error('Cliente no encontrado');
+
+        document.getElementById('modal-cliente-title').textContent = 'Editar Cliente';
+        document.getElementById('cliente-id').value = cliente.id_cliente;
+        document.getElementById('cliente-nombre').value = cliente.nombre || '';
+        document.getElementById('cliente-apellido').value = cliente.apellido || '';
+        document.getElementById('cliente-email').value = cliente.email || '';
+        document.getElementById('cliente-telefono').value = cliente.telefono || '';
+        document.getElementById('modal-cliente-error').innerHTML = '';
+        document.getElementById('modal-cliente').classList.add('active');
+      } catch (error) {
+        showBanner('Error al cargar cliente: ' + error.message, 'error');
+      }
+    }
+
+    async function guardarCliente(event) {
+      event.preventDefault();
+
+      const id = document.getElementById('cliente-id').value;
+      const nombre = document.getElementById('cliente-nombre').value.trim();
+      const apellido = document.getElementById('cliente-apellido').value.trim();
+      const email = document.getElementById('cliente-email').value.trim();
+      const telefono = document.getElementById('cliente-telefono').value.trim();
+
+      if (!nombre) {
+        document.getElementById('modal-cliente-error').innerHTML = `
+          <div class="error-message">El nombre es obligatorio</div>
+        `;
+        return;
+      }
+
+      const payload = { nombre, apellido, email, telefono };
+
+      try {
+        const url = id ? `/api/admin/clientes/${id}` : '/api/admin/clientes';
+        const method = id ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          document.getElementById('modal-cliente-error').innerHTML = `
+            <div class="error-message">${result.message || result.error || 'Error al guardar'}</div>
+          `;
+          return;
+        }
+
+        cerrarModalCliente();
+        cargarDatosClientes();
+        showBanner(id ? 'Cliente actualizado exitosamente' : 'Cliente creado exitosamente', 'success');
+      } catch (error) {
+        document.getElementById('modal-cliente-error').innerHTML = `
+          <div class="error-message">Error: ${error.message}</div>
+        `;
+      }
+    }
+
+    function cerrarModalCliente() {
+      document.getElementById('modal-cliente').classList.remove('active');
+    }
+
+    function abrirModalEliminarCliente(id, nombre) {
+      clienteAEliminar = id;
+      document.getElementById('eliminar-cliente-mensaje').textContent =
+        `¿Estás seguro de eliminar al cliente "${nombre}"? Esta acción no se puede deshacer.`;
+      document.getElementById('modal-eliminar-cliente').classList.add('active');
+    }
+
+    function cerrarModalEliminarCliente() {
+      document.getElementById('modal-eliminar-cliente').classList.remove('active');
+      clienteAEliminar = null;
+    }
+
+    async function confirmarEliminarCliente() {
+      if (!clienteAEliminar) return;
+
+      try {
+        const res = await fetch(`/api/admin/clientes/${clienteAEliminar}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          showBanner(result.message || result.error || 'Error al eliminar', 'error');
+          return;
+        }
+
+        cerrarModalEliminarCliente();
+        cargarDatosClientes();
+        showBanner('Cliente eliminado exitosamente', 'success');
+      } catch (error) {
+        showBanner('Error al eliminar: ' + error.message, 'error');
+      }
+    }
+
+    // ============================================================================
+    // INICIALIZACIÓN
+    // ============================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!navbarManager || !navbarManager.protectAdminPage()) {
+        return;
+      }
+
+      puedeEditarUsuarios = puedeEditar('usuarios');
+      puedeEliminarUsuarios = tienePermiso('usuarios.eliminar');
+      aplicarPermisosUI();
+
+      cargarDatosUsuarios();
+    });
+
+    // Cerrar modales con Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        cerrarModal();
+        cerrarModalEliminar();
+        closeModal('modal-cliente');
+      }
+    });
+  </script>
+</body>
+
+</html>

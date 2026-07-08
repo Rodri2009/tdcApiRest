@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administración - Usuarios y Clientes</title>
+  <link rel="stylesheet" href="/css/tailwind.min.css">
+  <link rel="stylesheet" href="/css/fontawesome.min.css">
+  <link rel="stylesheet" href="/styles/admin.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #0c0a09; color: #fff; font-family: system-ui; margin: 0; padding: 0; }
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    .page-header { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; }
+    .btn-back { color: #f0abfc; cursor: pointer; text-decoration: none; }
+    h1 { color: #f0abfc; margin: 0; }
+    .tabs-container { display: flex; gap: 20px; border-bottom: 1px solid rgba(240, 171, 252, 0.2); margin-bottom: 24px; }
+    .tab-button { padding: 12px 20px; background: transparent; border: none; color: #999; cursor: pointer; font-size: 1rem; border-bottom: 3px solid transparent; }
+    .tab-button.active { color: #f0abfc; border-bottom-color: #f0abfc; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .filters-panel { margin-bottom: 20px; padding: 15px; background: #1a1a1a; border-radius: 8px; }
+    .filters-row { display: flex; gap: 20px; align-items: flex-end; }
+    .filter-field { display: flex; flex-direction: column; }
+    .filter-field label { color: #999; font-size: 12px; margin-bottom: 5px; }
+    .filter-field input { padding: 8px; background: #222; border: 1px solid #333; color: #fff; border-radius: 4px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    .btn-primary { background: #f0abfc; color: #0c0a09; font-weight: 600; }
+    .btn-primary:hover { background: #e879f9; }
+    .btn-secondary { background: #333; color: #f0abfc; }
+    .btn-secondary:hover { background: #444; }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-success:hover { background: #15803d; }
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
+    th { background: #1a1a1a; color: #f0abfc; font-weight: 600; }
+    tr:hover { background: #1a1a1a; }
+    .loading { text-align: center; padding: 40px; }
+    
+    /* Modal styles */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 24px; width: 90%; max-width: 500px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-title { margin: 0; color: #f0abfc; font-size: 1.25rem; }
+    .modal-close { background: transparent; border: none; color: #999; cursor: pointer; font-size: 1.5rem; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; color: #f0abfc; font-weight: 600; margin-bottom: 5px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: #fff; border-radius: 4px; }
+    .form-group small { color: #78716c; }
+    .error-message { padding: 10px; background: #7f1d1d; border: 1px solid #dc2626; color: #fca5a5; border-radius: 4px; margin-bottom: 15px; }
+    .checkbox-group { display: flex; flex-direction: column; gap: 8px; }
+    .checkbox-item { display: flex; gap: 10px; }
+    .checkbox-item input { flex-shrink: 0; margin-top: 3px; }
+  </style>
+</head>
+<body>
+  <script src="/navbar.js"></script>
+  
+  <main class="wrap">
+    <div class="page-header">
+      <a href="admin.html" class="btn-back"><i class="fas fa-arrow-left"></i> Volver</a>
+      <h1>👥 Usuarios y Clientes</h1>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-container">
+      <button class="tab-button active" onclick="switchTab('usuarios')">
+        <i class="fas fa-users"></i> Usuarios del Sistema
+      </button>
+      <button class="tab-button" onclick="switchTab('clientes')">
+        <i class="fas fa-user-circle"></i> Clientes
+      </button>
+    </div>
+
+    <!-- TAB 1: USUARIOS -->
+    <div id="tab-usuarios" class="tab-content active">
+      <div class="filters-panel">
+        <div class="filters-row">
+          <button class="btn btn-primary" onclick="abrirModalUsuario()">
+            <i class="fas fa-user-plus"></i> Nuevo Usuario
+          </button>
+          <div class="filter-field" style="flex:1;">
+            <label>Buscar</label>
+            <input type="text" id="buscar-usuarios" placeholder="Email o nombre..." oninput="filtrarUsuarios()">
+          </div>
+        </div>
+      </div>
+      
+      <div class="table-container">
+        <div id="tabla-usuarios-container">
+          <div class="loading">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Cargando usuarios...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CLIENTES -->
+    <div id="tab-clientes" class="tab-content">
+      <div class="filters-panel">
+        <div class="filters-row">
+          <button class="btn btn-primary" onclick="abrirModalCliente()">
+            <i class="fas fa-user-plus"></i> Nuevo Cliente
+          </button>
+          <div class="filter-field" style="flex:1;">
+            <label>Buscar</label>
+            <input type="text" id="search-clientes" placeholder="Nombre, apellido, email..." oninput="filtrarClientes()">
+          </div>
+        </div>
+      </div>
+      
+      <div class="table-container">
+        <div id="tabla-clientes-container">
+          <div class="loading">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Cargando clientes...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal Crear/Editar Usuario -->
+  <div id="modal-usuario" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Nuevo Usuario</h2>
+        <button class="modal-close" onclick="cerrarModal()">&times;</button>
+      </div>
+      <div id="modal-error"></div>
+      <form id="form-usuario" onsubmit="guardarUsuario(event)">
+        <input type="hidden" id="id_usuario">
+        
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="usuario-email" required placeholder="usuario@ejemplo.com">
+        </div>
+
+        <div class="form-group">
+          <label>Nombre</label>
+          <input type="text" id="usuario-nombre" placeholder="Nombre completo">
+        </div>
+
+        <div class="form-group" id="password-group">
+          <label>Contraseña *</label>
+          <input type="password" id="usuario-password" placeholder="Mínimo 6 caracteres" minlength="6">
+          <small style="color: #78716c;">Dejar vacío para mantener la actual (al editar)</small>
+        </div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="usuario-activo" checked style="width: auto;">
+            Usuario activo
+          </label>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-save"></i> Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar Eliminar Usuario -->
+  <div id="modal-eliminar-usuario" class="modal-overlay">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2 class="modal-title">⚠️ Confirmar Eliminación</h2>
+        <button class="modal-close" onclick="cerrarModalEliminar()">&times;</button>
+      </div>
+      <p id="eliminar-mensaje" style="margin-bottom: 20px;">¿Estás seguro de eliminar este usuario?</p>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="cerrarModalEliminar()">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmarEliminar()">
+          <i class="fas fa-trash"></i> Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Crear/Editar Cliente -->
+  <div id="modal-cliente" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-cliente-title">Nuevo Cliente</h2>
+        <button class="modal-close" onclick="cerrarModalCliente()">&times;</button>
+      </div>
+      <div id="modal-cliente-error"></div>
+      <form id="form-cliente" onsubmit="guardarCliente(event)">
+        <input type="hidden" id="cliente-id">
+
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" id="cliente-nombre" required placeholder="Nombre">
+        </div>
+
+        <div class="form-group">
+          <label>Apellido</label>
+          <input type="text" id="cliente-apellido" placeholder="Apellido">
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="cliente-email" placeholder="contacto@ejemplo.com">
+        </div>
+
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="tel" id="cliente-telefono" placeholder="+54 9 11 XXXX-XXXX">
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="cerrarModalCliente()">Cancelar</button>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-save"></i> Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar Eliminar Cliente -->
+  <div id="modal-eliminar-cliente" class="modal-overlay">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2 class="modal-title">⚠️ Confirmar Eliminación</h2>
+        <button class="modal-close" onclick="cerrarModalEliminarCliente()">&times;</button>
+      </div>
+      <p id="eliminar-cliente-mensaje" style="margin-bottom: 20px;">¿Estás seguro de eliminar este cliente?</p>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="cerrarModalEliminarCliente()">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmarEliminarCliente()">
+          <i class="fas fa-trash"></i> Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let usuarios = [];
+    let clientes = [];
+    let usuarioAEliminar = null;
+    let clienteAEliminar = null;
+
+    function getHeaders() {
+      return {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        'Content-Type': 'application/json'
+      };
+    }
+
+    // Tab switching
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      
+      document.getElementById('tab-' + tabName).classList.add('active');
+      event.target.classList.add('active');
+      
+      if (tabName === 'usuarios' && usuarios.length === 0) cargarDatosUsuarios();
+      if (tabName === 'clientes' && clientes.length === 0) cargarDatosClientes();
+    }
+
+    // Load data
+    async function cargarDatosUsuarios() {
+      try {
+        const res = await fetch('/api/usuarios', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Error cargando usuarios');
+        usuarios = await res.json();
+        renderizarTablaUsuarios();
+      } catch (err) {
+        console.error('Error:', err);
+        document.getElementById('tabla-usuarios-container').innerHTML = '<p style="color:red;">Error cargando usuarios</p>';
+      }
+    }
+
+    async function cargarDatosClientes() {
+      try {
+        const res = await fetch('/api/admin/clientes', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Error cargando clientes');
+        clientes = await res.json();
+        renderizarTablaClientes();
+      } catch (err) {
+        console.error('Error:', err);
+        document.getElementById('tabla-clientes-container').innerHTML = '<p style="color:red;">Error cargando clientes</p>';
+      }
+    }
+
+    function renderizarTablaUsuarios() {
+      const html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Nombre</th>
+              <th>Rol</th>
+              <th>Activo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${usuarios.map(u => `
+              <tr>
+                <td>${u.email}</td>
+                <td>${u.nombre || '-'}</td>
+                <td>${u.rol || '-'}</td>
+                <td>${u.activo ? '✓' : '✗'}</td>
+                <td>
+                  <button class="btn" style="background:#333; color:#f0abfc; padding: 5px 10px; margin: 0 2px;" onclick="editarUsuario(${u.id_usuario})">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn" style="background:#333; color:#f0abfc; padding: 5px 10px; margin: 0 2px;" onclick="abrirModalEliminar(${u.id_usuario}, '${u.email.replace(/'/g, '&apos;')}')">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      document.getElementById('tabla-usuarios-container').innerHTML = html;
+    }
+
+    function renderizarTablaClientes() {
+      const html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Usuario</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${clientes.map(c => `
+              <tr>
+                <td>${c.nombre || '-'}</td>
+                <td>${c.apellido || '-'}</td>
+                <td>${c.email || '-'}</td>
+                <td>${c.telefono || '-'}</td>
+                <td>${c.id_usuario ? '✓' : '✗'}</td>
+                <td>
+                  <button class="btn" style="background:#333; color:#f0abfc; padding: 5px 10px; margin: 0 2px;" onclick="editarCliente(${c.id_cliente})">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn" style="background:#333; color:#f0abfc; padding: 5px 10px; margin: 0 2px;" onclick="abrirModalEliminarCliente(${c.id_cliente}, '${c.nombre.replace(/'/g, '&apos;')}')">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      document.getElementById('tabla-clientes-container').innerHTML = html;
+    }
+
+    // Filtering
+    function filtrarUsuarios() {
+      const buscar = document.getElementById('buscar-usuarios').value.toLowerCase();
+      const filtrados = usuarios.filter(u => 
+        (u.email || '').toLowerCase().includes(buscar) ||
+        (u.nombre || '').toLowerCase().includes(buscar)
+      );
+      const original = usuarios;
+      usuarios = filtrados;
+      renderizarTablaUsuarios();
+      usuarios = original;
+    }
+
+    function filtrarClientes() {
+      const buscar = document.getElementById('search-clientes').value.toLowerCase();
+      const filtrados = clientes.filter(c =>
+        (c.nombre || '').toLowerCase().includes(buscar) ||
+        (c.apellido || '').toLowerCase().includes(buscar) ||
+        (c.email || '').toLowerCase().includes(buscar) ||
+        (c.telefono || '').toLowerCase().includes(buscar)
+      );
+      const original = clientes;
+      clientes = filtrados;
+      renderizarTablaClientes();
+      clientes = original;
+    }
+
+    // Modal Usuario
+    function abrirModalUsuario() {
+      document.getElementById('modal-title').textContent = 'Nuevo Usuario';
+      document.getElementById('id_usuario').value = '';
+      document.getElementById('usuario-email').value = '';
+      document.getElementById('usuario-nombre').value = '';
+      document.getElementById('usuario-password').value = '';
+      document.getElementById('usuario-password').required = true;
+      document.getElementById('usuario-activo').checked = true;
+      document.getElementById('modal-error').innerHTML = '';
+      document.getElementById('modal-usuario').classList.add('show');
+    }
+
+    async function editarUsuario(id) {
+      try {
+        const res = await fetch(`/api/usuarios/${id}`, { headers: getHeaders() });
+        if (!res.ok) throw new Error('Error al cargar usuario');
+        const usuario = await res.json();
+
+        document.getElementById('modal-title').textContent = 'Editar Usuario';
+        document.getElementById('id_usuario').value = usuario.id_usuario;
+        document.getElementById('usuario-email').value = usuario.email;
+        document.getElementById('usuario-nombre').value = usuario.nombre || '';
+        document.getElementById('usuario-password').value = '';
+        document.getElementById('usuario-password').required = false;
+        document.getElementById('usuario-activo').checked = usuario.activo !== 0;
+        document.getElementById('modal-error').innerHTML = '';
+        document.getElementById('modal-usuario').classList.add('show');
+      } catch (err) {
+        alert('Error cargando usuario: ' + err.message);
+      }
+    }
+
+    async function guardarUsuario(event) {
+      event.preventDefault();
+
+      const id = document.getElementById('id_usuario').value;
+      const email = document.getElementById('usuario-email').value;
+      const nombre = document.getElementById('usuario-nombre').value;
+      const password = document.getElementById('usuario-password').value;
+      const activo = document.getElementById('usuario-activo').checked;
+
+      const datos = { email, nombre, activo };
+      if (password) datos.password = password;
+
+      try {
+        const url = id ? `/api/usuarios/${id}` : '/api/usuarios';
+        const method = id ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: getHeaders(),
+          body: JSON.stringify(datos)
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          document.getElementById('modal-error').innerHTML = `
+            <div class="error-message">${result.message || result.error || 'Error'}</div>
+          `;
+          return;
+        }
+
+        cerrarModal();
+        cargarDatosUsuarios();
+        alert(id ? 'Usuario actualizado' : 'Usuario creado');
+      } catch (error) {
+        document.getElementById('modal-error').innerHTML = `
+          <div class="error-message">Error: ${error.message}</div>
+        `;
+      }
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal-usuario').classList.remove('show');
+    }
+
+    function abrirModalEliminar(id, email) {
+      usuarioAEliminar = id;
+      document.getElementById('eliminar-mensaje').textContent =
+        `¿Estás seguro de eliminar a "${email}"? Esta acción no se puede deshacer.`;
+      document.getElementById('modal-eliminar-usuario').classList.add('show');
+    }
+
+    function cerrarModalEliminar() {
+      document.getElementById('modal-eliminar-usuario').classList.remove('show');
+      usuarioAEliminar = null;
+    }
+
+    async function confirmarEliminar() {
+      if (!usuarioAEliminar) return;
+      try {
+        const res = await fetch(`/api/usuarios/${usuarioAEliminar}`, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Error eliminando usuario');
+        cerrarModalEliminar();
+        cargarDatosUsuarios();
+        alert('Usuario eliminado');
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // Modal Cliente
+    function abrirModalCliente() {
+      document.getElementById('modal-cliente-title').textContent = 'Nuevo Cliente';
+      document.getElementById('cliente-id').value = '';
+      document.getElementById('cliente-nombre').value = '';
+      document.getElementById('cliente-apellido').value = '';
+      document.getElementById('cliente-email').value = '';
+      document.getElementById('cliente-telefono').value = '';
+      document.getElementById('modal-cliente-error').innerHTML = '';
+      document.getElementById('modal-cliente').classList.add('show');
+    }
+
+    async function editarCliente(id) {
+      try {
+        const res = await fetch(`/api/admin/clientes/${id}`, { headers: getHeaders() });
+        if (!res.ok) throw new Error('Error al cargar cliente');
+        const cliente = await res.json();
+
+        document.getElementById('modal-cliente-title').textContent = 'Editar Cliente';
+        document.getElementById('cliente-id').value = cliente.id_cliente;
+        document.getElementById('cliente-nombre').value = cliente.nombre || '';
+        document.getElementById('cliente-apellido').value = cliente.apellido || '';
+        document.getElementById('cliente-email').value = cliente.email || '';
+        document.getElementById('cliente-telefono').value = cliente.telefono || '';
+        document.getElementById('modal-cliente-error').innerHTML = '';
+        document.getElementById('modal-cliente').classList.add('show');
+      } catch (err) {
+        alert('Error cargando cliente: ' + err.message);
+      }
+    }
+
+    async function guardarCliente(event) {
+      event.preventDefault();
+
+      const id = document.getElementById('cliente-id').value;
+      const nombre = document.getElementById('cliente-nombre').value;
+      const apellido = document.getElementById('cliente-apellido').value;
+      const email = document.getElementById('cliente-email').value;
+      const telefono = document.getElementById('cliente-telefono').value;
+
+      if (!nombre) {
+        document.getElementById('modal-cliente-error').innerHTML = '<div class="error-message">El nombre es obligatorio</div>';
+        return;
+      }
+
+      const datos = { nombre, apellido, email, telefono };
+
+      try {
+        const url = id ? `/api/admin/clientes/${id}` : '/api/admin/clientes';
+        const method = id ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: getHeaders(),
+          body: JSON.stringify(datos)
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          document.getElementById('modal-cliente-error').innerHTML = `
+            <div class="error-message">${result.message || result.error || 'Error'}</div>
+          `;
+          return;
+        }
+
+        cerrarModalCliente();
+        cargarDatosClientes();
+        alert(id ? 'Cliente actualizado' : 'Cliente creado');
+      } catch (error) {
+        document.getElementById('modal-cliente-error').innerHTML = `
+          <div class="error-message">Error: ${error.message}</div>
+        `;
+      }
+    }
+
+    function cerrarModalCliente() {
+      document.getElementById('modal-cliente').classList.remove('show');
+    }
+
+    function abrirModalEliminarCliente(id, nombre) {
+      clienteAEliminar = id;
+      document.getElementById('eliminar-cliente-mensaje').textContent =
+        `¿Estás seguro de eliminar a "${nombre}"? Esta acción no se puede deshacer.`;
+      document.getElementById('modal-eliminar-cliente').classList.add('show');
+    }
+
+    function cerrarModalEliminarCliente() {
+      document.getElementById('modal-eliminar-cliente').classList.remove('show');
+      clienteAEliminar = null;
+    }
+
+    async function confirmarEliminarCliente() {
+      if (!clienteAEliminar) return;
+      try {
+        const res = await fetch(`/api/admin/clientes/${clienteAEliminar}`, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Error eliminando cliente');
+        cerrarModalEliminarCliente();
+        cargarDatosClientes();
+        alert('Cliente eliminado');
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // Load initial data
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarDatosUsuarios();
+    });
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administración - Usuarios y Clientes</title>
+  <link rel="stylesheet" href="/css/tailwind.min.css">
+  <link rel="stylesheet" href="/css/fontawesome.min.css">
+  <link rel="stylesheet" href="/styles/admin.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #0c0a09; color: #fff; font-family: system-ui; margin: 0; padding: 0; }
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    .page-header { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; }
+    .btn-back { color: #f0abfc; cursor: pointer; text-decoration: none; }
+    h1 { color: #f0abfc; margin: 0; }
+    .tabs-container { display: flex; gap: 20px; border-bottom: 1px solid rgba(240, 171, 252, 0.2); margin-bottom: 24px; }
+    .tab-button { padding: 12px 20px; background: transparent; border: none; color: #999; cursor: pointer; font-size: 1rem; border-bottom: 3px solid transparent; }
+    .tab-button.active { color: #f0abfc; border-bottom-color: #f0abfc; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .filters-panel { margin-bottom: 20px; padding: 15px; background: #1a1a1a; border-radius: 8px; }
+    .filters-row { display: flex; gap: 20px; }
+    .filter-field { display: flex; flex-direction: column; }
+    .filter-field label { color: #999; font-size: 12px; margin-bottom: 5px; }
+    .filter-field input { padding: 8px; background: #222; border: 1px solid #333; color: #fff; border-radius: 4px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    .btn-primary { background: #f0abfc; color: #0c0a09; }
+    .btn-primary:hover { background: #e879f9; }
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
+    th { background: #1a1a1a; color: #f0abfc; }
+    tr:hover { background: #1a1a1a; }
+    .loading { text-align: center; padding: 40px; }
+  </style>
+</head>
+<body>
+  <script src="/navbar.js"></script>
+  
+  <main class="wrap">
+    <div class="page-header">
+      <a href="admin.html" class="btn-back"><i class="fas fa-arrow-left"></i> Volver</a>
+      <h1>👥 Usuarios y Clientes</h1>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-container">
+      <button class="tab-button active" onclick="switchTab('usuarios')">
+        <i class="fas fa-users"></i> Usuarios del Sistema
+      </button>
+      <button class="tab-button" onclick="switchTab('clientes')">
+        <i class="fas fa-user-circle"></i> Clientes
+      </button>
+    </div>
+
+    <!-- TAB 1: USUARIOS -->
+    <div id="tab-usuarios" class="tab-content active">
+      <div class="filters-panel">
+        <div class="filters-row">
+          <button class="btn btn-primary" onclick="abrirModalUsuario()">
+            <i class="fas fa-user-plus"></i> Nuevo Usuario
+          </button>
+          <div class="filter-field" style="flex:1;">
+            <label>Buscar</label>
+            <input type="text" id="buscar-usuarios" placeholder="Email o nombre..." oninput="filtrarUsuarios()">
+          </div>
+        </div>
+      </div>
+      
+      <div class="table-container">
+        <div id="tabla-usuarios-container">
+          <div class="loading">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Cargando usuarios...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CLIENTES -->
+    <div id="tab-clientes" class="tab-content">
+      <div class="filters-panel">
+        <div class="filters-row">
+          <button class="btn btn-primary" onclick="abrirModalCliente()">
+            <i class="fas fa-user-plus"></i> Nuevo Cliente
+          </button>
+          <div class="filter-field" style="flex:1;">
+            <label>Buscar</label>
+            <input type="text" id="search-clientes" placeholder="Nombre, apellido, email..." oninput="filtrarClientes()">
+          </div>
+        </div>
+      </div>
+      
+      <div class="table-container">
+        <div id="tabla-clientes-container">
+          <div class="loading">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Cargando clientes...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    let usuarios = [];
+    let clientes = [];
+
+    // Tab switching
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      
+      document.getElementById('tab-' + tabName).classList.add('active');
+      event.target.classList.add('active');
+      
+      if (tabName === 'usuarios' && usuarios.length === 0) cargarDatosUsuarios();
+      if (tabName === 'clientes' && clientes.length === 0) cargarDatosClientes();
+    }
+
+    // Load data
+    async function cargarDatosUsuarios() {
+      try {
+        const res = await fetch('/api/usuarios', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+        usuarios = await res.json();
+        renderizarTablaUsuarios();
+      } catch (err) {
+        console.error('Error cargando usuarios:', err);
+        document.getElementById('tabla-usuarios-container').innerHTML = '<p style="color:red;">Error cargando usuarios</p>';
+      }
+    }
+
+    async function cargarDatosClientes() {
+      try {
+        const res = await fetch('/api/admin/clientes', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+        clientes = await res.json();
+        renderizarTablaClientes();
+      } catch (err) {
+        console.error('Error cargando clientes:', err);
+        document.getElementById('tabla-clientes-container').innerHTML = '<p style="color:red;">Error cargando clientes</p>';
+      }
+    }
+
+    function renderizarTablaUsuarios() {
+      const html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Nombre</th>
+              <th>Rol</th>
+              <th>Activo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${usuarios.map(u => `
+              <tr>
+                <td>${u.email}</td>
+                <td>${u.nombre}</td>
+                <td>${u.rol}</td>
+                <td>${u.activo ? '✓' : '✗'}</td>
+                <td>
+                  <button class="btn" style="background:#333; color:#f0abfc; padding: 5px 10px;" onclick="editarUsuario(${u.id_usuario})">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn" style="background:#333; color:#f0abfc; padding: 5px 10px;" onclick="abrirModalEliminar(${u.id_usuario})">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      document.getElementById('tabla-usuarios-container').innerHTML = html;
+    }
+
+    function renderizarTablaClientes() {
+      const html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Usuario</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${clientes.map(c => `
+              <tr>
+                <td>${c.nombre}</td>
+                <td>${c.apellido}</td>
+                <td>${c.email}</td>
+                <td>${c.telefono}</td>
+                <td>${c.id_usuario ? '✓' : '✗'}</td>
+                <td>
+                  <button class="btn" style="background:#333; color:#f0abfc; padding: 5px 10px;" onclick="editarCliente(${c.id_cliente})">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn" style="background:#333; color:#f0abfc; padding: 5px 10px;" onclick="abrirModalEliminarCliente(${c.id_cliente})">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      document.getElementById('tabla-clientes-container').innerHTML = html;
+    }
+
+    // Filtering
+    function filtrarUsuarios() {
+      const buscar = document.getElementById('buscar-usuarios').value.toLowerCase();
+      const filtrados = usuarios.filter(u => 
+        (u.email || '').toLowerCase().includes(buscar) ||
+        (u.nombre || '').toLowerCase().includes(buscar)
+      );
+      const original = usuarios;
+      usuarios = filtrados;
+      renderizarTablaUsuarios();
+      usuarios = original;
+    }
+
+    function filtrarClientes() {
+      const buscar = document.getElementById('search-clientes').value.toLowerCase();
+      const filtrados = clientes.filter(c =>
+        (c.nombre || '').toLowerCase().includes(buscar) ||
+        (c.apellido || '').toLowerCase().includes(buscar) ||
+        (c.email || '').toLowerCase().includes(buscar) ||
+        (c.telefono || '').toLowerCase().includes(buscar)
+      );
+      const original = clientes;
+      clientes = filtrados;
+      renderizarTablaClientes();
+      clientes = original;
+    }
+
+    // Modals (simplified)
+    function abrirModalUsuario() {
+      alert('Modal: Crear nuevo usuario');
+    }
+
+    function editarUsuario(id) {
+      alert('Editar usuario #' + id);
+    }
+
+    function abrirModalEliminar(id) {
+      alert('Eliminar usuario #' + id);
+    }
+
+    function abrirModalCliente() {
+      alert('Modal: Crear nuevo cliente');
+    }
+
+    function editarCliente(id) {
+      alert('Editar cliente #' + id);
+    }
+
+    function abrirModalEliminarCliente(id) {
+      alert('Eliminar cliente #' + id);
+    }
+
+    // Load initial data
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarDatosUsuarios();
+    });
+  </script>
+</body>
+</html>

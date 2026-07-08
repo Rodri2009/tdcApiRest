@@ -453,7 +453,7 @@ class NavbarManager {
 
         // Usuarios
         items.push(`<div class="border-t border-stone-700 my-1"></div>`);
-        items.push(this.menuItem('/admin_usuarios.html', '🔑', 'Usuarios'));
+        items.push(this.menuItem('/admin_usuarios_clientes.html', '👥', 'Usuarios y Clientes'));
 
         return items.join('');
     }
