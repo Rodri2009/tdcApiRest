@@ -225,6 +225,45 @@ const sendBandaConfirmacion = async (to, banda) => {
 };
 
 /**
+ * Envía email de verificación de registro
+ * @param {string} to - Email del usuario
+ * @param {string} nombre - Nombre del usuario
+ * @param {string} verificationToken - Token único de verificación (64 chars)
+ */
+const sendVerificationEmail = async (to, nombre, verificationToken) => {
+    logVerbose(`-> Preparando email de verificación para: ${to}`);
+
+    try {
+        // Cargar la plantilla
+        let htmlBody = fs.readFileSync(
+            path.join(__dirname, 'emailTemplates/verificacionEmail.html'), 'utf-8'
+        );
+
+        // Construir URL de verificación usando APP_URL del .env
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const verificationUrl = `${appUrl}/verificar-email?token=${verificationToken}`;
+
+        // Reemplazar placeholders
+        htmlBody = htmlBody.replace(/{{nombre}}/g, nombre || 'Usuario');
+        htmlBody = htmlBody.replace(/{{verification_url}}/g, verificationUrl);
+
+        // Enviar email
+        await transporter.sendMail({
+            from: `"El Templo de Claypole" <${process.env.EMAIL_USER}>`,
+            to: to,
+            subject: '✉️ Verifica tu email - El Templo de Claypole',
+            html: htmlBody,
+        });
+
+        logSuccess(`✅ Email de verificación enviado exitosamente a ${to}.`);
+
+    } catch (error) {
+        logError(`❌ Error al enviar el email de verificación a ${to}:`, error);
+        throw error;
+    }
+};
+
+/**
  * Envía un correo de prueba simple para verificar la configuración.
  */
 const sendTestEmail = async () => {
@@ -255,4 +294,5 @@ module.exports = {
     sendAdminNotification,
     sendBandaNotificacionAdmin,
     sendBandaConfirmacion,
+    sendVerificationEmail,
 };

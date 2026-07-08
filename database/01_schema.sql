@@ -124,6 +124,11 @@ CREATE TABLE IF NOT EXISTS usuarios (
     token_oauth VARCHAR(1000) DEFAULT NULL COMMENT 'Token para futuras acciones',
     foto_url VARCHAR(500) DEFAULT NULL COMMENT 'Foto de perfil del OAuth',
     
+    -- Email Verification
+    email_verified TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = email verificado, 0 = pendiente',
+    verification_token VARCHAR(255) UNIQUE DEFAULT NULL COMMENT 'Token único para verificación de email',
+    verification_token_expires_at TIMESTAMP NULL DEFAULT NULL COMMENT 'Expiración del token de verificación',
+    
     -- Auditoría
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

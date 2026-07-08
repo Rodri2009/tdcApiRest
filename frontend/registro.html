@@ -684,18 +684,8 @@
                         throw new Error(result.message || 'Error al registrarse');
                     }
 
-                    // Guardar datos
-                    localStorage.setItem('authToken', result.token);
-                    localStorage.setItem('user_data', JSON.stringify(result.user));
-
-                    this.showNotification('✓ ¡Registro exitoso! Redirigiendo...', 'success', 2000);
-
-                    setTimeout(() => {
-                        // Redirigir a la página de origen si existe, sino a index.html
-                        const returnTo = sessionStorage.getItem('returnTo');
-                        sessionStorage.removeItem('returnTo'); // Limpiar después de leer
-                        window.location.href = returnTo || '/index.html';
-                    }, 2000);
+                    // ✅ NUEVO: Mostrar modal de verificación de email
+                    this.showVerificationModal(result.email);
 
                 } catch (error) {
                     console.error('Error de registro:', error);
@@ -710,6 +700,118 @@
                     this.unlockForm();
                     this.submitBtn.innerHTML = '<span id="buttonText">Registrarse</span>';
                 }
+            }
+
+            // ✅ NUEVO: Modal para verificación de email
+            showVerificationModal(email) {
+                const modalHTML = `
+                    <div style="
+                        position: fixed;
+                        inset: 0;
+                        background: rgba(0, 0, 0, 0.7);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 3000;
+                        animation: fadeIn 0.3s ease;
+                    ">
+                        <div style="
+                            background: #111827;
+                            border: 1px solid #374151;
+                            border-radius: 12px;
+                            padding: 40px;
+                            max-width: 480px;
+                            width: 90%;
+                            text-align: center;
+                            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+                        ">
+                            <div style="margin-bottom: 20px;">
+                                <i class="fas fa-envelope" style="
+                                    font-size: 48px;
+                                    color: #f0abfc;
+                                "></i>
+                            </div>
+                            <h2 style="
+                                color: #f0abfc;
+                                font-size: 24px;
+                                font-weight: bold;
+                                margin: 0 0 16px 0;
+                            ">✅ ¡Registro Completado!</h2>
+                            <p style="
+                                color: #d1d5db;
+                                font-size: 14px;
+                                margin: 0 0 20px 0;
+                                line-height: 1.6;
+                            ">Te enviamos un email de confirmación a:<br><strong style="color: #f0abfc;">${email}</strong></p>
+                            <div style="
+                                background: rgba(240, 171, 252, 0.1);
+                                border: 1px solid rgba(240, 171, 252, 0.3);
+                                border-radius: 8px;
+                                padding: 16px;
+                                margin: 20px 0;
+                                color: #d1d5db;
+                                font-size: 13px;
+                            ">
+                                <p style="margin: 0 0 8px 0;"><strong>📝 Pasos:</strong></p>
+                                <ol style="margin: 0; text-align: left; padding-left: 20px;">
+                                    <li style="margin-bottom: 4px;">Revisa tu bandeja de entrada</li>
+                                    <li style="margin-bottom: 4px;">Abre el email de El Templo de Claypole</li>
+                                    <li>Haz clic en el botón para confirmar tu email</li>
+                                </ol>
+                            </div>
+                            <p style="
+                                color: #9ca3af;
+                                font-size: 12px;
+                                margin: 15px 0 0 0;
+                            ">Si no recibes el email en unos minutos, revisa tu carpeta de spam.</p>
+                            <div style="
+                                display: flex;
+                                gap: 12px;
+                                margin-top: 25px;
+                            ">
+                                <button onclick="window.location.href='/login.html';" style="
+                                    flex: 1;
+                                    padding: 12px;
+                                    background: #f0abfc;
+                                    color: #0b0b0b;
+                                    border: none;
+                                    border-radius: 8px;
+                                    font-weight: 700;
+                                    cursor: pointer;
+                                    font-size: 14px;
+                                    transition: all 0.3s ease;
+                                " onmouseover="this.style.background='#e991f2'" onmouseout="this.style.background='#f0abfc'">
+                                    Ir al Login
+                                </button>
+                                <button onclick="window.location.reload();" style="
+                                    flex: 1;
+                                    padding: 12px;
+                                    background: transparent;
+                                    color: #f0abfc;
+                                    border: 1px solid #f0abfc;
+                                    border-radius: 8px;
+                                    font-weight: 700;
+                                    cursor: pointer;
+                                    font-size: 14px;
+                                    transition: all 0.3s ease;
+                                " onmouseover="this.style.background='rgba(240, 171, 252, 0.1)'" onmouseout="this.style.background='transparent'">
+                                    Registrarse de Nuevo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <style>
+                        @keyframes fadeIn {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                    </style>
+                `;
+
+                // Inyectar en DOM
+                const container = document.createElement('div');
+                container.innerHTML = modalHTML;
+                document.body.appendChild(container.firstElementChild);
             }
 
         }
