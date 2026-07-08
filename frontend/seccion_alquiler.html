@@ -270,8 +270,7 @@
                     if (desktopMenu) desktopMenu.innerHTML = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition">🔐 Admin</a>`;
                     if (mobileMenu) mobileMenu.innerHTML = `<a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐 Admin</a>`;
                 } else {
-                    const iniciales = nombre.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                    if (desktopMenu) desktopMenu.innerHTML = `<div class="flex items-center gap-2"><span class="text-sm font-semibold text-neon">${nombre}</span><div class="w-6 h-6 rounded-full bg-fuchsia-600 text-white flex items-center justify-center text-xs font-bold">${iniciales}</div><button onclick="logout()" class="px-2 py-1 text-xs rounded-full bg-red-600 text-white hover:bg-red-700 transition">Salir</button></div>`;
+                    if (desktopMenu) desktopMenu.innerHTML = `<div class="flex items-center gap-2"><span class="text-sm font-semibold text-neon">${nombre}</span><button onclick="logout()" class="px-2 py-1 text-xs rounded-full bg-red-600 text-white hover:bg-red-700 transition">Salir</button></div>`;
                     if (mobileMenu) mobileMenu.innerHTML = `<div class="px-3 py-2 text-base font-medium text-neon">Hola, ${nombre}</div><button onclick="logout()" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">🚪 Cerrar Sesión</button>`;
                 }
             } else {

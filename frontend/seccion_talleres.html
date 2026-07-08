@@ -208,11 +208,9 @@
                     if (desktopMenu) desktopMenu.innerHTML = desktopHTML;
                     if (mobileMenu) mobileMenu.innerHTML = mobileHTML;
                 } else {
-                    const iniciales = nombre.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
                     const desktopHTML = `
                         <div class="flex items-center gap-2">
                             <span class="text-sm font-semibold text-neon">${nombre}</span>
-                            <div class="w-6 h-6 rounded-full bg-fuchsia-600 text-white flex items-center justify-center text-xs font-bold">${iniciales}</div>
                             <button onclick="logout()" class="px-2 py-1 text-xs rounded-full bg-red-600 text-white hover:bg-red-700 transition">Salir</button>
                         </div>
                     `;

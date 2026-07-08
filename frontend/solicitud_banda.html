@@ -1861,8 +1861,7 @@
                     if (desktop) desktop.innerHTML = html;
                     if (mobile) mobile.innerHTML = html.replace('text-sm', 'text-base').replace('px-3 py-1', 'px-3 py-2 block');
                 } else {
-                    const iniciales = nombre.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                    const desktopHTML = `<div class="flex items-center gap-2"><span class="text-sm font-semibold text-neon">${nombre}</span><div class="w-6 h-6 rounded-full bg-fuchsia-600 text-white flex items-center justify-center text-xs font-bold">${iniciales}</div><button onclick="localStorage.removeItem('authToken'); window.location.href='/index.html'" class="px-2 py-1 text-xs rounded-full bg-red-600 text-white hover:bg-red-700 transition">Salir</button></div>`;
+                    const desktopHTML = `<div class="flex items-center gap-2"><span class="text-sm font-semibold text-neon">${nombre}</span><button onclick="localStorage.removeItem('authToken'); window.location.href='/index.html'" class="px-2 py-1 text-xs rounded-full bg-red-600 text-white hover:bg-red-700 transition">Salir</button></div>`;
                     const mobileHTML = `<div class="px-3 py-2 text-base font-medium text-neon">Hola, ${nombre}</div><button onclick="localStorage.removeItem('authToken'); window.location.href='/index.html'" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">🚪 Cerrar Sesión</button>`;
                     if (desktop) desktop.innerHTML = desktopHTML;
                     if (mobile) mobile.innerHTML = mobileHTML;
