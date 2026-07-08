@@ -77,7 +77,7 @@ async function validateCurrentUrl(page, expectedPath = '') {
                     // pero no siempre. Devolvemos -1 si no se puede obtener.
                     return document.readyState === 'complete' ? 200 : -1;
                 }),
-                new Promise((_, reject) => 
+                new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('page.evaluate timeout')), 10000)
                 )
             ]);

@@ -80,9 +80,57 @@
             transform: translateX(2px);
         }
 
+        .menu-item-title {
+            font-weight: 600;
+            color: #f8fafc;
+        }
+
+        .menu-item-category {
+            font-size: 0.8rem;
+            color: #a78bfa;
+            margin-top: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         #menu-items-panel {
             max-height: 380px;
             overflow-y: auto;
+            display: inline-block;
+            width: auto;
+            min-width: 0;
+        }
+
+        #menu-items-table {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        #menu-items-table th:nth-child(1),
+        #menu-items-table td:nth-child(1) {
+            width: 3rem;
+            max-width: 3rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #menu-items-table th:nth-child(2),
+        #menu-items-table td:nth-child(2) {
+            width: 3rem;
+            max-width: 3rem;
+            white-space: nowrap;
+        }
+
+        .menu-item-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #menu-items-table td {
+            vertical-align: top;
         }
 
         .card-summary {
@@ -147,6 +195,95 @@
             color: #9ca3af;
             font-style: italic;
         }
+
+        .comanda-mesa-box {
+            background: linear-gradient(135deg, rgba(240, 171, 252, 0.1), rgba(168, 85, 247, 0.08));
+            border: 2px solid rgba(240, 171, 252, 0.3);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comanda-mesa-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f0abfc;
+            flex: 1;
+        }
+
+        .btn-edit-mesa {
+            background: transparent;
+            border: 1px solid rgba(240, 171, 252, 0.3);
+            color: #f0abfc;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+
+        .btn-edit-mesa:hover {
+            background: rgba(240, 171, 252, 0.15);
+            border-color: rgba(240, 171, 252, 0.5);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(3px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #161418;
+            border: 1px solid rgba(240, 171, 252, 0.12);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(240, 171, 252, 0.1);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #f0abfc;
+            font-size: 1.2rem;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
     </style>
 </head>
 
@@ -159,10 +296,6 @@
             </a>
             <div class="header-title-row">
                 <h1>Admin — Comandas</h1>
-                <div class="service-status ss-connecting" title="Gestión de comandas">
-                    <span class="ss-dot"></span>
-                    <span id="status-text">listo</span>
-                </div>
             </div>
             <div class="spacer"></div>
         </div>
@@ -173,23 +306,22 @@
                     <div class="card-header">
                         <div>
                             <h2>Nueva comanda</h2>
-                            <p class="text-stone-400">Registra un pedido rápido sin base de datos. Ideal para barra y cocina.</p>
                         </div>
                     </div>
                     <div class="form-grid">
-                        <div>
-                            <label class="text-stone-400 block mb-2" for="comanda-mesa">Mesa / Cliente</label>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <label class="text-stone-400 whitespace-nowrap" for="comanda-mesa">Mesa / Cliente</label>
                             <input id="comanda-mesa" type="text" placeholder="Ej: Mesa 10 / Juan"
-                                class="w-full px-4 py-3 rounded bg-stone-800 border border-stone-700 text-stone-100">
+                                class="flex-1 px-4 py-3 rounded bg-stone-800 border border-stone-700 text-stone-100">
                         </div>
                         <div id="menu-items-panel" class="bg-stone-900 border border-stone-700 rounded p-4">
                             <h3 class="text-lg font-semibold text-stone-100 mb-3">Menú rápido</h3>
-                            <p class="text-stone-400 text-sm mb-3">Haz clic sobre un ítem para agregarlo automáticamente al pedido.</p>
+                            <p class="text-stone-400 text-sm mb-3">Haz clic sobre un ítem para agregarlo automáticamente
+                                al pedido.</p>
                             <div class="overflow-x-auto">
-                                <table class="min-w-full text-left text-sm text-stone-200" id="menu-items-table">
+                                <table class="text-left text-sm text-stone-200" id="menu-items-table">
                                     <thead>
                                         <tr>
-                                            <th class="pb-2">Categoría</th>
                                             <th class="pb-2">Item</th>
                                             <th class="pb-2 text-right">Precio</th>
                                         </tr>
@@ -200,12 +332,18 @@
                         </div>
                         <div class="md:col-span-2">
                             <label class="text-stone-400 block mb-2" for="comanda-items">Items</label>
-                            <textarea id="comanda-items" class="w-full textarea-auto px-4 py-3 rounded bg-stone-800 border border-stone-700 text-stone-100"
+                            <textarea id="comanda-items"
+                                class="w-full textarea-auto px-4 py-3 rounded bg-stone-800 border border-stone-700 text-stone-100"
                                 placeholder="Ej: 2 cervezas, 1 pizza muzzarella, 1 bruschetta"></textarea>
+                            <div class="mt-3 flex justify-between items-center">
+                                <p class="text-stone-500 text-sm">Total de items:</p>
+                                <p id="comanda-total-label" class="text-lg font-bold text-neon">$0</p>
+                            </div>
                         </div>
                         <div class="md:col-span-2">
                             <label class="text-stone-400 block mb-2" for="comanda-notas">Notas (opcional)</label>
-                            <textarea id="comanda-notas" class="w-full textarea-auto px-4 py-3 rounded bg-stone-800 border border-stone-700 text-stone-100"
+                            <textarea id="comanda-notas"
+                                class="w-full textarea-auto px-4 py-3 rounded bg-stone-800 border border-stone-700 text-stone-100"
                                 placeholder="Ej: sin cebolla, traer pan primero"></textarea>
                         </div>
                     </div>
@@ -243,25 +381,23 @@
                     <div class="card-header">
                         <div>
                             <h2>Comandas activas</h2>
-                            <p class="text-stone-400">Todos los pedidos se almacenan localmente por ahora.</p>
                         </div>
-                        <div class="flex flex-wrap gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             <button id="btn-refrescar" class="btn btn-secondary btn-sm">
                                 <i class="fas fa-sync-alt"></i> Refrescar
                             </button>
                             <button id="btn-borrar-todas" class="btn btn-danger btn-sm">
                                 <i class="fas fa-trash"></i> Borrar todas
                             </button>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap gap-3 mb-4">
-                        <div class="w-full sm:w-auto">
-                            <select id="filter-status" class="w-full px-4 py-3 rounded bg-stone-800 border border-stone-700 text-stone-100">
-                                <option value="all">Todos los estados</option>
-                                <option value="En preparación">En preparación</option>
-                                <option value="Listo">Listo</option>
-                                <option value="Entregado">Entregado</option>
-                            </select>
+                            <div class="w-full sm:w-auto">
+                                <select id="filter-status"
+                                    class="w-full px-4 py-3 rounded bg-stone-800 border border-stone-700 text-stone-100">
+                                    <option value="all">Todos los estados</option>
+                                    <option value="En preparación">En preparación</option>
+                                    <option value="Listo">Listo</option>
+                                    <option value="Entregado">Entregado</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div id="comandas-list"></div>
@@ -273,6 +409,28 @@
             </div>
         </div>
     </main>
+
+    <!-- Modal para editar Mesa/Cliente -->
+    <div id="modal-edit-mesa" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Editar Mesa / Cliente</h3>
+            </div>
+            <div class="modal-body">
+                <label class="text-stone-400 block mb-2" for="modal-mesa-input">Mesa / Cliente</label>
+                <input id="modal-mesa-input" type="text" placeholder="Ej: Mesa 10 / Juan"
+                    class="w-full px-4 py-3 rounded bg-stone-800 border border-stone-700 text-stone-100">
+            </div>
+            <div class="modal-footer">
+                <button id="btn-cancel-edit" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button id="btn-save-edit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script src="admin_comandas.js"></script>
 </body>

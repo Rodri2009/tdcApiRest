@@ -13,6 +13,7 @@ const $mesa = document.getElementById('comanda-mesa');
 const $items = document.getElementById('comanda-items');
 const $notas = document.getElementById('comanda-notas');
 const $feedback = document.getElementById('comanda-feedback');
+const $totalLabel = document.getElementById('comanda-total-label');
 const $list = document.getElementById('comandas-list');
 const $empty = document.getElementById('comandas-empty');
 const $countPreparacion = document.getElementById('count-preparacion');
@@ -25,11 +26,30 @@ const $btnRefrescar = document.getElementById('btn-refrescar');
 const $btnBorrarTodas = document.getElementById('btn-borrar-todas');
 const $menuTableBody = document.querySelector('#menu-items-table tbody');
 
+// Modal para editar mesa
+const $modalEditMesa = document.getElementById('modal-edit-mesa');
+const $modalMesaInput = document.getElementById('modal-mesa-input');
+const $btnCancelEdit = document.getElementById('btn-cancel-edit');
+const $btnSaveEdit = document.getElementById('btn-save-edit');
+
+let editingComandaId = null;
+
 $btnCrear.addEventListener('click', crearComanda);
 $btnLimpiarForm.addEventListener('click', limpiarFormulario);
 $btnRefrescar.addEventListener('click', render);
 $btnBorrarTodas.addEventListener('click', borrarTodasComandas);
 $filterStatus.addEventListener('change', render);
+$items.addEventListener('input', actualizarTotalLabel);
+
+// Event listeners del modal
+$btnCancelEdit.addEventListener('click', closeEditMesaModal);
+$btnSaveEdit.addEventListener('click', saveEditMesa);
+$modalEditMesa.addEventListener('click', (e) => {
+    if (e.target === $modalEditMesa) closeEditMesaModal();
+});
+$modalMesaInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') saveEditMesa();
+});
 
 loadMenuItems().then(render);
 
@@ -87,8 +107,10 @@ function renderMenuItems() {
     $menuTableBody.innerHTML = menuItems
         .map(item => `
             <tr class="menu-item-row" data-item="${escapeHtml(item.item)}" data-precio="${item.precio}">
-                <td class="py-2 text-stone-200">${escapeHtml(item.categoria)}</td>
-                <td class="py-2 text-stone-200">${escapeHtml(item.item)}</td>
+                <td class="py-2 text-stone-200">
+                    <div class="menu-item-title">${escapeHtml(item.item)}</div>
+                    <div class="menu-item-category">${escapeHtml(item.categoria)}</div>
+                </td>
                 <td class="py-2 text-right text-stone-100">$${formatPrice(item.precio)}</td>
             </tr>
         `)
@@ -139,7 +161,33 @@ function agregarItemDesdeMenu(itemName, price) {
     } else {
         $items.value = itemText;
     }
+    actualizarTotalLabel();
     showFeedback(`Agregado: ${itemName}`, 'success');
+}
+
+function extraerPreciosDelTexto(texto) {
+    // Busca patrones como "- $123" o "- $1.234,56"
+    const regex = /-\s*\$([\d.,]+)/g;
+    const precios = [];
+    let match;
+    while ((match = regex.exec(texto)) !== null) {
+        const precioStr = match[1].replace(/\./g, '').replace(',', '.');
+        const precio = parseFloat(precioStr);
+        if (!isNaN(precio)) {
+            precios.push(precio);
+        }
+    }
+    return precios;
+}
+
+function calcularTotalDesdeItems(itemsText) {
+    const precios = extraerPreciosDelTexto(itemsText);
+    return precios.reduce((sum, precio) => sum + precio, 0);
+}
+
+function actualizarTotalLabel() {
+    const total = calcularTotalDesdeItems($items.value);
+    $totalLabel.textContent = `$${formatPrice(total)}`;
 }
 
 function formatId(id) {
@@ -161,6 +209,7 @@ function limpiarFormulario(event) {
     $items.value = '';
     $notas.value = '';
     $feedback.textContent = '';
+    $totalLabel.textContent = '$0';
 }
 
 function render() {
@@ -200,18 +249,27 @@ function renderList(comandas) {
     $empty.classList.add('hidden');
 
     comandas.forEach(comanda => {
+        const totalComanda = calcularTotalDesdeItems(comanda.items);
         const item = document.createElement('article');
         item.className = 'comanda-item';
         item.innerHTML = `
-            <div class="flex flex-wrap justify-between gap-3">
+            <div class="flex flex-wrap justify-between gap-3 mb-3">
                 <div>
                     <h3>
                         <span>${formatId(comanda.id)}</span>
                         <span class="badge-pill ${statusBadgeClass(comanda.status)}">${comanda.status}</span>
                     </h3>
-                    <small>${escapeHtml(comanda.mesa)}</small>
                 </div>
-                <div class="text-stone-400 text-sm">${formatDate(comanda.createdAt)}</div>
+                <div class="text-right">
+                    <div class="text-stone-400 text-sm">${formatDate(comanda.createdAt)}</div>
+                    <div class="text-lg font-bold text-neon mt-2">Total: $${formatPrice(totalComanda)}</div>
+                </div>
+            </div>
+            <div class="comanda-mesa-box">
+                <div class="comanda-mesa-text">${escapeHtml(comanda.mesa)}</div>
+                <button class="btn-edit-mesa" data-action="edit-mesa" title="Editar mesa/cliente">
+                    <i class="fas fa-pen"></i>
+                </button>
             </div>
             <div class="comanda-meta">
                 <div class="text-stone-300"><strong>Items:</strong></div>
@@ -221,7 +279,7 @@ function renderList(comandas) {
             <div class="comanda-actions">
                 ${comanda.status === 'En preparación' ? '<button class="btn btn-warning btn-sm" data-action="set-listo">Marcar Listo</button>' : ''}
                 ${comanda.status === 'Listo' ? '<button class="btn btn-success btn-sm" data-action="set-entregado">Marcar Entregado</button>' : ''}
-                <button class="btn btn-secondary btn-sm" data-action="set-en-preparacion">Volver a Preparación</button>
+                ${comanda.status !== 'En preparación' ? '<button class="btn btn-secondary btn-sm" data-action="set-en-preparacion">Volver a Preparación</button>' : ''}
                 <button class="btn btn-danger btn-sm" data-action="delete">Eliminar</button>
             </div>
         `;
@@ -252,6 +310,11 @@ function handleAction(id, action) {
         return;
     }
 
+    if (action === 'edit-mesa') {
+        openEditMesaModal(id);
+        return;
+    }
+
     if (action === 'set-listo') {
         comanda.status = 'Listo';
     }
@@ -266,6 +329,42 @@ function handleAction(id, action) {
 
     comanda.updatedAt = new Date().toISOString();
     saveState();
+    render();
+}
+
+function openEditMesaModal(id) {
+    const comanda = state.comandas.find(item => item.id === id);
+    if (!comanda) return;
+
+    editingComandaId = id;
+    $modalMesaInput.value = comanda.mesa;
+    $modalEditMesa.classList.add('active');
+    $modalMesaInput.focus();
+    $modalMesaInput.select();
+}
+
+function closeEditMesaModal() {
+    editingComandaId = null;
+    $modalMesaInput.value = '';
+    $modalEditMesa.classList.remove('active');
+}
+
+function saveEditMesa() {
+    if (!editingComandaId) return;
+
+    const newMesa = $modalMesaInput.value.trim();
+    if (!newMesa) {
+        alert('Por favor ingresa un valor para mesa/cliente');
+        return;
+    }
+
+    const comanda = state.comandas.find(item => item.id === editingComandaId);
+    if (!comanda) return;
+
+    comanda.mesa = newMesa;
+    comanda.updatedAt = new Date().toISOString();
+    saveState();
+    closeEditMesaModal();
     render();
 }
 
