@@ -1197,6 +1197,19 @@
             } catch (e) { return null; }
         }
 
+        function decodeJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+                );
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
         function updateAuthMenu() {
             const token = localStorage.getItem('authToken');
             const desktopMenu = document.getElementById('auth-menu-desktop');
@@ -1217,25 +1230,59 @@
             }
 
             if (token) {
-                // Usuario autenticado
-                const desktopHTML = `
-                    <a href="/admin.html" 
-                       class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">
-                        🔐 Admin
-                    </a>
-                `;
-                const mobileHTML = `
-                    <a href="/admin.html"
-                       class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
-                        🔐 Admin Panel
-                    </a>
-                    <button onclick="logout()" 
-                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
-                        🚪 Cerrar Sesión
-                    </button>
-                `;
-                desktopMenu.innerHTML = desktopHTML;
-                mobileMenu.innerHTML = mobileHTML;
+                // Usuario autenticado - decodificar JWT para obtener rol
+                const decoded = decodeJWT(token);
+                const rol = decoded ? decoded.rol || decoded.role : null;
+                const nombre = decoded ? decoded.nombre : 'Usuario';
+                const isAdmin = rol === 'admin' || rol === 'staff';
+
+                if (isAdmin) {
+                    // Mostrar botón Admin
+                    const desktopHTML = `
+                        <a href="/admin.html" 
+                           class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition duration-150">
+                            🔐 Admin
+                        </a>
+                    `;
+                    const mobileHTML = `
+                        <a href="/admin.html"
+                           class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
+                            🔐 Admin Panel
+                        </a>
+                        <button onclick="logout()" 
+                                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
+                            🚪 Cerrar Sesión
+                        </button>
+                    `;
+                    desktopMenu.innerHTML = desktopHTML;
+                    mobileMenu.innerHTML = mobileHTML;
+                } else {
+                    // Usuario cliente - mostrar nombre e iniciales
+                    const iniciales = nombre.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                    const desktopHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-semibold text-neon">${nombre}</span>
+                            <div class="w-8 h-8 rounded-full bg-fuchsia-600 text-white flex items-center justify-center text-xs font-bold">
+                                ${iniciales}
+                            </div>
+                            <button onclick="logout()" 
+                                    class="ml-2 px-2 py-1 text-xs rounded-full bg-red-600 text-white hover:bg-red-700 transition duration-150">
+                                Salir
+                            </button>
+                        </div>
+                    `;
+                    const mobileHTML = `
+                        <div class="px-3 py-2 text-base font-medium text-neon">
+                            Hola, ${nombre}
+                        </div>
+                        <button onclick="logout()" 
+                                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
+                            🚪 Cerrar Sesión
+                        </button>
+                    `;
+                    desktopMenu.innerHTML = desktopHTML;
+                    mobileMenu.innerHTML = mobileHTML;
+                }
             } else {
                 // Usuario no autenticado
                 const desktopHTML = `
