@@ -198,8 +198,89 @@
     </div>
 
     <script>
-        // Manejador del menú móvil responsivo
+        // ============================================================
+        // FUNCIONES DE AUTENTICACIÓN
+        // ============================================================
+        function decodeJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+                );
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (!mobileMenu) return;
+
+            if (token) {
+                // Usuario autenticado - decodificar JWT para obtener rol
+                const decoded = decodeJWT(token);
+                const rol = decoded ? decoded.rol || decoded.role : null;
+                const nombre = decoded ? decoded.nombre : 'Usuario';
+                const isAdmin = rol === 'admin' || rol === 'staff';
+
+                if (isAdmin) {
+                    // Mostrar botón Admin
+                    const mobileHTML = `
+                        <a href="/admin.html"
+                           class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">
+                            🔐 Admin Panel
+                        </a>
+                        <button onclick="logout()" 
+                                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
+                            🚪 Cerrar Sesión
+                        </button>
+                    `;
+                    mobileMenu.innerHTML = mobileHTML;
+                } else {
+                    // Usuario cliente - mostrar nombre e iniciales
+                    const iniciales = nombre.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                    const mobileHTML = `
+                        <div class="px-3 py-2 text-base font-medium text-neon">
+                            Hola, ${nombre}
+                        </div>
+                        <button onclick="logout()" 
+                                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">
+                            🚪 Cerrar Sesión
+                        </button>
+                    `;
+                    mobileMenu.innerHTML = mobileHTML;
+                }
+            } else {
+                // Usuario no autenticado
+                const mobileHTML = `
+                    <a href="login.html"
+                       class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon border-2 border-transparent hover:border-neon text-neon">
+                        Login
+                    </a>
+                `;
+                mobileMenu.innerHTML = mobileHTML;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/index.html';
+        }
+
+        // Escuchar cambios en localStorage (sesión iniciada en otra pestaña)
+        window.addEventListener('storage', updateAuthMenu);
+
+        // ============================================================
+        // MANEJADOR DEL MENÚ MÓVIL RESPONSIVO
+        // ============================================================
         document.addEventListener('DOMContentLoaded', function () {
+            // Actualizar menú de autenticación
+            updateAuthMenu();
+
             const menuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
 
