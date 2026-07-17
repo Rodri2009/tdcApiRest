@@ -701,6 +701,45 @@ function mostrarListado() {
     mostrarVista('listado');
 }
 
+// Verificar estado del servicio Mercado Pago
+async function verificarEstadoMP() {
+    try {
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const res = await fetch('/api/mercadopago/health', { headers });
+        let data = null;
+        try { data = await res.json(); } catch (_) { }
+        
+        if (!res.ok) {
+            if (data && data.status === 'disabled') {
+                return 'disabled';
+            }
+            return 'error';
+        }
+        
+        if (data && data.status === 'disabled') {
+            return 'disabled';
+        }
+        
+        return 'ok';
+    } catch (e) {
+        console.warn('[admin_caja.js] Error verificando estado MP:', e.message);
+        return 'error';
+    }
+}
+
+// Mostrar banner de MP deshabilitado (desaparece a los 5 segundos)
+function mostrarBannerMPDeshabilitado() {
+    const mensaje = '⚠️ El servicio de Mercado Pago no está habilitado. Para activarlo, reiniciar el backend con la opción <strong>--mp</strong>.';
+    banner.innerHTML = mensaje;
+    banner.setAttribute('style', 'display: block; padding: 12px 16px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #dc3545; background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); color: #721c24; font-weight: 600;');
+    banner.classList.remove('hidden');
+    
+    setTimeout(() => {
+        banner.setAttribute('style', 'display: none;');
+        banner.classList.add('hidden');
+    }, 5000);
+}
+
 // Actualizar estado de conexión
 function actualizarEstadoConexion(estado, mensaje) {
     if (!cajaStatus || !statusText) return;
@@ -1194,6 +1233,13 @@ async function inicializar() {
 
         await authenticateAndGetToken();
         console.log('[admin_caja.js] ✅ Autenticado');
+
+        // Verificar estado de Mercado Pago
+        const mpStatus = await verificarEstadoMP();
+        if (mpStatus === 'disabled') {
+            console.log('[admin_caja.js] ⚠️ Mercado Pago deshabilitado');
+            mostrarBannerMPDeshabilitado();
+        }
 
         await cargarCajaAbierta();
         console.log('[admin_caja.js] ✅ Caja abierta cargada');

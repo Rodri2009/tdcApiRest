@@ -1211,7 +1211,7 @@
         }
 
         function updateAuthMenu() {
-            const token = localStorage.getItem('authToken');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             const desktopMenu = document.getElementById('auth-menu-desktop');
             const mobileMenu = document.getElementById('auth-menu-mobile');
 
@@ -1223,6 +1223,7 @@
                 if (exp && Math.floor(Date.now() / 1000) > exp) {
                     if (isDev()) addDebugLog('⚠️ Token expirado, limpiando sesión', 'warning');
                     localStorage.removeItem('authToken');
+                    localStorage.removeItem('token');
                     localStorage.removeItem('user_data');
                     updateAuthMenu();
                     return;
@@ -1304,6 +1305,7 @@
 
         function logout() {
             localStorage.removeItem('authToken');
+            localStorage.removeItem('token');
             window.location.href = '/index.html';
         }
 

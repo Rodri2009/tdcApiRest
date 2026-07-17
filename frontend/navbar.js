@@ -4,18 +4,24 @@
  * Soporta sistema de roles y permisos
  */
 
+console.log('%c[NAVBAR] ✅ navbar.js cargado exitosamente', 'color: green; font-weight: bold; font-size: 14px;');
+
 class NavbarManager {
     constructor() {
+        console.log('[NAVBAR_DEBUG] NavbarManager constructor ejecutado');
         this.isAuthenticated = false;
         this.userEmail = null;
         this.userRole = null;
         this.userRoles = [];
         this.userPermisos = [];
         this.userNivel = 0;
-        this.jwtToken = localStorage.getItem('authToken');
+        this.jwtToken = localStorage.getItem('authToken') || localStorage.getItem('token');
+
+        console.log('[NAVBAR_DEBUG] JWT Token encontrado:', !!this.jwtToken);
 
         if (this.jwtToken) {
             this.isAuthenticated = true;
+            console.log('[NAVBAR_DEBUG] Usuario autenticado');
             // Decodificar el JWT para obtener datos del usuario
             this.decodeJWT();
             // Guardar datos en localStorage para acceso rápido
@@ -34,6 +40,8 @@ class NavbarManager {
                 this.clearAuth();
                 window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
             }
+        } else {
+            console.log('[NAVBAR_DEBUG] Usuario NO autenticado');
         }
     }
 
@@ -41,6 +49,7 @@ class NavbarManager {
      * Decodifica el JWT sin verificar la firma (solo para leer datos en frontend)
      */
     decodeJWT() {
+        console.log('[NAVBAR_DEBUG] decodeJWT() iniciado');
         try {
             const base64Url = this.jwtToken.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -67,8 +76,12 @@ class NavbarManager {
             this.userRoles = payload.roles || [];
             this.userPermisos = payload.permisos || [];
             this.userNivel = payload.nivel || 0;
+            
+            console.log('[NAVBAR_DEBUG] decodeJWT() - userRoles:', this.userRoles);
+            console.log('[NAVBAR_DEBUG] decodeJWT() - userNivel:', this.userNivel);
         } catch (error) {
             console.error('Error decodificando JWT:', error);
+            console.error('[NAVBAR_DEBUG] Error en decodeJWT:', error.message);
             this.clearAuth();
         }
     }
@@ -116,6 +129,7 @@ class NavbarManager {
         this.userPermisos = [];
         this.userNivel = 0;
         localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
         localStorage.removeItem('userPermisos');
         localStorage.removeItem('userRoles');
         localStorage.removeItem('userRole');
@@ -137,6 +151,13 @@ class NavbarManager {
      * Genera el HTML de la barra de navegación
      */
     generateNavbarHTML() {
+        // DEBUG: Logs para depuración
+        console.log('[NAVBAR_DEBUG] ===== GENERANDO NAVBAR =====');
+        console.log('[NAVBAR_DEBUG] URL actual:', window.location.pathname);
+        console.log('[NAVBAR_DEBUG] isAuthenticated:', this.isAuthenticated);
+        console.log('[NAVBAR_DEBUG] userEmail:', this.userEmail);
+        console.log('[NAVBAR_DEBUG] userRoles:', this.userRoles);
+
         // Inyectar estilos CSS si no existen
         if (!document.getElementById('navbar-styles')) {
             const styleElement = document.createElement('style');
@@ -248,11 +269,16 @@ class NavbarManager {
             document.head.appendChild(styleElement);
         }
 
-        // Determinar si estamos en admin.html
-        const isAdminPage = window.location.pathname.includes('admin.html');
-
         // Detectar si es página de staff (admin.html, admin_, editar_, config_)
         const isStaffPage = /\/(admin\.html|admin_|editar_|config_)/.test(window.location.pathname);
+        
+        console.log('[NAVBAR_DEBUG] Regex test para isStaffPage:', /\/(admin\.html|admin_|editar_|config_)/.test(window.location.pathname));
+        console.log('[NAVBAR_DEBUG] isStaffPage:', isStaffPage);
+        
+        // El botón "Panel Admin" se muestra en todas las páginas de staff
+        const isAdminPage = isStaffPage;
+        console.log('[NAVBAR_DEBUG] isAdminPage:', isAdminPage);
+        console.log('[NAVBAR_DEBUG] Mostrando badge "Panel Admin":', isAdminPage);
         const adminPageBadge = isAdminPage ? `
             <div class="flex items-center gap-3">
                 <a href="/index.html" class="hover:opacity-80 transition" title="Ir a inicio">
@@ -266,6 +292,8 @@ class NavbarManager {
                 </div>
             </div>
         ` : '';
+        
+        console.log('[NAVBAR_DEBUG] adminPageBadge HTML generado:', adminPageBadge ? 'SÍ - Badge visible' : 'NO - Badge oculto');
 
         const logoHTML = isAdminPage ? adminPageBadge : `
             <a href="/index.html" class="flex items-center space-x-3 hover:opacity-80 transition">
@@ -502,6 +530,7 @@ class NavbarManager {
      * @param {string} selector - Selector CSS donde inyectar el navbar (ej: 'body')
      */
     injectNavbar(selector = 'body') {
+        console.log('[NAVBAR_DEBUG] injectNavbar() - Selector:', selector);
         const container = document.querySelector(selector);
         if (!container) {
             console.error(`No se encontró elemento con selector: ${selector}`);
@@ -509,10 +538,13 @@ class NavbarManager {
         }
 
         const navbarHTML = this.generateNavbarHTML();
+        console.log('[NAVBAR_DEBUG] injectNavbar() - HTML generado, longitud:', navbarHTML.length);
         container.insertAdjacentHTML('afterbegin', navbarHTML);
+        console.log('[NAVBAR_DEBUG] injectNavbar() - Navbar inyectado en DOM');
 
         // Configurar dropdown menu si está autenticado
         if (this.isAuthenticated) {
+            console.log('[NAVBAR_DEBUG] injectNavbar() - Configurando dropdown menu');
             this.setupDropdownMenu();
         }
     }
@@ -876,20 +908,32 @@ function protectRoutesAutomatically() {
  * Inicializa NavbarManager automáticamente cuando el DOM está listo
  */
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('[NAVBAR_DEBUG] ===== INICIALIZANDO NAVBAR =====');
+    console.log('[NAVBAR_DEBUG] DOMContentLoaded ejecutado');
+    
     // Instanciar NavbarManager globalmente
     if (!navbarManager) {
+        console.log('[NAVBAR_DEBUG] Instanciando NavbarManager...');
         navbarManager = new NavbarManager();
         window.navbarManager = navbarManager;
+        console.log('[NAVBAR_DEBUG] NavbarManager instanciado');
     }
 
     // Inyectar navbar en la página SOLO si no existe ya una navbar
     if (!document.querySelector('header.bg-rustic')) {
+        console.log('[NAVBAR_DEBUG] Inyectando navbar en body...');
         navbarManager.injectNavbar('body');
+    } else {
+        console.log('[NAVBAR_DEBUG] Navbar ya existe en el DOM, no se inyecta');
     }
 
     // Aplicar restricciones de permisos UI
+    console.log('[NAVBAR_DEBUG] Aplicando permisos UI...');
     aplicarPermisosUI();
 
     // Proteger rutas que requieren autenticación
+    console.log('[NAVBAR_DEBUG] Protegiendo rutas...');
     protectRoutesAutomatically();
+    
+    console.log('[NAVBAR_DEBUG] ===== FIN INICIALIZACIÓN NAVBAR =====');
 });

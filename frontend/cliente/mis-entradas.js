@@ -31,6 +31,7 @@ function getCurrentUser() {
     } catch (error) {
         console.error('❌ Error al decodificar token:', error);
         localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
         window.location.href = '/login.html';
         return null;
     }
@@ -39,6 +40,7 @@ function getCurrentUser() {
 function logout() {
     if (confirm('¿Está seguro de que desea cerrar sesión?')) {
         localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
         window.location.href = '/login.html';
     }
 }
@@ -78,6 +80,7 @@ async function fetchMyTickets() {
         if (!response.ok) {
             if (response.status === 401) {
                 localStorage.removeItem('authToken');
+                localStorage.removeItem('token');
                 window.location.href = '/login.html';
                 return;
             }

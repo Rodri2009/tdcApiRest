@@ -311,7 +311,7 @@
                 if (response.ok) {
                     // Éxito: guardar JWT y mostrar estado éxito
                     if (data.token) {
-                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('authToken', data.token);
                     }
                     showState('success');
                     startCountdown();

@@ -281,6 +281,7 @@
 
         function logout() {
             localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
             window.location.href = '/index.html';
         }
         updateAuthMenu();

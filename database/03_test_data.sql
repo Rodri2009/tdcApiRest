@@ -215,8 +215,8 @@ LOCK TABLES `usuarios` WRITE;
 /*!40000 ALTER TABLE `usuarios` DISABLE KEYS */;
 INSERT INTO `usuarios` (`id_usuario`, `email`, `password_hash`, `nombre`, `rol`, `activo`, `proveedor_oauth`, `id_oauth`, `token_oauth`, `foto_url`, `creado_en`, `actualizado_en`) VALUES
 
-  (1,'temploclaypole@gmail.com','$2a$10$d3C9.uYqlJaofNGk3Nc0AuKm3KN9sWhIQhuZCv67j0F9Jc5VsMm2W','Templo User','staff',1,'google','107386203679475316318',NULL,'https://lh3.googleusercontent.com/a/ACg8ocK9dwZoBaeK4ng93n4rTE_TLWgqd-VSfex5hfKVObbt06w0oIHl=s96-c','2026-03-13 04:29:21','2026-03-13 12:25:56'),
-  (2,'villalbarodrigo2009@gmail.com','$2a$10$xT4ERvVKWABJlrrYPsJXWOZHTVsZtYp1uCm52pM23iHbdmAUlHlyu','Rodrigo Villalba','admin',1,'google','117318714094755139695',NULL,'https://lh3.googleusercontent.com/a/ACg8ocJGyiIz4tnQI40z1wg81HbfIeiPnmIl49oegEjoq5aFm0k-951Emg=s96-c','2026-03-13 04:29:21','2026-03-18 12:23:51');
+  (1,'temploclaypole@gmail.com','$2b$10$APBzwPMziRV2PutOngre0Or4tISXMZ7TUSIcGpsXBdNnHhESrdSMi','Templo User','staff',1,'google','107386203679475316318',NULL,'https://lh3.googleusercontent.com/a/ACg8ocK9dwZoBaeK4ng93n4rTE_TLWgqd-VSfex5hfKVObbt06w0oIHl=s96-c','2026-03-13 04:29:21','2026-03-13 12:25:56'),
+  (2,'villalbarodrigo2009@gmail.com','$2b$10$APBzwPMziRV2PutOngre0Or4tISXMZ7TUSIcGpsXBdNnHhESrdSMi','Rodrigo Villalba','admin',1,'google','117318714094755139695',NULL,'https://lh3.googleusercontent.com/a/ACg8ocJGyiIz4tnQI40z1wg81HbfIeiPnmIl49oegEjoq5aFm0k-951Emg=s96-c','2026-03-13 04:29:21','2026-03-18 12:23:51');
 /*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
 
