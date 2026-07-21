@@ -25,12 +25,19 @@ const $btnLimpiarForm = document.getElementById('btn-borrar-form');
 const $btnRefrescar = document.getElementById('btn-refrescar');
 const $btnBorrarTodas = document.getElementById('btn-borrar-todas');
 const $menuTableBody = document.querySelector('#menu-items-table tbody');
+const $btnEditPrecios = document.getElementById('btn-edit-precios');
 
 // Modal para editar mesa
 const $modalEditMesa = document.getElementById('modal-edit-mesa');
 const $modalMesaInput = document.getElementById('modal-mesa-input');
 const $btnCancelEdit = document.getElementById('btn-cancel-edit');
 const $btnSaveEdit = document.getElementById('btn-save-edit');
+
+// Modal para editar precios
+const $modalEditPrecios = document.getElementById('modal-edit-precios');
+const $preciosEditor = document.getElementById('precios-editor');
+const $btnCancelEditPrecios = document.getElementById('btn-cancel-edit-precios');
+const $btnSavePrecios = document.getElementById('btn-save-precios');
 
 let editingComandaId = null;
 
@@ -40,6 +47,7 @@ $btnRefrescar.addEventListener('click', render);
 $btnBorrarTodas.addEventListener('click', borrarTodasComandas);
 $filterStatus.addEventListener('change', render);
 $items.addEventListener('input', actualizarTotalLabel);
+$btnEditPrecios.addEventListener('click', openEditPreciosModal);
 
 // Event listeners del modal
 $btnCancelEdit.addEventListener('click', closeEditMesaModal);
@@ -49,6 +57,12 @@ $modalEditMesa.addEventListener('click', (e) => {
 });
 $modalMesaInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') saveEditMesa();
+});
+
+$btnCancelEditPrecios.addEventListener('click', closeEditPreciosModal);
+$btnSavePrecios.addEventListener('click', saveEditPrecios);
+$modalEditPrecios.addEventListener('click', (e) => {
+    if (e.target === $modalEditPrecios) closeEditPreciosModal();
 });
 
 loadMenuItems().then(render);
@@ -123,6 +137,41 @@ function renderMenuItems() {
             agregarItemDesdeMenu(itemName, itemPrice);
         });
     });
+}
+
+function openEditPreciosModal() {
+    const csvText = menuItems.length ? [
+        'categoria,item,precio',
+        ...menuItems.map(item => `${item.categoria},${item.item},${item.precio}`)
+    ].join('\n') : 'categoria,item,precio';
+
+    $preciosEditor.value = csvText;
+    $modalEditPrecios.classList.add('active');
+    $preciosEditor.focus();
+}
+
+function closeEditPreciosModal() {
+    $modalEditPrecios.classList.remove('active');
+}
+
+function saveEditPrecios() {
+    const text = $preciosEditor.value.trim();
+    if (!text) {
+        alert('El CSV no puede estar vacío.');
+        return;
+    }
+
+    const newItems = parseCSV(text);
+    if (!newItems.length) {
+        alert('Formato de CSV inválido. Debe incluir encabezado y filas con categoría, item y precio.');
+        return;
+    }
+
+    menuItems = newItems;
+    renderMenuItems();
+    actualizarTotalLabel();
+    closeEditPreciosModal();
+    showFeedback('Precios del menú actualizados.', 'success');
 }
 
 function crearComanda(event) {

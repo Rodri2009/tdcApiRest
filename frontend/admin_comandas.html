@@ -258,9 +258,45 @@
             border: 1px solid rgba(240, 171, 252, 0.12);
             border-radius: 16px;
             padding: 24px;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+        }
+
+        #precios-editor {
+            width: 100%;
+            min-height: 220px;
+            resize: vertical;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: #e5e7eb;
+            background: #0f172a;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 14px;
+            border-radius: 12px;
+        }
+
+        .modal-note {
+            color: #94a3b8;
+            font-size: 0.88rem;
+            margin-top: 10px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-footer .btn {
+            min-width: 120px;
+        }
+
+        .modal-footer .btn-primary {
+            min-width: 140px;
+        }
+
+        .modal-footer .btn-secondary {
+            min-width: 120px;
         }
 
         .modal-header {
@@ -315,9 +351,16 @@
                                 class="flex-1 px-4 py-3 rounded bg-stone-800 border border-stone-700 text-stone-100">
                         </div>
                         <div id="menu-items-panel" class="bg-stone-900 border border-stone-700 rounded p-4">
-                            <h3 class="text-lg font-semibold text-stone-100 mb-3">Menú rápido</h3>
-                            <p class="text-stone-400 text-sm mb-3">Haz clic sobre un ítem para agregarlo automáticamente
-                                al pedido.</p>
+                            <div class="flex items-center justify-between gap-3 mb-3">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-stone-100 mb-1">Menú rápido</h3>
+                                    <p class="text-stone-400 text-sm">Haz clic sobre un ítem para agregarlo
+                                        automáticamente al pedido.</p>
+                                </div>
+                                <button id="btn-edit-precios" class="btn btn-secondary btn-sm" type="button">
+                                    <i class="fas fa-edit"></i> Editar precios
+                                </button>
+                            </div>
                             <div class="overflow-x-auto">
                                 <table class="text-left text-sm text-stone-200" id="menu-items-table">
                                     <thead>
@@ -427,6 +470,28 @@
                 </button>
                 <button id="btn-save-edit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edit-precios" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-csv"></i> Editar precios del menú</h3>
+            </div>
+            <div class="modal-body">
+                <label class="text-stone-400 block mb-2" for="precios-editor">CSV de precios</label>
+                <textarea id="precios-editor" class="w-full" aria-label="Editor de precios del menú"></textarea>
+                <p class="modal-note">Edita el CSV en tiempo de ejecución para actualizar los precios del menú en esta
+                    sesión.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-cancel-edit-precios" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button id="btn-save-precios" class="btn btn-primary">
+                    <i class="fas fa-check"></i> Guardar cambios
                 </button>
             </div>
         </div>

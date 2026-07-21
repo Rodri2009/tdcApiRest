@@ -737,10 +737,10 @@ run_sql_docker() {
     # El archivo debe estar en /docker-entrypoint-initdb.d/ (montado desde database/)
     local output exit_code
     if [ "$DEBUG" = true ]; then
-        output=$(docker exec "$CONTAINER_NAME" sh -c "cat /docker-entrypoint-initdb.d/$filename | mysql -u '$DB_USER' -p'$DB_PASSWORD' '$DB_NAME'" 2>&1) && exit_code=0 || exit_code=$?
+        output=$(docker exec "$CONTAINER_NAME" sh -c "cat /docker-entrypoint-initdb.d/$filename | mysql -u '$DB_ADMIN_USER' -p'$DB_ADMIN_PASSWORD' '$DB_NAME'" 2>&1) && exit_code=0 || exit_code=$?
         [ -n "$output" ] && echo "$output"
     else
-        output=$(docker exec "$CONTAINER_NAME" sh -c "cat /docker-entrypoint-initdb.d/$filename | mysql -u '$DB_USER' -p'$DB_PASSWORD' '$DB_NAME'" 2>&1) && exit_code=0 || exit_code=$?
+        output=$(docker exec "$CONTAINER_NAME" sh -c "cat /docker-entrypoint-initdb.d/$filename | mysql -u '$DB_ADMIN_USER' -p'$DB_ADMIN_PASSWORD' '$DB_NAME'" 2>&1) && exit_code=0 || exit_code=$?
     fi
 
     if [ $exit_code -eq 0 ]; then
@@ -850,6 +850,9 @@ if [ "$SKIP_SQL" = false ] && [ "$USE_DOCKER" = true ] && [ "$SHOULD_RESET_DB" =
     # Drop & Create DB
     exec_sql_docker "DROP DATABASE IF EXISTS \`$DB_NAME\`;" "Eliminando base de datos"
     exec_sql_docker "CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" "Creando base de datos"
+    exec_sql_docker "CREATE USER IF NOT EXISTS 'rodrigo'@'%' IDENTIFIED BY '$DB_PASSWORD';" "Creando usuario de conexión rodrigo"
+    exec_sql_docker "GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO 'rodrigo'@'%';" "Otorgando permisos al usuario rodrigo"
+    exec_sql_docker "FLUSH PRIVILEGES;" "Aplicando permisos"
     echo ""
 
     if [ "$USE_LATEST_DUMP" = true ]; then

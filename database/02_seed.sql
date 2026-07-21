@@ -746,6 +746,12 @@ UNLOCK TABLES;
 LOCK TABLES `usuarios` WRITE;
 /*!40000 ALTER TABLE `usuarios` DISABLE KEYS */;
 UNLOCK TABLES;
+
+-- Crear usuario de conexión para el backend local
+CREATE USER IF NOT EXISTS 'rodrigo'@'%' IDENTIFIED BY 'desa8102test';
+GRANT ALL PRIVILEGES ON `tdc_db`.* TO 'rodrigo'@'%';
+FLUSH PRIVILEGES;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

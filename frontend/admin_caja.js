@@ -457,7 +457,7 @@ async function verDetalle(cajaId) {
         const totalIngresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
         const totalEgresos = movimientos.filter(m => m.tipo === 'egreso').reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
         const saldoEsperado = parseFloat(caja.saldo_inicial_en_cuenta) + totalIngresos - totalEgresos;
-        const diferencia = parseFloat(caja.saldo_final_en_efectivo || 0) - saldoEsperado;
+        const diferencia = parseFloat(caja.saldo_inicial_en_cuenta) + totalIngresos - totalEgresos;
 
         // Función auxiliar para construir filas
         const buildDetalleRow = (m, isIngreso) => {
@@ -499,7 +499,7 @@ async function verDetalle(cajaId) {
         document.getElementById('detalle-saldo-inicial').textContent = formatearDinero(caja.saldo_inicial_en_cuenta);
         document.getElementById('detalle-total-ingresos').textContent = formatearDinero(totalIngresos);
         document.getElementById('detalle-total-egresos').textContent = formatearDinero(totalEgresos);
-        document.getElementById('detalle-saldo-esperado').textContent = formatearDinero(saldoEsperado);
+        //document.getElementById('detalle-saldo-esperado').textContent = formatearDinero(saldoEsperado);
         document.getElementById('detalle-saldo-final').textContent = formatearDinero(caja.saldo_final_en_efectivo || 0);
         document.getElementById('detalle-diferencia').textContent = formatearDinero(diferencia);
 
@@ -708,18 +708,18 @@ async function verificarEstadoMP() {
         const res = await fetch('/api/mercadopago/health', { headers });
         let data = null;
         try { data = await res.json(); } catch (_) { }
-        
+
         if (!res.ok) {
             if (data && data.status === 'disabled') {
                 return 'disabled';
             }
             return 'error';
         }
-        
+
         if (data && data.status === 'disabled') {
             return 'disabled';
         }
-        
+
         return 'ok';
     } catch (e) {
         console.warn('[admin_caja.js] Error verificando estado MP:', e.message);
@@ -733,7 +733,7 @@ function mostrarBannerMPDeshabilitado() {
     banner.innerHTML = mensaje;
     banner.setAttribute('style', 'display: block; padding: 12px 16px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #dc3545; background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); color: #721c24; font-weight: 600;');
     banner.classList.remove('hidden');
-    
+
     setTimeout(() => {
         banner.setAttribute('style', 'display: none;');
         banner.classList.add('hidden');

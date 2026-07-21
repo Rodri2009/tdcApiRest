@@ -116,8 +116,8 @@ tdcApiRest/
 
 | Email | Contraseña | Rol |
 |-------|-----------|-----|
-| rodri.e.v@hotmail.com | 12345678 | cliente |
-| admin@templo.com | admin123 | admin |
+| villalbarodrigo2009@gmail.com | 1234 | admin |
+| temploclaypole@templo.com | rodrigo | staff |
 
 ### Pruebas de API (con curl o Postman)
 
@@ -125,7 +125,7 @@ tdcApiRest/
 # 1. Login y obtener JWT
 curl -X POST http://localhost/api/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"rodri.e.v@hotmail.com","password":"12345678"}'
+  -d '{"email":"villalbarodrigo2009@gmail.com","password":"1234"}'
 
 # Respuesta: { "token": "eyJhbGc...", "user": {...} }
 
@@ -287,5 +287,5 @@ docker exec -it <backend-id> npm test
 
 ---
 
-**Última actualización:** 8 de julio de 2026
+**Última actualización:** 21 de julio de 2026
 **Versión del proyecto:** 2.0 (Post-refactor navbar/auth)
