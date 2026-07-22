@@ -465,7 +465,11 @@ async function verDetalle(cajaId) {
             const fecha = createdAt.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
             const hora = createdAt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
             const descripcion = String(m.descripcion || '').trim();
-            const usuario = String(m.usuario_nombre || '').trim() || '-';
+            let usuario = String(m.usuario_nombre || '').trim();
+            if (m.categoria === 'mercadopago' && m.subcategoria) {
+                usuario = String(m.subcategoria).trim();
+            }
+            usuario = usuario || '-';
             const montoClass = isIngreso ? 'text-green-400' : 'text-red-400';
             return `
             <tr>

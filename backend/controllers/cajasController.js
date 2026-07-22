@@ -67,7 +67,7 @@ function normalizeMpDisplayFields(tx) {
     return { subcategoria, descripcion };
 }
 
-async function upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, alreadyExists = false) {
+async function upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, usuarioId, alreadyExists = false) {
     const comprobante_ref = `MP-${tx.id}`;
     const { subcategoria, descripcion } = normalizeMpDisplayFields(tx);
 
@@ -82,9 +82,9 @@ async function upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, al
     if (alreadyExists) {
         await db.query(
             `UPDATE movimientos_caja
-             SET tipo = ?, subcategoria = ?, descripcion = ?, monto = ?, metodo_pago = ?, creado_en = ?
+             SET tipo = ?, subcategoria = ?, descripcion = ?, monto = ?, metodo_pago = ?, usuario_id = ?, creado_en = ?
              WHERE id_caja = ? AND comprobante_ref = ?`,
-            [tipo, subcategoria, descripcion, monto, 'otro', mysqlDatetime, cajaId, comprobante_ref]
+            [tipo, subcategoria, descripcion, monto, 'otro', usuarioId || null, mysqlDatetime, cajaId, comprobante_ref]
         );
         return { inserted: false, updated: true, comprobante_ref, subcategoria, descripcion };
     }
@@ -93,7 +93,7 @@ async function upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, al
         `INSERT INTO movimientos_caja
          (id_caja, tipo, categoria, subcategoria, descripcion, monto, metodo_pago, comprobante_ref, usuario_id, creado_en)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [cajaId, tipo, 'mercadopago', subcategoria, descripcion, monto, 'otro', comprobante_ref, 2, mysqlDatetime]
+        [cajaId, tipo, 'mercadopago', subcategoria, descripcion, monto, 'otro', comprobante_ref, usuarioId || null, mysqlDatetime]
     );
 
     return { inserted: true, updated: false, comprobante_ref, subcategoria, descripcion };
@@ -764,7 +764,8 @@ async function importarMovimientosMPCaja(req, res) {
                 const createdAtDate = parseMercadoPagoDate(tx.creationDate || tx.dateTime || '') || new Date();
                 const createdAt = createdAtDate.toISOString(); // ✅ Incluye 'Z' para indicar UTC
 
-                const { inserted, updated, subcategoria, descripcion } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, existingRefs.has(comprobante_ref));
+                const usuarioId = req.user?.id_usuario || req.user?.id;
+                const { inserted, updated, subcategoria, descripcion } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, usuarioId, existingRefs.has(comprobante_ref));
 
                 if (inserted) {
                     importedCount++;
@@ -924,7 +925,8 @@ async function importarMovimientosRetroactivos(req, res) {
                     }
                 }
 
-                const { inserted, updated, subcategoria, descripcion } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, existingRefs.has(comprobante_ref));
+                const usuarioId = req.user?.id_usuario || req.user?.id;
+                const { inserted, updated, subcategoria, descripcion } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, usuarioId, existingRefs.has(comprobante_ref));
 
                 if (inserted) importedCount++;
                 if (updated) updatedCount++;
@@ -1081,8 +1083,9 @@ async function importarRetroactivosStream(req, res) {
 
                 const createdAtDate = parseMercadoPagoDate(tx.creationDate || tx.dateTime || '') || new Date();
                 const createdAt = createdAtDate.toISOString(); // ✅ Incluye 'Z' para indicar UTC
+                const usuarioId = req.user?.id_usuario || req.user?.id;
 
-                const { inserted, updated } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, existingRefs.has(comprobante_ref));
+                const { inserted, updated } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, usuarioId, existingRefs.has(comprobante_ref));
 
                 if (inserted) importedCount++;
                 if (updated) updatedCount++;
@@ -1428,13 +1431,14 @@ async function importarAutoStream(req, res) {
 
                 const createdAtDate = parseMercadoPagoDate(tx.creationDate || tx.dateTime || '') || new Date();
                 const createdAt = createdAtDate.toISOString(); // ✅ Incluye 'Z' para indicar UTC
+                const usuarioId = req.user?.id_usuario || req.user?.id;
 
                 // Log each transaction
                 if (importedCount < 5) {
                     console.log(`[cajasController] [${importedCount + 1}] ${tipo.toUpperCase()}: $${monto} | ${(tx.title || 'sin título').substring(0, 50)} | fecha: ${createdAt}`);
                 }
 
-                const { inserted, updated } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, existingRefs.has(comprobante_ref));
+                const { inserted, updated } = await upsertMovimientoCajaMP(db, cajaId, tx, tipo, monto, createdAt, usuarioId, existingRefs.has(comprobante_ref));
                 if (inserted) {
                     if (tipo === 'ingreso') totalMonto += monto;
                     else totalMonto -= monto;
