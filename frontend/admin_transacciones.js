@@ -74,6 +74,13 @@
     /* --- Authentication --- */
     async function authenticateAndGetToken() {
         try {
+            const storedToken = localStorage.getItem('mpAuthToken') || localStorage.getItem('authToken');
+            if (storedToken) {
+                authToken = storedToken;
+                console.log('[Auth] ✅ Reutilizando token guardado');
+                return authToken;
+            }
+
             const response = await fetch(`${API}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
@@ -87,6 +94,7 @@
             authToken = data.accessToken;
             if (authToken) {
                 localStorage.setItem('authToken', authToken);
+                localStorage.setItem('mpAuthToken', authToken);
             }
             console.log('[Auth] ✅ Token obtenido');
             return authToken;
@@ -98,7 +106,7 @@
     }
 
     async function fetchWithAuth(url, options = {}, retryOn401 = true) {
-        const token = authToken || localStorage.getItem('authToken') || await authenticateAndGetToken();
+        const token = authToken || localStorage.getItem('authToken') || localStorage.getItem('mpAuthToken') || await authenticateAndGetToken();
         if (!token) {
             throw new Error('Token inválido o expirado');
         }
@@ -1060,10 +1068,10 @@
             // Los botones se actualizarán cuando verificarCajaAbiertaReal() confirme la caja desde la API
         }
 
-        // seguridad en frontend: solo personal (nivel >= 50)
+        // seguridad en frontend: solo personal/admin con rol válido o nivel >= 50
         if (window.navbarManager) {
-            if (!navbarManager.protectAdminPage() || !navbarManager.tieneNivel(50)) {
-                if (navbarManager.userNivel < 50) {
+            if (!navbarManager.protectAdminPage() || !navbarManager.tieneAccesoStaff()) {
+                if (Number(navbarManager.userNivel || 0) < 50) {
                     alert('Acceso restringido al personal.');
                     window.location.href = '/index.html';
                 }

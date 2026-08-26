@@ -19,6 +19,8 @@ const listClientes = async (req, res) => {
                 c.apellido,
                 c.telefono, 
                 c.email,
+                c.notas,
+                c.tipo,
                 u.rol as usuario_rol,
                 u.nombre as usuario_nombre
              FROM clientes c
@@ -105,8 +107,8 @@ const createCliente = async (req, res) => {
 
             // Crear cliente con vinculación automática si corresponde
             const result = await conn.query(
-                `INSERT INTO clientes (id_usuario, nombre, apellido, telefono, email, creado_en) VALUES (?, ?, ?, ?, ?, NOW())`,
-                [idUsuario || null, nombre || null, apellido || null, telefono || null, emailTrimmed]
+                `INSERT INTO clientes (id_usuario, nombre, apellido, telefono, email, tipo, notas, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+                [idUsuario || null, nombre || null, apellido || null, telefono || null, emailTrimmed, tipo || null, notas || null]
             );
             res.status(201).json({
                 id_cliente: Number(result.insertId),
@@ -118,8 +120,8 @@ const createCliente = async (req, res) => {
         } else {
             // Sin email: crear cliente simple
             const result = await conn.query(
-                `INSERT INTO clientes (nombre, apellido, telefono, email, creado_en) VALUES (?, ?, ?, ?, NOW())`,
-                [nombre || null, apellido || null, telefono || null, null]
+                `INSERT INTO clientes (nombre, apellido, telefono, email, tipo, notas, creado_en) VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+                [nombre || null, apellido || null, telefono || null, null, tipo || null, notas || null]
             );
             res.status(201).json({ id_cliente: Number(result.insertId), message: 'Cliente creado' });
         }
@@ -144,15 +146,15 @@ const getCliente = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const cliente = await conn.query(
-            `SELECT id_cliente, id_usuario, nombre, apellido, telefono, email FROM clientes WHERE id_cliente = ?`,
+            `SELECT id_cliente, id_usuario, nombre, apellido, telefono, email, tipo, notas FROM clientes WHERE id_cliente = ?`,
             [id]
         );
         if (!cliente || cliente.length === 0) {
             return res.status(404).json({ error: 'Cliente no encontrado.' });
         }
-        
+
         const clienteData = cliente[0];
-        
+
         // Si tiene usuario vinculado, obtener información adicional
         if (clienteData.id_usuario) {
             const usuario = await conn.query(
@@ -163,7 +165,7 @@ const getCliente = async (req, res) => {
                 clienteData.usuario = usuario[0];
             }
         }
-        
+
         res.status(200).json(clienteData);
     } catch (err) {
         logError('Error en getCliente:', err);
@@ -186,7 +188,7 @@ const updateCliente = async (req, res) => {
     const id = parseInt(req.params.id, 10);
     logVerbose(`[CLIENTES] PUT /api/admin/clientes/${id}`);
     if (isNaN(id)) return res.status(400).json({ error: 'ID de cliente inválido.' });
-    const { nombre, apellido, telefono, email } = req.body;
+    const { nombre, apellido, telefono, email, tipo, notas } = req.body;
     logVerbose('[CLIENTES] Body recibido:', req.body);
     if (!nombre && !telefono && !email) return res.status(400).json({ error: 'Se requiere al menos un campo para actualizar.' });
 
@@ -198,7 +200,7 @@ const updateCliente = async (req, res) => {
         let newIdUsuario = null;
         if (email && email.trim()) {
             const emailTrimmed = email.trim();
-            
+
             // Verificar que el email no esté en otro cliente
             const existing = await conn.query(
                 'SELECT id_cliente FROM clientes WHERE email = ? AND id_cliente != ?',
@@ -225,6 +227,9 @@ const updateCliente = async (req, res) => {
         if (typeof apellido !== 'undefined') { updates.push('apellido = ?'); params.push(apellido || null); }
         if (typeof telefono !== 'undefined') { updates.push('telefono = ?'); params.push(telefono || null); }
         if (typeof email !== 'undefined') { updates.push('email = ?'); params.push(email ? email.trim() : null); }
+        if (typeof tipo !== 'undefined') { updates.push('tipo = ?'); params.push(tipo || null); }
+        if (typeof notas !== 'undefined') { updates.push('notas = ?'); params.push(notas || null); }
+
         // ✅ Actualizar id_usuario si se detectó vinculación
         if (email !== undefined && newIdUsuario !== null) {
             updates.push('id_usuario = ?');
@@ -244,7 +249,7 @@ const updateCliente = async (req, res) => {
             `UPDATE clientes SET ${updates.join(', ')} WHERE id_cliente = ?`,
             params
         );
-        
+
         logVerbose('[CLIENTES] UPDATE ejecutado');
         res.json({
             id_cliente: id,
@@ -285,8 +290,8 @@ const deleteCliente = async (req, res) => {
         logError('Error en deleteCliente:', err);
         // Errores comunes con FK
         if (err && err.code === 'ER_ROW_IS_REFERENCED_2_FOREIGN_KEY') {
-            return res.status(409).json({ 
-                error: 'Este cliente está vinculado a bandas o eventos. Por favor, desvincula primero los registros asociados.' 
+            return res.status(409).json({
+                error: 'Este cliente está vinculado a bandas o eventos. Por favor, desvincula primero los registros asociados.'
             });
         }
         res.status(500).json({ error: 'Error interno del servidor: ' + err.message });

@@ -136,7 +136,7 @@ El `docker/docker-compose.yml` define tres servicios principales:
 - `nginx`:
   - monta `../frontend` en `/usr/share/nginx/html`
   - usa `../docker/nginx.conf`
-  - expone puertos `80` y `443`
+  - expone el servicio interno en `80` y `443`; en este servidor local se mapea además como `8080:80` y `8443:443`, pero ese puerto del host puede variar según la máquina o el despliegue
   - depende de `backend`
 
 - `backend`:
@@ -146,11 +146,15 @@ El `docker/docker-compose.yml` define tres servicios principales:
   - monta las carpetas de perfil de Puppeteer desde `backend/profile/mp-profile` y `backend/profile/wa-profile`
   - monta `../scripts/infraestructura/docker_entrypoint.sh` como `/usr/local/bin/docker-entrypoint.sh`
   - pasa variables de entorno desde `../.env`
+  - escucha internamente en `3000`; el host puede exponerse en `3001:3000` o según la configuración del equipo donde se despliega
 
 - `mariadb`:
   - levanta MariaDB con binlog habilitado y parámetros personalizados
   - ejecuta los archivos SQL montados en `/docker-entrypoint-initdb.d` al inicializar la DB por primera vez
   - usa un healthcheck con `mysqladmin ping` para que `backend` espere hasta que la DB esté disponible
+  - expone el puerto interno `3306`; en este servidor local puede estar mapeado a `3307:3306` y en otras máquinas puede variar
+
+> Aclaración de despliegue: este repositorio se sincroniza como copia de seguridad y puede levantarse en más de un equipo o servidor. Por eso los puertos del host no son un valor universal: el servicio interno sigue siendo `80` para nginx, `3000` para Node y `3306` para MariaDB, pero el mapeo externo depende de la máquina donde se despliega. En este servidor local puede verse como `http://192.168.1.21:8080/` para el frontend, mientras que otra máquina puede usar `http://localhost:8080/` con el mismo esquema interno.
 
 ### Cómo se usan los scripts shell
 
@@ -186,6 +190,7 @@ El `scripts/infraestructura/docker_entrypoint.sh` se ejecuta dentro del contened
 - usar `./scripts/reset.sh --all` para reiniciar la DB y el stack
 - usar `./scripts/restart.sh --backend` para redeploy rápido del backend
 - mantener `backend/profile/*-profile` como perfiles persistentes de Puppeteer
+- al documentar accesos o pruebas, aclarar si se está trabajando desde este servidor, desde localhost o desde una copia de respaldo del equipo; los puertos del host pueden cambiar según el entorno, aunque la configuración interna del stack permanezca igual
 
 ---
 

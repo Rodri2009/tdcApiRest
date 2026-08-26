@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud Fecha para Show en Vivo - El Templo de Claypole</title>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@latest/dist/fp.min.js"></script>
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+
+
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0c0a09;
+            color: #d6d3d1;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 20px auto;
+            background-color: #1e293b;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            border: 1px solid var(--color-rustic);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 2.25rem !important;
+            font-weight: bold;
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        h3 {
+            color: var(--color-secondary);
+            font-size: 1.5rem;
+            margin-top: 25px;
+        }
+
+        h3.subtitle {
+            color: #ccc;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            font-weight: normal;
+        }
+
+        label {
+            font-weight: bold;
+            color: #f0abfc;
+        }
+
+        select,
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 8px !important;
+            border: 1.5px solid #581c87;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 18px;
+            background-color: #0f172a;
+            color: #f8fafc;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            line-height: 1.2;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 5px var(--color-secondary);
+        }
+
+        .form-group {
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .campo-invalido {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 5px #ef4444 !important;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .button-group button {
+            background-color: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s ease-in-out;
+            text-decoration: none;
+            box-sizing: border-box;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .button-group button:hover {
+            background-color: rgba(132, 63, 172, 0.2);
+            transform: scale(1.02);
+        }
+
+        .button-group button:disabled {
+            background-color: #6b7280;
+            color: #d1d5db;
+            border-color: #6b7280;
+            cursor: not-allowed;
+            transform: scale(1.0);
+        }
+
+        .info-banner {
+            background-color: rgba(88, 28, 135, 0.2);
+            border: 1px solid var(--color-secondary);
+            border-radius: 6px;
+            padding: 12px;
+            margin: 15px 0;
+            color: #d6d3d1;
+            font-size: 0.95rem;
+        }
+
+        /* GRID DE BANDAS */
+        .band-list-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 8px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #0f172a;
+            border: 1px solid #581c87;
+            border-radius: 8px;
+        }
+
+        .banda-grid-item {
+            background-color: #0f172a;
+            border: 2px solid #581c87;
+            border-radius: 8px;
+            padding: 8px 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .banda-grid-item:hover {
+            border-color: var(--color-secondary);
+            background-color: rgba(88, 28, 135, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .banda-grid-item.selected {
+            background-color: rgba(88, 28, 135, 0.3);
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 15px rgba(240, 171, 252, 0.3);
+        }
+
+        .banda-logo {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .banda-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .banda-logo-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.5rem;
+        }
+
+        .banda-grid-name {
+            color: var(--color-secondary);
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .banda-grid-genre {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            text-align: center;
+        }
+
+        /* conservado para animación de banda nueva */
+        .banda-grid-item.banda-nueva {
+            animation: bandaNuevaGlow 3s ease forwards;
+        }
+
+        @keyframes bandaNuevaGlow {
+            0% {
+                border-color: #4ade80;
+                box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+                background-color: rgba(74, 222, 128, 0.15);
+            }
+
+            25% {
+                border-color: #4ade80;
+                box-shadow: 0 0 18px 4px rgba(74, 222, 128, 0.7);
+                background-color: rgba(74, 222, 128, 0.2);
+            }
+
+            75% {
+                border-color: #4ade80;
+                box-shadow: 0 0 12px 2px rgba(74, 222, 128, 0.4);
+                background-color: rgba(74, 222, 128, 0.12);
+            }
+
+            100% {
+                border-color: var(--color-secondary);
+                box-shadow: none;
+                background-color: rgba(88, 28, 135, 0.1);
+            }
+        }
+
+        .banda-item.banda-nueva {
+            animation: bandaNuevaGlow 3s ease forwards;
+        }
+
+        .checkbox-custom {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #581c87;
+            background-color: transparent;
+            transition: all 0.2s;
+        }
+
+        .checkbox-custom.checked {
+            background-color: var(--color-secondary);
+            border-color: var(--color-secondary);
+        }
+
+        .checkbox-custom i {
+            color: #1f2937;
+            font-size: 0.8rem;
+        }
+
+        .date-slot {
+            background-color: #0f172a;
+            border: 1px solid #581c87;
+            border-radius: 6px;
+            padding: 12px;
+            /*margin: 8px 0;*/
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: stretch;
+            flex: 1;
+        }
+
+        .date-slot input {
+            flex: 1;
+            padding: 8px !important;
+            font-size: 16px !important;
+        }
+
+        .disabled-slot {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .disabled-slot .flatpickr-input,
+        .disabled-slot input {
+            cursor: not-allowed !important;
+            color: #71717a !important;
+        }
+
+        /* Contenedor de fechas - en fila en desktop */
+        #fechasContainer {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        #fechasContainer .date-slot {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        /* Mobile - fechas en columna */
+        @media (max-width: 768px) {
+            #fechasContainer {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            #fechasContainer .date-slot {
+                min-width: 100%;
+            }
+
+            .band-list {
+                max-height: 240px;
+            }
+        }
+
+        .order-number {
+            background-color: var(--color-primary);
+            color: var(--color-secondary);
+            width: 60px;
+            height: 30px;
+            border-radius: 25%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .notification-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.5s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        .notification-banner.error {
+            background-color: #ef4444;
+        }
+
+        .notification-banner.warning {
+            background-color: #f59e0b;
+        }
+
+        .notification-banner.success {
+            background-color: #10b981;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(240, 171, 252, 0.3);
+            border-top: 4px solid var(--color-secondary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #top-nav {
+            background-color: var(--color-rustic);
+            padding: 0;
+            display: flex;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #top-nav .logo {
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 1rem;
+        }
+
+        #top-nav .nav-links {
+            display: flex;
+            gap: 2rem;
+            margin-left: auto;
+            padding-right: 1rem;
+        }
+
+        #top-nav .nav-item {
+            color: #d6d3d1;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            align-self: center;
+        }
+
+        #top-nav .nav-item:hover {
+            color: var(--color-secondary);
+        }
+
+        #top-nav .active-nav {
+            color: var(--color-secondary);
+        }
+
+        /* Menú responsivo */
+        @media (min-width: 768px) {
+            .nav-links {
+                display: flex !important;
+            }
+
+            #mobile-menu-band {
+                display: none !important;
+            }
+
+            #mobile-menu-button {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .nav-links {
+                display: none !important;
+            }
+
+            #mobile-menu-band {
+                display: block !important;
+            }
+
+            #mobile-menu-button {
+                display: block !important;
+            }
+        }
+
+        /* Estilos para banda-thumb */
+        .banda-thumb {
+            width: 32px !important;
+            height: 32px !important;
+            max-width: 32px !important;
+            max-height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
+            border-radius: 4px;
+            object-fit: cover;
+            margin-right: 10px;
+            flex-shrink: 0;
+            display: block !important;
+        }
+
+        .banda-placeholder {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            background-color: #1a1f3a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+            color: var(--color-secondary);
+        }
+
+        /* Estilos mejorados para bandas seleccionadas */
+        .section-title {
+            color: var(--color-secondary);
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            margin-top: 10px;
+            text-shadow: 0 0 3px var(--color-secondary);
+        }
+
+        .mt-20 {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: rgba(88, 28, 135, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(240, 171, 252, 0.2);
+        }
+
+        .card {
+            background-color: #0f172a;
+            border: 1px solid #2d3748;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            background-color: #1a1f3a;
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 8px rgba(240, 171, 252, 0.2);
+        }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .band-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            overflow-y: auto;
+            border-radius: 6px;
+        }
+
+        .btn-eliminar-banda {
+            padding: 8px 12px !important;
+            color: #ef4444;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-eliminar-banda:hover {
+            color: #fca5a5;
+            transform: scale(1.1);
+        }
+
+        .btn-ghost {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        .text-danger {
+            color: #ef4444;
+        }
+
+        .helper-text {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        #listaBandasSeleccionadas {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        #listaBandasSeleccionadas .card {
+            border-bottom: 1px solid #2d3748;
+            margin-bottom: 0;
+        }
+
+        #listaBandasSeleccionadas .card:last-child {
+            border-bottom: none;
+        }
+
+        .flex-row {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 8px !important;
+            border: 1.5px solid #581c87;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            padding: 0;
+            background: none;
+            border: none;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .accordion-header:hover {
+            color: var(--color-secondary);
+        }
+
+        .accordion-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .accordion-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .accordion-content {
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .accordion-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        /* FLYER PREVIEW */
+        .flyer-form-container {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            margin-top: 15px;
+        }
+
+        .flyer-preview-side {
+            flex-shrink: 0;
+        }
+
+        #flyerPreview {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            border: 2px dashed #581c87;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        #flyerPreview:hover {
+            border-color: var(--color-secondary);
+        }
+
+        #flyerPreview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        #flyerPreview .preview-placeholder {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .flyer-input-side {
+            flex: 1;
+        }
+
+        .flyer-input-side .form-group {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navegación -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver a inicio</span>
+                </a>
+
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="seccion_bandas.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
+                        Vivo</a>
+                    <a href="seccion_alquiler.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
+                        Salón</a>
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+
+                <button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="seccion_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
+                    en Vivo</a>
+                <a href="seccion_alquiler.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
+                    del Salón</a>
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
+    <div id="notification-banner" class="notification-banner"></div>
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <h2>Solicitud para fecha de bandas en vivo</h2>
+        <h3 class="subtitle">Organiza tu evento con bandas en vivo</h3>
+
+        <!-- SECCIÓN ESCENARIO -->
+        <button type="button" id="btnEscenarioToggle" class="accordion-header">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; flex: 1;">
+                <i class="fas fa-microphone"></i> Espacio - Escenario - Backline y Sonido
+            </h3>
+            <span class="accordion-toggle collapsed" id="escenarioToggleIcon">
+                <i class="fas fa-chevron-down"></i>
+            </span>
+        </button>
+
+        <div id="escenarioContent" class="accordion-content collapsed">
+            <div class="form-group">
+                <label for="backlineInfo"><i class="fas fa-guitar"></i> Espacio:</label>
+                <div
+                    style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
+                    <ul>
+                        <li><i class="fas fa-users" style="margin-right:8px;color:var(--color-secondary);"></i>El Templo
+                            de Claypole cuenta con un aforo para 150 personas para shows en vivo</li>
+                        <li><i class="fas fa-location-dot"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Estamos a 3 cuadras de la
+                            Estación de Claypole.</li>
+                        <li><i class="fas fa-road" style="margin-right:8px;color:var(--color-secondary);"></i>Calle de
+                            asfalto, sin problemas de acceso para equipos y público.
+                        </li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Frente de madera,
+                            ambientación tipo rustica, parrilla, patio, mesas y sillas</li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>En el interior escenario al
+                            frente, barra en el fondo, baños al costado.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="backlineInfo"><i class="fas fa-guitar"></i> Backline Disponible:</label>
+                <div
+                    style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
+                    <ul>
+                        <li><i class="fas fa-volume-low"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Amplificador de bajo (Nativo
+                            60W
+                            RMS).</li>
+                        <li><i class="fas fa-guitar"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Amplificador
+                            de guitarra (Wenstone GE-700, 70W RMS, parlante Selenium 150W).</li>
+                        <li><i class="fas fa-drum" style="margin-right:8px;color:var(--color-secondary);"></i>Batería
+                            base:
+                        </li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Cuerpo completo (bombo, 2
+                            toms,
+                            tambor).</li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Fierros para ride y crash.
+                        </li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Fierro de hi-hat con pedal.
+                        </li>
+                        <li style="margin-left:20px;"><i class="fas fa-check"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>Banqueta.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="sonidoInfo"><i class="fas fa-volume-up"></i> Sistema de Sonido:</label>
+                <div
+                    style="background-color: #0f172a; border: 1px solid #581c87; border-radius: 6px; padding: 15px; color: #d6d3d1; font-size: 0.95rem;">
+                    <ul>
+                        <li><i class="fas fa-volume-up" style="margin-right:8px;color:var(--color-secondary);"></i>PA
+                            JBL
+                            500wrms (MidsHighs) y 600wrms (Sublow) (potencia con procesador y crossover
+                            activo).</li>
+                        <li><i class="fas fa-arrow-turn-down"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>2
+                            retornos de escenario DBtecnology 300wrms</li>
+                        <li><i class="fas fa-arrow-turn-down"
+                                style="margin-right:8px;color:var(--color-secondary);"></i>2
+                            retornos movibles de 250rms</li>
+                        <li><i class="fas fa-microphone" style="margin-right:8px;color:var(--color-secondary);"></i>6
+                            microfonos</li>
+                        <li><i class="fas fa-circle-dot" style="margin-right:8px;color:var(--color-secondary);"></i>1
+                            Caja
+                            directa para teclado / guitarra acústica / microfono de violin, etc..</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- SECCIÓN BANDAS -->
+        <h3><i class="fas fa-music"></i> Bandas (Máximo 5)</h3>
+        <div class="info-banner">
+            Selecciona las bandas / artistas que deseas incluir desde el catálogo.
+            <button type="button" id="btnCatalogoBandas" class="btn btn-ghost"
+                style="color: var(--color-secondary); float: unset; margin-left: 20px;">
+                <i class="fas fa-book-open"></i> Catálogo de Bandas
+            </button>
+        </div>
+
+        <div id="bandasSeleccionadas" class="mt-20">
+            <h4 class="section-title">Bandas Seleccionadas (<span id="countBandas">0</span>/5)</h4>
+            <div id="listaBandasSeleccionadas"></div>
+        </div>
+
+        <!-- SECCIÓN FECHAS -->
+        <h3><i class="fas fa-calendar"></i> Fechas Propuestas (Máximo 2)</h3>
+        <div class="info-banner">
+            Selecciona hasta 2 fechas tentativas. Al menos una es obligatoria. El horario se definirá más adelante.
+        </div>
+
+        <div class="form-group">
+            <div id="fechasContainer">
+                <div class="date-slot">
+                    <label class="label-inline">Fecha 1 (Obligatoria):</label>
+                    <input type="text" class="fechaEvento" data-fecha-index="0" placeholder="Selecciona fecha" required>
+                </div>
+                <div class="date-slot">
+                    <label class="label-inline">Fecha 2 (Opcional):</label>
+                    <input type="text" class="fechaEvento" data-fecha-index="1" placeholder="Selecciona fecha">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="nombreEvento">Nombre del show / fecha</label>
+            <input id="nombreEvento" type="text" placeholder="Ej: Noche de Metal / Domingo Rock"
+                style="width: 100%; padding: 12px; border: 1.5px solid #581c87; border-radius: 4px; background-color: #0f172a; color: #f8fafc; box-sizing: border-box;">
+        </div>
+
+        <div class="form-group">
+            <label>Precios</label>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+                <div>
+                    <label for="precioAnticipada"
+                        style="display:block;margin-bottom:6px;font-size:0.95rem;color:#cbd5e1;">Precio
+                        anticipada</label>
+                    <input id="precioAnticipada" type="number" min="0" step="100" placeholder="8000"
+                        style="width:100%;padding:12px;border:1.5px solid #581c87;border-radius:4px;background-color:#0f172a;color:#f8fafc;box-sizing:border-box;">
+                </div>
+                <div>
+                    <label for="precioPuerta"
+                        style="display:block;margin-bottom:6px;font-size:0.95rem;color:#cbd5e1;">Precio puerta</label>
+                    <input id="precioPuerta" type="number" min="0" step="100" placeholder="12000"
+                        style="width:100%;padding:12px;border:1.5px solid #581c87;border-radius:4px;background-color:#0f172a;color:#f8fafc;box-sizing:border-box;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Productor / Organizador -->
+        <div id="productorSelectorGroup"
+            style="padding:8px 12px;background:#1a1025;border-left:3px solid #f0abfc;border-radius:0 4px 4px 0;font-size:0.85rem;display:flex;align-items:center;gap:10px;">
+            <i class="fas fa-address-book" style="color:#f0abfc;flex-shrink:0;"></i>
+            <span id="contactDataInfo"
+                style="color:#d6d3d1;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cargando
+                datos de contacto...</span>
+            <button type="button" class="btn btn-secondary" id="btnEditCliente" onclick="openEditClienteModal()"
+                style="padding:5px 10px;font-size:0.85rem;flex-shrink:0;"><i class="fas fa-edit"></i>
+                Editar</button>
+        </div>
+
+        <!-- SECCIÓN FLYER -->
+        <h3><i class="fas fa-image"></i> Flyer del Evento (Opcional)</h3>
+        <div class="flyer-form-container">
+            <div class="flyer-preview-side">
+                <div id="flyerPreview" onclick="document.getElementById('flyerFile').click()">
+                    <div class="preview-placeholder">
+                        <i class="fas fa-cloud-arrow-up" style="font-size: 2rem; margin-bottom: 5px;"></i>
+                        <div>Click para subir</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flyer-input-side">
+                <div class="form-group">
+                    <label for="urlFlyer">Flyer (URL o subir)</label>
+                    <p class="hint" style="font-size: 0.9rem; color: #9ca3af; margin-top: 5px;">Pegá la URL del flyer o
+                        hacé click en la imagen para subir (JPG o PNG, máx 3MB):</p>
+                    <input type="text" id="urlFlyer" placeholder="https://..." onchange="updateFlyerPreview()"
+                        oninput="updateFlyerPreview()" style="margin-top: 5px;">
+                    <input type="file" id="flyerFile" accept="image/png,image/jpeg" style="display: none;"
+                        onchange="handleFlyerUpload()" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="comentariosEspeciales">Comentarios o Requerimientos Especiales:</label>
+            <textarea id="comentariosEspeciales" rows="4"
+                placeholder="Ej: necesitamos sonido para teclado, violín, etc."
+                style="width: 100%; padding: 12px; border: 1.5px solid #581c87; border-radius: 4px; background-color: #0f172a; color: #f8fafc; box-sizing: border-box;"></textarea>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="button-group">
+            <button id="btnVolver" class="secondary">Volver</button>
+            <button id="btnEnviarSolicitud">Enviar Solicitud</button>
+        </div>
+    </div>
+
+    <script>
+        // Función para decodificar JWT
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('Error decodificando JWT:', e);
+                return null;
+            }
+        }
+
+        let solicitudId = null;
+        let visitorsId = null;
+        let bandasDisponibles = [];
+        let bandasSeleccionadas = [];
+        let fechasSeleccionadas = [null, null];
+        let calendarios = [];
+        let selectedClient = null;
+        let currentUserRole = 'user';
+        // solo dos entradas ahora
+
+        // Obtener parámetros URL
+        const params = new URLSearchParams(window.location.search);
+        solicitudId = params.get('solicitudId');
+
+        // Mostrar/ocultar notificaciones
+        function showNotification(msg, type = 'error', duration = 4000) {
+            const banner = document.getElementById('notification-banner');
+            banner.textContent = msg;
+            banner.className = 'notification-banner show ' + type;
+            setTimeout(() => { banner.className = 'notification-banner'; }, duration);
+        }
+
+        // Mostrar/ocultar overlay de carga
+        function toggleLoadingOverlay(show, msg = 'Cargando...') {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.toggle('show', show);
+        }
+
+        // Inicializar Fingerprint
+        function initFingerprint() {
+            if (typeof FingerprintJS !== 'undefined') {
+                FingerprintJS.load().then(fp => fp.get()).then(result => {
+                    visitorsId = result.visitorId;
+                    console.log('[FINGERPRINT]', visitorsId);
+                }).catch(err => console.warn('Fingerprint error:', err));
+            }
+        }
+
+        // Flag para asignar listener una sola vez
+        let bandasListenerConfigurado = false;
+
+        // Resaltar visualmente una banda recién creada
+        function highlightNuevaBanda(bandaId) {
+            const bandasList = document.getElementById('bandasList');
+            if (!bandasList) return;
+            bandasList.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const item = bandasList.querySelector(`[data-banda-id="${bandaId}"]`);
+            if (item) {
+                item.classList.add('banda-nueva');
+                setTimeout(() => item.classList.remove('banda-nueva'), 3200);
+            }
+            showNotification('✅ Banda registrada. ¡Ya podés seleccionarla de la lista!', 'success', 5000);
+        }
+
+        // Cargar bandas disponibles
+        async function loadBandas() {
+            try {
+                const res = await fetch('/api/bandas');
+                if (!res.ok) throw new Error('Error cargando bandas');
+                bandasDisponibles = await res.json();
+
+                // LIMPIAR bandas seleccionadas con IDs inválidos (NaN, undefined, etc)
+                bandasSeleccionadas = bandasSeleccionadas.filter(b => {
+                    const esValido = b.bandaId && !isNaN(b.bandaId) && b.bandaId > 0;
+                    const existeEnApi = bandasDisponibles.some(api => (api.id_banda || api.id) === b.bandaId);
+                    return esValido && existeEnApi;
+                });
+
+                console.log('[LOAD BANDAS] Bandas cargadas:', bandasDisponibles.length);
+                console.log('[LOAD BANDAS] Bandas seleccionadas válidas:', bandasSeleccionadas);
+
+                renderBandasLista();
+                // Asignar listener UNA SOLA VEZ en la carga inicial
+                if (!bandasListenerConfigurado) {
+                    setupBandaListeners();
+                    bandasListenerConfigurado = true;
+                }
+                renderBandasSeleccionadas();
+            } catch (err) {
+                console.error('Error:', err);
+                showNotification('Error al cargar las bandas disponibles', 'error');
+            }
+        }
+
+        // Hora por defecto: banda 1 a las 23:00, cada banda +40 minutos
+        function horaDefaultBanda(idx) {
+            const base = 23 * 60; // 23:00 en minutos
+            const total = base + idx * 40;
+            const h = Math.floor(total / 60) % 24;
+            const m = total % 60;
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
+
+        // Renderizar catálogo de bandas como grid de tarjetas
+        function renderBandasLista() {
+            const container = document.getElementById('bandasList');
+            if (!container) return;
+            const searchInput = document.getElementById('modalBandaSearch');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+            const filtered = bandasDisponibles.filter(b =>
+                b.nombre.toLowerCase().includes(searchTerm) ||
+                (b.genero_musical && b.genero_musical.toLowerCase().includes(searchTerm))
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="helper-text text-center p-20">No hay bandas disponibles</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(banda => {
+                const bandaId = banda.id_banda || banda.id;
+                const isSelected = bandasSeleccionadas.some(b => b.bandaId === bandaId);
+                const nombre = banda.nombre.replace(/'/g, "&#39;");
+                const genero = (banda.genero_musical || '').replace(/'/g, "&#39;");
+                const logo = (banda.logo_url || '').replace(/'/g, "&#39;");
+                return `
+                    <div class="banda-grid-item ${isSelected ? 'selected' : ''}" onclick="toggleBanda({id_banda:${bandaId},id:${bandaId},nombre:'${nombre}',genero_musical:'${genero}',logo_url:'${logo}'})">
+                        <div class="banda-logo">
+                            ${banda.logo_url && banda.logo_url.trim()
+                        ? `<img src="${banda.logo_url}" alt="${nombre}" onerror="this.style.display='none'">`
+                        : `<div class="banda-logo-placeholder"><i class="fas fa-music"></i></div>`
+                    }
+                        </div>
+                        <div class="banda-grid-name">${nombre}</div>
+                        ${banda.genero_musical ? `<div class="banda-grid-genre">${genero}</div>` : ''}
+                        <div class="checkbox-custom ${isSelected ? 'checked' : ''}">
+                            ${isSelected ? '<i class="fas fa-check"></i>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Manejar click en banda usando delegación de eventos
+        function setupBandaListeners() {
+            console.log('[SETUP LISTENERS] Configurando listeners en bandasList');
+            const container = document.getElementById('bandasList');
+            if (!container) {
+                console.log('[SETUP LISTENERS] ERROR: container bandasList no encontrado');
+                return;
+            }
+
+            container.addEventListener('click', (e) => {
+                console.log('[BANDA CLICK] Click detectado', e.target);
+                const bandaItem = e.target.closest('.banda-item');
+                console.log('[BANDA CLICK] bandaItem:', bandaItem);
+
+                if (bandaItem) {
+                    const bandaId = parseInt(bandaItem.dataset.bandaId);
+                    // Encontrar la banda completa en el array disponible
+                    const banda = bandasDisponibles.find(b => (b.id_banda || b.id) === bandaId);
+
+                    console.log('[BANDA CLICK] Banda encontrada:', banda);
+                    if (banda) {
+                        toggleBanda(banda);
+                    }
+                }
+            });
+        }
+
+        // Toggle selección de banda (recibe objeto banda completo)
+        function toggleBanda(banda) {
+            console.log('[TOGGLE BANDA] Iniciando toggle para banda:', banda);
+            console.log('[TOGGLE BANDA] Bandas seleccionadas antes:', bandasSeleccionadas);
+
+            const bandaId = banda.id_banda || banda.id;
+            const idx = bandasSeleccionadas.findIndex(b => b.bandaId === bandaId);
+
+            if (idx >= 0) {
+                console.log('[TOGGLE BANDA] Removiendo banda (índice:', idx, ')');
+                bandasSeleccionadas.splice(idx, 1);
+            } else {
+                console.log('[TOGGLE BANDA] Agregando banda');
+                // Sin límite de bandas
+                // Guardar con bandaId para claridad
+                bandasSeleccionadas.push({
+                    bandaId: bandaId,
+                    id: bandaId,
+                    nombre: banda.nombre,
+                    genero: banda.genero_musical,
+                    logoUrl: banda.logo_url,
+                    hora_inicio: horaDefaultBanda(bandasSeleccionadas.length)
+                });
+            }
+
+            console.log('[TOGGLE BANDA] Bandas seleccionadas después:', bandasSeleccionadas);
+            renderBandasLista();
+            // NO llamar setupBandaListeners() aquí - ya está configurado
+            renderBandasSeleccionadas();
+        }
+
+        // Helper: generar texto por defecto para comentarios según bandas
+        function computeDefaultComments() {
+            if (!bandasSeleccionadas || bandasSeleccionadas.length === 0) return '';
+            const principal = bandasSeleccionadas[bandasSeleccionadas.length - 1].nombre || '';
+            const invitadas = Math.max(0, bandasSeleccionadas.length - 1);
+            let text = `Fecha de ${principal}`;
+            if (invitadas > 0) {
+                text += ` con ${invitadas} banda${invitadas !== 1 ? 's' : ''} invitada${invitadas !== 1 ? 's' : ''}`;
+            }
+            text += '.';
+            return text;
+        }
+
+        // Si el campo de comentarios está vacío, poner texto por defecto
+        function updateDefaultComments() {
+            const textarea = document.getElementById('comentariosEspeciales');
+            if (textarea && !textarea.value.trim()) {
+                textarea.value = computeDefaultComments();
+            }
+        }
+
+        // Actualizar preview del flyer
+        function updateFlyerPreview() {
+            try {
+                const urlInput = document.getElementById('urlFlyer');
+                const previewContainer = document.getElementById('flyerPreview');
+
+                if (!urlInput || !previewContainer) return;
+
+                const url = urlInput.value.trim();
+
+                if (!url) {
+                    previewContainer.innerHTML = '<div class="preview-placeholder"><i class="fas fa-image" style="font-size:2rem;margin-bottom:6px;display:block;"></i><p style="margin:0;font-size:0.75rem;">Sin<br>flyer</p></div>';
+                    return;
+                }
+
+                // Mostrar loading mientras carga
+                previewContainer.innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;"><i class="fas fa-spinner fa-pulse" style="font-size:1.4rem"></i><div style="font-size:0.8rem;margin-top:6px;">Cargando preview...</div></div>';
+
+                // Crear imagen y asignar listeners ANTES de establecer src
+                const img = document.createElement('img');
+                img.alt = 'Flyer preview';
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '100%';
+
+                img.onload = function () {
+                    previewContainer.innerHTML = '';
+                    previewContainer.appendChild(img);
+                };
+
+                img.onerror = function () {
+                    previewContainer.innerHTML = '<div class="preview-placeholder"><i class="fas fa-exclamation-circle" style="font-size:2rem;margin-bottom:6px;display:block;"></i><p style="margin:0;font-size:0.75rem;">Error al<br>cargar img</p></div>';
+                };
+
+                img.src = url;
+            } catch (err) {
+                console.error('[FLYER] Error en updateFlyerPreview:', err.message);
+            }
+        }
+
+        // Manejar subida de archivo de flyer
+        function handleFlyerUpload() {
+            const fileInput = document.getElementById('flyerFile');
+            const urlInput = document.getElementById('urlFlyer');
+            const file = fileInput.files[0];
+
+            if (!file) return;
+
+            // Validar tipo y tamaño (máx 3MB)
+            const allowed = ['image/png', 'image/jpeg'];
+            const maxSize = 3 * 1024 * 1024;
+            if (!allowed.includes(file.type)) {
+                showNotification('Formato no soportado. Use JPG o PNG.', 'error');
+                fileInput.value = '';
+                return;
+            }
+            if (file.size > maxSize) {
+                showNotification('La imagen no puede superar 3 MB', 'error');
+                fileInput.value = '';
+                return;
+            }
+
+            // Estado UI: mostrar carga
+            showNotification('Subiendo flyer...', 'info');
+            document.getElementById('flyerPreview').innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;"><i class="fas fa-spinner fa-pulse" style="font-size:1.4rem"></i><div style="font-size:0.8rem;margin-top:6px;">Subiendo...</div></div>';
+
+            const form = new FormData();
+            form.append('flyer', file);
+
+            fetch('/api/uploads/flyers', {
+                method: 'POST',
+                body: form
+            }).then(async res => {
+                if (!res.ok) {
+                    const txt = await res.text().catch(() => '');
+                    throw new Error((res.status ? res.status + ' ' : '') + (txt || res.statusText || 'Error al subir'));
+                }
+                return res.json();
+            }).then(json => {
+                if (json && json.url) {
+                    urlInput.value = json.url;
+                    updateFlyerPreview();
+                    showNotification('Flyer subido correctamente', 'success');
+                } else {
+                    throw new Error('Respuesta inválida del servidor');
+                }
+            }).catch(err => {
+                console.error('Error subiendo flyer:', err);
+                showNotification('Error al subir el flyer: ' + (err.message || ''), 'error');
+                document.getElementById('flyerPreview').innerHTML = '<div class="preview-placeholder"><i class="fas fa-image" style="font-size:2rem;margin-bottom:6px;display:block;"></i><p style="margin:0;font-size:0.75rem;">Sin<br>flyer</p></div>';
+                fileInput.value = '';
+            });
+        }
+
+        // Renderizar bandas seleccionadas
+        function renderBandasSeleccionadas() {
+            console.log('[RENDER SELECCIONADAS] Renderizando bandas seleccionadas:', bandasSeleccionadas);
+            const container = document.getElementById('listaBandasSeleccionadas');
+            const count = document.getElementById('countBandas');
+            count.textContent = bandasSeleccionadas.length;
+
+            if (bandasSeleccionadas.length === 0) {
+                container.innerHTML = '<div class="helper-text p-20" style="text-align:center; padding:30px 20px;">Selecciona bandas para verlas aquí</div>';
+            } else {
+                // después de modificar la lista, actualizar comentarios por defecto
+                updateDefaultComments();
+                container.innerHTML = bandasSeleccionadas.map((banda, idx) => `
+                    <div class="card card-row">
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:50px;">
+                            <div class="order-number" style="text-align:center;">Toca ${idx + 1}º</div>
+                            <input type="time" value="${banda.hora_inicio || ''}" data-banda-idx="${idx}"
+                                class="hora-inicio-banda"
+                                style="background:#0f172a;border:1px solid #581c87;color:#f8fafc;border-radius:4px;padding:2px 3px;font-size:0.78rem;width:72px;text-align:center;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;flex:1;"> 
+                            ${banda.logoUrl ? `<img src="${banda.logoUrl}" alt="${banda.nombre}" class="banda-thumb">` : `<div class="banda-placeholder"><i class="fas fa-music"></i></div>`}
+                            <div style="flex:1;">
+                                <div class="text-neon" style="font-weight:bold;margin:0;">${banda.nombre}</div>
+                                ${banda.genero ? `<div class="helper-text" style="margin:2px 0 0 0;">${banda.genero}</div>` : ''}
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:5px;align-items:center;">
+                            ${idx > 0 ? `<button type="button" class="btn-mover-arriba btn btn-ghost" data-banda-idx="${idx}" style="padding:6px 8px;cursor:pointer;border:none;background:none;color:var(--color-secondary);font-size:0.9rem;" title="Subir"><i class="fas fa-chevron-up"></i></button>` : '<div style="width:30px;"></div>'}
+                            ${idx < bandasSeleccionadas.length - 1 ? `<button type="button" class="btn-mover-abajo btn btn-ghost" data-banda-idx="${idx}" style="padding:6px 8px;cursor:pointer;border:none;background:none;color:var(--color-secondary);font-size:0.9rem;" title="Bajar"><i class="fas fa-chevron-down"></i></button>` : '<div style="width:30px;"></div>'}
+                            <button type="button" class="btn-eliminar-banda btn btn-ghost text-danger" data-banda-idx="${idx}" style="padding:8px 12px;cursor:pointer;border:none;background:none;font-size:1rem;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Agregar event listeners a botones de eliminar
+            document.querySelectorAll('.btn-eliminar-banda').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const idx = parseInt(this.dataset.bandaIdx);
+                    const banda = bandasSeleccionadas[idx];
+                    console.log('[ELIMINAR BANDA] Eliminando banda en índice:', idx, banda);
+                    if (banda) {
+                        const bandaCompleta = bandasDisponibles.find(b => (b.id_banda || b.id) === banda.bandaId);
+                        if (bandaCompleta) {
+                            toggleBanda(bandaCompleta);
+                        }
+                    }
+                });
+            });
+
+            // Guardar hora_inicio en el array cuando el usuario la cambia
+            document.querySelectorAll('.hora-inicio-banda').forEach(input => {
+                input.addEventListener('change', function () {
+                    const idx = parseInt(this.dataset.bandaIdx);
+                    if (bandasSeleccionadas[idx]) {
+                        bandasSeleccionadas[idx].hora_inicio = this.value;
+                    }
+                });
+            });
+
+            // Agregar event listeners a botones de mover
+            document.querySelectorAll('.btn-mover-arriba').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const idx = parseInt(this.dataset.bandaIdx);
+                    if (idx > 0) {
+                        const temp = bandasSeleccionadas[idx];
+                        bandasSeleccionadas[idx] = bandasSeleccionadas[idx - 1];
+                        bandasSeleccionadas[idx - 1] = temp;
+                        renderBandasSeleccionadas();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.btn-mover-abajo').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const idx = parseInt(this.dataset.bandaIdx);
+                    if (idx < bandasSeleccionadas.length - 1) {
+                        const temp = bandasSeleccionadas[idx];
+                        bandasSeleccionadas[idx] = bandasSeleccionadas[idx + 1];
+                        bandasSeleccionadas[idx + 1] = temp;
+                        renderBandasSeleccionadas();
+                    }
+                });
+            });
+        }
+
+        // Inicializar calendarios de fechas
+        async function initCalendarios() {
+            try {
+                const anioActual = new Date().getFullYear();
+
+                // Detectar si es admin para permitir fechas pasadas
+                const token = localStorage.getItem('authToken');
+                let isAdmin = false;
+                if (token) {
+                    const userData = parseJwt(token);
+                    isAdmin = userData && userData.role === 'admin';
+                }
+
+                // Cargar en paralelo: feriados (año actual y siguiente) + fechas ocupadas
+                const [feriadosAct, feriadosSig, ocupadasRaw] = await Promise.all([
+                    fetch(`https://api.argentinadatos.com/v1/feriados/${anioActual}`).then(r => r.json()).catch(() => []),
+                    fetch(`https://api.argentinadatos.com/v1/feriados/${anioActual + 1}`).then(r => r.json()).catch(() => []),
+                    fetch('/api/opciones/fechas-ocupadas').then(r => r.json()).catch(() => [])
+                ]);
+
+                const feriados = [...feriadosAct, ...feriadosSig].map(f => f.fecha.replace(/\//g, '-'));
+                const ocupadas = Array.isArray(ocupadasRaw) ? ocupadasRaw : [];
+
+                const input1 = document.querySelector('.fechaEvento[data-fecha-index="0"]');
+                const input2 = document.querySelector('.fechaEvento[data-fecha-index="1"]');
+
+                // Función que genera el predicado de deshabilitación para flatpickr:
+                // Sólo habilita fines de semana (sáb/dom) y feriados, excluyendo fechas ocupadas
+                // y opcionalmente una fecha reservada por el otro picker.
+                function buildDisableFn(excluir) {
+                    return function (date) {
+                        const ymd = date.getFullYear() + '-' +
+                            String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                            String(date.getDate()).padStart(2, '0');
+                        if (excluir && ymd === excluir) return true;          // excluida por Fecha 1
+                        if (ocupadas.includes(ymd)) return true;              // fecha ya ocupada
+                        const esFdS = date.getDay() === 0 || date.getDay() === 6;
+                        const esFeriado = feriados.includes(ymd);
+                        return !(esFdS || esFeriado);                         // deshabilitar días de semana
+                    };
+                }
+
+                // Helper para cambiar el estado habilitado/deshabilitado de Fecha 2
+                function setFecha2Disabled(disabled) {
+                    if (disabled) {
+                        cal2.set('clickOpens', false);
+                        if (cal2.altInput) {
+                            cal2.altInput.disabled = true;
+                            cal2.altInput.placeholder = 'Selecciona Fecha 1 primero';
+                        }
+                        input2.closest('.date-slot').classList.add('disabled-slot');
+                    } else {
+                        cal2.set('clickOpens', true);
+                        if (cal2.altInput) {
+                            cal2.altInput.disabled = false;
+                            cal2.altInput.placeholder = 'Selecciona fecha (opcional)';
+                        }
+                        input2.closest('.date-slot').classList.remove('disabled-slot');
+                    }
+                }
+
+                // --- Calendario Fecha 1 ---
+                const cal1Config = {
+                    locale: 'es',
+                    altInput: true,
+                    altFormat: 'j \\de F, Y',
+                    dateFormat: 'Y-m-d',
+                    disable: [buildDisableFn(null)],
+                    onChange: (selectedDates, dateStr) => {
+                        fechasSeleccionadas[0] = dateStr || null;
+
+                        if (dateStr) {
+                            // Si Fecha 2 ya tenía esa misma fecha, limpiarla
+                            if (fechasSeleccionadas[1] === dateStr) {
+                                cal2.clear();
+                                fechasSeleccionadas[1] = null;
+                            }
+                            // Actualizar disable de Fecha 2 para excluir la fecha recién seleccionada
+                            cal2.set('disable', [buildDisableFn(dateStr)]);
+                            setFecha2Disabled(false);
+                        } else {
+                            // Fecha 1 limpiada: deshabilitar y limpiar Fecha 2
+                            cal2.clear();
+                            fechasSeleccionadas[1] = null;
+                            cal2.set('disable', [buildDisableFn(null)]);
+                            setFecha2Disabled(true);
+                        }
+                    }
+                };
+                // Solo agregar minDate si no es admin
+                if (!isAdmin) {
+                    cal1Config.minDate = 'today';
+                }
+                const cal1 = flatpickr(input1, cal1Config);
+                calendarios[0] = cal1;
+
+                // --- Calendario Fecha 2 (inicia deshabilitado) ---
+                const cal2Config = {
+                    locale: 'es',
+                    altInput: true,
+                    altFormat: 'j \\de F, Y',
+                    dateFormat: 'Y-m-d',
+                    disable: [buildDisableFn(null)],
+                    onChange: (selectedDates, dateStr) => {
+                        fechasSeleccionadas[1] = dateStr || null;
+                    }
+                };
+                // Solo agregar minDate si no es admin
+                if (!isAdmin) {
+                    cal2Config.minDate = 'today';
+                }
+                const cal2 = flatpickr(input2, cal2Config);
+                calendarios[1] = cal2;
+
+                // Deshabilitar Fecha 2 al inicio (requiere que Fecha 1 esté seleccionada)
+                setFecha2Disabled(true);
+
+                // Pre-llenar fecha desde parámetro de URL (?fecha=YYYY-MM-DD)
+                const fechaParam = new URLSearchParams(window.location.search).get('fecha');
+                if (fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam)) {
+                    cal1.setDate(fechaParam, true);
+                    setFecha2Disabled(false);
+                }
+
+            } catch (err) {
+                console.error('Error init calendarios:', err);
+            }
+        }
+
+        // Botón catálogo de bandas.
+        // Los listeners del modal se registran la primera vez que se abre (lazy setup).
+        document.getElementById('btnCatalogoBandas').addEventListener('click', () => {
+            abrirModalCatalogo();
+        });
+
+        // Guardar bandas seleccionadas en localStorage antes de navegar
+        function guardarBandasEnLocalStorage() {
+            if (bandasSeleccionadas.length > 0) {
+                localStorage.setItem('bandasSeleccionadasTemp', JSON.stringify(bandasSeleccionadas));
+            }
+        }
+
+        // Restaurar bandas seleccionadas desde localStorage
+        function restaurarBandasDesdeLocalStorage() {
+            try {
+                const saved = localStorage.getItem('bandasSeleccionadasTemp');
+                if (saved) {
+                    const bandaGuardadas = JSON.parse(saved);
+                    if (Array.isArray(bandaGuardadas) && bandaGuardadas.length > 0) {
+                        bandasSeleccionadas = bandaGuardadas;
+                        renderBandasLista();
+                        renderBandasSeleccionadas();
+                        localStorage.removeItem('bandasSeleccionadasTemp');
+                        return true;
+                    }
+                    localStorage.removeItem('bandasSeleccionadasTemp');
+                }
+            } catch (err) {
+                console.error('Error restaurando bandas desde localStorage:', err);
+                localStorage.removeItem('bandasSeleccionadasTemp');
+            }
+            return false;
+        }
+
+        let modalListenersSetup = false;
+        function setupModalListeners() {
+            if (modalListenersSetup) return;
+            document.getElementById('modalCatalogoClose').addEventListener('click', cerrarModalCatalogo);
+            document.getElementById('modalCatalogoOverlay').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) cerrarModalCatalogo();
+            });
+            document.getElementById('modalBandaSearch').addEventListener('input', () => {
+                renderBandasLista();
+            });
+            document.getElementById('btnRegistrarBanda').addEventListener('click', () => {
+                // Guardar bandas seleccionadas antes de navegar a solicitud_banda.html
+                guardarBandasEnLocalStorage();
+                window.location.href = '/solicitud_banda.html?returnTo=solicitud_fecha_bandas.html';
+            });
+            modalListenersSetup = true;
+        }
+
+        function abrirModalCatalogo() {
+            setupModalListeners();
+            document.getElementById('modalCatalogoOverlay').style.display = 'flex';
+            document.getElementById('modalBandaSearch').focus();
+            renderBandasLista();
+        }
+
+        function cerrarModalCatalogo() {
+            document.getElementById('modalCatalogoOverlay').style.display = 'none';
+        }
+
+        function getCurrentUserRole() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return 'user';
+            const decoded = parseJwt(token);
+            return decoded ? (decoded.rol || decoded.role || 'user') : 'user';
+        }
+
+        function updateSolicitudButtonLabel() {
+            const isAdminFlow = ['admin', 'staff'].includes(getCurrentUserRole());
+            const btn = document.getElementById('btnEnviarSolicitud');
+            if (btn) {
+                btn.textContent = isAdminFlow ? 'Crear solicitud' : 'Enviar Solicitud';
+            }
+        }
+
+        let clienteSearchDebounceTimer = null;
+        let modalClienteSeleccionado = null;
+
+        function renderModalClienteSearchResults(results, query = '') {
+            const container = document.getElementById('modalBuscadorResultados');
+            if (!container) return;
+
+            const normalizedQuery = (query || '').trim();
+            if (!normalizedQuery || normalizedQuery.length < 2) {
+                container.innerHTML = '';
+                return;
+            }
+
+            if (!results || results.length === 0) {
+                container.innerHTML = '<div style="padding:10px;border:1px dashed rgba(168,85,247,0.35);border-radius:8px;color:#cbd5e1;">No se encontraron clientes.</div>';
+                return;
+            }
+
+            container.innerHTML = results.map((cliente) => {
+                const nombreCompleto = [cliente.nombre, cliente.apellido].filter(Boolean).join(' ').trim();
+                return `
+                    <div data-select-modal-client="${cliente.id_cliente}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(168,85,247,0.25);border-radius:8px;background:rgba(15,23,42,0.8);margin-top:8px;cursor:pointer;">
+                        <div>
+                            <div style="font-weight:600;color:#f8fafc;">${nombreCompleto || 'Cliente sin nombre'}</div>
+                            <div style="font-size:0.9rem;color:#94a3b8;">${cliente.email || 'Sin email'}${cliente.telefono ? ` • ${cliente.telefono}` : ''}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.querySelectorAll('[data-select-modal-client]').forEach((row) => {
+                row.addEventListener('click', () => {
+                    const clienteId = Number(row.getAttribute('data-select-modal-client'));
+                    const cliente = results.find((item) => Number(item.id_cliente) === clienteId);
+                    if (cliente) {
+                        selectClienteFromModal(cliente);
+                    }
+                });
+            });
+        }
+
+        function selectClienteFromModal(cliente) {
+            if (!cliente) return;
+            modalClienteSeleccionado = cliente;
+            selectedClient = cliente;
+            const nombreCompleto = [cliente.nombre, cliente.apellido].filter(Boolean).join(' ').trim();
+            const contactDataInfo = document.getElementById('contactDataInfo');
+            const summary = [nombreCompleto || 'Cliente sin nombre', cliente.email || 'Sin email', cliente.telefono || 'Sin teléfono'].filter(Boolean).join(' • ');
+
+            document.getElementById('modalClienteId').value = cliente.id_cliente || '';
+            document.getElementById('modalClienteIdDisplay').textContent = cliente.id_cliente || '-';
+            document.getElementById('modalClienteNombre').value = cliente.nombre || '';
+            document.getElementById('modalClienteEmail').value = cliente.email || '';
+            document.getElementById('modalClienteTelefono').value = cliente.telefono || '';
+            document.getElementById('modalBuscadorClienteInput').value = nombreCompleto || '';
+            document.getElementById('modalBuscadorResultados').innerHTML = '';
+            if (contactDataInfo) {
+                contactDataInfo.textContent = summary;
+            }
+            showNotification('Cliente seleccionado para la solicitud', 'success', 2200);
+        }
+
+        function closeEditClienteModal() {
+            const modal = document.getElementById('clienteModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function saveClienteModal() {
+            const nombre = document.getElementById('modalClienteNombre').value.trim();
+            const email = document.getElementById('modalClienteEmail').value.trim();
+            const telefono = document.getElementById('modalClienteTelefono').value.trim();
+            const clienteId = document.getElementById('modalClienteId').value;
+
+            if (!clienteId && !nombre && !email && !telefono) {
+                showNotification('Seleccioná un cliente o completá sus datos', 'warning');
+                return;
+            }
+
+            selectedClient = {
+                id_cliente: clienteId || null,
+                nombre: nombre || (modalClienteSeleccionado ? modalClienteSeleccionado.nombre : ''),
+                apellido: modalClienteSeleccionado?.apellido || '',
+                email: email || (modalClienteSeleccionado ? modalClienteSeleccionado.email : ''),
+                telefono: telefono || (modalClienteSeleccionado ? modalClienteSeleccionado.telefono : '')
+            };
+
+            showNotification('Cliente listo para la solicitud', 'success', 2200);
+            closeEditClienteModal();
+        }
+
+        async function buscarClientes(queryOverride = '', isAutocomplete = false) {
+            const input = document.getElementById('modalBuscadorClienteInput');
+            const query = (queryOverride || input?.value || '').trim();
+            const container = document.getElementById('modalBuscadorResultados');
+
+            if (!query || query.length < 2) {
+                if (container) container.innerHTML = '';
+                return;
+            }
+
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showNotification('Tu sesión expiró. Volvé a iniciar sesión', 'error');
+                return;
+            }
+
+            try {
+                if (isAutocomplete && container) {
+                    container.innerHTML = '<div style="padding:10px;color:#94a3b8;">Buscando clientes...</div>';
+                }
+
+                const response = await fetch(`/api/admin/clientes/search?q=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'No se pudo buscar el cliente');
+                }
+
+                const resultados = await response.json();
+                renderModalClienteSearchResults(resultados || [], query);
+            } catch (err) {
+                console.error('Error buscando cliente:', err);
+                showNotification(err.message || 'No se pudo buscar el cliente', 'error');
+            }
+        }
+
+        async function openEditClienteModal() {
+            const modal = document.getElementById('clienteModal');
+            if (!modal) return;
+
+            modalClienteSeleccionado = null;
+            document.getElementById('modalBuscadorClienteInput').value = '';
+            document.getElementById('modalBuscadorResultados').innerHTML = '';
+            document.getElementById('modalClienteId').value = '';
+            document.getElementById('modalClienteIdDisplay').textContent = '-';
+            document.getElementById('modalClienteNombre').value = '';
+            document.getElementById('modalClienteEmail').value = '';
+            document.getElementById('modalClienteTelefono').value = '';
+
+            if (selectedClient) {
+                document.getElementById('modalClienteNombre').value = selectedClient.nombre || '';
+                document.getElementById('modalClienteEmail').value = selectedClient.email || '';
+                document.getElementById('modalClienteTelefono').value = selectedClient.telefono || '';
+            }
+
+            const searchInput = document.getElementById('modalBuscadorClienteInput');
+            if (searchInput && !searchInput.dataset.bound) {
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(clienteSearchDebounceTimer);
+                    clienteSearchDebounceTimer = setTimeout(() => {
+                        buscarClientes(searchInput.value, true);
+                    }, 250);
+                });
+                searchInput.dataset.bound = 'true';
+            }
+
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                searchInput?.focus();
+            }, 50);
+        }
+
+
+        // Botón volver
+        document.getElementById('btnVolver').addEventListener('click', () => {
+            window.location.href = '/index.html';
+        });
+
+        // Botón enviar solicitud
+        document.getElementById('btnEnviarSolicitud').addEventListener('click', async () => {
+            // Validar
+            if (bandasSeleccionadas.length === 0) {
+                showNotification('Debes seleccionar al menos una banda', 'warning');
+                return;
+            }
+            if (!fechasSeleccionadas[0]) {
+                showNotification('Debes seleccionar al menos una fecha obligatoria', 'warning');
+                return;
+            }
+
+            // Obtener datos del usuario desde JWT
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showNotification('Por favor inicia sesión para enviar la solicitud', 'error');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const userData = parseJwt(token);
+            if (!userData) {
+                showNotification('Error al procesar tu sesión', 'error');
+                return;
+            }
+
+            const isAdminFlow = ['admin', 'staff'].includes(getCurrentUserRole());
+            const contactoNombre = isAdminFlow && selectedClient
+                ? [selectedClient.nombre, selectedClient.apellido].filter(Boolean).join(' ').trim() || 'Cliente'
+                : (userData.nombre || userData.nombreCompleto || 'Usuario');
+            const contactoEmail = isAdminFlow && selectedClient ? (selectedClient.email || '') : (userData.email || '');
+            const contactoTelefono = isAdminFlow && selectedClient ? (selectedClient.telefono || '') : (userData.telefono || '');
+
+            // Preparar datos para enviar
+            const solicitudData = {
+                contacto_nombre: contactoNombre,
+                contacto_email: contactoEmail,
+                contacto_telefono: contactoTelefono,
+                nombre_show: document.getElementById('nombreEvento').value.trim() || null,
+                precio_anticipada: document.getElementById('precioAnticipada').value ? Number(document.getElementById('precioAnticipada').value) : null,
+                precio_puerta: document.getElementById('precioPuerta').value ? Number(document.getElementById('precioPuerta').value) : null,
+                fecha_evento: fechasSeleccionadas[0],
+                hora_evento: '21:00',            // default 21:00
+                duracion: 8 * 60,               // 8 horas en minutos
+                fecha_alternativa: fechasSeleccionadas[1] || null,
+                descripcion: document.getElementById('comentariosEspeciales').value || computeDefaultComments(),
+                expectativa_publico: 150,       // aforo máximo del templo
+                url_flyer: document.getElementById('urlFlyer').value.trim(),
+                bandas_json: bandasSeleccionadas.map((b, idx) => ({
+                    id_banda: b.bandaId,
+                    nombre: b.nombre,
+                    orden_show: idx,
+                    es_principal: idx === 0,
+                    hora_inicio: b.hora_inicio || null
+                }))
+            };
+
+            toggleLoadingOverlay(true, 'Enviando solicitud...');
+
+            try {
+                const response = await fetch('/api/solicitudes-fechas-bandas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(solicitudData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error al crear la solicitud');
+                }
+
+                const result = await response.json();
+                toggleLoadingOverlay(false);
+
+                const redirectUrl = isAdminFlow
+                    ? '/admin_solicitudes.html'
+                    : `/comprobante.html?solicitudId=${result.solicitudId}`;
+
+                showNotification(isAdminFlow ? '¡Solicitud creada correctamente! Redirigiendo al panel...' : '¡Solicitud enviada exitosamente! Redirigiendo...', 'success', 3000);
+
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 2000);
+
+            } catch (err) {
+                toggleLoadingOverlay(false);
+                console.error('Error:', err);
+                showNotification(err.message || 'Error al enviar la solicitud', 'error');
+            }
+        });
+
+        // Inicializar
+        function decodeJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+                );
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                const decoded = decodeJWT(token);
+                const rol = decoded ? decoded.rol || decoded.role : null;
+                const nombre = decoded ? decoded.nombre : 'Usuario';
+                const isAdmin = rol === 'admin' || rol === 'staff';
+
+                if (isAdmin) {
+                    if (desktopMenu) desktopMenu.innerHTML = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition">🔐 Admin</a>`;
+                    if (mobileMenu) mobileMenu.innerHTML = `<a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900 hover:bg-emerald-400">🔐 Admin</a>`;
+                } else {
+                    if (desktopMenu) desktopMenu.innerHTML = `<div class="flex items-center gap-2"><span class="text-sm font-semibold text-neon">${nombre}</span><button onclick="logout()" class="px-2 py-1 text-xs rounded-full bg-red-600 text-white hover:bg-red-700 transition">Salir</button></div>`;
+                    if (mobileMenu) mobileMenu.innerHTML = `<div class="px-3 py-2 text-base font-medium text-neon">Hola, ${nombre}</div><button onclick="logout()" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900 hover:text-white">🚪 Cerrar Sesión</button>`;
+                }
+            } else {
+                if (desktopMenu) desktopMenu.innerHTML = `<a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition">Login</a>`;
+                if (mobileMenu) mobileMenu.innerHTML = `<a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon text-neon">Login</a>`;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('token');
+            window.location.href = '/index.html';
+        }
+
+        window.addEventListener('storage', updateAuthMenu);
+
+        // Toggle Escenario sección
+        function initAccordion() {
+            const btnToggle = document.getElementById('btnEscenarioToggle');
+            const content = document.getElementById('escenarioContent');
+            const icon = document.getElementById('escenarioToggleIcon');
+
+            if (btnToggle && content && icon) {
+                btnToggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    content.classList.toggle('collapsed');
+                    icon.classList.toggle('collapsed');
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAuthMenu();
+            currentUserRole = getCurrentUserRole();
+            updateSolicitudButtonLabel();
+            initFingerprint();
+            loadBandas().then(() => {
+                // Primero, restaurar bandas guardadas si existen (desde localStorage)
+                const bandasRestauradas = restaurarBandasDesdeLocalStorage();
+
+                const params = new URLSearchParams(window.location.search);
+                const nuevaBandaId = params.get('nuevaBanda');
+                if (nuevaBandaId) {
+                    const bandaId = parseInt(nuevaBandaId, 10);
+                    // Encontrar la banda registrada en el listado disponible
+                    const bandaRegistrada = bandasDisponibles.find(b => (b.id_banda || b.id) === bandaId);
+
+                    if (bandaRegistrada) {
+                        // Seleccionar la banda automáticamente (se suma a las ya restauradas)
+                        toggleBanda(bandaRegistrada);
+
+                        // Abrir el modal con el catálogo
+                        setTimeout(() => {
+                            abrirModalCatalogo();
+                            // Después de un pequeño delay, scroll al item y highlight visual
+                            setTimeout(() => {
+                                highlightNuevaBanda(bandaId);
+                            }, 100);
+                        }, 50);
+                    } else {
+                        // Si no se encuentra, solo hacer highlight
+                        highlightNuevaBanda(bandaId);
+                    }
+
+                    window.history.replaceState({}, '', window.location.pathname);
+                } else if (bandasRestauradas) {
+                    // Si se restauraron bandas pero no hay nuevaBanda, abrir el modal
+                    setTimeout(() => {
+                        abrirModalCatalogo();
+                    }, 50);
+                }
+            });
+            initCalendarios();
+            initAccordion();
+
+            // Manejador del menú móvil responsivo
+            const menuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu-band');
+
+            if (menuButton && mobileMenu) {
+                function toggleMenu() {
+                    mobileMenu.classList.toggle('hidden');
+                }
+
+                menuButton.addEventListener('click', toggleMenu);
+
+                // Ocultar el menú móvil al hacer clic en un enlace
+                const navLinks = mobileMenu.querySelectorAll('a');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (!mobileMenu.classList.contains('hidden')) {
+                            mobileMenu.classList.add('hidden');
+                        }
+                    });
+                });
+            }
+        });
+
+        // Modal HTML (insertado dinámicamente al final del body)
+        document.body.insertAdjacentHTML('beforeend', `
+        <div id="clienteModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:10000;">
+            <div style="background:#1a1a1a;padding:20px;border-radius:8px;max-width:500px;width:90%;color:#d6d3d1;max-height:80vh;overflow-y:auto;">
+                <h3 style="margin-top:0;">Editar Cliente</h3>
+                
+                <!-- Sección de búsqueda de clientes existentes -->
+                <div style="margin-bottom:20px;padding:12px;background:#2a2a2a;border:1px solid #374151;border-radius:6px;">
+                    <label style="display:block;margin-bottom:8px;font-size:0.9rem;color:#f0abfc;">Buscar cliente existente (opcional):</label>
+                    <input type="text" id="modalBuscadorClienteInput" placeholder="Nombre, email o teléfono..." 
+                        style="width:100%;padding:8px;background:#1a1a1a;border:1px solid #444;color:#d6d3d1;border-radius:4px;margin-bottom:8px;"
+                        onkeyup='buscarClientes(this.value)'>
+                    <div id="modalBuscadorResultados" style="background:#0f172a;border:1px solid #374151;border-radius:4px;max-height:200px;overflow-y:auto;"></div>
+                </div>
+                
+                <hr style="border:none;border-top:1px solid #374151;margin:15px 0;">
+                
+                <!-- ID del cliente (oculto pero accesible) -->
+                <input type="hidden" id="modalClienteId" value="">
+                
+                <!-- Sección de edición manual -->
+                <div style="margin-bottom:10px;">
+                    <label style="font-size:0.85rem;color:#9ca3af;">ID Cliente: <span id="modalClienteIdDisplay">-</span></label>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label>Nombre</label>
+                    <input type="text" id="modalClienteNombre" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;">
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label>Email</label>
+                    <input type="email" id="modalClienteEmail" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;">
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label>Teléfono</label>
+                    <input type="tel" id="modalClienteTelefono" style="width:100%;padding:6px;background:#2a2a2a;border:1px solid #444;color:#d6d3d1;border-radius:4px;">
+                </div>
+                <div style="text-align:right;">
+                    <button class="btn btn-secondary" onclick="closeEditClienteModal()" style="margin-right:8px;">Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveClienteModal()">Guardar</button>
+                </div>
+            </div>
+        </div>
+        `);
+
+        /* ================ FIN MODAL DE CLIENTE ================ */
+
+    </script>
+
+    <!-- MODAL CATÁLOGO DE BANDAS -->
+    <div id="modalCatalogoOverlay"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;">
+        <div
+            style="background:var(--color-bg-medium,#1e293b);border:1.5px solid var(--color-secondary,#a855f7);border-radius:12px;width:95%;max-width:960px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
+            <!-- Header -->
+            <div
+                style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid rgba(168,85,247,0.3);">
+                <h3 style="margin:0;color:var(--color-secondary,#a855f7);"><i class="fas fa-book-open"></i> Catálogo de
+                    Bandas</h3>
+                <button id="modalCatalogoClose"
+                    style="background:none;border:none;color:#94a3b8;font-size:1.3rem;cursor:pointer;line-height:1;"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <!-- Buscador + registrar -->
+            <div
+                style="padding:12px 20px;display:flex;gap:10px;align-items:center;border-bottom:1px solid rgba(168,85,247,0.15);">
+                <input id="modalBandaSearch" type="text" placeholder="Buscar por nombre o género..."
+                    style="flex:1;padding:8px 12px;border:1.5px solid #581c87;border-radius:6px;background:#0f172a;color:#f8fafc;">
+                <button id="btnRegistrarBanda" class="btn btn-ghost"
+                    style="white-space:nowrap;color:var(--color-secondary,#a855f7);border:1.5px solid var(--color-secondary,#a855f7);">
+                    <i class="fas fa-plus"></i> Registrar nueva banda
+                </button>
+            </div>
+            <!-- Grid de bandas -->
+            <div id="bandasList" class="band-list-grid" style="overflow-y:auto;padding:12px 20px;flex:1;"></div>
+            <!-- Footer -->
+            <div
+                style="padding:12px 20px;border-top:1px solid rgba(168,85,247,0.15);display:flex;justify-content:flex-end;">
+                <button id="modalCatalogoConfirmar" class="btn btn-primary"
+                    onclick="document.getElementById('modalCatalogoOverlay').style.display='none'">
+                    <i class="fas fa-check"></i> Confirmar selección
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

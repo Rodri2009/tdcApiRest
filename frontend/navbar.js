@@ -20,6 +20,13 @@ class NavbarManager {
         console.log('[NAVBAR_DEBUG] JWT Token encontrado:', !!this.jwtToken);
 
         if (this.jwtToken) {
+            const tokenMeta = this.getTokenMeta(this.jwtToken);
+            if (tokenMeta.isMpOnlyToken) {
+                console.warn('[NAVBAR_DEBUG] Token detectado como MP legacy. Se ignora para la sesión del usuario.');
+                this.clearAuth();
+                return;
+            }
+
             this.isAuthenticated = true;
             console.log('[NAVBAR_DEBUG] Usuario autenticado');
             // Decodificar el JWT para obtener datos del usuario
@@ -32,16 +39,35 @@ class NavbarManager {
             localStorage.setItem('userName', this.userName);
             localStorage.setItem('userNivel', this.userNivel);
 
-            // Detectar si estamos en página de admin pero el rol es bajo (JWT desactualizado)
+            // Detectar si estamos en página de admin pero el rol es bajo
+            // No se debe limpiar la sesión aquí: si el usuario tiene un token válido pero no
+            // tiene acceso de staff, solo debe redirigirse a inicio sin desloguearlo.
             const isStaffPage = /\/(admin\.html|admin_|editar_|config_)/.test(window.location.pathname);
-            if (isStaffPage && this.userNivel < 50) {
-                console.warn('⚠️ JWT desactualizado: nivel=' + this.userNivel + ' en página de admin');
-                console.log('🔄 Limpiando sesión y redirigiendo a login para regenerar JWT...');
-                this.clearAuth();
-                window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+            if (isStaffPage && !this.tieneAccesoStaff()) {
+                console.warn('⚠️ Usuario autenticado sin acceso de staff en página admin: nivel=' + this.userNivel + ', role=' + this.userRole);
+                console.log('🔄 Redirigiendo a inicio sin borrar la sesión actual');
+                window.location.href = '/index.html';
             }
         } else {
             console.log('[NAVBAR_DEBUG] Usuario NO autenticado');
+        }
+    }
+
+    getTokenMeta(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split('')
+                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+            );
+            const payload = JSON.parse(jsonPayload);
+            const isMpOnlyToken = !!payload.permissions && !payload.id_usuario && !payload.roles && !payload.nivel && !payload.nombre;
+            return { payload, isMpOnlyToken };
+        } catch (error) {
+            return { payload: null, isMpOnlyToken: false };
         }
     }
 
@@ -60,10 +86,27 @@ class NavbarManager {
                     .join('')
             );
             const payload = JSON.parse(jsonPayload);
+            if (payload.permissions && !payload.id_usuario && !payload.roles && !payload.nivel && !payload.nombre) {
+                console.warn('[NAVBAR_DEBUG] JWT detectado como token MP legacy; se invalida para la sesión app.');
+                this.clearAuth();
+                return;
+            }
+
+            const rawRoles = Array.isArray(payload.roles)
+                ? payload.roles
+                : Array.isArray(payload.userRoles)
+                    ? payload.userRoles
+                    : [];
+            const legacyRole = payload.role || payload.userRole || payload.rol || '';
+            const normalizedRoles = [...rawRoles, legacyRole]
+                .filter(Boolean)
+                .map(r => String(r).trim())
+                .filter((r, index, arr) => arr.findIndex(item => String(item).toLowerCase() === String(r).toLowerCase()) === index);
+
             this.userEmail = payload.email || payload.id || 'Usuario';
             this.userName = payload.nombre || payload.email || 'Usuario';
             this.clientId = payload.id_cliente || null;
-            this.userRole = payload.role || 'user';
+            this.userRole = String(legacyRole || normalizedRoles[0] || 'user').trim();
 
             console.log('[JWT_DECODE] ===== DECODIFICACION JWT =====');
             console.log('[JWT_DECODE] Payload completo:', JSON.stringify(payload));
@@ -73,10 +116,26 @@ class NavbarManager {
             console.log('[JWT_DECODE] nombre:', payload.nombre);
             console.log('[JWT_DECODE] email:', payload.email);
 
-            this.userRoles = payload.roles || [];
-            this.userPermisos = payload.permisos || [];
-            this.userNivel = payload.nivel || 0;
-            
+            this.userRoles = normalizedRoles;
+            this.userPermisos = Array.isArray(payload.permisos)
+                ? payload.permisos
+                : Array.isArray(payload.permissions)
+                    ? payload.permissions
+                    : (Array.isArray(payload.userPermisos) ? payload.userPermisos : []);
+
+            const roleLower = String(this.userRole || '').toLowerCase();
+            const roleLevelMap = {
+                admin: 100,
+                super_admin: 100,
+                staff: 50,
+                staff_readonly: 50,
+                cliente: 10,
+                client: 10,
+                user: 0
+            };
+            const inferredNivel = Number(payload.nivel ?? payload.userNivel ?? roleLevelMap[roleLower] ?? 0);
+            this.userNivel = Number.isFinite(inferredNivel) ? inferredNivel : 0;
+
             console.log('[NAVBAR_DEBUG] decodeJWT() - userRoles:', this.userRoles);
             console.log('[NAVBAR_DEBUG] decodeJWT() - userNivel:', this.userNivel);
         } catch (error) {
@@ -91,30 +150,51 @@ class NavbarManager {
      */
     tienePermiso(permiso) {
         // SUPER_ADMIN o admin tienen todos los permisos
-        if (this.userRoles.includes('SUPER_ADMIN') || this.userRoles.includes('admin')) return true;
-        return this.userPermisos.includes(permiso);
+        const roles = (this.userRoles || []).map(r => String(r).toLowerCase());
+        const role = String(this.userRole || '').toLowerCase();
+        if (roles.includes('super_admin') || roles.includes('admin') || role === 'super_admin' || role === 'admin') return true;
+        return (this.userPermisos || []).includes(permiso);
     }
 
     /**
      * Verifica si el usuario tiene alguno de los permisos
      */
     tieneAlgunPermiso(permisos) {
-        if (this.userRoles.includes('SUPER_ADMIN') || this.userRoles.includes('admin')) return true;
-        return permisos.some(p => this.userPermisos.includes(p));
+        const roles = (this.userRoles || []).map(r => String(r).toLowerCase());
+        const role = String(this.userRole || '').toLowerCase();
+        if (roles.includes('super_admin') || roles.includes('admin') || role === 'super_admin' || role === 'admin') return true;
+        return (permisos || []).some(p => (this.userPermisos || []).includes(p));
     }
 
     /**
      * Verifica si el usuario tiene un rol específico
      */
     tieneRol(rol) {
-        return this.userRoles.includes(rol);
+        const target = String(rol || '').toLowerCase();
+        const roles = (this.userRoles || []).map(r => String(r).toLowerCase());
+        const current = String(this.userRole || '').toLowerCase();
+        return roles.includes(target) || current === target;
     }
 
     /**
      * Verifica si el usuario tiene nivel mínimo
      */
     tieneNivel(nivelMinimo) {
-        return this.userNivel >= nivelMinimo;
+        return Number(this.userNivel || 0) >= Number(nivelMinimo || 0);
+    }
+
+    /**
+     * Verifica si el usuario tiene acceso de staff/admin
+     */
+    tieneAccesoStaff() {
+        const nivel = Number(this.userNivel || 0);
+        const role = String(this.userRole || '').toLowerCase();
+        const roles = (this.userRoles || []).map(r => String(r).toLowerCase());
+        const staffRoles = ['admin', 'super_admin', 'staff', 'staff_readonly'];
+
+        return nivel >= 50
+            || staffRoles.includes(role)
+            || roles.some(r => staffRoles.includes(String(r).toLowerCase()));
     }
 
     /**
@@ -271,10 +351,10 @@ class NavbarManager {
 
         // Detectar si es página de staff (admin.html, admin_, editar_, config_)
         const isStaffPage = /\/(admin\.html|admin_|editar_|config_)/.test(window.location.pathname);
-        
+
         console.log('[NAVBAR_DEBUG] Regex test para isStaffPage:', /\/(admin\.html|admin_|editar_|config_)/.test(window.location.pathname));
         console.log('[NAVBAR_DEBUG] isStaffPage:', isStaffPage);
-        
+
         // El botón "Panel Admin" se muestra en todas las páginas de staff
         const isAdminPage = isStaffPage;
         console.log('[NAVBAR_DEBUG] isAdminPage:', isAdminPage);
@@ -292,7 +372,7 @@ class NavbarManager {
                 </div>
             </div>
         ` : '';
-        
+
         console.log('[NAVBAR_DEBUG] adminPageBadge HTML generado:', adminPageBadge ? 'SÍ - Badge visible' : 'NO - Badge oculto');
 
         const logoHTML = isAdminPage ? adminPageBadge : `
@@ -704,7 +784,9 @@ class NavbarManager {
      * Verifica si el usuario es admin (legacy - usar tieneRol o tienePermiso)
      */
     isAdmin() {
-        return this.isAuthenticated && (this.userRole === 'admin' || this.userRoles.includes('SUPER_ADMIN') || this.userRoles.includes('ADMIN'));
+        const role = String(this.userRole || '').toLowerCase();
+        const roles = (this.userRoles || []).map(r => String(r).toLowerCase());
+        return this.isAuthenticated && (role === 'admin' || role === 'super_admin' || roles.includes('admin') || roles.includes('super_admin'));
     }
 }
 
@@ -865,17 +947,15 @@ function protectRoutesAutomatically() {
         }
 
         // Verificar que el usuario tenga nivel >= 50 (staff o superior) O rol de admin/staff
-        const nivel = navbarManager.userNivel || 0;
-        const role = navbarManager.userRole || '';
-        const roles = navbarManager.userRoles || [];
-        const tieneAcceso = nivel >= 50
-            || role === 'admin' || role === 'staff' || role === 'staff_readonly'
-            || roles.includes('admin') || roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')
-            || roles.includes('staff') || roles.includes('staff_readonly');
+        const nivel = Number(navbarManager.userNivel || 0);
+        const role = String(navbarManager.userRole || '').toLowerCase();
+        const roles = (navbarManager.userRoles || []).map(r => String(r).toLowerCase());
+        const staffRoles = ['admin', 'super_admin', 'staff', 'staff_readonly'];
+        const tieneAcceso = nivel >= 50 || staffRoles.includes(role) || roles.some(r => staffRoles.includes(r));
 
         if (!tieneAcceso) {
             console.warn(`Acceso denegado: Usuario nivel=${nivel} rol=${role} intenta acceder a ${window.location.pathname}`);
-            // Redirigir a página de inicio
+            // No borrar el token para evitar logout accidental al navegar entre paneles.
             window.location.href = '/index.html';
             return;
         }
@@ -910,7 +990,7 @@ function protectRoutesAutomatically() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[NAVBAR_DEBUG] ===== INICIALIZANDO NAVBAR =====');
     console.log('[NAVBAR_DEBUG] DOMContentLoaded ejecutado');
-    
+
     // Instanciar NavbarManager globalmente
     if (!navbarManager) {
         console.log('[NAVBAR_DEBUG] Instanciando NavbarManager...');
@@ -934,6 +1014,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Proteger rutas que requieren autenticación
     console.log('[NAVBAR_DEBUG] Protegiendo rutas...');
     protectRoutesAutomatically();
-    
+
     console.log('[NAVBAR_DEBUG] ===== FIN INICIALIZACIÓN NAVBAR =====');
 });

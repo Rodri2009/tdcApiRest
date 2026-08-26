@@ -736,24 +736,36 @@
                 </a>
 
                 <nav class="hidden md:flex space-x-8 items-center">
-                    <a href="seccion_bandas.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en Vivo</a>
-                    <a href="seccion_alquiler.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del Salón</a>
-                    <a href="seccion_talleres.html" class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <a href="seccion_bandas.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
+                        Vivo</a>
+                    <a href="seccion_alquiler.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
+                        Salón</a>
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Talleres</a>
                     <div id="auth-menu-desktop"></div>
                 </nav>
 
-                <button id="mobile-menu-button" class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                <button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
                     <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
             </div>
         </div>
         <div id="mobile-menu" class="hidden md:hidden">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
-                <a href="seccion_bandas.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas en Vivo</a>
-                <a href="seccion_alquiler.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler del Salón</a>
-                <a href="seccion_talleres.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
+                <a href="seccion_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
+                    en Vivo</a>
+                <a href="seccion_alquiler.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
+                    del Salón</a>
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Talleres</a>
                 <div id="auth-menu-mobile"></div>
             </div>
         </div>
@@ -908,7 +920,8 @@
             <div class="flyer-input-side">
                 <div class="form-group">
                     <label for="urlFlyer">Flyer (URL o subir)</label>
-                    <p class="hint" style="font-size: 0.9rem; color: #9ca3af; margin-top: 5px;">Pegá la URL del flyer o hacé click en la imagen para subir (JPG o PNG, máx 3MB):</p>
+                    <p class="hint" style="font-size: 0.9rem; color: #9ca3af; margin-top: 5px;">Pegá la URL del flyer o
+                        hacé click en la imagen para subir (JPG o PNG, máx 3MB):</p>
                     <input type="text" id="urlFlyer" placeholder="https://..." onchange="updateFlyerPreview()"
                         oninput="updateFlyerPreview()" style="margin-top: 5px;">
                     <input type="file" id="flyerFile" accept="image/png,image/jpeg" style="display: none;"
@@ -1662,7 +1675,7 @@
 
         function logout() {
             localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
+            localStorage.removeItem('token');
             window.location.href = '/index.html';
         }
 
@@ -1689,18 +1702,18 @@
             loadBandas().then(() => {
                 // Primero, restaurar bandas guardadas si existen (desde localStorage)
                 const bandasRestauradas = restaurarBandasDesdeLocalStorage();
-                
+
                 const params = new URLSearchParams(window.location.search);
                 const nuevaBandaId = params.get('nuevaBanda');
                 if (nuevaBandaId) {
                     const bandaId = parseInt(nuevaBandaId, 10);
                     // Encontrar la banda registrada en el listado disponible
                     const bandaRegistrada = bandasDisponibles.find(b => (b.id_banda || b.id) === bandaId);
-                    
+
                     if (bandaRegistrada) {
                         // Seleccionar la banda automáticamente (se suma a las ya restauradas)
                         toggleBanda(bandaRegistrada);
-                        
+
                         // Abrir el modal con el catálogo
                         setTimeout(() => {
                             abrirModalCatalogo();
@@ -1713,7 +1726,7 @@
                         // Si no se encuentra, solo hacer highlight
                         highlightNuevaBanda(bandaId);
                     }
-                    
+
                     window.history.replaceState({}, '', window.location.pathname);
                 } else if (bandasRestauradas) {
                     // Si se restauraron bandas pero no hay nuevaBanda, abrir el modal

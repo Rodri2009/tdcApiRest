@@ -241,29 +241,29 @@ min_version_or_fail() {
 NODE_MIN_VERSION="14.0.0"
 NPM_MIN_VERSION="6.0.0"
 
-if ! command_exists node; then
-    echo -e "${RED}[✗] ERROR: 'node' no está instalado.${NC}"
-    echo "   Instala Node.js: https://nodejs.org/"
-    exit 1
-fi
-if ! command_exists npm; then
-    echo -e "${RED}[✗] ERROR: 'npm' no está instalado.${NC}"
-    exit 1
-fi
+#if ! command_exists node; then
+#    echo -e "${RED}[✗] ERROR: 'node' no está instalado.${NC}"
+#    echo "   Instala Node.js: https://nodejs.org/"
+#    exit 1
+#fi
+#if ! command_exists npm; then
+#    echo -e "${RED}[✗] ERROR: 'npm' no está instalado.${NC}"
+#    exit 1
+#fi
 
-NODE_VERSION="$(node --version | sed 's/^v//')"
-NPM_VERSION="$(npm --version)"
+#NODE_VERSION="$(node --version | sed 's/^v//')"
+#NPM_VERSION="$(npm --version)"
 
-if ! min_version_or_fail "$NODE_VERSION" "$NODE_MIN_VERSION"; then
-    echo -e "${RED}[✗] ERROR: Node $NODE_VERSION encontrado, se requiere $NODE_MIN_VERSION+${NC}"
-    exit 1
-fi
-if ! min_version_or_fail "$NPM_VERSION" "$NPM_MIN_VERSION"; then
-    echo -e "${RED}[✗] ERROR: npm $NPM_VERSION encontrado, se requiere $NPM_MIN_VERSION+${NC}"
-    exit 1
-fi
+#if ! min_version_or_fail "$NODE_VERSION" "$NODE_MIN_VERSION"; then
+#    echo -e "${RED}[✗] ERROR: Node $NODE_VERSION encontrado, se requiere $NODE_MIN_VERSION+${NC}"
+#    exit 1
+#fi
+#if ! min_version_or_fail "$NPM_VERSION" "$NPM_MIN_VERSION"; then
+#    echo -e "${RED}[✗] ERROR: npm $NPM_VERSION encontrado, se requiere $NPM_MIN_VERSION+${NC}"
+#    exit 1
+#fi
 
-echo -e "${GREEN}  ✓ Node.js $NODE_VERSION y npm $NPM_VERSION detectados${NC}"
+#echo -e "${GREEN}  ✓ Node.js $NODE_VERSION y npm $NPM_VERSION detectados${NC}"
 
 # --- Función para crear .env.tmp ---
 # Crea un archivo temporal con overrides en la carpeta docker y deja
@@ -579,8 +579,8 @@ echo -e "${CYAN}Servicios activos:${NC}"
 "${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" --env-file "$ENV_FILE_TO_USE" ps
 echo ""
 echo -e "${YELLOW}¿Cómo probar la app?${NC}"
-echo -e "  - Frontend:     ${CYAN}http://localhost:8080${NC} (nginx)"
-echo -e "  - Backend API:  ${CYAN}http://localhost:3000${NC} (Node.js)"
+    echo -e "  - Frontend:     ${CYAN}http://localhost:8080${NC} (nginx)"
+    echo -e "  - Backend API:  ${CYAN}http://localhost:3000${NC} (Node.js)"
 if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
     echo -e "  - VNC Backend:  ${CYAN}vncviewer localhost:5901${NC} (sin contraseña)"
     echo -e "  - Debug Chrome: ${CYAN}localhost:9001 (MP), localhost:9002 (WA)${NC}"
