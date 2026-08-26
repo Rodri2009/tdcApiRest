@@ -5,6 +5,7 @@ const {
     crearCaja,
     obtenerCaja,
     agregarMovimiento,
+    actualizarMovimientoCaja,
     eliminarMovimiento,
     eliminarCaja,
     cerrarCaja,
@@ -85,6 +86,13 @@ router.get('/:id/movimientos', obtenerMovimientosCaja);
  * Body: { tipo, categoria, subcategoria, descripcion, monto, metodo, comprobante, id_evento_confirmado, id_solicitud }
  */
 router.post('/:id/movimientos', agregarMovimiento);
+
+/**
+ * PUT /api/cajas/movimientos/:movimientoId
+ * Actualizar un movimiento de caja
+ * Body: { tipo, categoria, subcategoria, descripcion, monto, metodo_pago, comprobante_ref, id_evento_confirmado, id_solicitud }
+ */
+router.put('/movimientos/:movimientoId', actualizarMovimientoCaja);
 
 /**
  * DELETE /api/cajas/movimientos/:movimientoId

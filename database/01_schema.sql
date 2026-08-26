@@ -26,7 +26,7 @@ USE tdc_db;
 -- Tipos de eventos con su categoría padre
 -- Ejemplo: INFANTILES → ALQUILER_SALON, FECHA_BANDAS → FECHA_BANDAS
 CREATE TABLE IF NOT EXISTS opciones_tipos (
-    id_tipo_evento VARCHAR(255) PRIMARY KEY COMMENT 'ID del tipo/subtipo: INFANTILES, FECHA_BANDAS, etc.',
+    id_tipo_evento VARCHAR(255) PRIMARY KEY COMMENT 'ID del tipo/subtipo: INFANTILES, FECHA_BANDAS',
     nombre_para_mostrar VARCHAR(255) NOT NULL COMMENT 'Nombre amigable para UI',
     descripcion TEXT COMMENT 'Descripción detallada del tipo de evento',
     categoria VARCHAR(50) NOT NULL COMMENT 'ALQUILER_SALON, FECHA_BANDAS, TALLERES_ACTIVIDADES, SERVICIOS',
@@ -243,6 +243,13 @@ CREATE TABLE IF NOT EXISTS clientes (
     email VARCHAR(255) DEFAULT NULL COMMENT 'Copia de usuarios.email para queries rápidas',
     notas TEXT DEFAULT NULL,
     
+    tipo ENUM(
+        'ALQUILER_SALON',
+        'SERVICIOS',
+        'TALLERES_ACTIVIDADES',
+        'FECHA_BANDAS'
+    ) DEFAULT NULL,
+
     -- Control
     creado_por_id_usuario INT DEFAULT NULL COMMENT 'ID del usuario admin/staff que lo creó. NULL = el cliente se registró solo',
     activo TINYINT(1) DEFAULT 1,

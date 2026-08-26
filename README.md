@@ -4,10 +4,13 @@ Sistema de gestión para solicitudes de alquiler, servicios, talleres y fechas d
 
 ## ⚡ Desarrollo y Pruebas Rápido
 
-Este proyecto usa **Docker Compose** para orquestar 3 servicios:
-- **nginx** (frontend/proxy): Puerto 80/443
-- **backend** (Node.js/Express): Puerto 3000
-- **mariadb** (base de datos): Puerto 3306
+Este proyecto usa **Docker Compose** para orquestar 3 servicios. Los puertos de acceso varían según dónde se levanta la copia del proyecto:
+
+- **nginx** (frontend/proxy): expone el frontend en el host con `8080:80` en este servidor y puede variar si se levanta en otra máquina
+- **backend** (Node.js/Express): escucha internamente en `3000`, pero se expone en el host según el contexto; en este servidor se usa `3001:3000`
+- **mariadb** (base de datos): expone `3307:3306` en este servidor; también puede variar en otros entornos
+
+> Importante: este repositorio se usa como copia de seguridad y como respaldo del equipo. Por eso la misma configuración puede ejecutarse en distintos hosts con puertos distintos. En este servidor se accede al frontend por `http://192.168.1.21:8080/` y el backend directo por `http://192.168.1.21:3001/`. En otro equipo local o en una réplica del proyecto, lo normal es usar `http://localhost:8080/` o `http://localhost:3001/` si mantiene el mismo mapeo de puertos.
 
 ### 🚀 Inicio Rápido
 
@@ -25,10 +28,26 @@ Este proyecto usa **Docker Compose** para orquestar 3 servicios:
 ./scripts/restart.sh --db
 ```
 
-**URLs de desarrollo:**
-- Frontend: http://localhost
-- API: http://localhost/api
-- PhpMyAdmin (si está en docker-compose): http://localhost:8080
+### 🔌 Acceso rápido por entorno
+
+```text
+ENTORNO ACTUAL DEL SERVIDOR
+- Frontend: http://192.168.1.21:8080/
+- API vía nginx: http://192.168.1.21:8080/api
+- Backend directo: http://192.168.1.21:3001/
+- MariaDB: 192.168.1.21:3307
+
+COPIA DE RESPALDO / EQUIPO DE DESARROLLO
+- Frontend: http://localhost:8080/
+- API vía nginx: http://localhost:8080/api
+- Backend directo: http://localhost:3001/
+- MariaDB: localhost:3307
+
+NOTA
+- Los servicios internos siguen siendo 80 (nginx), 3000 (Node.js) y 3306 (MariaDB).
+- Los puertos del host cambian según el equipo donde se levanta la copia.
+- El repositorio se usa como respaldo y como copia de trabajo; por eso siempre debe documentarse el entorno de despliegue.
+```
 
 ### 📝 Flujo de Trabajo: Haciendo Cambios
 
@@ -40,7 +59,7 @@ Este proyecto usa **Docker Compose** para orquestar 3 servicios:
 # Solo recarga la página en el navegador con F5
 
 # Ejemplo:
-vim frontend/admin_usuarios.html   # Haz cambios
+nano frontend/admin_usuarios.html   # Haz cambios
 # En navegador: F5 o Ctrl+Shift+R (hard refresh)
 ```
 
@@ -55,7 +74,7 @@ volumes:
 
 ```bash
 # Edita archivos en backend/ (ej: controllers/, routes/, services/)
-vim backend/controllers/authController.js
+nano backend/controllers/authController.js
 
 # Reinicia el contenedor para que cargue los cambios
 ./scripts/restart.sh --backend
@@ -75,7 +94,7 @@ docker-compose -f docker/docker-compose.yml logs -f backend
 
 ```bash
 # Edita configuración de Nginx
-vim docker/nginx.conf
+nano docker/nginx.conf
 
 # Recarga (sin rebuild):
 docker-compose -f docker/docker-compose.yml restart nginx
@@ -200,7 +219,7 @@ docker-compose up -d nginx
 **Escenario 1: Arreglar Bug Pequeño en Frontend**
 ```bash
 # 1. Edita el HTML/CSS
-vim frontend/admin_usuarios.html
+nano frontend/admin_usuarios.html
 
 # 2. F5 en el navegador → cambios visibles al instante
 ```
@@ -208,7 +227,7 @@ vim frontend/admin_usuarios.html
 **Escenario 2: Cambiar Lógica de Backend**
 ```bash
 # 1. Edita el código
-vim backend/controllers/usuariosController.js
+nano backend/controllers/usuariosController.js
 
 # 2. Reinicia backend
 ./scripts/restart.sh --backend -v
@@ -220,7 +239,7 @@ curl http://localhost/api/usuarios
 **Escenario 3: Agregar Campo a Base de Datos**
 ```bash
 # 1. Edita schema
-vim database/01_schema.sql
+nano database/01_schema.sql
 
 # 2. Aplica cambio
 ./scripts/reset.sh --db
@@ -233,7 +252,7 @@ SELECT * FROM usuarios;
 **Escenario 4: Cambiar Configuración de nginx**
 ```bash
 # 1. Edita configuración
-vim docker/nginx.conf
+nano docker/nginx.conf
 
 # 2. Recarga (sin rebuild, gracias al volumen montado)
 ./scripts/restart.sh --frontend

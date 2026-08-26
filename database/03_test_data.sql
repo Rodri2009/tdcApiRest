@@ -77,21 +77,21 @@ UNLOCK TABLES;
 
 LOCK TABLES `clientes` WRITE;
 /*!40000 ALTER TABLE `clientes` DISABLE KEYS */;
-INSERT INTO `clientes` (`id_cliente`, `id_usuario`, `nombre`, `apellido`, `telefono`, `email`, `notas`, `creado_por_id_usuario`, `activo`, `creado_en`, `actualizado_en`) VALUES
+INSERT INTO `clientes` (`id_cliente`, `id_usuario`, `nombre`, `apellido`, `telefono`, `email`, `notas`, `tipo`, `creado_por_id_usuario`, `activo`, `creado_en`, `actualizado_en`) VALUES
 
-  (1,NULL,'Juan','Pérez','+5491111111','juan@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (2,NULL,'María','González','+5491111112','maria@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (3,NULL,'Pedro','López','+5491111113','pedro@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (4,NULL,'Rodrigo','Villalba','1122757887','villalbarodrigo2009@gmail.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (5,NULL,'Carlos','Martínez','+5491111115','carlos@test.com',NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
-  (6,NULL,'Bruno',NULL,NULL,NULL,NULL,NULL,1,'2026-03-17 23:43:07','2026-03-17 23:43:07'),
-  (7,1,'Templo','User',NULL,'temploclaypole@gmail.com',NULL,1,1,'2026-03-17 23:43:07','2026-03-17 23:43:07'),
-  (8,NULL,'Lucho','Reite','1155001122',NULL,'Rol en banda: Manager (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
-  (9,NULL,'Marco','Sández','1155003344','pateando.bares@gmail.com','Rol en banda: Productor (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
-  (10,NULL,'Sol','Rodríguez','1155005566','lasmentas@gmail.com','Rol en banda: Vocalista/Manager (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
-  (11,NULL,'Carlos','Mendoza','1144445566','cumbia.sudaka@gmail.com','Rol en banda: Líder (migrado desde bandas_artistas.contacto_*)',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
-  (12,NULL,'Test','Binlog',NULL,'test@binlog.com',NULL,NULL,1,'2026-03-31 17:09:25','2026-03-31 17:09:25'),
-  (13,NULL,'Seba',NULL,NULL,NULL,NULL,NULL,1,'2026-03-31 17:11:03','2026-03-31 17:11:03');
+  (1,NULL,'Juan','Pérez','+5491111111','juan@test.com',NULL,'SERVICIOS',1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
+  (2,NULL,'María','González','+5491111112','maria@test.com',NULL,'TALLERES_ACTIVIDADES',1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
+  (3,NULL,'Pedro','López','+5491111113','pedro@test.com',NULL,NULL,1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
+  (4,NULL,'Rodrigo','Villalba','1122757887','villalbarodrigo2009@gmail.com',NULL,'FECHA_BANDAS',1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
+  (5,NULL,'Carlos','Martínez','+5491111115','carlos@test.com',NULL,'FECHA_BANDAS',1,1,'2026-03-13 04:29:21','2026-03-13 04:29:21'),
+  (6,NULL,'Bruno',NULL,NULL,NULL,NULL,NULL,NULL,1,'2026-03-17 23:43:07','2026-03-17 23:43:07'),
+  (7,1,'Templo','User',NULL,'temploclaypole@gmail.com',NULL,NULL,1,1,'2026-03-17 23:43:07','2026-03-17 23:43:07'),
+  (8,NULL,'Lucho','Reite','1155001122',NULL,'Rol en banda: Manager (migrado desde bandas_artistas.contacto_*)','FECHA_BANDAS',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
+  (9,NULL,'Marco','Sández','1155003344','pateando.bares@gmail.com','Rol en banda: Productor (migrado desde bandas_artistas.contacto_*)','FECHA_BANDAS',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
+  (10,NULL,'Sol','Rodríguez','1155005566','lasmentas@gmail.com','Rol en banda: Vocalista/Manager (migrado desde bandas_artistas.contacto_*)','FECHA_BANDAS',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
+  (11,NULL,'Carlos','Mendoza','1144445566','cumbia.sudaka@gmail.com','Rol en banda: Líder (migrado desde bandas_artistas.contacto_*)','FECHA_BANDAS',NULL,1,'2026-03-18 01:31:13','2026-03-18 01:31:13'),
+  (12,NULL,'Test','Binlog',NULL,'test@binlog.com',NULL,NULL,NULL,1,'2026-03-31 17:09:25','2026-03-31 17:09:25'),
+  (13,NULL,'Seba',NULL,NULL,NULL,NULL,NULL,NULL,1,'2026-03-31 17:11:03','2026-03-31 17:11:03');
 /*!40000 ALTER TABLE `clientes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -213,10 +213,16 @@ UNLOCK TABLES;
 
 LOCK TABLES `usuarios` WRITE;
 /*!40000 ALTER TABLE `usuarios` DISABLE KEYS */;
-INSERT INTO `usuarios` (`id_usuario`, `email`, `password_hash`, `nombre`, `rol`, `activo`, `proveedor_oauth`, `id_oauth`, `token_oauth`, `foto_url`, `creado_en`, `actualizado_en`) VALUES
+INSERT INTO `usuarios` (`id_usuario`, `email`, `password_hash`, `nombre`, `rol`, `activo`, `proveedor_oauth`, `id_oauth`, `token_oauth`, `foto_url`, `email_verified`, `creado_en`, `actualizado_en`) VALUES
 
-  (1,'temploclaypole@gmail.com','$2a$10$ad7UbwII0YnLMOhKhiFRdu9GUf.kicRmgb1GrqYfisWnmfk4Sf3Ru','Templo User','staff',1,'google','107386203679475316318',NULL,'https://lh3.googleusercontent.com/a/ACg8ocJGyiIz4tnQI40z1wg81HbfIeiPnmIl49oegEjoq5aFm0k-951Emg=s96-c','2026-03-13 04:29:21','2026-03-13 12:25:56'),
-  (2,'villalbarodrigo2009@gmail.com','$2a$10$0RjSyJBBtT76vAFllqNMKOLkzUFH1kT8g9IyBjTzU7IgOuqNaWcSO','Rodrigo Villalba','admin',1,'google','117318714094755139695',NULL,'https://lh3.googleusercontent.com/a/ACg8ocJGyiIz4tnQI40z1wg81HbfIeiPnmIl49oegEjoq5aFm0k-951Emg=s96-c','2026-03-13 04:29:21','2026-03-18 12:23:51');
+  (1,'temploclaypole@gmail.com','$2a$10$ad7UbwII0YnLMOhKhiFRdu9GUf.kicRmgb1GrqYfisWnmfk4Sf3Ru','Templo User','staff',1,'google','107386203679475316318',NULL,'https://lh3.googleusercontent.com/a/ACg8ocJGyiIz4tnQI40z1wg81HbfIeiPnmIl49oegEjoq5aFm0k-951Emg=s96-c',1,'2026-03-13 04:29:21','2026-03-13 12:25:56'),
+  (2,'villalbarodrigo2009@gmail.com','$2a$10$uR3LGeWWOEXxYhwmVPFazuPoa/DmTwfm2WU6.EeagDkRUJnCJNcCi','Rodrigo Villalba','admin',1,'google','117318714094755139695',NULL,'https://lh3.googleusercontent.com/a/ACg8ocJGyiIz4tnQI40z1wg81HbfIeiPnmIl49oegEjoq5aFm0k-951Emg=s96-c',1,'2026-03-13 04:29:21','2026-03-18 12:23:51');
+
+/*UPDATE `usuarios`
+SET `email_verified` = 1,
+    `verification_token` = NULL,
+    `verification_token_expires_at` = NULL
+WHERE `email` IN ('temploclaypole@gmail.com', 'villalbarodrigo2009@gmail.com');*/
 /*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
 

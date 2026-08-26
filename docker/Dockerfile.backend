@@ -68,11 +68,11 @@ RUN groupadd -r pptruser && \
 WORKDIR /app
 
 # Copiar package.json y package-lock.json primero (para caché de capas Docker)
-COPY backend/package*.json ./
+COPY backend/package.json ./
 
 # Instalar dependencias con npm ci (reproducible, más confiable que npm install)
 # npm ci usa el package-lock.json para versiones exactas
-RUN npm ci && npm cache clean --force
+RUN npm install && npm cache clean --force
 
 # ============================================================================
 # INSTALAR CHROMIUM CON PUPPETEER

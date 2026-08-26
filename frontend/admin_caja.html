@@ -43,8 +43,6 @@
                         <p class="text-blue-300 text-sm mt-1">
                             <i class="fas fa-clock mr-1"></i>
                             Abierta desde: <span id="caja-abierta-apertura">-</span>
-                            &nbsp;·&nbsp;
-                            Saldo inicial: <span id="caja-abierta-saldo-inicial">$0</span>
                         </p>
                     </div>
                     <div class="flex gap-2 items-center">
@@ -64,9 +62,6 @@
             <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
                 <h2>Historial de Cajas</h2>
                 <div class="flex gap-2">
-                    <button id="btn-nueva-caja" class="btn btn-green btn-sm">
-                        <i class="fas fa-plus mr-1"></i> Abrir Caja Manual
-                    </button>
                     <button id="btn-toggle-importar" class="btn btn-purple btn-sm">
                         <i class="fas fa-download mr-1"></i> Importar desde MP
                     </button>
@@ -150,233 +145,256 @@
 
         <!-- VISTA: DETALLE DE CAJA -->
         <section id="view-detalle" class="balance-section hidden">
-            <div class="flex items-center justify-between mb-4">
-                <button id="btn-volver" class="btn btn-sm">
-                    <i class="fas fa-arrow-left mr-1"></i> Volver
-                </button>
-                <h2 id="detalle-titulo">Detalle de Caja</h2>
-                <div style="width: 100px;"></div>
-            </div>
-
-            <!-- Nombre personalizado + Evento Asociado -->
-            <div class="mb-4">
-                <label class="text-sm text-stone-400">Nombre de la Caja (opcional)</label>
-                <div class="flex gap-2">
-                    <input type="text" id="detalle-nombre" placeholder="Ej: Caja Viernes Noche"
-                        class="flex-1 px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
-                    <button id="btn-guardar-nombre" class="btn btn-sm btn-green">Guardar</button>
-                </div>
-            </div>
-
-            <!-- Evento Asociado -->
-            <div class="mb-4">
-                <label class="text-sm text-stone-400">Evento Asociado (opcional)</label>
-                <div class="flex gap-2">
-                    <select id="id-evento-confirmado"
-                        class="flex-1 px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
-                        <option value="">-- Sin evento asociado --</option>
-                    </select>
-                    <button id="btn-guardar-evento" class="btn btn-sm btn-green">Guardar</button>
-                </div>
-            </div>
-
-            <!-- Movimientos en Cuenta y Efectivo: Lado a Lado -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-
-                <!-- COLUMNA IZQUIERDA: MOVIMIENTOS EN CUENTA (MP/Banco/Tarjeta/etc) -->
-                <div>
-                    <details class="caja-collapsible">
-                        <summary class="caja-collapsible-summary">
-                            <span>💳 Ingresos en Cuenta</span>
-                            <span class="caja-collapsible-indicator">+</span>
-                        </summary>
-                        <table class="tx-table mb-2" style="font-size: 0.85rem;">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Hora</th>
-                                    <th>Usuario</th>
-                                    <th>Descripción</th>
-                                    <th>Monto</th>
-                                </tr>
-                            </thead>
-                            <tbody id="detalle-ingresos-cuenta"></tbody>
-                        </table>
-                    </details>
-
-                    <details class="caja-collapsible mt-2">
-                        <summary class="caja-collapsible-summary">
-                            <span>💳 Egresos en Cuenta</span>
-                            <span class="caja-collapsible-indicator">+</span>
-                        </summary>
-                        <table class="tx-table" style="font-size: 0.85rem;">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Hora</th>
-                                    <th>Usuario</th>
-                                    <th>Descripción</th>
-                                    <th>Monto</th>
-                                </tr>
-                            </thead>
-                            <tbody id="detalle-egresos-cuenta"></tbody>
-                        </table>
-                    </details>
-                </div>
-
-                <!-- COLUMNA DERECHA: MOVIMIENTOS EN EFECTIVO -->
-                <div>
-                    <details class="caja-collapsible">
-                        <summary class="caja-collapsible-summary">
-                            <span>💵 Ingresos en Efectivo</span>
-                            <span class="caja-collapsible-indicator">+</span>
-                        </summary>
-                        <table class="tx-table mb-2" style="font-size: 0.85rem;">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Hora</th>
-                                    <th>Usuario</th>
-                                    <th>Descripción</th>
-                                    <th>Monto</th>
-                                </tr>
-                            </thead>
-                            <tbody id="detalle-ingresos-efectivo"></tbody>
-                        </table>
-                    </details>
-
-                    <details class="caja-collapsible mt-2">
-                        <summary class="caja-collapsible-summary">
-                            <span>💵 Egresos en Efectivo</span>
-                            <span class="caja-collapsible-indicator">+</span>
-                        </summary>
-                        <table class="tx-table" style="font-size: 0.85rem;">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Hora</th>
-                                    <th>Usuario</th>
-                                    <th>Descripción</th>
-                                    <th>Monto</th>
-                                </tr>
-                            </thead>
-                            <tbody id="detalle-egresos-efectivo"></tbody>
-                        </table>
-                    </details>
-                </div>
-
-            </div>
-
-            <!-- Totales -->
-            <div class="bg-stone-800 p-4 rounded">
-                <div class="grid grid-cols-3 gap-4">
-                    <div>
-                        <p class="text-stone-400 text-sm">Saldo Inicial</p>
-                        <p id="detalle-saldo-inicial" class="text-2xl font-bold">$0.00</p>
-                    </div>
-                    <div>
-                        <p class="text-stone-400 text-sm">Total Ingresos</p>
-                        <p id="detalle-total-ingresos" class="text-2xl font-bold text-green-400">$0.00</p>
-                    </div>
-                    <div>
-                        <p class="text-stone-400 text-sm">Total Egresos</p>
-                        <p id="detalle-total-egresos" class="text-2xl font-bold text-red-400">$0.00</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-stone-700">
-                    <!--<div>
-                        <p class="text-stone-400 text-sm">Esperado</p>
-                        <p id="detalle-saldo-esperado" class="text-2xl font-bold text-yellow-400">$0.00</p>
-                    </div>-->
-                    <div>
-                        <p class="text-stone-400 text-sm">Contado</p>
-                        <p id="detalle-saldo-final" class="text-2xl font-bold">$0.00</p>
-                    </div>
-                    <div>
-                        <p class="text-stone-400 text-sm">Diferencia</p>
-                        <p id="detalle-diferencia" class="text-2xl font-bold text-red-400">$0.00</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Info de la caja -->
-            <div class="bg-stone-800 p-4 rounded mb-4 border-t border-stone-700">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                        <p class="text-stone-400">Número</p>
-                        <p id="detalle-numero" class="font-bold text-lg">-</p>
-                    </div>
-                    <div>
-                        <p class="text-stone-400">Apertura</p>
-                        <p id="detalle-apertura" class="font-bold">-</p>
-                    </div>
-                    <div>
-                        <p class="text-stone-400">Cierre</p>
-                        <p id="detalle-cierre" class="font-bold">-</p>
-                    </div>
-                    <div>
-                        <p class="text-stone-400">Duración</p>
-                        <p id="detalle-duracion" class="font-bold">-</p>
-                    </div>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- VISTA: ABRIR CAJA -->
-        <section id="view-abrir" class="balance-section hidden">
-            <h2>Abrir Nueva Caja</h2>
-            <p class="text-stone-400 mb-4">Inicia un nuevo período de caja. Los movimientos quedarán registrados en este
-                período.</p>
-
-            <form id="form-abrir-caja">
-                <div class="form-group">
-                    <label for="nombre-caja">Nombre de Caja (ej: "Caja 1", "Mostrador A")</label>
-                    <input type="text" id="nombre-caja" placeholder="Nombre descriptivo de la caja" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="id-evento-confirmado">Evento Asociado (opcional)</label>
-                    <select id="id-evento-confirmado">
-                        <option value="">-- Sin evento asociado --</option>
-                    </select>
-                    <small class="text-stone-500">Selecciona el evento si esta caja es para un evento específico</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="saldo-inicial">
-                        Saldo Inicial en Cuenta (MP/Banco)
-                        <button type="button" id="btn-cargar-saldo-mp" class="btn btn-purple btn-xs"
-                            style="margin-left: 8px;">
-                            <i class="fas fa-download"></i> Cargar de MP
-                        </button>
-                    </label>
-                    <input type="number" id="saldo-inicial" min="0" step="0.01" value="0" placeholder="0.00" required>
-                    <small id="saldo-info" class="text-stone-500">Referencia del saldo en cuenta/MP</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="efectivo-inicial">Efectivo Inicial en Caja (cambio/vuelto)</label>
-                    <input type="number" id="efectivo-inicial" min="0" step="0.01" value="0" placeholder="0.00">
-                    <small class="text-stone-500">Dinero físico para dar cambio</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="notas-apertura">Notas (opcional)</label>
-                    <textarea id="notas-apertura" placeholder="Ej: Efectivo de ayer, Bill de $5000, etc."></textarea>
-                </div>
-
-                <div class="controls">
-                    <button type="submit" class="btn btn-green">
-                        <i class="fas fa-lock-open mr-2"></i> Abrir Caja
+            <div class="rounded-xl border border-stone-700 bg-stone-900/60 shadow-lg p-4 md:p-5">
+                <div class="flex items-center justify-between mb-4 gap-3">
+                    <div class="w-10"></div>
+                    <h2 id="detalle-titulo" class="text-xl font-bold text-white">Detalle de Caja</h2>
+                    <button id="btn-volver" type="button"
+                        class="btn btn-sm w-10 h-10 rounded-full p-0 flex items-center justify-center text-xl leading-none"
+                        aria-label="Cerrar detalle de caja" title="Cerrar detalle de caja">
+                        <i class="fas fa-xmark"></i>
                     </button>
-                    <button type="button" class="btn" onclick="mostrarListado()">Cancelar</button>
                 </div>
-            </form>
+
+                <!-- Nombre personalizado + Evento Asociado -->
+                <div class="mb-4">
+                    <label class="text-sm text-stone-400">Nombre de la Caja (opcional)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="detalle-nombre" placeholder="Ej: Caja Viernes Noche"
+                            class="flex-1 px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
+                        <button id="btn-guardar-nombre" class="btn btn-sm btn-green">Guardar</button>
+                    </div>
+                </div>
+
+                <!-- Evento Asociado -->
+                <div class="mb-4">
+                    <label class="text-sm text-stone-400">Evento Asociado (opcional)</label>
+                    <div class="flex gap-2">
+                        <select id="id-evento-confirmado"
+                            class="flex-1 px-3 py-2 bg-stone-700 rounded text-stone-100 border border-stone-600">
+                            <option value="">-- Sin evento asociado --</option>
+                        </select>
+                        <button id="btn-guardar-evento" class="btn btn-sm btn-green">Guardar</button>
+                    </div>
+                </div>
+
+                <!-- Movimientos en Cuenta y Efectivo: Lado a Lado -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+
+                    <!-- COLUMNA IZQUIERDA: MOVIMIENTOS EN CUENTA (MP/Banco/Tarjeta/etc) -->
+                    <div>
+                        <details class="caja-collapsible">
+                            <summary class="caja-collapsible-summary">
+                                <span>💳 Ingresos en Cuenta</span>
+                                <span id="total-ingresos-cuenta"
+                                    class="ml-auto mr-2 text-sm font-bold text-green-400">$0.00</span>
+                                <span class="caja-collapsible-indicator">+</span>
+                            </summary>
+                            <table class="tx-table mb-2" style="font-size: 0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Usuario</th>
+                                        <th>Descripción</th>
+                                        <th>Monto</th>
+                                        <th class="w-20 text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detalle-ingresos-cuenta"></tbody>
+                            </table>
+                        </details>
+
+                        <details class="caja-collapsible mt-2">
+                            <summary class="caja-collapsible-summary">
+                                <span>💳 Egresos en Cuenta</span>
+                                <span id="total-egresos-cuenta"
+                                    class="ml-auto mr-2 text-sm font-bold text-red-400">$0.00</span>
+                                <span class="caja-collapsible-indicator">+</span>
+                            </summary>
+                            <table class="tx-table" style="font-size: 0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Usuario</th>
+                                        <th>Descripción</th>
+                                        <th>Monto</th>
+                                        <th class="w-20 text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detalle-egresos-cuenta"></tbody>
+                            </table>
+                        </details>
+                    </div>
+
+                    <!-- COLUMNA DERECHA: MOVIMIENTOS EN EFECTIVO -->
+                    <div>
+                        <details class="caja-collapsible">
+                            <summary class="caja-collapsible-summary">
+                                <span>💵 Ingresos en Efectivo</span>
+                                <span id="total-ingresos-efectivo"
+                                    class="ml-auto mr-2 text-sm font-bold text-green-400">$0.00</span>
+                                <span class="caja-collapsible-indicator">+</span>
+                            </summary>
+                            <table class="tx-table mb-2" style="font-size: 0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Usuario</th>
+                                        <th>Descripción</th>
+                                        <th>Monto</th>
+                                        <th class="w-20 text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detalle-ingresos-efectivo"></tbody>
+                            </table>
+                        </details>
+
+                        <details class="caja-collapsible mt-2">
+                            <summary class="caja-collapsible-summary">
+                                <span>💵 Egresos en Efectivo</span>
+                                <span id="total-egresos-efectivo"
+                                    class="ml-auto mr-2 text-sm font-bold text-red-400">$0.00</span>
+                                <span class="caja-collapsible-indicator">+</span>
+                            </summary>
+                            <table class="tx-table" style="font-size: 0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Usuario</th>
+                                        <th>Descripción</th>
+                                        <th>Monto</th>
+                                        <th class="w-20 text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detalle-egresos-efectivo"></tbody>
+                            </table>
+                        </details>
+                    </div>
+
+                </div>
+
+                <!-- Totales -->
+                <div class="bg-stone-800 p-4 rounded">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-stone-400 text-sm">Total Ingresos</p>
+                            <p id="detalle-total-ingresos" class="text-2xl font-bold text-green-400">$0.00</p>
+                        </div>
+                        <div>
+                            <p class="text-stone-400 text-sm">Total Egresos</p>
+                            <p id="detalle-total-egresos" class="text-2xl font-bold text-red-400">$0.00</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-stone-700">
+                        <div>
+                            <p class="text-stone-400 text-sm">Diferencia</p>
+                            <p id="detalle-diferencia" class="text-2xl font-bold text-red-400">$0.00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info de la caja -->
+                <div class="bg-stone-800 p-4 rounded mb-4 border-t border-stone-700">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <p class="text-stone-400">Número</p>
+                            <p id="detalle-numero" class="font-bold text-lg">-</p>
+                        </div>
+                        <div>
+                            <p class="text-stone-400">Apertura</p>
+                            <p id="detalle-apertura" class="font-bold">-</p>
+                        </div>
+                        <div>
+                            <p class="text-stone-400">Cierre</p>
+                            <p id="detalle-cierre" class="font-bold">-</p>
+                        </div>
+                        <div>
+                            <p class="text-stone-400">Duración</p>
+                            <p id="detalle-duracion" class="font-bold">-</p>
+                        </div>
+                    </div>
+                </div>
+
         </section>
+
     </main>
 
-    <script src="admin_caja.js?v=4"></script>
+    <div id="movimiento-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-xl shadow-2xl">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-stone-700">
+                <h3 id="movimiento-modal-title" class="text-xl font-bold text-purple-200">Editar movimiento</h3>
+                <button id="movimiento-modal-close" type="button"
+                    class="text-stone-300 hover:text-white text-2xl leading-none">×</button>
+            </div>
+            <form id="movimiento-form" class="p-5 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-stone-400 mb-1">Tipo</label>
+                        <select id="movimiento-tipo"
+                            class="w-full px-3 py-2 bg-stone-800 border border-stone-600 rounded text-stone-100">
+                            <option value="ingreso">Ingreso</option>
+                            <option value="egreso">Egreso</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-stone-400 mb-1">Método</label>
+                        <select id="movimiento-metodo"
+                            class="w-full px-3 py-2 bg-stone-800 border border-stone-600 rounded text-stone-100">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="transferencia">Transferencia</option>
+                            <option value="tarjeta">Tarjeta</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-stone-400 mb-1">Categoría</label>
+                        <input id="movimiento-categoria" type="text" value="manual"
+                            class="w-full px-3 py-2 bg-stone-800 border border-stone-600 rounded text-stone-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-stone-400 mb-1">Subcategoría</label>
+                        <input id="movimiento-subcategoria" type="text" value="manual"
+                            class="w-full px-3 py-2 bg-stone-800 border border-stone-600 rounded text-stone-100">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-stone-400 mb-1">Descripción</label>
+                    <input id="movimiento-descripcion" type="text" required placeholder="Ej: Pago de alquiler"
+                        class="w-full px-3 py-2 bg-stone-800 border border-stone-600 rounded text-stone-100">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-stone-400 mb-1">Monto</label>
+                    <input id="movimiento-monto" type="number" min="0" step="0.01" required
+                        class="w-full px-3 py-2 bg-stone-800 border border-stone-600 rounded text-stone-100">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-stone-400 mb-1">Comprobante / referencia</label>
+                    <input id="movimiento-comprobante" type="text" placeholder="Opcional"
+                        class="w-full px-3 py-2 bg-stone-800 border border-stone-600 rounded text-stone-100">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" id="movimiento-cancelar" class="btn btn-sm">Cancelar</button>
+                    <button type="submit" class="btn btn-green btn-sm">
+                        <i class="fas fa-save mr-1"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin_caja.js?v=5"></script>
 
     <style>
         .btn-sm {

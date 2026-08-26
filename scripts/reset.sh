@@ -81,6 +81,8 @@ SKIP_SQL=false
 SKIP_BACKUP=false
 ENABLE_MP=false
 ENABLE_WA=false
+MP_FLAG=false
+WA_FLAG=false
 USE_LATEST_DUMP=false
 # session backup flags (nuevos)
 SAVE_MP_SESSION=false
@@ -336,15 +338,26 @@ check_backend_http() {
     return 0
   fi
 
+  local health_urls=(
+    "http://127.0.0.1:3001/health"
+    "http://127.0.0.1:3000/health"
+    "http://localhost:3001/health"
+    "http://localhost:3000/health"
+  )
+  local health_url=""
+
   echo ""
   echo -e "${CYAN}[*] Verificando disponibilidad del backend HTTP...${NC}"
-  if curl -sS --max-time 5 http://localhost:3000/health >/dev/null 2>&1; then
-    echo -e "  ${GREEN}✓ Backend HTTP responde correctamente en http://localhost:3000/health${NC}"
-  else
-    echo -e "  ${RED}✗ El backend no responde en http://localhost:3000/health${NC}"
-    echo -e "    ${YELLOW}Revisá los logs con: ./scripts/backend_logs.sh${NC}"
-    echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
-  fi
+  for health_url in "${health_urls[@]}"; do
+    if curl -sS --max-time 5 "$health_url" >/dev/null 2>&1; then
+      echo -e "  ${GREEN}✓ Backend HTTP responde correctamente en $health_url${NC}"
+      return 0
+    fi
+  done
+
+  echo -e "  ${RED}✗ El backend no responde en ninguno de los puertos probados (${health_urls[*]})${NC}"
+  echo -e "    ${YELLOW}Revisá los logs con: ./scripts/backend_logs.sh${NC}"
+  echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
 }
 create_env_override() {
     # Crea un archivo .env.tmp con overrides de variables
@@ -621,30 +634,20 @@ reset_docker_containers() {
             echo ""
                 $compose_cmd up $build_flag -d --force-recreate 2>&1
             else
-                $compose_cmd up $build_flag -d --force-recreate 2>&1 | grep -E '(Creating|Created|Starting|Started|Pulling)' || true
-            echo -ne "    Eliminando volumen... "
-            docker volume rm docker_mariadb_data 2>/dev/null || true
-            echo -e "${GREEN}✓${NC}"
-            
-            echo -ne "    Levantando mariadb... "
-            $compose_cmd up $build_flag -d mariadb 2>&1 | grep -E '(Creating|Starting)' || true
-            echo -e "${GREEN}✓${NC}"
-            
-            echo -ne "    Esperando MariaDB... "
-            wait_for_mysql_ready
+                $compose_cmd up $build_flag -d --force-recreate 2>&1 | grep -E 
+            fi # Cierre del if de DEBUG
+        fi # Cierre del if de CONTAINERS_TO_RESET "all"
 
-            # Reiniciar backend para que reconecte a la nueva instancia de MariaDB
-            echo -ne "    Reiniciando backend... "
-            $compose_cmd up $build_flag -d --force-recreate backend 2>&1 | grep -E '(Creating|Starting|Started)' || true
+        # Levantar contenedores restantes si solo se reinició la DB o el backend por separado
+        if [[ " $CONTAINERS_TO_RESET " =~ " all " ]] || [[ " $CONTAINERS_TO_RESET " =~ " db " ]]; then
+            echo -ne "    Levantando backend y nginx... "
+            $compose_cmd up $build_flag -d backend nginx 2>&1 | grep -E 
             echo -e "${GREEN}✓${NC}"
-            
-            # Esperar a que el backend esté listo (puede tomar más tiempo si hay MP/WA)
             wait_for_backend_ready
-        fi
+        fi # Cierre del if de CONTAINERS_TO_RESET "all" o "db"
         
         if [[ " $CONTAINERS_TO_RESET " =~ " backend " ]]; then
             echo -e "${YELLOW}  → Reseteando solo Backend${NC}"
-            
             # Primero asegurar que MariaDB está listo
             echo -ne "    Verificando MariaDB... "
             if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "mariadb"; then
@@ -656,41 +659,34 @@ reset_docker_containers() {
                     echo -ne "${YELLOW}no responde${NC}, levantando... "
                     $compose_cmd up -d mariadb 2>&1 | grep -E '(Starting)' || true
                     wait_for_mysql_ready
-                fi
+                fi # Cierre del if de docker exec
             else
                 # MariaDB no existe, levantar
                 echo -ne "${YELLOW}no corre${NC}, levantando... "
                 $compose_cmd up -d mariadb 2>&1 | grep -E '(Creating|Starting)' || true
                 wait_for_mysql_ready
-            fi
-            
+            fi # Cierre del if de docker ps
             # Ahora detener y levantar backend
             echo -ne "    Deteniendo backend... "
             $compose_cmd stop backend 2>/dev/null || true
             echo -e "${GREEN}✓${NC}"
-            
             echo -ne "    Levantando backend $build_flag... "
-            $compose_cmd up $build_flag -d --force-recreate backend 2>&1 | grep -E '(Creating|Starting)' || true
+            $compose_cmd up $build_flag -d --force-recreate backend 2>&1 | grep -E 
             echo -e "${GREEN}✓${NC}"
-            
-            # Esperar a que el backend esté listo (incluye MP/WA si está habilitado)
             wait_for_backend_ready
-        fi
+        fi # Cierre del if de CONTAINERS_TO_RESET "backend"
         
         if [[ " $CONTAINERS_TO_RESET " =~ " frontend " ]]; then
             echo -e "${YELLOW}  → Reseteando solo Frontend${NC}"
             echo -ne "    Deteniendo nginx... "
             $compose_cmd stop nginx 2>/dev/null || true
             echo -e "${GREEN}✓${NC}"
-            
             echo -ne "    Levantando nginx... "
-            $compose_cmd up $build_flag -d nginx 2>&1 | grep -E '(Creating|Starting)' || true
+            $compose_cmd up $build_flag -d nginx 2>&1 | grep -E 
             echo -e "${GREEN}✓${NC}"
-            
             sleep 1
-        fi
-    fi
-    
+        fi # Cierre del if de CONTAINERS_TO_RESET "frontend"
+    fi # Cierre del if de USE_DOCKER
     echo ""
 }
 
@@ -928,8 +924,8 @@ if [ "$USE_DOCKER" = true ]; then
     echo ""
 fi
 echo -e "${YELLOW}¿Cómo probar la app?${NC}"
-echo -e "  - Frontend:     ${CYAN}http://localhost:8080${NC} (nginx)"
-echo -e "  - Backend API:  ${CYAN}http://localhost:3000${NC} (Node.js)"
+    echo -e "  - Frontend:     ${CYAN}http://localhost:8080${NC} (nginx)"
+    echo -e "  - Backend API:  ${CYAN}http://localhost:3000${NC} (Node.js)"
 if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
     echo -e "  - VNC Backend:  ${CYAN}vncviewer localhost:5901${NC} (sin contraseña)"
     echo -e "  - Debug Chrome: ${CYAN}localhost:9001 (MP), localhost:9002 (WA)${NC}"

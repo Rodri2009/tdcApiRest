@@ -637,11 +637,55 @@
                 }
             }
 
+            function hasValidAuthSession() {
+                const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                if (!token || typeof token !== 'string' || !token.includes('.')) {
+                    return false;
+                }
+
+                try {
+                    const parts = token.split('.');
+                    if (parts.length < 2) return false;
+                    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+                    const decoded = JSON.parse(
+                        decodeURIComponent(
+                            atob(payload)
+                                .split('')
+                                .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                                .join('')
+                        )
+                    );
+
+                    const now = Math.floor(Date.now() / 1000);
+                    if (decoded.exp && decoded.exp <= now) {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user_data');
+                        return false;
+                    }
+
+                    return true;
+                } catch (e) {
+                    console.warn('Sesión inválida en login:', e);
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user_data');
+                    return false;
+                }
+            }
+
             // Inicializar el login manager cuando el DOM esté listo
             document.addEventListener('DOMContentLoaded', () => {
+                if (hasValidAuthSession()) {
+                    const returnTo = sessionStorage.getItem('returnTo');
+                    sessionStorage.removeItem('returnTo');
+                    window.location.replace(returnTo || '/index.html');
+                    return;
+                }
+
                 new LoginManager();
                 ensureGoogleInitialized();
-                
+
                 // Pasar returnTo a registro.html si existe
                 const registerLink = document.getElementById('registerLink');
                 if (registerLink) {
