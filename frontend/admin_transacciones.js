@@ -85,6 +85,9 @@
 
             const data = await response.json();
             authToken = data.accessToken;
+            if (authToken) {
+                localStorage.setItem('authToken', authToken);
+            }
             console.log('[Auth] ✅ Token obtenido');
             return authToken;
         } catch (err) {
@@ -92,6 +95,37 @@
             updateServiceStatus('auth_error');
             return null;
         }
+    }
+
+    async function fetchWithAuth(url, options = {}, retryOn401 = true) {
+        const token = authToken || localStorage.getItem('authToken') || await authenticateAndGetToken();
+        if (!token) {
+            throw new Error('Token inválido o expirado');
+        }
+
+        const headers = {
+            ...(options.headers || {}),
+            'Authorization': `Bearer ${token}`
+        };
+
+        const response = await fetch(url, { ...options, headers });
+
+        if (response.status === 401 && retryOn401) {
+            console.warn('[Auth] 🔄 401 recibido, renovando token y reintentando...');
+            const refreshedToken = await authenticateAndGetToken();
+            if (refreshedToken && refreshedToken !== token) {
+                const retryResponse = await fetch(url, {
+                    ...options,
+                    headers: {
+                        ...(options.headers || {}),
+                        'Authorization': `Bearer ${refreshedToken}`
+                    }
+                });
+                return retryResponse;
+            }
+        }
+
+        return response;
     }
 
     /* --- Configuración de sonido de notificación --- */
@@ -512,33 +546,54 @@
         }
 
         try {
-            // Convertir la transacción de MP al formato de movimiento_caja
-            const monto = parseAmount(tx.amount);
-            const movimiento = {
-                tipo: tx.transactionAmount < 0 ? 'egreso' : 'ingreso',
-                categoria: 'mercado_pago',
-                subcategoria: tx.paymentMethod || 'transferencia',
-                descripcion: `MP: ${tx.payer?.name || 'Cliente'} - ${tx.description || tx.reference}`,
-                monto: Math.abs(monto),
-                metodo_pago: 'mercado_pago',
-                comprobante: tx.id,
-                id_evento_confirmado: null
+            const rawMonto = Number(parseAmount(tx.amount));
+            const monto = Number.isFinite(rawMonto) ? Math.abs(rawMonto) : 0;
+            if (!Number.isFinite(rawMonto) || monto <= 0) {
+                console.warn('[registrarMovimientoMPEnCaja] Monto inválido:', tx.amount);
+                return;
+            }
+
+            const tipo = rawMonto >= 0 ? 'ingreso' : 'egreso';
+            const metodoPagoRaw = (tx.paymentMethod || tx.type || '').toLowerCase();
+            const metodoPagoMap = {
+                transferencia: 'transferencia',
+                transfer: 'transferencia',
+                payout: 'transferencia',
+                tarjeta: 'tarjeta',
+                debit: 'tarjeta',
+                credit: 'tarjeta',
+                cheque: 'cheque',
+                efectivo: 'efectivo',
+                cash: 'efectivo'
             };
 
-            const res = await fetch(`/api/cajas/${cajaId}/movimientos`, {
+            const movimiento = {
+                tipo,
+                categoria: 'mercadopago',
+                subcategoria: tx.category || tx.type || metodoPagoRaw || 'transferencia',
+                descripcion: (tx.description || tx.title || tx.name || 'Movimiento MP').toString().trim() || 'Movimiento MP',
+                monto,
+                metodo_pago: metodoPagoMap[metodoPagoRaw] || 'otro',
+                comprobante_ref: tx.id || tx.reference || null,
+                id_evento_confirmado: null,
+                id_solicitud: null
+            };
+
+            const res = await fetchWithAuth(`/api/cajas/${cajaId}/movimientos`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(movimiento)
             });
 
+            const contentType = res.headers.get('content-type') || '';
+            const respuesta = contentType.includes('application/json') ? await res.json() : { message: await res.text() };
+
             if (res.ok) {
-                console.log('[registrarMovimientoMPEnCaja] ✅ Movimiento registrado en BD para caja:', cajaId);
+                console.log('[registrarMovimientoMPEnCaja] ✅ Movimiento registrado en BD para caja:', cajaId, respuesta);
             } else {
-                const error = await res.json();
-                console.warn('[registrarMovimientoMPEnCaja] Error:', error.error);
+                console.warn('[registrarMovimientoMPEnCaja] Error:', respuesta.error || respuesta.message || `HTTP ${res.status}`);
             }
         } catch (e) {
             console.error('[registrarMovimientoMPEnCaja] Error:', e.message);
@@ -1072,9 +1127,7 @@
             const token = authToken || localStorage.getItem('authToken');
             if (!token) return;
             try {
-                const res = await fetch('/api/cajas/activa', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetchWithAuth('/api/cajas/activa');
                 if (res.ok) {
                     const caja = await res.json();
                     console.log('[verificarCajaAbiertaReal] Respuesta completa de API:', caja);
@@ -1111,6 +1164,14 @@
                 modal.classList.remove('hidden');
                 cargarSaldoMPAlModal();
                 cargarEventosAlModal();
+
+                setTimeout(() => {
+                    const nombreInput = document.getElementById('tx-nombre-caja');
+                    if (nombreInput) {
+                        nombreInput.focus();
+                        nombreInput.select();
+                    }
+                }, 50);
             }
         });
 
@@ -1123,18 +1184,22 @@
             if (!confirm('¿Cerrar la caja actual? Se calculará el saldo automáticamente.')) return;
 
             try {
-                const res = await fetch(`/api/cajas/${window._cajaAbiertaId}/cerrar`, {
+                const res = await fetchWithAuth(`/api/cajas/${window._cajaAbiertaId}/cerrar`, {
                     method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ saldoFinal: 0, notas: 'Cerrada desde admin_transacciones' })
                 });
                 if (res.ok) {
                     window._cajaAbiertaId = null;
                     cajaAbierta = false;
-                    guardarEstadoCaja();  // Guardar estado: caja cerrada
+                    cajaMovimientos = [];
+                    guardarEstadoCaja();
                     btnAbrirCaja.classList.remove('hidden');
                     btnCerrarCaja.classList.add('hidden');
                     showBanner('✅ Caja cerrada correctamente', 'success');
+
+                    const refreshed = await fetchTransactions(true);
+                    renderTransactions(refreshed || allTransactions || []);
                 } else {
                     const err = await res.json();
                     showBanner(`Error: ${err.error || 'No se pudo cerrar la caja'}`, 'error');
@@ -1153,17 +1218,10 @@
         // Cargar saldo de MP en el modal
         async function cargarSaldoMPAlModal() {
             try {
-                const inputSaldo = document.getElementById('tx-saldo-inicial');
-                const infoText = document.getElementById('tx-saldo-info');
-
-                if (!inputSaldo) return;
-
                 const token = authToken || localStorage.getItem('authToken');
                 if (!token) await authenticateAndGetToken();
 
-                const res = await fetch('/api/mercadopago/balance', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetchWithAuth('/api/mercadopago/balance');
 
                 if (res.ok) {
                     const data = await res.json();
@@ -1175,9 +1233,9 @@
                     }
 
                     if (available > 0) {
-                        inputSaldo.value = available.toFixed(2);
-                        if (infoText) {
-                            infoText.textContent = `✅ Saldo cargado de Mercado Pago: $${available.toFixed(2)}`;
+                        const efectivoInput = document.getElementById('tx-efectivo-inicial');
+                        if (efectivoInput) {
+                            efectivoInput.value = available.toFixed(2);
                         }
                     }
                 }
@@ -1195,9 +1253,7 @@
                 const token = authToken || localStorage.getItem('authToken');
                 if (!token) await authenticateAndGetToken();
 
-                const res = await fetch('/api/cajas/eventos-disponibles', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetchWithAuth('/api/cajas/eventos-disponibles');
 
                 if (res.ok) {
                     const eventos = await res.json();
@@ -1252,7 +1308,6 @@
                 e.preventDefault();
 
                 const nombreCaja = document.getElementById('tx-nombre-caja').value.trim();
-                const saldoInicial = parseFloat(document.getElementById('tx-saldo-inicial').value);
                 const efectivoInicial = parseFloat(document.getElementById('tx-efectivo-inicial').value) || 0;
                 const idEvento = document.getElementById('tx-id-evento-confirmado').value || null;
                 const notas = document.getElementById('tx-notas-apertura').value;
@@ -1262,24 +1317,17 @@
                     return;
                 }
 
-                if (Number.isNaN(saldoInicial) || saldoInicial < 0) {
-                    showBanner('⚠️ Ingresa un saldo inicial válido', 'warning');
-                    return;
-                }
-
                 const token = authToken || localStorage.getItem('authToken');
                 if (!token) await authenticateAndGetToken();
 
                 try {
-                    const res = await fetch('/api/cajas', {
+                    const res = await fetchWithAuth('/api/cajas', {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
                             nombre: nombreCaja,
-                            saldoInicial: saldoInicial,
                             saldoInicialEnEfectivo: efectivoInicial,
                             idEventoConfirmado: idEvento ? parseInt(idEvento) : null,
                             notas

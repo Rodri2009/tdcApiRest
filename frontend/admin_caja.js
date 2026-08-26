@@ -19,11 +19,9 @@ const bannerCajaAbierta = getElement('banner-caja-abierta');
 const cajasList = getElement('cajas-list');
 const sinCajas = getElement('sin-cajas');
 const banner = getElement('banner');
-const btnNuevaCaja = getElement('btn-nueva-caja');
 const btnVolver = getElement('btn-volver');
 const btnGuardarNombre = getElement('btn-guardar-nombre');
 const btnGuardarEvento = getElement('btn-guardar-evento');
-const formAbrirCaja = getElement('form-abrir-caja');
 const btnCerrarCajaAbierta = getElement('btn-cerrar-caja-abierta');
 const cajaStatus = getElement('caja-status');
 const statusText = getElement('status-text');
@@ -162,11 +160,9 @@ function mostrarCajaAbierta(caja) {
 
     const titulo = document.getElementById('caja-abierta-titulo');
     const apertura = document.getElementById('caja-abierta-apertura');
-    const saldoInicial = document.getElementById('caja-abierta-saldo-inicial');
 
     if (titulo) titulo.textContent = `Caja #${caja.numero_caja}`;
     if (apertura) apertura.textContent = formatearFecha(caja.fecha_apertura);
-    if (saldoInicial) saldoInicial.textContent = formatearDinero(caja.saldo_inicial);
 
     if (bannerCajaAbierta) bannerCajaAbierta.classList.remove('hidden');
 }
@@ -181,12 +177,11 @@ async function cerrarCajaAbierta() {
     if (!token) await authenticateAndGetToken();
 
     try {
-        // Si no ingresó saldo, calcularlo automáticamente
+        // Si no ingresó saldo, calcularlo automáticamente solo con los movimientos de la caja
         let finalAmount = null;
         if (saldoFinal.trim() !== '') {
             finalAmount = parseFloat(saldoFinal.replace('$', '').replace('.', '').replace(',', '.'));
         } else {
-            // Calcular automáticamente
             const movimientos = cajaAbierta.movimientos || [];
             const totalIngresos = movimientos
                 .filter(m => m.tipo === 'ingreso')
@@ -194,8 +189,8 @@ async function cerrarCajaAbierta() {
             const totalEgresos = movimientos
                 .filter(m => m.tipo === 'egreso')
                 .reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
-            finalAmount = parseFloat(cajaAbierta.saldo_inicial) + totalIngresos - totalEgresos;
-            console.log(`[admin_caja.js] 📊 Saldo final calculado: ${formatearDinero(finalAmount)}`);
+            finalAmount = totalIngresos - totalEgresos;
+            console.log(`[admin_caja.js] 📊 Saldo final calculado sin saldo inicial: ${formatearDinero(finalAmount)}`);
         }
 
         const response = await fetch(`/api/cajas/${cajaAbierta.id}/cerrar`, {
@@ -345,10 +340,6 @@ async function cargarCajas() {
                 </div>
                 <div class="caja-card-body">
                     <div class="caja-card-item">
-                        <span class="caja-card-label">Saldo Inicial</span>
-                        <span class="caja-card-value">${formatearDinero(caja.saldo_inicial)}</span>
-                    </div>
-                    <div class="caja-card-item">
                         <span class="caja-card-label">Saldo Final</span>
                         <span class="caja-card-value">${esAbierta ? '—' : formatearDinero(caja.saldo_final)}</span>
                     </div>
@@ -456,8 +447,23 @@ async function verDetalle(cajaId) {
         // Calcular totales GENERALES (todos los movimientos)
         const totalIngresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
         const totalEgresos = movimientos.filter(m => m.tipo === 'egreso').reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
-        const saldoEsperado = parseFloat(caja.saldo_inicial_en_cuenta) + totalIngresos - totalEgresos;
-        const diferencia = parseFloat(caja.saldo_inicial_en_cuenta) + totalIngresos - totalEgresos;
+        const totalIngresosCuenta = ingresosEnCuenta.reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
+        const totalEgresosCuenta = egresosEnCuenta.reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
+        const totalIngresosEfectivo = ingresosEnEfectivo.reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
+        const totalEgresosEfectivo = egresosEnEfectivo.reduce((sum, m) => sum + parseFloat(m.monto || 0), 0);
+        const diferencia = totalIngresos - totalEgresos;
+
+        const setSummaryTotal = (id, amount, tone = 'neutral') => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = formatearDinero(Math.abs(amount || 0));
+            el.className = `ml-auto mr-2 text-sm font-bold ${tone === 'positive' ? 'text-green-400' : tone === 'negative' ? 'text-red-400' : 'text-stone-300'}`;
+        };
+
+        setSummaryTotal('total-ingresos-cuenta', totalIngresosCuenta, 'positive');
+        setSummaryTotal('total-egresos-cuenta', totalEgresosCuenta, 'negative');
+        setSummaryTotal('total-ingresos-efectivo', totalIngresosEfectivo, 'positive');
+        setSummaryTotal('total-egresos-efectivo', totalEgresosEfectivo, 'negative');
 
         // Función auxiliar para construir filas
         const buildDetalleRow = (m, isIngreso) => {
@@ -478,43 +484,96 @@ async function verDetalle(cajaId) {
                 <td class="text-stone-400 text-sm">${usuario}</td>
                 <td>${descripcion || '-'}</td>
                 <td class="${montoClass}">${formatearDinero(m.monto)}</td>
+                <td class="text-center">${renderMovimientoActionCell(m)}</td>
             </tr>
         `;
         };
 
+        const colSpan = 6;
+
         // Llenar 4 tablas separadas
         document.getElementById('detalle-ingresos-cuenta').innerHTML = ingresosEnCuenta.length > 0
             ? ingresosEnCuenta.map(m => buildDetalleRow(m, true)).join('')
-            : '<tr><td colspan="5" class="text-center text-stone-500">Sin ingresos en cuenta</td></tr>';
+            : `<tr><td colspan="${colSpan}" class="text-center text-stone-500">Sin ingresos en cuenta</td></tr>`;
 
         document.getElementById('detalle-egresos-cuenta').innerHTML = egresosEnCuenta.length > 0
             ? egresosEnCuenta.map(m => buildDetalleRow(m, false)).join('')
-            : '<tr><td colspan="5" class="text-center text-stone-500">Sin egresos en cuenta</td></tr>';
+            : `<tr><td colspan="${colSpan}" class="text-center text-stone-500">Sin egresos en cuenta</td></tr>`;
 
         document.getElementById('detalle-ingresos-efectivo').innerHTML = ingresosEnEfectivo.length > 0
             ? ingresosEnEfectivo.map(m => buildDetalleRow(m, true)).join('')
-            : '<tr><td colspan="5" class="text-center text-stone-500">Sin ingresos en efectivo</td></tr>';
+            : `<tr><td colspan="${colSpan}" class="text-center text-stone-500">Sin ingresos en efectivo</td></tr>`;
 
         document.getElementById('detalle-egresos-efectivo').innerHTML = egresosEnEfectivo.length > 0
             ? egresosEnEfectivo.map(m => buildDetalleRow(m, false)).join('')
-            : '<tr><td colspan="5" class="text-center text-stone-500">Sin egresos en efectivo</td></tr>';
+            : `<tr><td colspan="${colSpan}" class="text-center text-stone-500">Sin egresos en efectivo</td></tr>`;
+
+        const resumenSections = [
+            { tabla: 'detalle-ingresos-cuenta', tipo: 'ingreso', metodoPago: 'transferencia' },
+            { tabla: 'detalle-egresos-cuenta', tipo: 'egreso', metodoPago: 'transferencia' },
+            { tabla: 'detalle-ingresos-efectivo', tipo: 'ingreso', metodoPago: 'efectivo' },
+            { tabla: 'detalle-egresos-efectivo', tipo: 'egreso', metodoPago: 'efectivo' }
+        ];
+
+        resumenSections.forEach(({ tabla, tipo, metodoPago }) => {
+            const target = document.getElementById(tabla);
+            if (!target) return;
+            const table = target.closest('table');
+            if (!table) return;
+
+            const existingAddButton = table.parentElement.querySelector('.js-add-movimiento-btn[data-table="' + tabla + '"]');
+            if (existingAddButton) {
+                existingAddButton.remove();
+            }
+
+            const btnWrap = document.createElement('div');
+            btnWrap.className = 'flex justify-end mb-2 js-add-movimiento-container';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-sm btn-green js-add-movimiento-btn';
+            btn.dataset.table = tabla;
+            btn.dataset.tipo = tipo;
+            btn.dataset.metodoPago = metodoPago;
+            btn.innerHTML = '<i class="fas fa-plus mr-1"></i> Agregar';
+            btn.addEventListener('click', () => abrirModalMovimiento({
+                modo: 'create',
+                tipo,
+                metodoPago
+            }));
+            btnWrap.appendChild(btn);
+            table.parentElement.insertBefore(btnWrap, table.nextSibling);
+        });
+
+        document.querySelectorAll('.js-edit-movimiento').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const id = Number(btn.dataset.id);
+                const movimiento = (cajaActual?.movimientos || []).find(item => Number(item.id) === id);
+                if (movimiento) {
+                    abrirModalMovimiento({ modo: 'edit', movimiento });
+                }
+            });
+        });
+
+        document.querySelectorAll('.js-delete-movimiento').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const id = Number(btn.dataset.id);
+                if (id) eliminarMovimientoCaja(id);
+            });
+        });
 
         // Llenar totales
-        document.getElementById('detalle-saldo-inicial').textContent = formatearDinero(caja.saldo_inicial_en_cuenta);
         document.getElementById('detalle-total-ingresos').textContent = formatearDinero(totalIngresos);
         document.getElementById('detalle-total-egresos').textContent = formatearDinero(totalEgresos);
-        //document.getElementById('detalle-saldo-esperado').textContent = formatearDinero(saldoEsperado);
-        document.getElementById('detalle-saldo-final').textContent = formatearDinero(caja.saldo_final_en_efectivo || 0);
         document.getElementById('detalle-diferencia').textContent = formatearDinero(diferencia);
 
         // Color de diferencia
         const diferenciEl = document.getElementById('detalle-diferencia');
-        if (diferencia === 0) {
+        if (diferencia > 0) {
             diferenciEl.className = 'text-2xl font-bold text-green-400';
         } else if (diferencia < 0) {
             diferenciEl.className = 'text-2xl font-bold text-red-400';
         } else {
-            diferenciEl.className = 'text-2xl font-bold text-yellow-400';
+            diferenciEl.className = 'text-2xl font-bold text-stone-300';
         }
 
         mostrarVista('detalle');
@@ -522,6 +581,160 @@ async function verDetalle(cajaId) {
         console.error('[admin_caja.js] Error en verDetalle:', err);
         mostrarBanner('Error cargando detalles: ' + err.message, 'error');
     }
+}
+
+let movimientoCajaEditandoId = null;
+let movimientoCajaContexto = null;
+
+function obtenerTablaPorTipoMetodo(tipo, metodoPago) {
+    if (tipo === 'ingreso' && metodoPago !== 'efectivo') return 'detalle-ingresos-cuenta';
+    if (tipo === 'egreso' && metodoPago !== 'efectivo') return 'detalle-egresos-cuenta';
+    if (tipo === 'ingreso' && metodoPago === 'efectivo') return 'detalle-ingresos-efectivo';
+    return 'detalle-egresos-efectivo';
+}
+
+function abrirModalMovimiento({ modo = 'create', movimiento = null, tipo = 'ingreso', metodoPago = 'efectivo' } = {}) {
+    const modal = document.getElementById('movimiento-modal');
+    const title = document.getElementById('movimiento-modal-title');
+    const form = document.getElementById('movimiento-form');
+
+    if (!modal || !title || !form) return;
+
+    movimientoCajaEditandoId = modo === 'edit' && movimiento ? Number(movimiento.id) : null;
+    movimientoCajaContexto = { tipo, metodoPago };
+
+    document.getElementById('movimiento-tipo').value = movimiento ? (movimiento.tipo || tipo) : tipo;
+    document.getElementById('movimiento-metodo').value = movimiento ? (movimiento.metodo_pago || metodoPago) : metodoPago;
+    document.getElementById('movimiento-categoria').value = movimiento ? (movimiento.categoria || 'manual') : 'manual';
+    document.getElementById('movimiento-subcategoria').value = movimiento ? (movimiento.subcategoria || 'manual') : 'manual';
+    document.getElementById('movimiento-descripcion').value = movimiento ? (movimiento.descripcion || '') : '';
+    document.getElementById('movimiento-monto').value = movimiento ? (movimiento.monto || 0) : '';
+    document.getElementById('movimiento-comprobante').value = movimiento ? (movimiento.comprobante_ref || '') : '';
+    title.textContent = modo === 'edit' ? 'Editar movimiento' : 'Nuevo movimiento';
+
+    form.dataset.modo = modo;
+    modal.classList.remove('hidden');
+
+    setTimeout(() => {
+        const descripcionInput = document.getElementById('movimiento-descripcion');
+        if (descripcionInput) {
+            descripcionInput.focus();
+            descripcionInput.select();
+        }
+    }, 50);
+}
+
+function cerrarModalMovimiento() {
+    const modal = document.getElementById('movimiento-modal');
+    if (modal) modal.classList.add('hidden');
+    movimientoCajaEditandoId = null;
+    movimientoCajaContexto = null;
+    const form = document.getElementById('movimiento-form');
+    if (form) form.reset();
+}
+
+async function guardarMovimientoDesdeModal(event) {
+    event.preventDefault();
+
+    if (!cajaActual || !cajaActual.id) {
+        mostrarBanner('No hay una caja activa seleccionada', 'error');
+        return;
+    }
+
+    if (!token) await authenticateAndGetToken();
+
+    const tipo = document.getElementById('movimiento-tipo').value;
+    const metodoPago = document.getElementById('movimiento-metodo').value;
+    const categoria = document.getElementById('movimiento-categoria').value.trim() || 'manual';
+    const subcategoria = document.getElementById('movimiento-subcategoria').value.trim() || 'manual';
+    const descripcion = document.getElementById('movimiento-descripcion').value.trim();
+    const monto = Number(document.getElementById('movimiento-monto').value);
+    const comprobante = document.getElementById('movimiento-comprobante').value.trim();
+
+    if (!descripcion || !Number.isFinite(monto) || monto <= 0) {
+        mostrarBanner('Completa descripción y monto válido', 'error');
+        return;
+    }
+
+    const payload = {
+        tipo,
+        categoria,
+        subcategoria,
+        descripcion,
+        monto,
+        metodo_pago: metodoPago,
+        comprobante_ref: comprobante || null,
+        id_evento_confirmado: null,
+        id_solicitud: null
+    };
+
+    try {
+        let response;
+        const url = movimientoCajaEditandoId
+            ? `/api/cajas/movimientos/${movimientoCajaEditandoId}`
+            : `/api/cajas/${cajaActual.id}/movimientos`;
+        const method = movimientoCajaEditandoId ? 'PUT' : 'POST';
+
+        response = await fetch(url, {
+            method,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const contentType = response.headers.get('content-type') || '';
+        const respuestaJson = contentType.includes('application/json') ? await response.json() : { message: await response.text() };
+
+        if (!response.ok) {
+            throw new Error(respuestaJson.error || respuestaJson.message || 'Error guardando movimiento');
+        }
+
+        mostrarBanner(movimientoCajaEditandoId ? 'Movimiento actualizado' : 'Movimiento agregado', 'success');
+        cerrarModalMovimiento();
+        await verDetalle(cajaActual.id);
+    } catch (err) {
+        console.error('[admin_caja.js] Error guardando movimiento:', err);
+        mostrarBanner('Error: ' + err.message, 'error');
+    }
+}
+
+async function eliminarMovimientoCaja(movimientoId) {
+    if (!movimientoId) return;
+    if (!confirm('¿Eliminar este movimiento de la caja?')) return;
+    if (!token) await authenticateAndGetToken();
+
+    try {
+        const response = await fetch(`/api/cajas/movimientos/${movimientoId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || 'Error eliminando movimiento');
+        }
+
+        mostrarBanner('Movimiento eliminado', 'success');
+        if (cajaActual?.id) await verDetalle(cajaActual.id);
+    } catch (err) {
+        console.error('[admin_caja.js] Error eliminando movimiento:', err);
+        mostrarBanner('Error: ' + err.message, 'error');
+    }
+}
+
+function renderMovimientoActionCell(movimiento) {
+    return `
+        <div class="flex justify-center items-center gap-2">
+            <button type="button" class="js-edit-movimiento text-blue-300 hover:text-blue-200" data-id="${movimiento.id}" title="Editar movimiento">
+                <i class="fas fa-pencil-alt"></i>
+            </button>
+            <button type="button" class="js-delete-movimiento text-red-300 hover:text-red-200" data-id="${movimiento.id}" title="Eliminar movimiento">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
 }
 
 // Guardar nombre de caja
@@ -597,7 +810,7 @@ async function guardarEvento() {
 function mostrarVista(vista) {
     viewListado.classList.add('hidden');
     viewDetalle.classList.add('hidden');
-    viewAbrir.classList.add('hidden');
+    if (viewAbrir) viewAbrir.classList.add('hidden');
 
     if (vista === 'listado') {
         viewListado.classList.remove('hidden');
@@ -607,13 +820,13 @@ function mostrarVista(vista) {
         viewDetalle.classList.remove('hidden');
         console.log('[admin_caja.js] 👁️ Mostrando detalle');
     }
-    else if (vista === 'abrir') {
-        viewAbrir.classList.remove('hidden');
-        console.log('[admin_caja.js] 👁️ Mostrando formulario abrir caja');
-        // Cargar automáticamente el saldo disponible de MP y eventos
-        cargarSaldoMPAlFormulario();
-        cargarEventosDisponibles();
-    }
+    // Apertura manual de caja desactivada en esta vista.
+    // else if (vista === 'abrir') {
+    //     viewAbrir.classList.remove('hidden');
+    //     console.log('[admin_caja.js] 👁️ Mostrando formulario abrir caja');
+    //     cargarSaldoMPAlFormulario();
+    //     cargarEventosDisponibles();
+    // }
 }
 
 // Cargar eventos confirmados en el select (reutilizable para diferentes selectores)
@@ -774,62 +987,6 @@ function mostrarBanner(mensaje, tipo = 'info') {
     }, 4000);
 }
 
-// Abrir nueva caja
-if (formAbrirCaja) {
-    formAbrirCaja.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const nombreCaja = document.getElementById('nombre-caja').value.trim();
-        const saldoInicial = parseFloat(document.getElementById('saldo-inicial').value);
-        const efectivoInicial = parseFloat(document.getElementById('efectivo-inicial').value) || 0;
-        const idEvento = document.getElementById('id-evento-confirmado').value || null;
-        const notas = document.getElementById('notas-apertura').value;
-
-        if (!nombreCaja) {
-            mostrarBanner('⚠️ Ingresa un nombre para la caja', 'warning');
-            return;
-        }
-
-        if (Number.isNaN(saldoInicial) || saldoInicial < 0) {
-            mostrarBanner('⚠️ Ingresa un saldo inicial válido', 'warning');
-            return;
-        }
-
-        if (!token) await authenticateAndGetToken();
-
-        try {
-            const response = await fetch('/api/cajas', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    nombre: nombreCaja,
-                    saldoInicial: parseFloat(saldoInicial),
-                    saldoInicialEnEfectivo: efectivoInicial,
-                    idEventoConfirmado: idEvento ? parseInt(idEvento) : null,
-                    notas
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Error abriendo caja');
-            }
-
-            mostrarBanner('Caja abierta correctamente', 'success');
-            formAbrirCaja.reset();
-            setTimeout(() => {
-                cargarCajaAbierta();
-                cargarCajas();
-                mostrarListado();
-            }, 1000);
-        } catch (err) {
-            console.error('[admin_caja.js] Error abriendo caja:', err);
-            mostrarBanner('Error: ' + err.message, 'error');
-        }
-    });
-}
 
 // Agregar log en panel de logs retroactivo
 function agregarLogRetroactivo(mensaje) {
@@ -1195,8 +1352,10 @@ async function pausarRefreshMP() {
                 if (btn) { btn.className = btn.className.replace('btn-green', 'btn-red'); }
             }
         } else {
-            agregarLogRetroactivo(`❌ Error: ${response.status}`);
-            mostrarBanner('⚠️ No se pudo cambiar estado del refresh', 'error');
+            const errData = await response.json().catch(() => ({}));
+            const errorMsg = errData?.error || errData?.details || `HTTP ${response.status}`;
+            agregarLogRetroactivo(`❌ Error: ${response.status} - ${errorMsg}`);
+            mostrarBanner(`⚠️ No se pudo cambiar estado del refresh: ${errorMsg}`, 'error');
         }
     } catch (err) {
         console.error('[admin_caja.js] ❌ Error toggle refresh:', err);
@@ -1208,11 +1367,17 @@ async function pausarRefreshMP() {
 }
 
 // Event listeners - con validación
-if (btnNuevaCaja) btnNuevaCaja.addEventListener('click', () => mostrarVista('abrir'));
 if (btnVolver) btnVolver.addEventListener('click', mostrarListado);
 if (btnGuardarNombre) btnGuardarNombre.addEventListener('click', guardarNombre);
 if (btnGuardarEvento) btnGuardarEvento.addEventListener('click', guardarEvento);
 if (btnCerrarCajaAbierta) btnCerrarCajaAbierta.addEventListener('click', cerrarCajaAbierta);
+
+document.getElementById('movimiento-modal-close')?.addEventListener('click', cerrarModalMovimiento);
+document.getElementById('movimiento-cancelar')?.addEventListener('click', cerrarModalMovimiento);
+document.getElementById('movimiento-form')?.addEventListener('submit', guardarMovimientoDesdeModal);
+
+window.abrirModalMovimiento = abrirModalMovimiento;
+window.eliminarMovimientoCaja = eliminarMovimientoCaja;
 
 // Toggle panel de importación MP
 const btnToggleImportar = document.getElementById('btn-toggle-importar');

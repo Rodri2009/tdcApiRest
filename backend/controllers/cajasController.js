@@ -314,20 +314,24 @@ async function obtenerMovimientosCaja(req, res) {
 async function agregarMovimiento(req, res) {
     try {
         const cajaId = req.params.id;
-        const usuarioId = req.user.id;
-        const { tipo, categoria, subcategoria, descripcion, monto, metodo, comprobante, id_evento_confirmado, id_solicitud } = req.body;
+        const usuarioId = req.user?.id_usuario || req.user?.id;
+        const { tipo, categoria, subcategoria, descripcion, monto, metodo, metodo_pago, comprobante, comprobante_ref, id_evento_confirmado, id_solicitud } = req.body;
+        const metodoPago = metodo_pago || metodo || 'efectivo';
+        const comprobanteFinal = comprobante_ref ?? comprobante ?? null;
 
         // Validar entrada
-        if (!tipo || !categoria || !descripcion || monto <= 0) {
+        if (!tipo || !categoria || !descripcion || Number(monto) <= 0) {
             return res.status(400).json({ error: 'Datos incompletos o inválidos' });
         }
 
-        // Verificar que la caja existe y está abierta
+        // Verificar que la caja existe. La edición manual de movimientos se permite
+        // aunque la caja ya esté cerrada, ya que la vista de detalle puede requerir
+        // corregir movimientos históricos.
         const verificarQuery = 'SELECT id, estado FROM cajas WHERE id = ?';
         const cajaResults = await db.query(verificarQuery, [cajaId]);
 
-        if (cajaResults.length === 0 || cajaResults[0].estado !== 'abierta') {
-            return res.status(400).json({ error: 'Caja no encontrada o cerrada' });
+        if (cajaResults.length === 0) {
+            return res.status(400).json({ error: 'Caja no encontrada' });
         }
 
         // Insertar movimiento
@@ -339,7 +343,7 @@ async function agregarMovimiento(req, res) {
 
         const result = await db.query(
             insertQuery,
-            [cajaId, tipo, categoria, subcategoria, descripcion, monto, metodo || 'efectivo', comprobante, usuarioId, id_evento_confirmado || null, id_solicitud || null]
+            [cajaId, tipo, categoria, subcategoria, descripcion, Number(monto), metodoPago, comprobanteFinal, usuarioId || null, id_evento_confirmado || null, id_solicitud || null]
         );
 
         // Log de actividad
@@ -359,14 +363,91 @@ async function agregarMovimiento(req, res) {
             categoria,
             subcategoria,
             descripcion,
-            monto,
-            metodo_pago: metodo || 'efectivo',
-            comprobante_ref: comprobante,
+            monto: Number(monto),
+            metodo_pago: metodoPago,
+            comprobante_ref: comprobanteFinal,
             creado_en: new Date()
         }));
     } catch (err) {
         console.error('[cajasController] Error:', err);
         res.status(500).json({ error: 'Error interno del servidor', details: err.message });
+    }
+}
+
+/**
+ * Actualizar un movimiento existente de la caja
+ */
+async function actualizarMovimientoCaja(req, res) {
+    try {
+        const movimientoId = req.params.movimientoId;
+        const { tipo, categoria, subcategoria, descripcion, monto, metodo_pago, comprobante_ref, id_evento_confirmado, id_solicitud } = req.body;
+
+        if (!movimientoId) {
+            return res.status(400).json({ error: 'ID del movimiento inválido' });
+        }
+
+        if (!tipo || !categoria || !descripcion || Number(monto) <= 0) {
+            return res.status(400).json({ error: 'Datos incompletos o inválidos' });
+        }
+
+        const movQuery = 'SELECT id_caja FROM movimientos_caja WHERE id = ?';
+        const movResults = await db.query(movQuery, [movimientoId]);
+
+        if (!movResults || movResults.length === 0) {
+            return res.status(404).json({ error: 'Movimiento no encontrado' });
+        }
+
+        const cajaId = movResults[0].id_caja;
+        const cajaQuery = 'SELECT estado FROM cajas WHERE id = ?';
+        const cajaResults = await db.query(cajaQuery, [cajaId]);
+
+        if (!cajaResults || cajaResults.length === 0) {
+            return res.status(400).json({ error: 'Caja no encontrada' });
+        }
+
+        const updateQuery = `
+            UPDATE movimientos_caja
+            SET tipo = ?,
+                categoria = ?,
+                subcategoria = ?,
+                descripcion = ?,
+                monto = ?,
+                metodo_pago = ?,
+                comprobante_ref = ?,
+                id_evento_confirmado = ?,
+                id_solicitud = ?,
+                actualizado_en = NOW()
+            WHERE id = ?
+        `;
+
+        await db.query(updateQuery, [
+            tipo,
+            categoria,
+            subcategoria || null,
+            descripcion,
+            Number(monto),
+            metodo_pago || 'efectivo',
+            comprobante_ref || null,
+            id_evento_confirmado || null,
+            id_solicitud || null,
+            movimientoId
+        ]);
+
+        return res.status(200).json(serializeBigInt({
+            id: Number(movimientoId),
+            id_caja: Number(cajaId),
+            tipo,
+            categoria,
+            subcategoria: subcategoria || null,
+            descripcion,
+            monto: Number(monto),
+            metodo_pago: metodo_pago || 'efectivo',
+            comprobante_ref: comprobante_ref || null,
+            actualizado_en: new Date()
+        }));
+    } catch (err) {
+        console.error('[cajasController] Error actualizando movimiento:', err);
+        return res.status(500).json({ error: 'Error interno del servidor', details: err.message });
     }
 }
 
@@ -388,12 +469,13 @@ async function eliminarMovimiento(req, res) {
 
         const cajaId = movResults[0].id_caja;
 
-        // Verificar que la caja está abierta
+        // La caja puede estar cerrada; el detalle histórico sigue permitiendo
+        // eliminar un movimiento manual si la operación es administrativa.
         const verificarCajaQuery = 'SELECT estado FROM cajas WHERE id = ?';
         const cajaResults = await db.query(verificarCajaQuery, [cajaId]);
 
-        if (cajaResults.length === 0 || cajaResults[0].estado !== 'abierta') {
-            return res.status(400).json({ error: 'Caja no encontrada o cerrada' });
+        if (cajaResults.length === 0) {
+            return res.status(400).json({ error: 'Caja no encontrada' });
         }
 
         // Eliminar movimiento
@@ -1118,112 +1200,108 @@ async function importarRetroactivosStream(req, res) {
  */
 async function pausarRefreshMP(req, res) {
     try {
-        // Obtener la página de Puppeteer del servidor
         const mpPage = req.mpPage;
 
-        if (!mpPage) {
-            return res.status(400).json({ error: 'Puppeteer MP no disponible' });
+        if (!mpPage || typeof mpPage.evaluate !== 'function') {
+            return res.status(400).json({
+                success: false,
+                error: 'Puppeteer MP no disponible',
+                details: 'La página de Mercado Pago no está inicializada.'
+            });
         }
 
-        // Determinar acción según estado actual del watch service
         let action = 'paused';
         try {
             const { getWatchService } = require('../controllers/watchController');
             const watchSvc = getWatchService();
+
             if (watchSvc && watchSvc.isActive) {
-                // ESTÁ ACTIVO → PAUSAR
                 watchSvc.stop();
                 console.log('[cajasController] ⏸️  TransactionWatchService pausado');
                 action = 'paused';
             } else if (watchSvc && !watchSvc.isActive) {
-                // ESTÁ PAUSADO → REANUDAR
-                watchSvc.start();
+                watchSvc.start().catch((e) => {
+                    console.warn('[cajasController] ⚠️  No se pudo reanudar el watch service:', e.message);
+                });
                 console.log('[cajasController] ▶️  TransactionWatchService reanudado');
                 action = 'resumed';
             }
         } catch (e) {
-            console.warn('[cajasController] ⚠️  No se pudo toglear watch service:', e.message);
+            console.warn('[cajasController] ⚠️  No se pudo togglear el watch service:', e.message);
         }
 
         if (action === 'paused') {
             console.log('[cajasController] 🔒 PAUSANDO refresh automático de MP en Puppeteer...');
-            await mpPage.evaluate(() => {
-                // ========== NIVEL 1: Congelar timers ==========
-                window._originalSetInterval = window.setInterval;
-                window._originalSetTimeout = window.setTimeout;
-                window._originalRAF = window.requestAnimationFrame;
-
-                const frozenIntervals = new Set();
-                const frozenTimeouts = new Set();
-
-                window.setInterval = function (...args) {
-                    const id = Math.random();
-                    frozenIntervals.add(id);
-                    return id;
-                };
-
-                window.setTimeout = function (...args) {
-                    const id = Math.random();
-                    frozenTimeouts.add(id);
-                    return id;
-                };
-
-                window.requestAnimationFrame = function (callback) {
-                    return -1;
-                };
-
-                // ========== NIVEL 2: Bloquear listeners excepto interacción ==========
-                window._originalAddEventListener = EventTarget.prototype.addEventListener;
-                const ALLOWED_EVENTS = ['click', 'mouseover', 'mouseout', 'focus', 'blur'];
-
-                EventTarget.prototype.addEventListener = function (event, handler, options) {
-                    if (!ALLOWED_EVENTS.includes(event)) {
-                        return;
-                    }
-                    return window._originalAddEventListener.call(this, event, handler, options);
-                };
-
-                // ========== NIVEL 3: Bloquear WebSocket ==========
-                window.WebSocket = class {
-                    constructor() { throw new Error('WebSocket bloqueado'); }
-                };
-
-                // ========== NIVEL 4: Bloquear fetch /api/ y /activities ==========
-                window._originalFetch = window.fetch;
-                window.fetch = function (url, options) {
-                    const urlStr = String(url || '');
-                    if (urlStr.includes('/api/') || urlStr.includes('/activities') || urlStr.includes('refresh')) {
-                        return Promise.reject(new Error('Fetch bloqueado'));
-                    }
-                    return window._originalFetch.apply(this, arguments);
-                };
-
-                console.log('✓ Refresh de MP PAUSADO EXITOSAMENTE');
-            });
-            console.log('[cajasController] ✓ Refresh de MP pausado en Puppeteer');
-            return res.json({ success: true, action: 'paused', message: 'Refresh de MP pausado' });
-        } else {
-            // REANUDAR: restaurar timers en el browser
-            console.log('[cajasController] 🔓 REANUDANDO refresh de MP en Puppeteer...');
             try {
                 await mpPage.evaluate(() => {
-                    if (window._originalSetInterval) window.setInterval = window._originalSetInterval;
-                    if (window._originalSetTimeout) window.setTimeout = window._originalSetTimeout;
-                    if (window._originalRAF) window.requestAnimationFrame = window._originalRAF;
-                    if (window._originalAddEventListener) EventTarget.prototype.addEventListener = window._originalAddEventListener;
-                    if (window._originalFetch) window.fetch = window._originalFetch;
-                    console.log('✓ Refresh de MP REANUDADO EXITOSAMENTE');
+                    window._originalSetInterval = window.setInterval;
+                    window._originalSetTimeout = window.setTimeout;
+                    window._originalRAF = window.requestAnimationFrame;
+                    window._originalAddEventListener = EventTarget.prototype.addEventListener;
+                    window._originalFetch = window.fetch;
+
+                    const ALLOWED_EVENTS = ['click', 'mouseover', 'mouseout', 'focus', 'blur'];
+                    window.setInterval = function () { return -1; };
+                    window.setTimeout = function () { return -1; };
+                    window.requestAnimationFrame = function () { return -1; };
+
+                    EventTarget.prototype.addEventListener = function (event, handler, options) {
+                        if (!ALLOWED_EVENTS.includes(event)) {
+                            return;
+                        }
+                        return window._originalAddEventListener.call(this, event, handler, options);
+                    };
+
+                    window.WebSocket = class {
+                        constructor() { throw new Error('WebSocket bloqueado'); }
+                    };
+
+                    window.fetch = function (url, options) {
+                        const urlStr = String(url || '');
+                        if (urlStr.includes('/api/') || urlStr.includes('/activities') || urlStr.includes('refresh')) {
+                            return Promise.reject(new Error('Fetch bloqueado'));
+                        }
+                        return window._originalFetch.apply(this, arguments);
+                    };
                 });
-            } catch (e) {
-                console.warn('[cajasController] ⚠️  No se pudo restaurar browser:', e.message);
+            } catch (pageErr) {
+                console.error('[cajasController] ❌ Error al pausar refresh en Puppeteer:', pageErr.message);
+                return res.status(409).json({
+                    success: false,
+                    error: 'No se pudo pausar el refresh en Puppeteer',
+                    details: pageErr.message
+                });
             }
-            console.log('[cajasController] ✓ Refresh de MP reanudado');
-            return res.json({ success: true, action: 'resumed', message: 'Refresh de MP reanudado' });
+
+            console.log('[cajasController] ✓ Refresh de MP pausado en Puppeteer');
+            return res.json({ success: true, action: 'paused', message: 'Refresh de MP pausado' });
         }
 
+        console.log('[cajasController] 🔓 REANUDANDO refresh de MP en Puppeteer...');
+        try {
+            await mpPage.evaluate(() => {
+                if (window._originalSetInterval) window.setInterval = window._originalSetInterval;
+                if (window._originalSetTimeout) window.setTimeout = window._originalSetTimeout;
+                if (window._originalRAF) window.requestAnimationFrame = window._originalRAF;
+                if (window._originalAddEventListener) EventTarget.prototype.addEventListener = window._originalAddEventListener;
+                if (window._originalFetch) window.fetch = window._originalFetch;
+                if (window.WebSocket && window.WebSocket.name === 'WebSocket') {
+                    delete window.WebSocket;
+                }
+            });
+        } catch (pageErr) {
+            console.warn('[cajasController] ⚠️  No se pudo restaurar el browser:', pageErr.message);
+        }
+
+        console.log('[cajasController] ✓ Refresh de MP reanudado');
+        return res.json({ success: true, action: 'resumed', message: 'Refresh de MP reanudado' });
     } catch (err) {
         console.error('[cajasController] ❌ Error pausando refresh:', err.message);
-        res.status(500).json({ error: 'Error pausando refresh', details: err.message });
+        return res.status(500).json({
+            success: false,
+            error: 'Error pausando refresh',
+            details: err.message
+        });
     }
 }
 
@@ -1531,6 +1609,7 @@ module.exports = {
     obtenerCaja,
     obtenerMovimientosCaja,
     agregarMovimiento,
+    actualizarMovimientoCaja,
     eliminarMovimiento,
     cerrarCaja,
     obtenerHistorialCajas,
