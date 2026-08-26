@@ -709,12 +709,12 @@ UNLOCK TABLES;
 
 LOCK TABLES `talleristas` WRITE;
 /*!40000 ALTER TABLE `talleristas` DISABLE KEYS */;
-INSERT INTO `talleristas` (`id`, `nombre`, `especialidad`, `bio`, `telefono`, `email`, `instagram`, `activo`, `creado_en`) VALUES
+INSERT INTO `talleristas` (`id`, `id_usuario`, `id_cliente`, `nombre`, `especialidad`, `bio`, `telefono`, `email`, `instagram`, `activo`, `creado_en`) VALUES
 
-  (1,'Sofía Herrera','Danza contemporánea y flamenco','Bailarina y docente con 10 años de experiencia en danza contemporánea y flamenco. Formada en el IUNA.','1123456789','sofia.herrera@mail.com','@sofiaherrera.danza',1,'2026-03-18 18:42:12'),
-  (2,'Marcos Delgado','Guitarra y teoría musical','Músico egresado del Conservatorio Municipal. Docente de guitarra clásica y popular desde 2015.','1134567890','marcos.delgado@mail.com','@marcosdelgado.musica',1,'2026-03-18 18:42:12'),
-  (3,'Valeria Ríos','Yoga y meditación','Instructora certificada de Hatha y Vinyasa Yoga. Facilitadora de mindfulness y meditación guiada.','1145678901','valeria.rios@mail.com','@valeria.yoga',1,'2026-03-18 18:42:12'),
-  (4,'Tomás Ferreira','Artes plásticas y manualidades','Artista plástico y docente. Trabaja con pintura, collage, arcilla y técnicas mixtas para todas las edades.','1156789012','tomas.ferreira@mail.com','@tomasferreira.arte',1,'2026-03-18 18:42:12');
+  (1,3,NULL,'Sofía Herrera','Danza contemporánea y flamenco','Bailarina y docente con 10 años de experiencia en danza contemporánea y flamenco. Formada en el IUNA.','1123456789','sofia.herrera@mail.com','@sofiaherrera.danza',1,'2026-03-18 18:42:12'),
+  (2,4,NULL,'Marcos Delgado','Guitarra y teoría musical','Músico egresado del Conservatorio Municipal. Docente de guitarra clásica y popular desde 2015.','1134567890','marcos.delgado@mail.com','@marcosdelgado.musica',1,'2026-03-18 18:42:12'),
+  (3,5,NULL,'Valeria Ríos','Yoga y meditación','Instructora certificada de Hatha y Vinyasa Yoga. Facilitadora de mindfulness y meditación guiada.','1145678901','valeria.rios@mail.com','@valeria.yoga',1,'2026-03-18 18:42:12'),
+  (4,6,NULL,'Tomás Ferreira','Artes plásticas y manualidades','Artista plástico y docente. Trabaja con pintura, collage, arcilla y técnicas mixtas para todas las edades.','1156789012','tomas.ferreira@mail.com','@tomasferreira.arte',1,'2026-03-18 18:42:12');
 /*!40000 ALTER TABLE `talleristas` ENABLE KEYS */;
 UNLOCK TABLES;
 

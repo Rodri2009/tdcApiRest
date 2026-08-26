@@ -1,7 +1,90 @@
 // backend/controllers/talleresController.js
 // Controlador para gestión de Talleres/Actividades
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
+
+const generarPasswordTemporal = () => {
+    const random = crypto.randomBytes(6).toString('hex');
+    return `Tdc-${random}!`;
+};
+
+const ensureTalleristaProfileColumns = async (conn) => {
+    const rows = await conn.query(
+        `SELECT COLUMN_NAME AS column_name
+         FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'talleristas'`
+    );
+    const columns = new Set(rows.map(row => row.column_name));
+
+    const additions = [];
+    if (!columns.has('id_usuario')) {
+        additions.push('ADD COLUMN id_usuario INT NULL');
+    }
+    if (!columns.has('id_cliente')) {
+        additions.push('ADD COLUMN id_cliente INT NULL');
+    }
+
+    if (additions.length > 0) {
+        const sql = `ALTER TABLE talleristas ${additions.join(', ')}`;
+        await conn.query(sql);
+    }
+};
+
+const resolverUsuarioYClienteTallerista = async (conn, { nombre, apellido, telefono, email, id_usuario = null, id_cliente = null }) => {
+    let finalIdUsuario = id_usuario ? Number(id_usuario) : null;
+    let finalIdCliente = id_cliente ? Number(id_cliente) : null;
+    let passwordTemporal = null;
+
+    const nombreCompleto = [nombre, apellido].filter(Boolean).join(' ').trim();
+
+    if (email && String(email).trim().length > 0) {
+        const emailNormalizado = String(email).trim();
+
+        if (!finalIdUsuario) {
+            const [usuarioExistente] = await conn.query(
+                'SELECT id_usuario FROM usuarios WHERE email = ? LIMIT 1',
+                [emailNormalizado]
+            );
+
+            if (usuarioExistente && usuarioExistente.id_usuario) {
+                finalIdUsuario = Number(usuarioExistente.id_usuario);
+            } else {
+                passwordTemporal = generarPasswordTemporal();
+                const salt = await bcrypt.genSalt(10);
+                const passwordHash = await bcrypt.hash(passwordTemporal, salt);
+                const result = await conn.query(
+                    `INSERT INTO usuarios (email, password_hash, nombre, rol, activo)
+                     VALUES (?, ?, ?, 'cliente', 1)`,
+                    [emailNormalizado, passwordHash, nombreCompleto || nombre || '',]
+                );
+                finalIdUsuario = Number(result.insertId);
+            }
+        }
+
+        if (!finalIdCliente && finalIdUsuario) {
+            const [clienteExistente] = await conn.query(
+                `SELECT id_cliente FROM clientes WHERE id_usuario = ? OR email = ? LIMIT 1`,
+                [finalIdUsuario, emailNormalizado]
+            );
+
+            if (clienteExistente && clienteExistente.id_cliente) {
+                finalIdCliente = Number(clienteExistente.id_cliente);
+            } else {
+                const result = await conn.query(
+                    `INSERT INTO clientes (id_usuario, nombre, apellido, telefono, email, creado_por_id_usuario, activo)
+                     VALUES (?, ?, ?, ?, ?, ?, 1)`,
+                    [finalIdUsuario, nombre || null, apellido || null, telefono || null, emailNormalizado, finalIdUsuario]
+                );
+                finalIdCliente = Number(result.insertId);
+            }
+        }
+    }
+
+    return { id_usuario: finalIdUsuario, id_cliente: finalIdCliente, passwordTemporal };
+};
 
 // =============================================================================
 // TALLERISTAS
@@ -12,14 +95,40 @@ const getTalleristas = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const soloActivos = req.query.activos === '1';
-        let sql = `SELECT id, nombre, especialidad, bio, telefono, email, instagram, activo, creado_en as creadoEn FROM talleristas`;
-        if (soloActivos) sql += ` WHERE activo = 1`;
-        sql += ` ORDER BY nombre`;
+
+        let sql = `
+            SELECT
+                t.id,
+                t.id_usuario,
+                t.id_cliente,
+                COALESCE(u.nombre, t.nombre) AS nombre,
+                COALESCE(c.apellido, '') AS apellido,
+                t.especialidad,
+                t.bio,
+                COALESCE(t.telefono, c.telefono) AS telefono,
+                COALESCE(t.email, c.email, u.email) AS email,
+                COALESCE(t.instagram, '') AS instagram,
+                t.activo,
+                t.creado_en AS creadoEn
+            FROM talleristas t
+            LEFT JOIN usuarios u ON u.id_usuario = t.id_usuario
+            LEFT JOIN clientes c ON c.id_cliente = t.id_cliente
+        `;
+
+        if (soloActivos) sql += ` WHERE t.activo = 1`;
+        sql += ` ORDER BY COALESCE(u.nombre, t.nombre)`;
+
         const rows = await conn.query(sql);
         res.status(200).json(rows);
     } catch (err) {
         logError("Error en getTalleristas:", err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        try {
+            const fallbackSql = `SELECT id, nombre, especialidad, bio, telefono, email, instagram, activo, creado_en as creadoEn FROM talleristas`;
+            const rows = await conn.query(fallbackSql);
+            res.status(200).json(rows);
+        } catch (fallbackErr) {
+            res.status(500).json({ error: 'Error interno del servidor' });
+        }
     } finally {
         if (conn) conn.release();
     }
@@ -30,7 +139,15 @@ const getTalleristaById = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const { id } = req.params;
-        const rows = await conn.query(`SELECT * FROM talleristas WHERE id = ?`, [id]);
+        const rows = await conn.query(`
+            SELECT
+                t.*,
+                COALESCE(c.apellido, '') AS apellido,
+                COALESCE(c.id_cliente, t.id_cliente) AS cliente_id
+            FROM talleristas t
+            LEFT JOIN clientes c ON c.id_cliente = t.id_cliente
+            WHERE t.id = ?
+        `, [id]);
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Tallerista no encontrado' });
         }
@@ -47,25 +164,86 @@ const createTallerista = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const { nombre, especialidad, bio, telefono, email, instagram, id_cliente = null, activo = 1 } = req.body;
+        const { nombre, apellido, especialidad, bio, telefono, email, instagram, cliente_id = null, id_cliente = null, id_usuario = null, activo = 1 } = req.body;
+        const selectedClienteId = id_cliente ?? cliente_id ?? null;
+
+        await ensureTalleristaProfileColumns(conn);
 
         if (!nombre) {
             return res.status(400).json({ error: 'El nombre es obligatorio' });
         }
 
-        const params = [nombre, especialidad || null, bio || null, telefono || null, email || null, instagram || null, id_cliente || null, activo];
-        logError('[TALLER] createTallerista payload:', { nombre, especialidad, telefono, email, id_cliente, activo });
-        logError('[TALLER] createTallerista params:', params);
-        const result = await conn.query(
-            `INSERT INTO talleristas (nombre, especialidad, bio, telefono, email, instagram, id_cliente, activo) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            params
-        );
+        const emailNormalizado = String(email || '').trim();
+        if (!emailNormalizado) {
+            return res.status(400).json({ error: 'El email es obligatorio para crear el tallerista y su usuario de acceso' });
+        }
 
-        res.status(201).json({
-            message: 'Tallerista creado exitosamente',
-            id: Number(result.insertId)
+        const [existingUser] = await conn.query('SELECT id_usuario FROM usuarios WHERE email = ? LIMIT 1', [emailNormalizado]);
+        if (existingUser && !id_usuario) {
+            return res.status(409).json({ error: 'El email ya existe en usuarios. Debe usar uno distinto.' });
+        }
+
+        const { id_usuario: usuarioCreadoId, id_cliente: clienteCreadoId, passwordTemporal } = await resolverUsuarioYClienteTallerista(conn, {
+            nombre,
+            apellido,
+            telefono,
+            email,
+            id_usuario,
+            id_cliente: selectedClienteId
         });
+
+        const finalIdCliente = clienteCreadoId || selectedClienteId || null;
+        const finalIdUsuario = usuarioCreadoId || id_usuario || null;
+
+        const params = [
+            finalIdUsuario,
+            finalIdCliente,
+            nombre,
+            especialidad || null,
+            bio || null,
+            telefono || null,
+            emailNormalizado,
+            instagram || null,
+            activo
+        ];
+
+        try {
+            const result = await conn.query(
+                `INSERT INTO talleristas (id_usuario, id_cliente, nombre, especialidad, bio, telefono, email, instagram, activo)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                params
+            );
+
+            const response = {
+                message: 'Tallerista creado exitosamente',
+                id: Number(result.insertId),
+                id_usuario: finalIdUsuario,
+                id_cliente: finalIdCliente,
+            };
+
+            if (passwordTemporal) {
+                response.passwordTemporal = passwordTemporal;
+                response.message = 'Tallerista creado exitosamente y usuario generado con contraseña temporal';
+            }
+
+            return res.status(201).json(response);
+        } catch (insertErr) {
+            if (insertErr && (insertErr.code === 'ER_BAD_FIELD_ERROR' || insertErr.code === 'ER_NO_SUCH_COLUMN')) {
+                const fallbackResult = await conn.query(
+                    `INSERT INTO talleristas (nombre, especialidad, bio, telefono, email, instagram, id_cliente, activo)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [nombre, especialidad || null, bio || null, telefono || null, emailNormalizado, instagram || null, finalIdCliente || null, activo]
+                );
+
+                return res.status(201).json({
+                    message: 'Tallerista creado exitosamente (esquema legacy)',
+                    id: Number(fallbackResult.insertId),
+                    id_usuario: finalIdUsuario,
+                    id_cliente: finalIdCliente
+                });
+            }
+            throw insertErr;
+        }
     } catch (err) {
         logError("Error en createTallerista:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -79,7 +257,32 @@ const updateTallerista = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const { id } = req.params;
-        const { nombre, especialidad, bio, telefono, email, instagram, id_cliente, activo } = req.body;
+        const { nombre, apellido, especialidad, bio, telefono, email, instagram, id_cliente, activo } = req.body;
+
+        const [talleristaActual] = await conn.query(`SELECT id_usuario, id_cliente FROM talleristas WHERE id = ? LIMIT 1`, [id]);
+        if (!talleristaActual) {
+            return res.status(404).json({ error: 'Tallerista no encontrado' });
+        }
+
+        const emailNormalizado = typeof email === 'string' ? email.trim() : (email || null);
+        if (emailNormalizado) {
+            const [userWithSameEmail] = await conn.query(
+                'SELECT id_usuario FROM usuarios WHERE email = ? AND id_usuario != ? LIMIT 1',
+                [emailNormalizado, talleristaActual.id_usuario || 0]
+            );
+            if (userWithSameEmail) {
+                return res.status(409).json({ error: 'El email ya existe en usuarios. Debe usar uno distinto.' });
+            }
+        }
+
+        if (talleristaActual.id_usuario && emailNormalizado) {
+            await conn.query('UPDATE usuarios SET email = ?, nombre = ? WHERE id_usuario = ?', [emailNormalizado, nombre || null, talleristaActual.id_usuario]);
+        }
+
+        const finalClienteId = id_cliente ?? talleristaActual.id_cliente ?? null;
+        if (finalClienteId && apellido) {
+            await conn.query('UPDATE clientes SET apellido = ? WHERE id_cliente = ?', [apellido, finalClienteId]);
+        }
 
         const result = await conn.query(
             `UPDATE talleristas SET 
@@ -92,7 +295,7 @@ const updateTallerista = async (req, res) => {
                 id_cliente = COALESCE(?, id_cliente),
                 activo = COALESCE(?, activo)
              WHERE id = ?`,
-            [nombre, especialidad, bio, telefono, email, instagram, id_cliente || null, activo, id]
+            [nombre, especialidad, bio, telefono, emailNormalizado, instagram, finalClienteId, activo, id]
         );
 
         if (result.affectedRows === 0) {
@@ -116,10 +319,12 @@ const deleteTallerista = async (req, res) => {
 
         // Verificar si tiene talleres asignados
         const talleres = await conn.query(`SELECT COUNT(*) as count FROM talleres WHERE tallerista_id = ?`, [id]);
-        if (talleres[0].count > 0) {
+        const talleresAsignados = Number(talleres[0].count || 0);
+        if (talleresAsignados > 0) {
             return res.status(400).json({
-                error: 'No se puede eliminar: el tallerista tiene talleres asignados',
-                talleresAsignados: Number(talleres[0].count)
+                error: `No se puede eliminar el tallerista porque tiene ${talleresAsignados} taller(es) asignado(s). Debe desvincular o eliminar esos talleres antes de borrar el perfil. El usuario asociado no se elimina.` ,
+                talleresAsignados,
+                eliminaUsuario: false
             });
         }
 
@@ -183,10 +388,32 @@ const getTalleres = async (req, res) => {
         sql += ` ORDER BY t.dia_semana, t.hora_inicio`;
 
         const rows = await conn.query(sql, params);
-        res.status(200).json(rows);
+        return res.status(200).json(rows);
     } catch (err) {
         logError("Error en getTalleres:", err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+
+        try {
+            const fallbackSql = `
+                SELECT 
+                    t.id, t.tipo_taller_id as tipoTallerId, t.tallerista_id as talleristaId,
+                    t.nombre, t.descripcion, t.dia_semana as diaSemana,
+                    TIME_FORMAT(t.hora_inicio, '%H:%i') as horaInicio,
+                    TIME_FORMAT(t.hora_fin, '%H:%i') as horaFin,
+                    t.duracion_minutos as duracionMinutos, t.cupo_maximo as cupoMaximo,
+                    t.cupo_minimo as cupoMinimo, t.ubicacion, t.activo, t.creado_en as creadoEn,
+                    tal.nombre as talleristaNombre,
+                    ot.nombre_para_mostrar as tipoNombre
+                FROM talleres t
+                LEFT JOIN talleristas tal ON t.tallerista_id = tal.id
+                LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_tipo_evento
+                WHERE 1=1
+            `;
+            const rows = await conn.query(fallbackSql);
+            return res.status(200).json(rows);
+        } catch (fallbackErr) {
+            logError('Fallback de getTalleres falló:', fallbackErr);
+            return res.status(500).json({ error: 'Error interno del servidor' });
+        }
     } finally {
         if (conn) conn.release();
     }
@@ -197,22 +424,15 @@ const getTallerById = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const { id } = req.params;
-        const rows = await conn.query(`
-            SELECT 
-                t.*, tal.nombre as tallerista_nombre,
-                ot.nombre_para_mostrar as tipo_nombre
-            FROM talleres t
-            LEFT JOIN talleristas tal ON t.tallerista_id = tal.id
-            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_tipo_evento
-            WHERE t.id = ?
-        `, [id]);
+        const rows = await conn.query(`SELECT * FROM talleres WHERE id = ?`, [id]);
 
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Taller no encontrado' });
         }
+
         res.status(200).json(rows[0]);
     } catch (err) {
-        logError("Error en getTallerById:", err);
+        logError('Error en getTallerById:', err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -224,20 +444,42 @@ const createTaller = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const {
-            tipoTallerId, talleristaId, nombre, descripcion,
-            diaSemana, horaInicio, horaFin, duracionMinutos = 60,
-            cupoMaximo = 15, cupoMinimo = 3, ubicacion = 'Salón TDC', activo = 1
+            tipoTallerId,
+            talleristaId,
+            nombre,
+            descripcion,
+            diaSemana,
+            horaInicio,
+            horaFin,
+            duracionMinutos,
+            cupoMaximo,
+            cupoMinimo,
+            ubicacion,
+            activo = 1
         } = req.body;
 
-        if (!tipoTallerId || !nombre) {
-            return res.status(400).json({ error: 'Tipo de taller y nombre son obligatorios' });
+        if (!nombre || !String(nombre).trim()) {
+            return res.status(400).json({ error: 'El nombre del taller es obligatorio' });
         }
 
         const result = await conn.query(
             `INSERT INTO talleres 
                 (tipo_taller_id, tallerista_id, nombre, descripcion, dia_semana, hora_inicio, hora_fin, duracion_minutos, cupo_maximo, cupo_minimo, ubicacion, activo) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [tipoTallerId, talleristaId || null, nombre, descripcion || null, diaSemana || null, horaInicio || null, horaFin || null, duracionMinutos, cupoMaximo, cupoMinimo, ubicacion, activo]
+            [
+                tipoTallerId || null,
+                talleristaId || null,
+                nombre,
+                descripcion || null,
+                diaSemana || null,
+                horaInicio || null,
+                horaFin || null,
+                duracionMinutos || null,
+                cupoMaximo || null,
+                cupoMinimo || null,
+                ubicacion || null,
+                activo
+            ]
         );
 
         res.status(201).json({
@@ -245,7 +487,7 @@ const createTaller = async (req, res) => {
             id: Number(result.insertId)
         });
     } catch (err) {
-        logError("Error en createTaller:", err);
+        logError('Error en createTaller:', err);
         res.status(500).json({ error: 'Error interno del servidor' });
     } finally {
         if (conn) conn.release();
@@ -473,6 +715,33 @@ const deletePrecioTaller = async (req, res) => {
 // TIPOS DE TALLER (usando opciones_tipos con categoria='TALLERES_ACTIVIDADES')
 // =============================================================================
 
+const normalizeTipoTallerId = (value) => {
+    const base = String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9\s-]/g, ' ')
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, '_')
+        .replace(/-+/g, '_');
+
+    return base ? `TALLER_${base}` : 'TALLER_GENERICO';
+};
+
+const generateUniqueTipoTallerId = async (conn, nombre) => {
+    const baseId = normalizeTipoTallerId(nombre);
+    let candidate = baseId;
+    let counter = 1;
+
+    while (true) {
+        const rows = await conn.query(`SELECT 1 FROM opciones_tipos WHERE id_tipo_evento = ? AND categoria = 'TALLERES_ACTIVIDADES'`, [candidate]);
+        if (rows.length === 0) return candidate;
+
+        candidate = `${baseId}_${counter}`;
+        counter += 1;
+    }
+};
+
 const getTiposTaller = async (req, res) => {
     let conn;
     try {
@@ -496,25 +765,21 @@ const createTipoTaller = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
-        const { id, nombre, descripcion, esPublico = 1 } = req.body;
+        const { nombre, descripcion, esPublico = 1 } = req.body;
 
-        if (!id || !nombre) {
-            return res.status(400).json({ error: 'ID y nombre son obligatorios' });
+        if (!nombre || !String(nombre).trim()) {
+            return res.status(400).json({ error: 'El nombre es obligatorio' });
         }
 
-        // Verificar que no exista
-        const exists = await conn.query(`SELECT 1 FROM opciones_tipos WHERE id_tipo_evento = ?`, [id]);
-        if (exists.length > 0) {
-            return res.status(400).json({ error: 'Ya existe un tipo con ese ID' });
-        }
+        const generatedId = await generateUniqueTipoTallerId(conn, nombre);
 
         await conn.query(
             `INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico, permite_adicionales) 
              VALUES (?, ?, ?, 'TALLERES_ACTIVIDADES', ?, 0)`,
-            [id.toUpperCase(), nombre, descripcion || null, esPublico]
+            [generatedId, nombre.trim(), descripcion || null, esPublico]
         );
 
-        res.status(201).json({ message: 'Tipo de taller creado exitosamente', id: id.toUpperCase() });
+        res.status(201).json({ message: 'Tipo de taller creado exitosamente', id: generatedId });
     } catch (err) {
         logError("Error en createTipoTaller:", err);
         res.status(500).json({ error: 'Error interno del servidor' });

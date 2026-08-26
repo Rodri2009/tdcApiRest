@@ -28,8 +28,10 @@ const CONFIG = {
     // ============================================
     // API BACKEND
     // ============================================
-    API_BASE: 'http://localhost:3000',
-    API_AUTH: 'http://localhost:3000/api/auth',
+    // En este stack, el frontend sirve /api/ a través de Nginx y no debe usar
+    // puertos fijos de desarrollo como 3000/3001.
+    API_BASE: window.location.origin,
+    API_AUTH: `${window.location.origin}/api/auth`,
     
     // En producción, cambiar a:
     // API_BASE: 'https://sudominio.com'

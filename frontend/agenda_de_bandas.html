@@ -180,27 +180,9 @@
         // LÓGICA DE CARGA DE EVENTOS DESDE LA API
         // ----------------------------------------------------
 
-        // La URL de tu API Node.js/Express, asumiendo que el contenedor backend está en el puerto 3000
-        // y se accede a través del host/puerto de Docker Compose (ej: localhost:3000)
-        // Por favor, ajusta esta URL si tu puerto API no es 3000.
-        //const API_URL = 'http://192.168.1.10/api/tickets/eventos';
-
-        // MODIFICACIÓN: URL Dinámica
-        const currentHost = window.location.host;
-        let API_BASE_URL = '';
-
-        if (currentHost.includes('localhost')) {
-            // Si estás en desarrollo local (usando localhost o una IP local)
-            API_BASE_URL = 'http://localhost';
-        } else if (currentHost.includes('192.168.1.10')) {
-            // Si estás en desarrollo local (usando localhost o una IP local)
-            API_BASE_URL = 'http://192.168.1.10';
-        } else {
-            // Si estás usando el dominio público
-            API_BASE_URL = window.location.protocol + '//' + currentHost;
-        }
-
-
+        // La API debe apuntar al mismo origen del frontend porque Nginx rebalancea
+        // /api/* hacia el backend. Evitamos puertos físicos del contenedor.
+        const API_BASE_URL = window.location.origin;
         const API_URL = API_BASE_URL + '/api/tickets/eventos_confirmados';
 
         const eventsListContainer = document.getElementById('events-list');

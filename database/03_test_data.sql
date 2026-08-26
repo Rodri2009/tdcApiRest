@@ -216,7 +216,11 @@ LOCK TABLES `usuarios` WRITE;
 INSERT INTO `usuarios` (`id_usuario`, `email`, `password_hash`, `nombre`, `rol`, `activo`, `proveedor_oauth`, `id_oauth`, `token_oauth`, `foto_url`, `email_verified`, `creado_en`, `actualizado_en`) VALUES
 
   (1,'temploclaypole@gmail.com','$2a$10$ad7UbwII0YnLMOhKhiFRdu9GUf.kicRmgb1GrqYfisWnmfk4Sf3Ru','Templo User','staff',1,'google','107386203679475316318',NULL,'https://lh3.googleusercontent.com/a/ACg8ocJGyiIz4tnQI40z1wg81HbfIeiPnmIl49oegEjoq5aFm0k-951Emg=s96-c',1,'2026-03-13 04:29:21','2026-03-13 12:25:56'),
-  (2,'villalbarodrigo2009@gmail.com','$2a$10$uR3LGeWWOEXxYhwmVPFazuPoa/DmTwfm2WU6.EeagDkRUJnCJNcCi','Rodrigo Villalba','admin',1,'google','117318714094755139695',NULL,'https://lh3.googleusercontent.com/a/ACg8ocJGyiIz4tnQI40z1wg81HbfIeiPnmIl49oegEjoq5aFm0k-951Emg=s96-c',1,'2026-03-13 04:29:21','2026-03-18 12:23:51');
+  (2,'villalbarodrigo2009@gmail.com','$2a$10$uR3LGeWWOEXxYhwmVPFazuPoa/DmTwfm2WU6.EeagDkRUJnCJNcCi','Rodrigo Villalba','admin',1,'google','117318714094755139695',NULL,'https://lh3.googleusercontent.com/a/ACg8ocJGyiIz4tnQI40z1wg81HbfIeiPnmIl49oegEjoq5aFm0k-951Emg=s96-c',1,'2026-03-13 04:29:21','2026-03-18 12:23:51'),
+  (3,'sofia.herrera@mail.com','$2a$10$ODbD.njB8qu6QK5Qv4ZlJ.qx9fNhqgIVWs.E0bP/HHw7GQzVigN8m','Sofía Herrera','tallerista',1,'local',NULL,NULL,NULL,1,'2026-03-18 18:42:12','2026-03-18 18:42:12'),
+  (4,'marcos.delgado@mail.com','$2a$10$Uq0cYgGibZ7Q7lheM1GXwe4GZ8CQbCwT2l3xIadKQK7FZbXR1bZ5i','Marcos Delgado','tallerista',1,'local',NULL,NULL,NULL,1,'2026-03-18 18:42:12','2026-03-18 18:42:12'),
+  (5,'valeria.rios@mail.com','$2a$10$NfC3AZyRKHL2mFh0aOgL2.dJfX0ltNbjtigfM7fQh8xn4d86NL7lK','Valeria Ríos','tallerista',1,'local',NULL,NULL,NULL,1,'2026-03-18 18:42:12','2026-03-18 18:42:12'),
+  (6,'tomas.ferreira@mail.com','$2a$10$zPQ1K3Fcxj6vPbm9g1hA6u0KxDmfSRwKlzBqDl/5P3jz0xkI5wXQG','Tomás Ferreira','tallerista',1,'local',NULL,NULL,NULL,1,'2026-03-18 18:42:12','2026-03-18 18:42:12');
 
 /*UPDATE `usuarios`
 SET `email_verified` = 1,

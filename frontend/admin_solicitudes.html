@@ -620,10 +620,9 @@
                     }
                 }
 
-                // Base URL de API: usa mismo origen o forzar localhost:3000 en entorno local si es necesario
-                const API_BASE_URL = (window.location.hostname === 'localhost' && window.location.port !== '3000')
-                    ? 'http://localhost:3000'
-                    : window.location.origin;
+                // Base URL de API: usa el mismo origen del frontend para respetar el proxy
+                // de Nginx y evitar puertos hardcodeados del backend.
+                const API_BASE_URL = window.location.origin;
 
                 function adminFetch(endpoint, options = {}) {
                     return fetch(`${API_BASE_URL}${endpoint}`, options);
@@ -641,12 +640,9 @@
                             headers['Authorization'] = `Bearer ${token}`;
                         }
 
-                        // Fase 2 fix: for local dev with backend on 3000 and frontend on 80/other,
-                        // aseguramos el origen correcto de la API.
-                        let apiBaseUrl = window.location.origin;
-                        if (window.location.hostname === 'localhost' && window.location.port !== '3000') {
-                            apiBaseUrl = 'http://localhost:3000';
-                        }
+                        // El frontend debe apuntar al proxy del mismo origen para no depender
+                        // del puerto interno del backend en Docker.
+                        const apiBaseUrl = window.location.origin;
 
                         const res = await fetch(`${apiBaseUrl}/api/admin/solicitudes`, {
                             headers: headers

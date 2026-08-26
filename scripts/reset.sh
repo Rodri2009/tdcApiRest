@@ -632,16 +632,15 @@ reset_docker_containers() {
         echo -ne "    Levantando contenedores $build_flag... "
         if [ "$DEBUG" = true ]; then
             echo ""
-                $compose_cmd up $build_flag -d --force-recreate 2>&1
-            else
-                $compose_cmd up $build_flag -d --force-recreate 2>&1 | grep -E 
-            fi # Cierre del if de DEBUG
-        fi # Cierre del if de CONTAINERS_TO_RESET "all"
+            $compose_cmd up $build_flag -d --force-recreate 2>&1
+        else
+            $compose_cmd up $build_flag -d --force-recreate 2>&1
+        fi
 
         # Levantar contenedores restantes si solo se reinició la DB o el backend por separado
         if [[ " $CONTAINERS_TO_RESET " =~ " all " ]] || [[ " $CONTAINERS_TO_RESET " =~ " db " ]]; then
             echo -ne "    Levantando backend y nginx... "
-            $compose_cmd up $build_flag -d backend nginx 2>&1 | grep -E 
+            $compose_cmd up $build_flag -d backend nginx 2>&1
             echo -e "${GREEN}✓${NC}"
             wait_for_backend_ready
         fi # Cierre del if de CONTAINERS_TO_RESET "all" o "db"
@@ -671,7 +670,7 @@ reset_docker_containers() {
             $compose_cmd stop backend 2>/dev/null || true
             echo -e "${GREEN}✓${NC}"
             echo -ne "    Levantando backend $build_flag... "
-            $compose_cmd up $build_flag -d --force-recreate backend 2>&1 | grep -E 
+            $compose_cmd up $build_flag -d --force-recreate backend 2>&1
             echo -e "${GREEN}✓${NC}"
             wait_for_backend_ready
         fi # Cierre del if de CONTAINERS_TO_RESET "backend"
@@ -682,7 +681,7 @@ reset_docker_containers() {
             $compose_cmd stop nginx 2>/dev/null || true
             echo -e "${GREEN}✓${NC}"
             echo -ne "    Levantando nginx... "
-            $compose_cmd up $build_flag -d nginx 2>&1 | grep -E 
+            $compose_cmd up $build_flag -d nginx 2>&1
             echo -e "${GREEN}✓${NC}"
             sleep 1
         fi # Cierre del if de CONTAINERS_TO_RESET "frontend"

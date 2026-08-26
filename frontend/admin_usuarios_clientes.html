@@ -739,7 +739,12 @@
           method: 'DELETE',
           headers: getHeaders()
         });
-        if (!res.ok) throw new Error('Error eliminando usuario');
+        const result = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(result.message || result.error || 'Error eliminando usuario');
+        }
+
         cerrarModalEliminar();
         cargarDatosUsuarios();
         alert('Usuario eliminado');

@@ -129,17 +129,7 @@
         // ----------------------------------------------------
 
         // URL Dinámica
-        const currentHost = window.location.host;
-        let API_BASE_URL = '';
-
-        if (currentHost.includes('localhost')) {
-            API_BASE_URL = 'http://localhost';
-        } else if (currentHost.includes('192.168.1.10')) {
-            API_BASE_URL = 'http://192.168.1.10';
-        } else {
-            API_BASE_URL = window.location.protocol + '//' + currentHost;
-        }
-
+        const API_BASE_URL = window.location.origin;
         const eventsListContainer = document.getElementById('events-list');
 
         /**

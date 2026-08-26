@@ -247,6 +247,21 @@ const actualizarUsuario = async (req, res) => {
 };
 
 /**
+ * Verifica si un usuario tiene solicitudes asociadas y por eso no puede eliminarse.
+ * Si no tiene solicitudes, se permite la baja y se eliminan sus relaciones
+ * en talleristas/clientes antes del DELETE del usuario.
+ */
+const obtenerConflictosEliminacionUsuario = async (conn, userId) => {
+    const [row] = await conn.query(
+        'SELECT COUNT(*) AS count FROM solicitudes WHERE id_usuario_creador = ?',
+        [userId]
+    );
+
+    const count = Number(row?.count || 0);
+    return count > 0 ? [{ table: 'solicitudes', count }] : [];
+};
+
+/**
  * Eliminar usuario
  */
 const eliminarUsuario = async (req, res) => {
@@ -267,7 +282,16 @@ const eliminarUsuario = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        // Eliminar usuario
+        const conflictos = await obtenerConflictosEliminacionUsuario(conn, id);
+        if (conflictos.length > 0) {
+            return res.status(409).json({
+                message: 'No se puede eliminar el usuario porque tiene solicitudes asociadas.',
+                conflictos
+            });
+        }
+
+        await conn.query('UPDATE talleristas SET id_usuario = NULL WHERE id_usuario = ?', [id]);
+        await conn.query('UPDATE clientes SET id_usuario = NULL WHERE id_usuario = ?', [id]);
         await conn.query('DELETE FROM usuarios WHERE id_usuario = ?', [id]);
 
         res.json({ message: `Usuario ${usuario.email} eliminado exitosamente` });

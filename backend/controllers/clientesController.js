@@ -1,6 +1,21 @@
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
+const ensureClienteOptionalColumns = async (conn) => {
+    const rows = await conn.query(
+        `SELECT COLUMN_NAME AS column_name
+         FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'clientes'`
+    );
+    const columns = new Set(rows.map(row => row.column_name));
+
+    if (!columns.has('tipo')) {
+        await conn.query('ALTER TABLE clientes ADD COLUMN tipo VARCHAR(50) NULL AFTER email');
+        logVerbose('[CLIENTES] Columna tipo agregada en clientes para compatibilidad con esquema legacy');
+    }
+};
+
 /**
  * GET /api/admin/clientes
  * Lista todos los clientes (admin) con info de usuario vinculado
@@ -11,6 +26,7 @@ const listClientes = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
+        await ensureClienteOptionalColumns(conn);
         const clientes = await conn.query(
             `SELECT 
                 c.id_cliente, 
@@ -79,6 +95,7 @@ const createCliente = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
+        await ensureClienteOptionalColumns(conn);
 
         // ✅ Validar email único en clientes si es proporcionado
         if (email && email.trim()) {
@@ -195,6 +212,7 @@ const updateCliente = async (req, res) => {
     let conn;
     try {
         conn = await pool.getConnection();
+        await ensureClienteOptionalColumns(conn);
 
         // ✅ Validar email único si se proporciona
         let newIdUsuario = null;

@@ -554,7 +554,9 @@ CREATE TABLE IF NOT EXISTS eventos_personal (
 -- Talleristas (instructores)
 CREATE TABLE IF NOT EXISTS talleristas (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(255) NOT NULL,
+    id_usuario INT DEFAULT NULL COMMENT 'FK a usuarios.id_usuario. La identidad real de la persona es usuarios',
+    id_cliente INT DEFAULT NULL COMMENT 'FK opcional a clientes.id_cliente si la persona además es cliente',
+    nombre VARCHAR(255) NOT NULL COMMENT 'Se conserva por compatibilidad con datos existentes; la fuente real es usuarios',
     especialidad VARCHAR(255),
     bio TEXT,
     telefono VARCHAR(50),
@@ -563,7 +565,12 @@ CREATE TABLE IF NOT EXISTS talleristas (
     activo TINYINT(1) DEFAULT 1,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_activo (activo),
-    INDEX idx_nombre (nombre)
+    INDEX idx_nombre (nombre),
+    UNIQUE KEY uk_tallerista_usuario (id_usuario),
+    KEY idx_tallerista_usuario (id_usuario),
+    KEY idx_tallerista_cliente (id_cliente),
+    CONSTRAINT fk_talleristas_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
+    CONSTRAINT fk_talleristas_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Talleres disponibles
