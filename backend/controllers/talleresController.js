@@ -322,7 +322,7 @@ const deleteTallerista = async (req, res) => {
         const talleresAsignados = Number(talleres[0].count || 0);
         if (talleresAsignados > 0) {
             return res.status(400).json({
-                error: `No se puede eliminar el tallerista porque tiene ${talleresAsignados} taller(es) asignado(s). Debe desvincular o eliminar esos talleres antes de borrar el perfil. El usuario asociado no se elimina.` ,
+                error: `No se puede eliminar el tallerista porque tiene ${talleresAsignados} taller(es) asignado(s). Debe desvincular o eliminar esos talleres antes de borrar el perfil. El usuario asociado no se elimina.`,
                 talleresAsignados,
                 eliminaUsuario: false
             });
@@ -579,33 +579,48 @@ const getPreciosTalleres = async (req, res) => {
         conn = await pool.getConnection();
         const { tipo, taller, vigente } = req.query;
 
+        const tipoFiltro = tipo || null;
+        const tallerFiltro = taller || null;
+
         let sql = `
             SELECT 
-                pt.id, pt.tipo_taller_id as tipoTallerId, pt.taller_id as tallerId,
-                pt.modalidad, pt.cantidad_clases as cantidadClases, pt.precio,
-                pt.vigente_desde as vigenteDesde, pt.vigente_hasta as vigenteHasta, pt.vigente,
+                pt.id,
+                pt.id_solicitud as solicitudId,
+                pt.id_solicitud_taller as solicitudTallerId,
+                COALESCE(pt.id_tipo_evento, pt.tipo_taller_id) as tipoTallerId,
+                pt.tipo_taller_id as tipoTallerIdLegacy,
+                pt.taller_id as tallerId,
+                pt.nombre_precio as nombrePrecio,
+                pt.descripcion,
+                pt.modalidad,
+                pt.cantidad_clases as cantidadClases,
+                pt.precio,
+                pt.vigente_desde as vigenteDesde,
+                pt.vigente_hasta as vigenteHasta,
+                COALESCE(pt.activo, pt.vigente) as activo,
+                COALESCE(pt.vigente, pt.activo) as vigente,
                 t.nombre as tallerNombre,
                 ot.nombre_para_mostrar as tipoNombre
             FROM precios_talleres pt
             LEFT JOIN talleres t ON pt.taller_id = t.id
-            LEFT JOIN opciones_tipos ot ON pt.tipo_taller_id = ot.id_tipo_evento
+            LEFT JOIN opciones_tipos ot ON COALESCE(pt.id_tipo_evento, pt.tipo_taller_id) = ot.id_tipo_evento
             WHERE 1=1
         `;
         const params = [];
 
-        if (tipo) {
-            sql += ` AND pt.tipo_taller_id = ?`;
-            params.push(tipo);
+        if (tipoFiltro) {
+            sql += ` AND COALESCE(pt.id_tipo_evento, pt.tipo_taller_id) = ?`;
+            params.push(tipoFiltro);
         }
-        if (taller) {
+        if (tallerFiltro) {
             sql += ` AND pt.taller_id = ?`;
-            params.push(taller);
+            params.push(tallerFiltro);
         }
         if (vigente === '1') {
-            sql += ` AND pt.vigente = 1`;
+            sql += ` AND COALESCE(pt.activo, pt.vigente) = 1`;
         }
 
-        sql += ` ORDER BY pt.tipo_taller_id, pt.modalidad, pt.vigente_desde DESC`;
+        sql += ` ORDER BY COALESCE(pt.id_tipo_evento, pt.tipo_taller_id), pt.modalidad, pt.vigente_desde DESC`;
 
         const rows = await conn.query(sql, params);
         res.status(200).json(rows);
@@ -622,23 +637,51 @@ const createPrecioTaller = async (req, res) => {
     try {
         conn = await pool.getConnection();
         const {
-            tipoTallerId, tallerId, modalidad = 'clase_suelta',
-            cantidadClases, precio, vigenteDesde, vigenteHasta, vigente = 1
+            tipoTallerId,
+            tallerId,
+            idTipoEvento,
+            idSolicitud,
+            idSolicitudTaller,
+            nombrePrecio,
+            descripcion,
+            modalidad = 'clase_suelta',
+            cantidadClases,
+            precio,
+            vigenteDesde,
+            vigenteHasta,
+            vigente = 1,
+            activo = 1
         } = req.body;
 
         if (!precio || !vigenteDesde) {
             return res.status(400).json({ error: 'Precio y fecha de vigencia son obligatorios' });
         }
 
-        if (!tipoTallerId && !tallerId) {
-            return res.status(400).json({ error: 'Debe especificar tipo de taller o taller específico' });
+        const finalTipoTallerId = idTipoEvento || tipoTallerId || null;
+        if (!finalTipoTallerId && !tallerId && !idSolicitudTaller && !idSolicitud) {
+            return res.status(400).json({ error: 'Debe especificar género, taller, solicitud o detalle del taller' });
         }
 
         const result = await conn.query(
             `INSERT INTO precios_talleres 
-                (tipo_taller_id, taller_id, modalidad, cantidad_clases, precio, vigente_desde, vigente_hasta, vigente) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [tipoTallerId || null, tallerId || null, modalidad, cantidadClases || null, precio, vigenteDesde, vigenteHasta || null, vigente]
+                (id_solicitud, id_solicitud_taller, id_tipo_evento, tipo_taller_id, taller_id, nombre_precio, descripcion, modalidad, cantidad_clases, precio, vigente_desde, vigente_hasta, vigente, activo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                idSolicitud || null,
+                idSolicitudTaller || null,
+                finalTipoTallerId,
+                finalTipoTallerId,
+                tallerId || null,
+                nombrePrecio || null,
+                descripcion || null,
+                modalidad,
+                cantidadClases || null,
+                precio,
+                vigenteDesde,
+                vigenteHasta || null,
+                vigente,
+                activo
+            ]
         );
 
         res.status(201).json({
@@ -659,22 +702,42 @@ const updatePrecioTaller = async (req, res) => {
         conn = await pool.getConnection();
         const { id } = req.params;
         const {
-            tipoTallerId, tallerId, modalidad,
-            cantidadClases, precio, vigenteDesde, vigenteHasta, vigente
+            tipoTallerId,
+            tallerId,
+            idTipoEvento,
+            idSolicitud,
+            idSolicitudTaller,
+            nombrePrecio,
+            descripcion,
+            modalidad,
+            cantidadClases,
+            precio,
+            vigenteDesde,
+            vigenteHasta,
+            vigente,
+            activo
         } = req.body;
+
+        const finalTipoTallerId = idTipoEvento ?? tipoTallerId ?? undefined;
 
         const result = await conn.query(
             `UPDATE precios_talleres SET 
+                id_solicitud = COALESCE(?, id_solicitud),
+                id_solicitud_taller = COALESCE(?, id_solicitud_taller),
+                id_tipo_evento = COALESCE(?, id_tipo_evento),
                 tipo_taller_id = COALESCE(?, tipo_taller_id),
                 taller_id = COALESCE(?, taller_id),
+                nombre_precio = COALESCE(?, nombre_precio),
+                descripcion = COALESCE(?, descripcion),
                 modalidad = COALESCE(?, modalidad),
                 cantidad_clases = COALESCE(?, cantidad_clases),
                 precio = COALESCE(?, precio),
                 vigente_desde = COALESCE(?, vigente_desde),
                 vigente_hasta = COALESCE(?, vigente_hasta),
-                vigente = COALESCE(?, vigente)
+                vigente = COALESCE(?, vigente),
+                activo = COALESCE(?, activo)
              WHERE id = ?`,
-            [tipoTallerId, tallerId, modalidad, cantidadClases, precio, vigenteDesde, vigenteHasta, vigente, id]
+            [idSolicitud, idSolicitudTaller, finalTipoTallerId, finalTipoTallerId, tallerId, nombrePrecio, descripcion, modalidad, cantidadClases, precio, vigenteDesde, vigenteHasta, vigente, activo, id]
         );
 
         if (result.affectedRows === 0) {
@@ -762,92 +825,21 @@ const getTiposTaller = async (req, res) => {
 };
 
 const createTipoTaller = async (req, res) => {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        const { nombre, descripcion, esPublico = 1 } = req.body;
-
-        if (!nombre || !String(nombre).trim()) {
-            return res.status(400).json({ error: 'El nombre es obligatorio' });
-        }
-
-        const generatedId = await generateUniqueTipoTallerId(conn, nombre);
-
-        await conn.query(
-            `INSERT INTO opciones_tipos (id_tipo_evento, nombre_para_mostrar, descripcion, categoria, es_publico, permite_adicionales) 
-             VALUES (?, ?, ?, 'TALLERES_ACTIVIDADES', ?, 0)`,
-            [generatedId, nombre.trim(), descripcion || null, esPublico]
-        );
-
-        res.status(201).json({ message: 'Tipo de taller creado exitosamente', id: generatedId });
-    } catch (err) {
-        logError("Error en createTipoTaller:", err);
-        res.status(500).json({ error: 'Error interno del servidor' });
-    } finally {
-        if (conn) conn.release();
-    }
+    return res.status(403).json({
+        error: 'Los tipos de talleres/actividades son un catálogo semilla y no se crean desde la UI.'
+    });
 };
 
 const updateTipoTaller = async (req, res) => {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        const { id } = req.params;
-        const { nombre, descripcion, esPublico } = req.body;
-
-        const result = await conn.query(
-            `UPDATE opciones_tipos SET 
-                nombre_para_mostrar = COALESCE(?, nombre_para_mostrar),
-                descripcion = COALESCE(?, descripcion),
-                es_publico = COALESCE(?, es_publico)
-             WHERE id_tipo_evento = ? AND categoria = 'TALLERES_ACTIVIDADES'`,
-            [nombre, descripcion, esPublico, id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Tipo de taller no encontrado' });
-        }
-
-        res.status(200).json({ message: 'Tipo de taller actualizado exitosamente' });
-    } catch (err) {
-        logError("Error en updateTipoTaller:", err);
-        res.status(500).json({ error: 'Error interno del servidor' });
-    } finally {
-        if (conn) conn.release();
-    }
+    return res.status(403).json({
+        error: 'Los tipos de talleres/actividades no son editables desde la UI; se mantienen como catálogo semilla.'
+    });
 };
 
 const deleteTipoTaller = async (req, res) => {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        const { id } = req.params;
-
-        // Verificar si hay talleres usando este tipo
-        const talleres = await conn.query(`SELECT COUNT(*) as count FROM talleres WHERE tipo_taller_id = ?`, [id]);
-        if (talleres[0].count > 0) {
-            return res.status(400).json({
-                error: 'No se puede eliminar: hay talleres usando este tipo',
-                talleresAsociados: Number(talleres[0].count)
-            });
-        }
-
-        const result = await conn.query(
-            `DELETE FROM opciones_tipos WHERE id_tipo_evento = ? AND categoria = 'TALLERES_ACTIVIDADES'`,
-            [id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Tipo de taller no encontrado' });
-        }
-
-        res.status(200).json({ message: 'Tipo de taller eliminado exitosamente' });
-    } catch (err) {
-        logError("Error en deleteTipoTaller:", err);
-        res.status(500).json({ error: 'Error interno del servidor' });
-    } finally {
-        if (conn) conn.release();
-    }
+    return res.status(403).json({
+        error: 'Los tipos de talleres/actividades no se eliminan desde la UI; el catálogo es semilla del sistema.'
+    });
 };
 
 // =============================================================================

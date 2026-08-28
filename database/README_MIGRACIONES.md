@@ -25,6 +25,23 @@ docker-compose up -d --build
 docker exec tdc-mysql mysql -u root -proot_password tdc_db < database/03_test_data.sql
 ```
 
+### ✅ Ejecutar migraciones SQL por número
+```bash
+# Ejecuta todos los SQL que comiencen con 04
+./scripts/infraestructura/run_sql_by_number.sh 04
+
+# Ejecuta 04 y 05 en orden
+./scripts/infraestructura/run_sql_by_number.sh 04 05
+
+# Muestra qué archivos están disponibles
+./scripts/infraestructura/run_sql_by_number.sh --list
+
+# Solo prueba la selección sin ejecutarla
+./scripts/infraestructura/run_sql_by_number.sh --dry-run 04
+```
+
+> Este helper solo selecciona archivos con prefijo numérico en `database/` y los ejecuta contra el contenedor MySQL activo. Es útil cuando no querés resetear toda la base ni depender del flujo fijo de `reset.sh`.
+
 ### ✅ Ejecutar migración de clientes a usuarios
 ```bash
 docker exec tdc-backend node backend/scripts/migrar_clientes.js
@@ -52,6 +69,11 @@ docker exec tdc-mysql mysql -u root -ppassword tdc_db < file.sql
 ```bash
 # Siguiente número: 07
 touch database/07_nombre_cambio.sql
+```
+
+### Paso 1.5: Ejecutarlo individualmente cuando no formó parte del reset
+```bash
+./scripts/infraestructura/run_sql_by_number.sh 07
 ```
 
 ### Paso 2: Escribir el cambio SQL

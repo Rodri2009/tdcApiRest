@@ -168,10 +168,10 @@
                 </div>
             </div>
 
-            <div class="section">
-                <h2>Resumen de Precios</h2>
+            <div class="section" id="resumen-solicitud">
+                <h2>Resumen de la Solicitud</h2>
                 <ul id="precios-list" style="list-style: none; padding: 0;">
-                    <li><span>Precio Base del Evento</span><strong id="precio_basico"></strong></li>
+                    <li><span>Precio base</span><strong id="precio_basico"></strong></li>
                 </ul>
                 <div id="adicionales-section" style="display: none;">
                     <h3>Adicionales Seleccionados:</h3>
@@ -211,31 +211,41 @@
                 return;
             }
 
-            // Intenta cargar datos de solicitud de banda primero
-            fetch(`/api/solicitudes-fechas-bandas/${solicitudId}`)
+            fetch(`/api/solicitudes/${solicitudId}`)
                 .then(res => {
-                    if (!res.ok) throw new Error('No es solicitud de banda');
+                    if (!res.ok) throw new Error('La solicitud solicitada no fue encontrada.');
                     return res.json();
                 })
-                .then(solicitudData => {
-                    // Es solicitud de banda
-                    renderComprobanteMultibanda(solicitudData);
+                .then(async (solicitudData) => {
+                    if (!solicitudData || !solicitudData.solicitudId) {
+                        throw new Error('La solicitud solicitada no fue encontrada.');
+                    }
+
+                    if (solicitudData.tipoEvento === 'BANDA' || solicitudData.tipoEvento === 'FECHA_BANDAS' || String(solicitudData.solicitudId).startsWith('bnd_')) {
+                        try {
+                            const bandRes = await fetch(`/api/solicitudes-fechas-bandas/${solicitudId}`);
+                            if (bandRes.ok) {
+                                const bandaData = await bandRes.json();
+                                renderComprobanteMultibanda(bandaData);
+                                return;
+                            }
+                        } catch (_) { }
+                    }
+
+                    if (solicitudData.tipoEvento === 'TALLERES' || solicitudData.idTipoEvento || solicitudData.nombreTaller || solicitudData.nombre_taller) {
+                        renderComprobanteTaller(solicitudData);
+                        return;
+                    }
+
+                    const tiposRes = await fetch('/api/opciones/tipos-evento');
+                    const todosLosTipos = tiposRes.ok ? await tiposRes.json() : [];
+                    renderComprobanteGenerico(solicitudData, todosLosTipos);
                 })
-                .catch(() => {
-                    // Si falla, intenta como solicitud genérica
-                    Promise.all([
-                        fetch(`/api/solicitudes/${solicitudId}`).then(res => res.json()),
-                        fetch('/api/opciones/tipos-evento').then(res => res.json())
-                    ])
-                        .then(([solicitudData, todosLosTipos]) => {
-                            renderComprobanteGenerico(solicitudData, todosLosTipos);
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            loadingDiv.style.display = 'none';
-                            errorDiv.style.display = 'block';
-                            errorDiv.querySelector('p').textContent = error.message || 'Error al cargar el comprobante';
-                        });
+                .catch(error => {
+                    console.error('Error:', error);
+                    loadingDiv.style.display = 'none';
+                    errorDiv.style.display = 'block';
+                    errorDiv.querySelector('p').textContent = error.message || 'Error al cargar el comprobante';
                 });
 
             // Renderizar comprobante para solicitud de banda
@@ -317,6 +327,31 @@
                 contentDiv.style.display = 'block';
             }
 
+            function renderComprobanteTaller(solicitudData) {
+                const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('es-AR', { timeZone: 'UTC' }) : '-';
+                const formatDuration = (minutes) => {
+                    if (!minutes) return '-';
+                    if (minutes % 60 === 0) return `${minutes / 60} hs`;
+                    return `${Math.floor(minutes / 60)}h ${minutes % 60}min`;
+                };
+
+                const resumenSection = document.getElementById('resumen-solicitud');
+                if (resumenSection) resumenSection.style.display = 'none';
+
+                document.getElementById('descripcion_tipo_evento').textContent = solicitudData.descripcion || solicitudData.descripcion_larga || solicitudData.descripcionLarga || 'No se registraron detalles del taller.';
+                document.getElementById('nombre_cliente').textContent = solicitudData.nombreCompleto || solicitudData.nombreCliente || solicitudData.nombre_completo || 'No informado';
+                document.getElementById('email').textContent = solicitudData.email || 'No informado';
+                document.getElementById('telefono').textContent = solicitudData.telefono || 'No informado';
+                document.getElementById('nombre_para_mostrar').textContent = solicitudData.nombreParaMostrar || solicitudData.nombreTaller || 'Taller';
+                document.getElementById('fecha_evento').textContent = formatDate(solicitudData.fechaEvento || solicitudData.fecha_evento);
+                document.getElementById('hora_evento').textContent = solicitudData.horaInicio || solicitudData.hora_evento || '-';
+                document.getElementById('duracion').textContent = formatDuration(solicitudData.duracionEvento || solicitudData.duracion);
+                document.getElementById('cantidad_de_personas').textContent = 'No aplica';
+
+                loadingDiv.style.display = 'none';
+                contentDiv.style.display = 'block';
+            }
+
             // Renderizar comprobante genérico (original)
             function renderComprobanteGenerico(solicitudData, todosLosTipos) {
                 if (!solicitudData || !solicitudData.solicitudId) {
@@ -326,7 +361,7 @@
                 const formatDate = (dateString) => new Date(dateString).toLocaleDateString('es-AR', { timeZone: 'UTC' });
                 const formatCurrency = (number) => `$${parseFloat(number || 0).toLocaleString('es-AR')}`;
 
-                const tipoEventoCompleto = todosLosTipos.find(tipo => tipo.id === solicitudData.id_tipo_evento);
+                const tipoEventoCompleto = todosLosTipos.find(tipo => tipo.id === (solicitudData.id_tipo_evento || solicitudData.idTipoEvento));
                 const descripcionEvento = tipoEventoCompleto ? tipoEventoCompleto.descripcion : 'No disponible.';
 
                 document.getElementById('descripcion_tipo_evento').textContent = descripcionEvento;
@@ -334,14 +369,14 @@
                 document.getElementById('nombre_cliente').textContent = solicitudData.nombreCliente || solicitudData.nombreCompleto || solicitudData.nombre_completo || '';
                 document.getElementById('email').textContent = solicitudData.email;
                 document.getElementById('telefono').textContent = solicitudData.telefono;
-                document.getElementById('nombre_para_mostrar').textContent = solicitudData.nombreTipoEvento || (tipoEventoCompleto ? tipoEventoCompleto.nombreParaMostrar : 'No disponible');
-                document.getElementById('fecha_evento').textContent = formatDate(solicitudData.fechaEvento);
-                document.getElementById('hora_evento').textContent = solicitudData.horaInicio;
+                document.getElementById('nombre_para_mostrar').textContent = solicitudData.nombreTipoEvento || solicitudData.nombreParaMostrar || (tipoEventoCompleto ? tipoEventoCompleto.nombreParaMostrar : 'No disponible');
+                document.getElementById('fecha_evento').textContent = formatDate(solicitudData.fechaEvento || solicitudData.fecha_evento);
+                document.getElementById('hora_evento').textContent = solicitudData.horaInicio || solicitudData.hora_evento;
 
-                const horas = solicitudData.duracionEvento ? Math.round(solicitudData.duracionEvento / 60) : 0;
+                const horas = (solicitudData.duracionEvento || solicitudData.duracion) ? Math.round((solicitudData.duracionEvento || solicitudData.duracion) / 60) : 0;
                 document.getElementById('duracion').textContent = `${horas} horas`;
                 document.getElementById('cantidad_de_personas').textContent = solicitudData.nombreCantidadPersonas || solicitudData.cantidadPersonas || 'No especificado';
-                document.getElementById('precio_basico').textContent = formatCurrency(solicitudData.precioBase);
+                document.getElementById('precio_basico').textContent = formatCurrency(solicitudData.precioBase || solicitudData.precio_basico);
 
                 let totalAdicionales = 0;
                 if (solicitudData.adicionales && solicitudData.adicionales.length > 0) {
@@ -355,7 +390,7 @@
                     document.getElementById('adicionales-section').style.display = 'block';
                 }
 
-                const precioFinal = solicitudData.precio_final ? parseFloat(solicitudData.precio_final) : (parseFloat(solicitudData.precioBase) + totalAdicionales);
+                const precioFinal = solicitudData.precio_final || solicitudData.precioFinal ? parseFloat(solicitudData.precio_final || solicitudData.precioFinal) : (parseFloat(solicitudData.precioBase || solicitudData.precio_basico || 0) + totalAdicionales);
                 document.getElementById('precio_final').textContent = formatCurrency(precioFinal);
 
                 loadingDiv.style.display = 'none';

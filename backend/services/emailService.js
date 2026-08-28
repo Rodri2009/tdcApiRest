@@ -1,20 +1,31 @@
 // backend/services/emailService.js
 const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
-const fs = require('fs'); // <-- Importa el File System de Node
-const path = require('path'); // <-- Importa el Path
+
+const localEnvPath = path.join(__dirname, '..', '.env');
+if (fs.existsSync(localEnvPath) && !process.env.EMAIL_HOST && !process.env.EMAIL_USER && !process.env.EMAIL_PASSWORD && !process.env.EMAIL_PASS) {
+    dotenv.config({ path: localEnvPath });
+}
+
+const EMAIL_HOST = process.env.EMAIL_HOST || 'smtp.gmail.com';
+const EMAIL_PORT = Number(process.env.EMAIL_PORT || 587);
+const EMAIL_USER = process.env.EMAIL_USER || process.env.EMAIL_FROM || '';
+const EMAIL_PASS = process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS || '';
+const EMAIL_FROM = process.env.EMAIL_FROM || EMAIL_USER;
 
 // 1. Creamos el "transportador" usando las variables de entorno
 const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com", // Usamos el host explícito de Gmail
-    port: 465, // Usamos el puerto 465 con SSL, que es más seguro y a menudo menos bloqueado
-    secure: true, // Forzar SSL
+    host: EMAIL_HOST,
+    port: EMAIL_PORT,
+    secure: Number(EMAIL_PORT) === 465,
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
     },
     tls: {
-        // No fallar en certificados autofirmados (a veces útil en entornos de desarrollo)
         rejectUnauthorized: false
     }
 });
@@ -86,7 +97,7 @@ const sendComprobanteEmail = async (to, subject, solicitud, headers) => {
 
         // 4. Enviar el correo
         await transporter.sendMail({
-            from: `"Sistema de Reservas TDC" <${process.env.EMAIL_USER}>`,
+            from: `"Sistema de Reservas TDC" <${EMAIL_FROM || EMAIL_USER}>`,
             to: to,
             subject: subject,
             html: htmlBody,
@@ -137,7 +148,7 @@ const sendAdminNotification = async (solicitud) => {
         `;
 
         await transporter.sendMail({
-            from: `"Sistema TDC" <${process.env.EMAIL_USER}>`,
+            from: `"Sistema TDC" <${EMAIL_FROM || EMAIL_USER}>`,
             to: adminEmail,
             subject: `[TDC] Nueva Solicitud de Show en Vivo - ID #${solicitud.id_solicitud}`,
             html: htmlBody,
@@ -212,7 +223,7 @@ const sendBandaConfirmacion = async (to, banda) => {
         `;
 
         await transporter.sendMail({
-            from: `"El Templo de Claypole" <${process.env.EMAIL_USER}>`,
+            from: `"El Templo de Claypole" <${EMAIL_FROM || EMAIL_USER}>`,
             to,
             subject: `✅ Banda registrada: ${banda.nombre}`,
             html,
@@ -243,7 +254,7 @@ const sendVerificationEmail = async (to, nombre, verificationToken, returnTo) =>
         // Construir URL de verificación usando APP_URL del .env
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
         let verificationUrl = `${appUrl}/verificar-email?token=${verificationToken}`;
-        
+
         // Agregar returnTo si existe
         if (returnTo) {
             verificationUrl += `&returnTo=${encodeURIComponent(returnTo)}`;

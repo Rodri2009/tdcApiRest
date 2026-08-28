@@ -131,6 +131,8 @@ Edita las variables en el script si necesitas cambiar:
 3. Hacer git commit de 02_seed.sql
 ```
 
+> Nota de negocio: para talleres/actividades la fuente de precio es `precios_talleres`; `precios_vigencia` sigue siendo la tabla para otros tipos de evento. Si cambias precios de talleres, actualiza `precios_talleres` y no el catálogo general de vigencia.
+
 ### Situación 3: Cambios en Datos de Prueba
 ```
 1. Editar 03_test_data.sql

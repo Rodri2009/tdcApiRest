@@ -270,12 +270,12 @@ NPM_MIN_VERSION="6.0.0"
 # la ruta en la variable global ENV_FILE_TMP. NO USA salida por stdout
 # para evitar problemas con subshells que borren el fichero prematuramente.
 create_env_override() {
-    # genera un .env.tmp y deja la ruta en la variable global ENV_FILE_TO_USE
-    # (evitamos devolverla por stdout para no tener que usar un subshell).
+    # Usa la raíz del proyecto como fuente única de verdad.
+    # El archivo docker/.env solo se sincroniza como copia de trabajo.
     trap - EXIT INT TERM
 
-    local env_file="docker/.env"
-    local env_tmp="docker/.env.tmp.$$"
+    local env_file="$ROOT_DIR/.env"
+    local env_tmp="$ROOT_DIR/.env.tmp.$$"
     
     if [ -f "$env_file" ]; then
         cp "$env_file" "$env_tmp"
@@ -336,7 +336,7 @@ create_env_override() {
 }
 
 cleanup_env_tmp() {
-    rm -f docker/.env.tmp.* 2>/dev/null || true
+    rm -f "$ROOT_DIR"/.env.tmp.* 2>/dev/null || true
 }
 
 # Trap para limpiar en caso de exit o interrupciones (Ctrl‑C, kill)

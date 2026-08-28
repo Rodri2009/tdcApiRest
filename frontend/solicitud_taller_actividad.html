@@ -463,18 +463,26 @@
         <div class="column-layout">
             <div class="form-group" id="tipoTallerGroup">
                 <label for="tipoTaller">Tipo de taller / actividad:</label>
-                <div class="flex-row">
-                    <select id="tipoTaller"></select>
-                    <button id="btnNuevoTipo" class="btn btn-outline" title="Crear nuevo tipo de taller o actividad">
-                        <i class="fas fa-plus"></i> Nuevo
-                    </button>
-                </div>
+                <select id="tipoTaller"></select>
             </div>
             <div class="form-group" id="descripcionGroup">
-                <label>Descripción:</label>
+                <label>Descripción del tipo:</label>
                 <div id="tipoDescripcion" class="form-section min-h-80">
                     Selecciona un tipo para ver detalles.
                 </div>
+            </div>
+        </div>
+
+        <div class="column-layout">
+            <div class="form-group">
+                <label for="nombreTaller">Nombre del taller / actividad:</label>
+                <input type="text" id="nombreTaller" placeholder="Ej: Yoga de verano, Curso de cerámica..."
+                    maxlength="200">
+            </div>
+            <div class="form-group">
+                <label for="descripcionTaller">Descripción general del taller:</label>
+                <textarea id="descripcionTaller" rows="3"
+                    placeholder="Contanos de qué trata el taller, público objetivo y detalles relevantes..."></textarea>
             </div>
         </div>
 
@@ -541,38 +549,13 @@
         <div id="notification-banner"></div>
 
         <div class="button-group">
-            <button id="btnSiguiente">Siguiente: Datos de contacto</button>
-            <button id="btnEnviar">Enviar y pagar</button>
+            <button id="btnCancelar" type="button">Cancelar</button>
+            <button id="btnSiguiente" type="button">Siguiente</button>
         </div>
     </div>
 
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
-    </div>
-
-    <!-- Modal para crear nuevo tipo -->
-    <div id="modal-crear-tipo" class="modal-overlay">
-        <div class="modal">
-            <div class="flex-row" style="justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h3 class="section-title">Nuevo Tipo de Taller</h3>
-                <button onclick="document.getElementById('modal-crear-tipo').style.display='none'"
-                    class="modal-close">×</button>
-            </div>
-            <div style="margin-bottom:15px;">
-                <label style="display:block;color:#f0abfc;font-weight:bold;margin-bottom:5px;">Nombre:</label>
-                <input type="text" id="modal-tipo-nombre" placeholder="Ej: Yoga, Danza, Arte" class="form-input">
-            </div>
-            <div style="margin-bottom:15px;">
-                <label style="display:block;color:#f0abfc;font-weight:bold;margin-bottom:5px;">Descripción:</label>
-                <textarea id="modal-tipo-descripcion" placeholder="Descripción del tipo de taller" rows="3"
-                    class="form-input"></textarea>
-            </div>
-            <div class="modal-actions">
-                <button onclick="document.getElementById('modal-crear-tipo').style.display='none'"
-                    class="btn btn-outline flex-1">Cancelar</button>
-                <button onclick="guardarNuevoTipo()" class="btn btn-primary flex-1">Crear</button>
-            </div>
-        </div>
     </div>
 
     <script src="/tallerForm.js"></script>
@@ -659,7 +642,7 @@
 
         function logout() {
             localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
+            localStorage.removeItem('token');
             window.location.href = '/index.html';
         }
 
@@ -673,10 +656,10 @@
             const fechaParam = new URLSearchParams(window.location.search).get('fecha');
             if (fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam)) {
                 const [yy, mm, dd] = fechaParam.split('-');
-                const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+                const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
                 const banner = document.createElement('div');
                 banner.style.cssText = 'background:#1e3a5f;border:1px solid #3b82f6;color:#93c5fd;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:0.9rem;display:flex;align-items:center;gap:8px;';
-                banner.innerHTML = `<i class="fas fa-calendar-day"></i> <span>Fecha seleccionada desde el calendario: <strong>${parseInt(dd)} de ${meses[parseInt(mm)-1]} de ${yy}</strong>. Podés tenerla en cuenta al configurar los horarios.</span>`;
+                banner.innerHTML = `<i class="fas fa-calendar-day"></i> <span>Fecha seleccionada desde el calendario: <strong>${parseInt(dd)} de ${meses[parseInt(mm) - 1]} de ${yy}</strong>. Podés tenerla en cuenta al configurar los horarios.</span>`;
                 const container = document.querySelector('.container, form, main, .content');
                 if (container) container.prepend(banner);
             }

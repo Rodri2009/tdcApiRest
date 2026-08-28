@@ -360,10 +360,10 @@ check_backend_http() {
   echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
 }
 create_env_override() {
-    # Crea un archivo .env.tmp con overrides de variables
-    # Copia el .env original y sobrescribe ENABLE_PUPPETEER_MP y ENABLE_PUPPETEER_WA
-    local env_file="$DOCKER_DIR/.env"
-    local env_tmp="$DOCKER_DIR/.env.tmp.$$"
+    # Usa la raíz del proyecto como fuente única de verdad.
+    # docker/.env sólo sirve como copia sincronizada del .env raíz.
+    local env_file="$PROJECT_DIR/.env"
+    local env_tmp="$PROJECT_DIR/.env.tmp.$$"
     
     if [ -f "$env_file" ]; then
         cp "$env_file" "$env_tmp"
@@ -418,7 +418,7 @@ create_env_override() {
 
 cleanup_env_tmp() {
     # Limpia los archivos temporales .env
-    rm -f "$DOCKER_DIR"/.env.tmp.* 2>/dev/null || true
+    rm -f "$PROJECT_DIR"/.env.tmp.* 2>/dev/null || true
 }
 
 # Trap para limpiar en caso de exit o señales de terminación
@@ -484,21 +484,23 @@ wait_for_mysql_ready() {
 }
 
 wait_for_backend_ready() {
-    # Espera hasta que el backend HTTP responda correctamente
-    # Aumenta espera si hay MP o WA habilitado (toman mucho más tiempo para iniciar)
+    # Espera hasta que el backend HTTP responda correctamente.
+    # El puerto expuesto por Docker es 3001, aunque el proceso escucha en 3000 dentro del contenedor.
+    # Mantener fallback a 3000 para entornos locales sin Docker.
     local max_wait=30
-    
+    local backend_ports=(3001 3000)
+
     # Detectar MP/WA desde banderas o desde .env
     local has_mp=false
     local has_wa=false
-    
+
     if [ "$ENABLE_MP" = true ]; then
         has_mp=true
     fi
     if [ "$ENABLE_WA" = true ]; then
         has_wa=true
     fi
-    
+
     # Si no estaban seteados por banderas, revisar .env
     if [ "$has_mp" = false ] && [ "$has_wa" = false ]; then
         if [ -f "$PROJECT_DIR/.env" ]; then
@@ -506,21 +508,24 @@ wait_for_backend_ready() {
             grep -q "^ENABLE_PUPPETEER_WA=true" "$PROJECT_DIR/.env" && has_wa=true
         fi
     fi
-    
+
     if [ "$has_mp" = true ] || [ "$has_wa" = true ]; then
         # Primera inicialización de WA/MP puede tomar 120-180s (descarga browser, autenticación y VNC)
         max_wait=180
     fi
-    
+
     echo -e "    ${CYAN}[INFO]${NC} Backend wait timeout configurado en ${max_wait}s (ENABLE_PUPPETEER_MP=${has_mp}, ENABLE_PUPPETEER_WA=${has_wa})"
     local elapsed=0
     echo -ne "    Esperando backend... "
-    
+
     while [ $elapsed -lt $max_wait ]; do
-        if curl -sS --max-time 2 http://localhost:3000/health >/dev/null 2>&1; then
-            echo -e "${GREEN}✓${NC}"
-            return 0
-        fi
+        local port
+        for port in "${backend_ports[@]}"; do
+            if curl -sS --max-time 2 "http://localhost:${port}/health" >/dev/null 2>&1; then
+                echo -e "${GREEN}✓${NC}"
+                return 0
+            fi
+        done
         echo -n "."
         sleep 2
         elapsed=$((elapsed + 2))

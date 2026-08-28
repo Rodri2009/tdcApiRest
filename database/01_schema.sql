@@ -401,10 +401,14 @@ CREATE TABLE IF NOT EXISTS solicitudes_talleres (
     id_solicitud_taller INT AUTO_INCREMENT PRIMARY KEY,
     id_solicitud INT NOT NULL COMMENT 'FK a solicitudes.id_solicitud',
     nombre_taller VARCHAR(255),
+    id_tipo_evento VARCHAR(255) NULL COMMENT 'FK a opciones_tipos.id_tipo_evento (género/semilla del taller)',
+    comentarios_observaciones TEXT NULL COMMENT 'Comentarios u observaciones del taller',
     fecha_evento DATE,
     hora_evento TIME DEFAULT NULL COMMENT 'Hora de inicio del evento',
     precio DECIMAL(10,2),
-    CONSTRAINT fk_solicitudes_talleres_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE
+    INDEX idx_solicitudes_talleres_tipo (id_tipo_evento),
+    CONSTRAINT fk_solicitudes_talleres_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
+    CONSTRAINT fk_solicitudes_talleres_tipo_evento FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS solicitudes_fechas_bandas (
@@ -599,19 +603,38 @@ CREATE TABLE IF NOT EXISTS talleres (
 -- Precios de talleres
 CREATE TABLE IF NOT EXISTS precios_talleres (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    tipo_taller_id VARCHAR(255) COMMENT 'FK a opciones_tipos.id_tipo_evento (opcional si es por taller específico)',
-    taller_id INT COMMENT 'FK a talleres.id (opcional si es por tipo)',
+    id_solicitud INT NULL COMMENT 'FK a solicitudes.id_solicitud. Precio asociado a una solicitud concreta',
+    id_solicitud_taller INT NULL COMMENT 'FK a solicitudes_talleres.id_solicitud_taller. Precio asociado al taller de la solicitud',
+    id_tipo_evento VARCHAR(255) NULL COMMENT 'FK a opciones_tipos.id_tipo_evento. Género/semilla del taller',
+    tipo_taller_id VARCHAR(255) NULL COMMENT 'Compatibilidad legacy: FK a opciones_tipos.id_tipo_evento',
+    taller_id INT NULL COMMENT 'Compatibilidad legacy: FK a talleres.id',
+    nombre_precio VARCHAR(255) NULL COMMENT 'Nombre del precio: Clase suelta, Pack 4 clases, etc.',
+    descripcion TEXT NULL COMMENT 'Detalle del precio o paquete',
     modalidad ENUM('clase_suelta', 'paquete') DEFAULT 'clase_suelta',
     cantidad_clases INT COMMENT 'Para paquetes',
     precio DECIMAL(10,2) NOT NULL,
     vigente_desde DATE NOT NULL,
     vigente_hasta DATE DEFAULT NULL,
     vigente TINYINT(1) DEFAULT 1,
-    INDEX idx_tipo (tipo_taller_id),
+    activo TINYINT(1) DEFAULT 1 COMMENT 'Indica si el precio sigue vigente para operar',
+    INDEX idx_solicitud (id_solicitud),
+    INDEX idx_solicitud_taller (id_solicitud_taller),
+    INDEX idx_tipo (id_tipo_evento),
+    INDEX idx_tipo_legacy (tipo_taller_id),
     INDEX idx_taller (taller_id),
     INDEX idx_vigente (vigente),
-    INDEX idx_vigencia (vigente_desde, vigente_hasta)
+    INDEX idx_activo (activo),
+    INDEX idx_vigencia (vigente_desde, vigente_hasta),
+    CONSTRAINT fk_precios_talleres_solicitud FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id_solicitud) ON DELETE CASCADE,
+    CONSTRAINT fk_precios_talleres_solicitud_taller FOREIGN KEY (id_solicitud_taller) REFERENCES solicitudes_talleres(id_solicitud_taller) ON DELETE CASCADE,
+    CONSTRAINT fk_precios_talleres_tipo_evento FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT,
+    CONSTRAINT fk_precios_talleres_tipo_evento_legacy FOREIGN KEY (tipo_taller_id) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+ALTER TABLE solicitudes_talleres
+    ADD COLUMN id_precio_taller INT NULL COMMENT 'FK a precios_talleres.id. Fuente oficial del precio del taller' AFTER id_tipo_evento,
+    ADD INDEX idx_solicitudes_talleres_precio (id_precio_taller),
+    ADD CONSTRAINT fk_solicitudes_talleres_precio FOREIGN KEY (id_precio_taller) REFERENCES precios_talleres(id) ON DELETE SET NULL;
 
 -- Inscripciones a talleres
 CREATE TABLE IF NOT EXISTS inscripciones_talleres (

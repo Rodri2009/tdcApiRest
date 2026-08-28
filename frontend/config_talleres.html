@@ -81,7 +81,10 @@
     <main class="wrap">
         <div class="page-header">
             <a href="/admin.html" class="btn-back">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
                 Volver al Panel
             </a>
             <h1><i class="fas fa-book-open"></i> Configuración de Talleres</h1>
@@ -108,9 +111,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-list"></i> Tipos de Taller</h3>
-                    <button class="btn btn-primary" onclick="openModal('tipo')">
-                        ➕ Nuevo Tipo
-                    </button>
+                    <span class="badge badge-gray">Catálogo semilla</span>
                 </div>
                 <div class="info-box">
                     <i class="fas fa-info-circle"></i>
@@ -211,7 +212,8 @@
                     <div class="filters-row">
                         <div class="filter-field">
                             <label>Buscar</label>
-                            <input type="text" id="filtro-tallerista-nombre" placeholder="Nombre..." oninput="filterTalleristas()">
+                            <input type="text" id="filtro-tallerista-nombre" placeholder="Nombre..."
+                                oninput="filterTalleristas()">
                         </div>
                         <div class="filter-field">
                             <label>Estado</label>

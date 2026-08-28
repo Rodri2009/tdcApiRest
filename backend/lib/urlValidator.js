@@ -23,27 +23,32 @@ async function validateCurrentUrl(page, expectedPath = '') {
             console.log('[urlValidator] SKIP_URL_VALIDATION=true, skipping checks (currentUrl', currentUrl, ')');
             return { valid: true, currentUrl, expectedPath };
         }
-
-        // Patrones de bloqueo/error comunes
+        const allowedAuthRedirectPatterns = [
+            /(?:^|\.)mercadolibre\.com(?:\/[A-Za-z0-9._~!$&'()*+,;=:@%-]*)*\/(?:login|auth|user-legal-id-social)(?:[/?#]|$)/i,
+            /(?:^|\.)mercadopago\.com(?:\/[A-Za-z0-9._~!$&'()*+,;=:@%-]*)*\/(?:login|auth|security)(?:[/?#]|$)/i,
+            /(?:^|\.)mercadolibre\.com.*\/login\//i,
+            /(?:^|\.)mercadolibre\.com.*\/user-legal-id-social/i,
+            /(?:^|\.)mercadolibre\.com.*\/msl\/login\//i,
+            /(?:^|\.)mercadolibre\.com.*\/jms\//i
+        ];
+        const isAuthRedirect = allowedAuthRedirectPatterns.some(pattern => pattern.test(currentUrl));
+        // Patrones de bloqueo/error comunes.
+        // Usamos coincidencias con límites de path para evitar falsos positivos en hashes,
+        // tokens o URLs de login de Mercadopago.
         const blockedPatterns = [
-            '/error',
-            '/blocked',
-            '/banned',
-            '/suspended',
-            '/challenge',
-            '/security',
-            '/login',
-            'cloudflare',
-            'captcha',
-            '403', // Forbidden
-            '429', // Too Many Requests
-            '503'  // Service Unavailable
+            /\/error(?:\/|$)/i,
+            /\/blocked(?:\/|$)/i,
+            /\/banned(?:\/|$)/i,
+            /\/suspended(?:\/|$)/i,
+            /\/challenge(?:\/|$)/i,
+            /\/security(?:\/|$)/i,
+            /(?:^|\.)cloudflare(?:\/|$)/i,
+            /(?:^|\/)captcha(?:\/|$)/i,
+            /(?:^|\/)(?:403|429|503)(?:\/|$)/i
         ];
 
-        // Verificar si la URL contiene patrones de bloqueo
-        const isBlocked = blockedPatterns.some(pattern =>
-            currentUrl.toLowerCase().includes(pattern)
-        );
+        // Verificar si la URL contiene patrones de bloqueo reales
+        const isBlocked = blockedPatterns.some(pattern => pattern.test(currentUrl));
 
         if (isBlocked) {
             console.warn('[urlValidator] Bloqueo detectado, currentUrl=', currentUrl);
@@ -52,14 +57,13 @@ async function validateCurrentUrl(page, expectedPath = '') {
                 reason: `Posible bloqueo detectado: URL contiene patrón peligroso`,
                 currentUrl,
                 expectedPath,
-                detectedPattern: blockedPatterns.find(p =>
-                    currentUrl.toLowerCase().includes(p)
-                )
+                detectedPattern: blockedPatterns.find(p => p.test(currentUrl))?.toString() || null
             };
         }
 
-        // Si se especifica expectedPath, verificar que estamos en la ruta correcta
-        if (expectedPath && !currentUrl.includes(expectedPath)) {
+        // Si se especifica expectedPath, verificar que estamos en la ruta correcta.
+        // Permitimos redirecciones de autenticación conocidas de Mercado Libre/MP sin tratarlas como error.
+        if (expectedPath && !currentUrl.includes(expectedPath) && !isAuthRedirect) {
             return {
                 valid: false,
                 reason: `URL inesperada - posible redirección`,

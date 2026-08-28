@@ -67,9 +67,34 @@ Integrar canales externos de pago y comunicación para la operación del negocio
 - fallos de sesiones externas
 - importación duplicada de pagos
 - latencia en sincronización con el backend
+- acumulación de snapshots HTML de diagnóstico si no se purgan
+
+## Snapshots HTML de diagnóstico
+
+El módulo de WhatsApp y scraping de navegador puede guardar capturas del HTML visible de la página para facilitar la depuración de sesiones, pantallas bloqueadas, chats no abiertos o cambios en la estructura de DOM.
+
+Esto se implementa a través de `backend/utils/htmlSaver.js` y se usa desde `backend/services/whatsappService.js`.
+
+### Comportamiento
+
+- se crea la carpeta `backend/pages-downloaded` si hace falta
+- cada vez que se detecta un estado crítico se guarda una instantánea con timestamp
+- los archivos con más de 24 horas se eliminan automáticamente para evitar residuos
+
+### Ejemplo de uso
+
+- autenticación de WhatsApp no detectada
+- carga de chats fallida
+- apertura de un chat sin mensajes
+- análisis de una pantalla bloqueada o con estructura distinta
+
+### Importancia
+
+Estas capturas no forman parte del negocio ni del flujo productivo. Sirven como evidencia técnica para resolver problemas de integración y nunca deberían considerarse datos operativos críticos.
 
 ## Próximos pasos
 
 - centralizar el estado de las integrations externas.
 - estandarizar la reconciliación de pagos.
 - encapsular logs y monitorización del módulo.
+- mantener el entorno de snapshots con purga automática para evitar acumulación.

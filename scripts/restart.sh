@@ -235,8 +235,10 @@ command_exists() { command -v "$1" >/dev/null 2>&1; }
 
 # --- Función para crear .env.tmp ---
 create_env_override() {
+    # Fuente única de verdad: .env en la raíz del proyecto.
+    # El archivo docker/.env se sincroniza como copia auxiliar.
     local env_file="$ENV_FILE"
-    local env_tmp="$ENV_FILE.tmp.$$"
+    local env_tmp="$ROOT_DIR/.env.tmp.$$"
     
     if [ -f "$env_file" ]; then
         cp "$env_file" "$env_tmp"

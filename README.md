@@ -12,6 +12,17 @@ Este proyecto usa **Docker Compose** para orquestar 3 servicios. Los puertos de 
 
 > Importante: este repositorio se usa como copia de seguridad y como respaldo del equipo. Por eso la misma configuración puede ejecutarse en distintos hosts con puertos distintos. En este servidor se accede al frontend por `http://192.168.1.21:8080/` y el backend directo por `http://192.168.1.21:3001/`. En otro equipo local o en una réplica del proyecto, lo normal es usar `http://localhost:8080/` o `http://localhost:3001/` si mantiene el mismo mapeo de puertos.
 
+### 🧩 Configuración de entorno único
+
+Este proyecto debe usar un único archivo de configuración raíz: [.env](.env).
+
+- La variable de entorno real es la del repositorio raíz.
+- El archivo [docker/.env](docker/.env) se sincroniza como copia auxiliar para que Docker pueda leerlo, pero no debe editarse a mano ni considerarse la fuente de verdad.
+- Si vas a activar o desactivar MP/WA/VNC, hacelo en [.env](.env) y luego reiniciá con los scripts.
+- Los scripts [scripts/up.sh](scripts/up.sh), [scripts/reset.sh](scripts/reset.sh) y [scripts/restart.sh](scripts/restart.sh) ahora generan overrides temporales desde la raíz para evitar que un archivo desactualizado vuelva a levantar servicios externos.
+
+> Regla: editá solo [.env](.env). Si un script necesita un override temporal, lo crea desde esa raíz y no desde [docker/.env](docker/.env).
+
 ### 🚀 Inicio Rápido
 
 ```bash

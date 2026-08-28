@@ -418,10 +418,12 @@ INSERT INTO `opciones_tipos` (`id_tipo_evento`, `nombre_para_mostrar`, `descripc
   ('INFANTILES','CUMPLE INFANTIL (de 1 a 12 años - SERVICIO COMPLETO)','🎈 **CUMPLEAÑOS INFANTIL**\n\n✅ **INCLUYE:**\n• Encargada general y de puerta\n• Uso de cocina completa con cocinera\n• Inflable 3x3\n• Metegoles, Ping Pong, Pool y Jenga gigante\n• Mesas, sillas y mantelería\n• Utensilios descartables\n• Baño equipado\n• Música y juego de luces\n• Cancha de fútbol (niños hasta 12 años)\n• 20 min previos para decoración\n\n❌ **NO INCLUYE:** Bebidas, alimentos, animación, vajilla de cristal','ALQUILER_SALON',1,1,50000.00,NULL),
   ('INFORMALES','JUNTADA / PARRILLADA INFORMAL PARA FAMILIA O AMIGOS (SERVICIO ECONÓMICO)','🎉 **SERVICIO ECONÓMICO**\n\n✅ **INCLUYE:**\n• Encargada/o general y control de puerta\n• Mesas y sillas\n• Uso de parrilla\n• Uso de bachas, mesadas, barra\n• Heladera y freezer\n• Baño equipado\n• Equipo de música\n• Metegoles, Ping Pong, Pool\n\n❌ **NO INCLUYE:** Horno, hornallas, cocinera, mantelería, vajilla','ALQUILER_SALON',1,1,50000.00,80000.00),
   ('MASAJES','Masajes','💆 **MASAJES PROFESIONALES**\n\nTipos: Descontracturante, Relajante, Reflexología, Piedras calientes\nDuración: 45 a 90 min','SERVICIOS',1,0,NULL,NULL),
-  ('TALLER_ARTE','Arte y Manualidades','🎨 **TALLERES DE ARTE**\n\nPintura, Dibujo, Cerámica, Manualidades, Tejido','TALLERES_ACTIVIDADES',1,0,NULL,NULL),
-  ('TALLER_DANZA','Danza','💃 **DANZA**\n\nEstilos: Folklore, Tango, Contemporánea, Salsa, Bachata','TALLERES_ACTIVIDADES',1,0,NULL,NULL),
-  ('TALLER_MUSICA','Música','🎵 **MÚSICA**\n\nInstrumentos: Guitarra, Teclado, Batería, Canto, Vientos','TALLERES_ACTIVIDADES',1,0,NULL,NULL),
-  ('TALLER_YOGA','Yoga','🧘 **YOGA**\n\nEstilos: Hatha, Vinyasa, Restaurativo, Embarazadas','TALLERES_ACTIVIDADES',1,0,NULL,NULL);
+  ('TALLER_PATRIMONIO_CULTURAL_INMATERIAL','Patrimonio Cultural Inmaterial','🏛️ **PATRIMONIO CULTURAL INMATERIAL**\n\nTradiciones, saberes, expresiones y prácticas comunitarias de valor cultural compartido.','TALLERES_ACTIVIDADES',1,0,NULL,NULL),
+  ('TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS','Música, Danza y Artes Escénicas','🎭 **MÚSICA, DANZA Y ARTES ESCÉNICAS**\n\nMúsica, baile, performance, teatro y otras expresiones artísticas escénicas.','TALLERES_ACTIVIDADES',1,0,NULL,NULL),
+  ('TALLER_LITERATURA_Y_FOMENTO_DE_LA_LECTURA','Literatura y Fomento de la Lectura','📚 **LITERATURA Y FOMENTO DE LA LECTURA**\n\nTalleres de escritura, lectura, narración, poesía y promoción de la lectura.','TALLERES_ACTIVIDADES',1,0,NULL,NULL),
+  ('TALLER_ARTES_VISUALES_ARTESANIAS_Y_PATRIMONIO_MATERIAL','Artes Visuales, Artesanías y Patrimonio Material','🎨 **ARTES VISUALES, ARTESANÍAS Y PATRIMONIO MATERIAL**\n\nDibujo, pintura, cerámica, tejido, artesanías y patrimonio tangible.','TALLERES_ACTIVIDADES',1,0,NULL,NULL),
+  ('TALLER_CULTURA_COMUNITARIA_Y_DE_BARRIO','Cultura Comunitaria y de Barrio','🤝 **CULTURA COMUNITARIA Y DE BARRIO**\n\nActividades de barrio, participación vecinal, interculturalidad y cultura comunitaria.','TALLERES_ACTIVIDADES',1,0,NULL,NULL),
+  ('TALLER_TRADICIONES_Y_FESTIVIDADES','Tradiciones y Festividades','✨ **TRADICIONES Y FESTIVIDADES**\n\nCelebraciones, rituales, festividades y prácticas tradicionales de la comunidad.','TALLERES_ACTIVIDADES',1,0,NULL,NULL);
 /*!40000 ALTER TABLE `opciones_tipos` ENABLE KEYS */;
 UNLOCK TABLES;
 

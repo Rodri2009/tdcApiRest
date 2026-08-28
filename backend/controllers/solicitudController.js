@@ -36,7 +36,16 @@ const crearSolicitud = async (req, res) => {
     logVerbose("[DEBUG] nombreFinal:", nombreFinal, "telefonoFinal:", telefonoFinal, "emailFinal:", emailFinal);
     logVerbose("[DEBUG] tipoEvento:", tipoEvento, "fechaEvento:", fechaEvento);
 
-    if (!tipoEvento || !fechaEvento) {
+    const tipoEventoNorm = (tipoEvento || '').toString().trim().toLowerCase();
+    const esBanda = tipoEventoNorm.includes('banda');
+    const esTaller = tipoEventoNorm.includes('taller');
+
+    if (!tipoEvento) {
+        logError(`Validación fallida: tipoEvento=${tipoEvento}, fechaEvento=${fechaEvento}`);
+        return res.status(400).json({ error: 'Falta el tipo de solicitud.' });
+    }
+
+    if (!fechaEvento && !esTaller && !esBanda) {
         logError(`Validación fallida: tipoEvento=${tipoEvento}, fechaEvento=${fechaEvento}`);
         return res.status(400).json({ error: 'Faltan datos obligatorios (tipoEvento, fechaEvento).' });
     }
@@ -83,9 +92,7 @@ const crearSolicitud = async (req, res) => {
 
         // 1. Insertar en la tabla general 'solicitudes'
         // Detectar si es solicitud de banda (siempre en minúsculas)
-        const tipoEventoNorm = (tipoEvento || '').toString().trim().toLowerCase();
-        const esBanda = tipoEventoNorm.includes('banda');
-        const categoria = esBanda ? 'BANDA' : 'ALQUILER';
+        const categoria = esBanda ? 'BANDA' : (esTaller ? 'TALLERES' : 'ALQUILER');
         // Before inserting the solicitud, create or reuse the cliente
         const clienteId = await getOrCreateClient(conn, { nombre: nombreFinal, telefono: telefonoFinal, email: emailFinal });
 
@@ -95,8 +102,8 @@ const crearSolicitud = async (req, res) => {
         `;
         const paramsGeneral = [
             categoria,
-            descripcionCorta || (descripcion ? descripcion.substring(0, 200) : null),
-            descripcionLarga || null,
+            descripcionCorta || (descripcion ? descripcion.substring(0, 200) : null) || (req.body.nombreParaMostrar || null),
+            descripcionLarga || descripcion || null,
             clienteId,
             req.body.url_flyer || null
         ];
@@ -110,6 +117,81 @@ const crearSolicitud = async (req, res) => {
             // Liberar la conexión actual (será gestionada por el controlador delegado)
             if (conn) { conn.release(); conn = null; }
             return solicitudFechaBandaController.crearSolicitudFechaBanda(req, res);
+        }
+
+        if (esTaller) {
+            const nombreTaller = String(req.body.nombreParaMostrar || req.body.nombre_taller || descripcionCorta || descripcion || 'Taller/Actividad').trim();
+            const tipoId = req.body.tipoId || req.body.idTipoEvento || req.body.tipo_taller_id || req.body.tipoTallerId || null;
+            const fechaEvento = req.body.fechaEvento || null;
+            const horaEvento = req.body.horaInicio || null;
+            const precioClase = Number(req.body.precioClase || 0) || 0;
+            const precioSemana = Number(req.body.precioSemana || 0) || 0;
+            const modalidadPago = req.body.modalidadPago || 'por_clase';
+            const comentarios = req.body.detalles || req.body.comentarios || null;
+
+            const sqlTaller = `
+                INSERT INTO solicitudes_talleres (
+                    id_solicitud,
+                    nombre_taller,
+                    id_tipo_evento,
+                    comentarios_observaciones,
+                    fecha_evento,
+                    hora_evento,
+                    precio
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            `;
+            const compraConPrecio = precioClase > 0 ? precioClase : precioSemana;
+            const tallerInsert = await conn.query(sqlTaller, [
+                newId,
+                nombreTaller,
+                tipoId,
+                comentarios,
+                fechaEvento,
+                horaEvento,
+                compraConPrecio || 0
+            ]);
+
+            const idSolicitudTaller = Number(tallerInsert.insertId);
+            const precioElegido = precioClase > 0 ? precioClase : precioSemana;
+
+            if (precioElegido > 0) {
+                const precioModalidad = modalidadPago === 'por_semana' ? 'paquete' : 'clase_suelta';
+                const nombrePrecio = modalidadPago === 'por_semana' ? 'Pack semanal' : 'Clase suelta';
+                await conn.query(
+                    `INSERT INTO precios_talleres (
+                        id_solicitud,
+                        id_solicitud_taller,
+                        id_tipo_evento,
+                        tipo_taller_id,
+                        nombre_precio,
+                        descripcion,
+                        modalidad,
+                        precio,
+                        vigente_desde,
+                        vigente_hasta,
+                        vigente,
+                        activo
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), NULL, 1, 1)`,
+                    [
+                        newId,
+                        idSolicitudTaller,
+                        tipoId,
+                        tipoId,
+                        nombrePrecio,
+                        comentarios || `Precio generado para ${nombreTaller}`,
+                        precioModalidad,
+                        precioElegido
+                    ]
+                );
+            }
+
+            await conn.query(
+                'UPDATE solicitudes SET descripcion_corta = ?, descripcion_larga = ? WHERE id_solicitud = ?',
+                [nombreTaller, comentarios || descripcionLarga || descripcion || null, newId]
+            );
+
+            await conn.commit();
+            return res.status(201).json({ solicitudId: newId, tipo: 'TALLER', tallerId: idSolicitudTaller });
         } else {
             // 2. Insertar en la tabla específica 'solicitudes_alquiler' (estructura normalizada)
             // CAMBIOS REALIZADOS (28/02/2026):
@@ -338,7 +420,7 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
                 COALESCE(c.nombre, '') as nombreCompleto,
                 c.telefono as telefono,
                 c.email as email,
-                sol.descripcion,
+                COALESCE(sol.descripcion_larga, sol.descripcion_corta, '') as descripcion,
                 sol.estado,
                 ss.tipo_servicio as tipoServicio,
                 COALESCE(sol.es_publico, 0) as esPublico
@@ -367,17 +449,21 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
                 st.hora_evento as horaInicio,
                 sol.duracion_minutos as duracionEvento,
                 NULL as cantidadPersonas,
-                st.precio as precioBase,
+                COALESCE(pt.precio, st.precio) as precioBase,
                 COALESCE(c.nombre, '') as nombreCompleto,
                 c.telefono as telefono,
                 c.email as email,
-                sol.descripcion,
+                COALESCE(sol.descripcion_larga, sol.descripcion_corta, st.comentarios_observaciones, '') as descripcion,
                 sol.estado,
                 st.nombre_taller as nombreTaller,
-                COALESCE(sol.es_publico, 0) as esPublico
+                COALESCE(sol.es_publico, 0) as esPublico,
+                COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) as idTipoEvento,
+                COALESCE(ot.nombre_para_mostrar, st.nombre_taller) as nombreParaMostrar
             FROM solicitudes_talleres st
             JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+            LEFT JOIN precios_talleres pt ON pt.id = st.id_precio_taller
+            LEFT JOIN opciones_tipos ot ON COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) = ot.id_tipo_evento
             WHERE st.id_solicitud = ?
         `;
         const [result] = await conn.query(sql, [numericId]);
@@ -630,7 +716,7 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(c.nombre, '') as nombreCompleto,
                     c.telefono as telefono,
                     c.email as email,
-                    sol.descripcion,
+                    COALESCE(sol.descripcion_larga, sol.descripcion_corta, '') as descripcion,
                     sol.estado,
                     ss.tipo_servicio as tipoServicio,
                     COALESCE(sol.es_publico, 0) as esPublico
@@ -670,22 +756,26 @@ const getSolicitudPorId = async (req, res) => {
                     st.hora_evento as horaInicio,
                     sol.duracion_minutos as duracionEvento,
                     NULL as cantidadPersonas,
-                    st.precio as precioBase,
+                    COALESCE(pt.precio, st.precio) as precioBase,
                     COALESCE(c.nombre, '') as nombreCompleto,
                     COALESCE(c.apellido, '') as apellidoCliente,
                     COALESCE(c.telefono, '') as telefono,
                     COALESCE(c.email, '') as email,
-                    sol.descripcion,
+                    COALESCE(sol.descripcion_larga, sol.descripcion_corta, st.comentarios_observaciones, '') as descripcion,
                     sol.estado,
                     st.nombre_taller as nombreTaller,
                     COALESCE(sol.es_publico, 0) as esPublico,
                     COALESCE(sol.descripcion_corta, '') as descripcion_corta,
                     COALESCE(sol.descripcion_larga, '') as descripcion_larga,
                     sol.fecha_creacion as fecha_creacion,
-                    COALESCE(c.id_cliente, '') as id_cliente
+                    COALESCE(c.id_cliente, '') as id_cliente,
+                    COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) as idTipoEvento,
+                    COALESCE(ot.nombre_para_mostrar, st.nombre_taller) as nombreParaMostrar
                 FROM solicitudes_talleres st
                 JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+                LEFT JOIN precios_talleres pt ON pt.id = st.id_precio_taller
+                LEFT JOIN opciones_tipos ot ON COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) = ot.id_tipo_evento
                 WHERE st.id_solicitud = ?
             `;
 
@@ -805,26 +895,51 @@ const finalizarSolicitud = async (req, res) => {
         const paramsUpdateAlquiler = [detallesAdicionales, id];
         await conn.query(sqlUpdateAlquiler, paramsUpdateAlquiler);
 
-        // Obtener los datos completos para los emails
+        // También persistir comentarios del taller si corresponde
+        const sqlUpdateTaller = `
+            UPDATE solicitudes_talleres SET
+                comentarios_observaciones = ?,
+                nombre_taller = ?,
+                fecha_evento = COALESCE(?, fecha_evento),
+                hora_evento = COALESCE(?, hora_evento)
+            WHERE id_solicitud = ?
+        `;
+        const nombreTaller = descripcionCorta || req.body.nombreTaller || req.body.nombre_taller || null;
+        await conn.query(sqlUpdateTaller, [detallesAdicionales || descripcionLarga || null, nombreTaller, req.body.fechaEvento || null, req.body.horaInicio || null, id]);
+
+        // Obtener los datos completos para los emails, soportando alquileres, talleres y otros tipos.
         const sqlSelect = `
             SELECT 
-                s.id_solicitud, s.categoria, s.fecha_creacion, s.estado,
-                s.descripcion_corta, s.descripcion_larga, s.url_flyer,
-                sa.fecha_evento, sa.hora_evento,
+                s.id_solicitud,
+                s.categoria,
+                s.fecha_creacion,
+                s.estado,
+                s.descripcion_corta,
+                s.descripcion_larga,
+                s.url_flyer,
+                COALESCE(sa.fecha_evento, st.fecha_evento, ss.fecha_evento, s.fecha_evento) as fecha_evento,
+                COALESCE(sa.hora_evento, st.hora_evento, ss.hora_evento, s.hora_inicio) as hora_evento,
                 s.duracion_minutos as duracion,
-                sa.precio_basico, sa.precio_final, sa.id_tipo_evento,
+                COALESCE(sa.precio_basico, st.precio, ss.precio, 0) as precio_basico,
+                COALESCE(sa.precio_final, st.precio, ss.precio, 0) as precio_final,
+                COALESCE(sa.id_tipo_evento, st.id_tipo_evento, ss.tipo_servicio) as id_tipo_evento,
                 sa.cantidad_personas,
                 COALESCE(c.nombre, ?) as nombre_completo,
                 COALESCE(c.email, ?) as email,
                 COALESCE(c.telefono, '') as telefono,
-                ot.nombre_para_mostrar,
-                ot.descripcion as descripcion_evento
+                COALESCE(ot.nombre_para_mostrar, st.nombre_taller, ss.tipo_servicio, s.descripcion_corta, 'Solicitud') as nombre_para_mostrar,
+                ot.descripcion as descripcion_evento,
+                COALESCE(st.nombre_taller, s.descripcion_corta, s.descripcion_larga, 'Solicitud') as nombre_taller,
+                COALESCE(st.comentarios_observaciones, s.descripcion_larga, s.descripcion_corta, '') as descripcion,
+                JSON_ARRAY() as adicionales
             FROM solicitudes s
             LEFT JOIN solicitudes_alquiler sa ON s.id_solicitud = sa.id_solicitud
+            LEFT JOIN solicitudes_talleres st ON s.id_solicitud = st.id_solicitud
+            LEFT JOIN solicitudes_servicios ss ON s.id_solicitud = ss.id_solicitud
             LEFT JOIN clientes c ON s.id_cliente = c.id_cliente
-            LEFT JOIN opciones_tipos ot ON sa.id_tipo_evento = ot.id_tipo_evento
-            LEFT JOIN precios_vigencia pv ON sa.id_precio_vigencia = pv.id
+            LEFT JOIN opciones_tipos ot ON COALESCE(sa.id_tipo_evento, st.id_tipo_evento, ss.tipo_servicio) = ot.id_tipo_evento
             WHERE s.id_solicitud = ?
+            LIMIT 1
         `;
         const [solicitudCompleta] = await conn.query(sqlSelect, [nombreCompleto, email, id]);
 
@@ -1635,18 +1750,19 @@ const getSolicitudPublicById = async (req, res) => {
                 const sql = `
                     SELECT
                         CONCAT('alq_', sa.id_solicitud) as solicitudId,
-                        sa.tipo_servicio as tipoServicio,
+                        sa.id_tipo_evento as tipoServicio,
                         sa.fecha_evento as fechaEvento,
                         sa.hora_evento as horaInicio,
                         sol.duracion_minutos as duracionEvento,
-                        sa.cantidad_de_personas as cantidadPersonas,
+                        sa.cantidad_personas as cantidadPersonas,
                         sa.precio_basico as precioBase,
                         COALESCE(c.nombre, '') as nombreParaMostrar,
-                        sa.tipo_de_evento as tipoEvento,
+                        COALESCE(ot.nombre_para_mostrar, sa.id_tipo_evento) as tipoEvento,
                         COALESCE(sol.es_publico, 0) as esPublico
                     FROM solicitudes_alquiler sa
                     JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud
                     LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+                    LEFT JOIN opciones_tipos ot ON sa.id_tipo_evento = ot.id_tipo_evento
                     WHERE sa.id_solicitud = ?
                 `;
 
@@ -1753,12 +1869,17 @@ const getSolicitudPublicById = async (req, res) => {
                         st.fecha_evento as fechaEvento,
                         st.hora_evento as horaInicio,
                         sol.duracion_minutos as duracionEvento,
-                        st.precio as precioBase,
+                        COALESCE(pt.precio, st.precio) as precioBase,
                         COALESCE(c.nombre, '') as nombreParaMostrar,
-                        sol.estado
+                        sol.estado,
+                        COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) as idTipoEvento,
+                        COALESCE(ot.nombre_para_mostrar, st.nombre_taller) as nombreTaller,
+                        COALESCE(sol.descripcion_larga, sol.descripcion_corta, st.comentarios_observaciones, '') as descripcion
                     FROM solicitudes_talleres st
                     JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
                     LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+                    LEFT JOIN precios_talleres pt ON pt.id = st.id_precio_taller
+                    LEFT JOIN opciones_tipos ot ON COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) = ot.id_tipo_evento
                     WHERE st.id_solicitud = ?
                 `;
 
@@ -1776,18 +1897,19 @@ const getSolicitudPublicById = async (req, res) => {
             const sqlAlq = `
                 SELECT
                     CONCAT('alq_', sa.id_solicitud) as solicitudId,
-                    sa.tipo_servicio as tipoServicio,
+                    sa.id_tipo_evento as tipoServicio,
                     sa.fecha_evento as fechaEvento,
                     sa.hora_evento as horaInicio,
                     sol.duracion_minutos as duracionEvento,
-                    sa.cantidad_de_personas as cantidadPersonas,
+                    sa.cantidad_personas as cantidadPersonas,
                     sa.precio_basico as precioBase,
                     COALESCE(c.nombre, '') as nombreParaMostrar,
-                    sa.tipo_de_evento as tipoEvento,
+                    COALESCE(ot.nombre_para_mostrar, sa.id_tipo_evento) as tipoEvento,
                     COALESCE(sol.es_publico, 0) as esPublico
                 FROM solicitudes_alquiler sa
                 JOIN solicitudes sol ON sa.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+                LEFT JOIN opciones_tipos ot ON sa.id_tipo_evento = ot.id_tipo_evento
                 WHERE sa.id_solicitud = ?
             `;
             const resAlq = await conn.query(sqlAlq, [idNum]);
@@ -1859,12 +1981,16 @@ const getSolicitudPublicById = async (req, res) => {
                     st.fecha_evento as fechaEvento,
                     st.hora_evento as horaInicio,
                     sol.duracion_minutos as duracionEvento,
-                    st.precio as precioBase,
+                    COALESCE(pt.precio, st.precio) as precioBase,
                     COALESCE(c.nombre, '') as nombreParaMostrar,
-                    sol.estado
+                    sol.estado,
+                    COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) as idTipoEvento,
+                    COALESCE(ot.nombre_para_mostrar, st.nombre_taller) as nombreTaller
                 FROM solicitudes_talleres st
                 JOIN solicitudes sol ON st.id_solicitud = sol.id_solicitud
                 LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+                LEFT JOIN precios_talleres pt ON pt.id = st.id_precio_taller
+                LEFT JOIN opciones_tipos ot ON COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) = ot.id_tipo_evento
                 WHERE st.id_solicitud = ?
             `;
             const [taller] = await conn.query(sqlTll, [idNum]);

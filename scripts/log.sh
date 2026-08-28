@@ -18,6 +18,7 @@
 #   --import          : filtra SOLO escrapeo para importaciones (EN VIVO + período)
 #   --activity        : filtra solo logs de [ActivityService]
 #   --debug           : filtra solo logs de DEBUG ([DEBUG])
+#   --status, --check : verifica si MP/WA están habilitados y si el backend los intenta arrancar
 #
 # FLAGS DE VISUALIZACIÓN:
 #   -f, --follow      : sigue los logs en tiempo real (default para todos)
@@ -107,6 +108,7 @@ ${BOLD}FLAGS DE VISUALIZACIÓN:${NC}
 ${BOLD}FLAGS DE DEPURACIÓN:${NC}
   -d, --debug       muestra comandos que se ejecutan
   -h, --help        muestra esta ayuda
+  --status, --check verifica si MP/WA están habilitados y si el backend los intenta arrancar
 
 ${BOLD}EJEMPLOS:${NC}
   $0                              # Todos los logs en tiempo real
@@ -116,6 +118,7 @@ ${BOLD}EJEMPLOS:${NC}
   $0 --backend --import           # SOLO escrapeo para importaciones (en vivo)
   $0 --backend --activity         # Logs de [ActivityService]
   $0 --backend --scraper --activity # Logs de SCRAPER y ActivityService
+  $0 --status                    # Verifica el estado de MP/WA y del backend
   $0 --mariadb --tail 50          # Últimas 50 líneas de MariaDB
   $0 --frontend -f                # Logs de nginx en vivo
   $0 --backend --debug            # Logs del backend solo DEBUG
@@ -311,11 +314,73 @@ show_all_logs() {
     echo ""
 }
 
+show_status() {
+    local env_root="$PROJECT_DIR/.env"
+    local env_docker="$PROJECT_DIR/docker/.env"
+
+    echo -e "${CYAN}${BOLD}Estado de servicios Puppeteer${NC}"
+    echo ""
+
+    local mp_root="no definido"
+    local wa_root="no definido"
+    local mp_docker="no definido"
+    local wa_docker="no definido"
+
+    if [ -f "$env_root" ]; then
+        mp_root=$(grep -E '^ENABLE_PUPPETEER_MP=' "$env_root" | head -n 1 | cut -d= -f2- || echo "no definido")
+        wa_root=$(grep -E '^ENABLE_PUPPETEER_WA=' "$env_root" | head -n 1 | cut -d= -f2- || echo "no definido")
+    fi
+
+    if [ -f "$env_docker" ]; then
+        mp_docker=$(grep -E '^ENABLE_PUPPETEER_MP=' "$env_docker" | head -n 1 | cut -d= -f2- || echo "no definido")
+        wa_docker=$(grep -E '^ENABLE_PUPPETEER_WA=' "$env_docker" | head -n 1 | cut -d= -f2- || echo "no definido")
+    fi
+
+    echo -e "${BOLD}Archivo .env:${NC}"
+    echo "  MP: $mp_root"
+    echo "  WA: $wa_root"
+    echo ""
+    echo -e "${BOLD}Archivo docker/.env:${NC}"
+    echo "  MP: $mp_docker"
+    echo "  WA: $wa_docker"
+    echo ""
+
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^docker-backend-1$'; then
+        echo -e "${GREEN}Backend contenedor: running${NC}"
+    else
+        echo -e "${RED}Backend contenedor: no está corriendo${NC}"
+        return 0
+    fi
+
+    echo ""
+    echo -e "${BOLD}Logs recientes relevantes del backend:${NC}"
+    docker logs --tail 80 docker-backend-1 2>&1 | grep -Ei 'PUPPETEER-MP|PUPPETEER-WA|Watch service iniciado|Watch service failed|Mercado Pago|WhatsApp|ENABLE_PUPPETEER_MP|ENABLE_PUPPETEER_WA|Navigation timeout|Failed to get activity|Connection refused' | tail -20 || echo "  No se detectó evidencia reciente de MP/WA en los logs del backend."
+
+    echo ""
+    if [ "$mp_root" = "true" ] || [ "$mp_docker" = "true" ]; then
+        echo -e "${YELLOW}Advertencia:${NC} MP está habilitado en el entorno. Si la sesión está cerrada, el backend puede fallar al navegar a Mercado Pago."
+    else
+        echo -e "${GREEN}MP parece deshabilitado en el entorno.${NC}"
+    fi
+
+    if [ "$wa_root" = "true" ] || [ "$wa_docker" = "true" ]; then
+        echo -e "${YELLOW}Advertencia:${NC} WA está habilitado en el entorno. Si la sesión está cerrada, el backend puede fallar al navegar a WhatsApp."
+    else
+        echo -e "${GREEN}WA parece deshabilitado en el entorno.${NC}"
+    fi
+}
+
 # === MAIN ===
+
+CHECK_STATUS=0
 
 # Parsear argumentos
 while [ $# -gt 0 ]; do
     case "$1" in
+        --status|--check)
+            CHECK_STATUS=1
+            shift
+            ;;
         --backend)
             SHOW_BACKEND=1
             SHOW_ALL=0
@@ -394,6 +459,11 @@ done
 # === VALIDACIONES ===
 
 check_docker
+
+if [ "$CHECK_STATUS" = "1" ]; then
+    show_status
+    exit 0
+fi
 
 # Si no se especificó ningún contenedor, mostrar todos
 if [ "$SHOW_ALL" = "1" ]; then
