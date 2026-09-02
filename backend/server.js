@@ -1,4 +1,6 @@
 const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const fs = require('fs');
 const path = require('path');
@@ -55,6 +57,32 @@ const WhatsAppService = require('./services/whatsappService');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const allowedOrigins = [
+    'http://localhost',
+    'http://localhost:80',
+    'http://localhost:8080',
+    'http://127.0.0.1',
+    'http://127.0.0.1:8080',
+    'http://192.168.1.21:8080'
+];
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        error: 'Demasiados intentos. Intenta nuevamente en unos minutos.'
+    }
+});
+
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
 
 // Estado global para servicios Puppeteer
 let mpBrowser = null;
@@ -140,11 +168,22 @@ ensureUploadsFolders();
 // Servir uploads (logos, fotos) desde /uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// CORS global: permite llamados cross-origin desde el frontend (localhost:80 -> localhost:3000)
+// CORS restringido: permitir solo orígenes de desarrollo/local y no cualquier dominio externo.
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    const isAllowedOrigin = origin && allowedOrigins.includes(origin);
+
+    if (isAllowedOrigin) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Credentials', 'true');
+    }
+
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('X-Content-Type-Options', 'nosniff');
+    res.header('X-Frame-Options', 'DENY');
+    res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+
     if (req.method === 'OPTIONS') {
         return res.sendStatus(204);
     }
@@ -154,8 +193,10 @@ app.use((req, res, next) => {
 // Middleware de logging con flags de depuración
 app.use((req, res, next) => {
     logRequest(req.method, req.originalUrl);
-    logVerbose(`Query params: ${JSON.stringify(req.query)}`);
-    logVerbose(`Body recibido: ${JSON.stringify(req.body)}`);
+    if (process.env.NODE_ENV !== 'production') {
+        logVerbose(`Query params: ${JSON.stringify(req.query)}`);
+        logVerbose(`Body recibido: ${JSON.stringify(req.body)}`);
+    }
     next();
 });
 

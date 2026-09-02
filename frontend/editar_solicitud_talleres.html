@@ -345,6 +345,62 @@
             gap: 0;
         }
 
+        /* FLYER PREVIEW - Igual que editar_solicitud_fecha_bandas.html */
+        .flyer-form-container {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            margin-top: 15px;
+        }
+
+        .flyer-preview-side {
+            flex-shrink: 0;
+        }
+
+        #flyerPreview {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            border: 2px dashed #581c87;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        #flyerPreview:hover {
+            border-color: var(--color-secondary);
+        }
+
+        #flyerPreview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        #flyerPreview .preview-placeholder {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .flyer-input-side {
+            flex: 1;
+        }
+
+        .flyer-input-side .form-group {
+            margin-bottom: 0;
+        }
+
+        .hint {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            margin: 6px 0 0;
+        }
+
         .button-group button {
             background-color: transparent;
             color: var(--color-secondary);
@@ -535,27 +591,43 @@
                 <input type="hidden" id="precioBase" name="precioBase">
 
                 <div class="column-layout">
-                    <div class="form-group" id="tipoEventoGroup">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="nombreTallerInput">Nombre de Taller / Actividad:</label>
+                        <input type="text" id="nombreTallerInput" placeholder="Ej: Taller de dibujo, Yoga de verano..."
+                            maxlength="200">
+                    </div>
+                    <div class="form-group" id="tipoEventoGroup" style="flex: 1;">
                         <div>
                             <label>Tipo de Taller:</label>
                             <button id="resetTipoEventoBtn">Cambiar tipo de taller</button>
                         </div>
                         <div id="tipoEventoContainer" class="radio-group"></div>
                     </div>
-                    <div class="form-group" id="descripcionGroup">
-                        <label>Descripción:</label>
-                        <div id="tipoEventoDescripcion">Seleccione un tipo de taller.</div>
-                    </div>
                 </div>
                 <div class="column-layout">
-                    <div class="form-group" style="margin-top: 8px;">
-                        <label for="urlFlyer">URL del Flyer (promocional)</label>
-                        <input type="text" id="urlFlyer" placeholder="https://..." />
-                        <div style="margin-top:6px;">
-                            <input type="file" id="flyerFile" accept="image/png,image/jpeg" />
-                            <small style="color:#999;margin-left:6px;">Subir imagen (JPEG/PNG, ≤ 3 MB)</small>
+                    <div class="form-group" style="margin-top: 8px; flex: 1;">
+                        <div class="flyer-form-container">
+                            <div class="flyer-preview-side">
+                                <div id="flyerPreview" onclick="document.getElementById('flyerFile').click()">
+                                    <div class="preview-placeholder">
+                                        <i class="fas fa-cloud-arrow-up"
+                                            style="font-size: 2rem; margin-bottom: 5px;"></i>
+                                        <div>Click para subir</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flyer-input-side">
+                                <div class="form-group">
+                                    <label for="urlFlyer">Flyer (URL o subir)</label>
+                                    <p class="hint">Pegá la URL del flyer o hacé click en la imagen para subir:</p>
+                                    <input type="text" id="urlFlyer" placeholder="https://..."
+                                        onchange="updateFlyerPreview()" oninput="updateFlyerPreview()"
+                                        style="margin-top: 5px;">
+                                    <input type="file" id="flyerFile" accept="image/png,image/jpeg"
+                                        style="display: none;" onchange="handleFlyerUpload()">
+                                </div>
+                            </div>
                         </div>
-                        <div id="flyerPreview" style="margin-top:8px;"></div>
                     </div>
                     <div class="form-group">
                         <label for="fechaEvento">Fecha del Taller (inicio):</label>
@@ -622,6 +694,138 @@
     <script src="/navbar.js"></script>
     <script src="/formLogic.js"></script>
     <script>
+        function updateFlyerPreview() {
+            const urlInput = document.getElementById('urlFlyer');
+            const preview = document.getElementById('flyerPreview');
+            if (!urlInput || !preview) return;
+
+            const url = (urlInput.value || '').trim();
+            if (!url) {
+                preview.innerHTML = '<div class="preview-placeholder"><i class="fas fa-cloud-arrow-up" style="font-size: 2rem; margin-bottom: 5px;"></i><div>Click para subir</div></div>';
+                return;
+            }
+
+            preview.innerHTML = `<img src="${url}" alt="Flyer" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'preview-placeholder\'><i class=\'fas fa-cloud-arrow-up\' style=\'font-size: 2rem; margin-bottom: 5px;\'></i><div>URL inválida</div></div>'">`;
+        }
+
+        async function handleFlyerUpload() {
+            const input = document.getElementById('flyerFile');
+            const urlInput = document.getElementById('urlFlyer');
+            const file = input && input.files && input.files[0];
+            if (!file) return;
+
+            if (!['image/png', 'image/jpeg'].includes(file.type)) {
+                alert('Formato no permitido. Solo PNG/JPEG.');
+                input.value = '';
+                return;
+            }
+
+            if (file.size > 3 * 1024 * 1024) {
+                alert('El archivo supera 3 MB.');
+                input.value = '';
+                return;
+            }
+
+            try {
+                const fd = new FormData();
+                fd.append('flyer', file);
+
+                const token = localStorage.getItem('authToken');
+                const headers = {};
+                if (token) headers.Authorization = `Bearer ${token}`;
+
+                const response = await fetch('/api/uploads/flyers', {
+                    method: 'POST',
+                    headers,
+                    body: fd
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al subir el flyer');
+                }
+
+                const body = await response.json();
+                if (body && body.url && urlInput) {
+                    urlInput.value = body.url;
+                    updateFlyerPreview();
+                }
+            } catch (error) {
+                console.error('[TALLERES] Error subiendo flyer:', error);
+                alert('Error al subir el flyer. Reintentá nuevamente.');
+            }
+        }
+
+        (function () {
+            const customCantidadesTaller = ['8 personas', '10 personas', '12 personas', '15 personas', '20 personas', '25 personas', '30 personas', '40 personas'];
+            const customDuracionesTaller = ['1 hora', '1.5 horas', '2 horas', '2.5 horas', '3 horas', '4 horas', '5 horas'];
+            const customHorariosTaller = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+
+            function applyCustomTallerCatalog() {
+                if (!window.App) return;
+
+                const tipoSelect = document.getElementById('tipoEventoSelect');
+                const selectedTipo = tipoSelect ? tipoSelect.value : '';
+                const selectedTipoInfo = (window.App.tiposDeEvento || []).find(t => String(t.id) === String(selectedTipo));
+                const isTaller = selectedTipoInfo && (String(selectedTipoInfo.categoria || '').toUpperCase() === 'TALLERES_ACTIVIDADES' || String(selectedTipoInfo.categoria || '').toUpperCase() === 'TALLER');
+
+                if (!isTaller) return;
+
+                const catalogKey = selectedTipo || 'TALLERES_ACTIVIDADES';
+                window.App.opcionesCantidades = window.App.opcionesCantidades || {};
+                window.App.opcionesDuraciones = window.App.opcionesDuraciones || {};
+                window.App.opcionesHoras = window.App.opcionesHoras || {};
+                window.App.opcionesCantidades[catalogKey] = customCantidadesTaller;
+                window.App.opcionesCantidades.TALLER = customCantidadesTaller;
+                window.App.opcionesCantidades.TALLERES_ACTIVIDADES = customCantidadesTaller;
+                window.App.opcionesDuraciones[catalogKey] = customDuracionesTaller;
+                window.App.opcionesDuraciones.TALLER = customDuracionesTaller;
+                window.App.opcionesDuraciones.TALLERES_ACTIVIDADES = customDuracionesTaller;
+                window.App.opcionesHoras[catalogKey] = customHorariosTaller.map(h => ({ hora: h, tipoDia: 'todos' }));
+                window.App.opcionesHoras.TALLER = customHorariosTaller.map(h => ({ hora: h, tipoDia: 'todos' }));
+                window.App.opcionesHoras.TALLERES_ACTIVIDADES = customHorariosTaller.map(h => ({ hora: h, tipoDia: 'todos' }));
+            }
+
+            const originalActualizarTodo = window.App && window.App.actualizarTodo;
+            if (window.App && !window.App.__tallerCatalogPatched) {
+                window.App.__tallerCatalogPatched = true;
+                window.App.actualizarTodo = async function (caller = 'user-interaction', overrides = {}) {
+                    const tipoId = overrides.overrideTipo || document.querySelector('#tipoEventoSelect')?.value || '';
+                    const tipoSeleccionado = (this.tiposDeEvento || []).find(t => String(t.id) === String(tipoId));
+                    const esTaller = tipoSeleccionado && (String(tipoSeleccionado.categoria || '').toUpperCase() === 'TALLERES_ACTIVIDADES' || String(tipoSeleccionado.categoria || '').toUpperCase() === 'TALLER');
+
+                    if (esTaller) {
+                        const catalogKey = String(tipoId || 'TALLERES_ACTIVIDADES');
+                        this.opcionesCantidades = this.opcionesCantidades || {};
+                        this.opcionesDuraciones = this.opcionesDuraciones || {};
+                        this.opcionesHoras = this.opcionesHoras || {};
+                        this.opcionesCantidades[catalogKey] = customCantidadesTaller;
+                        this.opcionesCantidades.TALLER = customCantidadesTaller;
+                        this.opcionesCantidades.TALLERES_ACTIVIDADES = customCantidadesTaller;
+                        this.opcionesDuraciones[catalogKey] = customDuracionesTaller;
+                        this.opcionesDuraciones.TALLER = customDuracionesTaller;
+                        this.opcionesDuraciones.TALLERES_ACTIVIDADES = customDuracionesTaller;
+                        this.opcionesHoras[catalogKey] = customHorariosTaller.map(h => ({ hora: h, tipoDia: 'todos' }));
+                        this.opcionesHoras.TALLER = customHorariosTaller.map(h => ({ hora: h, tipoDia: 'todos' }));
+                        this.opcionesHoras.TALLERES_ACTIVIDADES = customHorariosTaller.map(h => ({ hora: h, tipoDia: 'todos' }));
+                    }
+
+                    return originalActualizarTodo.call(this, caller, overrides);
+                };
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    applyCustomTallerCatalog();
+                    const tipoSelect = document.getElementById('tipoEventoSelect');
+                    if (tipoSelect) {
+                        tipoSelect.addEventListener('change', () => {
+                            setTimeout(applyCustomTallerCatalog, 0);
+                        });
+                    }
+                }, 250);
+            });
+        })();
+
         // ============================================================
         // CARGA DE CLIENTE Y ACTUALIZACIÓN DE CONTACTO COMPACTO
         // ============================================================
@@ -679,7 +883,8 @@
 
             // Inicializar la app de edición
             initializeApp({
-                mode: 'edit'
+                mode: 'edit',
+                categoriaFiltro: 'TALLERES_ACTIVIDADES'
             });
 
             setTimeout(() => {

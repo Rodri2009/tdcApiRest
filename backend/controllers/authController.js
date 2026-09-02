@@ -57,7 +57,7 @@ const obtenerRolYPermisos = (rol) => {
  */
 const generarToken = (usuario) => {
     logVerbose('[GENERAR_TOKEN] Generando JWT para usuario id_usuario:', usuario.id_usuario, 'id_cliente:', usuario.id_cliente);
-    
+
     const { roles, permisos, nivel } = obtenerRolYPermisos(usuario.rol);
 
     const payload = {
@@ -70,7 +70,7 @@ const generarToken = (usuario) => {
         permisos: permisos,
         nivel: nivel
     };
-    
+
     logVerbose('[GENERAR_TOKEN] Payload JWT:', JSON.stringify(payload));
 
     return {
@@ -213,8 +213,8 @@ const verifyEmail = async (req, res) => {
 
         // 2. Validar que el token no esté expirado
         if (new Date() > new Date(usuario.verification_token_expires_at)) {
-            return res.status(401).json({ 
-                message: 'Token de verificación expirado. Por favor, solicita uno nuevo.' 
+            return res.status(401).json({
+                message: 'Token de verificación expirado. Por favor, solicita uno nuevo.'
             });
         }
 
@@ -241,12 +241,17 @@ const verifyEmail = async (req, res) => {
         // 6. Generar JWT
         const { token: jwtToken, user: userResponse } = generarToken(usuarioActualizado);
 
-        // Setear cookie
-        res.cookie('token', jwtToken, {
+        // Setear cookie con flags de seguridad
+        const cookieOptions = {
             httpOnly: true,
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
             secure: process.env.NODE_ENV === 'production',
+            path: '/',
             maxAge: 8 * 60 * 60 * 1000 // 8 horas
-        });
+        };
+
+        res.cookie('accessToken', jwtToken, cookieOptions);
+        res.cookie('token', jwtToken, { ...cookieOptions, maxAge: 8 * 60 * 60 * 1000 });
 
         res.status(200).json({
             message: '✅ Email verificado exitosamente. ¡Bienvenido!',
@@ -287,8 +292,8 @@ const login = async (req, res) => {
 
         // Verificar si el email está verificado
         if (user.email_verified === 0) {
-            return res.status(401).json({ 
-                message: 'Por favor verifica tu email antes de continuar. Revisa tu bandeja de entrada.' 
+            return res.status(401).json({
+                message: 'Por favor verifica tu email antes de continuar. Revisa tu bandeja de entrada.'
             });
         }
 
@@ -306,12 +311,16 @@ const login = async (req, res) => {
         // Generar token
         const { token, user: userResponse } = generarToken(user);
 
-        // Setear cookie
-        res.cookie('token', token, {
+        const cookieOptions = {
             httpOnly: true,
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
             secure: process.env.NODE_ENV === 'production',
+            path: '/',
             maxAge: 8 * 60 * 60 * 1000 // 8 horas
-        });
+        };
+
+        res.cookie('accessToken', token, cookieOptions);
+        res.cookie('token', token, { ...cookieOptions, maxAge: 8 * 60 * 60 * 1000 });
 
         res.status(200).json({
             message: 'Login exitoso.',
@@ -373,12 +382,16 @@ const oauthCallback = async (req, res) => {
             // Generar token para usuario existente
             const { token, user: userResponse } = generarToken(existingOAuthUser);
 
-            // Setear cookie
-            res.cookie('token', token, {
+            const cookieOptions = {
                 httpOnly: true,
+                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
                 secure: process.env.NODE_ENV === 'production',
+                path: '/',
                 maxAge: 8 * 60 * 60 * 1000 // 8 horas
-            });
+            };
+
+            res.cookie('accessToken', token, cookieOptions);
+            res.cookie('token', token, { ...cookieOptions, maxAge: 8 * 60 * 60 * 1000 });
 
             console.log('[OAUTH-CALLBACK] ✓ Login exitoso (OAuth conocido)');
             return res.status(200).json({
@@ -414,12 +427,16 @@ const oauthCallback = async (req, res) => {
             // Generar token para usuario existente
             const { token, user: userResponse } = generarToken(existingEmailUser);
 
-            // Setear cookie
-            res.cookie('token', token, {
+            const cookieOptions = {
                 httpOnly: true,
+                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
                 secure: process.env.NODE_ENV === 'production',
+                path: '/',
                 maxAge: 8 * 60 * 60 * 1000 // 8 horas
-            });
+            };
+
+            res.cookie('accessToken', token, cookieOptions);
+            res.cookie('token', token, { ...cookieOptions, maxAge: 8 * 60 * 60 * 1000 });
 
             console.log('[OAUTH-CALLBACK] ✓ Login exitoso (OAuth linkeado a cuenta)');
             return res.status(200).json({
@@ -466,12 +483,16 @@ const oauthCallback = async (req, res) => {
             // Generar token
             const { token, user: userResponse } = generarToken(nuevoUsuario);
 
-            // Setear cookie
-            res.cookie('token', token, {
+            const cookieOptions = {
                 httpOnly: true,
+                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
                 secure: process.env.NODE_ENV === 'production',
+                path: '/',
                 maxAge: 8 * 60 * 60 * 1000 // 8 horas
-            });
+            };
+
+            res.cookie('accessToken', token, cookieOptions);
+            res.cookie('token', token, { ...cookieOptions, maxAge: 8 * 60 * 60 * 1000 });
 
             console.log('[OAUTH-CALLBACK] ✓ Registro OAuth exitoso');
             res.status(201).json({

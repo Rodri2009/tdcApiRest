@@ -20,11 +20,7 @@ ALTER TABLE solicitudes_talleres
   ADD INDEX IF NOT EXISTS idx_solicitudes_talleres_tipo (id_tipo_evento),
   ADD INDEX IF NOT EXISTS idx_solicitudes_talleres_precio (id_precio_taller);
 
-ALTER TABLE solicitudes_talleres
-  ADD CONSTRAINT fk_solicitudes_talleres_tipo_evento
-    FOREIGN KEY (id_tipo_evento) REFERENCES opciones_tipos(id_tipo_evento) ON DELETE RESTRICT;
-
--- Si la FK ya existe, esta sentencia puede fallar según el entorno; la siguiente condición evita caos en ejecuciones repetidas.
+-- Si la FK ya existe, la siguiente condición evita caos en ejecuciones repetidas.
 -- MariaDB/MySQL no tiene una cláusula IF NOT EXISTS para ADD CONSTRAINT, por eso se hace un chequeo previo.
 SET @fk_exists := (
   SELECT COUNT(*)

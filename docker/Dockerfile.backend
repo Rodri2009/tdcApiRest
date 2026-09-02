@@ -1,7 +1,7 @@
 # Dockerfile.backend - Versión con soporte para Puppeteer (Chromium, WA, MP)
-# Base: node:18-slim (Debian) - necesario para ejecutar Chromium con todas sus dependencias
+# Base: node:20-slim (Debian) - requerido por la librería mariadb y compatible con Chromium
 
-FROM node:18-slim
+FROM node:20-slim
 
 # ============================================================================
 # INSTALAR DEPENDENCIAS DEL SISTEMA PARA CHROMIUM + VNC

@@ -64,7 +64,7 @@
         <section class="py-20 md:py-32 bg-stone-950 text-center">
             <div class="max-w-4xl mx-auto px-4">
                 <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-6">
-                    <span class="block text-neon"><i class="fas fa-glass-cheers mr-3"></i>Alquiler del Salón</span>
+                    <span class="block text-neon"><i class="fas fa-glass-cheers mr-3"></i>Espacio Cultural</span>
                 </h1>
                 <!--                 <p class="mt-4 text-2xl text-stone-300 font-medium">
                     El espacio perfecto para tus celebraciones y eventos
@@ -104,11 +104,9 @@
                         <p class="text-stone-400 text-sm">¿Tenés algo diferente en mente? ¡Consultanos!</p>
                     </a>
                 </div>
-                <div class="mt-8">
-                    <a href="solicitud_alquiler.html"
-                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
-                        <i class="fas fa-calculator mr-2"></i> Armar Presupuesto
-                    </a>
+                <div class="mt-8 text-center text-stone-400 text-sm">
+                    <p>Si te pasaron un enlace directo, podés continuar desde ahí. La reserva no se muestra en la
+                        navegación pública.</p>
                 </div>
             </div>
         </section>
@@ -232,6 +230,11 @@
     </footer>
 
     <script>
+        const accessParam = new URLSearchParams(window.location.search).get('acceso');
+        if (accessParam !== 'cliente') {
+            window.location.href = '/index.html';
+        }
+
         document.getElementById('year').textContent = new Date().getFullYear();
 
         // Menú móvil
@@ -281,7 +284,7 @@
 
         function logout() {
             localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
+            localStorage.removeItem('token');
             window.location.href = '/index.html';
         }
         updateAuthMenu();

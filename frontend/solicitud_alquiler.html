@@ -1552,7 +1552,12 @@
 
         function logout() {
             localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
+            localStorage.removeItem('token');
+            window.location.href = '/index.html';
+        }
+
+        const accessParam = new URLSearchParams(window.location.search).get('acceso');
+        if (accessParam !== 'cliente') {
             window.location.href = '/index.html';
         }
 

@@ -15,6 +15,8 @@ const {
     // Talleres
     getTalleres,
     getTallerById,
+    getTalleresPublicos,
+    getTallerPublicoById,
     createTaller,
     updateTaller,
     deleteTaller,
@@ -32,6 +34,7 @@ const {
     getInscripciones,
     getInscripcionById,
     createInscripcion,
+    createInscripcionPublica,
     updateInscripcion,
     deleteInscripcion
 } = require('../controllers/talleresController');
@@ -44,8 +47,12 @@ const {
 router.get('/tipos', getTiposTaller);
 
 // Talleres activos (público)
+router.get('/publicos', getTalleresPublicos);
+router.get('/publicos/:id', getTallerPublicoById);
 router.get('/', getTalleres);
 router.get('/:id', getTallerById);
+
+router.post('/inscripciones/publica', createInscripcionPublica);
 
 // Talleristas activos (público - para mostrar info)
 router.get('/talleristas/lista', getTalleristas);

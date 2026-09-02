@@ -121,9 +121,12 @@ function extractToken(req) {
         return authHeader.substring(7);
     }
 
-    // Token en cookie
+    // Token en cookie: soporta el nombre actual y el nombre legado
     if (req.cookies?.accessToken) {
         return req.cookies.accessToken;
+    }
+    if (req.cookies?.token) {
+        return req.cookies.token;
     }
 
     return null;

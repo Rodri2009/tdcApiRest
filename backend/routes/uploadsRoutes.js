@@ -4,47 +4,65 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const uploadsController = require('../controllers/uploadsController');
-const { logVerbose } = require('../lib/debugFlags');
+const { logVerbose, logWarning } = require('../lib/debugFlags');
+const { sanitizeFileName, validateUploadFile, ensureDirectory, MAX_UPLOAD_SIZE } = require('../utils/uploadValidation');
 
-// Storage específico para flyers: backend/uploads/flyers
-// NOMBRE CONSISTENTE: solicitud_{id}.{ext} para permitir auto-recuperación de URL si se pierde la referencia en BD
+const UPLOAD_BASE_DIR = path.join(__dirname, '..', 'uploads', 'flyers');
+ensureDirectory(UPLOAD_BASE_DIR);
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const dir = path.join(__dirname, '..', 'uploads', 'flyers');
-        try { fs.mkdirSync(dir, { recursive: true }); } catch (e) { /* noop */ }
-        cb(null, dir);
+        try {
+            ensureDirectory(UPLOAD_BASE_DIR);
+            cb(null, UPLOAD_BASE_DIR);
+        } catch (err) {
+            cb(err);
+        }
     },
     filename: (req, file, cb) => {
-        // Obtener solicitudId del query param: /api/uploads/flyers?solicitudId=11
-        const solicitudId = req.query.solicitudId;
+        try {
+            const solicitudId = req.query.solicitudId;
+            const validated = validateUploadFile(null, file.originalname, file.mimetype);
+            if (!validated.ok) {
+                return cb(new Error(validated.reason));
+            }
 
-        // Determinar extensión del archivo
-        const ext = (file.originalname && file.originalname.indexOf('.') !== -1)
-            ? file.originalname.substring(file.originalname.lastIndexOf('.')).toLowerCase()
-            : (file.mimetype === 'image/png' ? '.png' : '.jpg');
+            const safeName = sanitizeFileName(file.originalname);
+            const ext = path.extname(safeName).toLowerCase();
+            const finalName = solicitudId
+                ? `solicitud_${solicitudId}${ext}`
+                : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
 
-        if (solicitudId) {
-            // ✅ NAMING CONSISTENTE: solicitud_{id}.{ext}
-            const consistentName = `solicitud_${solicitudId}${ext}`;
-            logVerbose(`[UPLOADS] Flyer para solicitud ${solicitudId}: guardando como ${consistentName}`);
-            cb(null, consistentName);
-        } else {
-            // Fallback a naming aleatorio si no se proporciona solicitudId
-            const tmpName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-            logVerbose(`[UPLOADS] Flyer sin solicitudId: usando naming aleatorio: ${tmpName}`);
-            cb(null, tmpName);
+            logVerbose(`[UPLOADS] Flyer guardado: ${finalName}`);
+            cb(null, finalName);
+        } catch (err) {
+            logWarning('[UPLOADS] Error al preparar nombre de archivo', err.message);
+            cb(err);
         }
     }
 });
 
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'image/png' || file.mimetype === 'image/jpeg') cb(null, true);
-    else cb(new Error('Tipo de archivo no permitido. Solo JPEG/PNG.'), false);
+    try {
+        const validation = validateUploadFile(Buffer.alloc(0), file.originalname, file.mimetype);
+        if (!validation.ok) {
+            return cb(new Error(validation.reason), false);
+        }
+        cb(null, true);
+    } catch (err) {
+        cb(new Error('Archivo inválido'), false);
+    }
 };
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: 3 * 1024 * 1024 } }); // 3 MB
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: MAX_UPLOAD_SIZE.jpg,
+        files: 1
+    }
+});
 
-// Público: subir flyer (campo multipart/form-data: 'flyer')
 router.post('/flyers', upload.single('flyer'), uploadsController.uploadFlyerPublic);
 
 module.exports = router;

@@ -5,6 +5,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SQL_DIR="$PROJECT_DIR/database"
 
+# Cargar el entorno del proyecto para usar DB_USER/DB_PASSWORD/MARIADB_ROOT_PASSWORD desde .env
+for env_file in "$PROJECT_DIR/.env" "$PROJECT_DIR/docker/.env"; do
+  if [ -f "$env_file" ]; then
+    set -a
+    . "$env_file"
+    set +a
+  fi
+done
+
 DB_NAME="${DB_NAME:-tdc_db}"
 DB_USER="${DB_USER:-root}"
 DB_PASSWORD="${DB_PASSWORD:-${MARIADB_ROOT_PASSWORD:-}}"
@@ -76,6 +85,30 @@ list_available_sql() {
     base="$(basename "$file")"
     printf '  - %s\n' "$base"
   done
+}
+
+wait_for_mysql_ready() {
+  local container="$1"
+  local max_attempts="${2:-30}"
+  local attempt=0
+
+  while [ "$attempt" -lt "$max_attempts" ]; do
+    if docker exec "$container" mysqladmin ping -h 127.0.0.1 -u"$DB_USER" -p"$DB_PASSWORD" --silent >/dev/null 2>&1; then
+      return 0
+    fi
+
+    if [ -n "${MARIADB_ROOT_PASSWORD:-}" ] && docker exec "$container" mysqladmin ping -h 127.0.0.1 -uroot -p"$MARIADB_ROOT_PASSWORD" --silent >/dev/null 2>&1; then
+      return 0
+    fi
+
+    attempt=$((attempt + 1))
+    echo -n "."
+    sleep 2
+  done
+
+  echo ""
+  echo "Error: MariaDB no respondió dentro del tiempo esperado en el contenedor $container."
+  return 1
 }
 
 parse_args() {
@@ -182,18 +215,50 @@ main() {
     exit 0
   fi
 
+  echo "Esperando a MariaDB..."
+  wait_for_mysql_ready "$container" 30 || exit 1
+  echo "MariaDB listo."
+
   for file in "${files[@]}"; do
     local base
     base="$(basename "$file")"
     echo ""
     echo "Ejecutando $base ..."
 
-    if [ -n "$DB_PASSWORD" ]; then
-      docker exec -i "$container" mysql -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < "$file"
-    else
-      docker exec -i "$container" mysql -u "$DB_USER" "$DB_NAME" < "$file"
+    local attempt=0
+    local max_attempts=5
+    local cmd_status=1
+
+    while [ "$attempt" -lt "$max_attempts" ] && [ "$cmd_status" -ne 0 ]; do
+      attempt=$((attempt + 1))
+      if [ -n "$DB_PASSWORD" ]; then
+        if docker exec -i "$container" mysql -h 127.0.0.1 -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < "$file" 2>/tmp/tdc_sql_error.$$; then
+          cmd_status=0
+        else
+          cmd_status=$?
+        fi
+      else
+        if docker exec -i "$container" mysql -h 127.0.0.1 -u "$DB_USER" "$DB_NAME" < "$file" 2>/tmp/tdc_sql_error.$$; then
+          cmd_status=0
+        else
+          cmd_status=$?
+        fi
+      fi
+
+      if [ "$cmd_status" -ne 0 ] && [ "$attempt" -lt "$max_attempts" ]; then
+        echo "Reintentando en 2s ($attempt/$max_attempts)..."
+        sleep 2
+      fi
+    done
+
+    if [ "$cmd_status" -ne 0 ]; then
+      echo "ERROR: no se pudo ejecutar $base"
+      cat /tmp/tdc_sql_error.$$ 2>/dev/null || true
+      rm -f /tmp/tdc_sql_error.$$
+      exit 1
     fi
 
+    rm -f /tmp/tdc_sql_error.$$
     echo "OK: $base"
   done
 

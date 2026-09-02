@@ -45,9 +45,9 @@ services:
       ENABLE_VNC: ${ENABLE_VNC:-false}
       ENABLE_PUPPETEER_MP: ${ENABLE_PUPPETEER_MP:-false}
       ENABLE_PUPPETEER_WA: ${ENABLE_PUPPETEER_WA:-false}
-    ports:
-      - "3001:3000"
-      - "5901:5901"
+    expose:
+      - "3000"
+      - "5901"
     networks:
       - tdc_network
     volumes:
@@ -71,8 +71,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-    ports:
-      - "3307:3306"
+    expose:
+      - "3306"
     networks:
       - tdc_network
     environment:

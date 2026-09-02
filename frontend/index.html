@@ -34,126 +34,27 @@
             color: transparent;
             font-family: 'Cinzel Decorative', Georgia, serif;
             background-image: linear-gradient(120deg, #ffffff 0%, #f8d7ff 15%, #d67bff 33%, #9148ff 50%, #c026d3 68%, #f472b6 84%, #ffffff 100%);
-            background-size: 320% 320%;
+            background-size: 100% 100%;
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            /* letter-spacing controla la separación entre letras */
-            letter-spacing: 0.1em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
             font-weight: 900;
-            /* font-size usa clamp(min, responsive, max): móvil mínimo, responsive con viewport, escritorio máximo */
-            font-size: clamp(3.6rem, 7vw, 6.2rem);
-            /* line-height controla el alto de línea / espacio vertical del encabezado */
+            font-size: clamp(3.2rem, 7vw, 6.2rem);
             line-height: 1;
             padding: 0 0.1em;
-            text-shadow:
-                0 0 16px rgba(236, 72, 153, 0.32),
-                0 0 30px rgba(168, 85, 247, 0.4),
-                0 0 60px rgba(168, 85, 247, 0.28),
-                0 0 110px rgba(217, 70, 239, 0.2);
-            filter: drop-shadow(0 0 2rem rgba(168, 85, 247, 0.24));
-            animation: colorShift 8s ease-in-out infinite, titleGlow 4.2s ease-in-out infinite, titleFloat 5.5s ease-in-out infinite;
-            transition: transform 0.25s ease, filter 0.25s ease;
+            text-shadow: 0 0 18px rgba(240, 171, 252, 0.18);
+            transition: transform 0.2s ease;
         }
 
         .hero-title-alt:hover {
-            transform: translateY(-6px) scale(1.02);
-            filter: drop-shadow(0 0 1.8rem rgba(168, 85, 247, 0.32));
+            transform: translateY(-2px);
         }
 
-        @keyframes colorShift {
-            0%,
-            100% {
-                background-position: 0% center;
-            }
-
-            50% {
-                background-position: 100% center;
-            }
-        }
-
-        @keyframes titleGlow {
-            0%,
-            100% {
-                text-shadow:
-                    0 0 10px rgba(240, 171, 252, 0.45),
-                    0 0 22px rgba(217, 70, 239, 0.35),
-                    0 0 42px rgba(192, 132, 252, 0.25),
-                    0 0 76px rgba(168, 85, 247, 0.18);
-            }
-
-            50% {
-                text-shadow:
-                    0 0 14px rgba(240, 171, 252, 0.65),
-                    0 0 32px rgba(217, 70, 239, 0.48),
-                    0 0 58px rgba(192, 132, 252, 0.36),
-                    0 0 100px rgba(168, 85, 247, 0.26);
-            }
-        }
-
-        @keyframes titleFloat {
-            0%,
-            100% {
-                transform: translateY(0px);
-            }
-
-            50% {
-                transform: translateY(-6px);
-            }
-        }
-
-        .hero-title-alt::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.45), transparent 35%);
-            transform: skewY(-8deg) scale(1.05);
-            opacity: 0.55;
-            border-radius: 1rem;
-            z-index: -1;
-            pointer-events: none;
-            filter: blur(6px);
-            animation: reflectionPulse 4.2s ease-in-out infinite;
-        }
-
-        @keyframes reflectionPulse {
-            0%,
-            100% {
-                opacity: 0.25;
-            }
-
-            50% {
-                opacity: 0.75;
-            }
-        }
-
+        .hero-title-alt::before,
         .hero-title-alt::after {
-            content: '';
-            position: absolute;
-            left: 50%;
-            bottom: -1.2rem;
-            transform: translateX(-50%);
-            width: 78%;
-            height: 0.4rem;
-            background: radial-gradient(circle, rgba(236, 72, 153, 0.55), transparent 65%);
-            filter: blur(14px);
-            border-radius: 999px;
-            z-index: -1;
-            animation: haloPulse 4.2s ease-in-out infinite;
-        }
-
-        @keyframes haloPulse {
-            0%,
-            100% {
-                background: radial-gradient(circle, rgba(240, 171, 252, 0.22), transparent 70%);
-                filter: blur(8px);
-            }
-
-            50% {
-                background: radial-gradient(circle, rgba(240, 171, 252, 0.52), transparent 58%);
-                filter: blur(16px);
-            }
+            content: none;
         }
 
         .hero-title-outline {
@@ -176,23 +77,15 @@
 
         .cta-button {
             position: relative;
-            background-image: linear-gradient(90deg, rgba(240, 171, 252, 0.6), rgba(217, 70, 239, 0.1), rgba(240, 171, 252, 0.6));
-            background-size: 200% 100%;
-            background-position: 0% center;
-            animation: colorShift 5s ease-in-out infinite;
-            padding: 2px;
+            background: rgba(88, 28, 135, 0.75);
+            border: 1px solid rgba(240, 171, 252, 0.4);
             border-radius: 0.5rem;
-            padding: 0.5rem 0.5rem;
+            padding: 0.75rem 1rem;
+            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
         }
 
         .cta-button::before {
-            content: '';
-            position: absolute;
-            inset: 2px;
-            background-color: rgba(28, 25, 23, 0.20);
-            border-radius: calc(0.5rem - 2px);
-            z-index: 1;
-            transition: background-color 0.3s ease-in-out;
+            content: none;
         }
 
         .cta-button span {
@@ -202,11 +95,9 @@
         }
 
         .cta-button:hover {
-            background-image: linear-gradient(90deg, rgba(240, 171, 252, 0.6), rgba(217, 70, 239, 0.1), rgba(240, 171, 252, 0.6));
-        }
-
-        .cta-button:hover::before {
-            background-color: rgba(217, 70, 239, 0.05);
+            background: rgba(124, 58, 237, 0.85);
+            border-color: rgba(240, 171, 252, 0.7);
+            transform: translateY(-1px);
         }
 
         .border-neon {
@@ -215,20 +106,14 @@
 
         /* Estilo para simular el brillo de los murales */
         .neon-glow-card {
-            background-color: rgba(28, 25, 23, 0.6);
-            /* stone-900 con transparencia */
-            backdrop-filter: blur(8px);
-            /* efecto vidrio (opcional, queda muy bien) */
-            -webkit-backdrop-filter: blur(8px);
-            /* soporte Safari */
-
-            box-shadow: 0 0 15px rgba(240, 171, 252, 0.5);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-color: rgba(28, 25, 23, 0.72);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .neon-glow-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0 25px rgba(240, 171, 252, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(168, 85, 247, 0.18);
         }
 
         /* Fondo con textura sutil de madera/rustico */
@@ -247,6 +132,26 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            background-attachment: scroll;
+        }
+
+        main,
+        section,
+        footer {
+            content-visibility: auto;
+            contain-intrinsic-size: 1200px 800px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
         }
 
         /* Asegurar que los botones en el Hero estén centrados vertical y horizontalmente en escritorio */
@@ -280,6 +185,38 @@
             nav.flex {
                 display: none !important;
             }
+
+            .hero-title-alt,
+            .cta-button,
+            .neon-glow-card,
+            .agenda-card-passline {
+                animation: none !important;
+                transform: none !important;
+                filter: none !important;
+                box-shadow: none !important;
+            }
+
+            .hero-title-alt::before,
+            .hero-title-alt::after {
+                display: none !important;
+            }
+
+            #inicio .mt-10 {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 0.75rem !important;
+            }
+
+            #inicio .mt-10 a {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-height: 48px !important;
+                padding: 0.75rem 1rem !important;
+            }
+
+            .agenda-grid {
+                grid-template-columns: 1fr !important;
+            }
         }
 
         /* GRID estilo PASSLINE */
@@ -292,21 +229,17 @@
         /* CARD */
         .agenda-card-passline {
             display: flex;
-            background: rgba(28, 25, 23, 0.45);
-            /* stone-900 con transparencia */
-            backdrop-filter: blur(8px);
-            /* opcional pero recomendado */
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(240, 171, 252, 0.2);
+            background: rgba(28, 25, 23, 0.72);
+            border: 1px solid rgba(240, 171, 252, 0.18);
             border-radius: 12px;
             overflow: hidden;
-            transition: .25s;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: pointer;
         }
 
         .agenda-card-passline:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 0 20px rgba(240, 171, 252, 0.45);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 22px rgba(168, 85, 247, 0.12);
         }
 
         /* FLYER GRANDE */
@@ -448,7 +381,7 @@
                 <!-- sm:mb-8 controla el espacio debajo del título en pantallas sm y superiores -->
                 <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight hero-title-alt mb-4 sm:mb-6 mx-auto  mt-6 sm:mt-10"
                     style="margin-bottom: 1.5rem;">
-                    <span class="block" style="white-space: pre-wrap;">El  Templo  de  Claypole</span>
+                    <span class="block" style="white-space: pre-wrap;">El Templo de Claypole</span>
                 </h1>
                 <div>
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -458,7 +391,7 @@
                         <!-- mb-3 controla el espacio inferior en mobile -->
                         <!-- sm:mb-4 controla el espacio inferior en sm+ -->
                         <div class="text-center mt-2 sm:mt-4 mb-3 sm:mb-4"
-                             style="margin-top: 1rem; margin-bottom: 1rem;">
+                            style="margin-top: 1rem; margin-bottom: 1rem;">
                             <h2 class="text-lg sm:text-2xl font-semibold text-white/70 tracking-wide uppercase">
                                 Próximos eventos
                             </h2>
@@ -472,22 +405,6 @@
                     </div>
                 </div>
                 <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-                    <a href="solicitud_alquiler.html"
-                        class="cta-button font-bold px-8 text-neon hover:scale-105 transition duration-300">
-                        <span>Alquilar el Salón</span>
-                    </a>
-                    <a href="seccion_bandas.html"
-                        class="cta-button font-bold px-8 text-neon hover:scale-105 transition duration-300">
-                        <span>Ver Bandas en Vivo</span>
-                    </a>
-                    <a href="solicitud_fecha_bandas.html"
-                        class="cta-button font-bold  px-8 text-neon hover:scale-105 transition duration-300">
-                        <span>Producir una fecha</span>
-                    </a>
-                    <a href="solicitud_banda.html"
-                        class="cta-button font-bold  px-8 text-neon hover:scale-105 transition duration-300">
-                        <span>Registrar banda o artista</span>
-                    </a>
                     <a href="solicitud_taller_actividad.html"
                         class="cta-button font-bold  px-8 text-neon hover:scale-105 transition duration-300">
                         <span>Dar un taller o clase</span>
@@ -519,19 +436,23 @@
     </main>
 
     <!-- Lightbox modal para galería de eventos anteriores -->
-    <div id="previous-events-lightbox" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div id="previous-events-lightbox"
+        class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
         <div class="relative max-w-4xl w-full px-4">
             <button id="previous-events-lightbox-close"
                 class="absolute top-3 right-3 w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-600 via-purple-700 to-violet-500 text-white shadow-2xl shadow-fuchsia-800/40 ring-1 ring-white/20 hover:scale-105 transition transform">
                 <i class="fas fa-times"></i>
             </button>
-            <img id="previous-events-lightbox-img" src="" alt="" class="mx-auto rounded-3xl shadow-2xl shadow-black/50 max-h-[80vh] w-auto" />
+            <img id="previous-events-lightbox-img" src="" alt=""
+                class="mx-auto rounded-3xl shadow-2xl shadow-black/50 max-h-[80vh] w-auto" />
             <div class="flex justify-between mt-4 gap-4">
-                <button id="previous-events-lightbox-prev" class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
+                <button id="previous-events-lightbox-prev"
+                    class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
                     <i class="fas fa-arrow-left"></i>
                     <span>Anterior</span>
                 </button>
-                <button id="previous-events-lightbox-next" class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
+                <button id="previous-events-lightbox-next"
+                    class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
                     <span>Siguiente</span>
                     <i class="fas fa-arrow-right"></i>
                 </button>
@@ -874,22 +795,23 @@
                 const categories = ['shows', 'workshops', 'events'];
                 let allImages = [];
 
-                // Cargar imágenes de cada categoría
+                // Cargar imágenes de cada categoría con un lote muy acotado para evitar un arranque pesado
                 for (const category of categories) {
                     const res = await fetch(`${API_BASE_URL}/api/gallery/${category}`);
                     if (!res.ok) continue;
-                    
+
                     const data = await res.json();
                     const images = data.images || [];
-                    
-                    // Tomar máximo 3 por categoría y agregar etiqueta de categoría
-                    const topImages = images.slice(0, 3).map(img => ({
+
+                    const topImages = images.slice(0, 2).map(img => ({
                         ...img,
                         category: category
                     }));
-                    
+
                     allImages = allImages.concat(topImages);
                 }
+
+                allImages = allImages.slice(0, 6);
 
                 if (allImages.length === 0) {
                     container.innerHTML = `
@@ -915,6 +837,8 @@
                         <div class="group p-4 bg-rustic rounded-xl neon-glow-img">
                             <img src="${image.url}"
                                  alt="${titleText}"
+                                 loading="lazy"
+                                 decoding="async"
                                  class="w-full h-56 object-cover rounded-lg mb-4 gallery-image cursor-pointer"
                                  onclick="openPreviousEventsLightbox(this)"
                                  onerror="this.onerror=null; this.src='https://placehold.co/400x300/581c87/f0abfc?text=${placeholderText}';">
@@ -1038,26 +962,28 @@
                     const data = await resEventos.json();
                     console.debug('[AGENDA-INDEX] /api/eventos/publicos raw ->', data);
                     if (isDev()) addDebugLog(`✅ Eventos cargados: ${data.length} encontrados`, 'success');
-                    eventos = data.map(item => {
-                        const fechaRaw = item.fecha_evento || item.fecha;
-                        const horaRaw = item.hora_inicio || item.hora || null;
-                        const fechaObj = parseDateString(fechaRaw, horaRaw);
-                        return {
-                            source: 'evento',
-                            id: item.id,
-                            id_solicitud: item.id_solicitud || null,
-                            fecha: fechaRaw,
-                            _fechaObj: fechaObj,
-                            hora: horaRaw,
-                            nombre: item.nombre_evento || item.nombre_banda || item.nombreCliente || item.nombreCompleto || item.descripcion || 'Evento',
-                            tipo: item.tipo_evento || 'BANDA',
-                            precio: item.precio_base || item.precio_anticipada || item.precio_final || item.precio || null,
-                            precio_anticipada: item.precio_anticipada || null,
-                            precio_puerta: item.precio_puerta || null,
-                            descripcion: item.descripcion || '',
-                            url_flyer: item.url_flyer || item.flyer_url || item.flyer || null
-                        };
-                    });
+                    eventos = data
+                        .filter(item => Number(item.es_publico ?? item.esPublico ?? item.public ?? 1) === 1)
+                        .map(item => {
+                            const fechaRaw = item.fecha_evento || item.fecha;
+                            const horaRaw = item.hora_inicio || item.hora || null;
+                            const fechaObj = parseDateString(fechaRaw, horaRaw);
+                            return {
+                                source: 'evento',
+                                id: item.id,
+                                id_solicitud: item.id_solicitud || null,
+                                fecha: fechaRaw,
+                                _fechaObj: fechaObj,
+                                hora: horaRaw,
+                                nombre: item.nombre_evento || item.nombre_banda || item.nombreCliente || item.nombreCompleto || item.descripcion || 'Evento',
+                                tipo: item.tipo_evento || 'BANDA',
+                                precio: item.precio_base || item.precio_anticipada || item.precio_final || item.precio || null,
+                                precio_anticipada: item.precio_anticipada || null,
+                                precio_puerta: item.precio_puerta || null,
+                                descripcion: item.descripcion || '',
+                                url_flyer: item.url_flyer || item.flyer_url || item.flyer || null
+                            };
+                        });
                 } else {
                     console.warn('[AGENDA-INDEX] /api/eventos/publicos response status', resEventos.status);
                     if (isDev()) addDebugLog(`⚠️ Error al cargar eventos (Status: ${resEventos.status})`, 'warning');
@@ -1073,26 +999,28 @@
                     const data = await resPublicas.json();
                     console.debug('[AGENDA-INDEX] /api/solicitudes/publicas raw ->', data);
                     if (isDev()) addDebugLog(`✅ Solicitudes cargadas: ${data.length} encontradas`, 'success');
-                    solicitudes = data.map(item => {
-                        const fechaRaw = item.fechaEvento;
-                        const horaRaw = item.horaEvento;
-                        const fechaObj = parseDateString(fechaRaw, horaRaw);
-                        return {
-                            source: 'solicitud',
-                            id: item.id,
-                            id_solicitud: item.id,
-                            fecha: fechaRaw,
-                            _fechaObj: fechaObj,
-                            hora: horaRaw,
-                            nombre: item.nombreEvento || item.nombreCompleto || item.nombre_cliente || item.descripcion || 'Evento',
-                            tipo: item.tipoEvento || 'ALQUILER',
-                            precio: item.precio || null,
-                            precio_anticipada: item.precio_anticipada || null,
-                            precio_puerta: item.precio_puerta || null,
-                            descripcion: item.descripcion || '',
-                            url_flyer: item.url_flyer || item.flyer_url || item.flyerUrl || item.flyer || item.imagen || item.adjunto_url || null
-                        };
-                    });
+                    solicitudes = data
+                        .filter(item => Number(item.es_publico ?? item.esPublico ?? item.public ?? 1) === 1)
+                        .map(item => {
+                            const fechaRaw = item.fechaEvento;
+                            const horaRaw = item.horaEvento;
+                            const fechaObj = parseDateString(fechaRaw, horaRaw);
+                            return {
+                                source: 'solicitud',
+                                id: item.id,
+                                id_solicitud: item.id,
+                                fecha: fechaRaw,
+                                _fechaObj: fechaObj,
+                                hora: horaRaw,
+                                nombre: item.nombreEvento || item.nombreCompleto || item.nombre_cliente || item.descripcion || 'Evento',
+                                tipo: item.tipoEvento || 'ALQUILER',
+                                precio: item.precio || null,
+                                precio_anticipada: item.precio_anticipada || null,
+                                precio_puerta: item.precio_puerta || null,
+                                descripcion: item.descripcion || '',
+                                url_flyer: item.url_flyer || item.flyer_url || item.flyerUrl || item.flyer || item.imagen || item.adjunto_url || null
+                            };
+                        });
                 } else {
                     console.warn('[AGENDA-INDEX] /api/solicitudes/publicas response status', resPublicas.status);
                     if (isDev()) addDebugLog(`⚠️ Error al cargar solicitudes (Status: ${resPublicas.status})`, 'warning');
@@ -1324,12 +1252,19 @@
             updateAuthMenu();
 
             if (isDev()) addDebugLog('Iniciando carga de agenda pública...', 'info');
-            // 2. Inicia la carga de la agenda pública
-            fetchAgenda();
-            
-            // 3. Cargar galería de eventos anteriores
-            loadPreviousEventsGallery();
-            
+
+            // Diferir la carga de contenido no crítico para que la pantalla se pinte antes.
+            const deferHeavyContent = () => {
+                fetchAgenda();
+                loadPreviousEventsGallery();
+            };
+
+            if ('requestIdleCallback' in window) {
+                window.requestIdleCallback(deferHeavyContent, { timeout: 300 });
+            } else {
+                setTimeout(deferHeavyContent, 120);
+            }
+
             if (isDev()) addDebugLog('🚀 Aplicación lista', 'success');
             // El resto de la lógica de desplazamiento y menú móvil ya está integrada.
         });

@@ -274,20 +274,22 @@
                 if (resEventos.ok) {
                     const data = await resEventos.json();
                     console.debug('[AGENDA] /api/eventos/publicos raw ->', data);
-                    eventos = data.map(e => ({
-                        source: 'evento',
-                        id: e.id,
-                        id_solicitud: e.id_solicitud || null,
-                        fecha_hora: e.fecha_evento || e.fecha_hora || e.fecha,
-                        fecha: e.fecha_evento || e.fecha,
-                        hora: e.hora_inicio || e.hora || null,
-                        nombre_banda: e.nombre_banda || e.nombre_evento,
-                        nombre_evento: e.nombre_evento,
-                        tipo: e.tipo_evento || e.genero_musical || 'Banda',
-                        precio_base: e.precio_anticipada || e.precio_base || e.precio_final || null,
-                        descripcion: e.descripcion,
-                        url_flyer: e.url_flyer || e.flyer_url || null
-                    }));
+                    eventos = data
+                        .filter(item => Number(item.es_publico ?? item.esPublico ?? item.public ?? 1) === 1)
+                        .map(e => ({
+                            source: 'evento',
+                            id: e.id,
+                            id_solicitud: e.id_solicitud || null,
+                            fecha_hora: e.fecha_evento || e.fecha_hora || e.fecha,
+                            fecha: e.fecha_evento || e.fecha,
+                            hora: e.hora_inicio || e.hora || null,
+                            nombre_banda: e.nombre_banda || e.nombre_evento,
+                            nombre_evento: e.nombre_evento,
+                            tipo: e.tipo_evento || e.genero_musical || 'Banda',
+                            precio_base: e.precio_anticipada || e.precio_base || e.precio_final || null,
+                            descripcion: e.descripcion,
+                            url_flyer: e.url_flyer || e.flyer_url || null
+                        }));
                 } else {
                     console.warn('[AGENDA] /api/eventos/publicos response status', resEventos.status);
                 }
@@ -299,19 +301,21 @@
                 if (resSolicitudes.ok) {
                     const data = await resSolicitudes.json();
                     console.debug('[AGENDA] /api/solicitudes/publicas raw ->', data);
-                    solicitudes = data.map(s => ({
-                        source: 'solicitud',
-                        id: s.id,
-                        fecha: s.fecha_evento || s.fechaEvento,
-                        hora_evento: s.hora_inicio || s.horaInicio || s.hora_evento || s.horaEvento,
-                        nombre_evento: s.nombreEvento || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda,
-                        nombreCliente: s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda,
-                        tipo: s.tipo_de_evento || s.tipoEvento || s.tipo || null,
-                        tipo_de_evento: s.tipo_de_evento || s.tipoEvento,
-                        precio_basico: s.precio_basico || s.precio,
-                        descripcion: s.descripcion,
-                        url_flyer: s.url_flyer || s.flyer_url || null
-                    }));
+                    solicitudes = data
+                        .filter(item => Number(item.es_publico ?? item.esPublico ?? item.public ?? 1) === 1)
+                        .map(s => ({
+                            source: 'solicitud',
+                            id: s.id,
+                            fecha: s.fecha_evento || s.fechaEvento,
+                            hora_evento: s.hora_inicio || s.horaInicio || s.hora_evento || s.horaEvento,
+                            nombre_evento: s.nombreEvento || s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda,
+                            nombreCliente: s.nombreCliente || s.nombreCompleto || s.nombre_completo || s.nombre_banda,
+                            tipo: s.tipo_de_evento || s.tipoEvento || s.tipo || null,
+                            tipo_de_evento: s.tipo_de_evento || s.tipoEvento,
+                            precio_basico: s.precio_basico || s.precio,
+                            descripcion: s.descripcion,
+                            url_flyer: s.url_flyer || s.flyer_url || null
+                        }));
                 } else {
                     console.warn('[AGENDA] /api/solicitudes/publicas response status', resSolicitudes.status);
                 }
@@ -443,7 +447,7 @@
 
         function logout() {
             localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
+            localStorage.removeItem('token');
             window.location.href = '/index.html';
         }
 

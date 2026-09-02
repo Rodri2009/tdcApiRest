@@ -895,6 +895,37 @@ const PROTECTED_ROUTES = [
     '/solicitud_fecha_bandas.html'
 ];
 
+const CLIENT_ONLY_PAGES = [
+    '/seccion_bandas.html',
+    '/solicitud_banda.html',
+    '/solicitud_fecha_bandas.html',
+    '/seccion_alquiler.html',
+    '/solicitud_alquiler.html'
+];
+
+const CLIENT_ACCESS_PARAM = 'acceso';
+const CLIENT_ACCESS_VALUE = 'cliente';
+
+function hasClientAccess() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(CLIENT_ACCESS_PARAM) === CLIENT_ACCESS_VALUE;
+}
+
+function isRestrictedClientPage() {
+    const currentPath = window.location.pathname;
+    return CLIENT_ONLY_PAGES.some(route => currentPath.includes(route));
+}
+
+function hideClientOnlyUiLinks() {
+    const restrictedLinks = document.querySelectorAll('a[href]');
+    restrictedLinks.forEach(link => {
+        const href = (link.getAttribute('href') || '').toLowerCase();
+        if ((href.includes('seccion_bandas.html') || href.includes('solicitud_fecha_bandas.html') || href.includes('solicitud_banda.html') || href.includes('seccion_alquiler.html') || href.includes('solicitud_alquiler.html')) && !hasClientAccess()) {
+            link.style.display = 'none';
+        }
+    });
+}
+
 // Rutas que requieren rol de staff (nivel >= 50)
 const STAFF_ROUTES = [
     '/admin_',
@@ -927,6 +958,15 @@ function isStaffRoute() {
  * Se ejecuta automáticamente durante la inicialización
  */
 function protectRoutesAutomatically() {
+    if (isRestrictedClientPage() && !hasClientAccess()) {
+        const tieneAccesoStaff = !!(navbarManager && navbarManager.tieneAccesoStaff && navbarManager.tieneAccesoStaff());
+        if (!tieneAccesoStaff) {
+            console.warn('Acceso bloqueado a página de cliente desde UI: redirigiendo a inicio.', window.location.pathname);
+            window.location.href = '/index.html';
+            return;
+        }
+    }
+
     // Proteger rutas de staff (admin_, editar_, config_)
     if (isStaffRoute()) {
         if (!navbarManager || !navbarManager.isAuthenticated) {
@@ -1006,6 +1046,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.log('[NAVBAR_DEBUG] Navbar ya existe en el DOM, no se inyecta');
     }
+
+    // Ocultar enlaces internos a páginas de clientes no autorizadas
+    console.log('[NAVBAR_DEBUG] Ocultando enlaces de cliente no autorizados...');
+    hideClientOnlyUiLinks();
 
     // Aplicar restricciones de permisos UI
     console.log('[NAVBAR_DEBUG] Aplicando permisos UI...');

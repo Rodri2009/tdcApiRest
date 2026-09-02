@@ -80,6 +80,7 @@ const App = {
         // Elementos comunes a ambas páginas
         this.elements = {
             tipoEventoContainer: document.getElementById('tipoEventoContainer'),
+            nombreTallerInput: document.getElementById('nombreTallerInput'),
             cantidadPersonasSelect: document.getElementById('cantidadPersonas'),
             duracionEventoSelect: document.getElementById('duracionEvento'),
             horaInicioSelect: document.getElementById('horaInicio'),
@@ -382,10 +383,13 @@ const App = {
 
     construirUI: function (fechaExcepcion = null) {
 
-        // Filtrar tipos según la categoría configurada (para page.html usar ALQUILER_SALON)
+        // Filtrar tipos según la categoría configurada.
+        // En la edición de solicitudes de taller/actividad sólo deben aparecer los tipos del catálogo TALLERES_ACTIVIDADES.
         let tiposParaMostrar = this.tiposDeEvento;
         if (this.config.categoriaFiltro) {
             tiposParaMostrar = this.tiposDeEvento.filter(t => t.categoria === this.config.categoriaFiltro);
+        } else if (this.config.mode === 'edit' && window.location.pathname.includes('editar_solicitud_talleres.html')) {
+            tiposParaMostrar = this.tiposDeEvento.filter(t => String(t.categoria || '').toUpperCase() === 'TALLERES_ACTIVIDADES');
         }
 
         this.llenarSelectDropdown(this.elements.tipoEventoContainer, 'tipoEvento', tiposParaMostrar);
@@ -626,8 +630,10 @@ const App = {
         console.log('📋 [FORM] Datos recibidos de la API:', JSON.stringify(solicitud, null, 2));
 
         // CORRECCIÓN: tipoServicio es el subtipo (INFANTILES), tipoEvento es la categoría (ALQUILER_SALON)
-        // Para el formulario necesitamos el subtipo (tipoServicio)
-        let tipo = solicitud.tipoServicio || solicitud.tipo_servicio || solicitud.tipoEvento || solicitud.tipo_de_evento;
+        // Para el formulario necesitamos el subtipo (tipoServicio), pero para talleres/actividades la API devuelve idTipoEvento
+        // y no el ID del select en `tipoServicio`, por eso tenemos que priorizar ese valor exacto.
+        const tipoIdDesdeSolicitud = solicitud.idTipoEvento || solicitud.id_tipo_evento || solicitud.tipoServicio || solicitud.tipo_servicio || solicitud.tipoEvento || solicitud.tipo_de_evento;
+        let tipo = tipoIdDesdeSolicitud;
         // Normalizar tipo a string si es number
         if (typeof tipo === 'number') tipo = String(tipo);
         if (tipo && typeof tipo === 'string') tipo = tipo.trim();
@@ -686,13 +692,30 @@ const App = {
         // Normalizar hora para el select
         const hora = normalizarHora(horaRaw);
 
+        console.group('[FORM][populate] 🔎 Resolución del tipo y horario');
+        console.log('input raw:', {
+            solicitudId,
+            tipoIdDesdeSolicitud,
+            tipo,
+            fecha,
+            horaRaw,
+            nombreTaller: solicitud.nombreTaller || solicitud.nombre_taller,
+            idTipoEvento: solicitud.idTipoEvento || solicitud.id_tipo_evento,
+            nombreParaMostrar: solicitud.nombreParaMostrar
+        });
+
         // 1. Establecer el tipo
         // Intentamos mapear el tipo recibido al id que usa la UI (this.tiposDeEvento)
         let uiTipoId = null;
         if (tipo) {
-            // Buscar coincidencia directa por id (exacta)
+            // Buscar coincidencia directa por id (exacta), dando prioridad al idTipoEvento real del taller
             const direct = this.tiposDeEvento.find(t => String(t.id) === String(tipo) || String(t.id).toLowerCase() === String(tipo).toLowerCase());
             if (direct) uiTipoId = String(direct.id);
+
+            if (!uiTipoId && tipoIdDesdeSolicitud && String(tipoIdDesdeSolicitud).includes('_')) {
+                const byExactId = this.tiposDeEvento.find(t => String(t.id).toLowerCase() === String(tipoIdDesdeSolicitud).toLowerCase());
+                if (byExactId) uiTipoId = String(byExactId.id);
+            }
 
             // Normalizaciones y variantes para intentar coincidir
             const tipoNorm = String(tipo).trim().toLowerCase();
@@ -775,6 +798,16 @@ const App = {
             if (matchingOpt) selectedValue = matchingOpt.value;
         }
 
+        console.log('[FORM][populate] Resultado de resolución:', {
+            tipoOriginal: tipo,
+            tipoIdDesdeSolicitud,
+            uiTipoId,
+            resolvedTipoForOptions,
+            selectedValue,
+            optionsCount: selectElement ? selectElement.options.length : 0,
+            tipoCatalogoActual: this.tiposDeEvento.find(t => String(t.id) === String(selectedValue || uiTipoId || tipo)) || null
+        });
+
         if (selectedValue && selectElement) {
             selectElement.value = selectedValue;
             // Disparar evento change para actualizar campos condicionales
@@ -783,6 +816,8 @@ const App = {
         } else {
             console.warn('populate: no se encontró opción coincidente para tipo:', tipo, 'uiTipoId:', uiTipoId);
         }
+
+        console.groupEnd();
 
         // 2. Sincronizar el calendario (solo visual)
         console.debug('[populate] fecha raw:', fecha, 'tipo:', typeof fecha);
@@ -912,6 +947,11 @@ const App = {
             overrideFechaStr: fecha,
             overrideHora: hora
         });
+
+        if (this.elements.nombreTallerInput) {
+            const nombreTaller = solicitud.nombreTaller || solicitud.nombre_taller || solicitud.nombre || solicitud.nombreActividad || '';
+            this.elements.nombreTallerInput.value = nombreTaller || '';
+        }
 
         // 4. Rellenar el campo de detalles
         if (this.elements.detallesAdicionalesTextarea) {
@@ -1412,8 +1452,10 @@ const App = {
         // Resolver la clave usable para opciones (duraciones/horas/cantidades)
         const resolvedTipoKey = this.resolveTipoKey(tipoId) || tipoId;
 
-        // 1. Actualizar Descripción
-        this.elements.tipoEventoDescripcionDiv.innerHTML = tipoId ? this.descripcionesTipos[tipoId] || 'Sin descripción.' : 'Seleccione un tipo de evento.';
+        // 1. Actualizar Descripción (si el bloque existe en la vista)
+        if (this.elements.tipoEventoDescripcionDiv) {
+            this.elements.tipoEventoDescripcionDiv.innerHTML = tipoId ? this.descripcionesTipos[tipoId] || 'Sin descripción.' : 'Seleccione un tipo de evento.';
+        }
 
         // 2. Poblar selects de Cantidad y Duración
         if (tipoId) {
@@ -1424,7 +1466,19 @@ const App = {
             this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
         }
         // Establecemos el valor (ya sea del override o del propio DOM)
-        this.elements.cantidadPersonasSelect.value = cantidad;
+        if (cantidad) {
+            const opts = Array.from(this.elements.cantidadPersonasSelect.options).map(o => o.value);
+            if (opts.includes(String(cantidad))) {
+                this.elements.cantidadPersonasSelect.value = String(cantidad);
+            } else if (cantidad && this.elements.cantidadPersonasSelect) {
+                const customOpt = new Option(String(cantidad), String(cantidad));
+                this.elements.cantidadPersonasSelect.add(customOpt);
+                this.elements.cantidadPersonasSelect.value = String(cantidad);
+                console.warn('[actualizarTodo] Cupo no estaba en catálogo; se dejó el valor real:', cantidad);
+            }
+        } else {
+            this.elements.cantidadPersonasSelect.value = '';
+        }
 
         // Para duración, intentar hacer match si es un string para encontrar la opción correcta
         if (duracion && typeof duracion === 'string') {
@@ -1448,10 +1502,23 @@ const App = {
                 console.log('[actualizarTodo] Duración asignada:', encontrada.value);
             } else {
                 console.warn('[actualizarTodo] No se encontró opción de duración para:', duracionTrimmed, 'opciones disponibles:', opciones.map(o => o.value));
-                this.elements.duracionEventoSelect.value = '';
+                const customValue = duracionTrimmed.replace(/\s*hs\.?$/i, '').trim();
+                const customLabel = customValue.includes(' ') ? customValue : `${customValue} horas`;
+                const customOption = new Option(customLabel, customLabel);
+                this.elements.duracionEventoSelect.add(customOption);
+                this.elements.duracionEventoSelect.value = customLabel;
+                console.warn('[actualizarTodo] Duración preservada como valor real del taller:', customLabel);
             }
+        } else if (duracion) {
+            const duracionStr = String(duracion).trim();
+            const customValue = duracionStr.includes(' ') ? duracionStr : `${duracionStr} horas`;
+            const opts = Array.from(this.elements.duracionEventoSelect.options).map(o => o.value);
+            if (!opts.includes(customValue)) {
+                this.elements.duracionEventoSelect.add(new Option(customValue, customValue));
+            }
+            this.elements.duracionEventoSelect.value = customValue;
         } else {
-            this.elements.duracionEventoSelect.value = duracion || '';
+            this.elements.duracionEventoSelect.value = '';
         }
 
         // 3. Poblar/Actualizar select de Hora
@@ -1466,9 +1533,12 @@ const App = {
             // usar resolvedTipoKey para buscar horarios (fallback si la clave no existe)
             const todosLosHorariosParaTipo = this.opcionesHoras[resolvedTipoKey] || this.opcionesHoras[tipoId] || [];
             const horariosFiltrados = todosLosHorariosParaTipo.filter(h => h.tipoDia === 'todos' || h.tipoDia === tipoDeDia).map(h => h.hora).sort();
-            console.log('[actualizarTodo] tipoDeDia:', tipoDeDia, 'horariosFiltrados (pre-normalización):', horariosFiltrados);
+            const esTaller = (this.tiposDeEvento || []).some(t => String(t.id) === String(tipoId) && (String(t.categoria || '').toUpperCase() === 'TALLERES_ACTIVIDADES' || String(t.categoria || '').toUpperCase() === 'TALLER'));
+            const horariosFallbackTaller = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+            const horariosDefinitivos = horariosFiltrados.length ? horariosFiltrados : (esTaller ? horariosFallbackTaller : []);
+            console.log('[actualizarTodo] tipoDeDia:', tipoDeDia, 'horariosFiltrados (pre-normalización):', horariosFiltrados, 'horariosDefinitivos:', horariosDefinitivos);
 
-            this.llenarSelect(this.elements.horaInicioSelect, horariosFiltrados, 'Seleccione hora...');
+            this.llenarSelect(this.elements.horaInicioSelect, horariosDefinitivos, 'Seleccione hora...');
             // Restauramos el valor de la hora, intentando variantes (con/sin 'hs', con/sin ':00' segundos) si no hay match exacto
             const setHoraIfPossible = (val) => {
                 if (!val) return false;
@@ -1503,10 +1573,18 @@ const App = {
             const horaSet = setHoraIfPossible(hora);
             if (!horaSet && hora) {
                 console.warn('actualizarTodo: no se pudo seleccionar la hora exacta:', hora, ' intentando normalizar...');
-                // intentar extraer hora numérica si viene con texto
                 const m = String(hora).match(/(\d{1,2}:\d{2})/);
                 if (m) {
                     const ok = setHoraIfPossible(m[1]);
+                }
+                if (!this.elements.horaInicioSelect.value && hora) {
+                    const valorReal = String(hora).trim();
+                    const opciones = Array.from(this.elements.horaInicioSelect.options).map(o => o.value);
+                    if (!opciones.includes(valorReal)) {
+                        this.elements.horaInicioSelect.add(new Option(valorReal, valorReal));
+                    }
+                    this.elements.horaInicioSelect.value = valorReal;
+                    console.warn('[actualizarTodo] Hora preservada como valor real del taller:', valorReal);
                 }
             }
         } else {
@@ -1674,6 +1752,12 @@ const App = {
                 if (k.toLowerCase().includes('band') || k.toLowerCase().includes('fecha')) return k;
             }
         }
+        if (prefNorm.includes('taller') || prefNorm.includes('actividad')) {
+            for (const k of keys) {
+                if (k.toLowerCase().includes('taller') || k.toLowerCase().includes('actividad')) return k;
+            }
+            return 'TALLERES_ACTIVIDADES';
+        }
         return null;
     },
 
@@ -1830,6 +1914,8 @@ const App = {
         const selectedSelect = document.querySelector('#tipoEventoSelect');
         const bodyData = {
             tipoEvento: selectedSelect ? selectedSelect.value : '',
+            nombreTaller: this.elements.nombreTallerInput ? this.elements.nombreTallerInput.value.trim() : '',
+            nombre_taller: this.elements.nombreTallerInput ? this.elements.nombreTallerInput.value.trim() : '',
             cantidadPersonas: this.elements.cantidadPersonasSelect.value,
             duracionEvento: this.elements.duracionEventoSelect.value,
             fechaEvento: this.elements.fechaEventoInput.value,

@@ -442,6 +442,22 @@ Este enfoque permite convertir el proyecto en un sistema más mantenible, testab
 
 ---
 
-## 13. Siguiente paso recomendado
+## 13. Resumen de seguridad operativa de la Fase 2
+
+La política recomendada para este proyecto es:
+
+- no publicar backend ni base de datos directamente en Internet
+- dejar un único punto de entrada web mediante proxy o balanceador
+- usar Nginx Proxy Manager como capa pública y dejar el stack interno aislado
+- cerrar puertos del host con firewall y permitir solo 80, 443 y administración por VPN o red local
+- restringir acceso por allowlist y red local cuando se requiera
+- usar geoblocking por IP como capa complementaria, pero no como única defensa
+- mantener la aplicación y el desarrollo activos sin mezclar la lógica de seguridad con la lógica de negocio
+
+En términos prácticos: la barrera real para Buenos Aires debe estar en la infraestructura, no solo en la app.
+
+---
+
+## 14. Siguiente paso recomendado
 
 Crear la documentación de módulos en `docs/modulos/` y mantener `PRO_PROMPT.md` como la guía central del proyecto.

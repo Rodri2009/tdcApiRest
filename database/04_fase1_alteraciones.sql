@@ -5,34 +5,32 @@
 -- Propósito: Agregar campos para fases posteriores sin romper existente
 -- ============================================================================
 
--- Notar: Se agregan campos con DEFAULT o NULL para compatibilidad
+-- Notar: Se agregan campos con DEFAULT o NULL para compatibilidad.
+-- La migración es idempotente: si ya existen columnas o índices, no falla.
 
-ALTER TABLE tickets ADD COLUMN (
-    -- Para MercadoPago y auditoría
-    mp_payment_id VARCHAR(255) DEFAULT NULL COMMENT 'ID de pago de MP (para reembolsos)',
-    
-    -- Para control en puerta (Fase 2)
-    escaneo_codigo VARCHAR(100) UNIQUE DEFAULT NULL COMMENT 'Código QR único para escanear en puerta',
-    cantidad_utilizada INT DEFAULT 0 COMMENT 'Cuántas entradas se usaron en puerta',
-    fecha_utilizacion TIMESTAMP NULL DEFAULT NULL COMMENT 'Cuándo se usó la entrada en puerta',
-    fecha_escaneo TIMESTAMP NULL DEFAULT NULL COMMENT 'Cuándo se escaneó (auditoría)',
-    
-    -- Para devoluciones (Fase 3)
-    razon_cancelacion VARCHAR(255) DEFAULT NULL COMMENT 'Motivo de la cancelación',
-    monto_reembolsado DECIMAL(10,2) DEFAULT 0 COMMENT 'Monto que se reembolsó',
-    fecha_cancelacion TIMESTAMP NULL DEFAULT NULL COMMENT 'Cuándo se canceló',
-    autorizado_por INT DEFAULT NULL COMMENT 'ID de usuario que autorizó (FK a usuarios.id_usuario)',
-    notas_puerta TEXT DEFAULT NULL COMMENT 'Observaciones en puerta',
-    
-    -- Foreign key para auditoría
-    FOREIGN KEY (autorizado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
-);
+ALTER TABLE tickets
+    ADD COLUMN IF NOT EXISTS mp_payment_id VARCHAR(255) DEFAULT NULL COMMENT 'ID de pago de MP (para reembolsos)',
+    ADD COLUMN IF NOT EXISTS escaneo_codigo VARCHAR(100) DEFAULT NULL COMMENT 'Código QR único para escanear en puerta',
+    ADD COLUMN IF NOT EXISTS cantidad_utilizada INT DEFAULT 0 COMMENT 'Cuántas entradas se usaron en puerta',
+    ADD COLUMN IF NOT EXISTS fecha_utilizacion TIMESTAMP NULL DEFAULT NULL COMMENT 'Cuándo se usó la entrada en puerta',
+    ADD COLUMN IF NOT EXISTS fecha_escaneo TIMESTAMP NULL DEFAULT NULL COMMENT 'Cuándo se escaneó (auditoría)',
+    ADD COLUMN IF NOT EXISTS razon_cancelacion VARCHAR(255) DEFAULT NULL COMMENT 'Motivo de la cancelación',
+    ADD COLUMN IF NOT EXISTS monto_reembolsado DECIMAL(10,2) DEFAULT 0 COMMENT 'Monto que se reembolsó',
+    ADD COLUMN IF NOT EXISTS fecha_cancelacion TIMESTAMP NULL DEFAULT NULL COMMENT 'Cuándo se canceló',
+    ADD COLUMN IF NOT EXISTS autorizado_por INT DEFAULT NULL COMMENT 'ID de usuario que autorizó (FK a usuarios.id_usuario)',
+    ADD COLUMN IF NOT EXISTS notas_puerta TEXT DEFAULT NULL COMMENT 'Observaciones en puerta';
 
--- Agregar índices para búsquedas rápidas
-ALTER TABLE tickets ADD INDEX idx_mp_payment_id (mp_payment_id);
-ALTER TABLE tickets ADD INDEX idx_escaneo_codigo (escaneo_codigo);
-ALTER TABLE tickets ADD INDEX idx_estado_ext (estado, fecha_utilizacion);
-ALTER TABLE tickets ADD INDEX idx_fecha_cancelacion (fecha_cancelacion);
+-- Foreign key para auditoría (solo si aún no existe)
+ALTER TABLE tickets
+    DROP FOREIGN KEY IF EXISTS fk_tickets_autorizado_por;
+ALTER TABLE tickets
+    ADD CONSTRAINT fk_tickets_autorizado_por FOREIGN KEY (autorizado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL;
+
+-- Agregar índices solo si no existen
+CREATE INDEX IF NOT EXISTS idx_mp_payment_id ON tickets (mp_payment_id);
+CREATE INDEX IF NOT EXISTS idx_escaneo_codigo ON tickets (escaneo_codigo);
+CREATE INDEX IF NOT EXISTS idx_estado_ext ON tickets (estado, fecha_utilizacion);
+CREATE INDEX IF NOT EXISTS idx_fecha_cancelacion ON tickets (fecha_cancelacion);
 
 -- ============================================================================
 -- CREAR TABLA: TICKETS_HISTORIAL (Auditoría completa)

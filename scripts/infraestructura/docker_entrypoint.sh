@@ -11,18 +11,19 @@ echo "[entrypoint] Comprobando node_modules y dependencias..."
 
 cd /app || exit 1
 
-# Si no existe node_modules o faltan paquetes importantes, instalamos dependencias
+# Validar instalación real del backend y no solo un par de paquetes antiguos.
+# Si el package.json cambió o el volumen persistente quedó desactualizado,
+# forzamos npm install para sincronizar node_modules con la versión actual.
 need_install=0
 if [ ! -d node_modules ]; then
   need_install=1
 else
-  # Intenta requerir un par de módulos críticos para validar instalación
-  node -e "require('uuid')" >/dev/null 2>&1 || need_install=1
-  node -e "require('puppeteer')" >/dev/null 2>&1 || need_install=1
+  # Verificar paquetes críticos para el backend actual.
+  node -e "require('express'); require('helmet'); require('express-rate-limit'); require('cookie-parser'); require('uuid'); require('jsonwebtoken');" >/dev/null 2>&1 || need_install=1
 fi
 
 if [ "$need_install" -eq 1 ]; then
-  echo "[entrypoint] node_modules parece faltar o faltan paquetes. Ejecutando 'npm install' en /app..."
+  echo "[entrypoint] node_modules faltante o desactualizado. Ejecutando 'npm install' en /app..."
   npm install
   echo "[entrypoint] npm install finalizado."
 else

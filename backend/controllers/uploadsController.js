@@ -1,13 +1,8 @@
 const path = require('path');
 const fs = require('fs');
-const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
+const { logVerbose, logError, logWarning } = require('../lib/debugFlags');
+const { validateUploadFile } = require('../utils/uploadValidation');
 
-/**
- * Auto-recuperar URL del flyer si existe en disco pero no en BD
- * Busca archivos con patrón: solicitud_${solicitudId}.png o solicitud_${solicitudId}.jpg
- * @param {number} solicitudId - ID de la solicitud
- * @returns {string|null} URL recuperada o null si no existe
- */
 const tryRecoverFlyerUrl = (solicitudId) => {
     if (!solicitudId) return null;
 
@@ -16,7 +11,6 @@ const tryRecoverFlyerUrl = (solicitudId) => {
         if (!fs.existsSync(uploadDir)) return null;
 
         const files = fs.readdirSync(uploadDir);
-        // Buscar archivos que coincidan con: solicitud_${id}.png o solicitud_${id}.jpg
         const pattern = `solicitud_${solicitudId}.`;
         const found = files.find(f => f.startsWith(pattern));
 
@@ -32,11 +26,27 @@ const tryRecoverFlyerUrl = (solicitudId) => {
     return null;
 };
 
-// Devuelve la URL pública del archivo subido
 const uploadFlyerPublic = async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ message: 'No se recibió archivo.' });
-        const finalFilename = req.file.filename;
+        if (!req.file) {
+            return res.status(400).json({ message: 'No se recibió archivo.' });
+        }
+
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const validation = validateUploadFile(fileBuffer, req.file.originalname, req.file.mimetype);
+
+        if (!validation.ok) {
+            fs.unlink(req.file.path, () => { });
+            return res.status(400).json({ message: validation.reason });
+        }
+
+        const finalFilename = validation.safeName;
+        const finalPath = path.join(path.dirname(req.file.path), finalFilename);
+
+        if (req.file.filename !== finalFilename) {
+            fs.renameSync(req.file.path, finalPath);
+        }
+
         const url = `/uploads/flyers/${finalFilename}`;
         logVerbose(`[UPLOADS] ✓ Flyer subido: ${url}`);
         return res.status(200).json({ url });

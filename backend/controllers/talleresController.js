@@ -347,6 +347,90 @@ const deleteTallerista = async (req, res) => {
 // TALLERES
 // =============================================================================
 
+const normalizeBigInt = (value) => {
+    if (typeof value === 'bigint') return Number(value);
+    if (Array.isArray(value)) return value.map(normalizeBigInt);
+    if (value && typeof value === 'object') {
+        return Object.fromEntries(
+            Object.entries(value).map(([key, item]) => [key, normalizeBigInt(item)])
+        );
+    }
+    return value;
+};
+
+const getTalleresPublicos = async (req, res) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const sql = `
+            SELECT 
+                t.id, t.tipo_taller_id as tipoTallerId, t.tallerista_id as talleristaId,
+                t.nombre, t.descripcion, t.dia_semana as diaSemana,
+                TIME_FORMAT(t.hora_inicio, '%H:%i') as horaInicio,
+                TIME_FORMAT(t.hora_fin, '%H:%i') as horaFin,
+                t.duracion_minutos as duracionMinutos, t.cupo_maximo as cupoMaximo,
+                t.cupo_minimo as cupoMinimo, t.ubicacion, t.activo, t.creado_en as creadoEn,
+                tal.nombre as talleristaNombre,
+                tal.id_cliente as tallerista_id_cliente,
+                c.nombre as tallerista_cliente_nombre,
+                ot.nombre_para_mostrar as tipoNombre,
+                CAST((t.cupo_maximo - COALESCE((SELECT COUNT(*) FROM inscripciones_talleres it WHERE it.taller_id = t.id AND it.estado = 'activa'), 0)) AS SIGNED) as cupos_disponibles
+            FROM talleres t
+            LEFT JOIN talleristas tal ON t.tallerista_id = tal.id
+            LEFT JOIN clientes c ON tal.id_cliente = c.id_cliente
+            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_tipo_evento
+            WHERE t.activo = 1
+            ORDER BY t.dia_semana, t.hora_inicio
+        `;
+
+        const rows = await conn.query(sql);
+        return res.status(200).json(normalizeBigInt(rows));
+    } catch (err) {
+        logError('Error en getTalleresPublicos:', err);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+const getTallerPublicoById = async (req, res) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const { id } = req.params;
+        const rows = await conn.query(`
+            SELECT 
+                t.id, t.tipo_taller_id as tipoTallerId, t.tallerista_id as talleristaId,
+                t.nombre, t.descripcion, t.dia_semana as diaSemana,
+                TIME_FORMAT(t.hora_inicio, '%H:%i') as horaInicio,
+                TIME_FORMAT(t.hora_fin, '%H:%i') as horaFin,
+                t.duracion_minutos as duracionMinutos, t.cupo_maximo as cupoMaximo,
+                t.cupo_minimo as cupoMinimo, t.ubicacion, t.activo, t.creado_en as creadoEn,
+                tal.nombre as talleristaNombre,
+                tal.id_cliente as tallerista_id_cliente,
+                c.nombre as tallerista_cliente_nombre,
+                ot.nombre_para_mostrar as tipoNombre,
+                CAST((t.cupo_maximo - COALESCE((SELECT COUNT(*) FROM inscripciones_talleres it WHERE it.taller_id = t.id AND it.estado = 'activa'), 0)) AS SIGNED) as cupos_disponibles
+            FROM talleres t
+            LEFT JOIN talleristas tal ON t.tallerista_id = tal.id
+            LEFT JOIN clientes c ON tal.id_cliente = c.id_cliente
+            LEFT JOIN opciones_tipos ot ON t.tipo_taller_id = ot.id_tipo_evento
+            WHERE t.id = ? AND t.activo = 1
+        `, [id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Taller público no encontrado' });
+        }
+
+        return res.status(200).json(normalizeBigInt(rows[0]));
+    } catch (err) {
+        logError('Error en getTallerPublicoById:', err);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 const getTalleres = async (req, res) => {
     let conn;
     try {
@@ -949,6 +1033,79 @@ const createInscripcion = async (req, res) => {
     }
 };
 
+const createInscripcionPublica = async (req, res) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const {
+            taller_id,
+            alumno_nombre,
+            alumno_telefono,
+            alumno_email,
+            comentarios,
+            modalidad = 'clase_suelta',
+            monto_pagado = 0,
+            fecha_inscripcion,
+            estado = 'activa'
+        } = req.body;
+
+        if (!taller_id || !alumno_nombre || !alumno_email) {
+            return res.status(400).json({
+                error: 'Taller, nombre y email del alumno son obligatorios'
+            });
+        }
+
+        const [taller] = await conn.query(`SELECT id, nombre, activo, cupo_maximo FROM talleres WHERE id = ? AND activo = 1 LIMIT 1`, [taller_id]);
+        if (!taller) {
+            return res.status(404).json({ error: 'Taller no disponible para inscripción' });
+        }
+
+        const cuposUsados = await conn.query(`
+            SELECT COUNT(*) as count
+            FROM inscripciones_talleres
+            WHERE taller_id = ? AND estado = 'activa'
+        `, [taller_id]);
+
+        const totalActivas = Number(cuposUsados[0]?.count || 0);
+        if (taller.cupo_maximo && totalActivas >= Number(taller.cupo_maximo)) {
+            return res.status(409).json({ error: 'No quedan cupos disponibles para este taller' });
+        }
+
+        const result = await conn.query(`
+            INSERT INTO inscripciones_talleres (
+                taller_id,
+                alumno_nombre,
+                alumno_telefono,
+                alumno_email,
+                modalidad,
+                monto_pagado,
+                fecha_inscripcion,
+                estado
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            taller_id,
+            String(alumno_nombre).trim(),
+            alumno_telefono || null,
+            String(alumno_email).trim(),
+            modalidad,
+            monto_pagado,
+            fecha_inscripcion || new Date(),
+            estado
+        ]);
+
+        return res.status(201).json({
+            message: 'Inscripción creada exitosamente',
+            id: Number(result.insertId),
+            taller_id: Number(taller_id)
+        });
+    } catch (err) {
+        logError('Error en createInscripcionPublica:', err);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 const updateInscripcion = async (req, res) => {
     let conn;
     try {
@@ -1022,6 +1179,8 @@ module.exports = {
     // Talleres
     getTalleres,
     getTallerById,
+    getTalleresPublicos,
+    getTallerPublicoById,
     createTaller,
     updateTaller,
     deleteTaller,
@@ -1039,6 +1198,7 @@ module.exports = {
     getInscripciones,
     getInscripcionById,
     createInscripcion,
+    createInscripcionPublica,
     updateInscripcion,
     deleteInscripcion
 };

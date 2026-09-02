@@ -78,49 +78,9 @@
 
         <section class="py-16 bg-stone-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl font-bold text-center text-neon mb-10">Talleres y Actividades realizados
-                    Anteriormente</h2>
-                <!-- <p class="text-center text-stone-400 mb-8">Aquí te mostramos algunas de las vibras que tuvimos en El
-                    Templo. ¡Inspírate!</p> -->
+                <h2 class="text-3xl font-bold text-center text-neon mb-10">Talleres y Actividades disponibles</h2>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-
-                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_taller_1.jpg" alt="Taller de Zumba"
-                            class="w-full h-64 object-cover rounded-lg mb-4"
-                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto_taller_1';">
-                        <p class="text-center text-white font-semibold">Taller de Zumba</p>
-                    </div>
-
-                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_taller_2.jpg" alt="Taller de Arte"
-                            class="w-full h-64 object-cover rounded-lg mb-4"
-                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto_taller_2';">
-                        <p class="text-center text-white font-semibold">Taller de Arte</p>
-                    </div>
-
-                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_taller_3.jpg" alt="Frances"
-                            class="w-full h-64 object-cover rounded-lg mb-4"
-                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto_taller_3';">
-                        <p class="text-center text-white font-semibold">Taller de Frances</p>
-                    </div>
-
-                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_actividad_1.jpg" alt="Zumba"
-                            class="w-full h-64 object-cover rounded-lg mb-4"
-                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto_actividad_1';">
-                        <p class="text-center text-white font-semibold">Clases de Zumba</p>
-                    </div>
-
-                    <div class="p-4 bg-rustic rounded-xl neon-glow-img">
-                        <img src="./img/foto_taller_5.jpg" alt="Taller de Dibujo"
-                            class="w-full h-64 object-cover rounded-lg mb-4"
-                            onerror="this.onerror=null; this.src='https://placehold.co/600x400/581c87/f0abfc?text=foto_taller_5';">
-                        <p class="text-center text-white font-semibold">Taller de Dibujo</p>
-                    </div>
-
-                </div>
+                <div id="talleres-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
             </div>
         </section>
 
@@ -244,7 +204,7 @@
 
         function logout() {
             localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
+            localStorage.removeItem('token');
             window.location.href = '/index.html';
         }
 
@@ -256,66 +216,71 @@
             updateAuthMenu();
         });
 
-        // Lightbox functionality for images inside the grid
-        (function () {
-            const imgs = Array.from(document.querySelectorAll('.grid img'));
-            if (!imgs.length) return;
+        async function cargarTalleres() {
+            const container = document.getElementById('talleres-grid');
+            if (!container) return;
 
-            const lightbox = document.getElementById('lightbox');
-            const lightboxImg = document.getElementById('lightbox-img');
-            const btnPrev = document.getElementById('lightbox-prev');
-            const btnNext = document.getElementById('lightbox-next');
-            const btnClose = document.getElementById('lightbox-close');
-            let currentIndex = 0;
+            try {
+                const res = await fetch('/api/talleres/publicos');
+                if (!res.ok) throw new Error('No se pudo cargar la lista de talleres');
 
-            imgs.forEach((img, idx) => {
-                img.style.cursor = 'zoom-in';
-                img.addEventListener('click', () => open(idx));
-            });
+                const talleres = await res.json();
+                if (!Array.isArray(talleres) || talleres.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
+                            <p class="text-xl text-stone-400">Aún no hay talleres publicados.</p>
+                            <p class="text-sm text-stone-500 mt-2">Pronto agregaremos nuevas actividades.</p>
+                        </div>
+                    `;
+                    return;
+                }
 
-            function open(index) {
-                currentIndex = index;
-                lightboxImg.src = imgs[currentIndex].src;
-                lightboxImg.alt = imgs[currentIndex].alt || '';
-                lightbox.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
+                const dias = {
+                    lunes: 'Lunes',
+                    martes: 'Martes',
+                    miercoles: 'Miércoles',
+                    jueves: 'Jueves',
+                    viernes: 'Viernes',
+                    sabado: 'Sábado',
+                    domingo: 'Domingo'
+                };
+
+                container.innerHTML = talleres.map(taller => {
+                    const dia = dias[(taller.diaSemana || '').toLowerCase()] || taller.diaSemana || 'Sin definir';
+                    const cupos = Number(taller.cupos_disponibles ?? taller.cupoMaximo ?? 0);
+                    return `
+                        <article class="p-5 bg-rustic rounded-xl border border-stone-700 shadow-lg hover:border-neon transition">
+                            <div class="mb-4 bg-stone-800 rounded-lg p-3 text-center">
+                                <div class="text-xs uppercase tracking-[0.2em] text-neon mb-2">${taller.tipoNombre || 'Actividad'}</div>
+                                <h3 class="text-2xl font-bold text-white">${taller.nombre}</h3>
+                            </div>
+                            <div class="space-y-2 text-sm text-stone-200">
+                                <p><span class="text-neon font-semibold">Docente:</span> ${taller.talleristaNombre || 'Por confirmar'}</p>
+                                <p><span class="text-neon font-semibold">Día:</span> ${dia}</p>
+                                <p><span class="text-neon font-semibold">Horario:</span> ${taller.horaInicio || '--'} - ${taller.horaFin || '--'}</p>
+                                <p><span class="text-neon font-semibold">Lugar:</span> ${taller.ubicacion || 'Salón TDC'}</p>
+                                <p><span class="text-neon font-semibold">Cupos:</span> ${cupos}</p>
+                            </div>
+                            <p class="mt-4 text-stone-300 text-sm leading-relaxed">${taller.descripcion || 'Sin descripción disponible.'}</p>
+                            <div class="mt-5 flex justify-end">
+                                <a href="/solicitud_taller_actividad.html" class="px-4 py-2 rounded-full bg-neon text-stone-900 font-semibold hover:opacity-90 transition">Inscribirme</a>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error cargando talleres:', error);
+                container.innerHTML = `
+                    <div class="col-span-full p-8 text-center bg-stone-800 rounded-xl border border-stone-700">
+                        <p class="text-xl text-red-400">No se pudieron cargar los talleres.</p>
+                    </div>
+                `;
             }
+        }
 
-            function close() {
-                lightbox.classList.add('hidden');
-                lightboxImg.src = '';
-                document.body.style.overflow = '';
-            }
-
-            function prev() {
-                currentIndex = (currentIndex - 1 + imgs.length) % imgs.length;
-                lightboxImg.src = imgs[currentIndex].src;
-                lightboxImg.alt = imgs[currentIndex].alt || '';
-            }
-
-            function next() {
-                currentIndex = (currentIndex + 1) % imgs.length;
-                lightboxImg.src = imgs[currentIndex].src;
-                lightboxImg.alt = imgs[currentIndex].alt || '';
-            }
-
-            btnPrev.addEventListener('click', prev);
-            btnNext.addEventListener('click', next);
-            btnClose.addEventListener('click', close);
-
-            // close when clicking outside image
-            lightbox.addEventListener('click', (e) => {
-                if (e.target === lightbox) close();
-            });
-
-            // keyboard support
-            document.addEventListener('keydown', (e) => {
-                if (lightbox.classList.contains('hidden')) return;
-                if (e.key === 'Escape') close();
-                if (e.key === 'ArrowLeft') prev();
-                if (e.key === 'ArrowRight') next();
-            });
-        })();
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarTalleres();
+        });
     </script>
     <script src="/navbar.js"></script>
 </body>

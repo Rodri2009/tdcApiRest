@@ -106,11 +106,9 @@
                         </ul>
                     </div>
                 </div>
-                <div class="mt-8">
-                    <a href="solicitud_fecha_bandas.html"
-                        class="inline-flex items-center justify-center bg-fuchsia-500 text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-2xl shadow-fuchsia-500/50 hover:bg-fuchsia-400 transition duration-300 transform hover:scale-105">
-                        <i class="fas fa-music mr-2"></i> Solicitar nueva fecha de banda o artistas en vivo
-                    </a>
+                <div class="mt-8 text-center text-stone-400 text-sm">
+                    <p>Si te pasaron un enlace directo, podés continuar desde ahí. La solicitud no se muestra en la
+                        navegación pública.</p>
                 </div>
             </div>
         </section>
@@ -143,13 +141,16 @@
                 class="absolute top-3 right-3 w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-600 via-purple-700 to-violet-500 text-white shadow-2xl shadow-fuchsia-800/40 ring-1 ring-white/20 hover:scale-105 transition transform">
                 <i class="fas fa-times"></i>
             </button>
-            <img id="lightbox-img" src="" alt="" class="mx-auto rounded-3xl shadow-2xl shadow-black/50 max-h-[80vh] w-auto" />
+            <img id="lightbox-img" src="" alt=""
+                class="mx-auto rounded-3xl shadow-2xl shadow-black/50 max-h-[80vh] w-auto" />
             <div class="flex justify-between mt-4 gap-4">
-                <button id="lightbox-prev" class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
+                <button id="lightbox-prev"
+                    class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
                     <i class="fas fa-arrow-left"></i>
                     <span>Anterior</span>
                 </button>
-                <button id="lightbox-next" class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
+                <button id="lightbox-next"
+                    class="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-500 text-white font-semibold shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition transform">
                     <span>Siguiente</span>
                     <i class="fas fa-arrow-right"></i>
                 </button>
@@ -219,7 +220,7 @@
 
         function logout() {
             localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
+            localStorage.removeItem('token');
             window.location.href = '/index.html';
         }
         updateAuthMenu();
@@ -340,7 +341,7 @@
             try {
                 const API_BASE_URL = window.location.origin;
                 const res = await fetch(`${API_BASE_URL}/api/gallery/${category}`);
-                
+
                 if (!res.ok) {
                     throw new Error(`Error ${res.status} al cargar galería`);
                 }
