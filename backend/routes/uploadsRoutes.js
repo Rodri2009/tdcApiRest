@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const uploadsController = require('../controllers/uploadsController');
 const { logVerbose, logWarning } = require('../lib/debugFlags');
-const { sanitizeFileName, validateUploadFile, ensureDirectory, MAX_UPLOAD_SIZE } = require('../utils/uploadValidation');
+const { sanitizeFileName, validateUploadMetadata, ensureDirectory, MAX_UPLOAD_SIZE } = require('../utils/uploadValidation');
 
 const UPLOAD_BASE_DIR = path.join(__dirname, '..', 'uploads', 'flyers');
 ensureDirectory(UPLOAD_BASE_DIR);
@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         try {
             const solicitudId = req.query.solicitudId;
-            const validated = validateUploadFile(null, file.originalname, file.mimetype);
+            const validated = validateUploadMetadata(file.originalname, file.mimetype);
             if (!validated.ok) {
                 return cb(new Error(validated.reason));
             }
@@ -44,7 +44,7 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
     try {
-        const validation = validateUploadFile(Buffer.alloc(0), file.originalname, file.mimetype);
+        const validation = validateUploadMetadata(file.originalname, file.mimetype);
         if (!validation.ok) {
             return cb(new Error(validation.reason), false);
         }

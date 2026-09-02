@@ -16,7 +16,8 @@ const isSuspiciousName = (name) => {
     if (!normalized || normalized.includes('..') || normalized.includes('/') || normalized.includes('\\')) return true;
     if (/\s{2,}/.test(normalized)) return true;
     if (/\.(php|php[0-9]+|asp|aspx|jsp|js|html|htm|svg|xml|exe|bat|cmd|sh|py)$/i.test(normalized)) return true;
-    if (/[^a-zA-Z0-9._-]/.test(normalized)) return true;
+    if (/[<>:"|?*\x00-\x1F\x7F]/.test(normalized)) return true;
+    if (!/^[\p{L}\p{N} ._()\-]+$/u.test(normalized)) return true;
     return false;
 };
 
@@ -61,7 +62,7 @@ const detectImageKind = (buffer) => {
     return null;
 };
 
-const validateUploadFile = (buffer, originalName, mimeType) => {
+const validateUploadMetadata = (originalName, mimeType) => {
     try {
         const mime = (mimeType || '').toLowerCase();
         const ext = path.extname((originalName || '').trim() || '').toLowerCase();
@@ -74,12 +75,40 @@ const validateUploadFile = (buffer, originalName, mimeType) => {
             return { ok: false, reason: 'Extensión no permitida' };
         }
 
+        const safeName = sanitizeFileName(originalName);
+        return {
+            ok: true,
+            extension: ext,
+            safeName
+        };
+    } catch (err) {
+        return { ok: false, reason: err.message || 'Archivo inválido' };
+    }
+};
+
+const validateUploadFile = (buffer, originalName, mimeType) => {
+    try {
+        const metadata = validateUploadMetadata(originalName, mimeType);
+        if (!metadata.ok) {
+            return metadata;
+        }
+
+        if (buffer === undefined || buffer === null) {
+            return {
+                ok: true,
+                extension: metadata.extension,
+                detectedType: null,
+                safeName: metadata.safeName
+            };
+        }
+
         const detected = detectImageKind(buffer);
         if (!detected) {
             return { ok: false, reason: 'Archivo no coincide con un JPG o PNG válido' };
         }
 
         const normalizedExt = `.${detected}`;
+        const mime = (mimeType || '').toLowerCase();
         if (
             (mime === 'image/jpeg' && detected !== 'jpg') ||
             (mime === 'image/png' && detected !== 'png')
@@ -95,7 +124,7 @@ const validateUploadFile = (buffer, originalName, mimeType) => {
             ok: true,
             extension: normalizedExt,
             detectedType: detected,
-            safeName: sanitizeFileName(originalName)
+            safeName: metadata.safeName
         };
     } catch (err) {
         return { ok: false, reason: err.message || 'Archivo inválido' };
@@ -111,6 +140,7 @@ module.exports = {
     ALLOWED_MIME_TYPES,
     MAX_UPLOAD_SIZE,
     sanitizeFileName,
+    validateUploadMetadata,
     validateUploadFile,
     ensureDirectory,
     detectImageKind

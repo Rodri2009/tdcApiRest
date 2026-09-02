@@ -333,31 +333,36 @@ check_containers_health() {
 }
 
 check_backend_http() {
-  if ! command -v curl >/dev/null 2>&1; then
-    echo -e "${YELLOW}[*] curl no está instalado, omitiendo verificación HTTP del backend${NC}"
+  echo ""
+  echo -e "${CYAN}[*] Verificando disponibilidad del backend HTTP dentro del contenedor...${NC}"
+
+  local backend_container=""
+  backend_container=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E 'docker-backend|backend' | head -n 1 || true)
+
+  if [ -z "$backend_container" ]; then
+    echo -e "  ${YELLOW}⚠ No se encontró un contenedor backend en ejecución; omitiendo verificación HTTP.${NC}"
     return 0
   fi
 
-  local health_urls=(
-    "http://127.0.0.1:3001/health"
-    "http://127.0.0.1:3000/health"
-    "http://localhost:3001/health"
-    "http://localhost:3000/health"
-  )
-  local health_url=""
+  local max_wait=30
+  local interval=2
+  local waited=0
 
-  echo ""
-  echo -e "${CYAN}[*] Verificando disponibilidad del backend HTTP...${NC}"
-  for health_url in "${health_urls[@]}"; do
-    if curl -sS --max-time 5 "$health_url" >/dev/null 2>&1; then
-      echo -e "  ${GREEN}✓ Backend HTTP responde correctamente en $health_url${NC}"
+  while [ $waited -lt $max_wait ]; do
+    if docker exec "$backend_container" sh -lc "curl -fsS http://127.0.0.1:3000/health >/dev/null 2>&1 || wget -qO- http://127.0.0.1:3000/health >/dev/null 2>&1" >/dev/null 2>&1; then
+      echo -e "  ${GREEN}✓ Backend HTTP responde correctamente dentro de $backend_container en 127.0.0.1:3000${NC}"
       return 0
     fi
+
+    sleep $interval
+    waited=$((waited + interval))
+    echo -e "  ${YELLOW}...esperando ${waited}/${max_wait}s${NC}"
   done
 
-  echo -e "  ${RED}✗ El backend no responde en ninguno de los puertos probados (${health_urls[*]})${NC}"
+  echo -e "  ${RED}✗ El backend no respondió en el puerto interno 3000 del contenedor después de ${max_wait} segundos${NC}"
   echo -e "    ${YELLOW}Revisá los logs con: ./scripts/backend_logs.sh${NC}"
-  echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
+  echo -e "    ${YELLOW}El servicio queda atrás de nginx y no debe validarse como un host port.$${NC}"
+  return 1
 }
 create_env_override() {
     # Usa la raíz del proyecto como fuente única de verdad.
@@ -929,7 +934,8 @@ if [ "$USE_DOCKER" = true ]; then
 fi
 echo -e "${YELLOW}¿Cómo probar la app?${NC}"
     echo -e "  - Frontend:     ${CYAN}http://localhost:8080${NC} (nginx)"
-    echo -e "  - Backend API:  ${CYAN}http://localhost:3000${NC} (Node.js)"
+    echo -e "  - Backend API:  ${CYAN}http://localhost:8080/api/ ...${NC} (re-enviado por nginx)"
+    echo -e "  - Backend interno: ${CYAN}backend:3000${NC} (solo dentro de Docker)"
 if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
     echo -e "  - VNC Backend:  ${CYAN}vncviewer localhost:5901${NC} (sin contraseña)"
     echo -e "  - Debug Chrome: ${CYAN}localhost:9001 (MP), localhost:9002 (WA)${NC}"

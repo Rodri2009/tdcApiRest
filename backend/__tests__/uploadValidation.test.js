@@ -14,6 +14,16 @@ describe('uploadValidation', () => {
         expect(validateUploadFile(png, 'photo.png', 'image/png')).toMatchObject({ ok: true, extension: '.png' });
     });
 
+    test('accepts filename and MIME checks without content buffer', () => {
+        expect(validateUploadFile(null, 'photo.jpg', 'image/jpeg')).toMatchObject({ ok: true, extension: '.jpg' });
+        expect(validateUploadFile(undefined, 'photo.png', 'image/png')).toMatchObject({ ok: true, extension: '.png' });
+    });
+
+    test('accepts common filenames with spaces and parentheses', () => {
+        const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+        expect(validateUploadFile(png, 'IMG 001 (final).png', 'image/png')).toMatchObject({ ok: true, extension: '.png' });
+    });
+
     test('rejects HTML or wrong content types', () => {
         const html = Buffer.from('<!doctype html><html>bad</html>');
         expect(validateUploadFile(html, 'bad.html', 'text/html')).toMatchObject({ ok: false });

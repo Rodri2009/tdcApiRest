@@ -1200,20 +1200,28 @@ const actualizarSolicitud = async (req, res) => {
         } else if (tipoEventoReal === 'ALQUILER') {
             tableTarget = 'solicitudes_alquiler';
             logVerbose(`[SOLICITUD][EDIT] PASO 1: Tipo ALQUILER → usando solicitudes_alquiler`);
+        } else if (tipoEventoReal === 'TALLER' || tipoEventoReal === 'TALLERES' || tipoEventoReal === 'TALLERES_ACTIVIDADES') {
+            tableTarget = 'solicitudes_talleres';
+            logVerbose(`[SOLICITUD][EDIT] PASO 1: Tipo TALLER → usando solicitudes_talleres`);
+        } else if (tipoEventoReal === 'SERVICIO' || tipoEventoReal === 'SERVICIOS') {
+            tableTarget = 'solicitudes_servicios';
+            logVerbose(`[SOLICITUD][EDIT] PASO 1: Tipo SERVICIO → usando solicitudes_servicios`);
         } else if (tipoEventoReal) {
             // Otros tipos: determinar por prefijo
             logVerbose(`[SOLICITUD][EDIT] PASO 1: Tipo desconocido (${tipoEventoReal}). Usando fallback por prefijo`);
-            if (prefijo === 'bnd_') tableTarget = 'solicitudes_fechas_bandas';
+            if (prefijo === 'bnd_' || prefijo === 'ev_') tableTarget = 'solicitudes_fechas_bandas';
             else if (prefijo === 'alq_') tableTarget = 'solicitudes_alquiler';
-            else if (prefijo === 'ev_') tableTarget = 'solicitudes_fechas_bandas'; // Eventos confirmados suelen ser bandas
-            else tableTarget = 'solicitudes_alquiler'; // Por defecto
+            else if (prefijo === 'tll_') tableTarget = 'solicitudes_talleres';
+            else if (prefijo === 'srv_') tableTarget = 'solicitudes_servicios';
+            else tableTarget = 'solicitudes_alquiler';
         } else {
             // Sin tipo encontrado: usar prefijo
             logVerbose(`[SOLICITUD][EDIT] PASO 1: Tipo no determinado. Usando fallback por prefijo (${prefijo})`);
-            if (prefijo === 'bnd_') tableTarget = 'solicitudes_fechas_bandas';
+            if (prefijo === 'bnd_' || prefijo === 'ev_') tableTarget = 'solicitudes_fechas_bandas';
             else if (prefijo === 'alq_') tableTarget = 'solicitudes_alquiler';
-            else if (prefijo === 'ev_') tableTarget = 'solicitudes_fechas_bandas'; // Eventos confirmados suelen ser bandas
-            else tableTarget = 'solicitudes_alquiler'; // Por defecto
+            else if (prefijo === 'tll_') tableTarget = 'solicitudes_talleres';
+            else if (prefijo === 'srv_') tableTarget = 'solicitudes_servicios';
+            else tableTarget = 'solicitudes_alquiler';
         }
 
         logVerbose(`[SOLICITUD][EDIT] PASO 2: Tabla destino = ${tableTarget}`);
@@ -1280,6 +1288,84 @@ const actualizarSolicitud = async (req, res) => {
             }
         }
         // ACTUALIZAR EN LA TABLA DE SOLICITUDES ESPECÍFICA
+        else if (tableTarget === 'solicitudes_talleres') {
+            logVerbose(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_talleres (id=${idNumerico})`);
+
+            const nombreTaller = req.body.nombreTaller || req.body.nombre_taller || req.body.nombreParaMostrar || null;
+            const descripcionParaTaller = descripcion || detallesAdicionales || req.body.descripcion || null;
+            const precioValor = req.body.precioClase || req.body.precioBase || req.body.precio_final || precioBase || null;
+            const tipoTallerId = req.body.idTipoEvento || req.body.tipoId || req.body.tipo_taller_id || req.body.tipoTallerId || null;
+
+            const setClauses = [];
+            const params = [];
+
+            if (nombreTaller) {
+                setClauses.push('nombre_taller = ?');
+                params.push(nombreTaller);
+            }
+            if (tipoTallerId) {
+                setClauses.push('id_tipo_evento = ?');
+                params.push(tipoTallerId);
+            }
+            if (descripcionParaTaller) {
+                setClauses.push('comentarios_observaciones = ?');
+                params.push(descripcionParaTaller);
+            }
+            if (fechaEvento) {
+                setClauses.push('fecha_evento = ?');
+                params.push(fechaEvento);
+            }
+            if (horaInicio) {
+                setClauses.push('hora_evento = ?');
+                params.push(horaInicio);
+            }
+            if (duracionEvento) {
+                setClauses.push('duracion = ?');
+                params.push(duracionEvento);
+            }
+            if (precioValor !== null && precioValor !== undefined && String(precioValor).trim() !== '') {
+                setClauses.push('precio = ?');
+                params.push(Number(precioValor));
+            }
+
+            if (setClauses.length === 0) {
+                logVerbose(`[SOLICITUD][EDIT] ⚠️ No hay campos para actualizar en solicitudes_talleres`);
+                await conn.commit();
+                return res.status(400).json({ error: 'No hay campos para actualizar.' });
+            }
+
+            params.push(idNumerico);
+            const sqlUpdateTaller = `UPDATE solicitudes_talleres SET ${setClauses.join(', ')} WHERE id_solicitud = ?`;
+            try {
+                const result = await conn.query(sqlUpdateTaller, params);
+                affectedRowsEspecifico = result.affectedRows || 0;
+                tablaActualizada = 'solicitudes_talleres';
+                logVerbose(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_talleres: affectedRows=${affectedRowsEspecifico}`);
+            } catch (tallerErr) {
+                logError(`[SOLICITUD][EDIT] ✗ Error en solicitudes_talleres:`, tallerErr.message);
+                throw tallerErr;
+            }
+
+            const urlFlyer = req.body.url_flyer || req.body.urlFlyer || null;
+            if (urlFlyer || descripcionCorta || descripcionLarga || descripcion || detallesAdicionales) {
+                const parentSet = [];
+                const parentParams = [];
+                if (urlFlyer) {
+                    parentSet.push('url_flyer = ?');
+                    parentParams.push(urlFlyer);
+                }
+                if (descripcionCorta || descripcionLarga || descripcion || detallesAdicionales) {
+                    parentSet.push('descripcion_corta = ?');
+                    parentParams.push(descripcionCorta || descripcion || detallesAdicionales || null);
+                    parentSet.push('descripcion_larga = ?');
+                    parentParams.push(descripcionLarga || descripcion || detallesAdicionales || null);
+                }
+                if (parentSet.length > 0) {
+                    parentParams.push(idNumerico);
+                    await conn.query(`UPDATE solicitudes SET ${parentSet.join(', ')} WHERE id_solicitud = ?`, parentParams);
+                }
+            }
+        }
         else if (tableTarget === 'solicitudes_fechas_bandas' || tableTarget === 'solicitudes_bandas') {
             // Soportar tanto la nueva tabla normalizada como el nombre legacy (compatibilidad)
             logVerbose(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_fechas_bandas (id=${idNumerico})`);

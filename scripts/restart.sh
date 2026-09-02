@@ -159,41 +159,32 @@ check_backend_http() {
     return 0
   fi
 
-  if ! command_exists curl; then
-    echo -e "${YELLOW}[*] curl no está instalado, omitiendo verificación HTTP del backend${NC}"
-    return 0
-  fi
-
-  local health_urls=(
-    "http://127.0.0.1:3001/health"
-    "http://127.0.0.1:3000/health"
-    "http://localhost:3001/health"
-    "http://localhost:3000/health"
-  )
-  local max_wait=30
-  local interval=2
-  local waited=0
-  local health_url=""
-
   echo ""
-  echo -e "${CYAN}[*] Verificando disponibilidad del backend HTTP...${NC}"
+  echo -e "${CYAN}[*] Verificando disponibilidad del backend HTTP dentro del contenedor...${NC}"
 
-  while [ $waited -lt $max_wait ]; do
-    for health_url in "${health_urls[@]}"; do
-      if curl -sS --max-time 3 "$health_url" >/dev/null 2>&1; then
-        echo -e "  ${GREEN}✓ Backend HTTP responde correctamente en $health_url${NC}"
+  local backend_container=""
+  backend_container=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E 'docker-backend|backend' | head -n 1 || true)
+
+  if [ -n "$backend_container" ]; then
+    local max_wait=30
+    local interval=2
+    local waited=0
+
+    while [ $waited -lt $max_wait ]; do
+      if docker exec "$backend_container" sh -lc "curl -fsS http://127.0.0.1:3000/health >/dev/null 2>&1 || wget -qO- http://127.0.0.1:3000/health >/dev/null 2>&1" >/dev/null 2>&1; then
+        echo -e "  ${GREEN}✓ Backend HTTP responde correctamente dentro de $backend_container en 127.0.0.1:3000${NC}"
         return 0
       fi
+
+      sleep $interval
+      waited=$((waited + interval))
+      echo -e "  ${YELLOW}...esperando ${waited}/${max_wait}s${NC}"
     done
+  fi
 
-    sleep $interval
-    waited=$((waited + interval))
-    echo -e "  ${YELLOW}...esperando ${waited}/${max_wait}s${NC}"
-  done
-
-  echo -e "  ${RED}✗ El backend no responde en ninguno de los puertos probados (${health_urls[*]}) después de ${max_wait} segundos${NC}"
+  echo -e "  ${RED}✗ El backend no respondió en el puerto interno 3000 del contenedor después de 30 segundos${NC}"
   echo -e "    ${YELLOW}Revisá los logs con: ./scripts/backend_logs.sh${NC}"
-  echo -e "    ${YELLOW}Comprueba si el backend arrancó bien y si la DB está accesible.${NC}"
+  echo -e "    ${YELLOW}Esto es normal si aún está levantando dependencias del backend o Puppeteer.${NC}"
   return 1
 }
 
@@ -442,7 +433,8 @@ echo ""
 if [ $SHOW_HELP_AT_END -eq 1 ]; then
   echo -e "${YELLOW}¿Cómo probar la app?${NC}"
   echo -e "  - Frontend:     ${CYAN}http://localhost:8080${NC} (nginx)"
-  echo -e "  - Backend API:  ${CYAN}http://localhost:3000${NC} (Node.js)"
+  echo -e "  - Backend API:  ${CYAN}http://localhost:8080/api/ ...${NC} (re-enviado por nginx)"
+  echo -e "  - Backend interno: ${CYAN}backend:3000${NC} (solo dentro de Docker)"
   if [ "$ENABLE_MP" = true ] || [ "$ENABLE_WA" = true ]; then
     echo -e "  - VNC Backend:  ${CYAN}vncviewer localhost:5901${NC} (sin contraseña)"
     echo -e "  - Debug Chrome: ${CYAN}localhost:9001 (MP), localhost:9002 (WA)${NC}"

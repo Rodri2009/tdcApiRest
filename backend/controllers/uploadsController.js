@@ -52,7 +52,7 @@ const uploadFlyerPublic = async (req, res) => {
         return res.status(200).json({ url });
     } catch (err) {
         logError('Error subiendo flyer:', err);
-        return res.status(500).json({ message: 'Error subiendo flyer.' });
+        return res.status(500).json({ message: 'Error interno al subir el flyer.' });
     }
 };
 
