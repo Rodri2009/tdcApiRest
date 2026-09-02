@@ -42,6 +42,9 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PROJECT_DIR="$ROOT_DIR"
+export PROJECT_DIR
+source "$ROOT_DIR/scripts/lib/messages.sh"
 ENV_FILE="$ROOT_DIR/.env"
 COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.yml"
 
@@ -192,6 +195,8 @@ if [[ ${1:-} == "-h" || ${1:-} == "--help" ]]; then
   show_help
   exit 0
 fi
+
+show_stack_compatibility_warning
 
 # Parsear argumentos
 while [ $# -gt 0 ]; do

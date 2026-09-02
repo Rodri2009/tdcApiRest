@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del Taller - El Templo de Claypole</title>
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="/css/fontawesome.min.css">
+    <!-- Estilos unificados de secciones -->
+    <link rel="stylesheet" href="/css/secciones.css">
+    <style>
+        :root {
+            --color-primary: #581c87;
+            --color-secondary: #f0abfc;
+            --color-rustic: #44403c;
+        }
+
+        .text-neon {
+            color: var(--color-secondary);
+            text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+        }
+
+        .bg-rustic {
+            background-color: var(--color-rustic);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 6px;
+            background-color: #0f172a;
+            border: 1.5px solid #581c87;
+            color: #f8fafc;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 8px rgba(240, 171, 252, 0.3);
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #d6d3d1;
+            margin-bottom: 5px;
+        }
+
+        .price-option-card {
+            border: 1.5px solid #374151;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #111827;
+        }
+
+        .price-option-card:hover,
+        .price-option-card.selected {
+            border-color: var(--color-secondary);
+            background-color: rgba(88, 28, 135, 0.2);
+        }
+
+        /* Banner de notificaciones */
+        #notification-banner {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translate(-50%, 160%);
+            padding: 14px 28px;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            z-index: 1000;
+            transition: transform 0.4s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        #notification-banner.show {
+            transform: translate(-50%, 0);
+        }
+
+        #notification-banner.success {
+            background-color: #10b981;
+        }
+
+        #notification-banner.error {
+            background-color: #ef4444;
+        }
+
+        #notification-banner.warning {
+            background-color: #f59e0b;
+            color: #0f172a;
+        }
+
+        #notification-banner.info {
+            background-color: #3b82f6;
+        }
+    </style>
+</head>
+
+<body class="bg-stone-950 text-stone-100 min-h-screen flex flex-col">
+
+    <!-- Banner de notificaciones flotante -->
+    <div id="notification-banner"></div>
+
+    <!-- Navegación Principal -->
+    <header class="bg-rustic sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="./img/logo_transparente.png" alt="El Templo de Claypole Logo" class="h-10 w-auto">
+                    <span class="text-base font-semibold text-neon tracking-wide hidden sm:block">Volver a inicio</span>
+                </a>
+
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="seccion_bandas.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Bandas en
+                        Vivo</a>
+                    <a href="seccion_alquiler.html"
+                        class="text-sm font-medium hover:text-neon transition duration-150 ease-in-out">Alquiler del
+                        Salón</a>
+                    <a href="seccion_talleres.html"
+                        class="text-sm font-medium text-neon transition duration-150 ease-in-out">Talleres</a>
+                    <div id="auth-menu-desktop"></div>
+                </nav>
+
+                <button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-md hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-neon">
+                    <svg class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-rustic">
+                <a href="seccion_bandas.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Bandas
+                    en Vivo</a>
+                <a href="seccion_alquiler.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-stone-700 hover:text-neon">Alquiler
+                    del Salón</a>
+                <a href="seccion_talleres.html"
+                    class="block px-3 py-2 rounded-md text-base font-medium text-neon">Talleres</a>
+                <div id="auth-menu-mobile"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+        <!-- Barra superior de navegación y acciones -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-8 pb-4 border-b border-stone-800">
+            <a href="seccion_talleres.html"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-stone-900 border border-stone-700 text-stone-300 hover:text-neon hover:border-neon transition text-sm font-semibold">
+                <i class="fas fa-arrow-left"></i>
+                <span>Volver a Talleres</span>
+            </a>
+            <div class="text-xs text-stone-400">
+                <span>Talleres</span> <i class="fas fa-chevron-right text-[10px] mx-1"></i> <span class="text-neon" id="breadcrumb-current">Ficha e Inscripción</span>
+            </div>
+        </div>
+
+        <!-- Estado de Carga -->
+        <div id="loading-state" class="py-20 text-center">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon mb-4"></div>
+            <p class="text-stone-400 text-lg font-medium">Cargando información del taller...</p>
+        </div>
+
+        <!-- Selector de taller si no se especificó ID -->
+        <div id="selector-state" class="hidden max-w-xl mx-auto p-8 bg-stone-900 rounded-xl border border-stone-700 text-center">
+            <i class="fas fa-graduation-cap text-4xl text-neon mb-4"></i>
+            <h2 class="text-2xl font-bold text-white mb-2">Selecciona un Taller</h2>
+            <p class="text-sm text-stone-400 mb-6">Elige el curso o actividad al que deseas inscribirte:</p>
+            <select id="select-taller-alt" class="form-input mb-6 text-center">
+                <option value="">-- Elige un taller --</option>
+            </select>
+            <div class="flex justify-center gap-4">
+                <a href="seccion_talleres.html" class="px-5 py-2.5 rounded-lg bg-stone-800 border border-stone-600 text-stone-300 hover:text-white font-medium">Cancelar y Volver</a>
+                <button id="btn-ir-taller" class="px-5 py-2.5 rounded-lg bg-neon text-stone-900 font-bold hover:opacity-90 transition">Siguiente <i class="fas fa-arrow-right ml-1"></i></button>
+            </div>
+        </div>
+
+        <!-- Contenedor Principal: Ficha + Formulario -->
+        <div id="taller-content" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            <!-- COLUMNA IZQUIERDA: Ficha detallada del Taller (7 cols) -->
+            <section class="lg:col-span-7 bg-stone-900/90 rounded-2xl border border-stone-800 p-6 md:p-8 shadow-xl space-y-6">
+                
+                <!-- Categoría y Cupos -->
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <span id="taller-categoria" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-stone-800 text-neon border border-purple-800/50">
+                        Taller
+                    </span>
+                    <span id="badge-cupos" class="px-3 py-1 rounded-full text-xs font-semibold">
+                        <!-- Se llena dinámicamente -->
+                    </span>
+                </div>
+
+                <!-- Imagen representativa -->
+                <div class="relative w-full h-56 sm:h-72 rounded-xl overflow-hidden border border-stone-800 bg-stone-950">
+                    <img id="taller-flyer" src="/img/hero.jpg" alt="Foto del taller" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-transparent"></div>
+                    <div class="absolute bottom-4 left-4 right-4">
+                        <h1 id="taller-nombre" class="text-2xl sm:text-3xl font-extrabold text-white drop-shadow-md">
+                            Cargando...
+                        </h1>
+                    </div>
+                </div>
+
+                <!-- Datos Clave de Cursada -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-stone-950/80 border border-stone-800 text-center">
+                    <div>
+                        <span class="block text-xs uppercase text-stone-400 font-semibold mb-1"><i class="fas fa-user-tie text-neon mr-1"></i>Docente</span>
+                        <span id="taller-docente" class="text-sm font-bold text-white">--</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs uppercase text-stone-400 font-semibold mb-1"><i class="fas fa-calendar-day text-neon mr-1"></i>Día</span>
+                        <span id="taller-dia" class="text-sm font-bold text-white">--</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs uppercase text-stone-400 font-semibold mb-1"><i class="fas fa-clock text-neon mr-1"></i>Horario</span>
+                        <span id="taller-horario" class="text-sm font-bold text-white">--</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs uppercase text-stone-400 font-semibold mb-1"><i class="fas fa-map-marker-alt text-neon mr-1"></i>Lugar</span>
+                        <span id="taller-ubicacion" class="text-sm font-bold text-white">Salón TDC</span>
+                    </div>
+                </div>
+
+                <!-- Descripción del taller -->
+                <div>
+                    <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="fas fa-align-left text-neon"></i> Acerca de este taller
+                    </h2>
+                    <p id="taller-descripcion" class="text-stone-300 text-sm sm:text-base leading-relaxed whitespace-pre-line">
+                        --
+                    </p>
+                </div>
+
+                <!-- Opciones de Precios y Aranceles -->
+                <div id="bloque-precios">
+                    <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <i class="fas fa-tags text-neon"></i> Modalidades y Aranceles
+                    </h2>
+                    <div id="lista-precios" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Opciones cargadas por JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- COLUMNA DERECHA: Formulario de Inscripción (5 cols) -->
+            <section class="lg:col-span-5 bg-stone-900 rounded-2xl border border-stone-800 p-6 md:p-8 shadow-xl sticky top-24">
+                
+                <!-- Encabezado del Formulario -->
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-edit text-neon"></i> Inscribirme al Taller
+                    </h2>
+                    <p class="text-xs text-stone-400 mt-1">Completá tus datos para asegurar tu cupo en la actividad.</p>
+                </div>
+
+                <!-- Alerta si está autenticado -->
+                <div id="alerta-autenticado" class="hidden mb-4 p-3 rounded-lg bg-purple-950/60 border border-purple-800/60 text-xs text-purple-200 flex items-center gap-2">
+                    <i class="fas fa-user-check text-neon"></i>
+                    <span>Datos precargados con tu cuenta de usuario.</span>
+                </div>
+
+                <!-- Formulario -->
+                <form id="form-inscripcion" class="space-y-4">
+
+                    <!-- Nombre Alumno -->
+                    <div>
+                        <label for="alumno-nombre" class="form-label">Nombre y Apellido *</label>
+                        <input type="text" id="alumno-nombre" required class="form-input" placeholder="Tu nombre completo">
+                    </div>
+
+                    <!-- Email Alumno -->
+                    <div>
+                        <label for="alumno-email" class="form-label">Correo Electrónico *</label>
+                        <input type="email" id="alumno-email" required class="form-input" placeholder="correo@ejemplo.com">
+                    </div>
+
+                    <!-- Teléfono / WhatsApp -->
+                    <div>
+                        <label for="alumno-telefono" class="form-label">Teléfono / WhatsApp *</label>
+                        <input type="tel" id="alumno-telefono" required class="form-input" placeholder="Ej: 11 2345-6789">
+                        <p class="text-[11px] text-stone-400 mt-1">Para coordinar novedades de la clase con el docente.</p>
+                    </div>
+
+                    <!-- Modalidad de Inscripción -->
+                    <div>
+                        <label for="alumno-modalidad" class="form-label">Modalidad / Plan</label>
+                        <select id="alumno-modalidad" class="form-input">
+                            <option value="clase_suelta">Clase Suelta / Individual</option>
+                            <option value="paquete">Mensualidad / Paquete de Clases</option>
+                        </select>
+                    </div>
+
+                    <!-- Comentarios u observaciones -->
+                    <div>
+                        <label for="alumno-comentarios" class="form-label">Comentarios o Consultas (opcional)</label>
+                        <textarea id="alumno-comentarios" rows="2" class="form-input resize-none" placeholder="Experiencia previa, consultas al tallerista, etc."></textarea>
+                    </div>
+
+                    <!-- Botonera de Acción: Cancelar / Siguiente -->
+                    <div class="pt-4 flex items-center justify-between gap-3">
+                        <a href="seccion_talleres.html"
+                            class="w-1/2 py-2.5 px-4 text-center rounded-lg border border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white font-semibold text-sm transition">
+                            Cancelar
+                        </a>
+                        <button type="submit" id="btn-submit-inscripcion"
+                            class="w-1/2 py-2.5 px-4 text-center rounded-lg bg-neon text-stone-900 hover:opacity-90 font-bold text-sm shadow-lg transition flex items-center justify-center gap-2">
+                            <span>Siguiente / Confirmar</span>
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+
+                </form>
+
+                <!-- Panel de Éxito tras inscripción (oculto inicialmente) -->
+                <div id="seccion-exito" class="hidden text-center py-6 space-y-4">
+                    <div class="w-16 h-16 bg-emerald-900/40 text-emerald-400 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-500 text-2xl">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-white">¡Inscripción Exitosa!</h3>
+                    <p class="text-sm text-stone-300">
+                        Te registraste correctamente a <span id="exito-taller-nombre" class="font-bold text-neon"></span>.
+                    </p>
+                    <div class="p-4 bg-stone-950 rounded-xl border border-stone-800 text-left text-xs space-y-1 text-stone-300">
+                        <p><strong class="text-stone-400">N° de Inscripción:</strong> <span id="exito-id" class="text-white font-mono font-bold">#--</span></p>
+                        <p><strong class="text-stone-400">Alumno:</strong> <span id="exito-alumno" class="text-white">--</span></p>
+                        <p><strong class="text-stone-400">Email:</strong> <span id="exito-email" class="text-white">--</span></p>
+                        <p><strong class="text-stone-400">Modalidad:</strong> <span id="exito-modalidad" class="text-white">--</span></p>
+                    </div>
+                    <p class="text-xs text-stone-400">
+                        Nos pondremos en contacto contigo a la brevedad para coordinar los detalles de la primera clase.
+                    </p>
+                    <div class="pt-4 flex flex-col gap-2">
+                        <a href="seccion_talleres.html" class="w-full py-2.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 text-sm font-semibold transition text-center">
+                            Ver otros Talleres
+                        </a>
+                        <a href="index.html" class="w-full py-2.5 rounded-lg border border-stone-700 hover:border-neon text-stone-300 hover:text-neon text-sm font-semibold transition text-center">
+                            Volver a Inicio
+                        </a>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-rustic border-t border-stone-800 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-xs text-stone-400">&copy; <span id="year"></span> El Templo de Claypole. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Lógica del Frontend -->
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Banner de notificaciones
+        let notificationTimer = null;
+        function showNotification(message, type = 'error', duration = 4000) {
+            const banner = document.getElementById('notification-banner');
+            clearTimeout(notificationTimer);
+            banner.textContent = message;
+            banner.className = 'show ' + type;
+            if (duration > 0) {
+                notificationTimer = setTimeout(() => { banner.className = ''; }, duration);
+            }
+        }
+
+        // Formato de moneda
+        function formatPrecioAR(val) {
+            const num = Number(val);
+            if (isNaN(num)) return '';
+            const partes = num.toFixed(2).split('.');
+            const enteros = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return enteros + ',' + partes[1];
+        }
+
+        // Manejo de Auth y Menú
+        function decodeJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                return JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+            } catch (e) { return null; }
+        }
+
+        function updateAuthMenu() {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const desktopMenu = document.getElementById('auth-menu-desktop');
+            const mobileMenu = document.getElementById('auth-menu-mobile');
+
+            if (token) {
+                const decoded = decodeJWT(token);
+                const rol = decoded ? (decoded.rol || decoded.role) : null;
+                const nombre = decoded ? (decoded.nombre || decoded.name || 'Usuario') : 'Usuario';
+                const isAdmin = rol === 'admin' || rol === 'staff' || rol === 'SUPER_ADMIN';
+
+                // Precargar datos del usuario en el formulario
+                const elNombre = document.getElementById('alumno-nombre');
+                const elEmail = document.getElementById('alumno-email');
+                const elTelefono = document.getElementById('alumno-telefono');
+                const alertaAuth = document.getElementById('alerta-autenticado');
+
+                if (decoded) {
+                    if (elNombre && !elNombre.value && (decoded.nombre || decoded.name)) {
+                        elNombre.value = decoded.nombre || decoded.name;
+                    }
+                    if (elEmail && !elEmail.value && decoded.email) {
+                        elEmail.value = decoded.email;
+                    }
+                    if (elTelefono && !elTelefono.value && decoded.telefono) {
+                        elTelefono.value = decoded.telefono;
+                    }
+                    if (alertaAuth) alertaAuth.classList.remove('hidden');
+                }
+
+                if (isAdmin) {
+                    const htmlD = `<a href="/admin.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-emerald-500 text-gray-900 hover:bg-emerald-400 transition">🔐 Admin</a>`;
+                    const htmlM = `<a href="/admin.html" class="block px-3 py-2 rounded-md text-base font-medium bg-emerald-500 text-gray-900">🔐 Admin</a>`;
+                    if (desktopMenu) desktopMenu.innerHTML = htmlD;
+                    if (mobileMenu) mobileMenu.innerHTML = htmlM;
+                } else {
+                    const htmlD = `
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-semibold text-neon">${nombre}</span>
+                            <button onclick="logout()" class="px-2 py-1 text-xs rounded-full bg-red-600 text-white hover:bg-red-700 transition">Salir</button>
+                        </div>
+                    `;
+                    const htmlM = `
+                        <div class="px-3 py-2 text-base font-medium text-neon">Hola, ${nombre}</div>
+                        <button onclick="logout()" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400">Cerrar Sesión</button>
+                    `;
+                    if (desktopMenu) desktopMenu.innerHTML = htmlD;
+                    if (mobileMenu) mobileMenu.innerHTML = htmlM;
+                }
+            } else {
+                const loginHTML = `<a href="login.html" class="px-3 py-1 text-sm rounded-full font-semibold bg-stone-800/60 border-2 border-neon text-neon hover:bg-stone-700 transition">Login</a>`;
+                if (desktopMenu) desktopMenu.innerHTML = loginHTML;
+                if (mobileMenu) mobileMenu.innerHTML = loginHTML;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('token');
+            window.location.reload();
+        }
+
+        // Estado del Taller Actual
+        let currentTaller = null;
+        let currentPrecios = [];
+
+        const diasSemanaMap = {
+            'lunes': 'Lunes',
+            'martes': 'Martes',
+            'miercoles': 'Miércoles',
+            'miércoles': 'Miércoles',
+            'jueves': 'Jueves',
+            'viernes': 'Viernes',
+            'sabado': 'Sábado',
+            'sábado': 'Sábado',
+            'domingo': 'Domingo'
+        };
+
+        const fotosFallback = [
+            '/img/foto_taller_1.jpg',
+            '/img/foto_taller_2.jpg',
+            '/img/foto_taller_3.jpg',
+            '/img/foto_taller_5.jpg'
+        ];
+
+        async function initPage() {
+            updateAuthMenu();
+
+            // Mobile menu toggle
+            const mb = document.getElementById('mobile-menu-button');
+            const mm = document.getElementById('mobile-menu');
+            if (mb && mm) {
+                mb.addEventListener('click', () => mm.classList.toggle('hidden'));
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const tallerId = params.get('id') || params.get('taller_id');
+
+            if (!tallerId) {
+                // Mostrar selector de talleres alternativo
+                await cargarSelectorTalleres();
+                return;
+            }
+
+            await cargarDetalleTaller(tallerId);
+        }
+
+        async function cargarDetalleTaller(id) {
+            const loading = document.getElementById('loading-state');
+            const content = document.getElementById('taller-content');
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+
+            try {
+                // 1) Cargar taller
+                const res = await fetch(`/api/talleres/publicos/${id}`);
+                if (!res.ok) {
+                    if (res.status === 404) {
+                        // Intentar buscar en lista completa por si el ID es diferente
+                        const fallbackRes = await fetch('/api/talleres/publicos');
+                        if (fallbackRes.ok) {
+                            const todos = await fallbackRes.json();
+                            const encontrado = todos.find(t => String(t.id) === String(id) || String(t.taller_id) === String(id));
+                            if (encontrado) {
+                                renderTaller(encontrado);
+                                await cargarPrecios(encontrado.id);
+                                return;
+                            }
+                        }
+                    }
+                    throw new Error('No se pudo encontrar el taller solicitado');
+                }
+
+                const taller = await res.json();
+                currentTaller = taller;
+                renderTaller(taller);
+
+                // 2) Cargar precios
+                await cargarPrecios(taller.id);
+
+            } catch (err) {
+                console.error('Error cargando taller:', err);
+                loading.innerHTML = `
+                    <div class="max-w-md mx-auto p-6 bg-stone-900 rounded-xl border border-red-800 text-center">
+                        <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-3"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Taller no encontrado</h3>
+                        <p class="text-sm text-stone-400 mb-6">${err.message}</p>
+                        <a href="seccion_talleres.html" class="px-5 py-2 rounded-lg bg-neon text-stone-900 font-bold">Ver Talleres Disponibles</a>
+                    </div>
+                `;
+            }
+        }
+
+        function renderTaller(taller) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('taller-content').classList.remove('hidden');
+
+            document.getElementById('taller-nombre').textContent = taller.nombre || 'Taller';
+            document.getElementById('breadcrumb-current').textContent = taller.nombre || 'Detalle';
+            document.title = `${taller.nombre} - El Templo de Claypole`;
+
+            // Categoría
+            document.getElementById('taller-categoria').textContent = taller.tipoNombre || 'Taller / Actividad';
+
+            // Docente
+            document.getElementById('taller-docente').textContent = taller.talleristaNombre || taller.tallerista_cliente_nombre || 'A confirmar';
+
+            // Día y Horario
+            const diaKey = (taller.diaSemana || '').toLowerCase();
+            document.getElementById('taller-dia').textContent = diasSemanaMap[diaKey] || taller.diaSemana || 'Por definir';
+
+            let horarioStr = '--';
+            if (taller.horaInicio) {
+                horarioStr = taller.horaInicio;
+                if (taller.horaFin) horarioStr += ` a ${taller.horaFin} hs`;
+            }
+            document.getElementById('taller-horario').textContent = horarioStr;
+            document.getElementById('taller-ubicacion').textContent = taller.ubicacion || 'Salón TDC';
+
+            // Descripción
+            document.getElementById('taller-descripcion').textContent = taller.descripcion || 'Sin descripción detallada disponible.';
+
+            // Flyer / Foto
+            const flyerImg = document.getElementById('taller-flyer');
+            const fotoIdx = (Number(taller.id) || 1) % fotosFallback.length;
+            flyerImg.src = fotosFallback[fotoIdx];
+            flyerImg.onerror = () => { flyerImg.src = '/img/hero.jpg'; };
+
+            // Cupos
+            const cuposDisponibles = Number(taller.cupos_disponibles ?? taller.cupoMaximo ?? 10);
+            const badgeCupos = document.getElementById('badge-cupos');
+            const submitBtn = document.getElementById('btn-submit-inscripcion');
+
+            if (cuposDisponibles > 0) {
+                badgeCupos.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-emerald-900/60 border border-emerald-500/50 text-emerald-300';
+                badgeCupos.innerHTML = `<i class="fas fa-users mr-1"></i> ${cuposDisponibles} cupos disponibles`;
+            } else {
+                badgeCupos.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-red-900/60 border border-red-500/50 text-red-300';
+                badgeCupos.innerHTML = `<i class="fas fa-times-circle mr-1"></i> Cupos Agotados`;
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.className = 'w-1/2 py-2.5 px-4 text-center rounded-lg bg-stone-700 text-stone-400 font-bold text-sm cursor-not-allowed';
+                    submitBtn.textContent = 'Cupos Agotados';
+                }
+            }
+        }
+
+        async function cargarPrecios(tallerId) {
+            const container = document.getElementById('lista-precios');
+            const selectModalidad = document.getElementById('alumno-modalidad');
+
+            try {
+                const res = await fetch(`/api/talleres/precios?taller=${tallerId}&vigente=1`);
+                if (res.ok) {
+                    const precios = await res.json();
+                    currentPrecios = precios;
+
+                    if (Array.isArray(precios) && precios.length > 0) {
+                        container.innerHTML = precios.map((p, idx) => {
+                            const desc = p.descripcion ? `<p class="text-xs text-stone-400 mt-1">${p.descripcion}</p>` : '';
+                            const clasesText = p.cantidadClases ? ` (${p.cantidadClases} clases)` : '';
+                            return `
+                                <div class="price-option-card ${idx === 0 ? 'selected' : ''}" onclick="selectPrice(${idx})">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-bold text-white text-sm">${p.nombre_precio || p.modalidad}${clasesText}</span>
+                                        <span class="text-neon font-extrabold text-sm">$${formatPrecioAR(p.precio)}</span>
+                                    </div>
+                                    ${desc}
+                                </div>
+                            `;
+                        }).join('');
+
+                        // Actualizar opciones del select
+                        selectModalidad.innerHTML = precios.map((p, idx) => `
+                            <option value="${p.modalidad}" data-idx="${idx}">
+                                ${p.nombre_precio || p.modalidad} - $${formatPrecioAR(p.precio)}
+                            </option>
+                        `).join('');
+
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('No se pudieron obtener aranceles específicos:', e);
+            }
+
+            // Fallback estándar
+            container.innerHTML = `
+                <div class="price-option-card selected">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-white text-sm">Clase Suelta</span>
+                        <span class="text-xs text-stone-400">Consultar arancel</span>
+                    </div>
+                    <p class="text-xs text-stone-400 mt-1">Abono por cada clase presencial.</p>
+                </div>
+                <div class="price-option-card">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-white text-sm">Abono Mensual</span>
+                        <span class="text-xs text-stone-400">Consultar arancel</span>
+                    </div>
+                    <p class="text-xs text-stone-400 mt-1">Cuota mensual con acceso a todas las clases del mes.</p>
+                </div>
+            `;
+        }
+
+        window.selectPrice = function (index) {
+            const cards = document.querySelectorAll('.price-option-card');
+            cards.forEach((c, idx) => {
+                if (idx === index) c.classList.add('selected');
+                else c.classList.remove('selected');
+            });
+            const select = document.getElementById('alumno-modalidad');
+            if (select && select.options[index]) {
+                select.selectedIndex = index;
+            }
+        };
+
+        // Selector si no se pasó ID en URL
+        async function cargarSelectorTalleres() {
+            document.getElementById('loading-state').classList.add('hidden');
+            const selectorState = document.getElementById('selector-state');
+            selectorState.classList.remove('hidden');
+
+            const select = document.getElementById('select-taller-alt');
+            try {
+                const res = await fetch('/api/talleres/publicos');
+                if (res.ok) {
+                    const talleres = await res.json();
+                    select.innerHTML = '<option value="">-- Elige un taller --</option>' + talleres.map(t => `
+                        <option value="${t.id}">${t.nombre} (${t.diaSemana || 'Taller'})</option>
+                    `).join('');
+
+                    document.getElementById('btn-ir-taller').onclick = () => {
+                        const val = select.value;
+                        if (!val) {
+                            showNotification('Por favor selecciona un taller para continuar', 'warning');
+                            return;
+                        }
+                        window.location.search = `?id=${val}`;
+                    };
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Manejo del formulario de inscripción
+        document.getElementById('form-inscripcion').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentTaller) {
+                showNotification('Error: no hay taller seleccionado.', 'error');
+                return;
+            }
+
+            const nombre = document.getElementById('alumno-nombre').value.trim();
+            const email = document.getElementById('alumno-email').value.trim();
+            const telefono = document.getElementById('alumno-telefono').value.trim();
+            const modalidad = document.getElementById('alumno-modalidad').value;
+            const comentarios = document.getElementById('alumno-comentarios').value.trim();
+
+            if (!nombre || !email || !telefono) {
+                showNotification('Por favor completá tu nombre, email y teléfono', 'warning');
+                return;
+            }
+
+            const submitBtn = document.getElementById('btn-submit-inscripcion');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...`;
+
+            try {
+                const payload = {
+                    taller_id: currentTaller.id,
+                    alumno_nombre: nombre,
+                    alumno_email: email,
+                    alumno_telefono: telefono,
+                    modalidad: modalidad || 'clase_suelta',
+                    comentarios: comentarios || null
+                };
+
+                const res = await fetch('/api/talleres/inscripciones/publica', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Error al registrar la inscripción');
+                }
+
+                // Éxito: Mostrar resumen y ocultar formulario
+                document.getElementById('form-inscripcion').classList.add('hidden');
+                const exitoSec = document.getElementById('seccion-exito');
+                exitoSec.classList.remove('hidden');
+
+                document.getElementById('exito-taller-nombre').textContent = currentTaller.nombre;
+                document.getElementById('exito-id').textContent = `#${data.id || 'CONF'}`;
+                document.getElementById('exito-alumno').textContent = nombre;
+                document.getElementById('exito-email').textContent = email;
+                document.getElementById('exito-modalidad').textContent = modalidad === 'paquete' ? 'Mensualidad' : 'Clase Suelta';
+
+                showNotification('¡Inscripción registrada con éxito!', 'success', 5000);
+
+            } catch (err) {
+                console.error('Error registrando inscripción:', err);
+                showNotification(err.message, 'error', 6000);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span>Siguiente / Confirmar</span> <i class="fas fa-check"></i>`;
+            }
+        });
+
+        // Inicializar al cargar el DOM
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+    <!-- Script de Navbar Dinámico -->
+    <script src="/navbar.js"></script>
+</body>
+
+</html>

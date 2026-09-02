@@ -1292,9 +1292,30 @@ const actualizarSolicitud = async (req, res) => {
             logVerbose(`[SOLICITUD][EDIT] PASO 3: Actualizando solicitudes_talleres (id=${idNumerico})`);
 
             const nombreTaller = req.body.nombreTaller || req.body.nombre_taller || req.body.nombreParaMostrar || null;
-            const descripcionParaTaller = descripcion || detallesAdicionales || req.body.descripcion || null;
+            const descripcionParaTaller = descripcion || detallesAdicionales || req.body.descripcion || req.body.comentarios || null;
             const precioValor = req.body.precioClase || req.body.precioBase || req.body.precio_final || precioBase || null;
             const tipoTallerId = req.body.idTipoEvento || req.body.tipoId || req.body.tipo_taller_id || req.body.tipoTallerId || null;
+            const cupoMax = req.body.cupoMax ?? req.body.cupo_max ?? req.body.cantidadPersonas ?? null;
+            const modalidadPago = req.body.modalidadPago || req.body.modalidad_pago || null;
+            const precioClase = req.body.precioClase ?? req.body.precio_clase ?? null;
+            const precioSemana = req.body.precioSemana ?? req.body.precio_semana ?? null;
+            const schedulePayload = req.body.schedule || req.body.horarios || req.body.tallerSchedule || null;
+            const scheduleJson = Array.isArray(schedulePayload) ? JSON.stringify(schedulePayload) : (typeof schedulePayload === 'string' ? schedulePayload : null);
+            const parsedSchedule = scheduleJson ? (() => { try { return JSON.parse(scheduleJson); } catch (err) { return schedulePayload; } })() : null;
+
+            let duracionMinutos = null;
+            if (duracionEvento) {
+                if (typeof duracionEvento === 'string') {
+                    const match = duracionEvento.match(/(\d+)\s*hora/i);
+                    if (match) {
+                        duracionMinutos = parseInt(match[1], 10) * 60;
+                    } else if (!isNaN(parseInt(duracionEvento, 10))) {
+                        duracionMinutos = parseInt(duracionEvento, 10);
+                    }
+                } else if (!isNaN(Number(duracionEvento))) {
+                    duracionMinutos = Number(duracionEvento);
+                }
+            }
 
             const setClauses = [];
             const params = [];
@@ -1319,46 +1340,104 @@ const actualizarSolicitud = async (req, res) => {
                 setClauses.push('hora_evento = ?');
                 params.push(horaInicio);
             }
-            if (duracionEvento) {
-                setClauses.push('duracion = ?');
-                params.push(duracionEvento);
-            }
             if (precioValor !== null && precioValor !== undefined && String(precioValor).trim() !== '') {
                 setClauses.push('precio = ?');
                 params.push(Number(precioValor));
             }
 
-            if (setClauses.length === 0) {
+            const hasParentUpdateFields = duracionMinutos !== null || !!fechaEvento || !!horaInicio;
+            const hasTallerMetadata = [cupoMax, modalidadPago, precioClase, precioSemana, scheduleJson, descripcionParaTaller].some(v => v !== null && v !== undefined && String(v).trim() !== '');
+            if (setClauses.length === 0 && !hasParentUpdateFields && !hasTallerMetadata) {
                 logVerbose(`[SOLICITUD][EDIT] ⚠️ No hay campos para actualizar en solicitudes_talleres`);
                 await conn.commit();
                 return res.status(400).json({ error: 'No hay campos para actualizar.' });
             }
 
-            params.push(idNumerico);
-            const sqlUpdateTaller = `UPDATE solicitudes_talleres SET ${setClauses.join(', ')} WHERE id_solicitud = ?`;
-            try {
-                const result = await conn.query(sqlUpdateTaller, params);
-                affectedRowsEspecifico = result.affectedRows || 0;
-                tablaActualizada = 'solicitudes_talleres';
-                logVerbose(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_talleres: affectedRows=${affectedRowsEspecifico}`);
-            } catch (tallerErr) {
-                logError(`[SOLICITUD][EDIT] ✗ Error en solicitudes_talleres:`, tallerErr.message);
-                throw tallerErr;
+            if (setClauses.length > 0) {
+                params.push(idNumerico);
+                const sqlUpdateTaller = `UPDATE solicitudes_talleres SET ${setClauses.join(', ')} WHERE id_solicitud = ?`;
+                try {
+                    const result = await conn.query(sqlUpdateTaller, params);
+                    affectedRowsEspecifico = result.affectedRows || 0;
+                    tablaActualizada = 'solicitudes_talleres';
+                    logVerbose(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes_talleres: affectedRows=${affectedRowsEspecifico}`);
+                } catch (tallerErr) {
+                    logError(`[SOLICITUD][EDIT] ✗ Error en solicitudes_talleres:`, tallerErr.message);
+                    throw tallerErr;
+                }
+            }
+
+            if (hasTallerMetadata) {
+                const prevDescription = await conn.query(`SELECT descripcion_larga FROM solicitudes WHERE id_solicitud = ? LIMIT 1`, [idNumerico]);
+                const previousValue = prevDescription && prevDescription[0] ? prevDescription[0].descripcion_larga : null;
+                let descriptionPayload = previousValue && typeof previousValue === 'string' && previousValue.trim().startsWith('{') ? (() => { try { return JSON.parse(previousValue); } catch (err) { return {}; } })() : {};
+
+                if (!descriptionPayload || typeof descriptionPayload !== 'object' || Array.isArray(descriptionPayload)) {
+                    descriptionPayload = {};
+                }
+                if (descripcionParaTaller) descriptionPayload.description = descripcionParaTaller;
+                if (parsedSchedule) descriptionPayload.schedule = parsedSchedule;
+                if (cupoMax !== null && cupoMax !== undefined && String(cupoMax).trim() !== '') descriptionPayload.cupoMax = Number(cupoMax);
+                if (modalidadPago) descriptionPayload.modalidadPago = modalidadPago;
+                if (precioClase !== null && precioClase !== undefined && String(precioClase).trim() !== '') descriptionPayload.precioClase = Number(precioClase);
+                if (precioSemana !== null && precioSemana !== undefined && String(precioSemana).trim() !== '') descriptionPayload.precioSemana = Number(precioSemana);
+
+                const descriptionJson = JSON.stringify(descriptionPayload);
+                await conn.query(`UPDATE solicitudes SET descripcion_larga = ? WHERE id_solicitud = ?`, [descriptionJson, idNumerico]);
+            }
+
+            // La duración vive en la tabla padre 'solicitudes' y no existe en solicitudes_talleres.
+            if (hasParentUpdateFields) {
+                const parentSet = [];
+                const parentParams = [];
+                if (fechaEvento) {
+                    parentSet.push('fecha_evento = ?');
+                    parentParams.push(fechaEvento);
+                }
+                if (horaInicio) {
+                    parentSet.push('hora_inicio = ?');
+                    parentParams.push(horaInicio);
+                }
+                if (duracionMinutos !== null) {
+                    parentSet.push('duracion_minutos = ?');
+                    parentParams.push(duracionMinutos);
+                }
+                if (parentSet.length > 0) {
+                    parentParams.push(idNumerico);
+                    const parentResult = await conn.query(`UPDATE solicitudes SET ${parentSet.join(', ')} WHERE id_solicitud = ?`, parentParams);
+                    affectedRowsEspecifico = parentResult.affectedRows || affectedRowsEspecifico || 0;
+                    tablaActualizada = tablaActualizada || 'solicitudes';
+                    logVerbose(`[SOLICITUD][EDIT] ✓ UPDATE solicitudes: sincronizados campos generales del taller (affectedRows=${affectedRowsEspecifico})`);
+                }
             }
 
             const urlFlyer = req.body.url_flyer || req.body.urlFlyer || null;
-            if (urlFlyer || descripcionCorta || descripcionLarga || descripcion || detallesAdicionales) {
+            const textDescription = descripcionCorta || descripcionLarga || descripcion || detallesAdicionales || null;
+            if (urlFlyer || textDescription || hasTallerMetadata) {
                 const parentSet = [];
                 const parentParams = [];
                 if (urlFlyer) {
                     parentSet.push('url_flyer = ?');
                     parentParams.push(urlFlyer);
                 }
-                if (descripcionCorta || descripcionLarga || descripcion || detallesAdicionales) {
-                    parentSet.push('descripcion_corta = ?');
-                    parentParams.push(descripcionCorta || descripcion || detallesAdicionales || null);
+                if (hasTallerMetadata) {
+                    const prevDescription = await conn.query(`SELECT descripcion_larga FROM solicitudes WHERE id_solicitud = ? LIMIT 1`, [idNumerico]);
+                    const previousValue = prevDescription && prevDescription[0] ? prevDescription[0].descripcion_larga : null;
+                    let metadataPayload = previousValue && typeof previousValue === 'string' && previousValue.trim().startsWith('{') ? (() => { try { return JSON.parse(previousValue); } catch (err) { return {}; } })() : {};
+                    if (!metadataPayload || typeof metadataPayload !== 'object' || Array.isArray(metadataPayload)) metadataPayload = {};
+                    if (textDescription) metadataPayload.description = textDescription;
+                    if (parsedSchedule) metadataPayload.schedule = parsedSchedule;
+                    if (cupoMax !== null && cupoMax !== undefined && String(cupoMax).trim() !== '') metadataPayload.cupoMax = Number(cupoMax);
+                    if (modalidadPago) metadataPayload.modalidadPago = modalidadPago;
+                    if (precioClase !== null && precioClase !== undefined && String(precioClase).trim() !== '') metadataPayload.precioClase = Number(precioClase);
+                    if (precioSemana !== null && precioSemana !== undefined && String(precioSemana).trim() !== '') metadataPayload.precioSemana = Number(precioSemana);
                     parentSet.push('descripcion_larga = ?');
-                    parentParams.push(descripcionLarga || descripcion || detallesAdicionales || null);
+                    parentParams.push(JSON.stringify(metadataPayload));
+                } else if (textDescription) {
+                    parentSet.push('descripcion_corta = ?');
+                    parentParams.push(textDescription);
+                    parentSet.push('descripcion_larga = ?');
+                    parentParams.push(textDescription);
                 }
                 if (parentSet.length > 0) {
                     parentParams.push(idNumerico);
@@ -1664,12 +1743,14 @@ const getSolicitudesPublicas = async (req, res) => {
                 COALESCE(c.nombre, '') as nombreCompleto,
                 sol.descripcion_larga as descripcion,
                 COALESCE(sol.es_publico, 0) as esPublico,
-                COALESCE(sol.url_flyer, e.url_flyer) as url_flyer
+                COALESCE(sol.url_flyer, e.url_flyer) as url_flyer,
+                t.id as id_taller
             FROM solicitudes sol
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN solicitudes_fechas_bandas sb ON sb.id_solicitud = sol.id_solicitud
             LEFT JOIN bandas_artistas b ON sb.id_banda = b.id_banda
             LEFT JOIN solicitudes_talleres st ON st.id_solicitud = sol.id_solicitud
+            LEFT JOIN talleres t ON (st.id_solicitud IS NOT NULL AND (t.nombre = st.nombre_taller OR t.nombre = sol.descripcion_corta))
             LEFT JOIN solicitudes_servicios ss ON ss.id_solicitud = sol.id_solicitud
             LEFT JOIN eventos_confirmados e ON e.id_solicitud = sol.id_solicitud AND e.activo = 1
             WHERE sol.es_publico = 1

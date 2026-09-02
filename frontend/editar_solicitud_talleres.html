@@ -78,7 +78,6 @@
         }
 
         .radio-group {
-            padding: 10px;
             border: 1px solid #581c87;
             border-radius: 4px;
             background-color: #0f172a;
@@ -124,6 +123,21 @@
             margin-bottom: 0;
             font-weight: bold;
             color: var(--color-secondary);
+        }
+
+        .schedule-list {
+            margin-top: 8px;
+        }
+
+        .schedule-item {
+            padding: 8px;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.7);
         }
 
         #resetTipoEventoBtn {
@@ -540,8 +554,7 @@
         <div class="container" id="mainContainer">
             <div class="header-row">
                 <a href="admin_solicitudes.html" id="backBtn" class="back-btn">
-                    <i class="fas fa-arrow-left"></i> Volver a Solicitudes
-                </a>
+                    <i class="fas fa-arrow-left"></i> Volver </a>
                 <h2 style="margin: 0;"><i class="fas fa-chalkboard-teacher"></i> Editor de Solicitud de Taller</h2>
                 <div style="width: 180px;"></div>
             </div>
@@ -618,11 +631,11 @@
                             </div>
                             <div class="flyer-input-side">
                                 <div class="form-group">
-                                    <label for="urlFlyer">Flyer (URL o subir)</label>
-                                    <p class="hint">Pegá la URL del flyer o hacé click en la imagen para subir:</p>
+                                    <label for="urlFlyer">Flyer</label>
+                                    <p class="hint">Hacé click en la imagen para subir:</p>
                                     <input type="text" id="urlFlyer" placeholder="https://..."
                                         onchange="updateFlyerPreview()" oninput="updateFlyerPreview()"
-                                        style="margin-top: 5px;">
+                                        style="display: none;">
                                     <input type="file" id="flyerFile" accept="image/png,image/jpeg"
                                         style="display: none;" onchange="handleFlyerUpload()">
                                 </div>
@@ -630,43 +643,64 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="fechaEvento">Fecha del Taller (inicio):</label>
+                        <label for="fechaEvento">Inicia el:</label>
                         <input type="text" id="fechaEvento" placeholder="Seleccione una fecha...">
                     </div>
-                    <div class="form-group" id="horaInicioGroup">
-                        <label for="horaInicio">Hora de Inicio (si aplica):</label>
-                        <select id="horaInicio">
-                            <option value="">--</option>
+                </div>
+
+                <div class="form-group" id="tallerScheduleSummary">
+                    <label>Horarios por semana</label>
+                    <div id="horarioForm" class="column-layout" style="margin-bottom:8px">
+                        <select id="tallerDiaSemana" style="flex: 1;">
+                            <option value="1">Lunes</option>
+                            <option value="2">Martes</option>
+                            <option value="3">Miércoles</option>
+                            <option value="4">Jueves</option>
+                            <option value="5">Viernes</option>
+                            <option value="6">Sábado</option>
+                            <option value="0">Domingo</option>
                         </select>
+                        <input type="time" id="tallerHoraInicioClase" style="flex: 1;" />
+                        <select id="tallerDuracionHoras" style="flex: 1;">
+                            <option value="1">1 hora</option>
+                            <option value="2">2 horas</option>
+                            <option value="3">3 horas</option>
+                        </select>
+                        <button type="button" id="btnAddTallerHorario" class="btn btn-primary" style="margin:2px;">Agregar</button>
+                    </div>
+                    <div id="tallerScheduleList" class="schedule-list"></div>
+                </div>
+
+                <div class="form-group" id="tallerMetadataGroup" style="display:none;">
+                    <div class="column-layout">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="tallerCupoMax">Cupo máximo</label>
+                            <input type="number" id="tallerCupoMax" min="1" value="10">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="tallerModalidadPago">Modalidad de pago</label>
+                            <select id="tallerModalidadPago">
+                                <option value="por_clase">Por clase</option>
+                                <option value="por_semana">Por semana</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="column-layout">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="tallerPrecioClase">Precio por clase ($)</label>
+                            <input type="number" id="tallerPrecioClase" min="0" step="1" value="0">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="tallerPrecioSemana">Precio por semana ($)</label>
+                            <input type="number" id="tallerPrecioSemana" min="0" step="1" value="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="tallerComentarios">Comentarios / observaciones</label>
+                        <textarea id="tallerComentarios" rows="3" placeholder="Comentarios del taller..."></textarea>
                     </div>
                 </div>
 
-                <!-- Nuevo: resumen del schedule (para talleres con repetición semanal) -->
-                <div class="form-group">
-                    <label>Horario semanal (si aplica)</label>
-                    <div id="tallerScheduleSummary" class="small muted">Si la solicitud incluye horarios recurrentes, se
-                        mostrarán aquí.</div>
-                </div>
-
-                <div class="column-layout">
-                    <div class="form-group" id="cantidadPersonasGroup">
-                        <label for="cantidadPersonas">Cupo máximo / Cantidad de Personas:</label>
-                        <select id="cantidadPersonas">
-                            <option value="">--</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="duracionEventoGroup">
-                        <label for="duracionEvento">Duración por clase (horas):</label>
-                        <select id="duracionEvento">
-                            <option value="">--</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="detallesAdicionales">Detalles Adicionales (opcional):</label>
-                    <textarea id="detallesAdicionales" name="detallesAdicionales" rows="4"></textarea>
-                </div>
             </fieldset>
 
             <hr>

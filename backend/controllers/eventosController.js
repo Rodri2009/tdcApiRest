@@ -24,11 +24,13 @@ const getPublicEvents = async (req, res) => {
                    sfb.precio_basico as precio_base,
                    sfb.precio_anticipada as precio_anticipada,
                    sfb.precio_puerta as precio_puerta,
-                   sol.es_publico as es_publico
+                   sol.es_publico as es_publico,
+                   t.id as id_taller
             FROM eventos_confirmados e
             LEFT JOIN solicitudes sol ON e.id_solicitud = sol.id_solicitud
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN solicitudes_fechas_bandas sfb ON e.id_solicitud = sfb.id_solicitud AND e.tipo_evento = 'BANDA'
+            LEFT JOIN talleres t ON (e.tipo_evento = 'TALLER' AND (t.nombre = sol.descripcion_corta OR t.nombre = sol.descripcion_larga))
             WHERE e.es_publico = 1 AND e.activo = 1
               AND COALESCE(sol.fecha_evento, e.fecha_evento) >= CURDATE()
             ORDER BY e.fecha_evento, e.hora_inicio

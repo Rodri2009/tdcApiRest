@@ -832,7 +832,8 @@
                 link = `checkout_form.html?event_id=${item.id}`;
             }
             else if (item.tipo === "TALLER") {
-                link = "seccion_talleres.html";
+                const tallerId = item.id_taller || item.id_solicitud || item.id;
+                link = tallerId ? `detalle_taller.html?id=${tallerId}` : "seccion_talleres.html";
             }
             else if (item.tipo === "SERVICIO") {
                 link = "seccion_servicios.html";
@@ -1055,7 +1056,8 @@
                             precio_anticipada: item.precio_anticipada || null,
                             precio_puerta: item.precio_puerta || null,
                             descripcion: item.descripcion || '',
-                            url_flyer: item.url_flyer || item.flyer_url || item.flyer || null
+                            url_flyer: item.url_flyer || item.flyer_url || item.flyer || null,
+                            id_taller: item.id_taller || item.taller_id || null
                         };
                     });
                 } else {
@@ -1090,7 +1092,8 @@
                             precio_anticipada: item.precio_anticipada || null,
                             precio_puerta: item.precio_puerta || null,
                             descripcion: item.descripcion || '',
-                            url_flyer: item.url_flyer || item.flyer_url || item.flyerUrl || item.flyer || item.imagen || item.adjunto_url || null
+                            url_flyer: item.url_flyer || item.flyer_url || item.flyerUrl || item.flyer || item.imagen || item.adjunto_url || null,
+                            id_taller: item.id_taller || item.taller_id || null
                         };
                     });
                 } else {

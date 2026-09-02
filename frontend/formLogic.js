@@ -28,6 +28,31 @@ function isUserAdmin() {
     return decoded && decoded.role === 'admin';
 }
 
+function parseTallerMetadata(raw) {
+    if (!raw || typeof raw === 'string' && raw.trim() === '') return {};
+
+    const asObject = typeof raw === 'string' ? (() => {
+        try {
+            return JSON.parse(raw);
+        } catch (err) {
+            return null;
+        }
+    })() : raw;
+
+    if (!asObject || typeof asObject !== 'object' || Array.isArray(asObject)) {
+        return {};
+    }
+
+    return {
+        schedule: asObject.schedule || asObject.horarios || asObject.tallerSchedule || asObject.taller_schedule || [],
+        cupoMax: asObject.cupoMax ?? asObject.cupo_max ?? asObject.cantidadPersonas ?? '',
+        modalidadPago: asObject.modalidadPago || asObject.modalidad_pago || 'por_clase',
+        precioClase: asObject.precioClase ?? asObject.precio_clase ?? asObject.precioBase ?? '',
+        precioSemana: asObject.precioSemana ?? asObject.precio_semana ?? '',
+        comentarios: asObject.comentarios || asObject.detalles || asObject.descripcionGeneral || asObject.comentarios_observaciones || asObject.description || ''
+    };
+}
+
 // =================================================================
 // ARCHIVO DE LÓGICA COMPARTIDA: formLogic.js
 // Contiene el objeto App y la función de inicialización.
@@ -115,6 +140,20 @@ const App = {
         this.elements.precioAnticipadaInput = document.getElementById('precioAnticipadaInput');
         this.elements.precioPuertaInput = document.getElementById('precioPuertaInput');
 
+        this.elements.tallerMetadataGroup = document.getElementById('tallerMetadataGroup');
+        this.elements.tallerScheduleSummary = document.getElementById('tallerScheduleSummary');
+        this.elements.tallerDiaSemana = document.getElementById('tallerDiaSemana');
+        this.elements.tallerHoraInicioClase = document.getElementById('tallerHoraInicioClase');
+        this.elements.tallerDuracionHoras = document.getElementById('tallerDuracionHoras');
+        this.elements.btnAddTallerHorario = document.getElementById('btnAddTallerHorario');
+        this.elements.tallerScheduleList = document.getElementById('tallerScheduleList');
+        this.elements.tallerCupoMax = document.getElementById('tallerCupoMax');
+        this.elements.tallerModalidadPago = document.getElementById('tallerModalidadPago');
+        this.elements.tallerPrecioClase = document.getElementById('tallerPrecioClase');
+        this.elements.tallerPrecioSemana = document.getElementById('tallerPrecioSemana');
+        this.elements.tallerComentarios = document.getElementById('tallerComentarios');
+        this.elements.detallesAdicionalesTextarea = this.elements.tallerComentarios || document.getElementById('detallesAdicionales');
+
         // Elementos condicionales
         if (this.config.mode === 'create') {
             this.elements.btnAdicionales = document.getElementById('btn-adicionales');
@@ -124,7 +163,6 @@ const App = {
             this.elements.saveButton = document.getElementById('save-button');
             this.elements.cancelButton = document.getElementById('cancel-button');
             this.elements.editFieldset = document.getElementById('edit-fieldset');
-            this.elements.detallesAdicionalesTextarea = document.getElementById('detallesAdicionales');
             // band fields already bound above (may be null in non-band pages)
         }
     },
@@ -170,6 +208,44 @@ const App = {
                     e.target.classList.remove('campo-invalido');
                 }
                 this.actualizarTodo();
+            });
+        });
+
+        if (this.elements.btnAddTallerHorario) {
+            this.elements.btnAddTallerHorario.addEventListener('click', (e) => {
+                e.preventDefault();
+                const day = this.elements.tallerDiaSemana ? this.elements.tallerDiaSemana.value : '';
+                const start = this.elements.tallerHoraInicioClase ? this.elements.tallerHoraInicioClase.value : '';
+                const duration = this.elements.tallerDuracionHoras ? this.elements.tallerDuracionHoras.value : '1';
+                if (!start) {
+                    this.showNotification('Seleccione una hora de inicio', 'warning');
+                    return;
+                }
+                const schedule = Array.isArray(this.tallerScheduleData) ? this.tallerScheduleData : [];
+                schedule.push({ day, start, duration: parseInt(duration, 10) || 1 });
+                this.tallerScheduleData = schedule;
+                if (this.elements.tallerHoraInicioClase) this.elements.tallerHoraInicioClase.value = '';
+                this.renderTallerScheduleList();
+            });
+        }
+
+        [this.elements.tallerCupoMax, this.elements.tallerModalidadPago, this.elements.tallerPrecioClase, this.elements.tallerPrecioSemana, this.elements.tallerComentarios].forEach(el => {
+            if (!el) return;
+            const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+            el.addEventListener(eventName, () => {
+                const cupo = this.elements.tallerCupoMax ? this.elements.tallerCupoMax.value : '';
+                const modalidad = this.elements.tallerModalidadPago ? this.elements.tallerModalidadPago.value : 'por_clase';
+                const precioClase = this.elements.tallerPrecioClase ? this.elements.tallerPrecioClase.value : '';
+                const precioSemana = this.elements.tallerPrecioSemana ? this.elements.tallerPrecioSemana.value : '';
+                const comentarios = this.elements.tallerComentarios ? this.elements.tallerComentarios.value : '';
+
+                if (this.elements.detallesAdicionalesTextarea && comentarios) this.elements.detallesAdicionalesTextarea.value = comentarios;
+                if (this.elements.precioBaseInput && modalidad === 'por_clase' && precioClase) {
+                    this.elements.precioBaseInput.value = precioClase;
+                }
+                if (this.elements.precioBaseInput && modalidad === 'por_semana' && precioSemana) {
+                    this.elements.precioBaseInput.value = precioSemana;
+                }
             });
         });
 
@@ -222,6 +298,60 @@ const App = {
                     ev.target.disabled = false;
                 }
             });
+        }
+    },
+
+    formatDayLabel: function (value) {
+        const map = { 0: 'Dom', 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb' };
+        return map[Number(value)] || String(value || 'Sin día');
+    },
+
+    renderTallerScheduleList: function () {
+        const list = this.elements.tallerScheduleList;
+        if (!list) return;
+
+        const entries = Array.isArray(this.tallerScheduleData) ? this.tallerScheduleData : [];
+        list.innerHTML = '';
+        list.dataset.schedule = JSON.stringify(entries);
+
+        if (!entries.length) {
+            list.innerHTML = '<div style="color:#d6d3d1;">Sin horarios recurrentes cargados.</div>';
+            return;
+        }
+
+        entries.forEach((entry, idx) => {
+            const item = document.createElement('div');
+            item.className = 'schedule-item';
+            item.innerHTML = `
+                <div>${this.formatDayLabel(entry.day)} • ${entry.start} • ${entry.duration || 1} h</div>
+                <div><button type="button" class="btn-ghost" data-idx="${idx}">Eliminar</button></div>
+            `;
+            list.appendChild(item);
+        });
+
+        list.querySelectorAll('button[data-idx]').forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                const idx = Number(event.currentTarget.dataset.idx);
+                if (Number.isNaN(idx)) return;
+                const next = Array.isArray(this.tallerScheduleData) ? this.tallerScheduleData.slice() : [];
+                next.splice(idx, 1);
+                this.tallerScheduleData = next;
+                this.renderTallerScheduleList();
+            });
+        });
+    },
+
+    getCurrentTallerSchedule: function () {
+        if (Array.isArray(this.tallerScheduleData)) {
+            return this.tallerScheduleData;
+        }
+
+        const list = this.elements.tallerScheduleList;
+        if (!list || !list.dataset.schedule) return [];
+        try {
+            return JSON.parse(list.dataset.schedule || '[]');
+        } catch (err) {
+            return [];
         }
     },
 
@@ -419,9 +549,15 @@ const App = {
             });
         }
 
-        this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
-        this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
-        this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo...');
+        if (this.elements.cantidadPersonasSelect) {
+            this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
+        }
+        if (this.elements.duracionEventoSelect) {
+            this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
+        }
+        if (this.elements.horaInicioSelect) {
+            this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo...');
+        }
         this.inicializarCalendario(this.fechasOcupadasSeguro, this.feriadosGlobal, fechaExcepcion);
     },
 
@@ -441,26 +577,31 @@ const App = {
             if (bandFieldsContainer) {
                 bandFieldsContainer.style.display = 'none';
             }
+            if (this.elements && this.elements.tallerMetadataGroup) {
+                this.elements.tallerMetadataGroup.style.display = 'none';
+            }
             return;
         }
 
         const tipoId = selectedSelect.value;
         const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
 
-        // Determinar si mostrar campos de banda según CATEGORÍA
-        // Mostrar si es: BANDA, TALLER, SERVICIO
-        // Ocultar si es: ALQUILER (alquiler de salón con subcategorías)
         const tieneCategoria = tipoSeleccionado && tipoSeleccionado.categoria;
         const categoria = tieneCategoria ? tipoSeleccionado.categoria.toUpperCase() : '';
         const mostrarCamposBanda = categoria === 'BANDA' || categoria === 'TALLER' || categoria === 'SERVICIO';
+        const mostrarMetadataTaller = categoria === 'TALLER' || categoria === 'TALLERES' || categoria === 'TALLERES_ACTIVIDADES';
 
         const bandFieldsContainer = document.getElementById('band-fields');
         if (bandFieldsContainer) {
             bandFieldsContainer.style.display = mostrarCamposBanda ? 'block' : 'none';
         }
+        if (this.elements && this.elements.tallerMetadataGroup) {
+            this.elements.tallerMetadataGroup.style.display = mostrarMetadataTaller ? 'block' : 'none';
+        }
+        if (this.elements && this.elements.tallerScheduleSummary) {
+            this.elements.tallerScheduleSummary.style.display = mostrarMetadataTaller ? 'block' : 'none';
+        }
 
-        // Ocultar "Cantidad de Personas" y "Duración del evento" para categoría BANDA
-        // Estos campos no aplican para fechas de bandas en vivo
         const ocultarCantidadYDuracion = categoria === 'BANDA';
 
         const cantidadGroup = document.getElementById('cantidadPersonasGroup');
@@ -1002,18 +1143,38 @@ const App = {
             }
         } catch (err) { console.error('populateForm: fallo al setear datos de contacto:', err); }
 
-        // 4d. Si la solicitud es un taller con schedule recurrente, mostrar un resumen
+        // 4d. Si la solicitud es un taller con schedule recurrente, mostrar y mantener la lista editable de horarios
         try {
             const scheduleSummaryDiv = document.getElementById('tallerScheduleSummary');
-            const sched = solicitud.schedule || solicitud.tallerSchedule || null;
-            if (scheduleSummaryDiv && sched) {
-                try {
-                    const lines = (sched || []).map(s => `- ${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][parseInt(s.day)]} ${s.start} (${s.duration}h)`).join('<br>');
-                    const ex = (solicitud.exceptions || []).join(', ');
-                    scheduleSummaryDiv.innerHTML = `<div>Inicio: <strong>${solicitud.startDate || solicitud.fechaEvento || solicitud.fecha_evento}</strong></div><div>Horarios:</div><div style="margin-top:6px">${lines}</div><div style="margin-top:6px">Excepciones: ${ex || '—'}</div>`;
-                } catch (err) {
-                    scheduleSummaryDiv.textContent = 'No se pudo renderizar schedule.';
-                }
+            const metadata = parseTallerMetadata(solicitud.tallerMetadata || solicitud.metadata || solicitud.descripcion_larga || solicitud.descripcionLarga || solicitud.descripcion || solicitud.comentarios_observaciones || solicitud.comentarios || {});
+            const sched = Array.isArray(metadata.schedule) ? metadata.schedule :
+                (Array.isArray(solicitud.schedule) ? solicitud.schedule :
+                    (Array.isArray(solicitud.tallerSchedule) ? solicitud.tallerSchedule :
+                        (Array.isArray(solicitud.horarios) ? solicitud.horarios : [])));
+
+            this.tallerScheduleData = sched.map(item => ({
+                day: item?.day ?? item?.dia ?? item?.diaSemana ?? item?.dia_semana ?? '1',
+                start: item?.start || item?.horaInicio || item?.hora_inicio || item?.horario || '09:00',
+                duration: Number(item?.duration ?? item?.duracion ?? item?.duracion_horas ?? 1)
+            }));
+
+            if (scheduleSummaryDiv) {
+                const cupoMax = metadata.cupoMax ?? solicitud.cupoMax ?? solicitud.cupo_max ?? solicitud.cantidadPersonas ?? '';
+                const modalidadPago = metadata.modalidadPago || solicitud.modalidadPago || solicitud.modalidad_pago || 'por_clase';
+                const precioClase = metadata.precioClase ?? solicitud.precioClase ?? solicitud.precio_clase ?? solicitud.precioBase ?? '';
+                const precioSemana = metadata.precioSemana ?? solicitud.precioSemana ?? solicitud.precio_semana ?? '';
+                const comentarios = metadata.comentarios || solicitud.detalles || solicitud.descripcionGeneral || solicitud.comentarios || solicitud.comentarios_observaciones || '';
+
+                if (this.elements && this.elements.tallerCupoMax) this.elements.tallerCupoMax.value = cupoMax || 10;
+                if (this.elements && this.elements.tallerModalidadPago) this.elements.tallerModalidadPago.value = modalidadPago;
+                if (this.elements && this.elements.tallerPrecioClase) this.elements.tallerPrecioClase.value = precioClase || 0;
+                if (this.elements && this.elements.tallerPrecioSemana) this.elements.tallerPrecioSemana.value = precioSemana || 0;
+                if (this.elements && this.elements.tallerComentarios) this.elements.tallerComentarios.value = comentarios || '';
+                if (this.elements && this.elements.detallesAdicionalesTextarea && comentarios) this.elements.detallesAdicionalesTextarea.value = comentarios;
+                if (this.elements && this.elements.precioBaseInput && modalidadPago === 'por_clase' && precioClase !== '') this.elements.precioBaseInput.value = precioClase;
+                if (this.elements && this.elements.precioBaseInput && modalidadPago === 'por_semana' && precioSemana !== '') this.elements.precioBaseInput.value = precioSemana;
+
+                this.renderTallerScheduleList();
             }
         } catch (err) { console.warn('populateForm: fallo al renderizar schedule de taller:', err); }
 
@@ -1416,10 +1577,13 @@ const App = {
 
     actualizarTodo: async function (caller = 'user-interaction', overrides = {}) {
         const tipoId = overrides.overrideTipo || document.querySelector('#tipoEventoSelect')?.value || '';
-        const fechaStr = overrides.overrideFechaStr || this.elements.fechaEventoInput.value;
-        const cantidad = overrides.overrideCantidad || this.elements.cantidadPersonasSelect.value;
-        const duracion = overrides.overrideDuracion || this.elements.duracionEventoSelect.value;
-        let hora = overrides.overrideHora || this.elements.horaInicioSelect.value;
+        const fechaStr = overrides.overrideFechaStr || (this.elements.fechaEventoInput ? this.elements.fechaEventoInput.value : '');
+        const cantidadSelect = this.elements.cantidadPersonasSelect;
+        const duracionSelect = this.elements.duracionEventoSelect;
+        const horaSelect = this.elements.horaInicioSelect;
+        const cantidad = overrides.overrideCantidad || (cantidadSelect ? cantidadSelect.value : '');
+        const duracion = overrides.overrideDuracion || (duracionSelect ? duracionSelect.value : '');
+        let hora = overrides.overrideHora || (horaSelect ? horaSelect.value : '');
 
 
         // Parsear fecha de forma segura en hora local, evitando desface UTC
@@ -1459,29 +1623,39 @@ const App = {
 
         // 2. Poblar selects de Cantidad y Duración
         if (tipoId) {
-            this.llenarSelect(this.elements.cantidadPersonasSelect, this.opcionesCantidades[resolvedTipoKey] || [], 'Seleccione cantidad...');
-            this.llenarSelect(this.elements.duracionEventoSelect, this.opcionesDuraciones[resolvedTipoKey] || [], 'Seleccione duración...');
-        } else {
-            this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
-            this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
-        }
-        // Establecemos el valor (ya sea del override o del propio DOM)
-        if (cantidad) {
-            const opts = Array.from(this.elements.cantidadPersonasSelect.options).map(o => o.value);
-            if (opts.includes(String(cantidad))) {
-                this.elements.cantidadPersonasSelect.value = String(cantidad);
-            } else if (cantidad && this.elements.cantidadPersonasSelect) {
-                const customOpt = new Option(String(cantidad), String(cantidad));
-                this.elements.cantidadPersonasSelect.add(customOpt);
-                this.elements.cantidadPersonasSelect.value = String(cantidad);
-                console.warn('[actualizarTodo] Cupo no estaba en catálogo; se dejó el valor real:', cantidad);
+            if (this.elements.cantidadPersonasSelect) {
+                this.llenarSelect(this.elements.cantidadPersonasSelect, this.opcionesCantidades[resolvedTipoKey] || [], 'Seleccione cantidad...');
+            }
+            if (this.elements.duracionEventoSelect) {
+                this.llenarSelect(this.elements.duracionEventoSelect, this.opcionesDuraciones[resolvedTipoKey] || [], 'Seleccione duración...');
             }
         } else {
-            this.elements.cantidadPersonasSelect.value = '';
+            if (this.elements.cantidadPersonasSelect) {
+                this.llenarSelect(this.elements.cantidadPersonasSelect, [], 'Seleccione tipo...');
+            }
+            if (this.elements.duracionEventoSelect) {
+                this.llenarSelect(this.elements.duracionEventoSelect, [], 'Seleccione tipo...');
+            }
+        }
+        // Establecemos el valor (ya sea del override o del propio DOM)
+        if (this.elements.cantidadPersonasSelect) {
+            if (cantidad) {
+                const opts = Array.from(this.elements.cantidadPersonasSelect.options).map(o => o.value);
+                if (opts.includes(String(cantidad))) {
+                    this.elements.cantidadPersonasSelect.value = String(cantidad);
+                } else {
+                    const customOpt = new Option(String(cantidad), String(cantidad));
+                    this.elements.cantidadPersonasSelect.add(customOpt);
+                    this.elements.cantidadPersonasSelect.value = String(cantidad);
+                    console.warn('[actualizarTodo] Cupo no estaba en catálogo; se dejó el valor real:', cantidad);
+                }
+            } else {
+                this.elements.cantidadPersonasSelect.value = '';
+            }
         }
 
         // Para duración, intentar hacer match si es un string para encontrar la opción correcta
-        if (duracion && typeof duracion === 'string') {
+        if (this.elements.duracionEventoSelect && duracion && typeof duracion === 'string') {
             const duracionTrimmed = duracion.trim();
             const opciones = Array.from(this.elements.duracionEventoSelect.options);
 
@@ -1509,7 +1683,7 @@ const App = {
                 this.elements.duracionEventoSelect.value = customLabel;
                 console.warn('[actualizarTodo] Duración preservada como valor real del taller:', customLabel);
             }
-        } else if (duracion) {
+        } else if (this.elements.duracionEventoSelect && duracion) {
             const duracionStr = String(duracion).trim();
             const customValue = duracionStr.includes(' ') ? duracionStr : `${duracionStr} horas`;
             const opts = Array.from(this.elements.duracionEventoSelect.options).map(o => o.value);
@@ -1517,7 +1691,7 @@ const App = {
                 this.elements.duracionEventoSelect.add(new Option(customValue, customValue));
             }
             this.elements.duracionEventoSelect.value = customValue;
-        } else {
+        } else if (this.elements.duracionEventoSelect) {
             this.elements.duracionEventoSelect.value = '';
         }
 
@@ -1538,56 +1712,58 @@ const App = {
             const horariosDefinitivos = horariosFiltrados.length ? horariosFiltrados : (esTaller ? horariosFallbackTaller : []);
             console.log('[actualizarTodo] tipoDeDia:', tipoDeDia, 'horariosFiltrados (pre-normalización):', horariosFiltrados, 'horariosDefinitivos:', horariosDefinitivos);
 
-            this.llenarSelect(this.elements.horaInicioSelect, horariosDefinitivos, 'Seleccione hora...');
-            // Restauramos el valor de la hora, intentando variantes (con/sin 'hs', con/sin ':00' segundos) si no hay match exacto
-            const setHoraIfPossible = (val) => {
-                if (!val) return false;
-                const opts = Array.from(this.elements.horaInicioSelect.options).map(o => o.value);
-                if (opts.includes(val)) {
-                    this.elements.horaInicioSelect.value = val; return true;
-                }
-                // variantes comunes: '18:00' vs '18:00:00' vs '21:00hs' vs '21:00 hs'
-                const candidates = [];
-                const normalized = String(val).trim();
-
-                // Si incluye segundos, intentar también la versión sin ellos
-                if (/^\d{2}:\d{2}:\d{2}$/.test(normalized)) {
-                    candidates.push(normalized.substring(0, 5));
-                }
-
-                // Si no tiene segundos, agregar :00 al final
-                if (!/:\d{2}:\d{2}$/.test(normalized) && /:\d{2}$/.test(normalized)) {
-                    candidates.push(normalized + ':00');
-                }
-
-                if (!normalized.endsWith('hs')) candidates.push(normalized + 'hs');
-                if (normalized.endsWith('hs')) candidates.push(normalized.replace(/\s*hs\s*$/i, ''));
-                candidates.push(normalized.replace(/\s+/g, ''));
-
-                for (const c of candidates) {
-                    if (opts.includes(c)) { this.elements.horaInicioSelect.value = c; return true; }
-                }
-                return false;
-            };
-
-            const horaSet = setHoraIfPossible(hora);
-            if (!horaSet && hora) {
-                console.warn('actualizarTodo: no se pudo seleccionar la hora exacta:', hora, ' intentando normalizar...');
-                const m = String(hora).match(/(\d{1,2}:\d{2})/);
-                if (m) {
-                    const ok = setHoraIfPossible(m[1]);
-                }
-                if (!this.elements.horaInicioSelect.value && hora) {
-                    const valorReal = String(hora).trim();
-                    const opciones = Array.from(this.elements.horaInicioSelect.options).map(o => o.value);
-                    if (!opciones.includes(valorReal)) {
-                        this.elements.horaInicioSelect.add(new Option(valorReal, valorReal));
+            if (this.elements.horaInicioSelect) {
+                this.llenarSelect(this.elements.horaInicioSelect, horariosDefinitivos, 'Seleccione hora...');
+                // Restauramos el valor de la hora, intentando variantes (con/sin 'hs', con/sin ':00' segundos) si no hay match exacto
+                const setHoraIfPossible = (val) => {
+                    if (!val) return false;
+                    const opts = Array.from(this.elements.horaInicioSelect.options).map(o => o.value);
+                    if (opts.includes(val)) {
+                        this.elements.horaInicioSelect.value = val; return true;
                     }
-                    this.elements.horaInicioSelect.value = valorReal;
-                    console.warn('[actualizarTodo] Hora preservada como valor real del taller:', valorReal);
+                    // variantes comunes: '18:00' vs '18:00:00' vs '21:00hs' vs '21:00 hs'
+                    const candidates = [];
+                    const normalized = String(val).trim();
+
+                    // Si incluye segundos, intentar también la versión sin ellos
+                    if (/^\d{2}:\d{2}:\d{2}$/.test(normalized)) {
+                        candidates.push(normalized.substring(0, 5));
+                    }
+
+                    // Si no tiene segundos, agregar :00 al final
+                    if (!/:\d{2}:\d{2}$/.test(normalized) && /:\d{2}$/.test(normalized)) {
+                        candidates.push(normalized + ':00');
+                    }
+
+                    if (!normalized.endsWith('hs')) candidates.push(normalized + 'hs');
+                    if (normalized.endsWith('hs')) candidates.push(normalized.replace(/\s*hs\s*$/i, ''));
+                    candidates.push(normalized.replace(/\s+/g, ''));
+
+                    for (const c of candidates) {
+                        if (opts.includes(c)) { this.elements.horaInicioSelect.value = c; return true; }
+                    }
+                    return false;
+                };
+
+                const horaSet = setHoraIfPossible(hora);
+                if (!horaSet && hora) {
+                    console.warn('actualizarTodo: no se pudo seleccionar la hora exacta:', hora, ' intentando normalizar...');
+                    const m = String(hora).match(/(\d{1,2}:\d{2})/);
+                    if (m) {
+                        const ok = setHoraIfPossible(m[1]);
+                    }
+                    if (!this.elements.horaInicioSelect.value && hora) {
+                        const valorReal = String(hora).trim();
+                        const opciones = Array.from(this.elements.horaInicioSelect.options).map(o => o.value);
+                        if (!opciones.includes(valorReal)) {
+                            this.elements.horaInicioSelect.add(new Option(valorReal, valorReal));
+                        }
+                        this.elements.horaInicioSelect.value = valorReal;
+                        console.warn('[actualizarTodo] Hora preservada como valor real del taller:', valorReal);
+                    }
                 }
             }
-        } else {
+        } else if (this.elements.horaInicioSelect) {
             this.llenarSelect(this.elements.horaInicioSelect, [], 'Seleccione tipo y fecha');
         }
 
@@ -1902,7 +2078,8 @@ const App = {
     },
 
     guardarCambios: async function () {
-        if (!confirm("¿Estás seguro de que quieres guardar los cambios?")) {
+        if (this.elements.tallerScheduleList && this.getCurrentTallerSchedule().length === 0) {
+            this.showNotification('Agregue al menos un horario semanal', 'warning');
             return;
         }
 
@@ -1912,18 +2089,29 @@ const App = {
         // --- ¡LÓGICA DE RECOLECCIÓN DE DATOS COMPLETA! ---
         // Leemos los valores ACTUALES del formulario en el momento de guardar.
         const selectedSelect = document.querySelector('#tipoEventoSelect');
+        const tallerCupoMax = this.elements.tallerCupoMax ? this.elements.tallerCupoMax.value : (this.elements.cantidadPersonasSelect ? this.elements.cantidadPersonasSelect.value : '');
+        const tallerDuracionEvento = this.elements.tallerDuracionHoras ? this.elements.tallerDuracionHoras.value : (this.elements.duracionEventoSelect ? this.elements.duracionEventoSelect.value : '');
+        const tallerModalidadPago = this.elements.tallerModalidadPago ? this.elements.tallerModalidadPago.value : (window.currentSolicitud && window.currentSolicitud.modalidadPago ? window.currentSolicitud.modalidadPago : 'por_clase');
+        const tallerPrecioClase = this.elements.tallerPrecioClase ? this.elements.tallerPrecioClase.value : (window.currentSolicitud && window.currentSolicitud.precioClase ? window.currentSolicitud.precioClase : '');
+        const tallerPrecioSemana = this.elements.tallerPrecioSemana ? this.elements.tallerPrecioSemana.value : (window.currentSolicitud && window.currentSolicitud.precioSemana ? window.currentSolicitud.precioSemana : '');
+        const tallerComentarios = this.elements.tallerComentarios ? this.elements.tallerComentarios.value : (this.elements.detallesAdicionalesTextarea ? this.elements.detallesAdicionalesTextarea.value : '');
+        const currentSchedule = this.getCurrentTallerSchedule();
         const bodyData = {
             tipoEvento: selectedSelect ? selectedSelect.value : '',
             nombreTaller: this.elements.nombreTallerInput ? this.elements.nombreTallerInput.value.trim() : '',
             nombre_taller: this.elements.nombreTallerInput ? this.elements.nombreTallerInput.value.trim() : '',
-            cantidadPersonas: this.elements.cantidadPersonasSelect.value,
-            duracionEvento: this.elements.duracionEventoSelect.value,
-            fechaEvento: this.elements.fechaEventoInput.value,
-            horaInicio: this.elements.horaInicioSelect.value,
-            // El precio base se recalcula y se envía para mantener consistencia
-            precioBase: this.elements.precioBaseInput.value,
-            // ¡IMPORTANTE! También enviamos los detalles adicionales
-            detallesAdicionales: this.elements.detallesAdicionalesTextarea ? this.elements.detallesAdicionalesTextarea.value : ''
+            cantidadPersonas: tallerCupoMax,
+            duracionEvento: tallerDuracionEvento,
+            fechaEvento: this.elements.fechaEventoInput ? this.elements.fechaEventoInput.value : '',
+            horaInicio: this.elements.horaInicioSelect ? this.elements.horaInicioSelect.value : '',
+            precioBase: this.elements.precioBaseInput ? this.elements.precioBaseInput.value : '',
+            detallesAdicionales: this.elements.detallesAdicionalesTextarea ? this.elements.detallesAdicionalesTextarea.value : tallerComentarios,
+            cupoMax: tallerCupoMax,
+            modalidadPago: tallerModalidadPago,
+            precioClase: tallerPrecioClase,
+            precioSemana: tallerPrecioSemana,
+            comentarios: tallerComentarios,
+            schedule: currentSchedule
         };
 
         // Si hay campos de banda en el formulario, los añadimos al body
@@ -1954,20 +2142,18 @@ const App = {
                 throw new Error(data.error || 'Error del servidor al guardar.');
             }
 
-            this.showNotification("Cambios guardados con éxito", 'success');
-
-            // Deshabilitamos el formulario y cambiamos los botones
-            if (this.elements.editFieldset) this.elements.editFieldset.disabled = true;
-            if (this.elements.saveButton) this.elements.saveButton.style.display = 'none';
-            if (this.elements.cancelButton) {
-                this.elements.cancelButton.textContent = 'Volver al Panel';
-                this.elements.cancelButton.style.width = '100%';
+            if (window.currentSolicitud) {
+                window.currentSolicitud = { ...window.currentSolicitud, ...bodyData };
             }
+
+            this.actualizarTodo();
+            this.showNotification('Cambios guardados correctamente', 'success');
 
         } catch (error) {
             this.showNotification(`Error: ${error.message}`, 'error');
             if (this.elements.saveButton) this.elements.saveButton.disabled = false;
         } finally {
+            if (this.elements.saveButton) this.elements.saveButton.disabled = false;
             this.toggleLoadingOverlay(false);
         }
     },

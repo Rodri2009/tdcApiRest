@@ -207,7 +207,8 @@
             if (tipo === 'BANDA' && event.id) {
                 link = `checkout_form.html?event_id=${event.id}`;
             } else if (tipo === 'TALLER') {
-                link = 'seccion_talleres.html';
+                const tallerId = event.id_taller || event.id_solicitud || event.id;
+                link = tallerId ? `detalle_taller.html?id=${tallerId}` : 'seccion_talleres.html';
             } else if (tipo === 'SERVICIO') {
                 link = 'seccion_servicios.html';
             }

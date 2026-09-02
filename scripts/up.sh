@@ -64,6 +64,7 @@ COMPOSE_FILE="docker/docker-compose.yml"
 
 # Ruta raíz del repo (útil para invocar scripts desde cualquier cwd)
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT_DIR/scripts/lib/messages.sh"
 
 # Permitir opción CLI: --migrate (o usar env var APPLY_MIGRATIONS=true)
 # También soporta flags de depuración: -v, -e, -d, --verbose, --error, --debug
@@ -186,6 +187,8 @@ echo -e "${BLUE}======================================================${NC}"
 echo -e "${BLUE}  TDC App - Levantamiento del Entorno${NC}"
 echo -e "${BLUE}======================================================${NC}"
 echo ""
+show_stack_compatibility_warning
+
 echo -e "${YELLOW}[*]${NC} Verificando requisitos locales..."
 echo ""
 

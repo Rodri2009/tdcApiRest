@@ -12,19 +12,32 @@ echo "[entrypoint] Comprobando node_modules y dependencias..."
 cd /app || exit 1
 
 # Validar instalación real del backend y no solo un par de paquetes antiguos.
-# Si el package.json cambió o el volumen persistente quedó desactualizado,
-# forzamos npm install para sincronizar node_modules con la versión actual.
+# Si el package.json cambió, el lockfile quedó desactualizado o el volumen
+# persistente conserva una versión incompatible de mariadb, forzamos npm install.
 need_install=0
+required_mariadb="$(node -p "require('./package.json').dependencies.mariadb || ''" 2>/dev/null || echo "")"
+installed_mariadb="$(node -p "require('./node_modules/mariadb/package.json').version" 2>/dev/null || echo "")"
+node_major="$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo "0")"
+
 if [ ! -d node_modules ]; then
   need_install=1
+elif [ -z "$required_mariadb" ]; then
+  need_install=1
+elif [ -z "$installed_mariadb" ]; then
+  need_install=1
+elif [ "$installed_mariadb" != "$required_mariadb" ]; then
+  echo "[entrypoint] mariadb instalado ($installed_mariadb) no coincide con la versión requerida ($required_mariadb)."
+  need_install=1
+elif [ "$node_major" -lt 20 ] && printf '%s' "$installed_mariadb" | grep -Eq '^3\.(5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22)$'; then
+  echo "[entrypoint] mariadb $installed_mariadb requiere Node >= 20.0.0; se reinstalará una versión compatible para este entorno."
+  need_install=1
 else
-  # Verificar paquetes críticos para el backend actual.
-  node -e "require('express'); require('helmet'); require('express-rate-limit'); require('cookie-parser'); require('uuid'); require('jsonwebtoken');" >/dev/null 2>&1 || need_install=1
+  node -e "require('express'); require('helmet'); require('express-rate-limit'); require('cookie-parser'); require('uuid'); require('jsonwebtoken'); require('mariadb');" >/dev/null 2>&1 || need_install=1
 fi
 
 if [ "$need_install" -eq 1 ]; then
   echo "[entrypoint] node_modules faltante o desactualizado. Ejecutando 'npm install' en /app..."
-  npm install
+  npm install --no-fund --no-audit
   echo "[entrypoint] npm install finalizado."
 else
   echo "[entrypoint] node_modules y dependencias presentes. TODO OK"

@@ -40,7 +40,7 @@
 #   -h, --help       Muestra esta ayuda
 #
 # Ejemplos:
-#   ./reset.sh                    # Todos los contenedores + reset BD
+#   ./reset.sh                    # Todos los contenedores + todos los SQL numerados
 #   ./reset.sh --db               # Solo mariadb + reset BD
 #   ./reset.sh --backend -d       # Solo backend (usa backend_logs.sh para ver salida)
 #   ./reset.sh --db --skip-test   # DB sin datos de prueba
@@ -61,6 +61,7 @@ NC='\033[0m'
 # Directorios base
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$PROJECT_DIR/scripts/lib/messages.sh"
 
 # Configuración por defecto
 DB_NAME="tdc_db"
@@ -95,6 +96,50 @@ if [ -f "$PROJECT_DIR/.env" ]; then
     set +e
     source "$PROJECT_DIR/.env"
     set -e
+fi
+
+# MariaDB no permite crear 'root' como usuario normal; si se configura MARIADB_USER=root,
+# el contenedor falla al iniciar. Forzamos un usuario no privilegiado para que el stack sea
+# robusto y no se trabe con un .env mal configurado.
+if [ "${MARIADB_USER:-}" = "root" ] || [ "${DB_USER:-}" = "root" ]; then
+    echo -e "${YELLOW}⚠️  Detectado un usuario root para MariaDB. El contenedor no permite crear un usuario root duplicado; se usa un usuario de aplicación no privilegiado.${NC}"
+    MARIADB_USER="tdc_app"
+    MARIADB_PASSWORD="${MARIADB_PASSWORD:-tdc_app_pass}"
+    DB_USER="tdc_app"
+    DB_PASSWORD="${DB_PASSWORD:-$MARIADB_PASSWORD}"
+    export MARIADB_USER MARIADB_PASSWORD DB_USER DB_PASSWORD
+fi
+
+load_numbered_sql_scripts() {
+    local candidate prefix filename
+    local -a sortable_scripts=()
+
+    for candidate in "$SQL_DIR"/*.sql; do
+        [ -f "$candidate" ] || continue
+        filename=$(basename "$candidate")
+
+        if [[ "$filename" =~ ^([0-9]+)_.*\.sql$ ]]; then
+            prefix="${BASH_REMATCH[1]}"
+            sortable_scripts+=("$prefix"$'\t'"$filename")
+        fi
+    done
+
+    if [ "${#sortable_scripts[@]}" -eq 0 ]; then
+        echo -e "${RED}[✗] ERROR: No se encontraron archivos .sql con prefijo numérico en $SQL_DIR${NC}"
+        exit 1
+    fi
+
+    mapfile -t SQL_SCRIPTS < <(
+        printf '%s\n' "${sortable_scripts[@]}" |
+            LC_ALL=C sort -t $'\t' -k1,1n -k2,2 |
+            cut -f2-
+    )
+}
+
+# Sin argumentos, cargar todos los SQL de database/ ordenados por su prefijo.
+# Con argumentos se preserva la selección explícita histórica de scripts.
+if [ "$#" -eq 0 ]; then
+    load_numbered_sql_scripts
 fi
 
 # Credenciales de administrador para DROP/CREATE DATABASE (requieren SUPER)
@@ -204,6 +249,8 @@ if [ "$SAVE_ALL_SESSION" = true ]; then
     SAVE_WA_SESSION=true
 fi
 
+show_stack_compatibility_warning
+
 # Si no especificó contenedores, usar "all" por defecto
 if [ -z "$CONTAINERS_TO_RESET" ]; then
     CONTAINERS_TO_RESET="all"
@@ -258,8 +305,8 @@ fi
 # scripts utilitarios mantengan la coherencia del archivo .env dentro de
 # docker/, evitando tener que copiar manualmente en cada ocasión.
 sync_env_file() {
-    local src="$ROOT_DIR/.env"
-    local dst="$ROOT_DIR/docker/.env"
+    local src="$PROJECT_DIR/.env"
+    local dst="$DOCKER_DIR/.env"
     if [ -f "$src" ]; then
         cp "$src" "$dst" 2>/dev/null || true
     fi
@@ -292,7 +339,7 @@ check_containers_health() {
       echo -e "  ${GREEN}✓${NC} $container: ${GREEN}running${NC}"
       
       # Revisar logs para errores críticos (ignorar warnings conocidas)
-      local critical_errors=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "(error|exception|failed|cannot|refused|fatal)" | grep -viE "(io_uring_queue_init|Chromium has locked|WhatsAppService|MercadoPagoService|PUPPETEER-WA|PUPPETEER-MP|BANDA-SYNC|FLYER-SYNC|Error al inicializar|Aborted connection|Got an error reading communication packets|reading communication packets)" | head -2 || true)
+      local critical_errors=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "(error|exception|failed|cannot|refused|fatal)" | grep -viE "(io_uring_queue_init|Chromium has locked|WhatsAppService|MercadoPagoService|PUPPETEER-WA|PUPPETEER-MP|BANDA-SYNC|FLYER-SYNC|Error al inicializar|Aborted connection|Got an error reading communication packets|reading communication packets|ER_GET_CONNECTION_TIMEOUT|pool timeout|reintentando en 5 segundos|Detalles del error de conexión|error de conexión)" | head -2 || true)
       
       # Revisar warnings
       local all_warnings=$(docker logs --tail 100 "$container" 2>&1 | grep -iE "warning|warn" | head -2 || true)
@@ -523,6 +570,9 @@ wait_for_backend_ready() {
     local elapsed=0
     echo -ne "    Esperando backend... "
 
+    local backend_container=""
+    backend_container=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E 'docker-backend|backend' | head -n 1 || true)
+
     while [ $elapsed -lt $max_wait ]; do
         local port
         for port in "${backend_ports[@]}"; do
@@ -531,6 +581,14 @@ wait_for_backend_ready() {
                 return 0
             fi
         done
+
+        if [ -n "$backend_container" ]; then
+            if docker exec "$backend_container" sh -lc "curl -fsS http://127.0.0.1:3000/health >/dev/null 2>&1 || wget -qO- http://127.0.0.1:3000/health >/dev/null 2>&1" >/dev/null 2>&1; then
+                echo -e "${GREEN}✓${NC}"
+                return 0
+            fi
+        fi
+
         echo -n "."
         sleep 2
         elapsed=$((elapsed + 2))
@@ -888,6 +946,12 @@ if [ "$SKIP_SQL" = false ] && [ "$USE_DOCKER" = true ] && [ "$SHOULD_RESET_DB" =
                 03_test_data.sql)
                     if ! run_sql_docker "$SQL_DIR/$script" "Test Data (Datos dinámicos de prueba)"; then
                         echo -e "${RED}[✗] ERROR: No se pudo cargar los datos de prueba${NC}"
+                        exit 1
+                    fi
+                    ;;
+                *)
+                    if ! run_sql_docker "$SQL_DIR/$script" "$script"; then
+                        echo -e "${RED}[✗] ERROR: No se pudo cargar $script${NC}"
                         exit 1
                     fi
                     ;;

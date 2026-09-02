@@ -76,13 +76,11 @@ Edita las variables en el script si necesitas cambiar:
 - `DB_PORT`: Puerto (default: `3306`)
 
 ### Qué Hace el Script
-1. **Verifica** que existan los 3 archivos SQL
+1. **Verifica** todos los archivos `.sql` con prefijo numérico en `database/`
 2. **Elimina** la base de datos existente (si existe)
 3. **Crea** una base de datos nueva con charset utf8mb4
-4. **Carga** 01_schema.sql
-5. **Carga** 02_seed.sql
-6. **Carga** 03_test_data.sql
-7. **Verifica** la integridad de datos cargando conteos de tablas importantes
+4. **Carga** los SQL ordenados numéricamente por prefijo (`01_`, `02_`, `03_`, ...)
+5. **Verifica** la integridad de datos cargando conteos de tablas importantes
 
 ### Output Esperado
 ```
@@ -94,12 +92,14 @@ Edita las variables en el script si necesitas cambiar:
     ✓ 01_schema.sql
     ✓ 02_seed.sql
     ✓ 03_test_data.sql
+    ✓ 04_fase1_alteraciones.sql
 
 [*] Eliminando base de datos existente... ✓ OK
 [*] Creando base de datos nueva... ✓ OK
 [*] Cargando: Schema (Estructura de tablas)... ✓ OK
 [*] Cargando: Seed Data (Configuración y catálogos)... ✓ OK
 [*] Cargando: Test Data (Datos dinámicos de prueba)... ✓ OK
+[*] Cargando: 04_fase1_alteraciones.sql... ✓ OK
 
 [*] Verificando integridad de datos...
     ✓ Configuración: 7 registros
@@ -116,6 +116,11 @@ Edita las variables en el script si necesitas cambiar:
 ```
 
 ## Flujo de Desarrollo
+
+Al ejecutar `./scripts/reset.sh` sin opciones, se incluyen automáticamente todos
+los SQL de primer nivel de `database/` cuyo nombre comience con un prefijo
+numérico seguido de `_`. Los archivos sin ese prefijo se omiten. Las opciones
+como `--only-schema` y `--skip-test` conservan su selección explícita actual.
 
 ### Situación 1: Cambios en el Schema
 ```
