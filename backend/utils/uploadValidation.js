@@ -152,8 +152,20 @@ const buildNormalizedUploadName = ({ baseName, requestId, prefix = 'upload', tar
             .slice(0, 80)
         : '';
 
-    if (requestId) {
-        return `solicitud_${requestId}${targetExt}`;
+    const cleanedRequestId = String(requestId || '')
+        .trim()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_-]+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+
+    if (cleanedRequestId) {
+        const hasKnownPrefix = /^(alq_|bnd_|tll_|srv_|ev_)/i.test(cleanedRequestId);
+        if (hasKnownPrefix) {
+            return `${cleanedRequestId}${targetExt}`;
+        }
+
+        return `solicitud_${cleanedRequestId}${targetExt}`;
     }
 
     const finalBase = sanitizedBase || `${prefix}_${Date.now()}`;

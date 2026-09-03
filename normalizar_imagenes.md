@@ -112,7 +112,8 @@ Este documento resume la auditoría completa de imágenes del sistema TDC API Re
 2. **Estandarización de formato de Flyers a JPG:**
    - Cualquier archivo de entrada (`image/png`, `image/jpeg`, etc.) se convierte mediante `sharp(buffer).jpeg({ quality: 85 }).toFile(...)` a formato **JPG**.
 3. **Estandarización de nomenclatura de Flyers:**
-   - Nomenclatura definida: `flyer_solicitud_{id_solicitud}.jpg` (o `solicitud_{id_solicitud}.jpg` unificado).
+   - Convención final adoptada: si el ID llega con prefijo, se conserva el prefijo (`bnd_9.jpg`, `tll_12.jpg`, `srv_8.jpg`, `alq_11.jpg`).
+   - Si la solicitud llega solo con número, se normaliza a `solicitud_5.jpg` para mantener la misma regla.
    - En caso de subidas anónimas sin ID previo: `flyer_{timestamp}_{hash}.jpg`.
 4. **Actualización en el Frontend (`editar_solicitud_talleres.html`):**
    - Modificar `handleFlyerUpload()` para enviar la URL con query param:

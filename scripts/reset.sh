@@ -85,6 +85,7 @@ ENABLE_WA=false
 MP_FLAG=false
 WA_FLAG=false
 USE_LATEST_DUMP=false
+SQL_SELECTION_EXPLICIT=false
 # session backup flags (nuevos)
 SAVE_MP_SESSION=false
 SAVE_WA_SESSION=false
@@ -217,22 +218,27 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --skip-test)
+            SQL_SELECTION_EXPLICIT=true
             SQL_SCRIPTS=("01_schema.sql" "02_seed.sql")
             shift
             ;;
         --only-schema)
+            SQL_SELECTION_EXPLICIT=true
             SQL_SCRIPTS=("01_schema.sql")
             shift
             ;;
         --only-seed)
+            SQL_SELECTION_EXPLICIT=true
             SQL_SCRIPTS=("02_seed.sql")
             shift
             ;;
         --only-test)
+            SQL_SELECTION_EXPLICIT=true
             SQL_SCRIPTS=("03_test_data.sql")
             shift
             ;;
         --use-latest-dump)
+            SQL_SELECTION_EXPLICIT=true
             USE_LATEST_DUMP=true
             shift
             ;;
@@ -254,6 +260,12 @@ show_stack_compatibility_warning
 # Si no especificó contenedores, usar "all" por defecto
 if [ -z "$CONTAINERS_TO_RESET" ]; then
     CONTAINERS_TO_RESET="all"
+fi
+
+# Si no se eligió una selección explícita de SQL, cargar todos los scripts numerados
+# para que los comandos con --db o --all no queden limitados a 01..03 por defecto.
+if [ "$SQL_SELECTION_EXPLICIT" = false ]; then
+    load_numbered_sql_scripts
 fi
 
 # Auto-detectar Docker
@@ -790,20 +802,21 @@ run_sql_docker() {
     if [ "$DEBUG" = true ]; then
         echo ""
         CONTAINER_NAME=$(get_container_name "$DOCKER_DIR")
-        echo -e "${BLUE}[DEBUG] Ejecutando: cat /docker-entrypoint-initdb.d/$filename | mysql ...${NC}"
+        echo -e "${BLUE}[DEBUG] Ejecutando: mysql < $file${NC}"
         echo ""
     fi
     
     CONTAINER_NAME=$(get_container_name "$DOCKER_DIR")
     
-    # Ejecutar SQL file dentro del contenedor usando cat
-    # El archivo debe estar en /docker-entrypoint-initdb.d/ (montado desde database/)
+    # Ejecutar el SQL desde el host directamente sobre stdin del contenedor.
+    # Esto funciona con archivos 04..08 y no depende de que estén montados en
+    # /docker-entrypoint-initdb.d/, que solo incluye 01..03 del compose.
     local output exit_code
     if [ "$DEBUG" = true ]; then
-        output=$(docker exec "$CONTAINER_NAME" sh -c "cat /docker-entrypoint-initdb.d/$filename | mysql -u '$DB_ADMIN_USER' -p'$DB_ADMIN_PASSWORD' '$DB_NAME'" 2>&1) && exit_code=0 || exit_code=$?
+        output=$(docker exec -i "$CONTAINER_NAME" mysql -h 127.0.0.1 -u "$DB_ADMIN_USER" -p"$DB_ADMIN_PASSWORD" "$DB_NAME" < "$file" 2>&1) && exit_code=0 || exit_code=$?
         [ -n "$output" ] && echo "$output"
     else
-        output=$(docker exec "$CONTAINER_NAME" sh -c "cat /docker-entrypoint-initdb.d/$filename | mysql -u '$DB_ADMIN_USER' -p'$DB_ADMIN_PASSWORD' '$DB_NAME'" 2>&1) && exit_code=0 || exit_code=$?
+        output=$(docker exec -i "$CONTAINER_NAME" mysql -h 127.0.0.1 -u "$DB_ADMIN_USER" -p"$DB_ADMIN_PASSWORD" "$DB_NAME" < "$file" 2>&1) && exit_code=0 || exit_code=$?
     fi
 
     if [ $exit_code -eq 0 ]; then
