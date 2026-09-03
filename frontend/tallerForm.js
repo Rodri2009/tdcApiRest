@@ -11,9 +11,9 @@
     const btnAddHorario = document.getElementById('btnAddHorario');
     const scheduleList = document.getElementById('scheduleList');
     const cupoMax = document.getElementById('cupoMax');
-    const modalidadPago = document.getElementById('modalidadPago');
     const precioClase = document.getElementById('precioClase');
     const precioSemana = document.getElementById('precioSemana');
+    const precioMes = document.getElementById('precioMes');
     const detalles = document.getElementById('detalles');
     const btnCancelar = document.getElementById('btnCancelar');
     const btnSiguiente = document.getElementById('btnSiguiente');
@@ -129,9 +129,9 @@
             schedule: schedule.slice(),
             exceptions: exceptions.slice(),
             cupoMax: parseInt(cupoMax.value),
-            modalidadPago: modalidadPago.value,
             precioClase: parseFloat(precioClase.value) || 0,
             precioSemana: parseFloat(precioSemana.value) || 0,
+            precioMes: parseFloat(precioMes.value) || 0,
             detalles: detalles.value || '',
             fingerprintId: fingerprint
         };
@@ -161,9 +161,9 @@
                 schedule: draft.schedule,
                 exceptions: draft.exceptions,
                 cupoMax: draft.cupoMax,
-                modalidadPago: draft.modalidadPago,
                 precioClase: draft.precioClase,
                 precioSemana: draft.precioSemana,
+                precioMes: draft.precioMes,
                 detalles: draft.detalles || draft.descripcionTaller || '',
                 fingerprintId: draft.fingerprintId || null
             };

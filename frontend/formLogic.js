@@ -46,9 +46,9 @@ function parseTallerMetadata(raw) {
     return {
         schedule: asObject.schedule || asObject.horarios || asObject.tallerSchedule || asObject.taller_schedule || [],
         cupoMax: asObject.cupoMax ?? asObject.cupo_max ?? asObject.cantidadPersonas ?? '',
-        modalidadPago: asObject.modalidadPago || asObject.modalidad_pago || 'por_clase',
         precioClase: asObject.precioClase ?? asObject.precio_clase ?? asObject.precioBase ?? '',
         precioSemana: asObject.precioSemana ?? asObject.precio_semana ?? '',
+        precioMes: asObject.precioMes ?? asObject.precio_mes ?? '',
         comentarios: asObject.comentarios || asObject.detalles || asObject.descripcionGeneral || asObject.comentarios_observaciones || asObject.description || ''
     };
 }
@@ -148,9 +148,9 @@ const App = {
         this.elements.btnAddTallerHorario = document.getElementById('btnAddTallerHorario');
         this.elements.tallerScheduleList = document.getElementById('tallerScheduleList');
         this.elements.tallerCupoMax = document.getElementById('tallerCupoMax');
-        this.elements.tallerModalidadPago = document.getElementById('tallerModalidadPago');
         this.elements.tallerPrecioClase = document.getElementById('tallerPrecioClase');
         this.elements.tallerPrecioSemana = document.getElementById('tallerPrecioSemana');
+        this.elements.tallerPrecioMes = document.getElementById('tallerPrecioMes');
         this.elements.tallerComentarios = document.getElementById('tallerComentarios');
         this.elements.detallesAdicionalesTextarea = this.elements.tallerComentarios || document.getElementById('detallesAdicionales');
 
@@ -229,22 +229,20 @@ const App = {
             });
         }
 
-        [this.elements.tallerCupoMax, this.elements.tallerModalidadPago, this.elements.tallerPrecioClase, this.elements.tallerPrecioSemana, this.elements.tallerComentarios].forEach(el => {
+        [this.elements.tallerCupoMax, this.elements.tallerPrecioClase, this.elements.tallerPrecioSemana, this.elements.tallerPrecioMes, this.elements.tallerComentarios].forEach(el => {
             if (!el) return;
             const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
             el.addEventListener(eventName, () => {
                 const cupo = this.elements.tallerCupoMax ? this.elements.tallerCupoMax.value : '';
-                const modalidad = this.elements.tallerModalidadPago ? this.elements.tallerModalidadPago.value : 'por_clase';
                 const precioClase = this.elements.tallerPrecioClase ? this.elements.tallerPrecioClase.value : '';
                 const precioSemana = this.elements.tallerPrecioSemana ? this.elements.tallerPrecioSemana.value : '';
+                const precioMes = this.elements.tallerPrecioMes ? this.elements.tallerPrecioMes.value : '';
                 const comentarios = this.elements.tallerComentarios ? this.elements.tallerComentarios.value : '';
 
                 if (this.elements.detallesAdicionalesTextarea && comentarios) this.elements.detallesAdicionalesTextarea.value = comentarios;
-                if (this.elements.precioBaseInput && modalidad === 'por_clase' && precioClase) {
-                    this.elements.precioBaseInput.value = precioClase;
-                }
-                if (this.elements.precioBaseInput && modalidad === 'por_semana' && precioSemana) {
-                    this.elements.precioBaseInput.value = precioSemana;
+                const precioBase = [precioClase, precioSemana, precioMes].find(v => v !== '' && Number(v) > 0);
+                if (this.elements.precioBaseInput && precioBase !== undefined) {
+                    this.elements.precioBaseInput.value = precioBase;
                 }
             });
         });
@@ -1078,6 +1076,11 @@ const App = {
         console.log('[populate] duracion raw:', duracion, 'tipo resuelto:', resolvedTipoForOptions || tipo);
         console.log('[populate] detalles raw:', detalles);
 
+        if (this.elements.nombreTallerInput) {
+            const nombreTaller = solicitud.nombreTaller || solicitud.nombre_taller || solicitud.nombre || solicitud.nombreActividad || '';
+            this.elements.nombreTallerInput.value = nombreTaller || '';
+        }
+
         // 3. Llamar a actualizarTodo pasándole TODOS los datos que conocemos.
         // Esto llenará los selects y calculará el precio inicial.
         // Usar la variable ya resuelta arriba `resolvedTipoForOptions` (si existe)
@@ -1088,11 +1091,6 @@ const App = {
             overrideFechaStr: fecha,
             overrideHora: hora
         });
-
-        if (this.elements.nombreTallerInput) {
-            const nombreTaller = solicitud.nombreTaller || solicitud.nombre_taller || solicitud.nombre || solicitud.nombreActividad || '';
-            this.elements.nombreTallerInput.value = nombreTaller || '';
-        }
 
         // 4. Rellenar el campo de detalles
         if (this.elements.detallesAdicionalesTextarea) {
@@ -1160,19 +1158,19 @@ const App = {
 
             if (scheduleSummaryDiv) {
                 const cupoMax = metadata.cupoMax ?? solicitud.cupoMax ?? solicitud.cupo_max ?? solicitud.cantidadPersonas ?? '';
-                const modalidadPago = metadata.modalidadPago || solicitud.modalidadPago || solicitud.modalidad_pago || 'por_clase';
                 const precioClase = metadata.precioClase ?? solicitud.precioClase ?? solicitud.precio_clase ?? solicitud.precioBase ?? '';
                 const precioSemana = metadata.precioSemana ?? solicitud.precioSemana ?? solicitud.precio_semana ?? '';
+                const precioMes = metadata.precioMes ?? solicitud.precioMes ?? solicitud.precio_mes ?? '';
                 const comentarios = metadata.comentarios || solicitud.detalles || solicitud.descripcionGeneral || solicitud.comentarios || solicitud.comentarios_observaciones || '';
 
                 if (this.elements && this.elements.tallerCupoMax) this.elements.tallerCupoMax.value = cupoMax || 10;
-                if (this.elements && this.elements.tallerModalidadPago) this.elements.tallerModalidadPago.value = modalidadPago;
                 if (this.elements && this.elements.tallerPrecioClase) this.elements.tallerPrecioClase.value = precioClase || 0;
                 if (this.elements && this.elements.tallerPrecioSemana) this.elements.tallerPrecioSemana.value = precioSemana || 0;
+                if (this.elements && this.elements.tallerPrecioMes) this.elements.tallerPrecioMes.value = precioMes || 0;
                 if (this.elements && this.elements.tallerComentarios) this.elements.tallerComentarios.value = comentarios || '';
                 if (this.elements && this.elements.detallesAdicionalesTextarea && comentarios) this.elements.detallesAdicionalesTextarea.value = comentarios;
-                if (this.elements && this.elements.precioBaseInput && modalidadPago === 'por_clase' && precioClase !== '') this.elements.precioBaseInput.value = precioClase;
-                if (this.elements && this.elements.precioBaseInput && modalidadPago === 'por_semana' && precioSemana !== '') this.elements.precioBaseInput.value = precioSemana;
+                const precioBase = [precioClase, precioSemana, precioMes].find(v => v !== '' && Number(v) > 0);
+                if (this.elements && this.elements.precioBaseInput && precioBase !== undefined) this.elements.precioBaseInput.value = precioBase;
 
                 this.renderTallerScheduleList();
             }
@@ -1794,9 +1792,63 @@ const App = {
         }
 
         // 4. Actualizar el Resumen y el Precio
-        // (Esta es tu lógica original, que está bien, la adaptamos ligeramente)
         const tipoSeleccionado = this.tiposDeEvento.find(t => t.id === tipoId);
         const nombreParaMostrar = tipoSeleccionado ? tipoSeleccionado.nombreParaMostrar : '';
+        const esTallerEnFormulario = Boolean(
+            this.elements.tallerCupoMax ||
+            this.elements.tallerPrecioClase ||
+            this.elements.tallerPrecioSemana ||
+            this.elements.tallerPrecioMes ||
+            this.elements.tallerComentarios ||
+            this.elements.tallerScheduleSummary
+        );
+
+        if (esTallerEnFormulario) {
+            const nombreTaller = (this.elements.nombreTallerInput && this.elements.nombreTallerInput.value.trim()) || 'Sin nombre';
+            const horarios = Array.isArray(this.getCurrentTallerSchedule()) ? this.getCurrentTallerSchedule() : [];
+            const cupo = this.elements.tallerCupoMax ? this.elements.tallerCupoMax.value : '';
+            const precioClase = Number(this.elements.tallerPrecioClase ? (this.elements.tallerPrecioClase.value || 0) : 0);
+            const precioSemana = Number(this.elements.tallerPrecioSemana ? (this.elements.tallerPrecioSemana.value || 0) : 0);
+            const precioMes = Number(this.elements.tallerPrecioMes ? (this.elements.tallerPrecioMes.value || 0) : 0);
+            const preciosDisponibles = [
+                { label: 'Precio por clase', valor: precioClase },
+                { label: 'Precio por semana', valor: precioSemana },
+                { label: 'Precio por mes', valor: precioMes }
+            ].filter(item => Number(item.valor) > 0);
+            const precioReferencia = preciosDisponibles.length ? Number(preciosDisponibles[0].valor) : 0;
+
+            let detalleHtml = '<ul>';
+            detalleHtml += `<li><strong>Nombre de taller:</strong> ${nombreTaller}</li>`;
+
+            if (horarios.length) {
+                const horariosTexto = horarios.map(h => {
+                    const dia = this.formatDayLabel(h.day);
+                    const dur = Number(h.duration) || 1;
+                    return `${dia} ${h.start} • ${dur} h`;
+                }).join('; ');
+                detalleHtml += `<li><strong>Días y horarios:</strong> ${horariosTexto}</li>`;
+            }
+
+            if (cupo) detalleHtml += `<li><strong>Cupo máximo:</strong> ${cupo}</li>`;
+            if (preciosDisponibles.length) {
+                preciosDisponibles.forEach(item => {
+                    detalleHtml += `<li><strong>${item.label}:</strong> $${this.convertirNumero(item.valor)}</li>`;
+                });
+            } else {
+                detalleHtml += '<li><strong>Precios:</strong> Sin valores cargados</li>';
+            }
+            detalleHtml += '</ul>';
+
+            this.elements.presupuestoDetalleDiv.innerHTML = detalleHtml;
+            if (this.elements.detallePreciosDiv) this.elements.detallePreciosDiv.innerHTML = '';
+            if (this.elements.presupuestoTotalDiv) {
+                this.elements.presupuestoTotalDiv.innerHTML = `<span>Valor de referencia: </span> $${this.convertirNumero(precioReferencia || 0)}`;
+            }
+            if (this.elements.precioBaseInput) this.elements.precioBaseInput.value = precioReferencia || 0;
+            return;
+        }
+
+        // (Esta es tu lógica original, que está bien, la adaptamos ligeramente)
         const montoSena = tipoSeleccionado ? parseFloat(tipoSeleccionado.montoSena) || 0 : 0;
         const depositoGarantia = tipoSeleccionado ? parseFloat(tipoSeleccionado.depositoGarantia) || 0 : 0;
         const duracionNum = parseInt((duracion.match(/\d+/) || ['0'])[0]);
@@ -2117,9 +2169,9 @@ const App = {
         const selectedSelect = document.querySelector('#tipoEventoSelect');
         const tallerCupoMax = this.elements.tallerCupoMax ? this.elements.tallerCupoMax.value : (this.elements.cantidadPersonasSelect ? this.elements.cantidadPersonasSelect.value : '');
         const tallerDuracionEvento = this.elements.tallerDuracionHoras ? this.elements.tallerDuracionHoras.value : (this.elements.duracionEventoSelect ? this.elements.duracionEventoSelect.value : '');
-        const tallerModalidadPago = this.elements.tallerModalidadPago ? this.elements.tallerModalidadPago.value : (window.currentSolicitud && window.currentSolicitud.modalidadPago ? window.currentSolicitud.modalidadPago : 'por_clase');
         const tallerPrecioClase = this.elements.tallerPrecioClase ? this.elements.tallerPrecioClase.value : (window.currentSolicitud && window.currentSolicitud.precioClase ? window.currentSolicitud.precioClase : '');
         const tallerPrecioSemana = this.elements.tallerPrecioSemana ? this.elements.tallerPrecioSemana.value : (window.currentSolicitud && window.currentSolicitud.precioSemana ? window.currentSolicitud.precioSemana : '');
+        const tallerPrecioMes = this.elements.tallerPrecioMes ? this.elements.tallerPrecioMes.value : (window.currentSolicitud && window.currentSolicitud.precioMes ? window.currentSolicitud.precioMes : '');
         const tallerComentarios = this.elements.tallerComentarios ? this.elements.tallerComentarios.value : (this.elements.detallesAdicionalesTextarea ? this.elements.detallesAdicionalesTextarea.value : '');
         const currentSchedule = this.getCurrentTallerSchedule();
         const bodyData = {
@@ -2133,9 +2185,9 @@ const App = {
             precioBase: this.elements.precioBaseInput ? this.elements.precioBaseInput.value : '',
             detallesAdicionales: this.elements.detallesAdicionalesTextarea ? this.elements.detallesAdicionalesTextarea.value : tallerComentarios,
             cupoMax: tallerCupoMax,
-            modalidadPago: tallerModalidadPago,
             precioClase: tallerPrecioClase,
             precioSemana: tallerPrecioSemana,
+            precioMes: tallerPrecioMes,
             comentarios: tallerComentarios,
             schedule: currentSchedule
         };

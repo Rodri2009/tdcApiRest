@@ -493,26 +493,15 @@ UNLOCK TABLES;
 
 LOCK TABLES `precios_talleres` WRITE;
 /*!40000 ALTER TABLE `precios_talleres` DISABLE KEYS */;
-INSERT INTO `precios_talleres` (`id`, `tipo_taller_id`, `taller_id`, `modalidad`, `cantidad_clases`, `precio`, `vigente_desde`, `vigente_hasta`, `vigente`) VALUES
-
-  (1,NULL,1,'clase_suelta',1,3500.00,'2026-01-01',NULL,1),
-  (2,NULL,1,'paquete',4,12000.00,'2026-01-01',NULL,1),
-  (3,NULL,1,'paquete',8,22000.00,'2026-01-01',NULL,1),
-  (4,NULL,2,'clase_suelta',1,3500.00,'2026-01-01',NULL,1),
-  (5,NULL,2,'paquete',4,12000.00,'2026-01-01',NULL,1),
-  (6,NULL,3,'clase_suelta',1,4000.00,'2026-01-01',NULL,1),
-  (7,NULL,3,'paquete',4,14000.00,'2026-01-01',NULL,1),
-  (8,NULL,3,'paquete',8,26000.00,'2026-01-01',NULL,1),
-  (9,NULL,4,'clase_suelta',1,2500.00,'2026-01-01',NULL,1),
-  (10,NULL,4,'paquete',4,9000.00,'2026-01-01',NULL,1),
-  (11,NULL,4,'paquete',8,16500.00,'2026-01-01',NULL,1),
-  (12,NULL,5,'clase_suelta',1,2800.00,'2026-01-01',NULL,1),
-  (13,NULL,5,'paquete',4,10000.00,'2026-01-01',NULL,1),
-  (14,NULL,6,'clase_suelta',1,5000.00,'2026-01-01',NULL,1),
-  (15,NULL,6,'paquete',4,18000.00,'2026-01-01',NULL,1);
+INSERT INTO `precios_talleres` (`id`, `tipo_taller_id`, `taller_id`, `nombre_precio`, `descripcion`, `precio_clase`, `precio_semana`, `precio_mes`, `vigente_desde`, `vigente_hasta`, `vigente`, `activo`) VALUES
+  (1,NULL,1,'Precio del taller','Tarifa base de taller para la actividad.',3500.00,12000.00,22000.00,'2026-01-01',NULL,1,1),
+  (2,NULL,2,'Precio del taller','Tarifa base de taller para la actividad.',3500.00,12000.00,22000.00,'2026-01-01',NULL,1,1),
+  (3,NULL,3,'Precio del taller','Tarifa base de taller para la actividad.',4000.00,14000.00,26000.00,'2026-01-01',NULL,1,1),
+  (4,NULL,4,'Precio del taller','Tarifa base de taller para la actividad.',2500.00,9000.00,16500.00,'2026-01-01',NULL,1,1),
+  (5,NULL,5,'Precio del taller','Tarifa base de taller para la actividad.',2800.00,10000.00,20000.00,'2026-01-01',NULL,1,1),
+  (6,NULL,6,'Precio del taller','Tarifa base de taller para la actividad.',5000.00,18000.00,32000.00,'2026-01-01',NULL,1,1);
 /*!40000 ALTER TABLE `precios_talleres` ENABLE KEYS */;
 UNLOCK TABLES;
-
 --
 -- Dumping data for table `precios_vigencia`
 --

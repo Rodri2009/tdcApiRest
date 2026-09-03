@@ -358,6 +358,29 @@ const normalizeBigInt = (value) => {
     return value;
 };
 
+const normalizePrecioTallerRow = (row = {}) => {
+    const precioClase = Number(row.precioClase ?? row.precio_clase ?? row.precio ?? 0) || 0;
+    const precioSemana = Number(row.precioSemana ?? row.precio_semana ?? 0) || 0;
+    const precioMes = Number(row.precioMes ?? row.precio_mes ?? 0) || 0;
+
+    const primerPrecioDisponible = [
+        { modalidad: 'por_clase', precio: precioClase, nombre: 'Precio por clase' },
+        { modalidad: 'por_semana', precio: precioSemana, nombre: 'Precio por semana' },
+        { modalidad: 'por_mes', precio: precioMes, nombre: 'Precio por mes' }
+    ].find(item => Number(item.precio) > 0);
+
+    return {
+        ...row,
+        precioClase,
+        precioSemana,
+        precioMes,
+        precio: primerPrecioDisponible ? primerPrecioDisponible.precio : 0,
+        modalidad: primerPrecioDisponible ? primerPrecioDisponible.modalidad : (row.modalidad || 'por_clase'),
+        nombre_precio: row.nombre_precio || row.nombrePrecio || primerPrecioDisponible?.nombre || 'Precio del taller',
+        nombrePrecio: row.nombre_precio || row.nombrePrecio || primerPrecioDisponible?.nombre || 'Precio del taller'
+    };
+};
+
 const getTalleresPublicos = async (req, res) => {
     let conn;
     try {
@@ -676,9 +699,9 @@ const getPreciosTalleres = async (req, res) => {
                 pt.taller_id as tallerId,
                 pt.nombre_precio as nombrePrecio,
                 pt.descripcion,
-                pt.modalidad,
-                pt.cantidad_clases as cantidadClases,
-                pt.precio,
+                pt.precio_clase as precioClase,
+                pt.precio_semana as precioSemana,
+                pt.precio_mes as precioMes,
                 pt.vigente_desde as vigenteDesde,
                 pt.vigente_hasta as vigenteHasta,
                 COALESCE(pt.activo, pt.vigente) as activo,
@@ -704,10 +727,10 @@ const getPreciosTalleres = async (req, res) => {
             sql += ` AND COALESCE(pt.activo, pt.vigente) = 1`;
         }
 
-        sql += ` ORDER BY COALESCE(pt.id_tipo_evento, pt.tipo_taller_id), pt.modalidad, pt.vigente_desde DESC`;
+        sql += ` ORDER BY COALESCE(pt.id_tipo_evento, pt.tipo_taller_id), pt.vigente_desde DESC`;
 
         const rows = await conn.query(sql, params);
-        res.status(200).json(rows);
+        res.status(200).json(rows.map(normalizePrecioTallerRow));
     } catch (err) {
         logError("Error en getPreciosTalleres:", err);
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -728,17 +751,39 @@ const createPrecioTaller = async (req, res) => {
             idSolicitudTaller,
             nombrePrecio,
             descripcion,
-            modalidad = 'clase_suelta',
-            cantidadClases,
+            modalidad,
             precio,
+            precioClase,
+            precioSemana,
+            precioMes,
             vigenteDesde,
             vigenteHasta,
             vigente = 1,
             activo = 1
         } = req.body;
 
-        if (!precio || !vigenteDesde) {
-            return res.status(400).json({ error: 'Precio y fecha de vigencia son obligatorios' });
+        const legacyPrecio = Number(precio ?? 0) || 0;
+        const normalizedPrecioClase = Number(precioClase ?? precio_clase ?? 0) || 0;
+        const normalizedPrecioSemana = Number(precioSemana ?? precio_semana ?? 0) || 0;
+        const normalizedPrecioMes = Number(precioMes ?? precio_mes ?? 0) || 0;
+
+        let precioClaseFinal = normalizedPrecioClase;
+        let precioSemanaFinal = normalizedPrecioSemana;
+        let precioMesFinal = normalizedPrecioMes;
+
+        if (legacyPrecio > 0 && precioClaseFinal === 0 && precioSemanaFinal === 0 && precioMesFinal === 0) {
+            const modalidadNorm = String(modalidad || '').toLowerCase();
+            if (['por_mes', 'mensual', 'mensualidad'].includes(modalidadNorm)) {
+                precioMesFinal = legacyPrecio;
+            } else if (['por_semana', 'semanal'].includes(modalidadNorm)) {
+                precioSemanaFinal = legacyPrecio;
+            } else {
+                precioClaseFinal = legacyPrecio;
+            }
+        }
+
+        if (!vigenteDesde || [precioClaseFinal, precioSemanaFinal, precioMesFinal].every(v => Number(v) <= 0)) {
+            return res.status(400).json({ error: 'Fecha de vigencia y al menos un precio válido son obligatorios: por clase, por semana o por mes.' });
         }
 
         const finalTipoTallerId = idTipoEvento || tipoTallerId || null;
@@ -748,7 +793,7 @@ const createPrecioTaller = async (req, res) => {
 
         const result = await conn.query(
             `INSERT INTO precios_talleres 
-                (id_solicitud, id_solicitud_taller, id_tipo_evento, tipo_taller_id, taller_id, nombre_precio, descripcion, modalidad, cantidad_clases, precio, vigente_desde, vigente_hasta, vigente, activo)
+                (id_solicitud, id_solicitud_taller, id_tipo_evento, tipo_taller_id, taller_id, nombre_precio, descripcion, precio_clase, precio_semana, precio_mes, vigente_desde, vigente_hasta, vigente, activo)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 idSolicitud || null,
@@ -756,11 +801,11 @@ const createPrecioTaller = async (req, res) => {
                 finalTipoTallerId,
                 finalTipoTallerId,
                 tallerId || null,
-                nombrePrecio || null,
+                nombrePrecio || 'Precio del taller',
                 descripcion || null,
-                modalidad,
-                cantidadClases || null,
-                precio,
+                precioClaseFinal > 0 ? precioClaseFinal : null,
+                precioSemanaFinal > 0 ? precioSemanaFinal : null,
+                precioMesFinal > 0 ? precioMesFinal : null,
                 vigenteDesde,
                 vigenteHasta || null,
                 vigente,
@@ -794,13 +839,39 @@ const updatePrecioTaller = async (req, res) => {
             nombrePrecio,
             descripcion,
             modalidad,
-            cantidadClases,
             precio,
+            precioClase,
+            precioSemana,
+            precioMes,
             vigenteDesde,
             vigenteHasta,
             vigente,
             activo
         } = req.body;
+
+        const legacyPrecio = Number(precio ?? 0) || 0;
+        const normalizedPrecioClase = Number(precioClase ?? precio_clase ?? 0) || 0;
+        const normalizedPrecioSemana = Number(precioSemana ?? precio_semana ?? 0) || 0;
+        const normalizedPrecioMes = Number(precioMes ?? precio_mes ?? 0) || 0;
+
+        let finalPrecioClase = normalizedPrecioClase;
+        let finalPrecioSemana = normalizedPrecioSemana;
+        let finalPrecioMes = normalizedPrecioMes;
+
+        if (legacyPrecio > 0 && finalPrecioClase === 0 && finalPrecioSemana === 0 && finalPrecioMes === 0) {
+            const modalidadNorm = String(modalidad || '').toLowerCase();
+            if (['por_mes', 'mensual', 'mensualidad'].includes(modalidadNorm)) {
+                finalPrecioMes = legacyPrecio;
+            } else if (['por_semana', 'semanal'].includes(modalidadNorm)) {
+                finalPrecioSemana = legacyPrecio;
+            } else {
+                finalPrecioClase = legacyPrecio;
+            }
+        }
+
+        if ([finalPrecioClase, finalPrecioSemana, finalPrecioMes].every(v => Number(v) <= 0)) {
+            return res.status(400).json({ error: 'Debe indicar al menos un precio válido: por clase, por semana o por mes.' });
+        }
 
         const finalTipoTallerId = idTipoEvento ?? tipoTallerId ?? undefined;
 
@@ -813,15 +884,19 @@ const updatePrecioTaller = async (req, res) => {
                 taller_id = COALESCE(?, taller_id),
                 nombre_precio = COALESCE(?, nombre_precio),
                 descripcion = COALESCE(?, descripcion),
-                modalidad = COALESCE(?, modalidad),
-                cantidad_clases = COALESCE(?, cantidad_clases),
-                precio = COALESCE(?, precio),
+                precio_clase = ?,
+                precio_semana = ?,
+                precio_mes = ?,
                 vigente_desde = COALESCE(?, vigente_desde),
                 vigente_hasta = COALESCE(?, vigente_hasta),
                 vigente = COALESCE(?, vigente),
                 activo = COALESCE(?, activo)
              WHERE id = ?`,
-            [idSolicitud, idSolicitudTaller, finalTipoTallerId, finalTipoTallerId, tallerId, nombrePrecio, descripcion, modalidad, cantidadClases, precio, vigenteDesde, vigenteHasta, vigente, activo, id]
+            [idSolicitud, idSolicitudTaller, finalTipoTallerId, finalTipoTallerId, tallerId, nombrePrecio, descripcion,
+             finalPrecioClase > 0 ? finalPrecioClase : null,
+             finalPrecioSemana > 0 ? finalPrecioSemana : null,
+             finalPrecioMes > 0 ? finalPrecioMes : null,
+             vigenteDesde, vigenteHasta, vigente, activo, id]
         );
 
         if (result.affectedRows === 0) {
@@ -1005,7 +1080,7 @@ const createInscripcion = async (req, res) => {
         conn = await pool.getConnection();
         const {
             taller_id, precio_id, alumno_nombre, alumno_telefono, alumno_email,
-            modalidad = 'clase_suelta', clases_restantes, monto_pagado = 0,
+            modalidad = 'por_clase', clases_restantes, monto_pagado = 0,
             fecha_inscripcion, fecha_vencimiento, estado = 'activa'
         } = req.body;
 
@@ -1043,7 +1118,7 @@ const createInscripcionPublica = async (req, res) => {
             alumno_telefono,
             alumno_email,
             comentarios,
-            modalidad = 'clase_suelta',
+            modalidad = 'por_clase',
             monto_pagado = 0,
             fecha_inscripcion,
             estado = 'activa'

@@ -521,25 +521,23 @@
                 <label for="cupoMax">Cupo máximo de alumnos:</label>
                 <input type="number" id="cupoMax" min="1" value="10">
             </div>
-            <div class="form-group">
-                <label for="modalidadPago">Modalidad de pago:</label>
-                <select id="modalidadPago">
-                    <option value="por_clase">Por clase</option>
-                    <option value="por_semana">Por semana</option>
-                </select>
-            </div>
         </div>
 
         <div class="column-layout">
             <div class="form-group">
                 <label for="precioClase">Precio por clase ($):</label>
-                <input type="number" id="precioClase" min="0" step="1" value="1000">
+                <input type="number" id="precioClase" min="0" step="1" value="0">
             </div>
             <div class="form-group">
                 <label for="precioSemana">Precio por semana ($):</label>
-                <input type="number" id="precioSemana" min="0" step="1" value="4000">
+                <input type="number" id="precioSemana" min="0" step="1" value="0">
+            </div>
+            <div class="form-group">
+                <label for="precioMes">Precio por mes ($):</label>
+                <input type="number" id="precioMes" min="0" step="1" value="0">
             </div>
         </div>
+        <p class="small muted">Indicá al menos uno de los tres precios. La vigencia del precio se conserva en el registro del taller.</p>
 
         <div class="form-group">
             <label for="detalles">Comentarios / Observaciones (opcional):</label>

@@ -673,18 +673,9 @@
                 </div>
 
                 <div class="form-group" id="tallerMetadataGroup" style="display:none;">
-                    <div class="column-layout">
-                        <div class="form-group" style="flex: 1;">
-                            <label for="tallerCupoMax">Cupo máximo</label>
-                            <input type="number" id="tallerCupoMax" min="1" value="10">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label for="tallerModalidadPago">Modalidad de pago</label>
-                            <select id="tallerModalidadPago">
-                                <option value="por_clase">Por clase</option>
-                                <option value="por_semana">Por semana</option>
-                            </select>
-                        </div>
+                    <div class="form-group">
+                        <label for="tallerCupoMax">Cupo máximo</label>
+                        <input type="number" id="tallerCupoMax" min="1" value="10">
                     </div>
                     <div class="column-layout">
                         <div class="form-group" style="flex: 1;">
@@ -695,7 +686,12 @@
                             <label for="tallerPrecioSemana">Precio por semana ($)</label>
                             <input type="number" id="tallerPrecioSemana" min="0" step="1" value="0">
                         </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="tallerPrecioMes">Precio por mes ($)</label>
+                            <input type="number" id="tallerPrecioMes" min="0" step="1" value="0">
+                        </div>
                     </div>
+                    <p class="hint">Debe indicarse al menos uno de los tres precios. La vigencia del precio se conserva en el sistema aunque aún no se edita desde esta pantalla.</p>
                     <div class="form-group">
                         <label for="tallerComentarios">Comentarios / observaciones</label>
                         <textarea id="tallerComentarios" rows="3" placeholder="Comentarios del taller..."></textarea>
@@ -706,7 +702,7 @@
 
             <hr>
 
-            <h3>Resumen de Presupuesto Básico:</h3>
+            <h3>Resumen del taller / actividad:</h3>
             <div id="presupuestoDetalle">
                 <p>Cargando datos...</p>
             </div>

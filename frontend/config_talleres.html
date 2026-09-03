@@ -714,12 +714,9 @@
         }
 
         const MODALIDADES = {
-            'clase_suelta': 'Clase suelta',
-            'pack_4': 'Pack 4 clases',
-            'pack_8': 'Pack 8 clases',
-            'mensual': 'Mensual',
-            'trimestral': 'Trimestral',
-            'anual': 'Anual'
+            'por_clase': 'Por clase',
+            'por_semana': 'Por semana',
+            'por_mes': 'Por mes'
         };
 
         function renderPrecios() {
@@ -736,11 +733,19 @@
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;">No hay precios configurados</td></tr>';
                 return;
             }
-            tbody.innerHTML = filtered.map(p => `
+            tbody.innerHTML = filtered.map(p => {
+                const precioClase = Number(p.precioClase ?? p.precio_clase ?? 0) || 0;
+                const precioSemana = Number(p.precioSemana ?? p.precio_semana ?? 0) || 0;
+                const precioMes = Number(p.precioMes ?? p.precio_mes ?? 0) || 0;
+                const resumen = [
+                    precioClase > 0 ? `Clase: $${precioClase.toLocaleString('es-AR')}` : null,
+                    precioSemana > 0 ? `Semana: $${precioSemana.toLocaleString('es-AR')}` : null,
+                    precioMes > 0 ? `Mes: $${precioMes.toLocaleString('es-AR')}` : null
+                ].filter(Boolean).join(' / ') || 'Sin precio cargado';
+                return `
                 <tr>
                     <td>${p.tipoNombre || p.tallerNombre || '-'}</td>
-                    <td><strong>$${Number(p.precio || 0).toLocaleString('es-AR')}</strong></td>
-                    <td>${MODALIDADES[p.modalidad] || p.modalidad}</td>
+                    <td>${resumen}</td>
                     <td>${p.vigenteDesde ? new Date(p.vigenteDesde).toLocaleDateString('es-AR') : '-'}</td>
                     <td>${p.vigenteHasta ? new Date(p.vigenteHasta).toLocaleDateString('es-AR') : 'Indefinido'}</td>
                     <td>${p.vigente ? '<span class="badge badge-success">Vigente</span>' : '<span class="badge badge-gray">Vencido</span>'}</td>
@@ -751,7 +756,7 @@
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `; }).join('');
         }
 
         function filterPrecios() { renderPrecios(); }
@@ -926,19 +931,16 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Modalidad</label>
-                            <select id="modal-modalidad">
-                                <option value="clase_suelta" ${item.modalidad === 'clase_suelta' ? 'selected' : ''}>Clase suelta</option>
-                                <option value="pack_4" ${item.modalidad === 'pack_4' ? 'selected' : ''}>Pack 4 clases</option>
-                                <option value="pack_8" ${item.modalidad === 'pack_8' ? 'selected' : ''}>Pack 8 clases</option>
-                                <option value="mensual" ${item.modalidad === 'mensual' ? 'selected' : ''}>Mensual</option>
-                                <option value="trimestral" ${item.modalidad === 'trimestral' ? 'selected' : ''}>Trimestral</option>
-                                <option value="anual" ${item.modalidad === 'anual' ? 'selected' : ''}>Anual</option>
-                            </select>
+                            <label>Precio por clase ($)</label>
+                            <input type="number" id="modal-precio-clase" value="${item.precioClase ?? item.precio_clase ?? ''}" min="0" step="100">
                         </div>
                         <div class="form-group">
-                            <label>Precio ($)</label>
-                            <input type="number" id="modal-precio" value="${item.precio || ''}" min="0" step="100">
+                            <label>Precio por semana ($)</label>
+                            <input type="number" id="modal-precio-semana" value="${item.precioSemana ?? item.precio_semana ?? ''}" min="0" step="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Precio por mes ($)</label>
+                            <input type="number" id="modal-precio-mes" value="${item.precioMes ?? item.precio_mes ?? ''}" min="0" step="100">
                         </div>
                     </div>
                     <div class="form-row">
@@ -1030,11 +1032,21 @@
                 url = editingId ? `${API_TALLERES}/${editingId}` : `${API_TALLERES}/`;
                 method = editingId ? 'PUT' : 'POST';
             } else if (type === 'precio') {
+                const precioClase = parseFloat(document.getElementById('modal-precio-clase')?.value || 0) || 0;
+                const precioSemana = parseFloat(document.getElementById('modal-precio-semana')?.value || 0) || 0;
+                const precioMes = parseFloat(document.getElementById('modal-precio-mes')?.value || 0) || 0;
+                const tienePrecio = [precioClase, precioSemana, precioMes].some(v => Number(v) > 0);
+                if (!tienePrecio) {
+                    showBanner('Debe indicar al menos un precio válido: clase, semana o mes.', 'error');
+                    return;
+                }
+
                 data = {
                     tipoTallerId: document.getElementById('modal-tipo-taller').value || null,
                     tallerId: document.getElementById('modal-taller').value || null,
-                    modalidad: document.getElementById('modal-modalidad').value,
-                    precio: parseFloat(document.getElementById('modal-precio').value),
+                    precioClase,
+                    precioSemana,
+                    precioMes,
                     vigenteDesde: document.getElementById('modal-desde').value,
                     vigenteHasta: document.getElementById('modal-hasta').value || null,
                     vigente: document.getElementById('modal-vigente').checked ? 1 : 0

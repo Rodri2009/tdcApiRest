@@ -253,7 +253,7 @@
                 <!-- Opciones de Precios y Aranceles -->
                 <div id="bloque-precios">
                     <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                        <i class="fas fa-tags text-neon"></i> Modalidades y Aranceles
+                        <i class="fas fa-tags text-neon"></i> Aranceles del taller
                     </h2>
                     <div id="lista-precios" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <!-- Opciones cargadas por JS -->
@@ -303,10 +303,12 @@
 
                     <!-- Modalidad de Inscripción -->
                     <div>
-                        <label for="alumno-modalidad" class="form-label">Modalidad / Plan</label>
+                        <label for="alumno-modalidad" class="form-label">Precio a elegir</label>
                         <select id="alumno-modalidad" class="form-input">
-                            <option value="clase_suelta">Clase Suelta / Individual</option>
-                            <option value="paquete">Mensualidad / Paquete de Clases</option>
+                            <option value="">Seleccioná una opción</option>
+                            <option value="por_clase">Por clase</option>
+                            <option value="por_semana">Por semana</option>
+                            <option value="por_mes">Por mes</option>
                         </select>
                     </div>
 
@@ -344,7 +346,7 @@
                         <p><strong class="text-stone-400">N° de Inscripción:</strong> <span id="exito-id" class="text-white font-mono font-bold">#--</span></p>
                         <p><strong class="text-stone-400">Alumno:</strong> <span id="exito-alumno" class="text-white">--</span></p>
                         <p><strong class="text-stone-400">Email:</strong> <span id="exito-email" class="text-white">--</span></p>
-                        <p><strong class="text-stone-400">Modalidad:</strong> <span id="exito-modalidad" class="text-white">--</span></p>
+                        <p><strong class="text-stone-400">Precio elegido:</strong> <span id="exito-modalidad" class="text-white">--</span></p>
                     </div>
                     <p class="text-xs text-stone-400">
                         Nos pondremos en contacto contigo a la brevedad para coordinar los detalles de la primera clase.
@@ -624,28 +626,53 @@
                     currentPrecios = precios;
 
                     if (Array.isArray(precios) && precios.length > 0) {
-                        container.innerHTML = precios.map((p, idx) => {
-                            const desc = p.descripcion ? `<p class="text-xs text-stone-400 mt-1">${p.descripcion}</p>` : '';
-                            const clasesText = p.cantidadClases ? ` (${p.cantidadClases} clases)` : '';
-                            return `
-                                <div class="price-option-card ${idx === 0 ? 'selected' : ''}" onclick="selectPrice(${idx})">
-                                    <div class="flex justify-between items-center">
-                                        <span class="font-bold text-white text-sm">${p.nombre_precio || p.modalidad}${clasesText}</span>
-                                        <span class="text-neon font-extrabold text-sm">$${formatPrecioAR(p.precio)}</span>
+                        const opciones = precios.filter(p => {
+                            const valor = Number(p.precioClase ?? p.precio_clase ?? p.precioSemana ?? p.precio_semana ?? p.precioMes ?? p.precio_mes ?? p.precio ?? 0);
+                            return valor > 0;
+                        });
+
+                        if (opciones.length > 0) {
+                            const cards = opciones.map((p, idx) => {
+                                const modalidad = p.modalidad || p.tipo_precio || p.precioKey || (
+                                    p.precioClase > 0 ? 'por_clase' : p.precioSemana > 0 ? 'por_semana' : 'por_mes'
+                                );
+                                const label = {
+                                    por_clase: 'Precio por clase',
+                                    por_semana: 'Precio por semana',
+                                    por_mes: 'Precio por mes'
+                                }[modalidad] || (p.nombre_precio || p.modalidad || 'Precio');
+                                const valor = Number(p.precioClase ?? p.precio_clase ?? p.precioSemana ?? p.precio_semana ?? p.precioMes ?? p.precio_mes ?? p.precio ?? 0);
+                                const desc = p.descripcion ? `<p class="text-xs text-stone-400 mt-1">${p.descripcion}</p>` : '';
+
+                                return `
+                                    <div class="price-option-card ${idx === 0 ? 'selected' : ''}" onclick="selectPrice(${idx})">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-bold text-white text-sm">${label}</span>
+                                            <span class="text-neon font-extrabold text-sm">$${formatPrecioAR(valor)}</span>
+                                        </div>
+                                        ${desc}
                                     </div>
-                                    ${desc}
-                                </div>
+                                `;
+                            }).join('');
+
+                            container.innerHTML = cards;
+                            selectModalidad.innerHTML = `
+                                <option value="">Seleccioná una opción</option>
+                                ${opciones.map((p, idx) => {
+                                    const modalidad = p.modalidad || p.tipo_precio || p.precioKey || (
+                                        p.precioClase > 0 ? 'por_clase' : p.precioSemana > 0 ? 'por_semana' : 'por_mes'
+                                    );
+                                    const label = {
+                                        por_clase: 'Precio por clase',
+                                        por_semana: 'Precio por semana',
+                                        por_mes: 'Precio por mes'
+                                    }[modalidad] || (p.nombre_precio || p.modalidad || 'Precio');
+                                    const valor = Number(p.precioClase ?? p.precio_clase ?? p.precioSemana ?? p.precio_semana ?? p.precioMes ?? p.precio_mes ?? p.precio ?? 0);
+                                    return `<option value="${modalidad}" data-idx="${idx}">${label} - $${formatPrecioAR(valor)}</option>`;
+                                }).join('')}
                             `;
-                        }).join('');
-
-                        // Actualizar opciones del select
-                        selectModalidad.innerHTML = precios.map((p, idx) => `
-                            <option value="${p.modalidad}" data-idx="${idx}">
-                                ${p.nombre_precio || p.modalidad} - $${formatPrecioAR(p.precio)}
-                            </option>
-                        `).join('');
-
-                        return;
+                            return;
+                        }
                     }
                 }
             } catch (e) {
@@ -656,18 +683,24 @@
             container.innerHTML = `
                 <div class="price-option-card selected">
                     <div class="flex justify-between items-center">
-                        <span class="font-bold text-white text-sm">Clase Suelta</span>
+                        <span class="font-bold text-white text-sm">Precio por clase</span>
                         <span class="text-xs text-stone-400">Consultar arancel</span>
                     </div>
-                    <p class="text-xs text-stone-400 mt-1">Abono por cada clase presencial.</p>
+                    <p class="text-xs text-stone-400 mt-1">Arancel por cada clase individual.</p>
                 </div>
                 <div class="price-option-card">
                     <div class="flex justify-between items-center">
-                        <span class="font-bold text-white text-sm">Abono Mensual</span>
+                        <span class="font-bold text-white text-sm">Precio por semana</span>
                         <span class="text-xs text-stone-400">Consultar arancel</span>
                     </div>
-                    <p class="text-xs text-stone-400 mt-1">Cuota mensual con acceso a todas las clases del mes.</p>
+                    <p class="text-xs text-stone-400 mt-1">Opcional para semanales o recorridos por semana.</p>
                 </div>
+            `;
+            selectModalidad.innerHTML = `
+                <option value="">Seleccioná una opción</option>
+                <option value="por_clase">Por clase</option>
+                <option value="por_semana">Por semana</option>
+                <option value="por_mes">Por mes</option>
             `;
         }
 
@@ -732,6 +765,11 @@
                 return;
             }
 
+            if (!modalidad) {
+                showNotification('Elegí al menos una opción de precio del taller', 'warning');
+                return;
+            }
+
             const submitBtn = document.getElementById('btn-submit-inscripcion');
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...`;
@@ -742,7 +780,7 @@
                     alumno_nombre: nombre,
                     alumno_email: email,
                     alumno_telefono: telefono,
-                    modalidad: modalidad || 'clase_suelta',
+                    modalidad: modalidad || 'por_clase',
                     comentarios: comentarios || null
                 };
 
@@ -767,7 +805,12 @@
                 document.getElementById('exito-id').textContent = `#${data.id || 'CONF'}`;
                 document.getElementById('exito-alumno').textContent = nombre;
                 document.getElementById('exito-email').textContent = email;
-                document.getElementById('exito-modalidad').textContent = modalidad === 'paquete' ? 'Mensualidad' : 'Clase Suelta';
+                const modalidadLabel = {
+                    por_clase: 'Por clase',
+                    por_semana: 'Por semana',
+                    por_mes: 'Por mes'
+                };
+                document.getElementById('exito-modalidad').textContent = modalidadLabel[modalidad] || 'Por clase';
 
                 showNotification('¡Inscripción registrada con éxito!', 'success', 5000);
 

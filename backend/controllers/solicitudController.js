@@ -5,6 +5,7 @@ logVerbose('[SOLICITUDCONTROLLER FILE LOADED] (workspace)');
 const { sendAdminNotification } = require('../services/emailService');
 const { sendComprobanteEmail } = require('../services/emailService');
 const { getOrCreateClient, updateClient } = require('../lib/clients');
+const { tryRecoverFlyerUrl } = require('./uploadsController');
 
 const crearSolicitud = async (req, res) => {
     logVerbose("\n-> Controlador crearSolicitud. Body recibido:", req.body);
@@ -124,10 +125,16 @@ const crearSolicitud = async (req, res) => {
             const tipoId = req.body.tipoId || req.body.idTipoEvento || req.body.tipo_taller_id || req.body.tipoTallerId || null;
             const fechaEvento = req.body.fechaEvento || null;
             const horaEvento = req.body.horaInicio || null;
-            const precioClase = Number(req.body.precioClase || 0) || 0;
-            const precioSemana = Number(req.body.precioSemana || 0) || 0;
-            const modalidadPago = req.body.modalidadPago || 'por_clase';
+            const precioClase = Number(req.body.precioClase || req.body.precio_clase || 0) || 0;
+            const precioSemana = Number(req.body.precioSemana || req.body.precio_semana || 0) || 0;
+            const precioMes = Number(req.body.precioMes || req.body.precio_mes || 0) || 0;
             const comentarios = req.body.detalles || req.body.comentarios || null;
+            const preciosIngresados = [precioClase, precioSemana, precioMes].filter(v => Number(v) > 0);
+
+            if (preciosIngresados.length === 0) {
+                await conn.rollback();
+                return res.status(400).json({ error: 'Debe indicar al menos un precio válido: por clase, por semana o por mes.' });
+            }
 
             const sqlTaller = `
                 INSERT INTO solicitudes_talleres (
@@ -140,7 +147,7 @@ const crearSolicitud = async (req, res) => {
                     precio
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
             `;
-            const compraConPrecio = precioClase > 0 ? precioClase : precioSemana;
+            const precioElegido = precioClase > 0 ? precioClase : (precioSemana > 0 ? precioSemana : precioMes);
             const tallerInsert = await conn.query(sqlTaller, [
                 newId,
                 nombreTaller,
@@ -148,42 +155,39 @@ const crearSolicitud = async (req, res) => {
                 comentarios,
                 fechaEvento,
                 horaEvento,
-                compraConPrecio || 0
+                precioElegido || 0
             ]);
 
             const idSolicitudTaller = Number(tallerInsert.insertId);
-            const precioElegido = precioClase > 0 ? precioClase : precioSemana;
 
-            if (precioElegido > 0) {
-                const precioModalidad = modalidadPago === 'por_semana' ? 'paquete' : 'clase_suelta';
-                const nombrePrecio = modalidadPago === 'por_semana' ? 'Pack semanal' : 'Clase suelta';
-                await conn.query(
-                    `INSERT INTO precios_talleres (
-                        id_solicitud,
-                        id_solicitud_taller,
-                        id_tipo_evento,
-                        tipo_taller_id,
-                        nombre_precio,
-                        descripcion,
-                        modalidad,
-                        precio,
-                        vigente_desde,
-                        vigente_hasta,
-                        vigente,
-                        activo
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), NULL, 1, 1)`,
-                    [
-                        newId,
-                        idSolicitudTaller,
-                        tipoId,
-                        tipoId,
-                        nombrePrecio,
-                        comentarios || `Precio generado para ${nombreTaller}`,
-                        precioModalidad,
-                        precioElegido
-                    ]
-                );
-            }
+            await conn.query(
+                `INSERT INTO precios_talleres (
+                    id_solicitud,
+                    id_solicitud_taller,
+                    id_tipo_evento,
+                    tipo_taller_id,
+                    nombre_precio,
+                    descripcion,
+                    precio_clase,
+                    precio_semana,
+                    precio_mes,
+                    vigente_desde,
+                    vigente_hasta,
+                    vigente,
+                    activo
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), NULL, 1, 1)`,
+                [
+                    newId,
+                    idSolicitudTaller,
+                    tipoId,
+                    tipoId,
+                    'Precios del taller',
+                    comentarios || `Precio generado para ${nombreTaller}`,
+                    precioClase > 0 ? precioClase : null,
+                    precioSemana > 0 ? precioSemana : null,
+                    precioMes > 0 ? precioMes : null
+                ]
+            );
 
             await conn.query(
                 'UPDATE solicitudes SET descripcion_corta = ?, descripcion_larga = ? WHERE id_solicitud = ?',
@@ -449,7 +453,7 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
                 st.hora_evento as horaInicio,
                 sol.duracion_minutos as duracionEvento,
                 NULL as cantidadPersonas,
-                COALESCE(pt.precio, st.precio) as precioBase,
+                COALESCE(pt.precio_clase, pt.precio_semana, pt.precio_mes, st.precio) as precioBase,
                 COALESCE(c.nombre, '') as nombreCompleto,
                 c.telefono as telefono,
                 c.email as email,
@@ -457,6 +461,7 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
                 sol.estado,
                 st.nombre_taller as nombreTaller,
                 COALESCE(sol.es_publico, 0) as esPublico,
+                sol.url_flyer as url_flyer,
                 COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) as idTipoEvento,
                 COALESCE(ot.nombre_para_mostrar, st.nombre_taller) as nombreParaMostrar
             FROM solicitudes_talleres st
@@ -468,6 +473,12 @@ const getSolicitudWithAutoDetect = async (conn, numericId) => {
         `;
         const [result] = await conn.query(sql, [numericId]);
         if (result) {
+            if (!result.url_flyer) {
+                const recoveredUrl = tryRecoverFlyerUrl(`tll_${numericId}`);
+                if (recoveredUrl) {
+                    result.url_flyer = recoveredUrl;
+                }
+            }
             return { ...result, adicionales: [] };
         }
     }
@@ -756,7 +767,7 @@ const getSolicitudPorId = async (req, res) => {
                     st.hora_evento as horaInicio,
                     sol.duracion_minutos as duracionEvento,
                     NULL as cantidadPersonas,
-                    COALESCE(pt.precio, st.precio) as precioBase,
+                    COALESCE(pt.precio_clase, pt.precio_semana, pt.precio_mes, st.precio) as precioBase,
                     COALESCE(c.nombre, '') as nombreCompleto,
                     COALESCE(c.apellido, '') as apellidoCliente,
                     COALESCE(c.telefono, '') as telefono,
@@ -768,6 +779,7 @@ const getSolicitudPorId = async (req, res) => {
                     COALESCE(sol.descripcion_corta, '') as descripcion_corta,
                     COALESCE(sol.descripcion_larga, '') as descripcion_larga,
                     sol.fecha_creacion as fecha_creacion,
+                    sol.url_flyer as url_flyer,
                     COALESCE(c.id_cliente, '') as id_cliente,
                     COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) as idTipoEvento,
                     COALESCE(ot.nombre_para_mostrar, st.nombre_taller) as nombreParaMostrar
@@ -790,6 +802,13 @@ const getSolicitudPorId = async (req, res) => {
                 ...taller,
                 adicionales: []
             };
+
+            if (!respuesta.url_flyer) {
+                const recoveredUrl = tryRecoverFlyerUrl(`tll_${tallerId}`);
+                if (recoveredUrl) {
+                    respuesta.url_flyer = recoveredUrl;
+                }
+            }
 
             logVerbose(`[SOLICITUD][GET] Taller obtenido: ${taller.nombreCompleto}`);
             console.log(`[SOLICITUD][GET] Respuesta JSON taller tll_${tallerId}:`, JSON.stringify(respuesta, null, 2));
@@ -2036,7 +2055,7 @@ const getSolicitudPublicById = async (req, res) => {
                         st.fecha_evento as fechaEvento,
                         st.hora_evento as horaInicio,
                         sol.duracion_minutos as duracionEvento,
-                        COALESCE(pt.precio, st.precio) as precioBase,
+                        COALESCE(pt.precio_clase, pt.precio_semana, pt.precio_mes, st.precio) as precioBase,
                         COALESCE(c.nombre, '') as nombreParaMostrar,
                         sol.estado,
                         COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) as idTipoEvento,
@@ -2148,7 +2167,7 @@ const getSolicitudPublicById = async (req, res) => {
                     st.fecha_evento as fechaEvento,
                     st.hora_evento as horaInicio,
                     sol.duracion_minutos as duracionEvento,
-                    COALESCE(pt.precio, st.precio) as precioBase,
+                    COALESCE(pt.precio_clase, pt.precio_semana, pt.precio_mes, st.precio) as precioBase,
                     COALESCE(c.nombre, '') as nombreParaMostrar,
                     sol.estado,
                     COALESCE(st.id_tipo_evento, pt.id_tipo_evento, pt.tipo_taller_id) as idTipoEvento,

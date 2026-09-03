@@ -587,17 +587,23 @@
       const diasMap = { 0: 'Dom', 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb' };
       const horarios = (draft.schedule || []).map(s => `<li>${diasMap[s.day] || s.day} • ${s.start} • ${s.duration}h</li>`).join('');
       const excepciones = (draft.exceptions || []).join(', ') || '(ninguna)';
-      const precio = draft.modalidadPago === 'por_clase' ? draft.precioClase : draft.precioSemana;
+      const precioClase = Number(draft.precioClase ?? draft.precio_clase ?? 0) || 0;
+      const precioSemana = Number(draft.precioSemana ?? draft.precio_semana ?? 0) || 0;
+      const precioMes = Number(draft.precioMes ?? draft.precio_mes ?? 0) || 0;
+      const precios = [];
+      if (precioClase > 0) precios.push(`<li><strong>Precio por clase:</strong> $${convertirNumero(String(precioClase))}</li>`);
+      if (precioSemana > 0) precios.push(`<li><strong>Precio por semana:</strong> $${convertirNumero(String(precioSemana))}</li>`);
+      if (precioMes > 0) precios.push(`<li><strong>Precio por mes:</strong> $${convertirNumero(String(precioMes))}</li>`);
+
       return `
         <h3>Resumen del Taller/Actividad:</h3>
         <ul>
-          <li><strong>Tipo:</strong> ${draft.tipoNombre || draft.tipo}</li>
-          <li><strong>Horarios semanales:</strong><ul>${horarios}</ul></li>
-          <li><strong>Excepciones:</strong> ${excepciones}</li>
-          <li><strong>Cupo máximo:</strong> ${draft.cupoMax} alumnos</li>
-          <li><strong>Modalidad de pago:</strong> ${draft.modalidadPago}</li>
-          <li><strong>Precio:</strong> $${convertirNumero(String(precio))}</li>
-          ${draft.detalles ? `<li><strong>Observaciones:</strong> ${draft.detalles}</li>` : ''}
+          <li><strong>Nombre de taller:</strong> ${draft.nombreTaller || draft.nombre_taller || draft.tipoNombre || draft.tipo || '—'}</li>
+          <li><strong>Horarios semanales:</strong><ul>${horarios || '<li>(sin horarios cargados)</li>'}</ul></li>
+          <li><strong>Días reservados y excepciones:</strong> ${excepciones}</li>
+          <li><strong>Cupo máximo:</strong> ${draft.cupoMax || draft.cupo_max || '—'} alumnos</li>
+          ${precios.length ? precios.join('') : '<li><strong>Precios:</strong> Sin valores cargados</li>'}
+          ${draft.detalles || draft.descripcion || draft.descripcionGeneral ? `<li><strong>Observaciones:</strong> ${draft.detalles || draft.descripcion || draft.descripcionGeneral}</li>` : ''}
         </ul>
       `;
     }
