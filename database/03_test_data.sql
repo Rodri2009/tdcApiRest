@@ -29,8 +29,8 @@ LOCK TABLES `solicitudes` WRITE;
 /*!40000 ALTER TABLE `solicitudes` DISABLE KEYS */;
 INSERT INTO `solicitudes` (`id_solicitud`, `categoria`, `id_cliente`, `id_usuario_creador`, `fecha_creacion`, `estado`, `es_publico`, `descripcion_corta`, `descripcion_larga`, `url_flyer`, `fecha_evento`, `hora_inicio`, `duracion_minutos`, `hora_fin`, `fecha_alternativa`, `actualizado_en`) VALUES
 (4,'BANDAS',4,NULL,'2026-03-13 04:29:21','Confirmado',1,'Fecha Tributo','Fecha con bandas tributo, a jovenes pordioseros, a la renga y a los redondos','/uploads/flyers/solicitud_4.jpg','2026-05-09','21:00:00',390,'04:30:00',NULL,'2026-04-01 02:07:15'),
-(5,'BANDAS',5,NULL,'2026-03-13 04:29:21','Confirmado',1,'Bandas de rock, produce Mati','2 bandas de rock','/uploads/flyers/solicitud_5.jpeg','2026-05-02','21:00:00',360,'04:00:00',NULL,'2026-04-01 02:39:32'),
-(6,'BANDAS',4,NULL,'2026-03-13 04:29:21','Confirmado',1,'Termidor Fest, produce Seba','Bandas Metaleras con tributo a Judas.','/uploads/flyers/solicitud_6.jpeg','2026-04-18','21:00:00',450,'28:30:00',NULL,'2026-04-01 02:06:35'),
+(5,'BANDAS',5,NULL,'2026-03-13 04:29:21','Confirmado',1,'Bandas de rock, produce Mati','2 bandas de rock',NULL,'2026-05-02','21:00:00',360,'04:00:00',NULL,'2026-04-01 02:39:32'),
+(6,'BANDAS',4,NULL,'2026-03-13 04:29:21','Confirmado',1,'Termidor Fest, produce Seba','Bandas Metaleras con tributo a Judas.','/uploads/flyers/solicitud_6.jpg','2026-04-18','21:00:00',450,'28:30:00',NULL,'2026-04-01 02:06:35'),
 (7,'SERVICIOS',1,NULL,'2026-03-13 04:29:21','Solicitado',0,'Servicio de Fotografía para Eventos','Servicio de Fotografía para Eventos. 4 horas mínimo.',NULL,NULL,NULL,NULL,NULL,NULL,'2026-03-13 04:29:21'),
 (8,'TALLERES',2,NULL,'2026-03-13 04:29:21','Confirmado',1,'Taller de Dibujo','Dibujos y arte en mesas.',NULL,'2026-04-22','10:00:00',90,NULL,NULL,'2026-03-13 04:29:21'),
 (9,'BANDAS',4,2,'2026-05-20 10:30:15','Confirmado',1,'Mounster of Claypole','Festival Metalero 7 bandas',NULL,'2026-05-16','21:00:00',480,'05:00:00',NULL,'2026-05-20 10:30:15'),

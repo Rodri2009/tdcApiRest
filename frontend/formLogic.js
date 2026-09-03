@@ -1229,20 +1229,46 @@ const App = {
             if (this.elements.flyerPreviewDiv) this.updateFlyerPreview();
         } catch (err) { console.warn('populateForm: fallo al setear campos de banda:', err); }
 
-        // 7. Rellenar el estado de la solicitud si existe el dropdown
+        // 7. Rellenar el estado de la solicitud (soporta select tradicional y dropdown personalizado)
         try {
             const estadoSelect = document.getElementById('estadoSolicitud');
             if (estadoSelect && solicitud.estado) {
                 estadoSelect.value = solicitud.estado;
                 console.log('[populateForm] Estado actual asignado al dropdown:', solicitud.estado);
             } else if (!estadoSelect) {
-                console.log('[populateForm] Dropdown de estado no encontrado aún');
+                console.log('[populateForm] Dropdown de estado select no encontrado');
             } else if (!solicitud.estado) {
                 console.log('[populateForm] Estado no disponible en solicitud');
             }
+
+            // Sincronizar dropdown personalizado si existe en la página
+            if (typeof updateEstadoDisplay === 'function' && solicitud.estado) {
+                updateEstadoDisplay(solicitud.estado);
+                if (typeof estadoAnterior !== 'undefined') {
+                    estadoAnterior = solicitud.estado;
+                }
+                console.log('[populateForm] Dropdown personalizado sincronizado a:', solicitud.estado);
+            }
         } catch (err) { console.warn('populateForm: fallo al setear estado:', err); }
 
-        // 6. Actualizar visibilidad de campos según el tipo
+        // 8. Rellenar ID y fecha de creación si existen en el encabezado
+        try {
+            const idBadge = document.getElementById('solicitudIdValue');
+            if (idBadge) idBadge.textContent = solicitud.solicitudId || '-';
+            const creadoSpan = document.getElementById('solicitudCreado');
+            const fechaCreacion = solicitud.fecha_creacion || solicitud.fechaCreacion || solicitud.creado;
+            if (creadoSpan && fechaCreacion) {
+                const d = new Date(fechaCreacion);
+                creadoSpan.textContent = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            }
+        } catch (err) { console.warn('populateForm: fallo al setear ID o fecha:', err); }
+
+        // 9. Disparar evento global para componentes que escuchen la carga de la solicitud
+        try {
+            document.dispatchEvent(new CustomEvent('solicitudLoaded', { detail: solicitud }));
+        } catch (err) { console.warn('populateForm: fallo al disparar solicitudLoaded:', err); }
+
+        // 10. Actualizar visibilidad de campos según el tipo
         this.actualizarCamposCondicionales();
     },
 

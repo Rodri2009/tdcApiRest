@@ -384,25 +384,35 @@ const uploadLogoPublic = async (req, res) => {
         const path = require('path');
         const dir = path.join(__dirname, '..', 'uploads', 'bandas');
         const originalPath = req.file.path;
+        const { normalizeImageToPng } = require('../utils/uploadValidation');
 
-        // Si nos pasan 'nombre' tratamos de renombrar a logo_<sanitized_nombre>.<ext>
         let finalFilename = req.file.filename;
         if (req.body && (req.body.nombre || req.body.nombre_banda)) {
             const rawName = (req.body.nombre || req.body.nombre_banda).toString();
             const sanitized = rawName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '_').toLowerCase();
-            const ext = path.extname(req.file.originalname).toLowerCase() || (req.file.mimetype === 'image/png' ? '.png' : '.jpg');
-            const target = path.join(dir, `logo_${sanitized}${ext}`);
+            const target = path.join(dir, `logo_${sanitized}.png`);
 
             try {
-                if (fs.existsSync(target)) {
-                    // sobrescribir
-                    fs.unlinkSync(target);
-                }
-                fs.renameSync(originalPath, target);
+                const fileBuffer = fs.readFileSync(originalPath);
+                const normalized = await normalizeImageToPng(fileBuffer, 9);
+                if (fs.existsSync(target)) fs.unlinkSync(target);
+                fs.writeFileSync(target, normalized);
+                fs.unlinkSync(originalPath);
                 finalFilename = path.basename(target);
             } catch (e) {
-                logWarning('No se pudo renombrar archivo a nombre limpio, usando nombre temporal', e.message || e);
-                // en caso de error, mantenemos el archivo temporal
+                logWarning('No se pudo convertir el logo a PNG, usando nombre temporal', e.message || e);
+            }
+        } else {
+            try {
+                const fileBuffer = fs.readFileSync(originalPath);
+                const normalized = await normalizeImageToPng(fileBuffer, 9);
+                const target = path.join(dir, `${path.basename(req.file.filename, path.extname(req.file.filename))}.png`);
+                if (fs.existsSync(target)) fs.unlinkSync(target);
+                fs.writeFileSync(target, normalized);
+                fs.unlinkSync(originalPath);
+                finalFilename = path.basename(target);
+            } catch (e) {
+                logWarning('No se pudo convertir el logo a PNG en nombre temporal', e.message || e);
             }
         }
 

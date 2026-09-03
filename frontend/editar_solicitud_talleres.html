@@ -569,8 +569,8 @@
                 <div>
                     <span style="color: #9ca3af;">Estado:</span>
                     <div class="estado-dropdown-container">
-                        <button class="estado-dropdown-toggle" id="estadoToggle">
-                            <span id="estadoLabel">Solicitado</span>
+                        <button type="button" class="estado-dropdown-toggle" id="estadoToggle">
+                            <span id="estadoLabel">—</span>
                             <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
                         </button>
                         <div class="estado-dropdown-menu" id="estadoMenu">
@@ -666,7 +666,8 @@
                             <option value="2">2 horas</option>
                             <option value="3">3 horas</option>
                         </select>
-                        <button type="button" id="btnAddTallerHorario" class="btn btn-primary" style="margin:2px;">Agregar</button>
+                        <button type="button" id="btnAddTallerHorario" class="btn btn-primary"
+                            style="margin:2px;">Agregar</button>
                     </div>
                     <div id="tallerScheduleList" class="schedule-list"></div>
                 </div>
@@ -768,7 +769,12 @@
                 const headers = {};
                 if (token) headers.Authorization = `Bearer ${token}`;
 
-                const response = await fetch('/api/uploads/flyers', {
+                const solicitudId = document.getElementById('idSolicitud')?.value || null;
+                const uploadUrl = solicitudId
+                    ? `/api/uploads/flyers?solicitudId=${encodeURIComponent(solicitudId)}`
+                    : '/api/uploads/flyers';
+
+                const response = await fetch(uploadUrl, {
                     method: 'POST',
                     headers,
                     body: fd
@@ -905,57 +911,42 @@
         }
 
         // ============================================================
-        // INICIALIZACIÓN
+        // SISTEMA DE NOTIFICACIONES
         // ============================================================
-        document.addEventListener('DOMContentLoaded', () => {
+        function showNotification(message, type = 'info', duration = 3000) {
+            const banner = document.getElementById('notification-banner');
+            if (!banner) return;
 
-            // Proteger esta página: redirigir a login si no está autenticado
-            // navbarManager ya fue instanciado por navbar.js
-            if (!navbarManager || !navbarManager.protectAdminPage()) {
-                return; // Salir si no está autenticado
-            }
+            const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
+            const textColor = '#ffffff';
 
-            // Inicializar la app de edición
-            initializeApp({
-                mode: 'edit',
-                categoriaFiltro: 'TALLERES_ACTIVIDADES'
-            });
+            banner.innerHTML = `
+                <div style="
+                    background-color: ${bgColor};
+                    color: ${textColor};
+                    padding: 12px 20px;
+                    border-radius: 6px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    margin-bottom: 10px;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                ">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:white;cursor:pointer;font-size:16px;">&times;</button>
+                </div>
+            `;
+            banner.style.display = 'block';
 
             setTimeout(() => {
-                if (window.currentSolicitud) {
-                    const idBadge = document.getElementById('solicitudIdValue');
-                    if (idBadge) idBadge.textContent = window.currentSolicitud.solicitudId || '-';
-                    const creadoSpan = document.getElementById('solicitudCreado');
-                    if (creadoSpan && window.currentSolicitud.fecha_creacion) {
-                        const d = new Date(window.currentSolicitud.fecha_creacion);
-                        creadoSpan.textContent = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    }
-                }
-            }, 1000);
+                banner.style.display = 'none';
+            }, duration);
+        }
 
-            // Configurar estado inicial del dropdown
-            setTimeout(() => {
-                if (window.currentSolicitud && window.currentSolicitud.estado) {
-                    const estadoActual = window.currentSolicitud.estado;
-                    estadoAnterior = estadoActual;
-                    updateEstadoDisplay(estadoActual);
-                    console.log('[ESTADO] Estado inicial cargado:', estadoActual);
-                }
-            }, 500);
-
-            // Cargar datos del cliente con apellido (COMPACTO)
-            setTimeout(() => {
-                if (window.currentSolicitud && window.currentSolicitud.idCliente) {
-                    loadClienteData(window.currentSolicitud.idCliente);
-                } else if (window.currentSolicitud && window.currentSolicitud.id_cliente) {
-                    loadClienteData(window.currentSolicitud.id_cliente);
-                }
-            }, 1500);
-
-            setupEstadoDropdown();
-        });
-
-        // Estado anterior para revertir si cancela
+        // ============================================================
+        // GESTIÓN DE ESTADO DE LA SOLICITUD
+        // ============================================================
         let estadoAnterior = 'Solicitado';
 
         function updateEstadoDisplay(estado) {
@@ -981,6 +972,9 @@
             const items = document.querySelectorAll('.estado-dropdown-item');
 
             if (!toggle || !menu) return;
+            // Protección contra inicializaciones duplicadas
+            if (toggle.dataset.dropdownInitialized === 'true') return;
+            toggle.dataset.dropdownInitialized = 'true';
 
             // Abrir/cerrar dropdown
             toggle.addEventListener('click', (e) => {
@@ -1022,6 +1016,7 @@
 
             if (!solicitudId) {
                 console.error('[SOLICITUD] No se pudo identificar la solicitud');
+                showNotification('No se pudo identificar la solicitud', 'error');
                 updateEstadoDisplay(estadoAnterior);
                 return;
             }
@@ -1029,6 +1024,7 @@
             const authToken = localStorage.getItem('authToken');
             if (!authToken) {
                 console.error('[SOLICITUD] No tiene autorización para cambiar el estado');
+                showNotification('No tiene autorización para cambiar el estado', 'error');
                 updateEstadoDisplay(estadoAnterior);
                 return;
             }
@@ -1054,19 +1050,77 @@
 
                     console.log('[SOLICITUD] ✓ Estado actualizado correctamente a:', nuevoEstado);
                     estadoAnterior = nuevoEstado; // Guardar nuevo estado anterior
+                    if (window.currentSolicitud) {
+                        window.currentSolicitud.estado = nuevoEstado;
+                    }
                     updateEstadoDisplay(nuevoEstado);
+                    showNotification(`Estado actualizado a ${nuevoEstado}`, 'success');
                 } catch (err) {
                     console.error('[SOLICITUD] ✗ Error al cambiar estado:', err);
+                    showNotification('Error al cambiar estado: ' + err.message, 'error');
                     // Revertir
                     updateEstadoDisplay(estadoAnterior);
                 }
             })();
         }
 
-        // Inicializar dropdown cuando el DOM esté listo
+        function onSolicitudDataReady(solicitud) {
+            if (!solicitud) return;
+
+            // 1. ID y Fecha de creación
+            const idBadge = document.getElementById('solicitudIdValue');
+            if (idBadge) idBadge.textContent = solicitud.solicitudId || '-';
+
+            const creadoSpan = document.getElementById('solicitudCreado');
+            const fechaCreacion = solicitud.fecha_creacion || solicitud.fechaCreacion || solicitud.creado;
+            if (creadoSpan && fechaCreacion) {
+                const d = new Date(fechaCreacion);
+                creadoSpan.textContent = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            }
+
+            // 2. Estado inicial
+            if (solicitud.estado) {
+                estadoAnterior = solicitud.estado;
+                updateEstadoDisplay(solicitud.estado);
+                console.log('[ESTADO] Estado sincronizado reactivamente:', solicitud.estado);
+            }
+
+            // 3. Contacto del cliente
+            const idCliente = solicitud.idCliente || solicitud.id_cliente;
+            if (idCliente) {
+                loadClienteData(idCliente);
+            }
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
         document.addEventListener('DOMContentLoaded', () => {
+            // Proteger esta página: redirigir a login si no está autenticado
+            // navbarManager ya fue instanciado por navbar.js
+            if (!navbarManager || !navbarManager.protectAdminPage()) {
+                return; // Salir si no está autenticado
+            }
+
+            // Configurar dropdown y botón volver
             setupEstadoDropdown();
             setupBackButton();
+
+            // Escuchar evento reactivo cuando la solicitud es cargada por formLogic
+            document.addEventListener('solicitudLoaded', (e) => {
+                onSolicitudDataReady(e.detail);
+            });
+
+            // Inicializar la app de edición
+            initializeApp({
+                mode: 'edit',
+                categoriaFiltro: 'TALLERES_ACTIVIDADES'
+            });
+
+            // Verificación de respaldo si la solicitud ya estuviera en memoria
+            if (window.currentSolicitud) {
+                onSolicitudDataReady(window.currentSolicitud);
+            }
         });
 
         // Configurar botón volver dinámico

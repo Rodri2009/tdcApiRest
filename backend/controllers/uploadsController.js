@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { logVerbose, logError, logWarning } = require('../lib/debugFlags');
-const { validateUploadFile } = require('../utils/uploadValidation');
+const { validateUploadFile, buildNormalizedUploadName, normalizeImageToJpg } = require('../utils/uploadValidation');
 
 const tryRecoverFlyerUrl = (solicitudId) => {
     if (!solicitudId) return null;
@@ -40,11 +40,20 @@ const uploadFlyerPublic = async (req, res) => {
             return res.status(400).json({ message: validation.reason });
         }
 
-        const finalFilename = validation.safeName;
+        const requestId = req.query && req.query.solicitudId ? String(req.query.solicitudId).trim() : '';
+        const finalFilename = buildNormalizedUploadName({
+            baseName: req.file.originalname,
+            requestId,
+            prefix: 'flyer',
+            targetExt: '.jpg'
+        });
+
         const finalPath = path.join(path.dirname(req.file.path), finalFilename);
 
         if (req.file.filename !== finalFilename) {
-            fs.renameSync(req.file.path, finalPath);
+            const normalizedBuffer = await normalizeImageToJpg(fileBuffer, 85);
+            fs.writeFileSync(finalPath, normalizedBuffer);
+            fs.unlinkSync(req.file.path);
         }
 
         const url = `/uploads/flyers/${finalFilename}`;

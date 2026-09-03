@@ -1,5 +1,11 @@
 const fs = require('fs');
 const path = require('path');
+let sharp = null;
+try {
+    sharp = require('sharp');
+} catch (err) {
+    sharp = null;
+}
 
 const MAX_UPLOAD_SIZE = {
     jpg: 5 * 1024 * 1024,
@@ -135,6 +141,63 @@ const ensureDirectory = (dirPath) => {
     fs.mkdirSync(dirPath, { recursive: true });
 };
 
+const buildNormalizedUploadName = ({ baseName, requestId, prefix = 'upload', targetExt = '.jpg' }) => {
+    const cleanBase = (baseName || '').trim();
+    const sanitizedBase = cleanBase && cleanBase !== 'upload'
+        ? cleanBase
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9_-]+/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '')
+            .slice(0, 80)
+        : '';
+
+    if (requestId) {
+        return `solicitud_${requestId}${targetExt}`;
+    }
+
+    const finalBase = sanitizedBase || `${prefix}_${Date.now()}`;
+    return `${finalBase}${targetExt}`;
+};
+
+const normalizeImageToJpg = async (buffer, quality = 85) => {
+    if (!buffer || buffer.length === 0) {
+        throw new Error('Archivo vacío');
+    }
+
+    const inputFormat = detectImageKind(buffer);
+    if (!inputFormat) {
+        throw new Error('Archivo no coincide con un JPG o PNG válido');
+    }
+
+    if (!sharp) {
+        return buffer;
+    }
+
+    return sharp(buffer)
+        .jpeg({ quality, mozjpeg: true })
+        .toBuffer();
+};
+
+const normalizeImageToPng = async (buffer, compressionLevel = 9) => {
+    if (!buffer || buffer.length === 0) {
+        throw new Error('Archivo vacío');
+    }
+
+    const inputFormat = detectImageKind(buffer);
+    if (!inputFormat) {
+        throw new Error('Archivo no coincide con un JPG o PNG válido');
+    }
+
+    if (!sharp) {
+        return buffer;
+    }
+
+    return sharp(buffer)
+        .png({ compressionLevel, quality: 90 })
+        .toBuffer();
+};
+
 module.exports = {
     ALLOWED_EXTENSIONS,
     ALLOWED_MIME_TYPES,
@@ -143,5 +206,8 @@ module.exports = {
     validateUploadMetadata,
     validateUploadFile,
     ensureDirectory,
-    detectImageKind
+    detectImageKind,
+    buildNormalizedUploadName,
+    normalizeImageToJpg,
+    normalizeImageToPng
 };
