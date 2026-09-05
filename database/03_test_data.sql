@@ -102,20 +102,20 @@ UNLOCK TABLES;
 LOCK TABLES `bandas_artistas` WRITE;
 /*!40000 ALTER TABLE `bandas_artistas` DISABLE KEYS */;
 INSERT INTO `bandas_artistas` (`id_banda`, `nombre`, `genero_musical`, `bio`, `instagram`, `facebook`, `twitter`, `tiktok`, `web_oficial`, `youtube`, `spotify`, `descripcion`, `logo_url`, `foto_prensa_url`, `contacto_rol`, `id_cliente`, `registrado_por_id_usuario`, `verificada`, `activa`, `creado_en`, `actualizado_en`) VALUES
-  (40,'El Wasil','Trash Metal','Banda metalera de alto voltaje.','@elwasil',NULL,NULL,NULL,NULL,NULL,NULL,'Banda trash metal','/uploads/bandas/logo_el_wasil.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (41,'Kill Hill','Thrash Metal','Banda de thrash metal underground.','@killhill',NULL,NULL,NULL,NULL,NULL,NULL,'Banda trash metal','/uploads/bandas/logo_kill_hill.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (42,'Cervetica','Metal','Banda metalera con sonido pesado.','@cervetica',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_cervetica.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (43,'Voltios','Trash Metal','Banda trash metal con riffs potentes.','@voltios',NULL,NULL,NULL,NULL,NULL,NULL,'Banda trash metal','/uploads/bandas/logo_voltios.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (44,'Demoledor','Thrash Metal','Banda de thrash metal agresivo.','@demoledor',NULL,NULL,NULL,NULL,NULL,NULL,'Banda thrash metal','/uploads/bandas/logo_demolador.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (45,'Alikaleitor','Metal','Banda metal underground con actitud.','@alikaleitor',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_alikaleitor.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (46,'Inferno','Thrash Metal','Banda de thrash infernal.','@inferno',NULL,NULL,NULL,NULL,NULL,NULL,'Banda trash metal','/uploads/bandas/logo_inferno.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (47,'Esquineros','Metal','Banda metalera con oscuridad y potencia.','@esquineros',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_esquineros.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (48,'Demacración','Metal','Banda metal con sonido corrosivo.','@demacracion',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_demacracion.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (49,'Planaria','Metal','Banda de metal experimental.','@planaria',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_planaria.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (50,'Hamvides','Thrash Metal','Banda thrash con energía corrosiva.','@hamvides',NULL,NULL,NULL,NULL,NULL,NULL,'Banda thrash metal','/uploads/bandas/logo_hamvides.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (51,'Ardid','Metal','Banda metalera oscura.','@ardid',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_ardid.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (52,'Post Mortem','Trash Metal','Banda trash metal con presencia brutal.','@postmortem',NULL,NULL,NULL,NULL,NULL,NULL,'Banda trash metal','/uploads/bandas/logo_post_mortem.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
-  (53,'Thorax','Metal','Banda metalera con actitud pesada.','@thorax',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_thorax.jpg',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00');
+  (40,'El Wasil','Trash Metal','Banda metalera de alto voltaje.','@elwasil',NULL,NULL,NULL,NULL,NULL,NULL,'Banda trash metal','/uploads/bandas/logo_el_wasil.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (41,'Kill Hill','Thrash Metal','Banda de thrash metal underground.','@killhill',NULL,NULL,NULL,NULL,NULL,NULL,'Banda trash metal','/uploads/bandas/logo_kill_hill.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (42,'Cervetica','Metal','Banda metalera con sonido pesado.','@cervetica',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_cervetica.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (43,'Voltios','Trash Metal','Banda trash metal con riffs potentes.','@voltios',NULL,NULL,NULL,NULL,NULL,NULL,'Banda trash metal','/uploads/bandas/logo_voltios.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (44,'Demoledor','Thrash Metal','Banda de thrash metal agresivo.','@demoledor',NULL,NULL,NULL,NULL,NULL,NULL,'Banda thrash metal','/uploads/bandas/logo_demolador.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (45,'Alikaleitor','Metal','Banda metal underground con actitud.','@alikaleitor',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_alikaleitor.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (46,'Inferno','Thrash Metal','Banda de thrash infernal.','@inferno',NULL,NULL,NULL,NULL,NULL,NULL,'Banda trash metal','/uploads/bandas/logo_inferno.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (47,'Esquineros','Metal','Banda metalera con oscuridad y potencia.','@esquineros',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_esquineros.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (48,'Demacración','Metal','Banda metal con sonido corrosivo.','@demacracion',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_demacracion.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (49,'Planaria','Metal','Banda de metal experimental.','@planaria',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_planaria.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (50,'Hamvides','Thrash Metal','Banda thrash con energía corrosiva.','@hamvides',NULL,NULL,NULL,NULL,NULL,NULL,'Banda thrash metal','/uploads/bandas/logo_hamvides.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (51,'Ardid','Metal','Banda metalera oscura.','@ardid',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_ardid.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (52,'Post Mortem','Trash Metal','Banda trash metal con presencia brutal.','@postmortem',NULL,NULL,NULL,NULL,NULL,NULL,'Banda trash metal','/uploads/bandas/logo_post_mortem.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00'),
+  (53,'Thorax','Metal','Banda metalera con actitud pesada.','@thorax',NULL,NULL,NULL,NULL,NULL,NULL,'Banda metalera','/uploads/bandas/logo_thorax.png',NULL,NULL,4,NULL,0,1,'2026-05-20 13:00:00','2026-05-20 13:00:00');
 /*!40000 ALTER TABLE `bandas_artistas` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -154,8 +154,8 @@ LOCK TABLES `eventos_confirmados` WRITE;
 /*!40000 ALTER TABLE `eventos_confirmados` DISABLE KEYS */;
 INSERT INTO `eventos_confirmados` (`id`, `id_solicitud`, `tipo_evento`, `tabla_origen`, `nombre_evento`, `descripcion_corta`, `descripcion`, `fecha_evento`, `hora_inicio`, `duracion_minutos`, `url_flyer`, `es_publico`, `activo`, `id_cliente`, `confirmado_en`) VALUES
 (1,4,'BANDA','solicitudes_fechas_bandas','Fecha Tributo','Fecha con bandas tributo, a jovenes pordioseros, a la renga y a los redondos','Fecha con bandas tributo, a jovenes pordioseros, a la renga y a los redondos','2026-05-09','21:00:00',390,'/uploads/flyers/solicitud_4.jpg',1,1,4,'2026-04-01 02:07:15'),
-(2,5,'BANDA','solicitudes_fechas_bandas','Bandas de rock, produce Mati','2 bandas de rock','2 bandas de rock','2026-05-02','21:00:00',360,'/uploads/flyers/solicitud_5.jpeg',1,1,5,'2026-04-01 02:39:32'),
-(3,6,'BANDA','solicitudes_fechas_bandas','Termidor Fest, produce Seba','Bandas Metaleras con tributo a Judas.','Bandas Metaleras con tributo a Judas.','2026-04-18','21:00:00',450,'/uploads/flyers/solicitud_6.jpeg',1,1,4,'2026-04-01 02:06:35'),
+(2,5,'BANDA','solicitudes_fechas_bandas','Bandas de rock, produce Mati','2 bandas de rock','2 bandas de rock','2026-05-02','21:00:00',360,'/uploads/flyers/solicitud_5.jpg',1,1,5,'2026-04-01 02:39:32'),
+(3,6,'BANDA','solicitudes_fechas_bandas','Termidor Fest, produce Seba','Bandas Metaleras con tributo a Judas.','Bandas Metaleras con tributo a Judas.','2026-04-18','21:00:00',450,'/uploads/flyers/solicitud_6.jpg',1,1,4,'2026-04-01 02:06:35'),
 (5,9,'BANDA','solicitudes_fechas_bandas','Mounster of Claypole','Festival Metalero 7 bandas','Festival Metalero 7 bandas','2026-05-16','21:00:00',480,NULL,1,1,4,'2026-05-20 10:30:15'),
 (6,10,'BANDA','solicitudes_fechas_bandas','DOMINGO METALERO','Festival metalero 6 bandas','Festival metalero 6 bandas','2026-05-24','18:00:00',600,NULL,1,1,4,'2026-05-20 11:15:30'),
 (7,11,'BANDA','solicitudes_fechas_bandas','CONURTRASH','Festival metalero 5 bandas','Festival metalero 5 bandas','2026-06-06','20:00:00',540,NULL,1,1,4,'2026-05-20 12:45:00');

@@ -63,6 +63,14 @@ const upload = multer({
     }
 });
 
-router.post('/flyers', upload.single('flyer'), uploadsController.uploadFlyerPublic);
+router.post('/flyers', (req, res, next) => {
+    upload.single('flyer')(req, res, (err) => {
+        if (err) {
+            const message = err && err.message ? err.message : 'Archivo inválido';
+            return res.status(400).json({ message });
+        }
+        return uploadsController.uploadFlyerPublic(req, res, next);
+    });
+});
 
 module.exports = router;

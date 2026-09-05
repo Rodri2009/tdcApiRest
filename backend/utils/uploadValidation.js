@@ -141,6 +141,29 @@ const ensureDirectory = (dirPath) => {
     fs.mkdirSync(dirPath, { recursive: true });
 };
 
+const normalizeRequestId = (requestId) => {
+    const raw = String(requestId || '').trim();
+    if (!raw) return '';
+
+    const match = raw.match(/^(?:[a-z]+_)?(\d+)$/i);
+    if (match) {
+        return match[1];
+    }
+
+    const cleaned = raw
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_-]+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+
+    const prefixMatch = cleaned.match(/^(?:alq_|bnd_|tll_|srv_|ev_)?(\d+)$/i);
+    if (prefixMatch) {
+        return prefixMatch[1];
+    }
+
+    return cleaned.replace(/^(?:alq_|bnd_|tll_|srv_|ev_)/i, '');
+};
+
 const buildNormalizedUploadName = ({ baseName, requestId, prefix = 'upload', targetExt = '.jpg' }) => {
     const cleanBase = (baseName || '').trim();
     const sanitizedBase = cleanBase && cleanBase !== 'upload'
@@ -152,20 +175,10 @@ const buildNormalizedUploadName = ({ baseName, requestId, prefix = 'upload', tar
             .slice(0, 80)
         : '';
 
-    const cleanedRequestId = String(requestId || '')
-        .trim()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9_-]+/g, '_')
-        .replace(/_+/g, '_')
-        .replace(/^_|_$/g, '');
+    const normalizedRequestId = normalizeRequestId(requestId);
 
-    if (cleanedRequestId) {
-        const hasKnownPrefix = /^(alq_|bnd_|tll_|srv_|ev_)/i.test(cleanedRequestId);
-        if (hasKnownPrefix) {
-            return `${cleanedRequestId}${targetExt}`;
-        }
-
-        return `solicitud_${cleanedRequestId}${targetExt}`;
+    if (normalizedRequestId) {
+        return `solicitud_${normalizedRequestId}${targetExt}`;
     }
 
     const finalBase = sanitizedBase || `${prefix}_${Date.now()}`;

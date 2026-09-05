@@ -165,6 +165,33 @@ const ensureUploadsFolders = () => {
 
 ensureUploadsFolders();
 
+// Compatibilidad: si un flyer legacy se guardó con extensión distinta a la real,
+// resolver automáticamente la ruta existente en disco para evitar 404s por archivos .jpeg/.jpg/.png mezclados.
+app.get('/uploads/flyers/:filename', (req, res, next) => {
+    const requested = String(req.params.filename || '').trim();
+    if (!requested) return next();
+
+    const uploadsDir = path.join(__dirname, 'uploads', 'flyers');
+    if (!fs.existsSync(uploadsDir)) return next();
+
+    const baseName = path.basename(requested, path.extname(requested));
+    const candidates = fs.readdirSync(uploadsDir)
+        .filter(file => {
+            const fileBase = path.basename(file, path.extname(file));
+            return fileBase === baseName || file.startsWith(`${baseName}.`) || file.startsWith(`${baseName}_`);
+        })
+        .sort((a, b) => a.length - b.length);
+
+    if (candidates.length > 0) {
+        const actualPath = path.join(uploadsDir, candidates[0]);
+        return res.sendFile(actualPath, (err) => {
+            if (err) next(err);
+        });
+    }
+
+    return next();
+});
+
 // Servir uploads (logos, fotos) desde /uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

@@ -19,19 +19,19 @@ INSERT INTO solicitudes (
     actualizado_en
 )
 SELECT 12, 'TALLERES', 2, 2, NOW(), 'Confirmado', 1,
-       'Percusión Fun para Principiantes',
+       'Taller de Teatro',
        'Taller de percusión corporal y ritmos latinos para principiantes. Se trabaja coordinación, escucha y groove en grupo.',
        '2026-09-15', '18:30:00', 60, '19:30:00', NOW()
 WHERE NOT EXISTS (SELECT 1 FROM solicitudes WHERE id_solicitud = 12)
 UNION ALL
 SELECT 13, 'TALLERES', 2, 2, NOW(), 'Confirmado', 1,
-       'Latin Dance Essentials',
+       'Electro Dance',
        'Introducción al baile latino con trabajo de base, musicalidad y expresión corporal en un ambiente accesible.',
        '2026-09-17', '20:00:00', 60, '21:00:00', NOW()
 WHERE NOT EXISTS (SELECT 1 FROM solicitudes WHERE id_solicitud = 13)
 UNION ALL
 SELECT 14, 'TALLERES', 2, 2, NOW(), 'Confirmado', 1,
-       'Yoga para Recuperar Energía',
+       'Yoga',
        'Práctica de yoga con foco en movilidad, respiración y relajación para comenzar o retomar la rutina.',
        '2026-09-20', '10:00:00', 60, '11:00:00', NOW()
 WHERE NOT EXISTS (SELECT 1 FROM solicitudes WHERE id_solicitud = 14)
@@ -53,19 +53,19 @@ INSERT INTO solicitudes_talleres (
     hora_evento,
     precio
 )
-SELECT 12, 12, 'Percusión Fun para Principiantes', 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS',
-       'Taller de percusión corporal y ritmos latinos para principiantes.',
-       '2026-09-15', '18:30:00', 3500.00
+SELECT 12, 12, 'Taller de Teatro', 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS',
+       'Taller de teatro para principiantes. Se trabaja expresión corporal, improvisación y trabajo en grupo',
+       '2026-09-11', '16:00:00', 3500.00
 WHERE NOT EXISTS (SELECT 1 FROM solicitudes_talleres WHERE id_solicitud_taller = 12)
 UNION ALL
-SELECT 13, 13, 'Latin Dance Essentials', 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS',
-       'Introducción al baile latino con trabajo de base, musicalidad y expresión corporal.',
-       '2026-09-17', '20:00:00', 4000.00
+SELECT 13, 13, 'Electro Dance', 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS',
+       'Introducción al baile electrónico con trabajo de base, musicalidad y expresión corporal en un ambiente accesible.',
+       '2026-09-11', '19:00:00', 4000.00
 WHERE NOT EXISTS (SELECT 1 FROM solicitudes_talleres WHERE id_solicitud_taller = 13)
 UNION ALL
-SELECT 14, 14, 'Yoga para Recuperar Energía', 'TALLER_CULTURA_COMUNITARIA_Y_DE_BARRIO',
+SELECT 14, 14, 'Yoga', 'TALLER_CULTURA_COMUNITARIA_Y_DE_BARRIO',
        'Práctica de yoga con foco en movilidad, respiración y relajación.',
-       '2026-09-20', '10:00:00', 3200.00
+       '2026-09-11', '14:00:00', 3200.00
 WHERE NOT EXISTS (SELECT 1 FROM solicitudes_talleres WHERE id_solicitud_taller = 14)
 UNION ALL
 SELECT 15, 15, 'Collage y Color', 'TALLER_ARTES_VISUALES_ARTESANIAS_Y_PATRIMONIO_MATERIAL',
@@ -91,25 +91,25 @@ INSERT INTO talleres (
     activo,
     creado_en
 )
-SELECT 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS', 2, NULL, 'Percusión Fun para Principiantes',
-       'Taller de percusión corporal y ritmos latinos para principiantes. Se trabaja coordinación, escucha y groove en grupo.',
-       'martes', '18:30:00', '19:30:00', 60, 10, 3, 'Salón TDC', 1, NOW()
+SELECT 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS', 2, NULL, 'Taller de Teatro',
+       'Taller de teatro para principiantes. Se trabaja expresión corporal, improvisación y trabajo en grupo.',
+       'viernes', '16:00:00', '17:00:00', 60, 10, 3, 'Salón TDC', 1, NOW()
 WHERE NOT EXISTS (
-    SELECT 1 FROM talleres WHERE nombre = 'Percusión Fun para Principiantes' AND tipo_taller_id = 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS'
+    SELECT 1 FROM talleres WHERE nombre = 'Taller de Teatro' AND tipo_taller_id = 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS'
 )
 UNION ALL
-SELECT 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS', 1, NULL, 'Latin Dance Essentials',
-       'Introducción al baile latino con trabajo de base, musicalidad y expresión corporal en un ambiente accesible.',
-       'jueves', '20:00:00', '21:00:00', 60, 12, 4, 'Salón TDC', 1, NOW()
+SELECT 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS', 1, NULL, 'Electro Dance',
+       'Introducción al baile electrónico con trabajo de base, musicalidad y expresión corporal en un ambiente accesible.',
+       'viernes', '19:00:00', '20:30:00', 90, 12, 4, 'Salón TDC', 1, NOW()
 WHERE NOT EXISTS (
-    SELECT 1 FROM talleres WHERE nombre = 'Latin Dance Essentials' AND tipo_taller_id = 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS'
+    SELECT 1 FROM talleres WHERE nombre = 'Electro Dance' AND tipo_taller_id = 'TALLER_MUSICA_DANZA_Y_ARTES_ESCENICAS'
 )
 UNION ALL
-SELECT 'TALLER_CULTURA_COMUNITARIA_Y_DE_BARRIO', 3, NULL, 'Yoga para Recuperar Energía',
+SELECT 'TALLER_CULTURA_COMUNITARIA_Y_DE_BARRIO', 3, NULL, 'Yoga',
        'Práctica de yoga con foco en movilidad, respiración y relajación para comenzar o retomar la rutina.',
-       'domingo', '10:00:00', '11:00:00', 60, 16, 4, 'Salón TDC', 1, NOW()
+       'viernes', '14:00:00', '15:00:00', 60, 16, 4, 'Salón TDC', 1, NOW()
 WHERE NOT EXISTS (
-    SELECT 1 FROM talleres WHERE nombre = 'Yoga para Recuperar Energía' AND tipo_taller_id = 'TALLER_CULTURA_COMUNITARIA_Y_DE_BARRIO'
+    SELECT 1 FROM talleres WHERE nombre = 'Yoga' AND tipo_taller_id = 'TALLER_CULTURA_COMUNITARIA_Y_DE_BARRIO'
 )
 UNION ALL
 SELECT 'TALLER_ARTES_VISUALES_ARTESANIAS_Y_PATRIMONIO_MATERIAL', 4, NULL, 'Collage y Color',

@@ -346,8 +346,21 @@
             </div>
         </div>
         <script>
+            function normalizeFlyerUrl(url) {
+                if (!url || typeof url !== 'string') return url;
+                return url.replace(/(\/uploads\/flyers\/[^\s?]+)\.(jpe?g|png)(?=$|[?#])/i, '$1.jpg');
+            }
+
             function handleFlyerError(img) {
                 img.onerror = null;
+
+                const currentSrc = normalizeFlyerUrl(img.getAttribute('src') || '');
+                if (currentSrc && currentSrc !== img.getAttribute('src')) {
+                    img.setAttribute('src', currentSrc);
+                    img.onerror = handleFlyerError;
+                    return;
+                }
+
                 const fallback = document.createElement('span');
                 fallback.className = 'flyer-missing';
                 fallback.style.flexDirection = 'column';
@@ -796,7 +809,7 @@
                         <td data-label="Cliente">${(solicitud.nombreCliente || '') + (solicitud.apellidoCliente ? '<br>' + solicitud.apellidoCliente : '') || '<em>No completado</em>'}</td>
                         <td data-label="Fecha Evento">${fechaEvento}</td>
                         <td data-label="Hora Inicio">${horaInicio}</td>
-                        <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + (solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer" onerror="handleFlyerError(this)">' : '<span class="flyer-missing" style="flex-direction:column;">📄<span class="flyer-missing-text">Sin flyer</span><button type="button" class="btn-upload-flyer" data-solicitud-id="' + solicitud.id + '">＋ Subir imagen</button></span>'}</td>
+                        <td data-label="Flyer">${(solicitud.url_flyer || solicitud.flyer_url) ? '<img src="' + normalizeFlyerUrl(solicitud.url_flyer || solicitud.flyer_url) + '" class="flyer-thumb" alt="flyer" onerror="handleFlyerError(this)">' : '<span class="flyer-missing" style="flex-direction:column;">📄<span class="flyer-missing-text">Sin flyer</span><button type="button" class="btn-upload-flyer" data-solicitud-id="' + solicitud.id + '">＋ Subir imagen</button></span>'}</td>
                         <td data-label="Descripción"><div class="description">${descripcionCorta}</div></td>
                         <td data-label="Acciones"><div class="actions-cell">${estadoDisplay}<div class="actions-buttons">${botones}</div></div></td>`;
 

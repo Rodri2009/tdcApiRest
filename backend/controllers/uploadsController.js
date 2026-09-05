@@ -10,13 +10,24 @@ const tryRecoverFlyerUrl = (solicitudId) => {
         const uploadDir = path.join(__dirname, '..', 'uploads', 'flyers');
         if (!fs.existsSync(uploadDir)) return null;
 
-        const normalizedId = String(solicitudId).trim();
+        const rawId = String(solicitudId).trim();
+        const normalizedId = rawId.replace(/^(?:alq_|bnd_|tll_|srv_|ev_)/i, '');
         const files = fs.readdirSync(uploadDir);
         const patterns = [
+            `${rawId}.`,
             `${normalizedId}.`,
             `solicitud_${normalizedId}.`,
+            `solicitud_${rawId}.`,
             `flyer_${normalizedId}.`,
-            `flyer_solicitud_${normalizedId}.`
+            `flyer_${rawId}.`,
+            `flyer_solicitud_${normalizedId}.`,
+            `flyer_solicitud_${rawId}.`,
+            `${rawId.replace(/_/g, '')}.`,
+            `bnd_${normalizedId}.`,
+            `tll_${normalizedId}.`,
+            `srv_${normalizedId}.`,
+            `alq_${normalizedId}.`,
+            `ev_${normalizedId}.`
         ];
         const found = files.find(f => patterns.some(pattern => f.startsWith(pattern)));
 

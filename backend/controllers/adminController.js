@@ -1,6 +1,15 @@
 const pool = require('../db');
 const { logVerbose, logError, logSuccess, logWarning } = require('../lib/debugFlags');
 
+const normalizeFlyerUrl = (url) => {
+    if (!url || typeof url !== 'string') return url;
+
+    const cleaned = url.trim();
+    if (!cleaned) return cleaned;
+
+    return cleaned.replace(/(\/uploads\/flyers\/[^\s?]+)\.(jpe?g|png)(?=$|[?#])/i, '$1.jpg');
+};
+
 const getSolicitudes = async (req, res) => {
     let conn;
     try {
@@ -169,9 +178,13 @@ const getSolicitudes = async (req, res) => {
         }
         // ejecutar la consulta con los filtros / ordenamiento ya aplicados
         const solicitudes = await conn.query(sql, params);
+        const normalizedSolicitudes = (Array.isArray(solicitudes) ? solicitudes : []).map(item => ({
+            ...item,
+            url_flyer: normalizeFlyerUrl(item && item.url_flyer)
+        }));
         // DEBUG: registrar tipo / longitud para diagnosticar front-end
         logVerbose('[ADMIN] getSolicitudes returned type:', typeof solicitudes, 'isArray:', Array.isArray(solicitudes), 'len:', solicitudes && solicitudes.length);
-        return res.json(solicitudes);
+        return res.json(normalizedSolicitudes);
     } finally {
         if (conn) conn.release();
     }
